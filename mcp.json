@@ -4,20 +4,20 @@
         "command": "npx",
         "args": ["-y", "@neondatabase/ncp-server-neon", "start", "napi_88x8jzryt6fewwb8ts6owfi2ov23xptlb1798ynl3mlfymv17lzifduyr1t3ly88"]
       },
-      "@21st-dev-magic-mcp": {
-        "command": "C:\\Windows\\System32\\cmd.exe",
+      "magic-mcp": {
+        "command": "npx",
         "args": [
-          "/c", "npx","-y",
+          "-y",
           "@smithery/cli@latest",
           "run",
           "@21st-dev/magic-mcp",
           "--config",
-          "\"{\\\"TWENTY_FIRST_API_KEY\\\":\\\"72b532ab1fcdcfcb7f4556d0743434f10fb61dd929c12795d25565aca347ad3a\\\"}\""
+          "{\"TWENTY_FIRST_API_KEY\":\"72b532ab1fcdcfcb7f4556d0743434f10fb61dd929c12795d25565aca347ad3a\"}"
         ]
       },
       "browser-tools": {
-        "command": "wsl",
-        "args": ["bash", "-c", "cmd /c npx -y @agentdeskai/browser-tools-mcp@1.2.0"],
+        "command": "npx",
+        "args": ["-y", "@agentdeskai/browser-tools-mcp@1.2.0"],
         "enabled": true
       }
     }
