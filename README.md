@@ -47,14 +47,12 @@
 允许AI助手与浏览器交互。
 
 **配置要求：**
-- WSL（Windows Subsystem for Linux）
 - Node.js环境
 
 设置步骤：
-1. 确保WSL已安装：`wsl --install`
-2. 安装依赖：`npm install -g @agentdeskai/browser-tools-mcp`
+1. 安装依赖：`npm install -g @agentdeskai/browser-tools-mcp`
 
-### 4. Figma Context MCP
+### 4. Figma API工具
 
 与Figma设计文件集成。
 
@@ -67,14 +65,39 @@
 1. 登录Figma账户
 2. 生成个人访问令牌（Account Settings > Personal Access Tokens）
 3. 获取设计文件ID（URL中的值）
-4. 设置环境变量：
-   ```
-   FIGMA_TOKEN=你的访问令牌
-   FIGMA_FILE_ID=你的文件ID
-   ```
+4. 设置环境变量
 
-## 如何启动
+## 自动启动MCP服务
 
-1. 确保已安装所有依赖
-2. 运行 `node service-worker.js` 启动服务
+项目包含自动启动脚本，可以在系统启动时自动运行所有MCP服务。
+
+### 手动启动
+
+1. 运行批处理文件：`start-mcp-services.bat`
+
+或
+
+2. 直接运行Node.js脚本：`node start-mcp-services.js`
+
+### 设置自动启动
+
+运行以下命令（需要管理员权限）：
+
+```bash
+node setup-autostart.js
+```
+
+这将创建一个Windows计划任务，在用户登录时自动启动所有MCP服务。
+
+### 日志
+
+所有服务的日志文件保存在`logs`目录中：
+- `browser-tools.log` - 浏览器工具MCP日志
+- `magic-mcp.log` - Magic MCP日志
+- `neon-mcp.log` - Neon数据库MCP日志
+
+## 如何启动应用
+
+1. 确保MCP服务已启动（手动或自动）
+2. 运行 `node service-worker.js` 启动应用服务
 3. 访问 http://localhost:3000 打开应用 
