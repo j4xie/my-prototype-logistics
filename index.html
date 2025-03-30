@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食品溯源系统 - 原型界面</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    
+    <style>
+        .preview-frame {
+            width: 390px;
+            height: 844px;
+            border: 1px solid #ccc;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .preview-frame:hover {
+            box-shadow: 0 0 30px rgba(0, 70, 127, 0.2);
+            transform: translateY(-5px);
+        }
+        .preview-frame.pc-size {
+            width: 1200px;
+            height: 800px;
+            border-radius: 8px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));
+            gap: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .card.pc-preview {
+            grid-column: span 3;
+        }
+        /* 分类标题样式 */
+        .category-divider {
+            grid-column: 1 / -1;
+            border-bottom: 2px dashed #00467F;
+            margin: 2rem 0;
+            padding-top: 1rem;
+            position: relative;
+        }
+        .category-title {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #fff;
+            padding: 0 10px;
+            color: #00467F;
+            font-weight: bold;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 1600px) {
+            .card.pc-preview {
+                grid-column: span 2;
+            }
+        }
+        @media (max-width: 1200px) {
+            .card.pc-preview {
+                grid-column: span 1;
+            }
+            .preview-frame.pc-size {
+                width: 100%;
+                height: 600px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto py-8 px-4">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-[#00467F] mb-2">工业级食品溯源系统</h1>
+            <p class="text-gray-600 max-w-3xl mx-auto">完整的食品溯源管理SaaS平台原型，支持多产品类型自定义溯源流程，实时追踪、记录与展示全产业链溯源数据。适配Web与移动端，满足企业内部管理与消费者溯源查询双重需求。</p>
+        </header>
+
+        <div class="grid-container">
+            <!-- 第1行：登录与功能选择 -->
+            <div class="category-divider">
+                <span class="category-title">登录与功能选择</span>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">登录页面</h2>
+                <div class="preview-frame">
+                    <iframe src="login.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">功能模块选择</h2>
+                <div class="preview-frame">
+                    <iframe src="home-selector.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <!-- 第2行：养殖管理相关页面 -->
+            <div class="category-divider">
+                <span class="category-title">养殖管理模块</span>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">养殖管理</h2>
+                <div class="preview-frame">
+                    <iframe src="home-farming.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">创建溯源记录</h2>
+                <div class="preview-frame">
+                    <iframe src="create-trace.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">疫苗录入</h2>
+                <div class="preview-frame">
+                    <iframe src="farming-vaccine.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">繁育信息管理</h2>
+                <div class="preview-frame">
+                    <iframe src="farming-breeding.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">场地视频监控</h2>
+                <div class="preview-frame">
+                    <iframe src="farming-monitor.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <!-- 第3行：生产加工相关页面 -->
+            <div class="category-divider">
+                <span class="category-title">生产加工模块</span>
+            </div>
+
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">生产加工</h2>
+                <div class="preview-frame">
+                    <iframe src="home-processing.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">溯源记录编辑</h2>
+                <div class="preview-frame">
+                    <iframe src="trace-edit.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">质检报告查询</h2>
+                <div class="preview-frame">
+                    <iframe src="processing-reports.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">肉质等级评定</h2>
+                <div class="preview-frame">
+                    <iframe src="processing-quality.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+                <p class="text-sm text-gray-600 mt-2">专业评定肉品品质等级，包含颜色、纹理、瘦肉率等多项指标，符合国家标准GB/T 17238-2008。</p>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">加工拍照</h2>
+                <div class="preview-frame">
+                    <iframe src="processing-photos.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <!-- 第4行：销售物流和地图 -->
+            <div class="category-divider">
+                <span class="category-title">销售物流模块</span>
+            </div>
+
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">销售物流</h2>
+                <div class="preview-frame">
+                    <iframe src="home-logistics.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">地图展示</h2>
+                <div class="preview-frame">
+                    <iframe src="trace-map.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <!-- 其他页面 -->
+            <div class="category-divider">
+                <span class="category-title">通用功能</span>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">溯源列表</h2>
+                <div class="preview-frame">
+                    <iframe src="trace-list.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">溯源详情</h2>
+                <div class="preview-frame">
+                    <iframe src="trace-detail.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">溯源证书</h2>
+                <div class="preview-frame">
+                    <iframe src="trace-certificate.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">系统设置</h2>
+                <div class="preview-frame">
+                    <iframe src="settings.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">个人中心</h2>
+                <div class="preview-frame">
+                    <iframe src="profile.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">模板配置器</h2>
+                <div class="preview-frame">
+                    <iframe src="template.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">帮助中心</h2>
+                <div class="preview-frame">
+                    <iframe src="help-center.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <!-- PC端页面 -->
+            <div class="category-divider">
+                <span class="category-title">PC端管理控制台</span>
+            </div>
+            
+            <div class="card pc-preview">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">管理员控制台</h2>
+                <div class="preview-frame pc-size">
+                    <iframe src="admin-dashboard.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <div class="card pc-preview">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">数据导入</h2>
+                <div class="preview-frame pc-size">
+                    <iframe src="data-import.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <div class="card pc-preview">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">用户管理</h2>
+                <div class="preview-frame pc-size">
+                    <iframe src="user-management.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <div class="card pc-preview">
+                <h2 class="text-xl font-semibold mb-3 text-[#00467F]">系统日志</h2>
+                <div class="preview-frame pc-size">
+                    <iframe src="system-logs.html" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>© 2025 食品溯源系统 | 工业级UI设计原型</p>
+        </footer>
+    </div>
+</body>
+</html> 
+</html> 

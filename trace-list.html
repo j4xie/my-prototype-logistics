@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>溯源记录 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="bg-[#F7F8FA]">
+    <div class="max-w-[390px] mx-auto min-h-screen pb-16">
+        <!-- 顶部导航栏 -->
+        <div class="trace-navbar sticky top-0 z-10">
+            <div class="trace-navbar-title">溯源记录</div>
+            <div class="flex">
+                <a href="#" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all">
+                    <i class="fas fa-filter text-[#00467F]"></i>
+                </a>
+                <a href="#" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all ml-1">
+                    <i class="fas fa-sort text-[#00467F]"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- 搜索与日期筛选 -->
+        <div class="px-5 py-3 bg-white shadow-sm">
+            <div class="relative mb-3">
+                <input type="text" class="trace-input pl-10 pr-3 py-2.5 bg-gray-50" placeholder="搜索批次号、产品名称...">
+                <span class="absolute left-3 top-3 text-gray-400">
+                    <i class="fas fa-search"></i>
+                </span>
+            </div>
+            <div class="flex justify-between items-center">
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="far fa-calendar-alt mr-2 text-[#00467F]"></i>
+                    <span>日期筛选</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button class="bg-blue-50 text-[#00467F] rounded px-3 py-1 text-xs border border-blue-100">
+                        今日
+                    </button>
+                    <button class="bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200">
+                        近7天
+                    </button>
+                    <button class="bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200">
+                        近30天
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态筛选标签 -->
+        <div class="px-5 py-3">
+            <div class="flex space-x-2 overflow-x-auto pb-1 -mx-1 px-1">
+                <button class="flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1.5 shadow-sm">
+                    全部
+                </button>
+                <button class="flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm">
+                    <i class="fas fa-circle text-[#3FC06D] text-xs mr-1"></i> 已完成
+                </button>
+                <button class="flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm">
+                    <i class="fas fa-circle text-[#F5A623] text-xs mr-1"></i> 待审核
+                </button>
+                <button class="flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm">
+                    <i class="fas fa-circle text-[#F05656] text-xs mr-1"></i> 异常
+                </button>
+                <button class="flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm">
+                    <i class="fas fa-circle text-gray-400 text-xs mr-1"></i> 草稿
+                </button>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="px-5 mb-5">
+            <div class="bg-white rounded-xl shadow-md p-4">
+                <div class="grid grid-cols-4 gap-3">
+                    <div class="text-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-1.5">
+                            <i class="fas fa-tasks text-[#00467F] text-xs"></i>
+                        </div>
+                        <div class="text-lg font-bold text-[#00467F]">248</div>
+                        <div class="text-xs text-gray-500">全部</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-1.5">
+                            <i class="fas fa-check text-[#3FC06D] text-xs"></i>
+                        </div>
+                        <div class="text-lg font-bold text-[#3FC06D]">183</div>
+                        <div class="text-xs text-gray-500">已完成</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-1.5">
+                            <i class="fas fa-clock text-[#F5A623] text-xs"></i>
+                        </div>
+                        <div class="text-lg font-bold text-[#F5A623]">42</div>
+                        <div class="text-xs text-gray-500">待审核</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-1.5">
+                            <i class="fas fa-exclamation text-[#F05656] text-xs"></i>
+                        </div>
+                        <div class="text-lg font-bold text-[#F05656]">23</div>
+                        <div class="text-xs text-gray-500">异常</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 列表标题 -->
+        <div class="px-5 mb-3">
+            <div class="flex justify-between items-center">
+                <h3 class="font-medium text-gray-800">列表记录</h3>
+                <div class="text-xs text-gray-500">共248条</div>
+            </div>
+        </div>
+
+        <!-- 记录列表 -->
+        <div class="px-5 space-y-4 mb-6">
+            <!-- 记录卡片1 -->
+            <div class="trace-card shadow-md hover:shadow-lg transition-all">
+                <div class="trace-card-header">
+                    <div class="trace-card-title flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                            <i class="fas fa-drumstick-bite text-[#00467F] text-sm"></i>
+                        </div>
+                        <span>和牛肉 #WG25031701</span>
+                    </div>
+                    <div class="trace-status-tag trace-status-tag-success">
+                        <i class="fas fa-check-circle mr-1"></i> 已完成
+                    </div>
+                </div>
+                <div class="trace-card-body">
+                    <div class="grid grid-cols-3 gap-3 text-sm mb-3">
+                        <div>
+                            <div class="text-gray-500">批次</div>
+                            <div class="font-medium">WG-2503-A</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">产地</div>
+                            <div class="font-medium">北海道</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">日期</div>
+                            <div class="font-medium">2025-03-15</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex items-center text-xs text-gray-500 mr-4">
+                            <i class="fas fa-user-check mr-1 text-[#00467F]"></i> 张主管
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <i class="fas fa-clock mr-1 text-[#00467F]"></i> 2025-03-17 14:30
+                        </div>
+                    </div>
+                </div>
+                <div class="trace-card-footer">
+                    <button class="trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2">
+                        <i class="fas fa-qrcode mr-1"></i> 二维码
+                    </button>
+                    <a href="trace-detail.html" class="trace-button trace-button-primary text-xs py-1.5 px-3">
+                        <i class="fas fa-eye mr-1"></i> 查看详情
+                    </a>
+                </div>
+            </div>
+
+            <!-- 记录卡片2 -->
+            <div class="trace-card shadow-md hover:shadow-lg transition-all">
+                <div class="trace-card-header">
+                    <div class="trace-card-title flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                            <i class="fas fa-fish text-[#00467F] text-sm"></i>
+                        </div>
+                        <span>大闸蟹 #DZX25031602</span>
+                    </div>
+                    <div class="trace-status-tag trace-status-tag-warning">
+                        <i class="fas fa-exclamation-circle mr-1"></i> 待审核
+                    </div>
+                </div>
+                <div class="trace-card-body">
+                    <div class="grid grid-cols-3 gap-3 text-sm mb-3">
+                        <div>
+                            <div class="text-gray-500">批次</div>
+                            <div class="font-medium">DZX-0316-B</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">产地</div>
+                            <div class="font-medium">阳澄湖</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">日期</div>
+                            <div class="font-medium">2025-03-16</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex items-center text-xs text-gray-500 mr-4">
+                            <i class="fas fa-user-check mr-1 text-[#00467F]"></i> 李检验员
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <i class="fas fa-clock mr-1 text-[#00467F]"></i> 2025-03-16 16:45
+                        </div>
+                    </div>
+                </div>
+                <div class="trace-card-footer">
+                    <button class="trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2">
+                        <i class="fas fa-qrcode mr-1"></i> 二维码
+                    </button>
+                    <a href="trace-detail.html" class="trace-button trace-button-primary text-xs py-1.5 px-3">
+                        <i class="fas fa-eye mr-1"></i> 查看详情
+                    </a>
+                </div>
+            </div>
+
+            <!-- 记录卡片3 -->
+            <div class="trace-card shadow-md hover:shadow-lg transition-all">
+                <div class="trace-card-header">
+                    <div class="trace-card-title flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                            <i class="fas fa-apple-alt text-[#00467F] text-sm"></i>
+                        </div>
+                        <span>猕猴桃 #MHT25031503</span>
+                    </div>
+                    <div class="trace-status-tag trace-status-tag-error">
+                        <i class="fas fa-times-circle mr-1"></i> 异常
+                    </div>
+                </div>
+                <div class="trace-card-body">
+                    <div class="grid grid-cols-3 gap-3 text-sm mb-3">
+                        <div>
+                            <div class="text-gray-500">批次</div>
+                            <div class="font-medium">MHT-0315-C</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">产地</div>
+                            <div class="font-medium">陕西眉县</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">日期</div>
+                            <div class="font-medium">2025-03-15</div>
+                        </div>
+                    </div>
+                    <div class="p-2.5 bg-red-50 text-xs text-red-600 rounded-lg mb-3 border border-red-100">
+                        <div class="flex items-start">
+                            <i class="fas fa-exclamation-triangle mr-1.5 mt-0.5"></i> 
+                            <span>质检异常：农残超标，需复检</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex items-center text-xs text-gray-500 mr-4">
+                            <i class="fas fa-user-check mr-1 text-[#00467F]"></i> 王质控
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <i class="fas fa-clock mr-1 text-[#00467F]"></i> 2025-03-15 09:15
+                        </div>
+                    </div>
+                </div>
+                <div class="trace-card-footer">
+                    <button class="trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2">
+                        <i class="fas fa-qrcode mr-1"></i> 二维码
+                    </button>
+                    <a href="trace-detail.html" class="trace-button trace-button-primary text-xs py-1.5 px-3">
+                        <i class="fas fa-eye mr-1"></i> 查看详情
+                    </a>
+                </div>
+            </div>
+
+            <!-- 记录卡片4 -->
+            <div class="trace-card shadow-md hover:shadow-lg transition-all">
+                <div class="trace-card-header">
+                    <div class="trace-card-title flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                            <i class="fas fa-wine-bottle text-[#00467F] text-sm"></i>
+                        </div>
+                        <span>葡萄酒 #PTJ25031404</span>
+                    </div>
+                    <div class="trace-status-tag trace-status-tag-success">
+                        <i class="fas fa-check-circle mr-1"></i> 已完成
+                    </div>
+                </div>
+                <div class="trace-card-body">
+                    <div class="grid grid-cols-3 gap-3 text-sm mb-3">
+                        <div>
+                            <div class="text-gray-500">批次</div>
+                            <div class="font-medium">PTJ-0314-D</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">产地</div>
+                            <div class="font-medium">宁夏贺兰山</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">日期</div>
+                            <div class="font-medium">2025-03-14</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex items-center text-xs text-gray-500 mr-4">
+                            <i class="fas fa-user-check mr-1 text-[#00467F]"></i> 赵工程师
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <i class="fas fa-clock mr-1 text-[#00467F]"></i> 2025-03-14 11:20
+                        </div>
+                    </div>
+                </div>
+                <div class="trace-card-footer">
+                    <button class="trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2">
+                        <i class="fas fa-qrcode mr-1"></i> 二维码
+                    </button>
+                    <a href="trace-detail.html" class="trace-button trace-button-primary text-xs py-1.5 px-3">
+                        <i class="fas fa-eye mr-1"></i> 查看详情
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分页控件 -->
+        <div class="px-5 py-3 mb-6">
+            <div class="flex justify-between items-center">
+                <button class="trace-button trace-button-secondary text-xs py-1.5 px-4 flex items-center">
+                    <i class="fas fa-chevron-left mr-1.5"></i> 上一页
+                </button>
+                <div class="text-sm text-gray-600 flex items-center">
+                    <span class="mx-2">第</span>
+                    <div class="bg-white border border-gray-200 rounded px-2 py-0.5 text-[#00467F] font-medium">1</div>
+                    <span class="mx-2">/ 12 页</span>
+                </div>
+                <button class="trace-button trace-button-primary text-xs py-1.5 px-4 flex items-center">
+                    下一页 <i class="fas fa-chevron-right ml-1.5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 底部导航栏 -->
+        <div class="trace-tabbar">
+            <a href="home-selector.html" class="trace-tabbar-item">
+                <i class="fas fa-home"></i>
+                <span>首页</span>
+            </a>
+            <a href="trace-list.html" class="trace-tabbar-item active">
+                <i class="fas fa-list"></i>
+                <span>记录</span>
+            </a>
+            <a href="create-trace.html" class="trace-tabbar-item">
+                <div class="w-14 h-14 rounded-full bg-[#00467F] flex items-center justify-center -mt-5 shadow-lg">
+                    <i class="fas fa-plus text-white text-lg"></i>
+                </div>
+            </a>
+            <a href="trace-map.html" class="trace-tabbar-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>地图</span>
+            </a>
+            <a href="profile.html" class="trace-tabbar-item">
+                <i class="fas fa-user"></i>
+                <span>我的</span>
+            </a>
+        </div>
+    </div>
+</body>
+</html> 

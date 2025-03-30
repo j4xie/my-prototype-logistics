@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    <style>
+        .admin-sidebar {
+            width: 250px;
+            background-color: #00467F;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+        }
+        .admin-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .menu-item {
+            transition: all 0.2s ease;
+        }
+        .menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .menu-item.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-left: 4px solid #FFA500;
+        }
+        .user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .user-status.active {
+            background-color: #3FC06D;
+        }
+        .user-status.inactive {
+            background-color: #F05656;
+        }
+    </style>
+</head>
+<body class="bg-[#F7F8FA]">
+    <!-- 侧边导航栏 -->
+    <div class="admin-sidebar text-white shadow-lg">
+        <div class="p-5 border-b border-blue-800">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center mr-3">
+                    <i class="fas fa-barcode text-[#00467F] text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg">食品溯源系统</h1>
+                    <p class="text-xs text-blue-200">管理控制台</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-3">
+            <p class="text-xs text-blue-300 mb-3 pl-3 uppercase">系统管理</p>
+            <a href="admin-dashboard.html" class="menu-item flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-tachometer-alt w-5"></i>
+                <span class="ml-2">控制台</span>
+            </a>
+            <a href="admin-users.html" class="menu-item active flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-users w-5"></i>
+                <span class="ml-2">用户管理</span>
+            </a>
+            <a href="admin-roles.html" class="menu-item flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-user-tag w-5"></i>
+                <span class="ml-2">角色权限</span>
+            </a>
+            
+            <p class="text-xs text-blue-300 mt-6 mb-3 pl-3 uppercase">数据管理</p>
+            <a href="admin-products.html" class="menu-item flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-boxes w-5"></i>
+                <span class="ml-2">产品管理</span>
+            </a>
+            <a href="admin-trace-nodes.html" class="menu-item flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-sitemap w-5"></i>
+                <span class="ml-2">溯源节点</span>
+            </a>
+            <a href="admin-templates.html" class="menu-item flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-file-alt w-5"></i>
+                <span class="ml-2">模板配置</span>
+            </a>
+            
+            <p class="text-xs text-blue-300 mt-6 mb-3 pl-3 uppercase">分析报表</p>
+            <a href="admin-analytics.html" class="menu-item flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-chart-line w-5"></i>
+                <span class="ml-2">数据分析</span>
+            </a>
+            <a href="admin-reports.html" class="menu-item flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-file-export w-5"></i>
+                <span class="ml-2">报表导出</span>
+            </a>
+            
+            <p class="text-xs text-blue-300 mt-6 mb-3 pl-3 uppercase">系统设置</p>
+            <a href="admin-settings.html" class="menu-item flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-cogs w-5"></i>
+                <span class="ml-2">系统配置</span>
+            </a>
+            <a href="admin-logs.html" class="menu-item flex items-center text-white py-2 px-3 rounded-md mb-1">
+                <i class="fas fa-history w-5"></i>
+                <span class="ml-2">操作日志</span>
+            </a>
+        </div>
+        
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-800">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center mr-3">
+                    <i class="fas fa-user text-[#00467F]"></i>
+                </div>
+                <div>
+                    <h3 class="font-medium text-sm">超级管理员</h3>
+                    <p class="text-xs text-blue-200">admin@foodtrace.com</p>
+                </div>
+                <a href="login.html" class="ml-auto text-white opacity-70 hover:opacity-100">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="admin-content">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">系统用户管理</h1>
+            <div class="flex items-center">
+                <button class="bg-[#00467F] text-white py-2 px-4 rounded-md hover:bg-blue-800 transition-all">
+                    <i class="fas fa-plus mr-1"></i> 添加用户
+                </button>
+            </div>
+        </div>
+
+        <!-- 用户筛选和搜索 -->
+        <div class="bg-white rounded-xl shadow-md p-5 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户角色</label>
+                    <select class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">全部角色</option>
+                        <option value="super_admin">超级管理员</option>
+                        <option value="admin">系统管理员</option>
+                        <option value="enterprise">企业用户</option>
+                        <option value="staff">企业员工</option>
+                        <option value="consumer">消费者</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户状态</label>
+                    <select class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">全部状态</option>
+                        <option value="active">已激活</option>
+                        <option value="inactive">未激活</option>
+                        <option value="locked">已锁定</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">创建时间</label>
+                    <select class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">全部时间</option>
+                        <option value="today">今天</option>
+                        <option value="week">本周</option>
+                        <option value="month">本月</option>
+                        <option value="year">今年</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">搜索用户</label>
+                    <div class="relative">
+                        <input type="text" placeholder="输入用户名/邮箱/手机号" class="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <span class="absolute left-3 top-2.5 text-gray-400">
+                            <i class="fas fa-search"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 用户统计 -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                <h3 class="text-2xl font-bold text-[#00467F]">2,584</h3>
+                <p class="text-sm text-gray-600">总用户数</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                <h3 class="text-2xl font-bold text-green-600">2,142</h3>
+                <p class="text-sm text-gray-600">已激活用户</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                <h3 class="text-2xl font-bold text-gray-500">352</h3>
+                <p class="text-sm text-gray-600">未激活用户</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                <h3 class="text-2xl font-bold text-red-600">90</h3>
+                <p class="text-sm text-gray-600">已锁定用户</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                <h3 class="text-2xl font-bold text-orange-500">65</h3>
+                <p class="text-sm text-gray-600">今日新增</p>
+            </div>
+        </div>
+
+        <!-- 用户表格 -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <input type="checkbox" class="rounded border-gray-300 text-[#00467F] focus:ring-[#00467F]">
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                用户信息
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                角色
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                所属企业
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                创建时间
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                状态
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                操作
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- 用户行1 -->
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" class="rounded border-gray-300 text-[#00467F] focus:ring-[#00467F]">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-[#00467F] flex items-center justify-center text-white">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">张三</div>
+                                        <div class="text-sm text-gray-500">zhangsan@example.com</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-[#00467F]">
+                                    超级管理员
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                系统管理方
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                2024-09-15
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="user-status active mr-2"></div>
+                                    <span class="text-sm text-green-600">已激活</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="#" class="text-[#00467F] hover:text-[#003366] mr-3">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="#" class="text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        
+                        <!-- 用户行2 -->
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" class="rounded border-gray-300 text-[#00467F] focus:ring-[#00467F]">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-green-600 flex items-center justify-center text-white">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">李四</div>
+                                        <div class="text-sm text-gray-500">lisi@company.com</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    企业管理员
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                阳澄湖大闸蟹有限公司
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                2024-10-01
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="user-status active mr-2"></div>
+                                    <span class="text-sm text-green-600">已激活</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="#" class="text-[#00467F] hover:text-[#003366] mr-3">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="#" class="text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        
+                        <!-- 用户行3 -->
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" class="rounded border-gray-300 text-[#00467F] focus:ring-[#00467F]">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-purple-600 flex items-center justify-center text-white">
+                                        <i class="fas fa-user-tie"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">王五</div>
+                                        <div class="text-sm text-gray-500">wangwu@foodco.com</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                    质检员
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                北海道和牛肉业有限公司
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                2024-10-05
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="user-status inactive mr-2"></div>
+                                    <span class="text-sm text-red-600">已锁定</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="#" class="text-[#00467F] hover:text-[#003366] mr-3">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="#" class="text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        
+                        <!-- 用户行4 -->
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" class="rounded border-gray-300 text-[#00467F] focus:ring-[#00467F]">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center text-white">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">赵六</div>
+                                        <div class="text-sm text-gray-500">zhaoliu@example.com</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    消费者
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                -
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                2024-10-15
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="user-status inactive mr-2"></div>
+                                    <span class="text-sm text-gray-500">未激活</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="#" class="text-[#00467F] hover:text-[#003366] mr-3">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="#" class="text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                <div class="flex-1 flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-gray-700">
+                            显示第 <span class="font-medium">1</span> 至 <span class="font-medium">10</span> 条，共 <span class="font-medium">256</span> 条记录
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </a>
+                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-[#00467F] text-sm font-medium text-white hover:bg-blue-700">
+                                1
+                            </a>
+                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                2
+                            </a>
+                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                3
+                            </a>
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                ...
+                            </span>
+                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                26
+                            </a>
+                            <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </a>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 批量操作 -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="inline-flex items-center text-sm text-gray-700">
+                        <input type="checkbox" class="rounded border-gray-300 text-[#00467F] focus:ring-[#00467F] mr-2">
+                        全选
+                    </label>
+                    <span class="mx-2 text-gray-300">|</span>
+                    <span class="text-sm text-gray-700">已选择 <span class="text-[#00467F] font-medium">0</span> 项</span>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="bg-red-50 text-red-600 px-3 py-1.5 text-sm rounded-md hover:bg-red-100 transition-all">
+                        <i class="fas fa-trash-alt mr-1"></i> 批量删除
+                    </button>
+                    <button class="bg-green-50 text-green-600 px-3 py-1.5 text-sm rounded-md hover:bg-green-100 transition-all">
+                        <i class="fas fa-check-circle mr-1"></i> 批量激活
+                    </button>
+                    <button class="bg-orange-50 text-orange-600 px-3 py-1.5 text-sm rounded-md hover:bg-orange-100 transition-all">
+                        <i class="fas fa-lock mr-1"></i> 批量锁定
+                    </button>
+                    <button class="bg-blue-50 text-[#00467F] px-3 py-1.5 text-sm rounded-md hover:bg-blue-100 transition-all">
+                        <i class="fas fa-download mr-1"></i> 导出选中
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加用户弹窗 (默认隐藏) -->
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4">
+            <div class="flex justify-between items-center p-5 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">添加新用户</h3>
+                <button class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                        <input type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="请输入用户名">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">电子邮箱</label>
+                        <input type="email" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="请输入电子邮箱">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">手机号码</label>
+                        <input type="tel" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="请输入手机号码">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">用户角色</label>
+                        <select class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">请选择角色</option>
+                            <option value="super_admin">超级管理员</option>
+                            <option value="admin">系统管理员</option>
+                            <option value="enterprise">企业用户</option>
+                            <option value="staff">企业员工</option>
+                            <option value="consumer">消费者</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                        <input type="password" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="请输入密码">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">确认密码</label>
+                        <input type="password" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="请再次输入密码">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">所属企业</label>
+                        <select class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">请选择企业</option>
+                            <option value="company1">阳澄湖大闸蟹有限公司</option>
+                            <option value="company2">北海道和牛肉业有限公司</option>
+                            <option value="company3">宁夏贺兰山葡萄酒业</option>
+                            <option value="company4">陕西眉县猕猴桃产业联盟</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">用户状态</label>
+                        <div class="flex items-center space-x-4 mt-2">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="status" value="active" class="text-[#00467F] focus:ring-[#00467F]" checked>
+                                <span class="ml-2 text-sm text-gray-700">激活</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="status" value="inactive" class="text-[#00467F] focus:ring-[#00467F]">
+                                <span class="ml-2 text-sm text-gray-700">不激活</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户备注</label>
+                    <textarea rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="请输入用户备注信息"></textarea>
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="checkbox" class="rounded border-gray-300 text-[#00467F] focus:ring-[#00467F]">
+                    <span class="ml-2 text-sm text-gray-700">创建后发送激活邮件</span>
+                </div>
+            </div>
+            <div class="px-5 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all">
+                    取消
+                </button>
+                <button class="px-4 py-2 bg-[#00467F] text-white rounded-md hover:bg-blue-800 transition-all">
+                    保存用户
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
