@@ -19,14 +19,20 @@ const createLogStream = (serviceName) => {
 };
 
 // 启动服务函数
-const startService = (command, args, serviceName) => {
+const startService = (command, args, serviceName, env = {}) => {
   console.log(`启动 ${serviceName} 服务...`);
   
   const logStream = createLogStream(serviceName);
   const timestamp = new Date().toISOString();
   logStream.write(`\n[${timestamp}] 启动 ${serviceName} 服务\n`);
   
-  const process = spawn(command, args, { shell: true });
+  // 合并环境变量
+  const processEnv = { ...process.env, ...env };
+  
+  const process = spawn(command, args, { 
+    shell: true,
+    env: processEnv
+  });
   
   process.stdout.on('data', (data) => {
     const output = data.toString();
@@ -52,7 +58,7 @@ const startService = (command, args, serviceName) => {
       
       // 5秒后重启
       setTimeout(() => {
-        startService(command, args, serviceName);
+        startService(command, args, serviceName, env);
       }, 5000);
     }
   });
@@ -74,19 +80,12 @@ const browserToolsProcess = startService(
   'browser-tools'
 );
 
-// 2. Magic MCP - 在Windows中需要特殊处理
-// 创建临时配置文件以避免命令行JSON转义问题
-const magicConfigPath = path.join(__dirname, 'magic-config.json');
-fs.writeFileSync(
-  magicConfigPath,
-  JSON.stringify({ TWENTY_FIRST_API_KEY: MAGIC_API_KEY }),
-  'utf8'
-);
-
+// 2. Magic MCP - 在Windows中需要特殊处理，使用环境变量方式
 const magicMcpProcess = startService(
   'cmd',
-  ['/c', 'npx', '-y', '@smithery/cli@latest', 'run', '@21st-dev/magic-mcp', '--config-file', magicConfigPath],
-  'magic-mcp'
+  ['/c', 'npx', '-y', '@smithery/cli@latest', 'run', '@21st-dev/magic-mcp'],
+  'magic-mcp',
+  { TWENTY_FIRST_API_KEY: MAGIC_API_KEY }
 );
 
 // 3. Neon MCP
@@ -103,11 +102,6 @@ process.on('SIGINT', () => {
   browserToolsProcess.kill();
   magicMcpProcess.kill();
   neonMcpProcess.kill();
-  
-  // 清理临时文件
-  if (fs.existsSync(magicConfigPath)) {
-    fs.unlinkSync(magicConfigPath);
-  }
   
   process.exit(0);
 });
