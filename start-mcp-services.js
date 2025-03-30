@@ -75,9 +75,17 @@ const browserToolsProcess = startService(
 );
 
 // 2. Magic MCP - 在Windows中需要特殊处理
+// 创建临时配置文件以避免命令行JSON转义问题
+const magicConfigPath = path.join(__dirname, 'magic-config.json');
+fs.writeFileSync(
+  magicConfigPath,
+  JSON.stringify({ TWENTY_FIRST_API_KEY: MAGIC_API_KEY }),
+  'utf8'
+);
+
 const magicMcpProcess = startService(
   'cmd',
-  ['/c', 'npx', '-y', '@smithery/cli@latest', 'run', '@21st-dev/magic-mcp', '--config', `{"TWENTY_FIRST_API_KEY":"${MAGIC_API_KEY}"}`],
+  ['/c', 'npx', '-y', '@smithery/cli@latest', 'run', '@21st-dev/magic-mcp', '--config-file', magicConfigPath],
   'magic-mcp'
 );
 
@@ -95,6 +103,11 @@ process.on('SIGINT', () => {
   browserToolsProcess.kill();
   magicMcpProcess.kill();
   neonMcpProcess.kill();
+  
+  // 清理临时文件
+  if (fs.existsSync(magicConfigPath)) {
+    fs.unlinkSync(magicConfigPath);
+  }
   
   process.exit(0);
 });
