@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 页面标题 -->
+    <title>登录 - 食品溯源系统</title>
+    <!-- 引入 Tailwind CSS 框架 -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- 引入字体图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- 引入自定义样式 -->
+    <link rel="stylesheet" href="assets/styles.css">
+    <!-- 引入表单验证脚本 -->
+    <script type="module" src="components/trace-form-validation.js"></script>
+    <!-- 引入错误处理脚本 -->
+    <script type="module" src="components/trace-error-handler.js"></script>
+    <!-- 引入用户体验脚本 -->
+    <script type="module" src="components/trace-ux.js"></script>
+    <!-- 引入数据存储脚本 -->
+    <script type="module" src="components/trace-store.js"></script>
+    
+    <style>
+        /* Ant Design 风格样式定义 - 优化版 */
+        :root {
+            /* 主色调定义 */
+            --primary-color: #1677FF; /* 主色 - 更新为设计规范需求 */
+            --primary-color-hover: #4096FF; /* 主色悬停状态 - 更新 */
+            --primary-color-active: #0958D9; /* 主色激活状态 - 更新 */
+            --success-color: #52c41a; /* 成功色 */
+            --warning-color: #faad14; /* 警告色 */
+            --error-color: #f5222d; /* 错误色 */
+            /* 字体定义 */
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+            /* 字体大小 */
+            --font-sm: 12px;
+            --font-md: 14px;
+            --font-lg: 16px;
+            /* 文字颜色 */
+            --text-primary: rgba(0, 0, 0, 0.85);
+            --text-secondary: #595959;
+            --text-light: #999999;
+            /* 圆角大小 */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            /* 边框颜色 */
+            --border-color-base: #d9d9d9;
+            --border-color-light: #f0f0f0;
+            /* 阴影效果 */
+            --box-shadow-base: 0 3px 10px rgba(0, 0, 0, 0.12);
+            /* 背景色 */
+            --bg-light: #f0f2f5;
+            --bg-icon: #E6F7FF;
+        }
+        
+        /* 页面基础样式 */
+        body {
+            font-family: var(--font-family);
+            color: var(--text-primary);
+            background-color: var(--bg-light);
+            font-size: var(--font-md);
+        }
+        
+        /* 明确定义隐藏类 */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* 卡片组件样式 */
+        .ant-card {
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color-light);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            background-color: #ffffff;
+        }
+        
+        /* 登录容器样式 */
+        .login-container {
+            position: relative;
+            max-width: 400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px 32px;
+            box-sizing: border-box;
+            background-color: #f9fafc;
+            border-radius: var(--radius-md);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 按钮基础样式 */
+        .ant-btn {
+            height: 48px; /* 更新为设计规范需求 */
+            padding: 8px 16px;
+            font-size: var(--font-md);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+            touch-action: manipulation;
+            border: none;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(22, 119, 255, 0.15);
+        }
+        
+        /* 主要按钮样式 */
+        .ant-btn-primary {
+            color: #fff;
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        /* 主要按钮悬停状态 */
+        .ant-btn-primary:hover {
+            background-color: var(--primary-color-hover);
+            border-color: var(--primary-color-hover);
+            box-shadow: 0 2px 8px rgba(22, 119, 255, 0.25);
+        }
+        
+        /* 主要按钮激活状态 */
+        .ant-btn-primary:active {
+            background-color: var(--primary-color-active);
+            border-color: var(--primary-color-active);
+        }
+        
+        /* 按钮加载状态动画 */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .anticon-spin {
+            animation: spin 1s infinite linear;
+        }
+        
+        /* 输入框样式 */
+        .ant-input {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-variant: tabular-nums;
+            list-style: none;
+            font-feature-settings: "tnum";
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            min-width: 0;
+            padding: 8px 12px;
+            height: 44px; /* 更新为设计规范需求 */
+            color: rgba(0, 0, 0, 0.85);
+            font-size: var(--font-md);
+            line-height: 1.5715;
+            background-color: #fff;
+            background-image: none;
+            border: 1px solid #d9d9d9;
+            border-radius: var(--radius-md);
+            transition: all 0.3s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* 输入框悬停状态 */
+        .ant-input:hover {
+            border-color: #69b1ff;
+            border-right-width: 1px;
+        }
+        
+        /* 输入框聚焦状态 */
+        .ant-input:focus {
+            border-color: #40a9ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+            border-right-width: 1px;
+            outline: 0;
+        }
+        
+        /* 密码框内的按钮样式 */
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            z-index: 2;
+        }
+        
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+        
+        /* 表单项样式 */
+        .ant-form-item {
+            margin-bottom: 24px;
+            vertical-align: top;
+        }
+        
+        /* 表单标签样式 */
+        .ant-form-item-label {
+            display: inline-block;
+            flex-grow: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            text-align: left;
+            vertical-align: middle;
+            margin-bottom: 8px;
+        }
+        
+        /* 表单标签文本样式 */
+        .ant-form-item-label label {
+            font-size: var(--font-md);
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        /* 表单控件容器样式 */
+        .ant-form-item-control {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        /* 复选框包装器样式 */
+        .ant-checkbox-wrapper {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            color: var(--text-secondary);
+            font-size: var(--font-md);
+            font-variant: tabular-nums;
+            line-height: 1.5715;
+            list-style: none;
+            font-feature-settings: "tnum";
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        /* 复选框样式 */
+        .ant-checkbox {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            color: var(--text-secondary);
+            font-size: var(--font-md);
+            font-variant: tabular-nums;
+            line-height: 1.5715;
+            list-style: none;
+            font-feature-settings: "tnum";
+            position: relative;
+            top: 0.2em;
+            line-height: 1;
+            white-space: nowrap;
+            outline: none;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        
+        /* 复选框输入框样式 */
+        .ant-checkbox-input {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            border-radius: 3px;
+        }
+        
+        /* 警告提示框样式 */
+        .ant-alert {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            color: var(--text-primary);
+            font-size: var(--font-md);
+            font-variant: tabular-nums;
+            line-height: 1.5715;
+            list-style: none;
+            font-feature-settings: "tnum";
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            word-wrap: break-word;
+            border-radius: var(--radius-md);
+        }
+        
+        /* 错误提示框样式 */
+        .ant-alert-error {
+            background-color: #fff1f0;
+            border: 1px solid #ffccc7;
+        }
+        
+        /* 错误提示消息样式 */
+        .ant-alert-error .ant-alert-message {
+            color: #ff4d4f;
+        }
+        
+        /* Hero Header 组件样式 */
+        .hero-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+        
+        /* 品牌标志样式 - 更新为圆形 */
+        .ant-logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 64px;
+            height: 64px;
+            background-color: var(--bg-icon);
+            border-radius: 50%; /* 改为圆形 */
+            margin-bottom: 12px; /* 减小间距 */
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.1);
+        }
+        
+        /* 品牌图标样式 */
+        .ant-logo .logo-icon {
+            font-size: 32px;
+            color: var(--primary-color);
+        }
+        
+        /* 系统名称样式 */
+        .system-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        /* 页面副标题样式 */
+        .page-subtitle {
+            font-size: var(--font-md);
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        /* 演示账号信息区域样式 */
+        .demo-account-info {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color-light);
+            text-align: center;
+        }
+        
+        .demo-account-title {
+            font-size: var(--font-sm);
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+        
+        .demo-account-item {
+            display: inline-block;
+            margin: 0 8px;
+            padding: 4px 8px;
+            font-size: var(--font-sm);
+            color: var(--primary-color);
+            background-color: rgba(22, 119, 255, 0.05);
+            border-radius: var(--radius-sm);
+        }
+        
+        /* 媒体查询 - 移动端适配 */
+        @media (max-width: 768px) {
+            .ant-card {
+                width: 90vw;
+                max-width: 400px;
+                padding: 24px 20px;
+            }
+            
+            .hero-header {
+                margin-bottom: 20px;
+            }
+            
+            .system-title {
+                font-size: 18px;
+            }
+            
+            .page-subtitle {
+                font-size: 13px;
+            }
+        }
+    </style>
+    
+    <script type="module">
+        // 导入存储和错误处理模块
+        import { traceStore } from './components/trace-store.js';
+        import { traceErrorHandler } from './components/trace-error-handler.js';
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', () => {
+            // 获取登录表单和错误消息元素
+            const loginForm = document.getElementById('login-form');
+            const errorMessage = document.getElementById('error-message');
+            const passwordInput = document.getElementById('password');
+            const passwordToggle = document.getElementById('password-toggle');
+            
+            // 确保错误提示框初始状态为隐藏
+            errorMessage.classList.add('hidden');
+            errorMessage.style.display = 'none';
+            errorMessage.textContent = '';
+            
+            // 切换密码显示/隐藏功能
+            passwordToggle.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                // 更新图标
+                if (type === 'password') {
+                    passwordToggle.innerHTML = '<i class="far fa-eye"></i>';
+                } else {
+                    passwordToggle.innerHTML = '<i class="far fa-eye-slash"></i>';
+                }
+            });
+            
+            // 检查用户是否已登录，如果已登录则跳转到功能模块选择页面
+            if (traceStore.user.isAuthenticated) {
+                window.location.href = 'home-selector.html';
+                return;
+            }
+            
+            // 监听表单提交事件
+            loginForm.addEventListener('submit', async (event) => {
+                // 阻止表单默认提交行为
+                event.preventDefault();
+                // 清空错误消息
+                errorMessage.textContent = '';
+                errorMessage.classList.add('hidden');
+                errorMessage.style.display = 'none';
+                
+                // 获取用户名和密码
+                const username = loginForm.username.value.trim();
+                const password = loginForm.password.value;
+                
+                // 验证用户名和密码不为空
+                if (!username || !password) {
+                    errorMessage.textContent = '用户名和密码不能为空';
+                    errorMessage.classList.remove('hidden');
+                    errorMessage.style.display = 'block';
+                    return;
+                }
+                
+                // 清空所有错误文本
+                document.querySelectorAll('.error-text').forEach(el => {
+                    el.textContent = '';
+                });
+                
+                try {
+                    // 获取登录按钮并更新为登录中状态
+                    const loginBtn = document.getElementById('login-btn');
+                    loginBtn.innerHTML = '<svg viewBox="0 0 1024 1024" class="anticon-spin mr-2" width="16" height="16" fill="currentColor"><path d="M988 548c-19.9 0-36-16.1-36-36 0-59.4-11.6-117-34.6-171.3a440.45 440.45 0 00-94.3-139.9 437.71 437.71 0 00-139.9-94.3C629 83.6 571.4 72 512 72c-19.9 0-36-16.1-36-36s16.1-36 36-36c69.1 0 136.2 13.5 199.3 40.3C772.3 66 827 103 874 150c47 47 83.9 101.8 109.7 162.7 26.7 63.1 40.2 130.2 40.2 199.3.1 19.9-16 36-35.9 36z"></path></svg>登录中...';
+                    loginBtn.disabled = true;
+                    
+                    // 模拟登录延迟
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // 验证管理员账号
+                    if (username === 'admin' && password === 'admin123') {
+                        // 管理员登录成功，存储用户信息
+                        traceStore.login({
+                            id: '001',
+                            name: '管理员',
+                            role: 'admin',
+                            permissions: ['create', 'read', 'update', 'delete', 'manage_users']
+                        });
+                        
+                        // 跳转到主页
+                        window.location.href = 'home-selector.html';
+                    } 
+                    // 验证普通用户账号
+                    else if (username === 'user' && password === 'user123') {
+                        // 普通用户登录成功，存储用户信息
+                        traceStore.login({
+                            id: '002',
+                            name: '普通用户',
+                            role: 'user',
+                            permissions: ['create', 'read', 'update']
+                        });
+                        
+                        // 跳转到主页
+                        window.location.href = 'home-selector.html';
+                    } 
+                    // 其他情况视为登录失败
+                    else {
+                        throw new Error('用户名或密码不正确');
+                    }
+                } catch (error) {
+                    // 显示错误消息
+                    errorMessage.textContent = error.message || '登录失败，请稍后再试';
+                    errorMessage.classList.remove('hidden');
+                    errorMessage.style.display = 'block';
+                    traceErrorHandler.handleError(error);
+                } finally {
+                    // 恢复登录按钮状态
+                    const loginBtn = document.getElementById('login-btn');
+                    loginBtn.innerHTML = '登录';
+                    loginBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</head>
+<body class="bg-[#F0F2F5]">
+    <!-- 页面主容器：垂直居中布局 -->
+    <div class="min-h-screen flex flex-col items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+        <!-- 登录卡片 -->
+        <div class="ant-card max-w-md w-full py-8 px-6">
+            <!-- Hero Header 组件 -->
+            <div class="hero-header">
+                <!-- 品牌标志 -->
+                <div class="ant-logo">
+                    <i class="fas fa-barcode logo-icon"></i>
+                </div>
+                <!-- 系统名称 -->
+                <h2 class="system-title">
+                    食品溯源系统
+                </h2>
+                <!-- 系统简介 -->
+                <p class="page-subtitle">
+                    安全、透明、可追溯的食品管理平台
+                </p>
+            </div>
+            
+            <!-- 错误提示区域：初始状态隐藏 -->
+            <div id="error-message" class="ant-alert ant-alert-error mb-6 hidden" style="display: none;">
+                <i class="fas fa-exclamation-circle mr-2 text-[#FF4D4F]"></i>
+                <div class="ant-alert-message"></div>
+            </div>
+            
+            <!-- 登录表单 -->
+            <form id="login-form" class="mt-4">
+                <!-- 用户名输入区域 -->
+                <div class="ant-form-item">
+                    <div class="ant-form-item-label">
+                        <label for="username">用户名</label>
+                    </div>
+                    <div class="ant-form-item-control">
+                        <div class="relative">
+                            <!-- 用户图标 -->
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            <!-- 用户名输入框 -->
+                            <input id="username" name="username" type="text" required 
+                                   class="ant-input pl-10" placeholder="请输入用户名">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 密码输入区域 -->
+                <div class="ant-form-item">
+                    <div class="ant-form-item-label">
+                        <label for="password">密码</label>
+                    </div>
+                    <div class="ant-form-item-control">
+                        <div class="relative">
+                            <!-- 锁图标 -->
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            <!-- 密码输入框 -->
+                            <input id="password" name="password" type="password" required
+                                   class="ant-input pl-10" placeholder="请输入密码">
+                            <!-- 密码可见性切换按钮 -->
+                            <button type="button" id="password-toggle" class="password-toggle">
+                                <i class="far fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 记住密码和忘记密码区域 - 使用Flex水平排列 -->
+                <div class="flex items-center justify-between mb-6">
+                    <!-- 记住密码复选框 -->
+                    <div class="ant-checkbox-wrapper">
+                        <input type="checkbox" id="remember" class="ant-checkbox-input">
+                        <span>记住我</span>
+                    </div>
+                    <!-- 忘记密码链接 -->
+                    <a href="#" class="text-sm text-[#1677FF] hover:text-[#0958D9] transition-colors">
+                        忘记密码?
+                    </a>
+                </div>
+
+                <!-- 登录按钮区域 -->
+                <div>
+                    <button type="submit" id="login-btn" class="ant-btn ant-btn-primary w-full">
+                        登录
+                    </button>
+                </div>
+            </form>
+            
+            <!-- 演示账号信息区域 - 优化为组件式布局 -->
+            <div class="demo-account-info">
+                <div class="demo-account-title">演示账号</div>
+                <div class="flex flex-wrap justify-center gap-2">
+                    <div class="demo-account-item">
+                        <span class="font-medium">管理员:</span> admin / admin123
+                    </div>
+                    <div class="demo-account-item">
+                        <span class="font-medium">普通用户:</span> user / user123
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

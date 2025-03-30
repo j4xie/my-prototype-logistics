@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>溯源证书 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    <style>
+        @keyframes shine {
+            0% {
+                background-position: -100% 0;
+            }
+            100% {
+                background-position: 100% 0;
+            }
+        }
+        .certificate-header {
+            background-image: linear-gradient(135deg, #00467F 0%, #0070B9 50%, #00467F 100%);
+            padding: 24px 0;
+            border-radius: 12px 12px 0 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .certificate-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shine 3s infinite;
+        }
+        .certificate-seal {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+        .certificate-seal-outer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #FFA500;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .certificate-seal-inner {
+            width: 90px;
+            height: 90px;
+            background: #FFA500;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+        }
+        .certificate-qr {
+            padding: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-[#F7F8FA]">
+    <div class="max-w-[390px] mx-auto min-h-screen pb-6">
+        <!-- 页面头部 -->
+        <div class="bg-white p-4 text-center mb-4">
+            <img src="https://via.placeholder.com/200x50?text=Food+Trace+Logo" alt="食品溯源系统" class="h-8 mx-auto mb-2">
+            <div class="text-xs text-gray-500">扫码查询产品真伪 · 全程可追溯食品安全</div>
+        </div>
+
+        <!-- 证书主体 -->
+        <div class="px-4 mb-6">
+            <div class="bg-white rounded-xl overflow-hidden shadow-md">
+                <!-- 证书头部 -->
+                <div class="certificate-header text-center text-white p-6">
+                    <h1 class="text-xl font-bold mb-1">食品安全溯源证书</h1>
+                    <p class="text-sm text-white/90">Food Safety Traceability Certificate</p>
+                </div>
+
+                <!-- 产品信息 -->
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-[#00467F]">和牛肉 A5级</h2>
+                            <p class="text-sm text-gray-500">证书编号: WG25031701-CERT</p>
+                        </div>
+                        <div class="certificate-qr">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://example.com/trace/WG25031701" 
+                                 alt="溯源二维码" class="w-20 h-20">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <div class="text-gray-500 text-sm">产品名称</div>
+                            <div class="font-medium">A5级和牛肉</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500 text-sm">产品批次</div>
+                            <div class="font-medium">WG-2503-A</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500 text-sm">产地</div>
+                            <div class="font-medium">日本北海道</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500 text-sm">生产日期</div>
+                            <div class="font-medium">2025-03-15</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500 text-sm">保质期</div>
+                            <div class="font-medium">90天</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500 text-sm">销售商</div>
+                            <div class="font-medium">高级食材直营店</div>
+                        </div>
+                    </div>
+
+                    <!-- 检验信息 -->
+                    <div class="bg-blue-50 rounded-lg p-4 mb-6">
+                        <h3 class="text-[#00467F] font-medium mb-2">检验信息</h3>
+                        <div class="text-sm text-gray-700 mb-2">
+                            <p><span class="text-gray-500">检验机构:</span> 日本食品安全检测中心</p>
+                            <p><span class="text-gray-500">检验日期:</span> 2025-03-12</p>
+                            <p><span class="text-gray-500">检验结果:</span> <span class="text-green-600">合格</span></p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <div class="bg-green-100 text-green-600 rounded px-2 py-1 text-xs">
+                                <i class="fas fa-check-circle mr-1"></i> 微生物检测
+                            </div>
+                            <div class="bg-green-100 text-green-600 rounded px-2 py-1 text-xs">
+                                <i class="fas fa-check-circle mr-1"></i> 兽药残留
+                            </div>
+                            <div class="bg-green-100 text-green-600 rounded px-2 py-1 text-xs">
+                                <i class="fas fa-check-circle mr-1"></i> 重金属
+                            </div>
+                            <div class="bg-green-100 text-green-600 rounded px-2 py-1 text-xs">
+                                <i class="fas fa-check-circle mr-1"></i> 农药残留
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 溯源信息摘要 -->
+                    <div class="mb-6">
+                        <h3 class="text-[#00467F] font-medium mb-3">溯源信息摘要</h3>
+                        <div class="border-l-2 border-[#00467F] pl-3 space-y-3 text-sm">
+                            <div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-seedling text-[#00467F] mr-2"></i>
+                                    <span class="font-medium">养殖阶段</span>
+                                </div>
+                                <p class="text-gray-600 mt-1">北海道和牛牧场，36个月饲养周期，有机草料。</p>
+                            </div>
+                            <div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-cut text-[#00467F] mr-2"></i>
+                                    <span class="font-medium">屠宰加工</span>
+                                </div>
+                                <p class="text-gray-600 mt-1">北海道高级肉类加工厂，BMS评分：12分（满分12分），A5级。</p>
+                            </div>
+                            <div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-truck-loading text-[#00467F] mr-2"></i>
+                                    <span class="font-medium">物流运输</span>
+                                </div>
+                                <p class="text-gray-600 mt-1">全程-2°C±1°C冷链运输，全球冷链物流公司。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 证书印章 -->
+                    <div class="flex justify-between items-center">
+                        <div class="certificate-seal">
+                            <div class="certificate-seal-outer"></div>
+                            <div class="certificate-seal-inner">
+                                食品安全<br>溯源认证
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-gray-800 font-medium">食品溯源系统</div>
+                            <div class="text-gray-500 text-sm">证书生成日期: 2025-03-17</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 验证提示 -->
+                <div class="bg-gray-50 py-4 px-6 text-center text-sm text-gray-600 border-t border-gray-100">
+                    <p>扫描二维码或访问以下网址验证证书真伪</p>
+                    <p class="text-[#00467F] mt-1">https://food-trace.example.com/verify/WG25031701</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 补充信息 -->
+        <div class="px-4 mb-6">
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+                <h3 class="text-[#00467F] font-medium mb-3">如何验证本证书?</h3>
+                <div class="text-sm text-gray-600 space-y-3">
+                    <div class="flex">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-[#00467F] flex-shrink-0 mr-3">
+                            1
+                        </div>
+                        <p>扫描上方二维码，访问官方溯源验证页面</p>
+                    </div>
+                    <div class="flex">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-[#00467F] flex-shrink-0 mr-3">
+                            2
+                        </div>
+                        <p>输入证书编号或批次号进行查询</p>
+                    </div>
+                    <div class="flex">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-[#00467F] flex-shrink-0 mr-3">
+                            3
+                        </div>
+                        <p>查看完整溯源记录和详细检验报告</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部版权 -->
+        <div class="px-4 text-center text-xs text-gray-500">
+            <p>© 2025 食品溯源系统 版权所有</p>
+            <p class="mt-1">技术支持: 区块链食品溯源联盟</p>
+        </div>
+    </div>
+</body>
+</html> 
