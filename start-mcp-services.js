@@ -74,10 +74,10 @@ const browserToolsProcess = startService(
   'browser-tools'
 );
 
-// 2. Magic MCP
+// 2. Magic MCP - 在Windows中需要特殊处理
 const magicMcpProcess = startService(
-  'npx',
-  ['-y', '@smithery/cli@latest', 'run', '@21st-dev/magic-mcp', '--config', `{"TWENTY_FIRST_API_KEY":"${MAGIC_API_KEY}"}`],
+  'cmd',
+  ['/c', 'npx', '-y', '@smithery/cli@latest', 'run', '@21st-dev/magic-mcp', '--config', `{"TWENTY_FIRST_API_KEY":"${MAGIC_API_KEY}"}`],
   'magic-mcp'
 );
 
