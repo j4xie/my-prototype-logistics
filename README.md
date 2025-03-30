@@ -1,31 +1,18 @@
 # 食品溯源系统原型
 
-基于MCP服务的物流原型系统，已实现自动化部署。
+基于MCP服务的物流原型系统，使用GitHub Actions实现自动部署。
 
 ## 部署信息
 
 项目已部署到Surge平台：
 - 网址：https://food-trace-prototype.surge.sh
-- 支持自动部署
+- 支持通过GitHub Actions自动部署
 
 ## 自动部署说明
 
-本项目支持三种自动部署方式：
+本项目使用GitHub Actions自动部署：
 
-### 1. 本地自动监视并部署（推荐开发用）
-
-启动自动部署监视器，当你修改任何HTML、CSS或JavaScript文件时，系统会自动将最新版本部署到Surge：
-
-```bash
-npm run auto-deploy
-```
-
-特点：
-- 实时监视文件变化
-- 自动执行部署
-- 本地开发时最方便
-
-### 2. GitHub Actions自动部署（推荐团队协作）
+### GitHub Actions自动部署
 
 当你将代码推送到GitHub仓库时，GitHub Actions会自动部署到Surge。
 
@@ -34,7 +21,10 @@ npm run auto-deploy
 2. 在仓库设置中添加Secret: `SURGE_TOKEN`
 3. 每次推送到main分支时会自动部署
 
-### 3. Netlify自动部署（更稳定的替代方案）
+已配置的工作流程：
+- `.github/workflows/deploy.yml` - 用于自动部署到Surge
+
+### 备选方案：Netlify自动部署
 
 如果需要更强大的托管服务，可以使用Netlify：
 
