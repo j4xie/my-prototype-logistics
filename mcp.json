@@ -2,11 +2,13 @@
     "mcpServers": {
       "neon": {
         "command": "npx",
-        "args": ["-y", "@neondatabase/ncp-server-neon", "start", "napi_88x8jzryt6fewwb8ts6owfi2ov23xptlb1798ynl3mlfymv17lzifduyr1t3ly88"]
+        "args": ["-y", "@neondatabase/mcp-server-neon", "start", "napi_88x8jzryt6fewwb8ts6owfi2ov23xptlb1798ynl3mlfymv17lzifduyr1t3ly88"]
       },
       "magic-mcp": {
-        "command": "npx",
+        "command": "cmd",
         "args": [
+          "/c",
+          "npx",
           "-y",
           "@smithery/cli@latest",
           "run",
