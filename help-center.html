@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帮助中心 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="bg-[#F7F8FA]">
+    <div class="max-w-[390px] mx-auto min-h-screen pb-16">
+        <!-- 顶部导航栏 -->
+        <div class="trace-navbar sticky top-0 z-10">
+            <a href="javascript:history.back()" class="w-10 h-10 rounded-full flex items-center justify-center">
+                <i class="fas fa-arrow-left text-[#00467F]"></i>
+            </a>
+            <div class="trace-navbar-title">帮助中心</div>
+            <div class="flex">
+                <button class="w-10 h-10 rounded-full flex items-center justify-center">
+                    <i class="fas fa-search text-[#00467F]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="px-4 py-4">
+            <!-- 搜索框 -->
+            <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+                <div class="relative">
+                    <input type="text" placeholder="搜索帮助内容..." class="trace-input pl-10">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+
+            <!-- 常见问题 -->
+            <div class="bg-white rounded-xl shadow-sm mb-6">
+                <div class="p-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-800">常见问题</h3>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-medium text-gray-800">如何创建新的溯源记录？</h4>
+                                <p class="text-sm text-gray-600 mt-1">了解创建溯源记录的详细步骤和注意事项</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-medium text-gray-800">如何导入批量数据？</h4>
+                                <p class="text-sm text-gray-600 mt-1">支持CSV和Excel格式的数据导入方法</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-medium text-gray-800">如何管理用户权限？</h4>
+                                <p class="text-sm text-gray-600 mt-1">用户角色和权限设置指南</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 使用指南 -->
+            <div class="bg-white rounded-xl shadow-sm mb-6">
+                <div class="p-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-800">使用指南</h3>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-medium text-gray-800">快速入门</h4>
+                                <p class="text-sm text-gray-600 mt-1">系统基本功能介绍</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-medium text-gray-800">高级功能</h4>
+                                <p class="text-sm text-gray-600 mt-1">系统高级功能使用说明</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-medium text-gray-800">最佳实践</h4>
+                                <p class="text-sm text-gray-600 mt-1">系统使用的最佳实践建议</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 联系支持 -->
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-800">联系支持</h3>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-phone text-[#00467F]"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium">电话支持</div>
+                                <div class="text-sm text-gray-500">400-123-4567</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-envelope text-[#00467F]"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium">邮件支持</div>
+                                <div class="text-sm text-gray-500">support@example.com</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-comments text-[#00467F]"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium">在线客服</div>
+                                <div class="text-sm text-gray-500">工作时间：9:00-18:00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { traceErrorHandler } from './components/trace-error-handler.js';
+        import { traceStore } from './components/trace-store.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查是否在iframe中
+            const isInIframe = window !== window.parent;
+            
+            // 监听父页面消息
+            window.addEventListener('message', function(event) {
+                if (event.origin !== window.location.origin) return;
+                
+                if (event.data.type === 'UPDATE_AUTH') {
+                    traceStore.login(event.data.data);
+                } else if (event.data.type === 'CLEAR_AUTH') {
+                    traceStore.logout();
+                    if (!isInIframe) {
+                        window.location.href = 'login.html';
+                    }
+                }
+            });
+
+            if (!traceStore.user.isAuthenticated && !isInIframe) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+</body>
+</html> 

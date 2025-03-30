@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>销售物流 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="components/trace-common.js"></script>
+    <style>
+        :root {
+            --primary-color: #1890FF;
+            --primary-hover: #40A9FF;
+            --primary-active: #096DD9;
+            --success-color: #52C41A;
+            --success-hover: #73D13D;
+            --warning-color: #FA8C16;
+            --warning-hover: #FFA940;
+            --error-color: #FF4D4F;
+            --error-hover: #FF7875;
+        }
+        
+        .bg-icon-primary {
+            background-color: #E6F7FF;
+        }
+        
+        .bg-icon-success {
+            background-color: #F6FFED;
+        }
+        
+        .bg-icon-warning {
+            background-color: #FFF7E6;
+        }
+        
+        .bg-icon-error {
+            background-color: #FFF1F0;
+        }
+        
+        .bg-icon-purple {
+            background-color: #F9F0FF;
+        }
+        
+        .icon-primary {
+            color: var(--primary-color);
+        }
+        
+        .icon-success {
+            color: var(--success-color);
+        }
+        
+        .icon-warning {
+            color: var(--warning-color);
+        }
+        
+        .icon-error {
+            color: var(--error-color);
+        }
+        
+        .icon-purple {
+            color: #722ED1;
+        }
+        
+        .quick-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .quick-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .alert-card {
+            border: 1px solid #FFCCC7;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="page-container max-w-md mx-auto bg-white min-h-screen flex flex-col relative">
+        <!-- 顶部导航栏 -->
+        <header class="app-header">
+            <div class="header-container">
+                <div class="flex items-center">
+                    <a href="home-selector.html" class="nav-icon mr-2">
+                        <i class="fas fa-chevron-left text-lg"></i>
+                    </a>
+                    <span class="header-title">销售物流</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="javascript:void(0)" class="nav-icon" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i>
+                    </a>
+                    <a href="javascript:void(0)" class="nav-icon ml-1" id="settingsBtn">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="content-container">
+            <div class="content-area">
+                <!-- 用户信息卡片 -->
+                <div class="user-card p-4 mb-4">
+                    <div class="flex items-center">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-md font-semibold" id="userName">李经理</h3>
+                            <p class="text-sm text-gray-500" id="userRole">销售物流主管</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 grid grid-cols-3 gap-3">
+                        <div class="stat-item bg-gray-50 p-2 rounded-md">
+                            <p class="font-semibold text-primary-color" id="todayShipments">12</p>
+                            <p class="text-xs text-secondary">今日出货</p>
+                        </div>
+                        <div class="stat-item bg-gray-50 p-2 rounded-md">
+                            <p class="font-semibold text-primary-color" id="todaySales">¥21,560</p>
+                            <p class="text-xs text-secondary">今日销售额</p>
+                        </div>
+                        <div class="stat-item bg-gray-50 p-2 rounded-md">
+                            <p class="font-semibold text-primary-color" id="pendingOrders">3</p>
+                            <p class="text-xs text-secondary">待发订单</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 今日出货统计 -->
+                <div class="content-section">
+                    <div class="card">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-100">
+                            <h2 class="text-lg font-medium flex items-center">
+                                <i class="fas fa-truck text-primary-color mr-2"></i>
+                                今日出货统计
+                            </h2>
+                            <a href="logistics-report.html" class="text-primary-color text-sm flex items-center">
+                                详情 <i class="fas fa-chevron-right ml-1 text-xs"></i>
+                            </a>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="text-left bg-gray-50">
+                                        <th class="py-2 px-4 text-sm font-medium">批次号</th>
+                                        <th class="py-2 px-4 text-sm font-medium">目的地</th>
+                                        <th class="py-2 px-3 text-sm font-medium">数量</th>
+                                        <th class="py-2 px-3 text-sm font-medium">状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-t border-gray-100">
+                                        <td class="py-3 px-4 text-sm">L-2023051201</td>
+                                        <td class="py-3 px-4 text-sm">上海市场</td>
+                                        <td class="py-3 px-3 text-sm">2.5吨</td>
+                                        <td class="py-3 px-3 text-sm">
+                                            <span class="status-tag success">已送达</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-t border-gray-100">
+                                        <td class="py-3 px-4 text-sm">L-2023051202</td>
+                                        <td class="py-3 px-4 text-sm">北京批发市场</td>
+                                        <td class="py-3 px-3 text-sm">1.8吨</td>
+                                        <td class="py-3 px-3 text-sm">
+                                            <span class="status-tag warning">运输中</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-t border-gray-100">
+                                        <td class="py-3 px-4 text-sm">L-2023051203</td>
+                                        <td class="py-3 px-4 text-sm">广州配送中心</td>
+                                        <td class="py-3 px-3 text-sm">3.2吨</td>
+                                        <td class="py-3 px-3 text-sm">
+                                            <span class="status-tag info">装车中</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 温控提醒 -->
+                <div class="content-section">
+                    <div class="card">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-100">
+                            <h2 class="text-lg font-medium flex items-center">
+                                <i class="fas fa-temperature-low text-primary-color mr-2"></i>
+                                温控提醒
+                            </h2>
+                            <span class="status-tag warning">2个异常</span>
+                        </div>
+                        <div class="alert warning mb-0 border-b border-gray-100">
+                            <div class="alert-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <div class="alert-title">冷藏车 #C-003 温度异常</div>
+                                <div class="alert-desc">当前温度: 6.8°C，超过设定值 (0-5°C)</div>
+                            </div>
+                            <a href="vehicle-monitor.html?id=C-003" class="text-gray-400">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </div>
+                        <div class="alert warning">
+                            <div class="alert-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <div class="alert-title">仓库 #B 湿度异常</div>
+                                <div class="alert-desc">当前湿度: 78%，超过设定值 (40-70%)</div>
+                            </div>
+                            <a href="warehouse-monitor.html?id=B" class="text-gray-400">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快捷操作 -->
+                <div class="content-section">
+                    <h2 class="text-lg font-medium mb-3 flex items-center">
+                        <i class="fas fa-bolt text-primary-color mr-2"></i>
+                        快捷操作
+                    </h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button class="module-card p-4" id="createOrderBtn">
+                            <div class="module-icon bg-icon-bg-primary mb-3 mx-auto">
+                                <i class="fas fa-file-invoice text-primary-color text-xl"></i>
+                            </div>
+                            <p class="text-center text-sm">创建订单</p>
+                        </button>
+                        <button class="module-card p-4" id="scanCodeBtn">
+                            <div class="module-icon bg-icon-bg-success mb-3 mx-auto">
+                                <i class="fas fa-qrcode text-success text-xl"></i>
+                            </div>
+                            <p class="text-center text-sm">扫码出库</p>
+                        </button>
+                        <button class="module-card p-4" id="vehicleMonitorBtn">
+                            <div class="module-icon bg-icon-bg-primary mb-3 mx-auto">
+                                <i class="fas fa-truck-moving text-primary-color text-xl"></i>
+                            </div>
+                            <p class="text-center text-sm">车辆监控</p>
+                        </button>
+                        <button class="module-card p-4" id="clientManageBtn">
+                            <div class="module-icon bg-icon-bg-warning mb-3 mx-auto">
+                                <i class="fas fa-user-tie text-warning text-xl"></i>
+                            </div>
+                            <p class="text-center text-sm">客户管理</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 销售趋势 -->
+                <div class="content-section">
+                    <div class="card">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-100">
+                            <h2 class="text-lg font-medium flex items-center">
+                                <i class="fas fa-chart-line text-primary-color mr-2"></i>
+                                销售趋势 (近7天)
+                            </h2>
+                            <a href="sales-analytics.html" class="text-primary-color text-sm flex items-center">
+                                详情 <i class="fas fa-chevron-right ml-1 text-xs"></i>
+                            </a>
+                        </div>
+                        <div class="p-4">
+                            <div class="h-48 flex items-end justify-between px-2" id="salesChart">
+                                <div class="chart-bar h-30p">
+                                    <div class="chart-value">18.5k</div>
+                                </div>
+                                <div class="chart-bar h-45p">
+                                    <div class="chart-value">22.1k</div>
+                                </div>
+                                <div class="chart-bar h-60p">
+                                    <div class="chart-value">25.3k</div>
+                                </div>
+                                <div class="chart-bar h-70p">
+                                    <div class="chart-value">28.7k</div>
+                                </div>
+                                <div class="chart-bar h-55p">
+                                    <div class="chart-value">24.8k</div>
+                                </div>
+                                <div class="chart-bar h-40p">
+                                    <div class="chart-value">20.5k</div>
+                                </div>
+                                <div class="chart-bar h-80p">
+                                    <div class="chart-value">31.2k</div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-2 px-2">
+                                <div>周一</div>
+                                <div>周二</div>
+                                <div>周三</div>
+                                <div>周四</div>
+                                <div>周五</div>
+                                <div>周六</div>
+                                <div>周日</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <footer class="app-footer">
+            <div class="footer-container">
+                <a href="home-selector.html" class="tab-item">
+                    <i class="fas fa-home text-xl"></i>
+                    <span class="text-xs mt-1">首页</span>
+                </a>
+                <a href="trace-list.html" class="tab-item">
+                    <i class="fas fa-clipboard-list text-xl"></i>
+                    <span class="text-xs mt-1">记录</span>
+                </a>
+                <a href="trace-map.html" class="tab-item">
+                    <i class="fas fa-map-marker-alt text-xl"></i>
+                    <span class="text-xs mt-1">地图</span>
+                </a>
+                <a href="profile.html" class="tab-item">
+                    <i class="fas fa-user text-xl"></i>
+                    <span class="text-xs mt-1">我的</span>
+                </a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面
+            initPage();
+            
+            // 绑定事件
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                refreshData();
+            });
+            
+            document.getElementById('createOrderBtn').addEventListener('click', function() {
+                if (traceAuth.hasPermission('logistics.create')) {
+                    window.location.href = 'logistics-create.html';
+                } else {
+                    traceUI.showToast('您没有创建订单的权限', 'error');
+                }
+            });
+            
+            document.getElementById('scanCodeBtn').addEventListener('click', function() {
+                if (traceAuth.hasPermission('logistics.scan')) {
+                    traceUI.showToast('正在打开扫码功能...', 'info');
+                    // 模拟实际扫码过程
+                    setTimeout(() => {
+                        traceUI.showToast('扫码成功: L-2023051204', 'success');
+                    }, 1500);
+                } else {
+                    traceUI.showToast('您没有扫码出库的权限', 'error');
+                }
+            });
+            
+            document.getElementById('vehicleMonitorBtn').addEventListener('click', function() {
+                if (traceAuth.hasPermission('logistics.monitor')) {
+                    window.location.href = 'vehicle-monitor.html';
+                } else {
+                    traceUI.showToast('您没有车辆监控的权限', 'error');
+                }
+            });
+            
+            document.getElementById('clientManageBtn').addEventListener('click', function() {
+                if (traceAuth.hasPermission('client.manage')) {
+                    window.location.href = 'client-management.html';
+                } else {
+                    traceUI.showToast('您没有客户管理的权限', 'error');
+                }
+            });
+            
+            // 权限检查
+            checkActionPermissions();
+        });
+        
+        function initPage() {
+            // 模拟从API获取数据
+            loadUserData();
+            
+            // 设置当前活动标签页
+            setActiveNavItem();
+            
+            // 调整主内容区域的填充，确保不被导航栏遮挡
+            adjustMainPadding();
+            
+            // 监听窗口大小变化，重新调整填充
+            window.addEventListener('resize', adjustMainPadding);
+        }
+        
+        function setActiveNavItem() {
+            // 获取所有导航项
+            const navItems = document.querySelectorAll('.tab-item');
+            
+            // 移除所有激活状态
+            navItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // 设置首页为激活状态
+            const homeNav = document.querySelector('.tab-item:nth-child(1)');
+            if (homeNav) {
+                homeNav.classList.add('active');
+            }
+        }
+        
+        function adjustMainPadding() {
+            const mainElement = document.querySelector('.content-container');
+            if (!mainElement) return;
+            
+            // 获取CSS变量值或使用默认值
+            const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 64;
+            const bottomTabHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bottom-tab-height')) || 60;
+            
+            // 计算合适的填充值（顶部导航高度 + 安全间距）
+            const topPadding = navHeight + 16;
+            const bottomPadding = bottomTabHeight + 20; // 添加额外安全间距
+            
+            // 应用填充值
+            mainElement.style.paddingTop = `${topPadding}px`;
+            mainElement.style.paddingBottom = `${bottomPadding}px`;
+        }
+        
+        function refreshData() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            traceUI.showLoading(refreshBtn);
+            
+            // 模拟数据刷新
+            setTimeout(() => {
+                loadUserData();
+                traceUI.hideLoading(refreshBtn);
+                traceUI.showToast('数据已更新', 'success');
+            }, 1000);
+        }
+        
+        function loadUserData() {
+            // 模拟用户数据
+            const userData = {
+                name: '李经理',
+                role: '销售物流主管',
+                permissions: ['logistics.create', 'logistics.scan', 'logistics.monitor'],
+                today: {
+                    shipments: Math.floor(Math.random() * 5) + 10,
+                    sales: Math.floor(Math.random() * 10000) + 20000,
+                    pendingOrders: Math.floor(Math.random() * 5) + 1
+                }
+            };
+            
+            // 更新用户信息
+            document.getElementById('userName').textContent = userData.name;
+            document.getElementById('userRole').textContent = userData.role;
+            document.getElementById('todayShipments').textContent = userData.today.shipments;
+            document.getElementById('todaySales').textContent = '¥' + userData.today.sales.toLocaleString();
+            document.getElementById('pendingOrders').textContent = userData.today.pendingOrders;
+            
+            // 模拟权限存储
+            if (!traceAuth.isAuthenticated()) {
+                traceAuth.login({
+                    id: '002',
+                    name: userData.name,
+                    role: userData.role,
+                    permissions: userData.permissions
+                });
+            }
+        }
+        
+        function checkActionPermissions() {
+            // 检查按钮权限
+            const buttons = [
+                { id: 'createOrderBtn', permission: 'logistics.create' },
+                { id: 'scanCodeBtn', permission: 'logistics.scan' },
+                { id: 'vehicleMonitorBtn', permission: 'logistics.monitor' },
+                { id: 'clientManageBtn', permission: 'client.manage' }
+            ];
+            
+            buttons.forEach(btn => {
+                const buttonElement = document.getElementById(btn.id);
+                if (buttonElement && !traceAuth.hasPermission(btn.permission)) {
+                    buttonElement.classList.add('disabled');
+                    
+                    // 添加锁图标
+                    const lockIcon = document.createElement('i');
+                    lockIcon.className = 'fas fa-lock text-gray-400 absolute top-2 right-2 text-xs';
+                    buttonElement.style.position = 'relative';
+                    buttonElement.appendChild(lockIcon);
+                }
+            });
+        }
+    </script>
+</body>
+</html> 

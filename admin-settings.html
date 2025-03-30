@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <img class="h-8 w-auto" src="assets/images/logo.png" alt="食品溯源系统">
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="admin-dashboard.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-chart-line mr-2"></i>仪表盘
+                        </a>
+                        <a href="admin-users.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-users mr-2"></i>用户管理
+                        </a>
+                        <a href="admin-roles.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-user-shield mr-2"></i>角色管理
+                        </a>
+                        <a href="admin-products.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-box mr-2"></i>产品管理
+                        </a>
+                        <a href="admin-templates.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-file-alt mr-2"></i>模板管理
+                        </a>
+                        <a href="admin-settings.html" class="border-primary text-primary border-b-2 inline-flex items-center px-1 pt-1 text-sm font-medium">
+                            <i class="fas fa-cog mr-2"></i>系统设置
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div class="ml-3 relative">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-700 text-sm">管理员</span>
+                            <a href="login.html" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- 页面标题 -->
+        <div class="px-4 py-5 sm:px-0">
+            <h1 class="text-2xl font-semibold text-gray-900">系统设置</h1>
+            <p class="mt-1 text-sm text-gray-500">管理系统全局配置，包括基本设置、安全设置和溯源参数设置</p>
+        </div>
+
+        <!-- 设置选项卡 -->
+        <div class="mt-6">
+            <div class="sm:hidden">
+                <select id="tabs" name="tabs" class="block w-full focus:ring-primary focus:border-primary border-gray-300 rounded-md">
+                    <option selected>基本设置</option>
+                    <option>安全设置</option>
+                    <option>溯源设置</option>
+                    <option>系统日志</option>
+                </select>
+            </div>
+            <div class="hidden sm:block">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex" aria-label="Tabs">
+                        <a href="#" class="border-primary text-primary border-b-2 py-4 px-6 text-center text-sm font-medium" aria-current="page">
+                            <i class="fas fa-sliders-h mr-2"></i>基本设置
+                        </a>
+                        <a href="#" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-6 text-center text-sm font-medium">
+                            <i class="fas fa-shield-alt mr-2"></i>安全设置
+                        </a>
+                        <a href="#" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-6 text-center text-sm font-medium">
+                            <i class="fas fa-qrcode mr-2"></i>溯源设置
+                        </a>
+                        <a href="#" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-6 text-center text-sm font-medium">
+                            <i class="fas fa-history mr-2"></i>系统日志
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- 基本设置面板 -->
+        <div class="mt-6">
+            <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+                <div class="md:grid md:grid-cols-3 md:gap-6">
+                    <div class="md:col-span-1">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">公司信息</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            设置平台的公司信息和品牌标识，这些信息将显示在溯源证书和消费者查询页面
+                        </p>
+                    </div>
+                    <div class="mt-5 md:mt-0 md:col-span-2">
+                        <form action="#" method="POST">
+                            <div class="grid grid-cols-6 gap-6">
+                                <div class="col-span-6 sm:col-span-4">
+                                    <label for="company-name" class="block text-sm font-medium text-gray-700">公司名称</label>
+                                    <input type="text" name="company-name" id="company-name" class="mt-1 form-input" value="某某食品有限公司">
+                                </div>
+                                <div class="col-span-6 sm:col-span-4">
+                                    <label for="contact-email" class="block text-sm font-medium text-gray-700">联系邮箱</label>
+                                    <input type="email" name="contact-email" id="contact-email" class="mt-1 form-input" value="contact@example.com">
+                                </div>
+                                <div class="col-span-6 sm:col-span-4">
+                                    <label for="contact-phone" class="block text-sm font-medium text-gray-700">联系电话</label>
+                                    <input type="text" name="contact-phone" id="contact-phone" class="mt-1 form-input" value="010-12345678">
+                                </div>
+                                <div class="col-span-6">
+                                    <label for="company-address" class="block text-sm font-medium text-gray-700">公司地址</label>
+                                    <input type="text" name="company-address" id="company-address" class="mt-1 form-input" value="北京市朝阳区某某路88号">
+                                </div>
+                                <div class="col-span-6">
+                                    <label for="company-logo" class="block text-sm font-medium text-gray-700">公司LOGO</label>
+                                    <div class="mt-1 flex items-center">
+                                        <span class="inline-block h-12 w-12 rounded-full overflow-hidden bg-gray-100">
+                                            <img src="assets/images/logo.png" alt="公司LOGO">
+                                        </span>
+                                        <input type="file" name="company-logo" id="company-logo" class="ml-5 form-input">
+                                        <button type="button" class="ml-2 btn-secondary sm:text-sm">
+                                            <i class="fas fa-upload mr-2"></i>上传
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6 mt-6">
+                <div class="md:grid md:grid-cols-3 md:gap-6">
+                    <div class="md:col-span-1">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">平台设置</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            设置平台的基本参数和显示选项
+                        </p>
+                    </div>
+                    <div class="mt-5 md:mt-0 md:col-span-2">
+                        <form action="#" method="POST">
+                            <div class="grid grid-cols-6 gap-6">
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="platform-name" class="block text-sm font-medium text-gray-700">平台名称</label>
+                                    <input type="text" name="platform-name" id="platform-name" class="mt-1 form-input" value="食品溯源系统">
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="platform-version" class="block text-sm font-medium text-gray-700">系统版本</label>
+                                    <input type="text" name="platform-version" id="platform-version" class="mt-1 form-input" value="v1.0.0" disabled>
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="page-size" class="block text-sm font-medium text-gray-700">默认分页大小</label>
+                                    <select id="page-size" name="page-size" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                        <option value="10">10条/页</option>
+                                        <option value="20">20条/页</option>
+                                        <option value="50">50条/页</option>
+                                        <option value="100">100条/页</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="date-format" class="block text-sm font-medium text-gray-700">日期格式</label>
+                                    <select id="date-format" name="date-format" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                        <option value="yyyy-MM-dd">YYYY-MM-DD</option>
+                                        <option value="dd/MM/yyyy">DD/MM/YYYY</option>
+                                        <option value="MM/dd/yyyy">MM/DD/YYYY</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label class="block text-sm font-medium text-gray-700">启用数据导出</label>
+                                    <div class="mt-2">
+                                        <div class="flex items-center">
+                                            <input id="export-enable" name="export-option" type="radio" class="focus:ring-primary h-4 w-4 text-primary border-gray-300" checked>
+                                            <label for="export-enable" class="ml-3 block text-sm font-medium text-gray-700">
+                                                启用
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center mt-2">
+                                            <input id="export-disable" name="export-option" type="radio" class="focus:ring-primary h-4 w-4 text-primary border-gray-300">
+                                            <label for="export-disable" class="ml-3 block text-sm font-medium text-gray-700">
+                                                禁用
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label class="block text-sm font-medium text-gray-700">启用批量导入</label>
+                                    <div class="mt-2">
+                                        <div class="flex items-center">
+                                            <input id="import-enable" name="import-option" type="radio" class="focus:ring-primary h-4 w-4 text-primary border-gray-300" checked>
+                                            <label for="import-enable" class="ml-3 block text-sm font-medium text-gray-700">
+                                                启用
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center mt-2">
+                                            <input id="import-disable" name="import-option" type="radio" class="focus:ring-primary h-4 w-4 text-primary border-gray-300">
+                                            <label for="import-disable" class="ml-3 block text-sm font-medium text-gray-700">
+                                                禁用
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6 mt-6">
+                <div class="md:grid md:grid-cols-3 md:gap-6">
+                    <div class="md:col-span-1">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">备份与恢复</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            设置系统备份策略和数据恢复选项
+                        </p>
+                    </div>
+                    <div class="mt-5 md:mt-0 md:col-span-2">
+                        <form action="#" method="POST">
+                            <div class="grid grid-cols-6 gap-6">
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="backup-frequency" class="block text-sm font-medium text-gray-700">备份频率</label>
+                                    <select id="backup-frequency" name="backup-frequency" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                        <option value="daily">每天</option>
+                                        <option value="weekly">每周</option>
+                                        <option value="monthly">每月</option>
+                                        <option value="manual">手动备份</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="backup-time" class="block text-sm font-medium text-gray-700">备份时间</label>
+                                    <input type="time" name="backup-time" id="backup-time" class="mt-1 form-input" value="03:00">
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="backup-retention" class="block text-sm font-medium text-gray-700">备份保留期</label>
+                                    <select id="backup-retention" name="backup-retention" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                        <option value="7">7天</option>
+                                        <option value="30">30天</option>
+                                        <option value="90">90天</option>
+                                        <option value="365">1年</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="backup-storage" class="block text-sm font-medium text-gray-700">备份存储位置</label>
+                                    <select id="backup-storage" name="backup-storage" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                        <option value="local">本地存储</option>
+                                        <option value="cloud">云存储</option>
+                                        <option value="both">本地+云存储</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-6">
+                                    <div class="flex justify-start space-x-4">
+                                        <button type="button" class="btn-primary">
+                                            <i class="fas fa-download mr-2"></i>立即备份
+                                        </button>
+                                        <button type="button" class="btn-secondary">
+                                            <i class="fas fa-upload mr-2"></i>恢复数据
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button type="button" class="btn-secondary mr-3">
+                    取消
+                </button>
+                <button type="button" class="btn-primary">
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab切换功能
+        // 实际项目中会使用更完善的JavaScript代码处理选项卡切换
+    </script>
+</body>
+</html> 
