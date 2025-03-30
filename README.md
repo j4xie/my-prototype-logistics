@@ -15,6 +15,13 @@
 - 有效的API密钥
 - 数据库连接字符串
 
+**已配置信息：**
+- 数据库连接字符串：已在.env文件中配置
+- 连接信息：
+  - 主机：ep-frosty-hill-a1h70bse-pooler.ap-southeast-1.aws.neon.tech
+  - 数据库：neondb
+  - 用户：neondb_owner
+
 要获取这些信息：
 1. 注册/登录 [Neon数据库](https://neon.tech)
 2. 创建新项目
