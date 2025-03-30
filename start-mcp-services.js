@@ -19,20 +19,14 @@ const createLogStream = (serviceName) => {
 };
 
 // 启动服务函数
-const startService = (command, args, serviceName, env = {}) => {
+const startService = (command, args, serviceName) => {
   console.log(`启动 ${serviceName} 服务...`);
   
   const logStream = createLogStream(serviceName);
   const timestamp = new Date().toISOString();
   logStream.write(`\n[${timestamp}] 启动 ${serviceName} 服务\n`);
   
-  // 合并环境变量
-  const processEnv = { ...process.env, ...env };
-  
-  const process = spawn(command, args, { 
-    shell: true,
-    env: processEnv
-  });
+  const process = spawn(command, args, { shell: true });
   
   process.stdout.on('data', (data) => {
     const output = data.toString();
@@ -58,7 +52,7 @@ const startService = (command, args, serviceName, env = {}) => {
       
       // 5秒后重启
       setTimeout(() => {
-        startService(command, args, serviceName, env);
+        startService(command, args, serviceName);
       }, 5000);
     }
   });
@@ -80,12 +74,11 @@ const browserToolsProcess = startService(
   'browser-tools'
 );
 
-// 2. Magic MCP - 在Windows中需要特殊处理，使用环境变量方式
+// 2. Magic MCP - 在Windows中需要特殊处理
 const magicMcpProcess = startService(
   'cmd',
-  ['/c', 'npx', '-y', '@smithery/cli@latest', 'run', '@21st-dev/magic-mcp'],
-  'magic-mcp',
-  { TWENTY_FIRST_API_KEY: MAGIC_API_KEY }
+  ['/c', 'npx', '-y', '@smithery/cli@latest', 'run', '@21st-dev/magic-mcp', '--config', `{"TWENTY_FIRST_API_KEY":"${MAGIC_API_KEY}"}`],
+  'magic-mcp'
 );
 
 // 3. Neon MCP
