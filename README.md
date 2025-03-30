@@ -1,6 +1,60 @@
-# My Prototype Logistics
+# 食品溯源系统原型
 
-基于MCP服务的物流原型系统。
+基于MCP服务的物流原型系统，已实现自动化部署。
+
+## 部署信息
+
+项目已部署到Surge平台：
+- 网址：https://food-trace-prototype.surge.sh
+- 支持自动部署
+
+## 自动部署说明
+
+本项目支持三种自动部署方式：
+
+### 1. 本地自动监视并部署（推荐开发用）
+
+启动自动部署监视器，当你修改任何HTML、CSS或JavaScript文件时，系统会自动将最新版本部署到Surge：
+
+```bash
+npm run auto-deploy
+```
+
+特点：
+- 实时监视文件变化
+- 自动执行部署
+- 本地开发时最方便
+
+### 2. GitHub Actions自动部署（推荐团队协作）
+
+当你将代码推送到GitHub仓库时，GitHub Actions会自动部署到Surge。
+
+设置步骤：
+1. 将代码推送到GitHub仓库
+2. 在仓库设置中添加Secret: `SURGE_TOKEN`
+3. 每次推送到main分支时会自动部署
+
+### 3. Netlify自动部署（更稳定的替代方案）
+
+如果需要更强大的托管服务，可以使用Netlify：
+
+1. 注册Netlify账户
+2. 连接GitHub仓库
+3. 设置构建命令: `npm run build:css`
+4. 设置发布目录: `./`
+
+## 本地开发
+
+```bash
+# 安装依赖
+npm install
+
+# 启动本地开发服务器
+npm start
+
+# 手动部署
+npm run deploy
+```
 
 ## MCP服务配置说明
 
@@ -101,3 +155,13 @@ node setup-autostart.js
 1. 确保MCP服务已启动（手动或自动）
 2. 运行 `node service-worker.js` 启动应用服务
 3. 访问 http://localhost:3000 打开应用 
+
+## 项目技术栈
+
+- **前端**: HTML5, CSS3, JavaScript
+- **样式**: TailwindCSS
+- **图表**: Chart.js
+- **地图**: Leaflet
+- **工具**: Axios, QRCode
+- **构建工具**: PostCSS, Autoprefixer
+- **开发服务器**: Browser-Sync 
