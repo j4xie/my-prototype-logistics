@@ -135,8 +135,8 @@
                                 <i class="fas fa-truck text-primary-color mr-2"></i>
                                 今日出货统计
                             </h2>
-                            <a href="coming-soon.html?title=出货统计详情&desc=出货统计详情功能正在开发中，即将上线..." class="text-primary-color text-sm flex items-center">
-                                <!-- 页面未开发：logistics-report.html，已重定向至敬请期待页面 -->
+                            <a href="logistics-report.html" class="text-primary-color text-sm flex items-center">
+                                <!-- 页面已开发：logistics-report.html -->
                                 详情 <i class="fas fa-chevron-right ml-1 text-xs"></i>
                             </a>
                         </div>
@@ -260,8 +260,8 @@
                                 <i class="fas fa-chart-line text-primary-color mr-2"></i>
                                 销售趋势 (近7天)
                             </h2>
-                            <a href="coming-soon.html?title=销售趋势分析&desc=销售趋势分析功能正在开发中，即将上线..." class="text-primary-color text-sm flex items-center">
-                                <!-- 页面未开发：sales-analytics.html，已重定向至敬请期待页面 -->
+                            <a href="sales-analytics.html" class="text-primary-color text-sm flex items-center">
+                                <!-- 页面已开发：sales-analytics.html -->
                                 详情 <i class="fas fa-chevron-right ml-1 text-xs"></i>
                             </a>
                         </div>
@@ -339,7 +339,7 @@
             
             document.getElementById('createOrderBtn').addEventListener('click', function() {
                 if (traceAuth.hasPermission('logistics.create')) {
-                    window.location.href = 'coming-soon.html?title=创建订单&desc=创建订单功能正在开发中，即将上线...'; // 页面未开发：logistics-create.html，已重定向至敬请期待页面
+                    window.location.href = 'logistics-create.html'; // 页面已开发：logistics-create.html
                 } else {
                     traceUI.showToast('您没有创建订单的权限', 'error');
                 }
@@ -359,7 +359,7 @@
             
             document.getElementById('vehicleMonitorBtn').addEventListener('click', function() {
                 if (traceAuth.hasPermission('logistics.monitor')) {
-                    window.location.href = 'coming-soon.html?title=车辆监控&desc=车辆监控功能正在开发中，即将上线...'; // 页面未开发：vehicle-monitor.html，已重定向至敬请期待页面
+                    window.location.href = 'vehicle-monitor.html'; // 页面已开发：vehicle-monitor.html
                 } else {
                     traceUI.showToast('您没有车辆监控的权限', 'error');
                 }
@@ -367,7 +367,7 @@
             
             document.getElementById('clientManageBtn').addEventListener('click', function() {
                 if (traceAuth.hasPermission('client.manage')) {
-                    window.location.href = 'coming-soon.html?title=客户管理&desc=客户管理功能正在开发中，即将上线...'; // 页面未开发：client-management.html，已重定向至敬请期待页面
+                    window.location.href = 'client-management.html'; // 页面已开发：client-management.html
                 } else {
                     traceUI.showToast('您没有客户管理的权限', 'error');
                 }
