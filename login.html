@@ -167,10 +167,55 @@
         
         /* 输入框聚焦状态 */
         .ant-input:focus {
-            border-color: #40a9ff;
-            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
             border-right-width: 1px;
             outline: 0;
+        }
+        
+        /* 新增：输入框错误状态 */
+        .ant-input-error {
+            border-color: var(--error-color);
+        }
+        
+        .ant-input-error:focus {
+            box-shadow: 0 0 0 2px rgba(245, 34, 45, 0.2);
+        }
+        
+        /* 新增：错误抖动动画 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.6s ease-in-out;
+        }
+        
+        /* 新增：成功输入状态 */
+        .ant-input-success {
+            border-color: var(--success-color);
+        }
+        
+        .ant-input-success:focus {
+            box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
+        }
+        
+        /* 新增：输入框图标位置统一调整 */
+        .input-prefix-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(0, 0, 0, 0.45);
+            pointer-events: none;
+            transition: color 0.3s;
+        }
+        
+        /* 新增：输入框有值/聚焦时图标颜色变化 */
+        .ant-form-item-control:focus-within .input-prefix-icon {
+            color: var(--primary-color);
         }
         
         /* 密码框内的按钮样式 */
@@ -381,6 +426,25 @@
                 font-size: 13px;
             }
         }
+        
+        /* 新增：按钮禁用状态 */
+        .ant-btn-primary:disabled {
+            background-color: #8cb8ff;
+            border-color: #8cb8ff;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        /* 新增：按钮加载中状态 */
+        .ant-btn-loading {
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        
+        /* 新增：加载指示器 */
+        .ant-btn .loading-indicator {
+            margin-right: 8px;
+        }
     </style>
     
     <script type="module">
@@ -395,11 +459,31 @@
             const errorMessage = document.getElementById('error-message');
             const passwordInput = document.getElementById('password');
             const passwordToggle = document.getElementById('password-toggle');
+            const usernameInput = document.getElementById('username');
+            const rememberCheckbox = document.getElementById('remember');
             
             // 确保错误提示框初始状态为隐藏
             errorMessage.classList.add('hidden');
             errorMessage.style.display = 'none';
             errorMessage.textContent = '';
+            
+            // 新增：检查是否有存储的用户名并自动填充
+            checkSavedCredentials();
+            
+            // 新增：输入框获取焦点时清除错误状态
+            usernameInput.addEventListener('focus', () => {
+                usernameInput.classList.remove('ant-input-error');
+                usernameInput.classList.remove('shake');
+            });
+            
+            passwordInput.addEventListener('focus', () => {
+                passwordInput.classList.remove('ant-input-error');
+                passwordInput.classList.remove('shake');
+            });
+            
+            // 新增：输入时实时验证
+            usernameInput.addEventListener('input', validateUsername);
+            passwordInput.addEventListener('input', validatePassword);
             
             // 切换密码显示/隐藏功能
             passwordToggle.addEventListener('click', () => {
@@ -433,24 +517,17 @@
                 const username = loginForm.username.value.trim();
                 const password = loginForm.password.value;
                 
-                // 验证用户名和密码不为空
-                if (!username || !password) {
-                    errorMessage.textContent = '用户名和密码不能为空';
-                    errorMessage.classList.remove('hidden');
-                    errorMessage.style.display = 'block';
+                // 新增：输入验证并显示视觉反馈
+                if (!validateForm()) {
                     return;
                 }
-                
-                // 清空所有错误文本
-                document.querySelectorAll('.error-text').forEach(el => {
-                    el.textContent = '';
-                });
                 
                 try {
                     // 获取登录按钮并更新为登录中状态
                     const loginBtn = document.getElementById('login-btn');
                     loginBtn.innerHTML = '<svg viewBox="0 0 1024 1024" class="anticon-spin mr-2" width="16" height="16" fill="currentColor"><path d="M988 548c-19.9 0-36-16.1-36-36 0-59.4-11.6-117-34.6-171.3a440.45 440.45 0 00-94.3-139.9 437.71 437.71 0 00-139.9-94.3C629 83.6 571.4 72 512 72c-19.9 0-36-16.1-36-36s16.1-36 36-36c69.1 0 136.2 13.5 199.3 40.3C772.3 66 827 103 874 150c47 47 83.9 101.8 109.7 162.7 26.7 63.1 40.2 130.2 40.2 199.3.1 19.9-16 36-35.9 36z"></path></svg>登录中...';
                     loginBtn.disabled = true;
+                    loginBtn.classList.add('ant-btn-loading');
                     
                     // 模拟登录延迟
                     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -465,8 +542,20 @@
                             permissions: ['create', 'read', 'update', 'delete', 'manage_users']
                         });
                         
-                        // 跳转到主页
-                        window.location.href = 'home-selector.html';
+                        // 新增：如果选中"记住我"，则保存用户名
+                        if (rememberCheckbox.checked) {
+                            saveCredentials(username);
+                        } else {
+                            clearSavedCredentials();
+                        }
+                        
+                        // 新增：显示成功动画后再跳转
+                        showSuccessMessage("登录成功，正在跳转...");
+                        
+                        // 延迟后跳转到主页
+                        setTimeout(() => {
+                            window.location.href = 'home-selector.html';
+                        }, 800);
                     } 
                     // 验证普通用户账号
                     else if (username === 'user' && password === 'user123') {
@@ -478,26 +567,155 @@
                             permissions: ['create', 'read', 'update']
                         });
                         
-                        // 跳转到主页
-                        window.location.href = 'home-selector.html';
+                        // 新增：如果选中"记住我"，则保存用户名
+                        if (rememberCheckbox.checked) {
+                            saveCredentials(username);
+                        } else {
+                            clearSavedCredentials();
+                        }
+                        
+                        // 新增：显示成功动画后再跳转
+                        showSuccessMessage("登录成功，正在跳转...");
+                        
+                        // 延迟后跳转到主页
+                        setTimeout(() => {
+                            window.location.href = 'home-selector.html';
+                        }, 800);
                     } 
                     // 其他情况视为登录失败
                     else {
                         throw new Error('用户名或密码不正确');
                     }
                 } catch (error) {
-                    // 显示错误消息
+                    // 显示错误消息和视觉反馈
                     errorMessage.textContent = error.message || '登录失败，请稍后再试';
                     errorMessage.classList.remove('hidden');
                     errorMessage.style.display = 'block';
+                    
+                    // 新增：添加抖动动画
+                    usernameInput.classList.add('ant-input-error');
+                    passwordInput.classList.add('ant-input-error');
+                    loginForm.classList.add('shake');
+                    
+                    // 动画结束后移除动画类
+                    setTimeout(() => {
+                        loginForm.classList.remove('shake');
+                    }, 600);
+                    
                     traceErrorHandler.handleError(error);
                 } finally {
                     // 恢复登录按钮状态
                     const loginBtn = document.getElementById('login-btn');
                     loginBtn.innerHTML = '登录';
                     loginBtn.disabled = false;
+                    loginBtn.classList.remove('ant-btn-loading');
                 }
             });
+            
+            // 新增：验证用户名
+            function validateUsername() {
+                const username = usernameInput.value.trim();
+                
+                if (username.length < 3) {
+                    return false;
+                }
+                
+                // 匹配只包含字母、数字、下划线的用户名
+                const usernamePattern = /^[a-zA-Z0-9_]+$/;
+                return usernamePattern.test(username);
+            }
+            
+            // 新增：验证密码
+            function validatePassword() {
+                const password = passwordInput.value;
+                return password.length >= 6;
+            }
+            
+            // 新增：表单整体验证
+            function validateForm() {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+                let isValid = true;
+                
+                // 验证用户名
+                if (!username) {
+                    usernameInput.classList.add('ant-input-error');
+                    usernameInput.classList.add('shake');
+                    isValid = false;
+                } else if (!validateUsername()) {
+                    usernameInput.classList.add('ant-input-error');
+                }
+                
+                // 验证密码
+                if (!password) {
+                    passwordInput.classList.add('ant-input-error');
+                    passwordInput.classList.add('shake');
+                    isValid = false;
+                } else if (!validatePassword()) {
+                    passwordInput.classList.add('ant-input-error');
+                }
+                
+                // 如果有错误，显示错误消息
+                if (!isValid) {
+                    errorMessage.textContent = '请填写正确的用户名和密码';
+                    errorMessage.classList.remove('hidden');
+                    errorMessage.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        usernameInput.classList.remove('shake');
+                        passwordInput.classList.remove('shake');
+                    }, 600);
+                }
+                
+                return isValid;
+            }
+            
+            // 新增："记住我"功能 - 保存凭据
+            function saveCredentials(username) {
+                localStorage.setItem('rememberedUser', username);
+                localStorage.setItem('rememberMe', 'true');
+            }
+            
+            // 新增："记住我"功能 - 清除凭据
+            function clearSavedCredentials() {
+                localStorage.removeItem('rememberedUser');
+                localStorage.removeItem('rememberMe');
+            }
+            
+            // 新增："记住我"功能 - 检查凭据
+            function checkSavedCredentials() {
+                const rememberedUser = localStorage.getItem('rememberedUser');
+                const rememberMe = localStorage.getItem('rememberMe');
+                
+                if (rememberedUser && rememberMe === 'true') {
+                    usernameInput.value = rememberedUser;
+                    rememberCheckbox.checked = true;
+                }
+            }
+            
+            // 新增：显示成功消息
+            function showSuccessMessage(message) {
+                // 隐藏错误消息框
+                errorMessage.classList.add('hidden');
+                errorMessage.style.display = 'none';
+                
+                // 创建成功消息元素
+                const successDiv = document.createElement('div');
+                successDiv.className = 'ant-alert mb-6 flex items-center p-3 rounded-md bg-[#f6ffed] border border-[#b7eb8f]';
+                successDiv.innerHTML = `
+                    <i class="fas fa-check-circle mr-2 text-[#52c41a]"></i>
+                    <div class="text-[#52c41a]">${message}</div>
+                `;
+                
+                // 将成功消息插入到表单前面
+                loginForm.parentNode.insertBefore(successDiv, loginForm);
+                
+                // 1秒后淡出
+                setTimeout(() => {
+                    successDiv.style.opacity = '0';
+                    successDiv.style.transition = 'opacity 0.5s ease';
+                }, 1000);
+            }
         });
     </script>
 </head>
@@ -538,13 +756,20 @@
                     <div class="ant-form-item-control">
                         <div class="relative">
                             <!-- 用户图标 -->
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <span class="input-prefix-icon">
                                 <i class="fas fa-user"></i>
                             </span>
                             <!-- 用户名输入框 -->
                             <input id="username" name="username" type="text" required 
-                                   class="ant-input pl-10" placeholder="请输入用户名">
+                                   class="ant-input pl-10" placeholder="请输入用户名"
+                                   autocomplete="username">
+                            <!-- 验证图标 -->
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-green-500 hidden" id="username-valid-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </span>
                         </div>
+                        <!-- 错误提示文本 -->
+                        <div class="text-xs text-red-500 mt-1 error-text" id="username-error"></div>
                     </div>
                 </div>
 
@@ -556,17 +781,20 @@
                     <div class="ant-form-item-control">
                         <div class="relative">
                             <!-- 锁图标 -->
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <span class="input-prefix-icon">
                                 <i class="fas fa-lock"></i>
                             </span>
                             <!-- 密码输入框 -->
                             <input id="password" name="password" type="password" required
-                                   class="ant-input pl-10" placeholder="请输入密码">
+                                   class="ant-input pl-10" placeholder="请输入密码"
+                                   autocomplete="current-password">
                             <!-- 密码可见性切换按钮 -->
-                            <button type="button" id="password-toggle" class="password-toggle">
+                            <button type="button" id="password-toggle" class="password-toggle" aria-label="显示密码">
                                 <i class="far fa-eye"></i>
                             </button>
                         </div>
+                        <!-- 错误提示文本 -->
+                        <div class="text-xs text-red-500 mt-1 error-text" id="password-error"></div>
                     </div>
                 </div>
 
@@ -574,7 +802,7 @@
                 <div class="flex items-center justify-between mb-6">
                     <!-- 记住密码复选框 -->
                     <div class="ant-checkbox-wrapper">
-                        <input type="checkbox" id="remember" class="ant-checkbox-input">
+                        <input type="checkbox" id="remember" class="ant-checkbox-input" aria-label="记住我">
                         <span>记住我</span>
                     </div>
                     <!-- 忘记密码链接 -->
@@ -585,7 +813,7 @@
 
                 <!-- 登录按钮区域 -->
                 <div>
-                    <button type="submit" id="login-btn" class="ant-btn ant-btn-primary w-full">
+                    <button type="submit" id="login-btn" class="ant-btn ant-btn-primary w-full transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]" aria-label="登录">
                         登录
                     </button>
                 </div>
