@@ -445,6 +445,164 @@
         .ant-btn .loading-indicator {
             margin-right: 8px;
         }
+        
+        /* 新增：错误消息文本动画 */
+        .error-text {
+            max-height: 0;
+            opacity: 0;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .error-text:not(:empty) {
+            max-height: 20px;
+            opacity: 1;
+            margin-top: 4px;
+        }
+        
+        /* 输入错误样式类 */
+        .input-error {
+            border-color: var(--error-color) !important;
+            animation: shake 0.6s ease-in-out;
+        }
+        
+        /* 表单级错误消息样式 */
+        #form-error-message {
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            max-height: 0;
+        }
+        
+        #form-error-message:not(.hidden) {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 100px;
+            background-color: rgba(245, 34, 45, 0.05);
+            border-radius: var(--radius-md);
+            padding: 8px 12px;
+            font-weight: 500;
+        }
+        
+        /* 增强抖动动画效果 */
+        @keyframes enhanced-shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+            20%, 40%, 60%, 80% { transform: translateX(4px); }
+        }
+        
+        .shake {
+            animation: enhanced-shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+        
+        /* 模态框样式 */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-backdrop.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            border-radius: var(--radius-md);
+            width: 90%;
+            max-width: 360px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-backdrop.show .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .modal-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .modal-btn {
+            padding: 6px 16px;
+            font-size: 14px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .modal-btn-primary {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        
+        .modal-btn-primary:hover {
+            background-color: var(--primary-color-hover);
+        }
+        
+        /* 成功提示消息样式 */
+        #success-message {
+            animation: fadeInUp 0.3s ease forwards;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+            max-width: 90%;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, calc(-50% + 20px));
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
     </style>
     
     <script type="module">
@@ -474,16 +632,51 @@
             usernameInput.addEventListener('focus', () => {
                 usernameInput.classList.remove('ant-input-error');
                 usernameInput.classList.remove('shake');
+                document.getElementById('username-error').textContent = '';
+                // 隐藏表单级错误消息
+                const formErrorMessage = document.getElementById('form-error-message');
+                if (formErrorMessage) {
+                    formErrorMessage.classList.add('hidden');
+                    formErrorMessage.textContent = '';
+                }
             });
             
             passwordInput.addEventListener('focus', () => {
                 passwordInput.classList.remove('ant-input-error');
                 passwordInput.classList.remove('shake');
+                document.getElementById('password-error').textContent = '';
+                // 隐藏表单级错误消息
+                const formErrorMessage = document.getElementById('form-error-message');
+                if (formErrorMessage) {
+                    formErrorMessage.classList.add('hidden');
+                    formErrorMessage.textContent = '';
+                }
             });
             
             // 新增：输入时实时验证
-            usernameInput.addEventListener('input', validateUsername);
-            passwordInput.addEventListener('input', validatePassword);
+            usernameInput.addEventListener('input', () => {
+                usernameInput.classList.remove('ant-input-error');
+                document.getElementById('username-error').textContent = '';
+                // 隐藏表单级错误消息
+                const formErrorMessage = document.getElementById('form-error-message');
+                if (formErrorMessage) {
+                    formErrorMessage.classList.add('hidden');
+                    formErrorMessage.textContent = '';
+                }
+                validateUsername();
+            });
+            
+            passwordInput.addEventListener('input', () => {
+                passwordInput.classList.remove('ant-input-error');
+                document.getElementById('password-error').textContent = '';
+                // 隐藏表单级错误消息
+                const formErrorMessage = document.getElementById('form-error-message');
+                if (formErrorMessage) {
+                    formErrorMessage.classList.add('hidden');
+                    formErrorMessage.textContent = '';
+                }
+                validatePassword();
+            });
             
             // 切换密码显示/隐藏功能
             passwordToggle.addEventListener('click', () => {
@@ -508,7 +701,8 @@
             loginForm.addEventListener('submit', async (event) => {
                 // 阻止表单默认提交行为
                 event.preventDefault();
-                // 清空错误消息
+                
+                // 清空顶部错误消息
                 errorMessage.textContent = '';
                 errorMessage.classList.add('hidden');
                 errorMessage.style.display = 'none';
@@ -517,7 +711,7 @@
                 const username = loginForm.username.value.trim();
                 const password = loginForm.password.value;
                 
-                // 新增：输入验证并显示视觉反馈
+                // 进行表单验证，如果验证不通过则直接返回
                 if (!validateForm()) {
                     return;
                 }
@@ -549,13 +743,13 @@
                             clearSavedCredentials();
                         }
                         
-                        // 新增：显示成功动画后再跳转
-                        showSuccessMessage("登录成功，正在跳转...");
+                        // 显示成功消息
+                        showSuccessMessage("登录成功，即将跳转...");
                         
-                        // 延迟后跳转到主页
+                        // 延迟后跳转到主页 - 改为1秒
                         setTimeout(() => {
                             window.location.href = 'home-selector.html';
-                        }, 800);
+                        }, 1000);
                     } 
                     // 验证普通用户账号
                     else if (username === 'user' && password === 'user123') {
@@ -574,28 +768,34 @@
                             clearSavedCredentials();
                         }
                         
-                        // 新增：显示成功动画后再跳转
-                        showSuccessMessage("登录成功，正在跳转...");
+                        // 显示成功消息
+                        showSuccessMessage("登录成功，即将跳转...");
                         
-                        // 延迟后跳转到主页
+                        // 延迟后跳转到主页 - 改为1秒
                         setTimeout(() => {
                             window.location.href = 'home-selector.html';
-                        }, 800);
+                        }, 1000);
                     } 
                     // 其他情况视为登录失败
                     else {
                         throw new Error('用户名或密码不正确');
                     }
                 } catch (error) {
-                    // 显示错误消息和视觉反馈
-                    errorMessage.textContent = error.message || '登录失败，请稍后再试';
-                    errorMessage.classList.remove('hidden');
-                    errorMessage.style.display = 'block';
+                    // 隐藏顶部错误消息区域
+                    errorMessage.classList.add('hidden');
+                    errorMessage.style.display = 'none';
                     
-                    // 新增：添加抖动动画
+                    // 添加表单级错误消息
+                    const formErrorDiv = document.getElementById('form-error-message') || createFormErrorMessage();
+                    formErrorDiv.textContent = '用户名或密码错误';
+                    formErrorDiv.classList.remove('hidden');
+                    
+                    // 添加抖动动画
+                    loginForm.classList.add('shake');
+                    
+                    // 为输入框添加错误样式
                     usernameInput.classList.add('ant-input-error');
                     passwordInput.classList.add('ant-input-error');
-                    loginForm.classList.add('shake');
                     
                     // 动画结束后移除动画类
                     setTimeout(() => {
@@ -637,29 +837,44 @@
                 const password = passwordInput.value;
                 let isValid = true;
                 
+                // 清除之前的错误提示
+                document.getElementById('username-error').textContent = '';
+                document.getElementById('password-error').textContent = '';
+                
+                // 隐藏表单级错误消息
+                const formErrorMessage = document.getElementById('form-error-message');
+                if (formErrorMessage) {
+                    formErrorMessage.classList.add('hidden');
+                    formErrorMessage.textContent = '';
+                }
+                
                 // 验证用户名
                 if (!username) {
                     usernameInput.classList.add('ant-input-error');
                     usernameInput.classList.add('shake');
+                    document.getElementById('username-error').textContent = '用户名不能为空';
                     isValid = false;
                 } else if (!validateUsername()) {
                     usernameInput.classList.add('ant-input-error');
+                    document.getElementById('username-error').textContent = '用户名格式不正确';
                 }
                 
                 // 验证密码
                 if (!password) {
                     passwordInput.classList.add('ant-input-error');
                     passwordInput.classList.add('shake');
+                    document.getElementById('password-error').textContent = '密码不能为空';
                     isValid = false;
                 } else if (!validatePassword()) {
                     passwordInput.classList.add('ant-input-error');
+                    document.getElementById('password-error').textContent = '密码长度至少为6位';
                 }
                 
-                // 如果有错误，显示错误消息
+                // 如果有错误，仅显示各字段下方的错误提示，不在顶部显示错误消息
                 if (!isValid) {
-                    errorMessage.textContent = '请填写正确的用户名和密码';
-                    errorMessage.classList.remove('hidden');
-                    errorMessage.style.display = 'block';
+                    // 隐藏顶部的错误消息
+                    errorMessage.classList.add('hidden');
+                    errorMessage.style.display = 'none';
                     
                     setTimeout(() => {
                         usernameInput.classList.remove('shake');
@@ -699,22 +914,140 @@
                 errorMessage.classList.add('hidden');
                 errorMessage.style.display = 'none';
                 
-                // 创建成功消息元素
+                // 移除已存在的成功消息（如果有）
+                const existingSuccess = document.getElementById('success-message');
+                if (existingSuccess) {
+                    existingSuccess.remove();
+                }
+                
+                // 创建成功消息元素 - 使用固定定位在页面中央
                 const successDiv = document.createElement('div');
-                successDiv.className = 'ant-alert mb-6 flex items-center p-3 rounded-md bg-[#f6ffed] border border-[#b7eb8f]';
+                successDiv.id = 'success-message';
+                successDiv.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 ant-alert flex items-center p-5 rounded-lg bg-[#f6ffed] border border-[#b7eb8f] shadow-lg';
+                successDiv.style.minWidth = '280px';
+                successDiv.style.textAlign = 'center';
+                successDiv.style.opacity = '0';
+                successDiv.style.transition = 'opacity 0.3s ease';
+                
                 successDiv.innerHTML = `
-                    <i class="fas fa-check-circle mr-2 text-[#52c41a]"></i>
-                    <div class="text-[#52c41a]">${message}</div>
+                    <div class="flex items-center justify-center w-full">
+                        <i class="fas fa-check-circle text-[#52c41a] text-xl mr-3"></i>
+                        <div class="text-[#52c41a] text-base font-medium">${message}</div>
+                    </div>
                 `;
                 
-                // 将成功消息插入到表单前面
-                loginForm.parentNode.insertBefore(successDiv, loginForm);
+                // 将成功消息添加到页面
+                document.body.appendChild(successDiv);
                 
-                // 1秒后淡出
+                // 渐显动画
                 setTimeout(() => {
-                    successDiv.style.opacity = '0';
-                    successDiv.style.transition = 'opacity 0.5s ease';
-                }, 1000);
+                    successDiv.style.opacity = '1';
+                }, 10);
+            }
+            
+            // 创建表单级错误消息元素
+            function createFormErrorMessage() {
+                // 首先检查是否已经有这个元素
+                let formErrorDiv = document.getElementById('form-error-message');
+                if (formErrorDiv) {
+                    return formErrorDiv;
+                }
+                
+                // 创建新的错误消息元素
+                formErrorDiv = document.createElement('div');
+                formErrorDiv.id = 'form-error-message';
+                formErrorDiv.className = 'hidden mt-4 mb-4 text-center text-red-500 text-sm font-medium';
+                
+                // 查找登录按钮容器
+                const loginButtonContainer = document.querySelector('button[type="submit"]').closest('div');
+                
+                // 在登录按钮容器前插入错误消息
+                loginButtonContainer.parentNode.insertBefore(formErrorDiv, loginButtonContainer);
+                
+                return formErrorDiv;
+            }
+            
+            // 创建忘记密码模态框
+            createForgotPasswordModal();
+            
+            // 处理忘记密码点击事件
+            document.getElementById('forgot-password-link').addEventListener('click', (event) => {
+                event.preventDefault();
+                showForgotPasswordModal();
+            });
+            
+            // 创建忘记密码模态框
+            function createForgotPasswordModal() {
+                // 检查模态框是否已存在
+                if (document.getElementById('forgot-password-modal')) {
+                    return;
+                }
+                
+                // 创建模态框背景
+                const modalBackdrop = document.createElement('div');
+                modalBackdrop.id = 'forgot-password-modal';
+                modalBackdrop.className = 'modal-backdrop';
+                
+                // 创建模态框内容
+                modalBackdrop.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">找回密码</h3>
+                            <button type="button" class="modal-close" id="modal-close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-sm text-gray-600">请联系系统管理员找回密码。</p>
+                            <p class="text-sm text-gray-600 mt-2">联系电话：<strong>400-123-4567</strong></p>
+                            <p class="text-sm text-gray-600 mt-1">工作时间：周一至周五 9:00-18:00</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="modal-btn modal-btn-primary" id="modal-confirm">确定</button>
+                        </div>
+                    </div>
+                `;
+                
+                // 将模态框添加到页面
+                document.body.appendChild(modalBackdrop);
+                
+                // 绑定关闭按钮事件
+                document.getElementById('modal-close').addEventListener('click', hideForgotPasswordModal);
+                document.getElementById('modal-confirm').addEventListener('click', hideForgotPasswordModal);
+                
+                // 点击背景关闭模态框
+                modalBackdrop.addEventListener('click', (event) => {
+                    if (event.target === modalBackdrop) {
+                        hideForgotPasswordModal();
+                    }
+                });
+                
+                // 按ESC键关闭模态框
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape' && modalBackdrop.classList.contains('show')) {
+                        hideForgotPasswordModal();
+                    }
+                });
+            }
+            
+            // 显示忘记密码模态框
+            function showForgotPasswordModal() {
+                const modal = document.getElementById('forgot-password-modal');
+                if (modal) {
+                    modal.classList.add('show');
+                    // 阻止背景滚动
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            
+            // 隐藏忘记密码模态框
+            function hideForgotPasswordModal() {
+                const modal = document.getElementById('forgot-password-modal');
+                if (modal) {
+                    modal.classList.remove('show');
+                    // 恢复背景滚动
+                    document.body.style.overflow = '';
+                }
             }
         });
     </script>
@@ -769,7 +1102,7 @@
                             </span>
                         </div>
                         <!-- 错误提示文本 -->
-                        <div class="text-xs text-red-500 mt-1 error-text" id="username-error"></div>
+                        <div class="text-xs text-red-500 error-text" id="username-error"></div>
                     </div>
                 </div>
 
@@ -794,7 +1127,7 @@
                             </button>
                         </div>
                         <!-- 错误提示文本 -->
-                        <div class="text-xs text-red-500 mt-1 error-text" id="password-error"></div>
+                        <div class="text-xs text-red-500 error-text" id="password-error"></div>
                     </div>
                 </div>
 
@@ -806,10 +1139,13 @@
                         <span>记住我</span>
                     </div>
                     <!-- 忘记密码链接 -->
-                    <a href="#" class="text-sm text-[#1677FF] hover:text-[#0958D9] transition-colors">
+                    <a href="javascript:void(0)" id="forgot-password-link" class="text-sm text-[#1677FF] hover:text-[#0958D9] transition-colors">
                         忘记密码?
                     </a>
                 </div>
+
+                <!-- 表单级错误提示区域 -->
+                <div id="form-error-message" class="hidden mt-4 mb-4 text-center text-red-500 text-sm font-medium"></div>
 
                 <!-- 登录按钮区域 -->
                 <div>
