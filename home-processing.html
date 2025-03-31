@@ -201,7 +201,8 @@
                                 <i class="fas fa-tasks text-primary-color mr-2"></i>
                                 生产进度
                             </h2>
-                            <a href="process-detail.html" class="text-primary-color text-sm flex items-center">
+                            <a href="coming-soon.html?title=生产进度详情&desc=生产进度详情功能正在开发中，即将上线..." class="text-primary-color text-sm flex items-center">
+                                <!-- 页面未开发：process-detail.html，已重定向至敬请期待页面 -->
                                 详情 <i class="fas fa-chevron-right ml-1 text-xs"></i>
                             </a>
                         </div>
@@ -366,7 +367,7 @@
             
             document.getElementById('slaughterBtn').addEventListener('click', function() {
                 if (traceAuth.hasPermission('processing.slaughter')) {
-                    window.location.href = 'processing-slaughter.html';
+                    window.location.href = 'coming-soon.html?title=屠宰信息录入&desc=屠宰信息录入功能正在开发中，即将上线...'; // 页面未开发：processing-slaughter.html，已重定向至敬请期待页面
                 } else {
                     traceUI.showToast('您没有屠宰信息录入权限', 'error');
                 }
@@ -382,7 +383,7 @@
             
             document.getElementById('environmentBtn').addEventListener('click', function() {
                 if (traceAuth.hasPermission('processing.environment')) {
-                    window.location.href = 'processing-environment.html';
+                    window.location.href = 'coming-soon.html?title=加工环境拍照&desc=加工环境拍照功能正在开发中，即将上线...'; // 页面未开发：processing-environment.html，已重定向至敬请期待页面
                 } else {
                     traceUI.showToast('您没有拍照权限', 'error');
                 }
