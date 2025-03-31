@@ -157,16 +157,94 @@
             border-radius: var(--border-radius-base);
             padding: var(--spacing-md);
             text-align: center;
-            transition: var(--transition-base);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
         }
         
         .module-card:hover:not(.disabled) {
-            transform: translateY(-2px);
+            transform: translateY(-4px) scale(1.03);
             box-shadow: var(--shadow-md);
             border-color: var(--primary-color);
+            z-index: 1;
+        }
+        
+        .module-card:active:not(.disabled) {
+            transform: translateY(-2px) scale(0.98);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.1s ease;
+        }
+        
+        /* 新增: 卡片点击涟漪效果 */
+        .module-card::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.5s, opacity 0.5s;
+            pointer-events: none;
+        }
+        
+        .module-card:active::after {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            transition: 0s;
+        }
+        
+        /* 新增: 模块卡片加载状态 */
+        .module-card.loading {
+            pointer-events: none;
+        }
+        
+        .module-card.loading::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 2;
+            border-radius: var(--border-radius-base);
+        }
+        
+        .module-card .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(24, 144, 255, 0.2);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 3;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+        }
+        
+        .module-card.loading .loading-spinner {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* 新增: 悬停时标题和图标变色 */
+        .module-card:hover:not(.disabled) h3 {
+            color: var(--primary-color);
+        }
+        
+        .module-card:hover:not(.disabled) .module-icon i {
+            transform: scale(1.1);
         }
         
         .module-icon {
@@ -178,6 +256,11 @@
             justify-content: center;
             margin: 0 auto var(--spacing-sm);
             font-size: 24px;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        
+        .module-icon i {
+            transition: transform 0.3s ease, color 0.3s ease;
         }
         
         /* 底部导航栏 */
@@ -372,39 +455,43 @@
                     
                     <div class="grid grid-cols-2 gap-4 mb-6">
                         <!-- 养殖管理模块 -->
-                        <a href="home-farming.html" class="module-card p-4" id="farmingModule">
+                        <a href="home-farming.html" class="module-card p-4" id="farmingModule" role="button" aria-label="养殖管理模块">
                             <div class="module-icon bg-icon-bg-primary mb-3 mx-auto">
                                 <i class="fas fa-piggy-bank text-primary-color text-xl"></i>
                             </div>
                             <h3 class="text-center font-medium mb-1">养殖管理</h3>
                             <p class="text-xs text-center text-secondary">动物饲养、疫苗、繁育信息管理</p>
+                            <div class="loading-spinner"></div>
                         </a>
                         
                         <!-- 生产加工模块 -->
-                        <a href="home-processing.html" class="module-card p-4" id="processingModule">
+                        <a href="home-processing.html" class="module-card p-4" id="processingModule" role="button" aria-label="生产加工模块">
                             <div class="module-icon bg-icon-bg-success mb-3 mx-auto">
                                 <i class="fas fa-industry text-success text-xl"></i>
                             </div>
                             <h3 class="text-center font-medium mb-1">生产加工</h3>
                             <p class="text-xs text-center text-secondary">屠宰、检验、包装等加工环节管理</p>
+                            <div class="loading-spinner"></div>
                         </a>
                         
                         <!-- 销售物流模块 -->
-                        <a href="home-logistics.html" class="module-card p-4" id="logisticsModule">
+                        <a href="home-logistics.html" class="module-card p-4" id="logisticsModule" role="button" aria-label="销售物流模块">
                             <div class="module-icon bg-icon-bg-warning mb-3 mx-auto">
                                 <i class="fas fa-truck text-warning text-xl"></i>
                             </div>
                             <h3 class="text-center font-medium mb-1">销售物流</h3>
                             <p class="text-xs text-center text-secondary">运输、配送、订单跟踪管理</p>
+                            <div class="loading-spinner"></div>
                         </a>
                         
                         <!-- 追溯查询模块 -->
-                        <a href="trace-query.html" class="module-card p-4" id="traceModule">
+                        <a href="trace-query.html" class="module-card p-4" id="traceModule" role="button" aria-label="追溯查询模块">
                             <div class="module-icon bg-icon-bg-purple mb-3 mx-auto">
                                 <i class="fas fa-search text-purple-color text-xl"></i>
                             </div>
                             <h3 class="text-center font-medium mb-1">追溯查询</h3>
                             <p class="text-xs text-center text-secondary">产品全链路溯源和质量追踪</p>
+                            <div class="loading-spinner"></div>
                         </a>
                     </div>
                     
@@ -415,20 +502,22 @@
                             管理员功能
                         </h3>
                         <div class="grid grid-cols-2 gap-4">
-                            <a href="admin-users.html" class="module-card p-4" id="userManageModule">
+                            <a href="admin-users.html" class="module-card p-4" id="userManageModule" role="button" aria-label="用户管理模块">
                                 <div class="module-icon bg-icon-bg-primary mb-3 mx-auto">
                                     <i class="fas fa-users-cog text-primary-color text-xl"></i>
                                 </div>
                                 <h3 class="text-center font-medium mb-1">用户管理</h3>
                                 <p class="text-xs text-center text-secondary">账号、权限配置</p>
+                                <div class="loading-spinner"></div>
                             </a>
                             
-                            <a href="admin-system.html" class="module-card p-4" id="systemConfigModule">
+                            <a href="admin-system.html" class="module-card p-4" id="systemConfigModule" role="button" aria-label="系统配置模块">
                                 <div class="module-icon bg-icon-bg-error mb-3 mx-auto">
                                     <i class="fas fa-cogs text-error text-xl"></i>
                                 </div>
                                 <h3 class="text-center font-medium mb-1">系统配置</h3>
                                 <p class="text-xs text-center text-secondary">设置、备份、维护</p>
+                                <div class="loading-spinner"></div>
                             </a>
                         </div>
                     </div>
@@ -476,6 +565,9 @@
             
             // 检查URL中是否有错误消息
             checkUrlParams();
+            
+            // 新增：添加模块点击事件处理
+            setupModuleCardInteractions();
         });
         
         /**
@@ -583,17 +675,21 @@
                 
                 if (moduleElement && !hasPermission) {
                     moduleElement.classList.add('disabled');
+                    moduleElement.setAttribute('aria-disabled', 'true');
+                    moduleElement.setAttribute('tabindex', '-1');
                     
                     // 添加锁图标
                     const lockIcon = document.createElement('i');
-                    lockIcon.className = 'fas fa-lock text-gray-400 absolute top-2 right-2 text-xs';
+                    lockIcon.className = 'fas fa-lock absolute top-3 right-3 text-sm text-gray-400 z-10';
                     moduleElement.style.position = 'relative';
                     moduleElement.appendChild(lockIcon);
                     
                     // 阻止点击事件
                     moduleElement.addEventListener('click', function(e) {
                         e.preventDefault();
-                        traceUI.showToast('您没有访问此模块的权限', 'error');
+                        
+                        // 新增：显示更详细的权限提示
+                        showPermissionDialog(moduleElement.querySelector('h3').textContent);
                     });
                 }
             });
@@ -605,6 +701,125 @@
                     adminSection.classList.add('hidden');
                 }
             }
+        }
+        
+        /**
+         * 新增：设置模块卡片交互行为
+         */
+        function setupModuleCardInteractions() {
+            // 获取所有模块卡片
+            const moduleCards = document.querySelectorAll('.module-card:not(.disabled)');
+            
+            // 为每个卡片添加点击事件
+            moduleCards.forEach(card => {
+                card.addEventListener('click', function(e) {
+                    e.preventDefault(); // 阻止默认行为
+                    
+                    // 获取目标页面URL
+                    const targetUrl = this.getAttribute('href');
+                    if (!targetUrl) return;
+                    
+                    // 添加加载状态
+                    this.classList.add('loading');
+                    
+                    // 等待200-500ms后跳转，模拟加载过程
+                    setTimeout(() => {
+                        // 如果URL包含hash，则使用滚动过渡
+                        if (targetUrl.includes('#')) {
+                            // 平滑滚动到目标位置
+                            const targetId = targetUrl.split('#')[1];
+                            const targetElement = document.getElementById(targetId);
+                            if (targetElement) {
+                                targetElement.scrollIntoView({ behavior: 'smooth' });
+                            } else {
+                                window.location.href = targetUrl;
+                            }
+                        } else {
+                            // 淡出效果后跳转
+                            document.body.style.opacity = '0.7';
+                            document.body.style.transition = 'opacity 0.3s ease';
+                            
+                            setTimeout(() => {
+                                window.location.href = targetUrl;
+                            }, 300);
+                        }
+                    }, Math.random() * 300 + 200); // 随机200-500ms延迟，使体验更自然
+                });
+                
+                // 为卡片添加键盘导航支持
+                card.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click(); // 触发点击事件
+                    }
+                });
+                
+                // 设置卡片可聚焦
+                if (!card.hasAttribute('tabindex')) {
+                    card.setAttribute('tabindex', '0');
+                }
+            });
+        }
+        
+        /**
+         * 新增：显示权限提示对话框
+         */
+        function showPermissionDialog(moduleName) {
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50';
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease';
+            
+            // 模态框内容
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-xs w-11/12 transform scale-95 transition-transform duration-300">
+                    <div class="text-center mb-4">
+                        <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-lock text-red-500 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">权限受限</h3>
+                        <p class="text-sm text-gray-500 mt-2">您没有访问 <span class="font-medium text-primary-color">${moduleName}</span> 的权限</p>
+                    </div>
+                    <div class="border-t border-gray-100 pt-4 pb-2">
+                        <p class="text-xs text-gray-500 mb-3">如需获取权限，请联系系统管理员或通过以下方式申请：</p>
+                        <div class="text-xs text-gray-700 bg-gray-50 p-2 rounded">
+                            <span class="font-medium">联系方式：</span>admin@example.com
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-center">
+                        <button class="btn-close px-4 py-2 bg-gray-100 rounded-md text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors">关闭</button>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到body
+            document.body.appendChild(modal);
+            
+            // 触发重绘以应用过渡效果
+            setTimeout(() => {
+                modal.style.opacity = '1';
+                modal.querySelector('div').classList.remove('scale-95');
+                modal.querySelector('div').classList.add('scale-100');
+            }, 10);
+            
+            // 添加关闭事件
+            modal.querySelector('.btn-close').addEventListener('click', function() {
+                modal.style.opacity = '0';
+                modal.querySelector('div').classList.remove('scale-100');
+                modal.querySelector('div').classList.add('scale-95');
+                
+                setTimeout(() => {
+                    document.body.removeChild(modal);
+                }, 300);
+            });
+            
+            // 点击背景关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.querySelector('.btn-close').click();
+                }
+            });
         }
         
         /**
