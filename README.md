@@ -8,6 +8,35 @@
 - 网址：https://food-trace-prototype.surge.sh
 - 支持通过GitHub Actions自动部署
 
+## 开发工具脚本
+
+### Git快速提交工具
+
+使用`gitpush`命令可一键完成git提交操作：
+
+```bash
+# 使用方法
+gitpush "提交说明信息"
+
+# 例如
+gitpush "修复登录页面bug"
+```
+
+此命令会自动执行以下操作：
+1. 添加所有更改 (git add .)
+2. 提交更改 (git commit -m "你的信息")
+3. 推送到远程仓库 (git push)
+
+### 部署脚本
+
+```bash
+# 完整部署（包含CSS构建）
+npm run deploy
+
+# 简单部署（不构建CSS）
+npm run deploy:simple
+```
+
 ## 自动部署说明
 
 本项目使用GitHub Actions自动部署：
@@ -79,268 +108,15 @@ npm start
 npm run deploy
 ```
 
-## MCP服务配置说明
+## MCP服务简介
 
-本项目使用多个MCP（Model Control Protocol）服务来提供各种AI增强功能。以下是每个服务的配置和使用说明：
+本项目使用多个MCP（Model Control Protocol）服务来提供各种AI增强功能：
 
-### 1. Neon数据库服务
-
-用于处理应用的数据存储需求，提供PostgreSQL兼容的云数据库服务。
-
-**配置要求：**
-- Neon账户和项目
-- 有效的API密钥
-- 数据库连接字符串
-
-**已配置信息：**
-- 数据库连接字符串：已在.env文件中配置
-- 连接信息：
-  - 主机：ep-frosty-hill-a1h70bse-pooler.ap-southeast-1.aws.neon.tech
-  - 数据库：neondb
-  - 用户：neondb_owner
-
-**API密钥示例：**
-```json
-{
-  "enabled": true,
-  "commandToRun": [
-    "npx",
-    "@neondatabase/mcp@latest",
-    "--neon-api-key",
-    "0sJhQZK2VDBqAaaaaBBBccCCddDDeeEE"
-  ]
-}
-```
-
-**连接字符串示例：**
-```
-postgresql://neondb_owner:abcdefg123456@ep-frosty-hill-a1h70bse-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
-```
-
-**使用功能：**
-- 创建和管理数据库项目
-- 执行SQL查询
-- 管理数据库分支
-- 描述表结构
-- 获取连接字符串
-- 执行数据库迁移
-
-**设置方法：**
-1. 注册/登录 [Neon数据库](https://neon.tech)
-2. 创建新项目
-3. 在项目设置中获取API密钥
-4. 更新mcp.json中的API密钥
-
-### 2. Magic MCP
-
-提供AI增强功能，尤其是UI组件生成和Logo搜索能力。
-
-**配置要求：**
-- 21st-dev平台账户
-- 有效的API密钥
-
-**API密钥示例：**
-```json
-{
-  "enabled": true,
-  "commandToRun": [
-    "npx",
-    "@21stio/magic-mcp@latest",
-    "start",
-    "--api-key",
-    "21st_xxxx1234abcd5678efgh"
-  ]
-}
-```
-
-**主要功能：**
-- 生成React UI组件（/ui或/21命令）
-- 搜索和提供品牌Logo（/logo命令）
-- 以JSX、TSX或SVG格式返回组件
-
-**使用场景：**
-- 快速构建UI界面
-- 添加品牌标识
-- 创建自定义组件
-
-**设置方法：**
-1. 注册/登录21st-dev平台
-2. 创建新项目/应用
-3. 生成API密钥
-4. 更新mcp.json中的API密钥
-
-### 3. Browser Tools MCP
-
-允许AI助手与浏览器交互，提供浏览器调试和分析功能。
-
-**配置要求：**
-- Node.js环境
-
-**配置示例：**
-```json
-{
-  "enabled": true,
-  "commandToRun": [
-    "npx",
-    "@agentdeskai/browser-tools-mcp@1.16.2"
-  ]
-}
-```
-
-**主要功能：**
-- 获取控制台日志和错误
-- 捕获网络请求和错误
-- 截取屏幕
-- 运行各种审计（可访问性、性能、SEO等）
-- 调试模式
-
-**使用场景：**
-- 调试网页问题
-- 分析网站性能
-- 检查UI问题
-- 优化网站访问体验
-
-**设置步骤：**
-1. 安装依赖：`npm install -g @agentdeskai/browser-tools-mcp`
-
-### 4. Sequential Thinking MCP
-
-提供结构化思考和问题解决功能，适用于复杂任务分析。
-
-**配置示例：**
-```json
-{
-  "enabled": true,
-  "commandToRun": [
-    "npx",
-    "@mcp.cx/sequential-thinking-mcp@latest"
-  ]
-}
-```
-
-**主要功能：**
-- 将复杂问题分解为步骤
-- 支持思考过程的修改和分支
-- 生成和验证解决方案假设
-- 维护多步骤解决方案的上下文
-
-**使用场景：**
-- 复杂问题分析
-- 多步骤规划
-- 需要修正的思考过程
-- 需要深入理解的分析任务
-
-### 5. Playwright MCP
-
-提供强大的浏览器自动化功能，实现网页交互和测试。
-
-**配置示例：**
-```json
-{
-  "enabled": true,
-  "commandToRun": [
-    "npx",
-    "@playwright/mcp@latest"
-  ]
-}
-```
-
-**主要功能：**
-- 导航到URL
-- 页面截图和快照
-- 点击和悬停等交互操作
-- 上传文件
-- 前进和后退导航
-
-**使用场景：**
-- 自动化网站测试
-- 模拟用户交互
-- 网页内容抓取
-- 监控网站变化
-
-**设置步骤：**
-1. 安装Playwright：`npm install -g @playwright/mcp`
-
-### 6. Figma API工具
-
-与Figma设计文件集成，实现设计到代码的转换。
-
-**配置要求：**
-- Figma账户
-- 个人访问令牌
-- 设计文件ID
-
-**API令牌示例：**
-```
-figd_aBcD1234EfGh5678IjKl9012MnOp3456QrSt7890UvWx1234YzAb5678CdEf9012
-```
-
-**环境变量配置示例：**
-```bash
-# .env文件
-FIGMA_ACCESS_TOKEN=figd_aBcD1234EfGh5678IjKl9012MnOp3456QrSt7890UvWx1234YzAb5678CdEf9012
-FIGMA_FILE_ID=abcDEF123456
-```
-
-**主要功能：**
-- 访问Figma设计文件
-- 导出设计资源
-- 查看设计规范
-
-**设置步骤：**
-1. 登录Figma账户
-2. 生成个人访问令牌（Account Settings > Personal Access Tokens）
-3. 获取设计文件ID（URL中的值）
-4. 设置环境变量
-
-## 完整MCP配置文件示例
-
-以下是包含所有MCP服务的完整`mcp.json`配置文件示例：
-
-```json
-{
-  "neonMcp": {
-    "enabled": true,
-    "commandToRun": [
-      "npx",
-      "@neondatabase/mcp@latest",
-      "--neon-api-key",
-      "0sJhQZK2VDBqAaaaaBBBccCCddDDeeEE"
-    ]
-  },
-  "magicMcp": {
-    "enabled": true,
-    "commandToRun": [
-      "npx",
-      "@21stio/magic-mcp@latest",
-      "start",
-      "--api-key",
-      "21st_xxxx1234abcd5678efgh"
-    ]
-  },
-  "browserToolsMcp": {
-    "enabled": true,
-    "commandToRun": [
-      "npx",
-      "@agentdeskai/browser-tools-mcp@1.16.2"
-    ]
-  },
-  "sequentialThinkingMcp": {
-    "enabled": true,
-    "commandToRun": [
-      "npx",
-      "@mcp.cx/sequential-thinking-mcp@latest"
-    ]
-  },
-  "playwrightMcp": {
-    "enabled": true,
-    "commandToRun": [
-      "npx",
-      "@playwright/mcp@latest"
-    ]
-  }
-}
-```
+1. **Neon数据库服务** - 提供PostgreSQL兼容的云数据库服务
+2. **Magic MCP** - 提供UI组件生成和Logo搜索能力
+3. **Browser Tools MCP** - 提供浏览器调试和分析功能
+4. **Sequential Thinking MCP** - 提供结构化思考和问题解决功能
+5. **Playwright MCP** - 提供浏览器自动化功能
 
 ## 自动启动MCP服务
 
@@ -348,11 +124,7 @@ FIGMA_FILE_ID=abcDEF123456
 
 ### 手动启动
 
-1. 运行批处理文件：`start-mcp-services.bat`
-
-或
-
-2. 直接运行Node.js脚本：`node start-mcp-services.js`
+运行批处理文件：`start-mcp-services.bat`
 
 ### 设置自动启动
 
@@ -363,15 +135,6 @@ node setup-autostart.js
 ```
 
 这将创建一个Windows计划任务，在用户登录时自动启动所有MCP服务。
-
-### 日志
-
-所有服务的日志文件保存在`logs`目录中：
-- `browser-tools.log` - 浏览器工具MCP日志
-- `magic-mcp.log` - Magic MCP日志
-- `neon-mcp.log` - Neon数据库MCP日志
-- `sequential-thinking.log` - 顺序思考MCP日志
-- `playwright-mcp.log` - Playwright MCP日志
 
 ## 如何启动应用
 
