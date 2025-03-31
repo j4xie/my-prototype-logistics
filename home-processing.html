@@ -201,8 +201,8 @@
                                 <i class="fas fa-tasks text-primary-color mr-2"></i>
                                 生产进度
                             </h2>
-                            <a href="coming-soon.html?title=生产进度详情&desc=生产进度详情功能正在开发中，即将上线..." class="text-primary-color text-sm flex items-center">
-                                <!-- 页面未开发：process-detail.html，已重定向至敬请期待页面 -->
+                            <a href="process-detail.html" class="text-primary-color text-sm flex items-center">
+                                <!-- 页面已开发：process-detail.html -->
                                 详情 <i class="fas fa-chevron-right ml-1 text-xs"></i>
                             </a>
                         </div>
@@ -298,7 +298,7 @@
                         快捷操作
                     </h2>
                     <div class="grid grid-cols-2 gap-4">
-                        <button class="module-card p-4" id="slaughterBtn">
+                        <button class="module-card p-4" id="slaughterInfoBtn">
                             <div class="module-icon bg-icon-bg-primary mb-3 mx-auto">
                                 <i class="fas fa-cut text-primary-color text-xl"></i>
                             </div>
@@ -310,7 +310,7 @@
                             </div>
                             <p class="text-center text-sm">肉质等级评定</p>
                         </button>
-                        <button class="module-card p-4" id="environmentBtn">
+                        <button class="module-card p-4" id="environmentPhotoBtn">
                             <div class="module-icon bg-icon-bg-warning mb-3 mx-auto">
                                 <i class="fas fa-camera text-warning text-xl"></i>
                             </div>
@@ -365,9 +365,9 @@
                 refreshData();
             });
             
-            document.getElementById('slaughterBtn').addEventListener('click', function() {
+            document.getElementById('slaughterInfoBtn').addEventListener('click', function() {
                 if (traceAuth.hasPermission('processing.slaughter')) {
-                    window.location.href = 'coming-soon.html?title=屠宰信息录入&desc=屠宰信息录入功能正在开发中，即将上线...'; // 页面未开发：processing-slaughter.html，已重定向至敬请期待页面
+                    window.location.href = 'processing-slaughter.html'; // 页面已开发：processing-slaughter.html
                 } else {
                     traceUI.showToast('您没有屠宰信息录入权限', 'error');
                 }
@@ -381,11 +381,11 @@
                 }
             });
             
-            document.getElementById('environmentBtn').addEventListener('click', function() {
-                if (traceAuth.hasPermission('processing.environment')) {
-                    window.location.href = 'coming-soon.html?title=加工环境拍照&desc=加工环境拍照功能正在开发中，即将上线...'; // 页面未开发：processing-environment.html，已重定向至敬请期待页面
+            document.getElementById('environmentPhotoBtn').addEventListener('click', function() {
+                if (traceAuth.hasPermission('processing.photo')) {
+                    window.location.href = 'processing-environment.html'; // 页面已开发：processing-environment.html
                 } else {
-                    traceUI.showToast('您没有拍照权限', 'error');
+                    traceUI.showToast('您没有加工环境拍照权限', 'error');
                 }
             });
             
@@ -507,9 +507,9 @@
         function checkActionPermissions() {
             // 检查按钮权限
             const buttons = [
-                { id: 'slaughterBtn', permission: 'processing.slaughter' },
+                { id: 'slaughterInfoBtn', permission: 'processing.slaughter' },
                 { id: 'qualityBtn', permission: 'processing.quality' },
-                { id: 'environmentBtn', permission: 'processing.environment' },
+                { id: 'environmentPhotoBtn', permission: 'processing.photo' },
                 { id: 'reportBtn', permission: 'processing.report' }
             ];
             
