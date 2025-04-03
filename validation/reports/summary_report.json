@@ -1,11 +1,11 @@
 {
-  "timestamp": "2025-04-03T06:53:18.811Z",
+  "timestamp": "2025-04-03T10:44:33.703Z",
   "results": {
-    "unit_tests": true,
+    "unit_tests": false,
     "ui_validation": true,
     "functionality": true,
     "html_structure": null,
-    "button_tests": false,
+    "button_tests": true,
     "resource_validation": true,
     "navigation_validation": true
   },
@@ -13,7 +13,7 @@
     "unit_tests": {
       "passed": 0,
       "failed": 0,
-      "message": "所有单元测试通过"
+      "message": "测试失败: Command failed: node C:\\Users\\Steve\\heiniu\\tests\\run-unit-tests.js"
     },
     "ui_validation": {
       "passed": 0,
@@ -31,7 +31,7 @@
       "message": ""
     },
     "button_tests": {
-      "message": "按钮测试执行出错: Unexpected token '开', \"开始按钮测试...\n\"... is not valid JSON"
+      "message": "按钮测试完成，但无法解析详细结果"
     },
     "resource_validation": {
       "message": "资源加载验证通过"
@@ -41,11 +41,11 @@
     }
   },
   "duration": {
-    "total": "7.09",
-    "unit_tests": "4.16",
-    "ui_validation": "0.57",
-    "functionality": "0.59",
-    "button_tests": "0.58"
+    "total": "95.28",
+    "unit_tests": "0.96",
+    "ui_validation": "0.55",
+    "functionality": "0.55",
+    "button_tests": "92.13"
   },
   "overall_status": "失败"
 }
