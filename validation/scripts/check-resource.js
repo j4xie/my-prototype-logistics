@@ -7,16 +7,8 @@ const config = {
   screenshotsDir: path.join(__dirname, '../reports/screenshots'),
   reportPath: path.join(__dirname, '../reports/resource_report.json')
 };
-
-// 确保目录存在
-if (!fs.existsSync(config.screenshotsDir)) {
-  fs.mkdirSync(config.screenshotsDir, { recursive: true });
-}
-
-// 确保reports目录存在
-const reportsDir = path.dirname(config.reportPath);
-if (!fs.existsSync(reportsDir)) {
-  fs.mkdirSync(reportsDir, { recursive: true });
+if (!fs.existsSync(screenshotDir)) {
+  fs.mkdirSync(screenshotDir);
 }
 
 async function run() {
@@ -81,4 +73,4 @@ async function run() {
   }
 }
 
-module.exports = { run };
+module.exports = { run }; 
