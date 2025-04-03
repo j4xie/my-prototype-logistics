@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>功能模块选择 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        /* 设计系统变量 */
+        :root {
+            /* 主色调变量 */
+            --primary-color: #1677FF;
+            --primary-hover: #4096FF;
+            --primary-active: #0958D9;
+            
+            /* 状态色变量 */
+            --success-color: #52C41A;
+            --success-hover: #73D13D;
+            --warning-color: #FA8C16;
+            --warning-hover: #FFA940;
+            --error-color: #FF4D4F;
+            --error-hover: #FF7875;
+            --purple-color: #722ED1;
+            --purple-hover: #9254DE;
+            
+            /* 图标背景色变量 */
+            --icon-bg-primary: #E6F7FF;
+            --icon-bg-success: #F6FFED;
+            --icon-bg-warning: #FFF7E6;
+            --icon-bg-purple: #F9F0FF;
+            
+            /* 文本颜色变量 */
+            --text-primary: rgba(0, 0, 0, 0.85);
+            --text-secondary: rgba(0, 0, 0, 0.65);
+            --text-disabled: rgba(0, 0, 0, 0.45);
+            
+            /* 背景色变量 */
+            --bg-layout: #F0F2F5;
+            --bg-container: #FFFFFF;
+            --bg-mask: rgba(0, 0, 0, 0.45);
+            
+            /* 边框变量 */
+            --border-color: #f0f0f0;
+            --border-radius-base: 8px;
+            
+            /* 阴影变量 */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+            
+            /* 动画变量 */
+            --transition-base: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+            
+            /* 间距变量 */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            
+            /* 组件尺寸 */
+            --icon-size-normal: 48px;
+            --nav-height: 64px;
+            --bottom-tab-height: 60px;
+            --safe-area-bottom: env(safe-area-inset-bottom, 0);
+        }
+        
+        /* 通用重置样式 */
+        body {
+            background-color: var(--bg-layout);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* 页面容器 */
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            background-color: var(--bg-layout);
+        }
+        
+        /* 顶部导航栏 */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 999;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .header-container {
+            max-width: 390px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-md);
+        }
+        
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        /* 主内容区域 */
+        .content-container {
+            padding-top: calc(var(--nav-height) + var(--spacing-md));
+            padding-bottom: calc(var(--bottom-tab-height) + var(--safe-area-bottom) + var(--spacing-md));
+        }
+        
+        .content-area {
+            max-width: 390px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-md);
+        }
+        
+        /* 用户信息卡片 */
+        .user-card {
+            background-color: var(--bg-container);
+            border-radius: var(--border-radius-base);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-base);
+        }
+        
+        .user-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        .user-avatar {
+            width: var(--icon-size-normal);
+            height: var(--icon-size-normal);
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        /* 模块卡片 */
+        .module-card {
+            background-color: var(--bg-container);
+            border-radius: var(--border-radius-base);
+            padding: var(--spacing-md);
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .module-card:hover:not(.disabled) {
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+            z-index: 1;
+        }
+        
+        .module-card:active:not(.disabled) {
+            transform: translateY(-2px) scale(0.98);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.1s ease;
+        }
+        
+        /* 新增: 卡片点击涟漪效果 */
+        .module-card::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.5s, opacity 0.5s;
+            pointer-events: none;
+        }
+        
+        .module-card:active::after {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            transition: 0s;
+        }
+        
+        /* 新增: 模块卡片加载状态 */
+        .module-card.loading {
+            pointer-events: none;
+        }
+        
+        .module-card.loading::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 2;
+            border-radius: var(--border-radius-base);
+        }
+        
+        .module-card .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(24, 144, 255, 0.2);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 3;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+        }
+        
+        .module-card.loading .loading-spinner {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* 新增: 悬停时标题和图标变色 */
+        .module-card:hover:not(.disabled) h3 {
+            color: var(--primary-color);
+        }
+        
+        .module-card:hover:not(.disabled) .module-icon i {
+            transform: scale(1.1);
+        }
+        
+        .module-icon {
+            width: var(--icon-size-normal);
+            height: var(--icon-size-normal);
+            border-radius: var(--border-radius-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto var(--spacing-sm);
+            font-size: 24px;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        
+        .module-icon i {
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        
+        /* 底部导航栏 */
+        .app-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--bottom-tab-height);
+            background-color: var(--bg-container);
+            border-top: 1px solid var(--border-color);
+            z-index: 100;
+            padding-bottom: var(--safe-area-bottom);
+        }
+        
+        .footer-container {
+            max-width: 390px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+        
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-disabled);
+            transition: var(--transition-base);
+            padding: var(--spacing-xs) 0;
+        }
+        
+        .tab-item.active {
+            color: var(--primary-color);
+        }
+        
+        .tab-item i {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .tab-item span {
+            font-size: 12px;
+        }
+        
+        /* 状态标签 */
+        .status-tag {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-tag.success {
+            background-color: var(--icon-bg-success);
+            color: var(--success-color);
+        }
+        
+        /* 统计卡片 */
+        .stat-item {
+            background-color: var(--bg-layout);
+            border-radius: var(--border-radius-base);
+            padding: var(--spacing-sm);
+            text-align: center;
+        }
+        
+        .stat-item p:first-child {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .stat-item p:last-child {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* 禁用状态 */
+        .disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 390px) {
+            .page-container,
+            .header-container,
+            .content-area,
+            .footer-container {
+                max-width: 100%;
+            }
+        }
+        
+        /* 新增导航图标样式 */
+        .nav-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: var(--transition-base);
+        }
+        
+        .nav-icon:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-around;
+            padding: 6px 0;
+            z-index: 999;
+        }
+
+        .nav-items {
+            list-style: none;
+            display: flex;
+            width: 100%;
+            justify-content: space-evenly;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .nav-item.active {
+            color: #007bff;
+        }
+
+        .nav-item img {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面容器 -->
+    <div class="page-container">
+        <!-- 顶部导航栏 -->
+        <header class="app-header">
+            <div class="header-container">
+                <div class="flex items-center">
+                    <span class="header-title">食品溯源系统</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="../profile/notifications.html" class="nav-icon bg-white bg-opacity-20 mx-1">
+                        <i class="fas fa-bell text-lg"></i>
+                    </a>
+                    <a href="../profile/settings.html" class="nav-icon bg-white bg-opacity-20 mx-1">
+                        <i class="fas fa-cog text-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="content-container">
+            <div class="content-area">
+                <!-- 用户信息卡片 -->
+                <div class="user-card p-4 mb-6">
+                    <div class="flex items-center">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-md font-semibold" id="userName">张三</h3>
+                            <p class="text-sm text-gray-500">
+                                <span id="userRole">系统管理员</span>
+                                <span class="role-tag ml-2" id="permissionLevel">高级权限</span>
+                            </p>
+                        </div>
+                        <div class="ml-auto">
+                            <a href="../profile/profile.html" class="btn-secondary px-3 py-1 text-xs">
+                                个人中心
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 系统状态摘要 -->
+                <div class="content-section">
+                    <div class="card p-4 mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-medium flex items-center">
+                                <i class="fas fa-chart-line text-primary-color mr-2"></i>
+                                系统状态
+                            </h2>
+                            <span class="status-tag success" id="systemStatus">正常运行</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="stat-item bg-gray-50 p-2 rounded-md">
+                                <p class="font-semibold text-primary-color" id="todayRecords">32</p>
+                                <p class="text-xs text-secondary">今日记录</p>
+                            </div>
+                            <div class="stat-item bg-gray-50 p-2 rounded-md">
+                                <p class="font-semibold text-warning" id="pendingTasks">8</p>
+                                <p class="text-xs text-secondary">待处理任务</p>
+                            </div>
+                            <div class="stat-item bg-gray-50 p-2 rounded-md">
+                                <p class="font-semibold text-success" id="activeUsers">18</p>
+                                <p class="text-xs text-secondary">在线用户</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 功能模块选择 -->
+                <div class="content-section">
+                    <h2 class="text-lg font-medium mb-4 flex items-center">
+                        <i class="fas fa-th-large text-primary-color mr-2"></i>
+                        功能模块
+                    </h2>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <!-- 养殖管理模块 -->
+                        <a href="home-farming.html" class="module-card p-4" id="farmingModule" role="button" aria-label="养殖管理模块">
+                            <div class="module-icon bg-icon-bg-primary mb-3 mx-auto">
+                                <i class="fas fa-piggy-bank text-primary-color text-xl"></i>
+                            </div>
+                            <h3 class="text-center font-medium mb-1">养殖管理</h3>
+                            <p class="text-xs text-center text-secondary">动物饲养、疫苗、繁育信息管理</p>
+                            <div class="loading-spinner"></div>
+                        </a>
+                        
+                        <!-- 生产加工模块 -->
+                        <a href="home-processing.html" class="module-card p-4" id="processingModule" role="button" aria-label="生产加工模块">
+                            <div class="module-icon bg-icon-bg-success mb-3 mx-auto">
+                                <i class="fas fa-industry text-success text-xl"></i>
+                            </div>
+                            <h3 class="text-center font-medium mb-1">生产加工</h3>
+                            <p class="text-xs text-center text-secondary">屠宰、检验、包装等加工环节管理</p>
+                            <div class="loading-spinner"></div>
+                        </a>
+                        
+                        <!-- 销售物流模块 -->
+                        <a href="home-logistics.html" class="module-card p-4" id="logisticsModule" role="button" aria-label="销售物流模块">
+                            <div class="module-icon bg-icon-bg-warning mb-3 mx-auto">
+                                <i class="fas fa-truck text-warning text-xl"></i>
+                            </div>
+                            <h3 class="text-center font-medium mb-1">销售物流</h3>
+                            <p class="text-xs text-center text-secondary">运输、配送、订单跟踪管理</p>
+                            <div class="loading-spinner"></div>
+                        </a>
+                        
+                        <!-- 追溯查询模块 -->
+                        <a href="../trace/trace-query.html" class="module-card p-4" id="traceModule" role="button" aria-label="追溯查询模块">
+                            <div class="module-icon bg-icon-bg-purple mb-3 mx-auto">
+                                <i class="fas fa-search text-purple-color text-xl"></i>
+                            </div>
+                            <h3 class="text-center font-medium mb-1">追溯查询</h3>
+                            <p class="text-xs text-center text-secondary">产品全链路溯源和质量追踪</p>
+                            <div class="loading-spinner"></div>
+                        </a>
+                    </div>
+                    
+                    <!-- 管理员专用模块 -->
+                    <div class="border-t border-gray-100 pt-4" id="adminModuleSection">
+                        <h3 class="text-md font-medium mb-3 flex items-center">
+                            <i class="fas fa-shield-alt text-primary-color mr-2"></i>
+                            管理员功能
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <a href="../admin/admin-users.html" class="module-card p-4" id="userManageModule" role="button" aria-label="用户管理模块">
+                                <div class="module-icon bg-icon-bg-primary mb-3 mx-auto">
+                                    <i class="fas fa-users-cog text-primary-color text-xl"></i>
+                                </div>
+                                <h3 class="text-center font-medium mb-1">用户管理</h3>
+                                <p class="text-xs text-center text-secondary">账号、权限配置</p>
+                                <div class="loading-spinner"></div>
+                            </a>
+                            
+                            <a href="../admin/admin-system.html" class="module-card p-4" id="systemConfigModule" role="button" aria-label="系统配置模块">
+                                <!-- 页面已开发：admin-system.html -->
+                                <div class="module-icon bg-icon-bg-error mb-3 mx-auto">
+                                    <i class="fas fa-cogs text-error text-xl"></i>
+                                </div>
+                                <h3 class="text-center font-medium mb-1">系统配置</h3>
+                                <p class="text-xs text-center text-secondary">设置、备份、维护</p>
+                                <div class="loading-spinner"></div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="bottom-nav">
+            <ul class="nav-items">
+                <li class="nav-item active">
+                    <img src="../../assets/icons/home-blue.svg" alt="首页">
+                    <span>首页</span>
+                </li>
+                <li class="nav-item">
+                    <a href="home-farming.html">
+                        <img src="../../assets/icons/record-gray.svg" alt="信息管理">
+                        <span>信息管理</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="../profile/profile.html">
+                        <img src="../../assets/icons/user-gray.svg" alt="我的">
+                        <span>我的</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 通用JS脚本 -->
+    <script src="../../components/trace-common.js"></script>
+    <script src="../../components/trace-nav.js"></script>
+    
+    <!-- 页面特定脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面
+            initPage();
+            
+            // 调整内容区域的填充，确保不被导航栏遮挡
+            adjustMainPadding();
+            
+            // 监听窗口大小变化，重新调整填充
+            window.addEventListener('resize', adjustMainPadding);
+            
+            // 检查URL中是否有错误消息
+            checkUrlParams();
+            
+            // 新增：添加模块点击事件处理
+            setupModuleCardInteractions();
+        });
+        
+        /**
+         * 初始化页面
+         */
+        function initPage() {
+            // 加载用户数据
+            loadUserData();
+            
+            // 检查模块权限
+            checkModulePermissions();
+        }
+        
+        /**
+         * 动态调整主内容区域的填充，确保在所有设备下内容不被导航栏遮挡
+         */
+        function adjustMainPadding() {
+            const mainElement = document.querySelector('.content-container');
+            if (!mainElement) return;
+            
+            // 获取CSS变量值或使用默认值
+            const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 64;
+            const bottomTabHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bottom-tab-height')) || 60;
+            
+            // 计算合适的填充值（顶部导航高度 + 安全间距）
+            const topPadding = navHeight + 16;
+            const bottomPadding = bottomTabHeight + 20; // 添加额外安全间距
+            
+            // 应用填充值
+            mainElement.style.paddingTop = `${topPadding}px`;
+            mainElement.style.paddingBottom = `${bottomPadding}px`;
+        }
+        
+        /**
+         * 加载用户数据
+         */
+        function loadUserData() {
+            // 模拟用户数据
+            const userData = {
+                name: '张三',
+                role: '系统管理员',
+                permissionLevel: '高级权限',
+                permissions: ['admin', 'farming.all', 'farming.view', 'processing.all', 'processing.view', 'logistics.all', 'logistics.view', 'trace.all', 'trace.view', 'admin.users', 'admin.system']
+            };
+            
+            // 更新用户信息
+            document.getElementById('userName').textContent = userData.name;
+            document.getElementById('userRole').textContent = userData.role;
+            document.getElementById('permissionLevel').textContent = userData.permissionLevel;
+            
+            // 模拟系统状态数据
+            document.getElementById('todayRecords').textContent = Math.floor(Math.random() * 20) + 20; // 20-40范围的随机数
+            document.getElementById('pendingTasks').textContent = Math.floor(Math.random() * 10) + 5; // 5-15范围的随机数
+            document.getElementById('activeUsers').textContent = Math.floor(Math.random() * 10) + 15; // 15-25范围的随机数
+            
+            // 模拟权限存储
+            if (!traceAuth.isAuthenticated()) {
+                traceAuth.login({
+                    id: '001',
+                    name: userData.name,
+                    role: userData.role,
+                    permissions: userData.permissions
+                });
+            }
+        }
+        
+        /**
+         * 检查模块访问权限
+         */
+        function checkModulePermissions() {
+            const modules = [
+                { id: 'farmingModule', permission: 'farming.view' },
+                { id: 'processingModule', permission: 'processing.view' },
+                { id: 'logisticsModule', permission: 'logistics.view' },
+                { id: 'traceModule', permission: 'trace.view' },
+                { id: 'userManageModule', permission: 'admin.users' },
+                { id: 'systemConfigModule', permission: 'admin.system' }
+            ];
+            
+            // 获取当前用户角色
+            const userRole = document.getElementById('userRole').textContent;
+            
+            // 如果是系统管理员，拥有所有权限，不做额外处理
+            if (userRole === '系统管理员') {
+                return; // 系统管理员拥有全部权限，不需要禁用任何模块
+            }
+            
+            // 为其他角色根据权限限制模块
+            modules.forEach(module => {
+                const moduleElement = document.getElementById(module.id);
+                
+                // 针对不同角色设置权限限制
+                let hasPermission = false;
+                
+                if (userRole === '养殖管理员' && module.id === 'farmingModule') {
+                    hasPermission = true;
+                } else if (userRole === '生产管理员' && module.id === 'processingModule') {
+                    hasPermission = true;
+                } else if (userRole === '物流管理员' && module.id === 'logisticsModule') {
+                    hasPermission = true;
+                } else if (userRole !== '养殖管理员' && userRole !== '生产管理员' && userRole !== '物流管理员') {
+                    // 其他角色根据traceAuth权限系统判断
+                    hasPermission = traceAuth.hasPermission(module.permission);
+                }
+                
+                if (moduleElement && !hasPermission) {
+                    moduleElement.classList.add('disabled');
+                    moduleElement.setAttribute('aria-disabled', 'true');
+                    moduleElement.setAttribute('tabindex', '-1');
+                    
+                    // 添加锁图标
+                    const lockIcon = document.createElement('i');
+                    lockIcon.className = 'fas fa-lock absolute top-3 right-3 text-sm text-gray-400 z-10';
+                    moduleElement.style.position = 'relative';
+                    moduleElement.appendChild(lockIcon);
+                    
+                    // 阻止点击事件
+                    moduleElement.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        // 新增：显示更详细的权限提示
+                        showPermissionDialog(moduleElement.querySelector('h3').textContent);
+                    });
+                }
+            });
+            
+            // 隐藏管理员模块（如果不是系统管理员）
+            if (userRole !== '系统管理员') {
+                const adminSection = document.getElementById('adminModuleSection');
+                if (adminSection) {
+                    adminSection.classList.add('hidden');
+                }
+            }
+        }
+        
+        /**
+         * 新增：设置模块卡片交互行为
+         */
+        function setupModuleCardInteractions() {
+            // 获取所有模块卡片
+            const moduleCards = document.querySelectorAll('.module-card:not(.disabled)');
+            
+            // 为每个卡片添加点击事件
+            moduleCards.forEach(card => {
+                card.addEventListener('click', function(e) {
+                    e.preventDefault(); // 阻止默认行为
+                    
+                    // 获取目标页面URL
+                    const targetUrl = this.getAttribute('href');
+                    if (!targetUrl) return;
+                    
+                    // 添加加载状态
+                    this.classList.add('loading');
+                    
+                    // 等待200-500ms后跳转，模拟加载过程
+                    setTimeout(() => {
+                        // 如果URL包含hash，则使用滚动过渡
+                        if (targetUrl.includes('#')) {
+                            // 平滑滚动到目标位置
+                            const targetId = targetUrl.split('#')[1];
+                            const targetElement = document.getElementById(targetId);
+                            if (targetElement) {
+                                targetElement.scrollIntoView({ behavior: 'smooth' });
+                            } else {
+                                window.location.href = targetUrl;
+                            }
+                        } else {
+                            // 淡出效果后跳转
+                            document.body.style.opacity = '0.7';
+                            document.body.style.transition = 'opacity 0.3s ease';
+                            
+                            setTimeout(() => {
+                                window.location.href = targetUrl;
+                            }, 300);
+                        }
+                    }, Math.random() * 300 + 200); // 随机200-500ms延迟，使体验更自然
+                });
+                
+                // 为卡片添加键盘导航支持
+                card.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click(); // 触发点击事件
+                    }
+                });
+                
+                // 设置卡片可聚焦
+                if (!card.hasAttribute('tabindex')) {
+                    card.setAttribute('tabindex', '0');
+                }
+            });
+        }
+        
+        /**
+         * 新增：显示权限提示对话框
+         */
+        function showPermissionDialog(moduleName) {
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50';
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease';
+            
+            // 模态框内容
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-xs w-11/12 transform scale-95 transition-transform duration-300">
+                    <div class="text-center mb-4">
+                        <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-lock text-red-500 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">权限受限</h3>
+                        <p class="text-sm text-gray-500 mt-2">您没有访问 <span class="font-medium text-primary-color">${moduleName}</span> 的权限</p>
+                    </div>
+                    <div class="border-t border-gray-100 pt-4 pb-2">
+                        <p class="text-xs text-gray-500 mb-3">如需获取权限，请联系系统管理员或通过以下方式申请：</p>
+                        <div class="text-xs text-gray-700 bg-gray-50 p-2 rounded">
+                            <span class="font-medium">联系方式：</span>admin@example.com
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-center">
+                        <button class="btn-close px-4 py-2 bg-gray-100 rounded-md text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors">关闭</button>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到body
+            document.body.appendChild(modal);
+            
+            // 触发重绘以应用过渡效果
+            setTimeout(() => {
+                modal.style.opacity = '1';
+                modal.querySelector('div').classList.remove('scale-95');
+                modal.querySelector('div').classList.add('scale-100');
+            }, 10);
+            
+            // 添加关闭事件
+            modal.querySelector('.btn-close').addEventListener('click', function() {
+                modal.style.opacity = '0';
+                modal.querySelector('div').classList.remove('scale-100');
+                modal.querySelector('div').classList.add('scale-95');
+                
+                setTimeout(() => {
+                    document.body.removeChild(modal);
+                }, 300);
+            });
+            
+            // 点击背景关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.querySelector('.btn-close').click();
+                }
+            });
+        }
+        
+        /**
+         * 检查URL参数并显示相应提示
+         */
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorMsg = urlParams.get('error');
+            
+            if (errorMsg) {
+                traceUI.showToast(decodeURIComponent(errorMsg), 'error');
+                
+                // 清除URL参数
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+    </script>
+
+  <!-- 自动按钮升级脚本 (自动注入) -->
+  <script src="/components/autoload-button-upgrade.js"></script>
+  </body>
+</html> 

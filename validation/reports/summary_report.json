@@ -1,0 +1,51 @@
+{
+  "timestamp": "2025-04-03T06:53:18.811Z",
+  "results": {
+    "unit_tests": true,
+    "ui_validation": true,
+    "functionality": true,
+    "html_structure": null,
+    "button_tests": false,
+    "resource_validation": true,
+    "navigation_validation": true
+  },
+  "details": {
+    "unit_tests": {
+      "passed": 0,
+      "failed": 0,
+      "message": "所有单元测试通过"
+    },
+    "ui_validation": {
+      "passed": 0,
+      "failed": 0,
+      "message": "UI元素验证通过"
+    },
+    "functionality": {
+      "passed": 0,
+      "failed": 0,
+      "message": "功能测试通过"
+    },
+    "html_structure": {
+      "passed": 0,
+      "failed": 0,
+      "message": ""
+    },
+    "button_tests": {
+      "message": "按钮测试执行出错: Unexpected token '开', \"开始按钮测试...\n\"... is not valid JSON"
+    },
+    "resource_validation": {
+      "message": "资源加载验证通过"
+    },
+    "navigation_validation": {
+      "message": "页面导航验证通过"
+    }
+  },
+  "duration": {
+    "total": "7.09",
+    "unit_tests": "4.16",
+    "ui_validation": "0.57",
+    "functionality": "0.59",
+    "button_tests": "0.58"
+  },
+  "overall_status": "失败"
+}

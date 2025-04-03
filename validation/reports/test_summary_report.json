@@ -1,0 +1,45 @@
+{
+  "startTime": "2025-04-03T00:55:34.712Z",
+  "endTime": "2025-04-03T00:56:13.552Z",
+  "totalDuration": "38.84秒",
+  "tests": {
+    "资源加载验证": {
+      "script": "check-resource.js",
+      "exitCode": 0,
+      "startTime": "2025-04-03T00:55:34.730Z",
+      "endTime": "2025-04-03T00:55:38.377Z",
+      "duration": "3.65秒",
+      "status": "通过"
+    },
+    "UI元素验证": {
+      "script": "check-ui.js",
+      "exitCode": 0,
+      "startTime": "2025-04-03T00:55:38.378Z",
+      "endTime": "2025-04-03T00:55:43.167Z",
+      "duration": "4.79秒",
+      "status": "通过"
+    },
+    "页面导航验证": {
+      "script": "check-page-transitions.js",
+      "exitCode": 0,
+      "startTime": "2025-04-03T00:55:43.167Z",
+      "endTime": "2025-04-03T00:56:04.053Z",
+      "duration": "20.89秒",
+      "status": "通过"
+    },
+    "功能测试": {
+      "script": "check-functionality.js",
+      "exitCode": 0,
+      "startTime": "2025-04-03T00:56:04.054Z",
+      "endTime": "2025-04-03T00:56:13.551Z",
+      "duration": "9.50秒",
+      "status": "通过"
+    }
+  },
+  "summary": {
+    "total": 4,
+    "completed": 4,
+    "failed": 0,
+    "passed": 4
+  }
+}

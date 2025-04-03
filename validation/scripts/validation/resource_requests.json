@@ -1,0 +1,1058 @@
+[
+  {
+    "url": "http://localhost:8888/",
+    "resourceType": "document"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/css/trace-components.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-ui.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-nav.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/pages/auth/login.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/home/home-selector.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/home/home-farming.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/farming/create-trace.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/farming/farming-vaccine.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/farming/farming-breeding.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/farming/farming-monitor.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/home/home-processing.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/trace/trace-edit.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/processing-reports.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/processing-quality.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/processing-photos.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/home/home-logistics.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/trace/trace-map.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/trace/trace-list.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/trace/trace-detail.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/trace/trace-certificate.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/profile/settings.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/profile/profile.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/template.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/profile/help-center.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/admin-dashboard.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/data-import.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/user-management.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/system-logs.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-form-validation.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-ux.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-store.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-nav.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/info-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/farming/assets/images/monitor-placeholder.jpg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/farming/assets/images/monitor-thumb1.jpg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/farming/assets/images/monitor-thumb2.jpg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/farming/assets/images/monitor-thumb3.jpg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/farming/assets/images/monitor-thumb4.jpg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/info-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-nav.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/processing/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-nav.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://img.freepik.com/free-vector/simple-world-map-vector-illustration_53876-136880.jpg",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://images.unsplash.com/photo-1602470520998-f4a52199a3d6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-ux.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-a11y.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://images.unsplash.com/photo-1602470520998-f4a52199a3d6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://via.placeholder.com/200x50?text=Food+Trace+Logo",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://example.com/trace/WG25031701",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-store.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-ux.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-a11y.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-store.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-ux.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-a11y.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-nav.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/static/js/debug-loader.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-store.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-data-import.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-regular-400.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-regular-400.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "http://localhost:8888/static/js/debug.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-store.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/components/trace-store.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/components/trace-data-import.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/components/trace-store.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/pages/admin/components/trace-store.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "http://localhost:8888/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/home.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/record.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8888/assets/icons/user.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-regular-400.woff2",
+    "resourceType": "font"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
+  }
+]
