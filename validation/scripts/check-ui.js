@@ -3,9 +3,9 @@ const fs = require('fs');
 const path = require('path');
 
 const config = {
-  baseUrl: 'http://localhost:8080/',
-  screenshotsDir: path.join(__dirname, '../reports/screenshots'),
-  reportPath: path.join(__dirname, '../reports/ui_report.json')
+  baseUrl: 'http://localhost:8080',
+  screenshotsDir: path.join(__dirname, '../reports/screenshots/check-ui'),
+  reportPath: path.join(__dirname, '../reports/check-ui_report.json')
 };
 
 // 确保目录存在
@@ -61,36 +61,28 @@ async function run() {
       }
     }
     
-    // 截取页面截图
+    // 保存UI验证报告
+    fs.writeFileSync(
+      config.reportPath,
+      JSON.stringify(uiReport, null, 2)
+    );
+    
+    // 截取修复后的页面截图
     await page.screenshot({ 
-      path: path.join(config.screenshotsDir, 'ui_validation.png'),
-      fullPage: true 
+      path: path.join(config.screenshotsDir, 'fixed_homepage.png'),
+      fullPage: true
     });
     
-    // 生成验证报告
-    const report = {
-      timestamp: new Date().toISOString(),
-      elements: uiReport,
-      status: 'success'
-    };
-    
-    fs.writeFileSync(config.reportPath, JSON.stringify(report, null, 2));
-    
     console.log('UI元素验证完成');
-    return report;
+    return uiReport;
     
   } catch (error) {
-    console.error('UI元素验证出错:', error);
-    
-    const errorReport = {
+    console.error('UI验证过程中出错:', error);
+    return {
       timestamp: new Date().toISOString(),
       error: error.message,
       status: 'failed'
     };
-    
-    fs.writeFileSync(config.reportPath, JSON.stringify(errorReport, null, 2));
-    
-    return errorReport;
   } finally {
     await browser.close();
   }
