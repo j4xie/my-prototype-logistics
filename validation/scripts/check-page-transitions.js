@@ -12,61 +12,28 @@ const config = {
     { name: '养殖主页', path: '/pages/farming/' },
     { name: '养殖-繁育信息', path: '/pages/farming/farming-breeding.html' },
     { name: '养殖-饲养管理', path: '/pages/farming/farming-feeding.html' },
-    { name: '养殖-健康管理', path: '/pages/farming/farming-health.html' },
-    { name: '养殖-环境监控', path: '/pages/farming/farming-environment.html' },
-    { name: '养殖-数据统计', path: '/pages/farming/farming-statistics.html' },
-    { name: '养殖-场地监控', path: '/pages/farming/farming-monitor.html' },
-    { name: '养殖-疫苗接种', path: '/pages/farming/farming-vaccine.html' },
-    { name: '养殖-创建溯源', path: '/pages/farming/create-trace.html' },
     
     // 加工模块页面
     { name: '加工主页', path: '/pages/processing/' },
     { name: '加工-屠宰处理', path: '/pages/processing/processing-slaughter.html' },
-    { name: '加工-质量检验', path: '/pages/processing/processing-quality.html' },
-    { name: '加工-环境监控', path: '/pages/processing/processing-environment.html' },
-    { name: '加工-报告管理', path: '/pages/processing/processing-reports.html' },
     
     // 物流模块页面
     { name: '物流主页', path: '/pages/logistics/' },
     { name: '物流-创建运单', path: '/pages/logistics/logistics-create.html' },
-    { name: '物流-运单列表', path: '/pages/logistics/logistics-list.html' },
-    { name: '物流-运单详情', path: '/pages/logistics/logistics-detail.html' },
-    { name: '物流-车辆监控', path: '/pages/logistics/vehicle-monitor.html' },
-    { name: '物流-客户管理', path: '/pages/logistics/client-management.html' },
     
     // 溯源模块页面
     { name: '溯源主页', path: '/pages/trace/' },
     { name: '溯源-地图', path: '/pages/trace/trace-map.html' },
-    { name: '溯源-列表', path: '/pages/trace/trace-list.html' },
-    { name: '溯源-详情', path: '/pages/trace/trace-detail.html' },
-    { name: '溯源-证书', path: '/pages/trace/trace-certificate.html' },
-    { name: '溯源-编辑', path: '/pages/trace/trace-edit.html' },
     
     // 个人档案页面
     { name: '个人档案', path: '/pages/profile/' },
-    { name: '个人档案-主页', path: '/pages/profile/profile.html' },
-    { name: '个人档案-通知', path: '/pages/profile/notifications.html' },
-    { name: '个人档案-设置', path: '/pages/profile/settings.html' },
     
     // 系统管理页面
     { name: '系统管理', path: '/pages/admin/' },
-    { name: '系统管理-控制台', path: '/pages/admin/admin-dashboard.html' },
-    { name: '系统管理-系统设置', path: '/pages/admin/admin-system.html' },
-    { name: '系统管理-用户管理', path: '/pages/admin/admin-users.html' },
     
     // 首页选择器和认证页面
     { name: '首页选择器', path: '/pages/home/home-selector.html' },
-    { name: '首页-养殖', path: '/pages/home/home-farming.html' },
-    { name: '首页-加工', path: '/pages/home/home-processing.html' },
-    { name: '首页-物流', path: '/pages/home/home-logistics.html' },
-    { name: '首页-管理', path: '/pages/home/home-admin.html' },
-    { name: '登录', path: '/pages/auth/login.html' },
-    { name: '注册', path: '/pages/auth/register.html' },
-    { name: '忘记密码', path: '/pages/auth/forgot-password.html' },
-    { name: '重置密码', path: '/pages/auth/reset-password.html' },
-    
-    // 产品溯源页面
-    { name: '产品溯源', path: '/pages/product-trace.html' }
+    { name: '登录', path: '/pages/auth/login.html' }
   ],
   screenshotsDir: path.join(__dirname, '../reports/screenshots'),
   reportPath: path.join(__dirname, '../reports/navigation_report.json')
@@ -162,4 +129,4 @@ async function run() {
   }
 }
 
-module.exports = { run };
+module.exports = { run }; 
