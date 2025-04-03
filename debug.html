@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>调试测试页面</title>
+    <script>
+        console.log('页面加载完成');
+        console.error('测试错误消息');
+        fetch('/api/test').catch(err => console.error('API测试错误:', err));
+    </script>
+</head>
+<body>
+    <h1>调试测试页面</h1>
+    <p>请打开开发者工具查看控制台输出</p>
+</body>
+</html> 

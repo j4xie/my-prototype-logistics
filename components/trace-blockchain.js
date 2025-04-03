@@ -1,625 +1,886 @@
 /**
- * 食品溯源系统 - 区块链验证组件
- * 提供数据上链、验证和可视化功能
+ * @module traceBlockchain
+ * @description 食品溯源系统 - 区块链溯源组件
+ * @version 1.0.0
+ * @author 食品溯源系统开发团队
  */
 
-// UPDATED CODE: 使用ES模块方式导出，移除自执行函数
-// 配置
-const config = {
-    chainName: '食品溯源链',
-    algorithm: 'SHA-256', // 哈希算法
-    difficulty: 4, // 工作量证明难度（前导0的个数）
-    blockTime: 5000, // 模拟出块时间（毫秒）
-    enabled: true // 是否启用区块链功能
+// 区块链配置
+const blockchainConfig = {
+  enabled: true,
+  provider: 'ethereum', // 区块链提供商: ethereum, hyperledger, custom
+  networkUrl: '', // 区块链网络地址，用于以太坊等公链
+  contractAddress: '', // 智能合约地址
+  apiKey: '', // API密钥（如适用）
+  gasLimit: 3000000, // 燃料限制（仅以太坊）
+  retryAttempts: 3, // 重试次数
+  timeout: 30000, // 超时时间（毫秒）
+  cacheEnabled: true, // 是否启用缓存
+  cacheExpiry: 3600 // 缓存过期时间（秒）
 };
 
-// 简化的区块结构
-class Block {
-    constructor(index, timestamp, data, previousHash = '') {
-        this.index = index;
-        this.timestamp = timestamp;
-        this.data = data;
-        this.previousHash = previousHash;
-        this.hash = this.calculateHash();
-        this.nonce = 0;
-    }
-    
-    // 计算区块哈希
-    calculateHash() {
-        // 在实际应用中应使用真正的加密库如crypto-js
-        return hashData(
-            this.index + 
-            this.timestamp + 
-            JSON.stringify(this.data) + 
-            this.previousHash + 
-            this.nonce
-        );
-    }
-    
-    // 工作量证明
-    mineBlock(difficulty) {
-        const target = Array(difficulty + 1).join('0');
-        
-        while (this.hash.substring(0, difficulty) !== target) {
-            this.nonce++;
-            this.hash = this.calculateHash();
-        }
-        
-        console.log(`区块 #${this.index} 已挖掘: ${this.hash}`);
-    }
-}
+// 区块链记录缓存
+const recordsCache = {};
 
-// 简化的区块链
-class Blockchain {
-    constructor() {
-        this.chain = [this.createGenesisBlock()];
-        this.difficulty = config.difficulty;
-        this.pendingTransactions = [];
-    }
-    
-    // 创建创世区块
-    createGenesisBlock() {
-        return new Block(0, Date.now(), { 
-            message: "创世区块", 
-            system: "食品溯源系统", 
-            version: "1.0.0" 
-        }, "0");
-    }
-    
-    // 获取最新区块
-    getLatestBlock() {
-        return this.chain[this.chain.length - 1];
-    }
-    
-    // 添加新交易到待处理队列
-    addTransaction(transaction) {
-        // 验证交易结构
-        if (!transaction.traceId || !transaction.data) {
-            throw new Error('交易缺少必要字段');
-        }
-        
-        // 添加交易到待处理队列
-        this.pendingTransactions.push({
-            ...transaction,
-            timestamp: Date.now(),
-            status: 'pending'
-        });
-        
-        return this.pendingTransactions.length - 1;
-    }
-    
-    // 挖掘待处理交易（创建新区块）
-    minePendingTransactions() {
-        if (this.pendingTransactions.length === 0) {
-            console.log('没有待处理交易，跳过挖矿');
-            return null;
-        }
-        
-        // 创建新区块
-        const block = new Block(
-            this.chain.length,
-            Date.now(),
-            this.pendingTransactions,
-            this.getLatestBlock().hash
-        );
-        
-        // 挖矿（工作量证明）
-        block.mineBlock(this.difficulty);
-        
-        // 将新区块添加到链上
-        this.chain.push(block);
-        
-        // 清空待处理交易并返回新区块
-        const processedTransactions = [...this.pendingTransactions];
-        this.pendingTransactions = [];
-        
-        return {
-            block,
-            transactions: processedTransactions
-        };
-    }
-    
-    // 验证链的完整性
-    isChainValid() {
-        for (let i = 1; i < this.chain.length; i++) {
-            const currentBlock = this.chain[i];
-            const previousBlock = this.chain[i - 1];
-            
-            // 验证当前区块的哈希是否正确
-            if (currentBlock.hash !== currentBlock.calculateHash()) {
-                console.log(`区块 #${currentBlock.index} 哈希无效`);
-                return false;
-            }
-            
-            // 验证当前区块的previousHash是否指向前一个区块的哈希
-            if (currentBlock.previousHash !== previousBlock.hash) {
-                console.log(`区块 #${currentBlock.index} 与前一个区块的链接无效`);
-                return false;
-            }
-        }
-        
-        return true;
-    }
-    
-    // 查找溯源记录的所有交易
-    findTraceTransactions(traceId) {
-        const transactions = [];
-        
-        // 搜索所有区块
-        for (const block of this.chain) {
-            if (Array.isArray(block.data)) {
-                // 找到该traceId的所有交易
-                const found = block.data.filter(tx => tx.traceId === traceId);
-                if (found.length > 0) {
-                    transactions.push(...found.map(tx => ({
-                        ...tx,
-                        blockIndex: block.index,
-                        blockHash: block.hash,
-                        verified: true
-                    })));
-                }
-            }
-        }
-        
-        // 搜索待处理交易
-        const pendingTx = this.pendingTransactions.filter(tx => tx.traceId === traceId);
-        if (pendingTx.length > 0) {
-            transactions.push(...pendingTx.map(tx => ({
-                ...tx,
-                verified: false,
-                status: 'pending'
-            })));
-        }
-        
-        return transactions;
-    }
-    
-    // 获取溯源记录的验证状态
-    getTraceVerificationStatus(traceId) {
-        const transactions = this.findTraceTransactions(traceId);
-        
-        if (transactions.length === 0) {
-            return {
-                status: 'not_found',
-                message: '未找到该溯源记录的区块链证明',
-                verified: false
-            };
-        }
-        
-        const verifiedTx = transactions.filter(tx => tx.verified);
-        const pendingTx = transactions.filter(tx => !tx.verified);
-        
-        return {
-            status: verifiedTx.length > 0 ? 'verified' : 'pending',
-            message: verifiedTx.length > 0 
-                ? `已上链验证，共有${verifiedTx.length}条记录` 
-                : '正在等待区块确认',
-            verified: verifiedTx.length > 0,
-            verifiedCount: verifiedTx.length,
-            pendingCount: pendingTx.length,
-            latestBlock: verifiedTx.length > 0 
-                ? Math.max(...verifiedTx.map(tx => tx.blockIndex)) 
-                : null,
-            transactions: transactions
-        };
-    }
-}
+// 交易队列
+const transactionQueue = [];
 
-// 本地存储模拟
-const storage = {
-    save: function(key, data) {
-        try {
-            localStorage.setItem(key, JSON.stringify(data));
-            return true;
-        } catch (e) {
-            console.error('区块链数据保存失败:', e);
+// 连接状态
+let connectionStatus = {
+  connected: false,
+  provider: null,
+  network: null,
+  error: null,
+  lastConnectAttempt: null
+};
+
+/**
+ * 区块链溯源模块
+ */
+const traceBlockchain = {
+  /**
+   * 初始化区块链组件
+   * @param {Object} options - 配置选项
+   * @returns {Promise<boolean>} 初始化是否成功
+   */
+  async init(options = {}) {
+    // 合并配置
+    Object.assign(blockchainConfig, options);
+    
+    if (!blockchainConfig.enabled) {
+      console.log('区块链功能已禁用');
+      return false;
+    }
+    
+    // 加载区块链提供商
+    try {
+      await this.loadProvider();
+      return connectionStatus.connected;
+    } catch (error) {
+      console.error('区块链初始化失败:', error);
+      connectionStatus.error = error.message;
+      return false;
+    }
+  },
+  
+  /**
+   * 加载区块链提供商
+   * @returns {Promise<void>}
+   */
+  async loadProvider() {
+    connectionStatus.lastConnectAttempt = Date.now();
+    
+    try {
+      switch (blockchainConfig.provider) {
+        case 'ethereum':
+          await this.loadEthereumProvider();
+          break;
+        case 'hyperledger':
+          await this.loadHyperledgerProvider();
+          break;
+        case 'custom':
+          await this.loadCustomProvider();
+          break;
+        default:
+          throw new Error(`不支持的区块链提供商: ${blockchainConfig.provider}`);
+      }
+      
+      connectionStatus.connected = true;
+      
+    } catch (error) {
+      connectionStatus.connected = false;
+      connectionStatus.error = error.message;
+      throw error;
+    }
+  },
+  
+  /**
+   * 加载以太坊提供商
+   * @returns {Promise<void>}
+   */
+  async loadEthereumProvider() {
+    // 检查是否有Web3或ethers库
+    if (typeof window.Web3 === 'undefined' && typeof window.ethers === 'undefined') {
+      await this.loadScript('https://cdn.ethers.io/lib/ethers-5.0.umd.min.js');
+    }
+    
+    // 优先使用ethers.js
+    if (typeof window.ethers !== 'undefined') {
+      try {
+        let provider;
+        
+        // 使用指定的网络URL
+        if (blockchainConfig.networkUrl) {
+          provider = new ethers.providers.JsonRpcProvider(blockchainConfig.networkUrl);
+        } 
+        // 否则尝试连接MetaMask
+        else if (window.ethereum) {
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          // 请求用户授权
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+        } else {
+          throw new Error('未找到以太坊提供商');
+        }
+        
+        // 获取网络信息
+        const network = await provider.getNetwork();
+        
+        // 保存提供商和网络信息
+        connectionStatus.provider = provider;
+        connectionStatus.network = {
+          name: network.name,
+          chainId: network.chainId
+        };
+        
+        // 如果有合约地址，创建合约实例
+        if (blockchainConfig.contractAddress) {
+          // 食品溯源智能合约ABI
+          const foodTraceABI = [
+            "function registerProduct(string productId, string metadata) public returns (bool)",
+            "function addTraceRecord(string productId, string recordType, string metadata) public returns (bool)",
+            "function getProduct(string productId) public view returns (string)",
+            "function getTraceHistory(string productId) public view returns (string[])",
+            "function verifyProduct(string productId, string metadata) public view returns (bool)"
+          ];
+          
+          // 创建合约实例
+          this.contract = new ethers.Contract(
+            blockchainConfig.contractAddress,
+            foodTraceABI,
+            provider.getSigner()
+          );
+        }
+        
+      } catch (error) {
+        console.error('以太坊提供商加载失败:', error);
+        throw error;
+      }
+    } else if (typeof window.Web3 !== 'undefined') {
+      // Web3回退选项
+      try {
+        let web3;
+        
+        if (window.ethereum) {
+          web3 = new Web3(window.ethereum);
+          await window.ethereum.enable();
+        } else if (window.web3) {
+          web3 = new Web3(window.web3.currentProvider);
+        } else if (blockchainConfig.networkUrl) {
+          web3 = new Web3(new Web3.providers.HttpProvider(blockchainConfig.networkUrl));
+        } else {
+          throw new Error('未找到Web3提供商');
+        }
+        
+        // 保存提供商信息
+        connectionStatus.provider = web3;
+        connectionStatus.network = {
+          name: await web3.eth.net.getNetworkType(),
+          chainId: await web3.eth.getChainId()
+        };
+        
+        // 如果有合约地址，创建合约实例
+        if (blockchainConfig.contractAddress) {
+          // 简化的ABI
+          const abi = [/* 合约ABI */];
+          this.contract = new web3.eth.Contract(abi, blockchainConfig.contractAddress);
+        }
+        
+      } catch (error) {
+        console.error('Web3提供商加载失败:', error);
+        throw error;
+      }
+    } else {
+      throw new Error('缺少以太坊库支持');
+    }
+  },
+  
+  /**
+   * 加载Hyperledger Fabric提供商
+   * @returns {Promise<void>}
+   */
+  async loadHyperledgerProvider() {
+    // Hyperledger Fabric通常通过REST API与后端通信
+    // 这里实现一个简单的HTTP客户端来与Fabric网关通信
+    connectionStatus.provider = {
+      type: 'hyperledger',
+      baseUrl: blockchainConfig.networkUrl || '/api/blockchain',
+      
+      async request(endpoint, method = 'GET', data = null) {
+        const url = this.baseUrl + endpoint;
+        const options = {
+          method,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        };
+        
+        if (blockchainConfig.apiKey) {
+          options.headers['X-API-Key'] = blockchainConfig.apiKey;
+        }
+        
+        if (data) {
+          options.body = JSON.stringify(data);
+        }
+        
+        const response = await fetch(url, options);
+        
+        if (!response.ok) {
+          throw new Error(`Hyperledger请求失败: ${response.status} ${response.statusText}`);
+        }
+        
+        return response.json();
+      }
+    };
+    
+    // 测试连接
+    try {
+      const status = await connectionStatus.provider.request('/status');
+      connectionStatus.network = {
+        name: status.network || 'hyperledger',
+        version: status.version,
+        peers: status.peers
+      };
+    } catch (error) {
+      console.error('Hyperledger连接测试失败:', error);
+      throw new Error('无法连接到Hyperledger网络');
+    }
+  },
+  
+  /**
+   * 加载自定义区块链提供商
+   * @returns {Promise<void>}
+   */
+  async loadCustomProvider() {
+    // 自定义区块链实现，可以根据项目需求定制
+    if (!blockchainConfig.networkUrl) {
+      throw new Error('自定义区块链需要指定networkUrl');
+    }
+    
+    // 简单的HTTP客户端
+    connectionStatus.provider = {
+      type: 'custom',
+      baseUrl: blockchainConfig.networkUrl,
+      
+      async request(endpoint, method = 'GET', data = null) {
+        const url = this.baseUrl + endpoint;
+        const options = {
+          method,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        };
+        
+        if (blockchainConfig.apiKey) {
+          options.headers['Authorization'] = `Bearer ${blockchainConfig.apiKey}`;
+        }
+        
+        if (data) {
+          options.body = JSON.stringify(data);
+        }
+        
+        const response = await fetch(url, options);
+        
+        if (!response.ok) {
+          throw new Error(`区块链请求失败: ${response.status} ${response.statusText}`);
+        }
+        
+        return response.json();
+      }
+    };
+    
+    // 测试连接
+    try {
+      const status = await connectionStatus.provider.request('/status');
+      connectionStatus.network = status;
+    } catch (error) {
+      console.error('自定义区块链连接测试失败:', error);
+      throw new Error('无法连接到自定义区块链网络');
+    }
+  },
+  
+  /**
+   * 加载外部脚本
+   * @param {string} url - 脚本URL
+   * @returns {Promise<void>}
+   */
+  loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = url;
+      script.async = true;
+      
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`加载脚本失败: ${url}`));
+      
+      document.head.appendChild(script);
+    });
+  },
+  
+  /**
+   * 获取连接状态
+   * @returns {Object} 连接状态对象
+   */
+  getConnectionStatus() {
+    return { ...connectionStatus };
+  },
+  
+  /**
+   * 重新连接区块链
+   * @returns {Promise<boolean>} 是否重连成功
+   */
+  async reconnect() {
+    try {
+      await this.loadProvider();
+      return connectionStatus.connected;
+    } catch (error) {
+      console.error('区块链重连失败:', error);
             return false;
         }
     },
-    load: function(key) {
-        try {
-            const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : null;
-        } catch (e) {
-            console.error('区块链数据加载失败:', e);
-            return null;
-        }
-    }
-};
-
-// 简化的哈希函数（实际应用中使用真正的加密库）
-function hashData(data) {
-    let hash = 0;
-    const str = String(data);
-    
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // 转换为32位整数
+  
+  /**
+   * 注册产品信息到区块链
+   * @param {string} productId - 产品ID
+   * @param {Object} productData - 产品数据
+   * @returns {Promise<Object>} 交易结果
+   */
+  async registerProduct(productId, productData) {
+    if (!connectionStatus.connected) {
+      throw new Error('区块链未连接');
     }
     
-    // 转换为16进制字符串并填充0
-    let hexHash = Math.abs(hash).toString(16).padStart(8, '0');
-    
-    // 扩展哈希长度，模拟SHA-256
-    while (hexHash.length < 64) {
-        hexHash += hashData(hexHash + Math.random()).slice(0, 8);
-    }
-    
-    return hexHash;
-}
-
-// 区块链实例
-let blockchain = null;
-
-// 挖矿定时器
-let miningTimer = null;
-
-// 初始化区块链
-function initBlockchain() {
-    if (!config.enabled) return null;
-    
-    // 尝试从本地存储加载区块链
-    const savedChain = storage.load('trace_blockchain');
-    
-    if (savedChain) {
-        try {
-            blockchain = new Blockchain();
-            blockchain.chain = savedChain.chain;
-            blockchain.pendingTransactions = savedChain.pendingTransactions || [];
-            blockchain.difficulty = savedChain.difficulty || config.difficulty;
-            
-            console.log(`已加载区块链，当前长度: ${blockchain.chain.length} 个区块`);
-        } catch (e) {
-            console.error('区块链数据加载失败，创建新链:', e);
-            blockchain = new Blockchain();
-        }
-    } else {
-        console.log('未找到现有区块链，创建新链');
-        blockchain = new Blockchain();
-    }
-    
-    // 开始定时挖矿
-    startMining();
-    
-    return blockchain;
-}
-
-// 开始定时挖矿
-function startMining() {
-    if (miningTimer) clearInterval(miningTimer);
-    
-    miningTimer = setInterval(() => {
-        if (blockchain.pendingTransactions.length > 0) {
-            console.log(`开始挖矿，处理 ${blockchain.pendingTransactions.length} 个待处理交易...`);
-            
-            const result = blockchain.minePendingTransactions();
-            
-            // 保存区块链到本地存储
-            storage.save('trace_blockchain', {
-                chain: blockchain.chain,
-                pendingTransactions: blockchain.pendingTransactions,
-                difficulty: blockchain.difficulty
-            });
-            
-            console.log(`区块 #${result.block.index} 已添加到链上`);
-            
-            // 如果有UI回调，通知UI更新
-            notifyBlockMined(result);
-        }
-    }, config.blockTime);
-}
-
-// 停止挖矿
-function stopMining() {
-    if (miningTimer) {
-        clearInterval(miningTimer);
-        miningTimer = null;
-    }
-}
-
-// 提交溯源数据到区块链
-function submitTraceData(traceId, data) {
-    if (!config.enabled || !blockchain) return { success: false, error: 'blockchain_disabled' };
+    // 转换产品数据为JSON字符串
+    const metadata = JSON.stringify(productData);
     
     try {
-        // 准备交易数据
-        const transaction = {
-            traceId,
-            data,
-            timestamp: Date.now(),
-            operation: 'create_trace',
-            signature: hashData(JSON.stringify(data) + traceId + Date.now())
-        };
-        
-        // 添加到待处理交易
-        const txIndex = blockchain.addTransaction(transaction);
-        
-        return { 
-            success: true, 
-            message: '溯源数据已提交到区块链，等待确认',
-            transactionIndex: txIndex
-        };
-    } catch (e) {
-        console.error('提交溯源数据到区块链失败:', e);
-        return { success: false, error: e.message };
+      let result;
+      
+      // 根据不同的区块链提供商执行注册
+      switch (blockchainConfig.provider) {
+        case 'ethereum':
+          result = await this.registerProductEthereum(productId, metadata);
+          break;
+        case 'hyperledger':
+        case 'custom':
+          result = await this.registerProductREST(productId, metadata);
+          break;
+        default:
+          throw new Error(`不支持的区块链提供商: ${blockchainConfig.provider}`);
+      }
+      
+      console.log(`产品已注册到区块链: ${productId}`, result);
+      return result;
+      
+    } catch (error) {
+      console.error(`产品注册失败: ${productId}`, error);
+      throw error;
     }
-}
-
-// 更新溯源数据
-function updateTraceData(traceId, data, operation = 'update_trace') {
-    if (!config.enabled || !blockchain) return { success: false, error: 'blockchain_disabled' };
-    
-    try {
-        // 准备交易数据
-        const transaction = {
-            traceId,
-            data,
-            timestamp: Date.now(),
-            operation,
-            signature: hashData(JSON.stringify(data) + traceId + operation + Date.now())
-        };
-        
-        // 添加到待处理交易
-        const txIndex = blockchain.addTransaction(transaction);
-        
-        return { 
-            success: true, 
-            message: '溯源数据更新已提交到区块链，等待确认',
-            transactionIndex: txIndex
-        };
-    } catch (e) {
-        console.error('更新溯源数据失败:', e);
-        return { success: false, error: e.message };
-    }
-}
-
-// 验证溯源记录
-function verifyTrace(traceId) {
-    if (!config.enabled || !blockchain) {
-        return { 
-            verified: false, 
-            status: 'blockchain_disabled',
-            message: '区块链功能未启用'
-        };
+  },
+  
+  /**
+   * 在以太坊上注册产品
+   * @param {string} productId - 产品ID
+   * @param {string} metadata - 产品元数据JSON字符串
+   * @returns {Promise<Object>} 交易结果
+   */
+  async registerProductEthereum(productId, metadata) {
+    if (!this.contract) {
+      throw new Error('未初始化智能合约');
     }
     
-    return blockchain.getTraceVerificationStatus(traceId);
-}
-
-// 获取溯源记录的区块链证明
-function getTraceProof(traceId) {
-    if (!config.enabled || !blockchain) {
-        return { 
-            success: false, 
-            error: 'blockchain_disabled'
-        };
-    }
-    
-    const transactions = blockchain.findTraceTransactions(traceId);
-    
-    if (transactions.length === 0) {
-        return {
-            success: false,
-            error: 'trace_not_found',
-            message: '未找到该溯源记录的区块链证明'
-        };
-    }
-    
-    // 构建区块链证明数据
-    const verifiedTx = transactions.filter(tx => tx.verified);
-    const blockIndexes = [...new Set(verifiedTx.map(tx => tx.blockIndex))];
-    
-    // 获取相关区块
-    const blocks = blockIndexes.map(index => blockchain.chain[index]);
-    
-    return {
-        success: true,
-        trace: {
-            id: traceId,
-            transactionCount: transactions.length,
-            verifiedCount: verifiedTx.length,
-            pendingCount: transactions.length - verifiedTx.length,
-            firstVerified: verifiedTx.length > 0 ? new Date(verifiedTx[0].timestamp).toISOString() : null,
-            lastVerified: verifiedTx.length > 0 ? new Date(verifiedTx[verifiedTx.length - 1].timestamp).toISOString() : null
-        },
-        blocks: blocks.map(block => ({
-            index: block.index,
-            timestamp: block.timestamp,
-            hash: block.hash,
-            previousHash: block.previousHash,
-            transactionCount: Array.isArray(block.data) ? block.data.length : 0
-        })),
-        chainInfo: {
-            name: config.chainName,
-            length: blockchain.chain.length,
-            algorithm: config.algorithm,
-            isValid: blockchain.isChainValid()
-        }
-    };
-}
-
-// 创建区块链验证标记UI
-function createVerificationBadge(traceId, targetElement) {
-    if (!targetElement || !config.enabled) return null;
-    
-    const verificationStatus = verifyTrace(traceId);
-    const badgeElement = document.createElement('div');
-    
-    if (verificationStatus.verified) {
-        badgeElement.className = 'blockchain-verified';
-        badgeElement.innerHTML = `
-            <i class="fas fa-shield-alt"></i>
-            <span>区块链验证</span>
-        `;
-        badgeElement.title = `此溯源记录已上链确认: ${verificationStatus.message}`;
-    } else {
-        badgeElement.className = 'blockchain-pending';
-        badgeElement.innerHTML = `
-            <i class="fas fa-clock"></i>
-            <span>待上链确认</span>
-        `;
-        badgeElement.title = `此溯源记录待上链确认: ${verificationStatus.message}`;
-    }
-    
-    // 添加点击事件显示详情
-    badgeElement.addEventListener('click', function(e) {
-        e.preventDefault();
-        showVerificationDetails(traceId);
+    const tx = await this.contract.registerProduct(productId, metadata, {
+      gasLimit: blockchainConfig.gasLimit
     });
     
-    // 添加到目标元素
-    targetElement.appendChild(badgeElement);
+    // 等待交易确认
+    const receipt = await tx.wait();
     
-    return badgeElement;
-}
-
-// 显示验证详情
-function showVerificationDetails(traceId) {
-    const proof = getTraceProof(traceId);
+    return {
+      success: true,
+      transactionHash: receipt.transactionHash,
+      blockNumber: receipt.blockNumber,
+      timestamp: Date.now()
+    };
+  },
+  
+  /**
+   * 通过REST API注册产品
+   * @param {string} productId - 产品ID
+   * @param {string} metadata - 产品元数据JSON字符串
+   * @returns {Promise<Object>} 交易结果
+   */
+  async registerProductREST(productId, metadata) {
+    const provider = connectionStatus.provider;
     
-    if (!proof.success) {
-        alert(`无法获取验证详情: ${proof.message || proof.error}`);
+    const response = await provider.request('/products', 'POST', {
+      productId,
+      metadata
+    });
+    
+    return response;
+  },
+  
+  /**
+   * 添加追溯记录
+   * @param {string} productId - 产品ID
+   * @param {string} recordType - 记录类型（如"生产"、"加工"、"运输"、"销售"等）
+   * @param {Object} recordData - 记录数据
+   * @returns {Promise<Object>} 交易结果
+   */
+  async addTraceRecord(productId, recordType, recordData) {
+    if (!connectionStatus.connected) {
+      throw new Error('区块链未连接');
+    }
+    
+    // 添加时间戳
+    recordData.timestamp = recordData.timestamp || Date.now();
+    
+    // 转换记录数据为JSON字符串
+    const metadata = JSON.stringify(recordData);
+    
+    try {
+      let result;
+      
+      // 根据不同的区块链提供商执行
+      switch (blockchainConfig.provider) {
+        case 'ethereum':
+          result = await this.addTraceRecordEthereum(productId, recordType, metadata);
+          break;
+        case 'hyperledger':
+        case 'custom':
+          result = await this.addTraceRecordREST(productId, recordType, metadata);
+          break;
+        default:
+          throw new Error(`不支持的区块链提供商: ${blockchainConfig.provider}`);
+      }
+      
+      console.log(`已添加追溯记录: ${productId} - ${recordType}`, result);
+      
+      // 清除缓存
+      if (recordsCache[productId]) {
+        delete recordsCache[productId];
+      }
+      
+      return result;
+      
+    } catch (error) {
+      console.error(`添加追溯记录失败: ${productId}`, error);
+      
+      // 如果遇到临时错误，添加到队列中稍后重试
+      if (error.message.includes('网络') || error.message.includes('超时')) {
+        this.queueTransaction({
+          type: 'addTraceRecord',
+          productId,
+          recordType,
+          recordData
+        });
+      }
+      
+      throw error;
+    }
+  },
+  
+  /**
+   * 在以太坊上添加追溯记录
+   * @param {string} productId - 产品ID
+   * @param {string} recordType - 记录类型
+   * @param {string} metadata - 记录元数据JSON字符串
+   * @returns {Promise<Object>} 交易结果
+   */
+  async addTraceRecordEthereum(productId, recordType, metadata) {
+    if (!this.contract) {
+      throw new Error('未初始化智能合约');
+    }
+    
+    const tx = await this.contract.addTraceRecord(productId, recordType, metadata, {
+      gasLimit: blockchainConfig.gasLimit
+    });
+    
+    // 等待交易确认
+    const receipt = await tx.wait();
+        
+        return { 
+            success: true, 
+      transactionHash: receipt.transactionHash,
+      blockNumber: receipt.blockNumber,
+      timestamp: Date.now()
+    };
+  },
+  
+  /**
+   * 通过REST API添加追溯记录
+   * @param {string} productId - 产品ID
+   * @param {string} recordType - 记录类型
+   * @param {string} metadata - 记录元数据JSON字符串
+   * @returns {Promise<Object>} 交易结果
+   */
+  async addTraceRecordREST(productId, recordType, metadata) {
+    const provider = connectionStatus.provider;
+    
+    const response = await provider.request(`/products/${productId}/records`, 'POST', {
+      recordType,
+      metadata
+    });
+    
+    return response;
+  },
+  
+  /**
+   * 获取产品追溯历史
+   * @param {string} productId - 产品ID
+   * @param {boolean} [useCache=true] - 是否使用缓存
+   * @returns {Promise<Array>} 追溯记录数组
+   */
+  async getTraceHistory(productId, useCache = true) {
+    if (!connectionStatus.connected) {
+      throw new Error('区块链未连接');
+    }
+    
+    // 检查缓存
+    if (useCache && blockchainConfig.cacheEnabled && recordsCache[productId]) {
+      const cacheEntry = recordsCache[productId];
+      
+      // 检查缓存是否过期
+      if (Date.now() - cacheEntry.timestamp < blockchainConfig.cacheExpiry * 1000) {
+        return cacheEntry.data;
+      }
+    }
+    
+    try {
+      let history;
+      
+      // 根据不同的区块链提供商执行查询
+      switch (blockchainConfig.provider) {
+        case 'ethereum':
+          history = await this.getTraceHistoryEthereum(productId);
+          break;
+        case 'hyperledger':
+        case 'custom':
+          history = await this.getTraceHistoryREST(productId);
+          break;
+        default:
+          throw new Error(`不支持的区块链提供商: ${blockchainConfig.provider}`);
+      }
+      
+      // 更新缓存
+      if (blockchainConfig.cacheEnabled) {
+        recordsCache[productId] = {
+          data: history,
+          timestamp: Date.now()
+        };
+      }
+      
+      return history;
+      
+    } catch (error) {
+      console.error(`获取追溯历史失败: ${productId}`, error);
+      throw error;
+    }
+  },
+  
+  /**
+   * 从以太坊获取追溯历史
+   * @param {string} productId - 产品ID
+   * @returns {Promise<Array>} 追溯记录数组
+   */
+  async getTraceHistoryEthereum(productId) {
+    if (!this.contract) {
+      throw new Error('未初始化智能合约');
+    }
+    
+    // 获取原始历史数据（字符串数组）
+    const rawHistory = await this.contract.getTraceHistory(productId);
+    
+    // 解析每条记录
+    return rawHistory.map(item => {
+      try {
+        return JSON.parse(item);
+      } catch (e) {
+        return { data: item, parseError: true };
+      }
+    });
+  },
+  
+  /**
+   * 通过REST API获取追溯历史
+   * @param {string} productId - 产品ID
+   * @returns {Promise<Array>} 追溯记录数组
+   */
+  async getTraceHistoryREST(productId) {
+    const provider = connectionStatus.provider;
+    
+    const response = await provider.request(`/products/${productId}/history`, 'GET');
+    
+    return response.history || [];
+  },
+  
+  /**
+   * 验证产品真实性
+   * @param {string} productId - 产品ID
+   * @param {Object} verificationData - 验证数据
+   * @returns {Promise<Object>} 验证结果
+   */
+  async verifyProduct(productId, verificationData) {
+    if (!connectionStatus.connected) {
+      throw new Error('区块链未连接');
+    }
+    
+    try {
+      let result;
+      
+      // 根据不同的区块链提供商执行验证
+      switch (blockchainConfig.provider) {
+        case 'ethereum':
+          result = await this.verifyProductEthereum(productId, verificationData);
+          break;
+        case 'hyperledger':
+        case 'custom':
+          result = await this.verifyProductREST(productId, verificationData);
+          break;
+        default:
+          throw new Error(`不支持的区块链提供商: ${blockchainConfig.provider}`);
+      }
+      
+      return result;
+      
+    } catch (error) {
+      console.error(`产品验证失败: ${productId}`, error);
+      throw error;
+    }
+  },
+  
+  /**
+   * 在以太坊上验证产品
+   * @param {string} productId - 产品ID
+   * @param {Object} verificationData - 验证数据
+   * @returns {Promise<Object>} 验证结果
+   */
+  async verifyProductEthereum(productId, verificationData) {
+    if (!this.contract) {
+      throw new Error('未初始化智能合约');
+    }
+    
+    const metadata = JSON.stringify(verificationData);
+    
+    // 调用智能合约验证方法
+    const isVerified = await this.contract.verifyProduct(productId, metadata);
+    
+    return {
+      verified: isVerified,
+      productId,
+      timestamp: Date.now()
+    };
+  },
+  
+  /**
+   * 通过REST API验证产品
+   * @param {string} productId - 产品ID
+   * @param {Object} verificationData - 验证数据
+   * @returns {Promise<Object>} 验证结果
+   */
+  async verifyProductREST(productId, verificationData) {
+    const provider = connectionStatus.provider;
+    
+    const response = await provider.request(`/products/${productId}/verify`, 'POST', verificationData);
+    
+    return response;
+  },
+  
+  /**
+   * 将交易加入队列（用于失败重试）
+   * @param {Object} transaction - 交易对象
+   */
+  queueTransaction(transaction) {
+    transaction.addedAt = Date.now();
+    transaction.attempts = 0;
+    
+    transactionQueue.push(transaction);
+    
+    // 如果队列中只有一个交易，启动处理
+    if (transactionQueue.length === 1) {
+      this.processTransactionQueue();
+    }
+  },
+  
+  /**
+   * 处理交易队列
+   */
+  async processTransactionQueue() {
+    if (transactionQueue.length === 0) {
+      return;
+    }
+    
+    // 获取队列中的第一个交易
+    const transaction = transactionQueue[0];
+    
+    // 已经尝试次数过多，从队列中移除
+    if (transaction.attempts >= blockchainConfig.retryAttempts) {
+      console.error('交易重试次数过多，放弃执行:', transaction);
+      transactionQueue.shift();
+      
+      // 处理下一个交易
+      this.processTransactionQueue();
+      return;
+    }
+    
+    // 增加尝试次数
+    transaction.attempts++;
+    
+    try {
+      // 根据交易类型执行相应操作
+      switch (transaction.type) {
+        case 'addTraceRecord':
+          await this.addTraceRecord(
+            transaction.productId,
+            transaction.recordType,
+            transaction.recordData
+          );
+          break;
+        case 'registerProduct':
+          await this.registerProduct(
+            transaction.productId,
+            transaction.productData
+          );
+          break;
+        default:
+          console.error('未知的交易类型:', transaction.type);
+      }
+      
+      // 交易成功，从队列中移除
+      transactionQueue.shift();
+      
+    } catch (error) {
+      console.error(`队列交易执行失败 (${transaction.attempts}/${blockchainConfig.retryAttempts}):`, error);
+      
+      // 延迟重试
+      setTimeout(() => {
+        this.processTransactionQueue();
+      }, 5000 * transaction.attempts); // 每次重试间隔增加
+      
         return;
     }
     
-    // 创建模态框显示验证详情
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    modal.innerHTML = `
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 overflow-auto max-h-[90vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900">区块链验证详情</h3>
-                <button type="button" class="text-gray-400 hover:text-gray-500" id="close-verification">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="space-y-4">
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <h4 class="font-medium text-blue-800 mb-2">溯源记录信息</h4>
-                    <div class="grid grid-cols-2 gap-2 text-sm">
-                        <div class="text-gray-600">ID:</div>
-                        <div>${proof.trace.id}</div>
-                        <div class="text-gray-600">交易数量:</div>
-                        <div>${proof.trace.transactionCount}</div>
-                        <div class="text-gray-600">已确认:</div>
-                        <div>${proof.trace.verifiedCount}</div>
-                        <div class="text-gray-600">待确认:</div>
-                        <div>${proof.trace.pendingCount}</div>
-                        <div class="text-gray-600">首次上链时间:</div>
-                        <div>${proof.trace.firstVerified || '尚未上链'}</div>
-                    </div>
-                </div>
-                
-                <div>
-                    <h4 class="font-medium text-gray-800 mb-2">区块信息</h4>
-                    <div class="space-y-2">
-                        ${proof.blocks.map(block => `
-                            <div class="border border-gray-200 rounded-lg p-3">
-                                <div class="flex justify-between mb-2">
-                                    <span class="font-medium">区块 #${block.index}</span>
-                                    <span class="text-xs text-gray-500">${new Date(block.timestamp).toLocaleString()}</span>
-                                </div>
-                                <div class="text-xs font-mono bg-gray-100 p-2 rounded mb-2 overflow-x-auto">
-                                    <div><span class="text-gray-600">Hash:</span> ${block.hash}</div>
-                                    <div><span class="text-gray-600">Previous:</span> ${block.previousHash}</div>
-                                </div>
-                                <div class="text-xs text-gray-600">
-                                    包含 ${block.transactionCount} 条交易
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h4 class="font-medium text-gray-800 mb-2">区块链信息</h4>
-                    <div class="grid grid-cols-2 gap-2 text-sm">
-                        <div class="text-gray-600">名称:</div>
-                        <div>${proof.chainInfo.name}</div>
-                        <div class="text-gray-600">长度:</div>
-                        <div>${proof.chainInfo.length} 个区块</div>
-                        <div class="text-gray-600">算法:</div>
-                        <div>${proof.chainInfo.algorithm}</div>
-                        <div class="text-gray-600">链完整性:</div>
-                        <div>${proof.chainInfo.isValid ? '有效' : '无效'}</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="mt-6 flex justify-end">
-                <button type="button" class="px-4 py-2 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 transition-colors" id="download-proof">
-                    <i class="fas fa-download mr-1"></i> 下载证明
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // 关闭按钮事件
-    const closeButton = document.getElementById('close-verification');
-    closeButton.addEventListener('click', function() {
-        document.body.removeChild(modal);
+    // 处理下一个交易
+    this.processTransactionQueue();
+  },
+  
+  /**
+   * 清除数据缓存
+   */
+  clearCache() {
+    Object.keys(recordsCache).forEach(key => {
+      delete recordsCache[key];
     });
-    
-    // 下载证明按钮事件
-    const downloadButton = document.getElementById('download-proof');
-    downloadButton.addEventListener('click', function() {
-        const proofData = JSON.stringify(proof, null, 2);
-        const blob = new Blob([proofData], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        
-        a.href = url;
-        a.download = `blockchain-proof-${traceId}.json`;
-        a.click();
-        
-        URL.revokeObjectURL(url);
-    });
-}
-
-// 通知区块已挖掘（可用于更新UI）
-function notifyBlockMined(result) {
-    // 创建区块挖掘通知
-    if (result && result.block) {
-        if (window.TraceOfflineManager && typeof TraceOfflineManager.showNotification === 'function') {
-            TraceOfflineManager.showNotification(
-                `区块 #${result.block.index} 已成功创建，包含 ${result.transactions.length} 条交易`,
-                'success',
-                5000
-            );
-        }
-        
-        console.log(`区块 #${result.block.index} 已挖掘，包含 ${result.transactions.length} 条交易`);
-        
-        // 触发自定义事件
-        const event = new CustomEvent('blockMined', { detail: result });
-        document.dispatchEvent(event);
+  },
+  
+  /**
+   * 获取区块链事件（交易历史）
+   * @param {Object} filters - 过滤条件
+   * @returns {Promise<Array>} 事件数组
+   */
+  async getEvents(filters = {}) {
+    if (!connectionStatus.connected) {
+      throw new Error('区块链未连接');
     }
-}
-
-// UPDATED CODE: 将所有函数和类导出为一个对象
-export const TraceBlockchain = {
-    // 公开配置
-    config,
     
-    // 主要功能
-    init: initBlockchain,
-    startMining,
-    stopMining,
-    submitTraceData,
-    updateTraceData,
-    verifyTrace,
-    getTraceProof,
-    createVerificationBadge,
-    showVerificationDetails
+    try {
+      let events;
+      
+      // 根据不同的区块链提供商执行查询
+      switch (blockchainConfig.provider) {
+        case 'ethereum':
+          events = await this.getEventsEthereum(filters);
+          break;
+        case 'hyperledger':
+        case 'custom':
+          events = await this.getEventsREST(filters);
+          break;
+        default:
+          throw new Error(`不支持的区块链提供商: ${blockchainConfig.provider}`);
+      }
+      
+      return events;
+      
+    } catch (error) {
+      console.error('获取区块链事件失败:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * 从以太坊获取事件
+   * @param {Object} filters - 过滤条件
+   * @returns {Promise<Array>} 事件数组
+   */
+  async getEventsEthereum(filters = {}) {
+    if (!this.contract) {
+      throw new Error('未初始化智能合约');
+    }
+    
+    // 构建过滤器
+    const filterOptions = {};
+    
+    if (filters.fromBlock) {
+      filterOptions.fromBlock = filters.fromBlock;
+    }
+    
+    if (filters.toBlock) {
+      filterOptions.toBlock = filters.toBlock;
+    }
+    
+    // 获取所有事件
+    const events = await this.contract.queryFilter('*', filterOptions.fromBlock, filterOptions.toBlock);
+    
+    // 格式化事件数据
+    return events.map(event => ({
+      transactionHash: event.transactionHash,
+      blockNumber: event.blockNumber,
+      event: event.event,
+      args: event.args,
+      timestamp: Date.now() // 注意：区块链事件本身不包含时间戳，这里使用当前时间
+    }));
+  },
+  
+  /**
+   * 通过REST API获取事件
+   * @param {Object} filters - 过滤条件
+   * @returns {Promise<Array>} 事件数组
+   */
+  async getEventsREST(filters = {}) {
+    const provider = connectionStatus.provider;
+    
+    const queryParams = new URLSearchParams();
+    
+    if (filters.fromBlock) {
+      queryParams.append('fromBlock', filters.fromBlock);
+    }
+    
+    if (filters.toBlock) {
+      queryParams.append('toBlock', filters.toBlock);
+    }
+    
+    if (filters.eventType) {
+      queryParams.append('eventType', filters.eventType);
+    }
+    
+    if (filters.productId) {
+      queryParams.append('productId', filters.productId);
+    }
+    
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    
+    const response = await provider.request(`/events${queryString}`, 'GET');
+    
+    return response.events || [];
+  }
 };
 
-// 在文档加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-    if (config.enabled) {
-        initBlockchain();
-    }
-}); 
+// 导出模块
+window.traceBlockchain = traceBlockchain;
+
+// 如果定义了模块系统，也通过模块系统导出
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = traceBlockchain;
+} else if (typeof define === 'function' && define.amd) {
+  define([], function() { return traceBlockchain; });
+} 

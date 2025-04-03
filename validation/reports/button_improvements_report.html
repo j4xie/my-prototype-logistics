@@ -1,0 +1,3695 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>按钮改进测试报告</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    h1, h2 {
+      color: #2c974b;
+    }
+    .report-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .summary-card {
+      background-color: #f6f8fa;
+      border: 1px solid #e1e4e8;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .summary-stats {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background-color: white;
+      border: 1px solid #e1e4e8;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 10px;
+      flex: 1;
+      min-width: 200px;
+      margin-right: 10px;
+    }
+    .stat-card:last-child {
+      margin-right: 0;
+    }
+    .stat-title {
+      font-size: 14px;
+      color: #586069;
+      margin-bottom: 5px;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c974b;
+    }
+    .stat-percentage {
+      font-size: 14px;
+      color: #586069;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #e1e4e8;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f6f8fa;
+      font-weight: bold;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .pass {
+      color: #2c974b;
+      font-weight: bold;
+    }
+    .fail {
+      color: #cb2431;
+    }
+    .error {
+      color: #cb2431;
+      font-style: italic;
+    }
+    .details-table {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .details-table th, .details-table td {
+      padding: 6px 10px;
+      font-size: 0.9em;
+    }
+    .toggle-details {
+      background-color: #f1f8ff;
+      border: 1px solid #c8e1ff;
+      border-radius: 3px;
+      color: #0366d6;
+      font-size: 12px;
+      padding: 2px 6px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    .toggle-details:hover {
+      background-color: #dbedff;
+    }
+    .timestamp {
+      color: #586069;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="report-container">
+    <h1>按钮改进测试报告</h1>
+    <p class="timestamp">生成时间: 2025/4/3 03:18:39</p>
+    
+    <div class="summary-card">
+      <h2>测试总结</h2>
+      <p>此报告评估了页面按钮的实现是否符合最佳实践标准，包括唯一ID、无障碍属性和视觉反馈效果。</p>
+      
+      <div class="summary-stats">
+        <div class="stat-card">
+          <div class="stat-title">总按钮数</div>
+          <div class="stat-value">252</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-title">具有唯一ID的按钮</div>
+          <div class="stat-value">26</div>
+          <div class="stat-percentage">10.32%</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-title">具有无障碍属性的按钮</div>
+          <div class="stat-value">38</div>
+          <div class="stat-percentage">15.08%</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-title">具有视觉反馈的按钮</div>
+          <div class="stat-value">26</div>
+          <div class="stat-percentage">10.32%</div>
+        </div>
+      </div>
+    </div>
+    
+    <h2>页面详细结果</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>页面路径</th>
+          <th>按钮总数</th>
+          <th>具有唯一ID</th>
+          <th>具有无障碍属性</th>
+          <th>具有视觉反馈</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/admin-dashboard.html" target="_blank">/pages/admin/admin-dashboard.html</a>
+            <button class="toggle-details" data-page="/pages/admin/admin-dashboard.html">详情</button>
+          </td>
+          <td>9</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-admin-dashboard.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>新建溯源</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>近7天</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>近30天</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>全年</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>处理</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>处理</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>处理</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/admin-products.html" target="_blank">/pages/admin/admin-products.html</a>
+            <button class="toggle-details" data-page="/pages/admin/admin-products.html">详情</button>
+          </td>
+          <td>15</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-admin-products.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>添加产品</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>更多筛选</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>搜索</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>上一页</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>下一页</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>上一页</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>1</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>2</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>3</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>下一页</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>上传</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>取消</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/admin-roles.html" target="_blank">/pages/admin/admin-roles.html</a>
+            <button class="toggle-details" data-page="/pages/admin/admin-roles.html">详情</button>
+          </td>
+          <td>24</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-admin-roles.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>添加角色</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>角色列表</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>权限管理</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>删除</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>删除</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>删除</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>删除</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>删除</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>删除</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>(全选)</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>(全选)</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>(全选)</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>(全选)</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>取消</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存配置</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>取消</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>创建角色</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/admin-settings.html" target="_blank">/pages/admin/admin-settings.html</a>
+            <button class="toggle-details" data-page="/pages/admin/admin-settings.html">详情</button>
+          </td>
+          <td>5</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-admin-settings.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>上传</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>立即备份</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>恢复数据</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>取消</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存设置</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/admin-system.html" target="_blank">/pages/admin/admin-system.html</a>
+            <button class="toggle-details" data-page="/pages/admin/admin-system.html">详情</button>
+          </td>
+          <td>10</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-admin-system.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>上传Logo</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存设置</td>
+            <td>saveBaseSettings</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存设置</td>
+            <td>saveSecuritySettings</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>清除缓存</td>
+            <td>clearCache</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存设置</td>
+            <td>saveOptimizationSettings</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>重新生成</td>
+            <td>regenerateApiKey</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>配置</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>配置</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>配置</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存设置</td>
+            <td>saveIntegrationSettings</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/admin-users.html" target="_blank">/pages/admin/admin-users.html</a>
+            <button class="toggle-details" data-page="/pages/admin/admin-users.html">详情</button>
+          </td>
+          <td>8</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-admin-users.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>添加用户</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>批量删除</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>批量激活</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>批量锁定</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>导出选中</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>取消</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存用户</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/data-import.html" target="_blank">/pages/admin/data-import.html</a>
+            <button class="toggle-details" data-page="/pages/admin/data-import.html">详情</button>
+          </td>
+          <td>4</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-data-import.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>选择文件</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>removeFile</td>
+            <td>removeFile</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>开始导入</td>
+            <td>startImport</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/product-register.html" target="_blank">/pages/admin/product-register.html</a>
+            <button class="toggle-details" data-page="/pages/admin/product-register.html">详情</button>
+          </td>
+          <td>3</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-product-register.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>返回</td>
+            <td>backButton</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>重置表单</td>
+            <td>resetButton</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>注册产品</td>
+            <td>submitButton</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | submit</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/system-logs.html" target="_blank">/pages/admin/system-logs.html</a>
+            <button class="toggle-details" data-page="/pages/admin/system-logs.html">详情</button>
+          </td>
+          <td>3</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-system-logs.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>downloadBtn</td>
+            <td>downloadBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>筛选</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/admin/user-management.html" target="_blank">/pages/admin/user-management.html</a>
+            <button class="toggle-details" data-page="/pages/admin/user-management.html">详情</button>
+          </td>
+          <td>10</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-admin-user-management.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>筛选</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>排序</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>取消</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>添加</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/auth/login.html" target="_blank">/pages/auth/login.html</a>
+            <button class="toggle-details" data-page="/pages/auth/login.html">详情</button>
+          </td>
+          <td>2</td>
+          <td>0 (0.00%)</td>
+          <td>2 (100.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-auth-login.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>显示密码</td>
+            <td>password-toggle</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>登录</td>
+            <td>login-btn</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>button | submit</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/demo/button-demo.html" target="_blank">/pages/demo/button-demo.html</a>
+            <button class="toggle-details" data-page="/pages/demo/button-demo.html">详情</button>
+          </td>
+          <td>26</td>
+          <td>26 (100.00%)</td>
+          <td>26 (100.00%)</td>
+          <td>26 (100.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-demo-button-demo.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>主要按钮</td>
+            <td>primary-button</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>次要按钮</td>
+            <td>secondary-button</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>图标按钮</td>
+            <td>icon-button</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>危险按钮</td>
+            <td>danger-button</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>普通状态</td>
+            <td>trace-btn-1743675544050-1</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>悬停状态</td>
+            <td>trace-btn-1743675544050-2</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>激活状态</td>
+            <td>trace-btn-1743675544050-3</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>禁用状态</td>
+            <td>trace-btn-1743675544050-4</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>确认</td>
+            <td>trace-btn-primary-1743675544053-1</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>取消</td>
+            <td>trace-btn-secondary-1743675544053-2</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>返回</td>
+            <td>trace-btn-secondary-1743675544053-3</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存</td>
+            <td>trace-btn-primary-1743675544053-4</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>添加</td>
+            <td>trace-btn-primary-1743675544053-5</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>删除</td>
+            <td>trace-btn-danger-1743675544053-6</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>trace-btn-secondary-1743675544053-7</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>搜索</td>
+            <td>trace-btn-primary-1743675544053-8</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>导出</td>
+            <td>trace-btn-secondary-1743675544053-9</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>导入</td>
+            <td>trace-btn-secondary-1743675544053-10</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>刷新</td>
+            <td>trace-btn-secondary-1743675544053-11</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>圆形图标按钮</td>
+            <td>trace-btn-icon-1743675544053-12</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存</td>
+            <td>trace-btn-save-1743675544053-13</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>取消</td>
+            <td>trace-btn-secondary-1743675544053-14</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>删除</td>
+            <td>trace-btn-delete-1743675544053-15</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>添加按钮</td>
+            <td>add-button</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>更新按钮</td>
+            <td>update-button</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>切换禁用状态</td>
+            <td>toggle-disable</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td class="pass">是</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/farming/create-trace.html" target="_blank">/pages/farming/create-trace.html</a>
+            <button class="toggle-details" data-page="/pages/farming/create-trace.html">详情</button>
+          </td>
+          <td>4</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-farming-create-trace.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>toggle-highend-fields</td>
+            <td>toggle-highend-fields</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>选择文件</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>保存草稿</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>下一步</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/farming/farming-breeding.html" target="_blank">/pages/farming/farming-breeding.html</a>
+            <button class="toggle-details" data-page="/pages/farming/farming-breeding.html">详情</button>
+          </td>
+          <td>4</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-farming-farming-breeding.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>refreshBtn</td>
+            <td>refreshBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>toggleHighendBtn</td>
+            <td>toggleHighendBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>重置</td>
+            <td>resetBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>提交记录</td>
+            <td>submitBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | submit</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/farming/farming-monitor.html" target="_blank">/pages/farming/farming-monitor.html</a>
+            <button class="toggle-details" data-page="/pages/farming/farming-monitor.html">详情</button>
+          </td>
+          <td>5</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-farming-farming-monitor.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>refreshBtn</td>
+            <td>refreshBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>fullScreenBtn</td>
+            <td>fullScreenBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>adjustFeedBtn</td>
+            <td>adjustFeedBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看历史</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>调整投喂量</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/farming/farming-vaccine.html" target="_blank">/pages/farming/farming-vaccine.html</a>
+            <button class="toggle-details" data-page="/pages/farming/farming-vaccine.html">详情</button>
+          </td>
+          <td>6</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-farming-farming-vaccine.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>refreshBtn</td>
+            <td>refreshBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>settingsBtn</td>
+            <td>settingsBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>toggleHighendBtn</td>
+            <td>toggleHighendBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>清除签名</td>
+            <td>clearSignature</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>重置</td>
+            <td>resetBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>提交记录</td>
+            <td>submitBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | submit</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/home/home-farming.html" target="_blank">/pages/home/home-farming.html</a>
+            <button class="toggle-details" data-page="/pages/home/home-farming.html">详情</button>
+          </td>
+          <td>8</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-home-home-farming.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>refreshBtn</td>
+            <td>refreshBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>settingsBtn</td>
+            <td>settingsBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>创建养殖记录</td>
+            <td>createRecordBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>动物疫苗录入</td>
+            <td>vaccineBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>繁育信息管理</td>
+            <td>breedingBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>场地视频监控</td>
+            <td>monitorBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/home/home-logistics.html" target="_blank">/pages/home/home-logistics.html</a>
+            <button class="toggle-details" data-page="/pages/home/home-logistics.html">详情</button>
+          </td>
+          <td>4</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-home-home-logistics.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>创建订单</td>
+            <td>createOrderBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>扫码出库</td>
+            <td>scanCodeBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>车辆监控</td>
+            <td>vehicleMonitorBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>客户管理</td>
+            <td>clientManageBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/home/home-processing.html" target="_blank">/pages/home/home-processing.html</a>
+            <button class="toggle-details" data-page="/pages/home/home-processing.html">详情</button>
+          </td>
+          <td>4</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-home-home-processing.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>屠宰信息录入</td>
+            <td>slaughterInfoBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>肉质等级评定</td>
+            <td>qualityBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>加工环境拍照</td>
+            <td>environmentPhotoBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>质检报告查阅</td>
+            <td>reportBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/home/home-selector.html" target="_blank">/pages/home/home-selector.html</a>
+            <button class="toggle-details" data-page="/pages/home/home-selector.html">详情</button>
+          </td>
+          <td>6</td>
+          <td>0 (0.00%)</td>
+          <td>6 (100.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-home-home-selector.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>养殖管理
+                            动物饲养、疫苗、繁育信息管理</td>
+            <td>farmingModule</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>生产加工
+                            屠宰、检验、包装等加工环节管理</td>
+            <td>processingModule</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>销售物流
+                            运输、配送、订单跟踪管理</td>
+            <td>logisticsModule</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>追溯查询
+                            产品全链路溯源和质量追踪</td>
+            <td>traceModule</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>用户管理
+                                账号、权限配置</td>
+            <td>userManageModule</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>系统配置
+                                设置、备份、维护</td>
+            <td>systemConfigModule</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/logistics/logistics-create.html" target="_blank">/pages/logistics/logistics-create.html</a>
+            <button class="toggle-details" data-page="/pages/logistics/logistics-create.html">详情</button>
+          </td>
+          <td>12</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-logistics-logistics-create.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>取消</td>
+            <td>backToHomeBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>下一步</td>
+            <td>nextStep1Btn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>扫码添加</td>
+            <td>scanProductBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>上一步</td>
+            <td>prevStep2Btn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>下一步</td>
+            <td>nextStep2Btn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>上一步</td>
+            <td>prevStep3Btn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>下一步</td>
+            <td>nextStep3Btn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>编辑</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>上一步</td>
+            <td>prevStep4Btn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>提交订单</td>
+            <td>submitOrderBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | submit</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/logistics/logistics-report.html" target="_blank">/pages/logistics/logistics-report.html</a>
+            <button class="toggle-details" data-page="/pages/logistics/logistics-report.html">详情</button>
+          </td>
+          <td>6</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-logistics-logistics-report.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>导出Excel</td>
+            <td>exportBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>1</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>2</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>3</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/logistics/sales-analytics.html" target="_blank">/pages/logistics/sales-analytics.html</a>
+            <button class="toggle-details" data-page="/pages/logistics/sales-analytics.html">详情</button>
+          </td>
+          <td>1</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-logistics-sales-analytics.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>应用筛选</td>
+            <td>applyFilterBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/logistics/vehicle-monitor.html" target="_blank">/pages/logistics/vehicle-monitor.html</a>
+            <button class="toggle-details" data-page="/pages/logistics/vehicle-monitor.html">详情</button>
+          </td>
+          <td>4</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-logistics-vehicle-monitor.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>refreshListBtn</td>
+            <td>refreshListBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>div | button</td>
+          </tr>
+        
+          <tr>
+            <td>联系司机</td>
+            <td>callDriverBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看订单</td>
+            <td>viewOrderBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>调整温度</td>
+            <td>changeTempBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/processing/process-detail.html" target="_blank">/pages/processing/process-detail.html</a>
+            <button class="toggle-details" data-page="/pages/processing/process-detail.html">详情</button>
+          </td>
+          <td>2</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-processing-process-detail.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>导出报告</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>设置提醒</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/processing/processing-environment.html" target="_blank">/pages/processing/processing-environment.html</a>
+            <button class="toggle-details" data-page="/pages/processing/processing-environment.html">详情</button>
+          </td>
+          <td>2</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-processing-processing-environment.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>上传环境照片</td>
+            <td>uploadBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>closePreview</td>
+            <td>closePreview</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/processing/processing-photos.html" target="_blank">/pages/processing/processing-photos.html</a>
+            <button class="toggle-details" data-page="/pages/processing/processing-photos.html">详情</button>
+          </td>
+          <td>0</td>
+          <td>0 (0%)</td>
+          <td>0 (0%)</td>
+          <td>0 (0%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-processing-processing-photos.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/processing/processing-quality.html" target="_blank">/pages/processing/processing-quality.html</a>
+            <button class="toggle-details" data-page="/pages/processing/processing-quality.html">详情</button>
+          </td>
+          <td>3</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-processing-processing-quality.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>helpBtn</td>
+            <td>helpBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>重置</td>
+            <td>resetBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>提交评定</td>
+            <td>submitBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/processing/processing-reports.html" target="_blank">/pages/processing/processing-reports.html</a>
+            <button class="toggle-details" data-page="/pages/processing/processing-reports.html">详情</button>
+          </td>
+          <td>2</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-processing-processing-reports.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>refreshBtn</td>
+            <td>refreshBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>searchBtn</td>
+            <td>searchBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/processing/processing-slaughter.html" target="_blank">/pages/processing/processing-slaughter.html</a>
+            <button class="toggle-details" data-page="/pages/processing/processing-slaughter.html">详情</button>
+          </td>
+          <td>1</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-processing-processing-slaughter.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>保存并提交</td>
+            <td>submitForm</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | submit</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/product-trace.html" target="_blank">/pages/product-trace.html</a>
+            <button class="toggle-details" data-page="/pages/product-trace.html">详情</button>
+          </td>
+          <td>3</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-product-trace.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>返回</td>
+            <td>backButton</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>开始扫描</td>
+            <td>scanButton</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>手动输入溯源码</td>
+            <td>inputCodeButton</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/profile/help-center.html" target="_blank">/pages/profile/help-center.html</a>
+            <button class="toggle-details" data-page="/pages/profile/help-center.html">详情</button>
+          </td>
+          <td>1</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-profile-help-center.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/profile/notifications.html" target="_blank">/pages/profile/notifications.html</a>
+            <button class="toggle-details" data-page="/pages/profile/notifications.html">详情</button>
+          </td>
+          <td>3</td>
+          <td>0 (0.00%)</td>
+          <td>1 (33.33%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-profile-notifications.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>mark-all-read</td>
+            <td>mark-all-read</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>筛选</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>高对比度</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/profile/profile.html" target="_blank">/pages/profile/profile.html</a>
+            <button class="toggle-details" data-page="/pages/profile/profile.html">详情</button>
+          </td>
+          <td>2</td>
+          <td>0 (0.00%)</td>
+          <td>1 (50.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-profile-profile.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>退出登录</td>
+            <td>logout-btn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>高对比度</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/profile/settings.html" target="_blank">/pages/profile/settings.html</a>
+            <button class="toggle-details" data-page="/pages/profile/settings.html">详情</button>
+          </td>
+          <td>2</td>
+          <td>0 (0.00%)</td>
+          <td>1 (50.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-profile-settings.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>检查更新</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>高对比度</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/trace/trace-certificate.html" target="_blank">/pages/trace/trace-certificate.html</a>
+            <button class="toggle-details" data-page="/pages/trace/trace-certificate.html">详情</button>
+          </td>
+          <td>2</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-trace-trace-certificate.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>返回详情</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>分享证书</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/trace/trace-detail.html" target="_blank">/pages/trace/trace-detail.html</a>
+            <button class="toggle-details" data-page="/pages/trace/trace-detail.html">详情</button>
+          </td>
+          <td>12</td>
+          <td>0 (0.00%)</td>
+          <td>1 (8.33%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-trace-trace-detail.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>基本信息</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>溯源流程</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>证书与检测</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看照片(3)</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看照片(2)</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看检测报告</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看温度记录</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看完整证书</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看追溯码</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看溯源证书</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>close-image-modal</td>
+            <td>close-image-modal</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>高对比度</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="pass">是</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/trace/trace-edit.html" target="_blank">/pages/trace/trace-edit.html</a>
+            <button class="toggle-details" data-page="/pages/trace/trace-edit.html">详情</button>
+          </td>
+          <td>3</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-trace-trace-edit.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>saveBtn</td>
+            <td>saveBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>上传文件</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>上传文件</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/trace/trace-list.html" target="_blank">/pages/trace/trace-list.html</a>
+            <button class="toggle-details" data-page="/pages/trace/trace-list.html">详情</button>
+          </td>
+          <td>18</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-trace-trace-list.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>今日</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>近7天</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>近30天</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>全部</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>已完成</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>待审核</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>异常</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>草稿</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>二维码</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看详情</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>二维码</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看详情</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>二维码</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看详情</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>二维码</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看详情</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>a | button</td>
+          </tr>
+        
+          <tr>
+            <td>上一页</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>下一页</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/trace/trace-map.html" target="_blank">/pages/trace/trace-map.html</a>
+            <button class="toggle-details" data-page="/pages/trace/trace-map.html">详情</button>
+          </td>
+          <td>9</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-trace-trace-map.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>全部产品</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>和牛肉</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>大闸蟹</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>猕猴桃</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>葡萄酒</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>未命名按钮</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看详情</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>查看详情</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+        <tr>
+          <td>
+            <a href="http://localhost:8080/pages/trace/trace-query.html" target="_blank">/pages/trace/trace-query.html</a>
+            <button class="toggle-details" data-page="/pages/trace/trace-query.html">详情</button>
+          </td>
+          <td>4</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+          <td>0 (0.00%)</td>
+        </tr>
+        <tr class="button-details" id="details-pages-trace-trace-query.html" style="display: none;">
+          <td colspan="5">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>按钮文本</th>
+                  <th>ID</th>
+                  <th>唯一ID</th>
+                  <th>无障碍</th>
+                  <th>视觉反馈</th>
+                  <th>类型</th>
+                </tr>
+              </thead>
+              <tbody>
+      
+          <tr>
+            <td>查询</td>
+            <td>searchBtn</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>高级搜索</td>
+            <td>toggleAdvanced</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>closeScanModal</td>
+            <td>closeScanModal</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+          <tr>
+            <td>开始扫描</td>
+            <td>无</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td class="fail">否</td>
+            <td>button | button</td>
+          </tr>
+        
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+  
+  <script>
+    // 添加按钮详情切换功能
+    document.querySelectorAll('.toggle-details').forEach(button => {
+      button.addEventListener('click', function() {
+        const pagePath = this.getAttribute('data-page');
+        const detailsId = 'details-' + pagePath.replace(/\//g, '-').replace(/^-/, '');
+        const detailsRow = document.getElementById(detailsId);
+        
+        if (detailsRow.style.display === 'none') {
+          detailsRow.style.display = 'table-row';
+          this.textContent = '隐藏';
+        } else {
+          detailsRow.style.display = 'none';
+          this.textContent = '详情';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+  

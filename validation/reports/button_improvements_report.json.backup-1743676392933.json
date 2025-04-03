@@ -1,0 +1,2984 @@
+{
+  "timestamp": "2025-04-03T10:18:39.173Z",
+  "summary": {
+    "totalButtons": 252,
+    "buttonsWithUniqueId": 26,
+    "buttonsWithAccessibility": 38,
+    "buttonsWithVisualFeedback": 26,
+    "percentageWithUniqueId": "10.32%",
+    "percentageWithAccessibility": "15.08%",
+    "percentageWithVisualFeedback": "10.32%"
+  },
+  "pageResults": {
+    "/pages/admin/admin-dashboard.html": {
+      "url": "http://localhost:8080/pages/admin/admin-dashboard.html",
+      "stats": {
+        "totalButtons": 9,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-gray-500 hover:text-gray-700"
+        },
+        {
+          "id": "",
+          "text": "新建溯源",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-[#00467F] text-white py-2 px-4 rounded-md hover:bg-blue-800 transition-all"
+        },
+        {
+          "id": "",
+          "text": "近7天",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-blue-100 text-[#00467F] px-3 py-1 rounded-md text-sm"
+        },
+        {
+          "id": "",
+          "text": "近30天",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-gray-100 text-gray-600 px-3 py-1 rounded-md text-sm"
+        },
+        {
+          "id": "",
+          "text": "全年",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-gray-100 text-gray-600 px-3 py-1 rounded-md text-sm"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#00467F] text-sm"
+        },
+        {
+          "id": "",
+          "text": "处理",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "px-3 py-1 bg-[#00467F] text-white text-xs rounded-md"
+        },
+        {
+          "id": "",
+          "text": "处理",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "px-3 py-1 bg-[#00467F] text-white text-xs rounded-md"
+        },
+        {
+          "id": "",
+          "text": "处理",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "px-3 py-1 bg-[#00467F] text-white text-xs rounded-md"
+        }
+      ]
+    },
+    "/pages/admin/admin-products.html": {
+      "url": "http://localhost:8080/pages/admin/admin-products.html",
+      "stats": {
+        "totalButtons": 15,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "添加产品",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-primary"
+        },
+        {
+          "id": "",
+          "text": "更多筛选",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-secondary"
+        },
+        {
+          "id": "",
+          "text": "搜索",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-primary"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-primary hover:text-primary-dark"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-red-600 hover:text-red-900"
+        },
+        {
+          "id": "",
+          "text": "上一页",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+        },
+        {
+          "id": "",
+          "text": "下一页",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+        },
+        {
+          "id": "",
+          "text": "上一页",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+        },
+        {
+          "id": "",
+          "text": "1",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "relative inline-flex items-center px-4 py-2 border border-primary bg-primary text-sm font-medium text-white"
+        },
+        {
+          "id": "",
+          "text": "2",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+        },
+        {
+          "id": "",
+          "text": "3",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+        },
+        {
+          "id": "",
+          "text": "下一页",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+        },
+        {
+          "id": "",
+          "text": "上传",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "ml-2 btn-secondary"
+        },
+        {
+          "id": "",
+          "text": "保存",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-primary sm:ml-3 sm:w-auto"
+        },
+        {
+          "id": "",
+          "text": "取消",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-secondary mt-3 sm:mt-0 sm:ml-3 sm:w-auto"
+        }
+      ]
+    },
+    "/pages/admin/admin-roles.html": {
+      "url": "http://localhost:8080/pages/admin/admin-roles.html",
+      "stats": {
+        "totalButtons": 24,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "添加角色",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-[#00467F] text-white py-2 px-4 rounded-md hover:bg-blue-800 transition-all"
+        },
+        {
+          "id": "",
+          "text": "角色列表",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "tab-active inline-block py-4 px-4 text-sm font-medium"
+        },
+        {
+          "id": "",
+          "text": "权限管理",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "inline-block py-4 px-4 text-sm font-medium text-gray-500 hover:text-gray-700"
+        },
+        {
+          "id": "",
+          "text": "编辑",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-gray-400 cursor-not-allowed"
+        },
+        {
+          "id": "",
+          "text": "删除",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-gray-400 cursor-not-allowed"
+        },
+        {
+          "id": "",
+          "text": "编辑",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#00467F] hover:text-blue-800"
+        },
+        {
+          "id": "",
+          "text": "删除",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-gray-400 cursor-not-allowed"
+        },
+        {
+          "id": "",
+          "text": "编辑",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#00467F] hover:text-blue-800"
+        },
+        {
+          "id": "",
+          "text": "删除",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-red-600 hover:text-red-800"
+        },
+        {
+          "id": "",
+          "text": "编辑",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#00467F] hover:text-blue-800"
+        },
+        {
+          "id": "",
+          "text": "删除",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-red-600 hover:text-red-800"
+        },
+        {
+          "id": "",
+          "text": "编辑",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#00467F] hover:text-blue-800"
+        },
+        {
+          "id": "",
+          "text": "删除",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-red-600 hover:text-red-800"
+        },
+        {
+          "id": "",
+          "text": "编辑",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#00467F] hover:text-blue-800"
+        },
+        {
+          "id": "",
+          "text": "删除",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-gray-400 cursor-not-allowed"
+        },
+        {
+          "id": "",
+          "text": "(全选)",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "ml-2 text-xs text-[#00467F]"
+        },
+        {
+          "id": "",
+          "text": "(全选)",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "ml-2 text-xs text-[#00467F]"
+        },
+        {
+          "id": "",
+          "text": "(全选)",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "ml-2 text-xs text-[#00467F]"
+        },
+        {
+          "id": "",
+          "text": "(全选)",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "ml-2 text-xs text-[#00467F]"
+        },
+        {
+          "id": "",
+          "text": "取消",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all"
+        },
+        {
+          "id": "",
+          "text": "保存配置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "px-4 py-2 bg-[#00467F] text-white rounded-md hover:bg-blue-800 transition-all"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-gray-400 hover:text-gray-500"
+        },
+        {
+          "id": "",
+          "text": "取消",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all"
+        },
+        {
+          "id": "",
+          "text": "创建角色",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "px-4 py-2 bg-[#00467F] text-white rounded-md hover:bg-blue-800 transition-all"
+        }
+      ]
+    },
+    "/pages/admin/admin-settings.html": {
+      "url": "http://localhost:8080/pages/admin/admin-settings.html",
+      "stats": {
+        "totalButtons": 5,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "上传",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "ml-2 btn-secondary sm:text-sm"
+        },
+        {
+          "id": "",
+          "text": "立即备份",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-primary"
+        },
+        {
+          "id": "",
+          "text": "恢复数据",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-secondary"
+        },
+        {
+          "id": "",
+          "text": "取消",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-secondary mr-3"
+        },
+        {
+          "id": "",
+          "text": "保存设置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-primary"
+        }
+      ]
+    },
+    "/pages/admin/admin-system.html": {
+      "url": "http://localhost:8080/pages/admin/admin-system.html",
+      "stats": {
+        "totalButtons": 10,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "上传Logo",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-default"
+        },
+        {
+          "id": "saveBaseSettings",
+          "text": "保存设置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        },
+        {
+          "id": "saveSecuritySettings",
+          "text": "保存设置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        },
+        {
+          "id": "clearCache",
+          "text": "清除缓存",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-default"
+        },
+        {
+          "id": "saveOptimizationSettings",
+          "text": "保存设置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        },
+        {
+          "id": "regenerateApiKey",
+          "text": "重新生成",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-default rounded-l-none border-l-0"
+        },
+        {
+          "id": "",
+          "text": "配置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-default btn-sm"
+        },
+        {
+          "id": "",
+          "text": "配置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-default btn-sm"
+        },
+        {
+          "id": "",
+          "text": "配置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-default btn-sm"
+        },
+        {
+          "id": "saveIntegrationSettings",
+          "text": "保存设置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        }
+      ]
+    },
+    "/pages/admin/admin-users.html": {
+      "url": "http://localhost:8080/pages/admin/admin-users.html",
+      "stats": {
+        "totalButtons": 8,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "添加用户",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-[#00467F] text-white py-2 px-4 rounded-md hover:bg-blue-800 transition-all"
+        },
+        {
+          "id": "",
+          "text": "批量删除",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-red-50 text-red-600 px-3 py-1.5 text-sm rounded-md hover:bg-red-100 transition-all"
+        },
+        {
+          "id": "",
+          "text": "批量激活",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-green-50 text-green-600 px-3 py-1.5 text-sm rounded-md hover:bg-green-100 transition-all"
+        },
+        {
+          "id": "",
+          "text": "批量锁定",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-orange-50 text-orange-600 px-3 py-1.5 text-sm rounded-md hover:bg-orange-100 transition-all"
+        },
+        {
+          "id": "",
+          "text": "导出选中",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-blue-50 text-[#00467F] px-3 py-1.5 text-sm rounded-md hover:bg-blue-100 transition-all"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-gray-400 hover:text-gray-500"
+        },
+        {
+          "id": "",
+          "text": "取消",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all"
+        },
+        {
+          "id": "",
+          "text": "保存用户",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "px-4 py-2 bg-[#00467F] text-white rounded-md hover:bg-blue-800 transition-all"
+        }
+      ]
+    },
+    "/pages/admin/data-import.html": {
+      "url": "http://localhost:8080/pages/admin/data-import.html",
+      "stats": {
+        "totalButtons": 4,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "w-10 h-10 rounded-full flex items-center justify-center"
+        },
+        {
+          "id": "",
+          "text": "选择文件",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button"
+        },
+        {
+          "id": "removeFile",
+          "text": "removeFile",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-red-500"
+        },
+        {
+          "id": "startImport",
+          "text": "开始导入",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button w-full"
+        }
+      ]
+    },
+    "/pages/admin/product-register.html": {
+      "url": "http://localhost:8080/pages/admin/product-register.html",
+      "stats": {
+        "totalButtons": 3,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "backButton",
+          "text": "返回",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "back-button"
+        },
+        {
+          "id": "resetButton",
+          "text": "重置表单",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "button button-default"
+        },
+        {
+          "id": "submitButton",
+          "text": "注册产品",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "submit",
+          "tagName": "BUTTON",
+          "className": "button button-primary"
+        }
+      ]
+    },
+    "/pages/admin/system-logs.html": {
+      "url": "http://localhost:8080/pages/admin/system-logs.html",
+      "stats": {
+        "totalButtons": 3,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "downloadBtn",
+          "text": "downloadBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "w-10 h-10 rounded-full flex items-center justify-center"
+        },
+        {
+          "id": "",
+          "text": "筛选",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button w-full"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100"
+        }
+      ]
+    },
+    "/pages/admin/user-management.html": {
+      "url": "http://localhost:8080/pages/admin/user-management.html",
+      "stats": {
+        "totalButtons": 10,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "w-10 h-10 rounded-full flex items-center justify-center"
+        },
+        {
+          "id": "",
+          "text": "筛选",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-sm text-gray-600"
+        },
+        {
+          "id": "",
+          "text": "排序",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-sm text-gray-600"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#00467F]"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-red-500"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#00467F]"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-red-500"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-gray-500"
+        },
+        {
+          "id": "",
+          "text": "取消",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary"
+        },
+        {
+          "id": "",
+          "text": "添加",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary"
+        }
+      ]
+    },
+    "/pages/auth/login.html": {
+      "url": "http://localhost:8080/pages/auth/login.html",
+      "stats": {
+        "totalButtons": 2,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 2,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "password-toggle",
+          "text": "显示密码",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "password-toggle"
+        },
+        {
+          "id": "login-btn",
+          "text": "登录",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "submit",
+          "tagName": "BUTTON",
+          "className": "ant-btn ant-btn-primary w-full transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+        }
+      ]
+    },
+    "/pages/demo/button-demo.html": {
+      "url": "http://localhost:8080/pages/demo/button-demo.html",
+      "stats": {
+        "totalButtons": 26,
+        "buttonsWithUniqueId": 26,
+        "buttonsWithAccessibility": 26,
+        "buttonsWithVisualFeedback": 26
+      },
+      "buttons": [
+        {
+          "id": "primary-button",
+          "text": "主要按钮",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "secondary-button",
+          "text": "次要按钮",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "icon-button",
+          "text": "图标按钮",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-icon trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "danger-button",
+          "text": "危险按钮",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-danger trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-1743675544050-1",
+          "text": "普通状态",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-1743675544050-2",
+          "text": "悬停状态",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-1743675544050-3",
+          "text": "激活状态",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-1743675544050-4",
+          "text": "禁用状态",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-primary-1743675544053-1",
+          "text": "确认",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-secondary-1743675544053-2",
+          "text": "取消",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-secondary-1743675544053-3",
+          "text": "返回",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-primary-1743675544053-4",
+          "text": "保存",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-primary-1743675544053-5",
+          "text": "添加",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-danger-1743675544053-6",
+          "text": "删除",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-secondary-1743675544053-7",
+          "text": "编辑",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-primary-1743675544053-8",
+          "text": "搜索",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-secondary-1743675544053-9",
+          "text": "导出",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-secondary-1743675544053-10",
+          "text": "导入",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-secondary-1743675544053-11",
+          "text": "刷新",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-icon-1743675544053-12",
+          "text": "圆形图标按钮",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-icon trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-save-1743675544053-13",
+          "text": "保存",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-secondary-1743675544053-14",
+          "text": "取消",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "trace-btn-delete-1743675544053-15",
+          "text": "删除",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-danger trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "add-button",
+          "text": "添加按钮",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "update-button",
+          "text": "更新按钮",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "toggle-disable",
+          "text": "切换禁用状态",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
+        }
+      ]
+    },
+    "/pages/farming/create-trace.html": {
+      "url": "http://localhost:8080/pages/farming/create-trace.html",
+      "stats": {
+        "totalButtons": 4,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "toggle-highend-fields",
+          "text": "toggle-highend-fields",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-sm text-[#722ED1]"
+        },
+        {
+          "id": "",
+          "text": "选择文件",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn bg-[#1677FF] hover:bg-[#4096FF] text-white px-6 py-2 rounded-lg transition-all active:scale-95"
+        },
+        {
+          "id": "",
+          "text": "保存草稿",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-200 transition-all active:scale-95"
+        },
+        {
+          "id": "",
+          "text": "下一步",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn flex-1 bg-[#1677FF] text-white px-4 py-3 rounded-lg hover:bg-[#4096FF] transition-all active:scale-95"
+        }
+      ]
+    },
+    "/pages/farming/farming-breeding.html": {
+      "url": "http://localhost:8080/pages/farming/farming-breeding.html",
+      "stats": {
+        "totalButtons": 4,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "refreshBtn",
+          "text": "refreshBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "icon-btn"
+        },
+        {
+          "id": "toggleHighendBtn",
+          "text": "toggleHighendBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-sm text-[#722ED1]"
+        },
+        {
+          "id": "resetBtn",
+          "text": "重置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-outline"
+        },
+        {
+          "id": "submitBtn",
+          "text": "提交记录",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "submit",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        }
+      ]
+    },
+    "/pages/farming/farming-monitor.html": {
+      "url": "http://localhost:8080/pages/farming/farming-monitor.html",
+      "stats": {
+        "totalButtons": 5,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "refreshBtn",
+          "text": "refreshBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "icon-btn"
+        },
+        {
+          "id": "fullScreenBtn",
+          "text": "fullScreenBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-primary text-sm"
+        },
+        {
+          "id": "adjustFeedBtn",
+          "text": "adjustFeedBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#1890FF] text-sm"
+        },
+        {
+          "id": "",
+          "text": "查看历史",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-outline text-xs py-1 px-3"
+        },
+        {
+          "id": "",
+          "text": "调整投喂量",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary text-xs py-1 px-3"
+        }
+      ]
+    },
+    "/pages/farming/farming-vaccine.html": {
+      "url": "http://localhost:8080/pages/farming/farming-vaccine.html",
+      "stats": {
+        "totalButtons": 6,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "refreshBtn",
+          "text": "refreshBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "icon-btn mr-2"
+        },
+        {
+          "id": "settingsBtn",
+          "text": "settingsBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "icon-btn"
+        },
+        {
+          "id": "toggleHighendBtn",
+          "text": "toggleHighendBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-sm text-[#722ED1]"
+        },
+        {
+          "id": "clearSignature",
+          "text": "清除签名",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-xs text-[#1890FF] absolute bottom-3 right-3"
+        },
+        {
+          "id": "resetBtn",
+          "text": "重置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-outline"
+        },
+        {
+          "id": "submitBtn",
+          "text": "提交记录",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "submit",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        }
+      ]
+    },
+    "/pages/home/home-farming.html": {
+      "url": "http://localhost:8080/pages/home/home-farming.html",
+      "stats": {
+        "totalButtons": 8,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "refreshBtn",
+          "text": "refreshBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "icon-btn mr-2"
+        },
+        {
+          "id": "settingsBtn",
+          "text": "settingsBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "icon-btn"
+        },
+        {
+          "id": "createRecordBtn",
+          "text": "创建养殖记录",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "action-btn"
+        },
+        {
+          "id": "vaccineBtn",
+          "text": "动物疫苗录入",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "action-btn"
+        },
+        {
+          "id": "breedingBtn",
+          "text": "繁育信息管理",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "action-btn"
+        },
+        {
+          "id": "monitorBtn",
+          "text": "场地视频监控",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "action-btn"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-icon"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn-icon"
+        }
+      ]
+    },
+    "/pages/home/home-logistics.html": {
+      "url": "http://localhost:8080/pages/home/home-logistics.html",
+      "stats": {
+        "totalButtons": 4,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "createOrderBtn",
+          "text": "创建订单",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "scanCodeBtn",
+          "text": "扫码出库",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "vehicleMonitorBtn",
+          "text": "车辆监控",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "clientManageBtn",
+          "text": "客户管理",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "module-card p-4"
+        }
+      ]
+    },
+    "/pages/home/home-processing.html": {
+      "url": "http://localhost:8080/pages/home/home-processing.html",
+      "stats": {
+        "totalButtons": 4,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "slaughterInfoBtn",
+          "text": "屠宰信息录入",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "qualityBtn",
+          "text": "肉质等级评定",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "environmentPhotoBtn",
+          "text": "加工环境拍照",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "reportBtn",
+          "text": "质检报告查阅",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "module-card p-4"
+        }
+      ]
+    },
+    "/pages/home/home-selector.html": {
+      "url": "http://localhost:8080/pages/home/home-selector.html",
+      "stats": {
+        "totalButtons": 6,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 6,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "farmingModule",
+          "text": "养殖管理\n                            动物饲养、疫苗、繁育信息管理",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "processingModule",
+          "text": "生产加工\n                            屠宰、检验、包装等加工环节管理",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "logisticsModule",
+          "text": "销售物流\n                            运输、配送、订单跟踪管理",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "traceModule",
+          "text": "追溯查询\n                            产品全链路溯源和质量追踪",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "userManageModule",
+          "text": "用户管理\n                                账号、权限配置",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "module-card p-4"
+        },
+        {
+          "id": "systemConfigModule",
+          "text": "系统配置\n                                设置、备份、维护",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "module-card p-4"
+        }
+      ]
+    },
+    "/pages/logistics/logistics-create.html": {
+      "url": "http://localhost:8080/pages/logistics/logistics-create.html",
+      "stats": {
+        "totalButtons": 12,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "backToHomeBtn",
+          "text": "取消",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-secondary"
+        },
+        {
+          "id": "nextStep1Btn",
+          "text": "下一步",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        },
+        {
+          "id": "scanProductBtn",
+          "text": "扫码添加",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-text"
+        },
+        {
+          "id": "prevStep2Btn",
+          "text": "上一步",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-secondary"
+        },
+        {
+          "id": "nextStep2Btn",
+          "text": "下一步",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        },
+        {
+          "id": "prevStep3Btn",
+          "text": "上一步",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-secondary"
+        },
+        {
+          "id": "nextStep3Btn",
+          "text": "下一步",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        },
+        {
+          "id": "",
+          "text": "编辑",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-blue-500 text-sm"
+        },
+        {
+          "id": "",
+          "text": "编辑",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-blue-500 text-sm"
+        },
+        {
+          "id": "",
+          "text": "编辑",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-blue-500 text-sm"
+        },
+        {
+          "id": "prevStep4Btn",
+          "text": "上一步",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-secondary"
+        },
+        {
+          "id": "submitOrderBtn",
+          "text": "提交订单",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "submit",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        }
+      ]
+    },
+    "/pages/logistics/logistics-report.html": {
+      "url": "http://localhost:8080/pages/logistics/logistics-report.html",
+      "stats": {
+        "totalButtons": 6,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "exportBtn",
+          "text": "导出Excel",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "export-btn"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "page-btn"
+        },
+        {
+          "id": "",
+          "text": "1",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "page-btn active"
+        },
+        {
+          "id": "",
+          "text": "2",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "page-btn"
+        },
+        {
+          "id": "",
+          "text": "3",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "page-btn"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "page-btn"
+        }
+      ]
+    },
+    "/pages/logistics/sales-analytics.html": {
+      "url": "http://localhost:8080/pages/logistics/sales-analytics.html",
+      "stats": {
+        "totalButtons": 1,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "applyFilterBtn",
+          "text": "应用筛选",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        }
+      ]
+    },
+    "/pages/logistics/vehicle-monitor.html": {
+      "url": "http://localhost:8080/pages/logistics/vehicle-monitor.html",
+      "stats": {
+        "totalButtons": 4,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "refreshListBtn",
+          "text": "refreshListBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "DIV",
+          "className": "btn btn-text btn-small"
+        },
+        {
+          "id": "callDriverBtn",
+          "text": "联系司机",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary btn-small"
+        },
+        {
+          "id": "viewOrderBtn",
+          "text": "查看订单",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-secondary btn-small"
+        },
+        {
+          "id": "changeTempBtn",
+          "text": "调整温度",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-secondary btn-small"
+        }
+      ]
+    },
+    "/pages/processing/process-detail.html": {
+      "url": "http://localhost:8080/pages/processing/process-detail.html",
+      "stats": {
+        "totalButtons": 2,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "导出报告",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn bg-blue-500 text-white py-2 rounded-lg w-full flex items-center justify-center"
+        },
+        {
+          "id": "",
+          "text": "设置提醒",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn bg-green-500 text-white py-2 rounded-lg w-full flex items-center justify-center"
+        }
+      ]
+    },
+    "/pages/processing/processing-environment.html": {
+      "url": "http://localhost:8080/pages/processing/processing-environment.html",
+      "stats": {
+        "totalButtons": 2,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "uploadBtn",
+          "text": "上传环境照片",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "upload-btn"
+        },
+        {
+          "id": "closePreview",
+          "text": "closePreview",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "absolute top-4 right-4 bg-black bg-opacity-50 text-white w-10 h-10 rounded-full flex items-center justify-center"
+        }
+      ]
+    },
+    "/pages/processing/processing-photos.html": {
+      "url": "http://localhost:8080/pages/processing/processing-photos.html",
+      "stats": {
+        "totalButtons": 0,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": []
+    },
+    "/pages/processing/processing-quality.html": {
+      "url": "http://localhost:8080/pages/processing/processing-quality.html",
+      "stats": {
+        "totalButtons": 3,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "helpBtn",
+          "text": "helpBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "icon-btn"
+        },
+        {
+          "id": "resetBtn",
+          "text": "重置",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-outline"
+        },
+        {
+          "id": "submitBtn",
+          "text": "提交评定",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary"
+        }
+      ]
+    },
+    "/pages/processing/processing-reports.html": {
+      "url": "http://localhost:8080/pages/processing/processing-reports.html",
+      "stats": {
+        "totalButtons": 2,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "refreshBtn",
+          "text": "refreshBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "icon-btn"
+        },
+        {
+          "id": "searchBtn",
+          "text": "searchBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "search-btn"
+        }
+      ]
+    },
+    "/pages/processing/processing-slaughter.html": {
+      "url": "http://localhost:8080/pages/processing/processing-slaughter.html",
+      "stats": {
+        "totalButtons": 1,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "submitForm",
+          "text": "保存并提交",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "submit",
+          "tagName": "BUTTON",
+          "className": "submit-btn"
+        }
+      ]
+    },
+    "/pages/product-trace.html": {
+      "url": "http://localhost:8080/pages/product-trace.html",
+      "stats": {
+        "totalButtons": 3,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "backButton",
+          "text": "返回",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "back-button"
+        },
+        {
+          "id": "scanButton",
+          "text": "开始扫描",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "button"
+        },
+        {
+          "id": "inputCodeButton",
+          "text": "手动输入溯源码",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "button secondary"
+        }
+      ]
+    },
+    "/pages/profile/help-center.html": {
+      "url": "http://localhost:8080/pages/profile/help-center.html",
+      "stats": {
+        "totalButtons": 1,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "w-10 h-10 rounded-full flex items-center justify-center"
+        }
+      ]
+    },
+    "/pages/profile/notifications.html": {
+      "url": "http://localhost:8080/pages/profile/notifications.html",
+      "stats": {
+        "totalButtons": 3,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 1,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "mark-all-read",
+          "text": "mark-all-read",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all"
+        },
+        {
+          "id": "",
+          "text": "筛选",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-[#00467F] text-sm font-medium"
+        },
+        {
+          "id": "",
+          "text": "高对比度",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "contrast-toggle"
+        }
+      ]
+    },
+    "/pages/profile/profile.html": {
+      "url": "http://localhost:8080/pages/profile/profile.html",
+      "stats": {
+        "totalButtons": 2,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 1,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "logout-btn",
+          "text": "退出登录",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "w-full bg-white text-red-500 font-medium py-4 rounded-xl shadow-sm mt-6 hover:bg-red-50 transition-colors"
+        },
+        {
+          "id": "",
+          "text": "高对比度",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "contrast-toggle"
+        }
+      ]
+    },
+    "/pages/profile/settings.html": {
+      "url": "http://localhost:8080/pages/profile/settings.html",
+      "stats": {
+        "totalButtons": 2,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 1,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "检查更新",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded hover:bg-gray-200 transition-all"
+        },
+        {
+          "id": "",
+          "text": "高对比度",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "contrast-toggle"
+        }
+      ]
+    },
+    "/pages/trace/trace-certificate.html": {
+      "url": "http://localhost:8080/pages/trace/trace-certificate.html",
+      "stats": {
+        "totalButtons": 2,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "返回详情",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "trace-button trace-button-secondary text-center"
+        },
+        {
+          "id": "",
+          "text": "分享证书",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary"
+        }
+      ]
+    },
+    "/pages/trace/trace-detail.html": {
+      "url": "http://localhost:8080/pages/trace/trace-detail.html",
+      "stats": {
+        "totalButtons": 12,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 1,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "基本信息",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "tab-button active"
+        },
+        {
+          "id": "",
+          "text": "溯源流程",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "tab-button"
+        },
+        {
+          "id": "",
+          "text": "证书与检测",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "tab-button"
+        },
+        {
+          "id": "",
+          "text": "查看照片(3)",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1 image-view-link"
+        },
+        {
+          "id": "",
+          "text": "查看照片(2)",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1 image-view-link"
+        },
+        {
+          "id": "",
+          "text": "查看检测报告",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1"
+        },
+        {
+          "id": "",
+          "text": "查看温度记录",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1"
+        },
+        {
+          "id": "",
+          "text": "查看完整证书",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "trace-button trace-button-primary w-full text-center py-2"
+        },
+        {
+          "id": "",
+          "text": "查看追溯码",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "trace-button trace-button-secondary flex items-center justify-center"
+        },
+        {
+          "id": "",
+          "text": "查看溯源证书",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "trace-button trace-button-primary flex items-center justify-center"
+        },
+        {
+          "id": "close-image-modal",
+          "text": "close-image-modal",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "absolute top-3 right-3 z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center text-gray-700 shadow-md"
+        },
+        {
+          "id": "",
+          "text": "高对比度",
+          "hasUniqueId": false,
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "contrast-toggle"
+        }
+      ]
+    },
+    "/pages/trace/trace-edit.html": {
+      "url": "http://localhost:8080/pages/trace/trace-edit.html",
+      "stats": {
+        "totalButtons": 3,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "saveBtn",
+          "text": "saveBtn",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "w-10 h-10 rounded-full flex items-center justify-center"
+        },
+        {
+          "id": "",
+          "text": "上传文件",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button"
+        },
+        {
+          "id": "",
+          "text": "上传文件",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button"
+        }
+      ]
+    },
+    "/pages/trace/trace-list.html": {
+      "url": "http://localhost:8080/pages/trace/trace-list.html",
+      "stats": {
+        "totalButtons": 18,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "今日",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-blue-50 text-[#00467F] rounded px-3 py-1 text-xs border border-blue-100"
+        },
+        {
+          "id": "",
+          "text": "近7天",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200"
+        },
+        {
+          "id": "",
+          "text": "近30天",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200"
+        },
+        {
+          "id": "",
+          "text": "全部",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1.5 shadow-sm"
+        },
+        {
+          "id": "",
+          "text": "已完成",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm"
+        },
+        {
+          "id": "",
+          "text": "待审核",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm"
+        },
+        {
+          "id": "",
+          "text": "异常",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm"
+        },
+        {
+          "id": "",
+          "text": "草稿",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm"
+        },
+        {
+          "id": "",
+          "text": "二维码",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2"
+        },
+        {
+          "id": "",
+          "text": "查看详情",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "trace-button trace-button-primary text-xs py-1.5 px-3"
+        },
+        {
+          "id": "",
+          "text": "二维码",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2"
+        },
+        {
+          "id": "",
+          "text": "查看详情",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "trace-button trace-button-primary text-xs py-1.5 px-3"
+        },
+        {
+          "id": "",
+          "text": "二维码",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2"
+        },
+        {
+          "id": "",
+          "text": "查看详情",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "trace-button trace-button-primary text-xs py-1.5 px-3"
+        },
+        {
+          "id": "",
+          "text": "二维码",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2"
+        },
+        {
+          "id": "",
+          "text": "查看详情",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "A",
+          "className": "trace-button trace-button-primary text-xs py-1.5 px-3"
+        },
+        {
+          "id": "",
+          "text": "上一页",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1.5 px-4 flex items-center"
+        },
+        {
+          "id": "",
+          "text": "下一页",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-primary text-xs py-1.5 px-4 flex items-center"
+        }
+      ]
+    },
+    "/pages/trace/trace-map.html": {
+      "url": "http://localhost:8080/pages/trace/trace-map.html",
+      "stats": {
+        "totalButtons": 9,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "",
+          "text": "全部产品",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1"
+        },
+        {
+          "id": "",
+          "text": "和牛肉",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200"
+        },
+        {
+          "id": "",
+          "text": "大闸蟹",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200"
+        },
+        {
+          "id": "",
+          "text": "猕猴桃",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200"
+        },
+        {
+          "id": "",
+          "text": "葡萄酒",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600"
+        },
+        {
+          "id": "",
+          "text": "未命名按钮",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600"
+        },
+        {
+          "id": "",
+          "text": "查看详情",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1"
+        },
+        {
+          "id": "",
+          "text": "查看详情",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "trace-button trace-button-secondary text-xs py-1"
+        }
+      ]
+    },
+    "/pages/trace/trace-query.html": {
+      "url": "http://localhost:8080/pages/trace/trace-query.html",
+      "stats": {
+        "totalButtons": 4,
+        "buttonsWithUniqueId": 0,
+        "buttonsWithAccessibility": 0,
+        "buttonsWithVisualFeedback": 0
+      },
+      "buttons": [
+        {
+          "id": "searchBtn",
+          "text": "查询",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "search-btn rounded-r-lg px-4 py-2"
+        },
+        {
+          "id": "toggleAdvanced",
+          "text": "高级搜索",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-blue-500 text-sm px-2 hover:text-blue-700"
+        },
+        {
+          "id": "closeScanModal",
+          "text": "closeScanModal",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-gray-400 hover:text-gray-600"
+        },
+        {
+          "id": "",
+          "text": "开始扫描",
+          "hasUniqueId": false,
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        }
+      ]
+    }
+  }
+}

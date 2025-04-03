@@ -1,0 +1,1538 @@
+{
+  "timestamp": "2025-04-03T05:49:02.632Z",
+  "summary": {
+    "totalButtons": 50,
+    "buttonWithUniqueIds": 0,
+    "buttonWithAccessibility": 47,
+    "buttonWithVisualFeedback": 22
+  },
+  "pageResults": [
+    {
+      "page": "/pages/auth/login.html",
+      "buttonCount": 2,
+      "uniqueIdCount": 0,
+      "accessibilityCount": 2,
+      "feedbackCount": 0,
+      "buttons": [
+        {
+          "id": "password-toggle",
+          "hasUniqueId": false,
+          "tag": "button",
+          "type": "button",
+          "text": "",
+          "ariaLabel": "显示密码",
+          "classes": [
+            "password-toggle"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 811,
+            "y": 387,
+            "width": 16,
+            "height": 21
+          }
+        },
+        {
+          "id": "login-btn",
+          "hasUniqueId": false,
+          "tag": "button",
+          "type": "submit",
+          "text": "登录",
+          "ariaLabel": "登录",
+          "classes": [
+            "ant-btn",
+            "ant-btn-primary",
+            "w-full",
+            "transition-all",
+            "duration-300",
+            "transform",
+            "hover:scale-[1.02]",
+            "active:scale-[0.98]"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 441,
+            "y": 489,
+            "width": 398,
+            "height": 48
+          }
+        }
+      ]
+    },
+    {
+      "page": "/pages/trace/trace-map.html",
+      "buttonCount": 9,
+      "uniqueIdCount": 0,
+      "accessibilityCount": 7,
+      "feedbackCount": 2,
+      "buttons": [
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "全部产品",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-[#00467F]",
+            "text-white",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 16,
+            "y": 73,
+            "width": 88,
+            "height": 30
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "和牛肉",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-white",
+            "text-gray-600",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1",
+            "border",
+            "border-gray-200"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 112,
+            "y": 73,
+            "width": 76,
+            "height": 30
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "大闸蟹",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-white",
+            "text-gray-600",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1",
+            "border",
+            "border-gray-200"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 196,
+            "y": 73,
+            "width": 76,
+            "height": 30
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "猕猴桃",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-white",
+            "text-gray-600",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1",
+            "border",
+            "border-gray-200"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 280,
+            "y": 73,
+            "width": 76,
+            "height": 30
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "葡萄酒",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-white",
+            "text-gray-600",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1",
+            "border",
+            "border-gray-200"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 364,
+            "y": 73,
+            "width": 76,
+            "height": 30
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "",
+          "ariaLabel": "",
+          "classes": [
+            "bg-gray-100",
+            "w-8",
+            "h-8",
+            "rounded-full",
+            "flex",
+            "items-center",
+            "justify-center",
+            "text-gray-600"
+          ],
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 1176,
+            "y": 151,
+            "width": 32,
+            "height": 32
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "",
+          "ariaLabel": "",
+          "classes": [
+            "bg-gray-100",
+            "w-8",
+            "h-8",
+            "rounded-full",
+            "flex",
+            "items-center",
+            "justify-center",
+            "text-gray-600"
+          ],
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 1216,
+            "y": 151,
+            "width": 32,
+            "height": 32
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "查看详情",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 16,
+            "y": 861,
+            "width": 67,
+            "height": 24
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "查看详情",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 16,
+            "y": 1050,
+            "width": 67,
+            "height": 24
+          }
+        }
+      ]
+    },
+    {
+      "page": "/pages/trace/trace-list.html",
+      "buttonCount": 18,
+      "uniqueIdCount": 0,
+      "accessibilityCount": 18,
+      "feedbackCount": 10,
+      "buttons": [
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "今日",
+          "ariaLabel": "",
+          "classes": [
+            "bg-blue-50",
+            "text-[#00467F]",
+            "rounded",
+            "px-3",
+            "py-1",
+            "text-xs",
+            "border",
+            "border-blue-100"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 1075,
+            "y": 126,
+            "width": 50,
+            "height": 26
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "近7天",
+          "ariaLabel": "",
+          "classes": [
+            "bg-white",
+            "text-gray-600",
+            "rounded",
+            "px-3",
+            "py-1",
+            "text-xs",
+            "border",
+            "border-gray-200"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 1133,
+            "y": 126,
+            "width": 56,
+            "height": 26
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "近30天",
+          "ariaLabel": "",
+          "classes": [
+            "bg-white",
+            "text-gray-600",
+            "rounded",
+            "px-3",
+            "py-1",
+            "text-xs",
+            "border",
+            "border-gray-200"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 1197,
+            "y": 126,
+            "width": 63,
+            "height": 26
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "全部",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-[#00467F]",
+            "text-white",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1.5",
+            "shadow-sm"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 20,
+            "y": 176,
+            "width": 60,
+            "height": 34
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "已完成",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-white",
+            "text-gray-600",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1.5",
+            "border",
+            "border-gray-200",
+            "shadow-sm"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 88,
+            "y": 176,
+            "width": 96,
+            "height": 34
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "待审核",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-white",
+            "text-gray-600",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1.5",
+            "border",
+            "border-gray-200",
+            "shadow-sm"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 192,
+            "y": 176,
+            "width": 96,
+            "height": 34
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "异常",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-white",
+            "text-gray-600",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1.5",
+            "border",
+            "border-gray-200",
+            "shadow-sm"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 296,
+            "y": 176,
+            "width": 82,
+            "height": 34
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "草稿",
+          "ariaLabel": "",
+          "classes": [
+            "flex-shrink-0",
+            "bg-white",
+            "text-gray-600",
+            "rounded-full",
+            "text-sm",
+            "px-4",
+            "py-1.5",
+            "border",
+            "border-gray-200",
+            "shadow-sm"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 386,
+            "y": 176,
+            "width": 82,
+            "height": 34
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "二维码",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1.5",
+            "px-3",
+            "mr-2"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 20,
+            "y": 514,
+            "width": 78,
+            "height": 28
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "a",
+          "type": "",
+          "text": "查看详情",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-primary",
+            "text-xs",
+            "py-1.5",
+            "px-3"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 110,
+            "y": 514,
+            "width": 93,
+            "height": 28
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "二维码",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1.5",
+            "px-3",
+            "mr-2"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 20,
+            "y": 679,
+            "width": 78,
+            "height": 28
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "a",
+          "type": "",
+          "text": "查看详情",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-primary",
+            "text-xs",
+            "py-1.5",
+            "px-3"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 110,
+            "y": 679,
+            "width": 93,
+            "height": 28
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "二维码",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1.5",
+            "px-3",
+            "mr-2"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 20,
+            "y": 894,
+            "width": 78,
+            "height": 28
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "a",
+          "type": "",
+          "text": "查看详情",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-primary",
+            "text-xs",
+            "py-1.5",
+            "px-3"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 110,
+            "y": 894,
+            "width": 93,
+            "height": 28
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "二维码",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1.5",
+            "px-3",
+            "mr-2"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 20,
+            "y": 1059,
+            "width": 78,
+            "height": 28
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "a",
+          "type": "",
+          "text": "查看详情",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-primary",
+            "text-xs",
+            "py-1.5",
+            "px-3"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 110,
+            "y": 1059,
+            "width": 93,
+            "height": 28
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "上一页",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1.5",
+            "px-4",
+            "flex",
+            "items-center"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 20,
+            "y": 1123,
+            "width": 82,
+            "height": 28
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "下一页",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-primary",
+            "text-xs",
+            "py-1.5",
+            "px-4",
+            "flex",
+            "items-center"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 1178,
+            "y": 1123,
+            "width": 82,
+            "height": 28
+          }
+        }
+      ]
+    },
+    {
+      "page": "/pages/trace/trace-detail.html",
+      "buttonCount": 12,
+      "uniqueIdCount": 0,
+      "accessibilityCount": 11,
+      "feedbackCount": 10,
+      "buttons": [
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "基本信息",
+          "ariaLabel": "",
+          "classes": [
+            "tab-button",
+            "active"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 0,
+            "y": 357,
+            "width": 78,
+            "height": 21
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "溯源流程",
+          "ariaLabel": "",
+          "classes": [
+            "tab-button"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 82,
+            "y": 357,
+            "width": 80,
+            "height": 21
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "证书与检测",
+          "ariaLabel": "",
+          "classes": [
+            "tab-button"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 165,
+            "y": 357,
+            "width": 92,
+            "height": 21
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "查看照片(3)",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1",
+            "image-view-link"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 16,
+            "y": 1331,
+            "width": 83,
+            "height": 24
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "查看照片(2)",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1",
+            "image-view-link"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 16,
+            "y": 1581,
+            "width": 83,
+            "height": 24
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "查看检测报告",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 16,
+            "y": 1803,
+            "width": 88,
+            "height": 24
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "查看温度记录",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "text-xs",
+            "py-1"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 16,
+            "y": 2053,
+            "width": 91,
+            "height": 24
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "a",
+          "type": "",
+          "text": "查看完整证书",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-primary",
+            "w-full",
+            "text-center",
+            "py-2"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 32,
+            "y": 2287,
+            "width": 108,
+            "height": 35
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "a",
+          "type": "",
+          "text": "查看追溯码",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-secondary",
+            "flex",
+            "items-center",
+            "justify-center"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 0,
+            "y": 2869,
+            "width": 634,
+            "height": 21
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "a",
+          "type": "",
+          "text": "查看溯源证书",
+          "ariaLabel": "",
+          "classes": [
+            "trace-button",
+            "trace-button-primary",
+            "flex",
+            "items-center",
+            "justify-center"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 646,
+            "y": 2869,
+            "width": 634,
+            "height": 21
+          }
+        },
+        {
+          "id": "close-image-modal",
+          "hasUniqueId": false,
+          "tag": "button",
+          "type": "submit",
+          "text": "",
+          "ariaLabel": "",
+          "classes": [
+            "absolute",
+            "top-3",
+            "right-3",
+            "z-10",
+            "bg-white",
+            "rounded-full",
+            "w-8",
+            "h-8",
+            "flex",
+            "items-center",
+            "justify-center",
+            "text-gray-700",
+            "shadow-md"
+          ],
+          "isAccessible": false,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 468,
+            "y": 2902,
+            "width": 32,
+            "height": 32
+          }
+        },
+        {
+          "id": "",
+          "hasUniqueId": "",
+          "tag": "button",
+          "type": "submit",
+          "text": "高对比度",
+          "ariaLabel": "切换高对比度模式",
+          "classes": [
+            "contrast-toggle"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 0,
+            "y": 2911,
+            "width": 56,
+            "height": 21
+          }
+        }
+      ]
+    },
+    {
+      "page": "/pages/home/home-selector.html",
+      "buttonCount": 6,
+      "uniqueIdCount": 0,
+      "accessibilityCount": 6,
+      "feedbackCount": 0,
+      "buttons": [
+        {
+          "id": "farmingModule",
+          "hasUniqueId": false,
+          "tag": "a",
+          "type": "",
+          "text": "养殖管理\n\n动物饲养、疫苗、繁育信息管理",
+          "ariaLabel": "养殖管理模块",
+          "classes": [
+            "module-card",
+            "p-4"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "button",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 461,
+            "y": 388,
+            "width": 171,
+            "height": 147
+          }
+        },
+        {
+          "id": "processingModule",
+          "hasUniqueId": false,
+          "tag": "a",
+          "type": "",
+          "text": "生产加工\n\n屠宰、检验、包装等加工环节管理",
+          "ariaLabel": "生产加工模块",
+          "classes": [
+            "module-card",
+            "p-4"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "button",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 648,
+            "y": 388,
+            "width": 171,
+            "height": 147
+          }
+        },
+        {
+          "id": "logisticsModule",
+          "hasUniqueId": false,
+          "tag": "a",
+          "type": "",
+          "text": "销售物流\n\n运输、配送、订单跟踪管理",
+          "ariaLabel": "销售物流模块",
+          "classes": [
+            "module-card",
+            "p-4"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "button",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 461,
+            "y": 551,
+            "width": 171,
+            "height": 147
+          }
+        },
+        {
+          "id": "traceModule",
+          "hasUniqueId": false,
+          "tag": "a",
+          "type": "",
+          "text": "追溯查询\n\n产品全链路溯源和质量追踪",
+          "ariaLabel": "追溯查询模块",
+          "classes": [
+            "module-card",
+            "p-4"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "button",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 648,
+            "y": 551,
+            "width": 171,
+            "height": 147
+          }
+        },
+        {
+          "id": "userManageModule",
+          "hasUniqueId": false,
+          "tag": "a",
+          "type": "",
+          "text": "用户管理\n\n账号、权限配置",
+          "ariaLabel": "用户管理模块",
+          "classes": [
+            "module-card",
+            "p-4"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "button",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 461,
+            "y": 775,
+            "width": 171,
+            "height": 131
+          }
+        },
+        {
+          "id": "systemConfigModule",
+          "hasUniqueId": false,
+          "tag": "a",
+          "type": "",
+          "text": "系统配置\n\n设置、备份、维护",
+          "ariaLabel": "系统配置模块",
+          "classes": [
+            "module-card",
+            "p-4"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "button",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 648,
+            "y": 775,
+            "width": 171,
+            "height": 131
+          }
+        }
+      ]
+    },
+    {
+      "page": "/pages/product-trace.html",
+      "buttonCount": 3,
+      "uniqueIdCount": 0,
+      "accessibilityCount": 3,
+      "feedbackCount": 0,
+      "buttons": [
+        {
+          "id": "backButton",
+          "hasUniqueId": false,
+          "tag": "button",
+          "type": "submit",
+          "text": "返回",
+          "ariaLabel": "",
+          "classes": [
+            "back-button"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 40,
+            "y": 21,
+            "width": 53,
+            "height": 21
+          }
+        },
+        {
+          "id": "scanButton",
+          "hasUniqueId": false,
+          "tag": "button",
+          "type": "submit",
+          "text": "开始扫描",
+          "ariaLabel": "",
+          "classes": [
+            "button"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 80,
+            "y": 484,
+            "width": 1120,
+            "height": 45
+          }
+        },
+        {
+          "id": "inputCodeButton",
+          "hasUniqueId": false,
+          "tag": "button",
+          "type": "submit",
+          "text": "手动输入溯源码",
+          "ariaLabel": "",
+          "classes": [
+            "button",
+            "secondary"
+          ],
+          "isAccessible": true,
+          "hasVisualFeedback": false,
+          "attributes": {
+            "role": "",
+            "ariaPressed": "",
+            "ariaExpanded": "",
+            "disabled": false
+          },
+          "position": {
+            "x": 80,
+            "y": 539,
+            "width": 1120,
+            "height": 45
+          }
+        }
+      ]
+    }
+  ]
+}

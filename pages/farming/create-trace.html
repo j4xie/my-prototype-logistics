@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>创建溯源记录 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        /* 页面特定样式 */
+        .type-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .type-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .type-card.selected {
+            border-color: var(--primary-color);
+            background-color: var(--icon-bg-primary);
+        }
+        
+        .step-progress {
+            height: 6px;
+            border-radius: 3px;
+            background-color: #F0F0F0;
+            overflow: hidden;
+        }
+        
+        .step-progress-inner {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .upload-area {
+            border: 2px dashed #E5E7EB;
+            border-radius: var(--border-radius-base);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: var(--icon-bg-primary);
+        }
+        
+        .process-card {
+            transition: all 0.3s ease;
+        }
+        
+        .process-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+            background-color: #FAFAFA;
+        }
+        
+        .fixed-bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            padding: 12px 16px;
+            z-index: 100;
+            border-top: 1px solid #F0F0F0;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        }
+        
+        /* 动画效果 */
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 表单样式增强 */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: rgba(0, 0, 0, 0.65);
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+            outline: none;
+        }
+        
+        .form-help {
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.45);
+            margin-top: 4px;
+        }
+        
+        .form-required::after {
+            content: "*";
+            color: var(--error-color);
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body class="bg-[#F0F2F5]">
+    <div class="max-w-[390px] mx-auto min-h-screen">
+        <!-- 顶部导航栏 -->
+        <header class="app-header">
+            <div class="header-container">
+                <div class="flex items-center">
+                    <a href="javascript:history.back()" class="nav-icon">
+                        <i class="fas fa-arrow-left text-white"></i>
+                    </a>
+                    <span class="header-title">创建溯源记录</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="#" class="nav-icon" id="helpBtn">
+                        <i class="fas fa-question-circle text-white"></i>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="content-container">
+            <div class="content-area">
+                <!-- 步骤进度指示 -->
+                <div class="card mb-4 fade-in">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="text-base font-medium text-gray-900">步骤 1/4：选择产品类型与基本信息</div>
+                        <div class="text-sm text-gray-500">25%</div>
+                    </div>
+                    <div class="step-progress">
+                        <div class="step-progress-inner" style="width: 25%;"></div>
+                    </div>
+                </div>
+
+                <!-- 产品类型选择 -->
+                <div class="card mb-4 fade-in" style="animation-delay: 0.1s">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <i class="fas fa-th-large text-[#1677FF] mr-2"></i>
+                        选择产品类型
+                    </h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="type-card bg-white rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer selected" data-type="highend" data-category="livestock">
+                            <input type="radio" name="product-type" class="hidden" checked>
+                            <div class="w-12 h-12 rounded-full bg-[#E6F7FF] flex items-center justify-center mb-3">
+                                <i class="fas fa-trophy text-[#1677FF] text-xl"></i>
+                            </div>
+                            <span class="text-base font-medium text-gray-900">高端畜禽</span>
+                            <span class="text-xs text-gray-500 mt-1">和牛、藏香猪等</span>
+                        </label>
+                        <label class="type-card bg-white rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer" data-type="normal" data-category="livestock">
+                            <input type="radio" name="product-type" class="hidden">
+                            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                                <i class="fas fa-piggy-bank text-gray-500 text-xl"></i>
+                            </div>
+                            <span class="text-base font-medium text-gray-700">普通畜禽</span>
+                            <span class="text-xs text-gray-500 mt-1">普通猪、肉牛等</span>
+                        </label>
+                        <label class="type-card bg-white rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer" data-type="seafood" data-category="aquatic">
+                            <input type="radio" name="product-type" class="hidden">
+                            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                                <i class="fas fa-fish text-gray-500 text-xl"></i>
+                            </div>
+                            <span class="text-base font-medium text-gray-700">水产品</span>
+                            <span class="text-xs text-gray-500 mt-1">海鲜、淡水鱼类</span>
+                        </label>
+                        <label class="type-card bg-white rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer" data-type="crops" data-category="plant">
+                            <input type="radio" name="product-type" class="hidden">
+                            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                                <i class="fas fa-seedling text-gray-500 text-xl"></i>
+                            </div>
+                            <span class="text-base font-medium text-gray-700">农作物</span>
+                            <span class="text-xs text-gray-500 mt-1">水果、蔬菜、谷物</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 基本信息表单 -->
+                <div class="card mb-4 fade-in" style="animation-delay: 0.2s">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <i class="fas fa-info-circle text-[#1677FF] mr-2"></i>
+                        基本信息
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="form-group">
+                            <label class="form-label form-required" for="batch-no">批次号</label>
+                            <input type="text" id="batch-no" class="form-input" 
+                                placeholder="例如：WG-2503-A" value="WG-2503-A">
+                            <div class="form-help">批次号将用于追踪整批产品</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label form-required" for="product-name">产品名称</label>
+                            <input type="text" id="product-name" class="form-input" 
+                                placeholder="输入产品名称" value="A5级和牛肉">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label class="form-label form-required" for="production-date">生产日期</label>
+                                <input type="date" id="production-date" class="form-input" 
+                                    value="2025-03-15">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label form-required" for="shelf-life">保质期(天)</label>
+                                <input type="number" id="shelf-life" class="form-input" 
+                                    placeholder="例如：90" value="90">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label form-required" for="origin">产地</label>
+                            <input type="text" id="origin" class="form-input" 
+                                placeholder="输入产地信息" value="日本北海道">
+                        </div>
+
+                        <!-- 畜禽类型选择 (如果选择了畜禽类别才显示) -->
+                        <div class="form-group livestock-field">
+                            <label class="form-label form-required" for="livestock-type">畜禽品种</label>
+                            <select id="livestock-type" class="form-input">
+                                <optgroup label="高端畜禽" class="highend-options">
+                                    <option value="和牛">和牛</option>
+                                    <option value="藏香猪">藏香猪</option>
+                                    <option value="伊比利亚猪">伊比利亚猪</option>
+                                    <option value="安格斯牛">安格斯牛</option>
+                                </optgroup>
+                                <optgroup label="普通畜禽" class="normal-options" style="display:none;">
+                                    <option value="普通猪">普通猪</option>
+                                    <option value="肉牛">肉牛</option>
+                                    <option value="肉羊">肉羊</option>
+                                    <option value="家禽">家禽</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- 高端畜禽特有的字段 -->
+                        <div class="highend-fields p-4 bg-[#F0F5FF] rounded-lg">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center">
+                                    <i class="fas fa-medal text-[#722ED1] mr-2"></i>
+                                    <h3 class="text-base font-medium text-[#722ED1]">高端畜禽特有信息</h3>
+                                </div>
+                                <button type="button" id="toggle-highend-fields" class="text-sm text-[#722ED1]">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                            <div id="highend-fields-content">
+                                <div class="grid grid-cols-2 gap-4 mb-3">
+                                    <div class="form-group">
+                                        <label class="form-label" for="bloodline-cert">血统证书编号</label>
+                                        <input type="text" id="bloodline-cert" class="form-input" 
+                                            placeholder="输入证书编号">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="breed-level">品种等级</label>
+                                        <select id="breed-level" class="form-input">
+                                            <option value="特级">特级</option>
+                                            <option value="一级">一级</option>
+                                            <option value="二级">二级</option>
+                                            <option value="三级">三级</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="special-feed">特殊饲料</label>
+                                    <input type="text" id="special-feed" class="form-input" 
+                                        placeholder="输入特殊饲料信息">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="premium-features">优质特性描述</label>
+                                    <textarea id="premium-features" class="form-input" rows="2" 
+                                      placeholder="描述该畜禽的优质特性，如肉质特点、生长环境等"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="product-grade">产品等级</label>
+                            <select id="product-grade" class="form-input">
+                                <option value="A5">A5级 (最高级)</option>
+                                <option value="A4">A4级</option>
+                                <option value="A3">A3级</option>
+                                <option value="A2">A2级</option>
+                                <option value="A1">A1级</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 上传图片区域 -->
+                <div class="card mb-4 fade-in" style="animation-delay: 0.3s">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <i class="fas fa-image text-[#1677FF] mr-2"></i>
+                        产品图片
+                    </h2>
+                    <div class="upload-area p-6 flex flex-col items-center justify-center">
+                        <div class="w-16 h-16 rounded-full bg-[#E6F7FF] flex items-center justify-center mb-3">
+                            <i class="fas fa-cloud-upload-alt text-[#1677FF] text-2xl"></i>
+                        </div>
+                        <p class="text-base text-gray-700 mb-2">点击或拖拽上传图片</p>
+                        <p class="text-sm text-gray-500 mb-4">支持 JPG、PNG 格式，单个文件不超过 5MB</p>
+                        <button class="btn bg-[#1677FF] hover:bg-[#4096FF] text-white px-6 py-2 rounded-lg transition-all active:scale-95">
+                            选择文件
+                        </button>
+                        <input type="file" class="hidden" accept="image/*">
+                    </div>
+                </div>
+
+                <!-- 产品描述区域 -->
+                <div class="card mb-4 fade-in" style="animation-delay: 0.4s">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <i class="fas fa-align-left text-[#1677FF] mr-2"></i>
+                        产品描述
+                    </h2>
+                    <div class="form-group">
+                        <textarea id="description" class="form-input" rows="4" 
+                              placeholder="输入产品描述信息">日本A5和牛肉，北海道产。肉质细嫩多汁，雪花纹理均匀，脂肪分布理想。适合涮火锅、煎烤等烹饪方式。</textarea>
+                    </div>
+                </div>
+
+                <!-- 环节配置区域 -->
+                <div class="card mb-20 fade-in" style="animation-delay: 0.5s">
+                    <h2 class="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                        <i class="fas fa-project-diagram text-[#1677FF] mr-2"></i>
+                        溯源环节配置
+                    </h2>
+                    <p class="text-sm text-gray-600 mb-4">已根据产品类型自动配置以下环节，点击进入详细配置</p>
+
+                    <div class="space-y-3">
+                        <!-- 养殖环节 -->
+                        <div class="process-card bg-white rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#E6F7FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-seedling text-[#1677FF]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">养殖阶段</div>
+                                    <div class="text-sm text-gray-500">包含18个字段，3个必填项</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+
+                        <!-- 繁育信息 - 仅畜禽显示 -->
+                        <div class="process-card livestock-process bg-white rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#E6F7FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-baby text-[#1677FF]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">繁育信息</div>
+                                    <div class="text-sm text-gray-500">包含12个字段，4个必填项</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+
+                        <!-- 疫苗接种 - 仅畜禽显示 -->
+                        <div class="process-card livestock-process bg-white rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#E6F7FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-syringe text-[#1677FF]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">疫苗接种</div>
+                                    <div class="text-sm text-gray-500">包含15个字段，5个必填项</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+
+                        <!-- 血统认证 - 仅高端畜禽显示 -->
+                        <div class="process-card highend-process bg-[#F9F0FF] rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#F0E6FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-dna text-[#722ED1]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">血统认证</div>
+                                    <div class="text-sm text-gray-500">包含10个字段，3个必填项</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-xs bg-purple-100 text-[#722ED1] px-2 py-0.5 rounded-full mr-2">高端专属</span>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- 精细饲养 - 仅高端畜禽显示 -->
+                        <div class="process-card highend-process bg-[#F9F0FF] rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#F0E6FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-utensils text-[#722ED1]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">精细饲养</div>
+                                    <div class="text-sm text-gray-500">包含14个字段，4个必填项</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-xs bg-purple-100 text-[#722ED1] px-2 py-0.5 rounded-full mr-2">高端专属</span>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                        </div>
+
+                        <!-- 屠宰加工 -->
+                        <div class="process-card bg-white rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#E6F7FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-cut text-[#1677FF]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">屠宰加工</div>
+                                    <div class="text-sm text-gray-500">包含15个字段，4个必填项</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+
+                        <!-- 肉质评级 - 仅高端畜禽显示 -->
+                        <div class="process-card highend-process bg-[#F9F0FF] rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#F0E6FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-star-half-alt text-[#722ED1]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">肉质评级</div>
+                                    <div class="text-sm text-gray-500">包含12个字段，3个必填项</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-xs bg-purple-100 text-[#722ED1] px-2 py-0.5 rounded-full mr-2">高端专属</span>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                        </div>
+
+                        <!-- 质量检验 -->
+                        <div class="process-card bg-white rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#E6F7FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-microscope text-[#1677FF]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">质量检验</div>
+                                    <div class="text-sm text-gray-500">包含20个字段，6个必填项</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+
+                        <!-- 冷链物流 -->
+                        <div class="process-card bg-white rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#E6F7FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-truck-loading text-[#1677FF]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">冷链物流</div>
+                                    <div class="text-sm text-gray-500">包含12个字段，4个必填项</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+
+                        <!-- 销售记录 -->
+                        <div class="process-card bg-white rounded-lg p-4 flex items-center justify-between cursor-pointer hover:shadow-md transition-all">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-[#E6F7FF] flex items-center justify-center mr-3">
+                                    <i class="fas fa-store text-[#1677FF]"></i>
+                                </div>
+                                <div>
+                                    <div class="text-base font-medium text-gray-900">销售记录</div>
+                                    <div class="text-sm text-gray-500">包含10个字段，3个必填项</div>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+
+                        <!-- 添加环节按钮 -->
+                        <div class="upload-area p-4 flex items-center justify-center cursor-pointer hover:border-[#1677FF] transition-all">
+                            <i class="fas fa-plus text-[#1677FF] mr-2"></i>
+                            <span class="text-gray-700">添加自定义环节</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部操作栏 -->
+        <div class="fixed-bottom-bar">
+            <div class="max-w-[390px] mx-auto flex space-x-4">
+                <button class="btn flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-200 transition-all active:scale-95">
+                    保存草稿
+                </button>
+                <button class="btn flex-1 bg-[#1677FF] text-white px-4 py-3 rounded-lg hover:bg-[#4096FF] transition-all active:scale-95">
+                    下一步
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 引用 -->
+    <script src="../../components/trace-common.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // 初始化页面
+        initPage();
+        
+        // 处理高端字段的折叠展开
+        const toggleHighendBtn = document.getElementById('toggle-highend-fields');
+        const highendFieldsContent = document.getElementById('highend-fields-content');
+        
+        if (toggleHighendBtn) {
+            toggleHighendBtn.addEventListener('click', () => {
+                const isVisible = highendFieldsContent.style.display !== 'none';
+                highendFieldsContent.style.display = isVisible ? 'none' : 'block';
+                
+                // 更新图标
+                const icon = toggleHighendBtn.querySelector('i');
+                if (isVisible) {
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                } else {
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                }
+            });
+        }
+        
+        // 产品类型选择
+        const typeCards = document.querySelectorAll('.type-card');
+        typeCards.forEach(card => {
+            card.addEventListener('click', () => {
+                // 移除所有卡片的选中状态
+                typeCards.forEach(c => c.classList.remove('selected'));
+                
+                // 添加当前卡片的选中状态
+                card.classList.add('selected');
+                
+                // 选中内部的radio
+                const radio = card.querySelector('input[type="radio"]');
+                radio.checked = true;
+                
+                // 更新图标颜色
+                typeCards.forEach(c => {
+                    const icon = c.querySelector('i');
+                    const iconBg = c.querySelector('.rounded-full');
+                    if (c.classList.contains('selected')) {
+                        icon.classList.remove('text-gray-500');
+                        icon.classList.add('text-[#1677FF]');
+                        iconBg.classList.remove('bg-gray-100');
+                        iconBg.classList.add('bg-[#E6F7FF]');
+                    } else {
+                        icon.classList.remove('text-[#1677FF]');
+                        icon.classList.add('text-gray-500');
+                        iconBg.classList.remove('bg-[#E6F7FF]');
+                        iconBg.classList.add('bg-gray-100');
+                    }
+                });
+                
+                // 处理特殊字段显示/隐藏
+                const selectedType = card.getAttribute('data-type');
+                const category = card.getAttribute('data-category');
+                
+                // 显示/隐藏畜禽相关字段
+                const livestockFields = document.querySelector('.livestock-field');
+                const highendFields = document.querySelector('.highend-fields');
+                
+                // 畜禽类别相关流程
+                const livestockProcesses = document.querySelectorAll('.livestock-process');
+                const highendProcesses = document.querySelectorAll('.highend-process');
+                
+                // 先全部隐藏
+                if (livestockFields) livestockFields.style.display = 'none';
+                if (highendFields) highendFields.style.display = 'none';
+                
+                livestockProcesses.forEach(p => p.style.display = 'none');
+                highendProcesses.forEach(p => p.style.display = 'none');
+                
+                // 根据选择显示对应字段
+                if (category === 'livestock') {
+                    if (livestockFields) livestockFields.style.display = 'block';
+                    
+                    // 显示畜禽流程
+                    livestockProcesses.forEach(p => p.style.display = 'flex');
+                    
+                    // 如果是高端畜禽，显示高端字段和流程
+                    if (selectedType === 'highend') {
+                        if (highendFields) highendFields.style.display = 'block';
+                        highendProcesses.forEach(p => p.style.display = 'flex');
+                        
+                        // 调整畜禽品种选择器
+                        const normalOptions = document.querySelector('.normal-options');
+                        const highendOptions = document.querySelector('.highend-options');
+                        if (normalOptions) normalOptions.style.display = 'none';
+                        if (highendOptions) highendOptions.style.display = 'block';
+                    } else {
+                        // 普通畜禽
+                        const normalOptions = document.querySelector('.normal-options');
+                        const highendOptions = document.querySelector('.highend-options');
+                        if (normalOptions) normalOptions.style.display = 'block';
+                        if (highendOptions) highendOptions.style.display = 'none';
+                    }
+                    
+                    // 保存畜禽类型到localStorage
+                    localStorage.setItem('livestock_type', selectedType === 'highend' ? 'highend' : 'normal');
+                }
+            });
+        });
+        
+        // 初始化从localStorage读取畜禽类型状态
+        initLivestockTypeFromStorage();
+        
+        // 上传图片功能
+        const uploadArea = document.querySelector('.upload-area');
+        const fileInput = document.querySelector('input[type="file"]');
+        const uploadButton = uploadArea.querySelector('button');
+        
+        uploadButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('border-[#1677FF]', 'bg-[#E6F7FF]');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('border-[#1677FF]', 'bg-[#E6F7FF]');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('border-[#1677FF]', 'bg-[#E6F7FF]');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (fileInput.files.length) {
+                handleFiles(fileInput.files);
+            }
+        });
+        
+        function handleFiles(files) {
+            // 在实际应用中处理文件上传
+            console.log('上传文件:', files);
+            
+            // 显示上传反馈
+            const fileName = files[0].name;
+            traceUI.showToast(`已选择文件: ${fileName}`, 'success');
+        }
+        
+        // 帮助按钮
+        document.getElementById('helpBtn').addEventListener('click', () => {
+            traceUI.showToast('帮助功能即将上线', 'info');
+        });
+        
+        // 底部按钮
+        const saveBtn = document.querySelector('.fixed-bottom-bar button:first-child');
+        const nextBtn = document.querySelector('.fixed-bottom-bar button:last-child');
+        
+        saveBtn.addEventListener('click', () => {
+            traceUI.showToast('草稿已保存', 'success');
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            // 在实际应用中，这里应该进行表单验证
+            console.log('进入下一步');
+            traceUI.showToast('正在进入下一步...', 'info');
+            
+            // 模拟验证和提交
+            setTimeout(() => {
+                // 跳转到下一步
+                // window.location.href = 'create-trace-step2.html';
+            }, 1000);
+        });
+        
+        // 环节配置卡片点击事件
+        const processCards = document.querySelectorAll('.process-card');
+        processCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const processName = card.querySelector('.text-base').textContent;
+                console.log(`点击了 ${processName} 环节配置`);
+                // 这里可以实现跳转到详细配置页面的逻辑
+                traceUI.showToast(`即将配置: ${processName}`, 'info');
+            });
+        });
+    });
+    
+    function initPage() {
+        // 检查认证状态
+        if (typeof traceAuth !== 'undefined') {
+            if (!traceAuth.isAuthenticated()) {
+                console.log('用户未登录，但在测试环境中继续');
+                // 在实际环境中，应该重定向到登录页面
+                
+                // 开发环境自动登录，便于调试
+                traceAuth.login({
+                    id: '001',
+                    name: '产品经理',
+                    role: '系统管理员',
+                    permissions: ['create', 'edit', 'publish']
+                });
+            }
+            
+            // 检查创建权限
+            if (!traceAuth.hasPermission('create')) {
+                console.warn('用户无创建权限，但在测试环境中继续');
+                // 在实际环境中，应该显示权限错误并重定向
+            }
+        }
+        
+        // 调整内容区域的填充，确保不被导航栏遮挡
+        const content = document.querySelector('.content-container');
+        const bottomBar = document.querySelector('.fixed-bottom-bar');
+        
+        if (content && bottomBar) {
+            // 为底部导航保留额外空间
+            const bottomBarHeight = bottomBar.offsetHeight;
+            content.style.paddingBottom = `${bottomBarHeight + 16}px`;
+        }
+    }
+    
+    // 初始化畜禽类型 - 从localStorage读取
+    function initLivestockTypeFromStorage() {
+        const savedType = localStorage.getItem('livestock_type');
+        
+        if (savedType) {
+            // 自动选择对应的畜禽类型
+            const targetCard = savedType === 'highend' 
+                ? document.querySelector('.type-card[data-type="highend"]')
+                : document.querySelector('.type-card[data-type="normal"]');
+            
+            if (targetCard) {
+                // 模拟点击
+                targetCard.click();
+            }
+        }
+    }
+    </script>
+
+  <!-- 自动按钮升级脚本 (自动注入) -->
+  <script src="/components/autoload-button-upgrade.js"></script>
+  </body>
+</html> 
