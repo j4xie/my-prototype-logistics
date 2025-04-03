@@ -1,0 +1,70 @@
+{
+  "导航菜单": {
+    "selector": "nav",
+    "count": 1,
+    "status": "通过",
+    "details": "找到1个元素"
+  },
+  "按钮": {
+    "selector": "button",
+    "count": 3,
+    "status": "通过",
+    "details": "找到3个元素"
+  },
+  "链接": {
+    "selector": "a",
+    "count": 6,
+    "status": "通过",
+    "details": "找到6个元素",
+    "links": [
+      {
+        "text": "首页",
+        "href": "./index.html",
+        "visible": true
+      },
+      {
+        "text": "种植",
+        "href": "./pages/farming/index.html",
+        "visible": true
+      },
+      {
+        "text": "加工",
+        "href": "./pages/processing/index.html",
+        "visible": true
+      },
+      {
+        "text": "物流",
+        "href": "./pages/logistics/index.html",
+        "visible": true
+      },
+      {
+        "text": "溯源",
+        "href": "./pages/trace/index.html",
+        "visible": true
+      },
+      {
+        "text": "我的",
+        "href": "./pages/profile/index.html",
+        "visible": true
+      }
+    ]
+  },
+  "图片": {
+    "selector": "img",
+    "count": 0,
+    "status": "失败",
+    "details": "未找到元素"
+  },
+  "标题": {
+    "selector": "h1",
+    "count": 2,
+    "status": "通过",
+    "details": "找到2个元素"
+  },
+  "页脚": {
+    "selector": "footer",
+    "count": 1,
+    "status": "通过",
+    "details": "找到1个元素"
+  }
+}

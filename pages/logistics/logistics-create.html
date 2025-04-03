@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>创建物流订单 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    <style>
+        /* 设计系统变量 */
+        :root {
+            --primary-color: #1677FF;
+            --primary-hover: #4096FF;
+            --primary-active: #0958D9;
+            --success-color: #52C41A;
+            --success-hover: #73D13D;
+            --warning-color: #FA8C16;
+            --error-color: #FF4D4F;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-bottom: 24px;
+        }
+        
+        .step-indicator::before {
+            content: "";
+            position: absolute;
+            top: 16px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #f0f0f0;
+            z-index: 1;
+        }
+        
+        .step {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .step-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            border: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            color: #999;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .step.active .step-dot {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .step.completed .step-dot {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+        
+        .step-label {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .step.active .step-label {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .step.completed .step-label {
+            color: var(--success-color);
+        }
+        
+        .step-content {
+            display: none;
+            padding: 16px 0;
+        }
+        
+        .step-content.active {
+            display: block;
+        }
+        
+        .form-section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-section-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .form-field {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        .form-textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            min-height: 80px;
+            transition: all 0.3s;
+        }
+        
+        .form-textarea:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 24px;
+        }
+        
+        .product-item {
+            display: flex;
+            padding: 12px;
+            border: 1px solid #f0f0f0;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+        
+        .product-item:hover {
+            border-color: #d9d9d9;
+            background-color: #fafafa;
+        }
+        
+        .product-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+            object-fit: cover;
+            margin-right: 12px;
+        }
+        
+        .product-details {
+            flex: 1;
+        }
+        
+        .product-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .product-meta {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .product-price {
+            font-weight: 500;
+            color: #ff4d4f;
+        }
+        
+        .product-actions {
+            display: flex;
+            align-items: center;
+        }
+        
+        .qty-control {
+            display: flex;
+            align-items: center;
+        }
+        
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid #d9d9d9;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .qty-btn:hover {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .qty-input {
+            width: 40px;
+            height: 28px;
+            border-top: 1px solid #d9d9d9;
+            border-bottom: 1px solid #d9d9d9;
+            border-left: 0;
+            border-right: 0;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: var(--bottom-tab-height, 60px);
+            background: white;
+            border-top: 1px solid #eee;
+            padding-bottom: var(--safe-area-bottom, 0);
+            z-index: 999;
+        }
+
+        .nav-items {
+            list-style: none;
+            display: flex;
+            max-width: 390px;
+            width: 100%;
+            height: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+            padding: 6px 0;
+        }
+
+        .nav-item.active {
+            color: #007bff;
+        }
+
+        .nav-item img {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="page-container">
+        <!-- 顶部导航栏 -->
+        <header class="app-header">
+            <div class="header-container">
+                <div class="flex items-center">
+                    <a href="home-logistics.html" class="nav-icon mr-2">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="header-title">创建物流订单</h1>
+                </div>
+                <div class="flex items-center">
+                    <a href="javascript:void(0)" class="nav-icon" id="helpBtn">
+                        <i class="fas fa-question-circle"></i>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区域 -->
+        <main class="content-container">
+            <div class="content-area">
+                <!-- 步骤指示器 -->
+                <div class="step-indicator">
+                    <div class="step active" data-step="1">
+                        <div class="step-dot">1</div>
+                        <div class="step-label">客户信息</div>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="step-dot">2</div>
+                        <div class="step-label">产品选择</div>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="step-dot">3</div>
+                        <div class="step-label">物流信息</div>
+                    </div>
+                    <div class="step" data-step="4">
+                        <div class="step-dot">4</div>
+                        <div class="step-label">确认提交</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 步骤内容区域 -->
+            <form id="orderForm">
+                <!-- 步骤1：客户信息 -->
+                <div class="step-content active" data-step="1">
+                    <div class="form-section">
+                        <h3 class="form-section-title">基本信息</h3>
+                        <div class="form-field">
+                            <label class="form-label" for="customerType">客户类型</label>
+                            <select class="form-input" id="customerType" required>
+                                <option value="">请选择客户类型</option>
+                                <option value="supermarket">超市/卖场</option>
+                                <option value="restaurant">餐饮企业</option>
+                                <option value="processor">食品加工企业</option>
+                                <option value="ecommerce">电商平台</option>
+                                <option value="individual">个人消费者</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="customerName">客户名称/公司名称</label>
+                            <input type="text" class="form-input" id="customerName" placeholder="请输入客户名称" required>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="contactPerson">联系人</label>
+                            <input type="text" class="form-input" id="contactPerson" placeholder="请输入联系人姓名" required>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="contactPhone">联系电话</label>
+                            <input type="tel" class="form-input" id="contactPhone" placeholder="请输入联系电话" required>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="contactEmail">电子邮箱</label>
+                            <input type="email" class="form-input" id="contactEmail" placeholder="请输入电子邮箱">
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3 class="form-section-title">收货地址</h3>
+                        <div class="form-field">
+                            <label class="form-label" for="province">所在省份</label>
+                            <select class="form-input" id="province" required>
+                                <option value="">请选择省份</option>
+                                <option value="北京市">北京市</option>
+                                <option value="上海市">上海市</option>
+                                <option value="广东省">广东省</option>
+                                <option value="江苏省">江苏省</option>
+                                <option value="浙江省">浙江省</option>
+                                <!-- 其他省份选项... -->
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="city">所在城市</label>
+                            <select class="form-input" id="city" required>
+                                <option value="">请先选择省份</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="district">所在区/县</label>
+                            <select class="form-input" id="district" required>
+                                <option value="">请先选择城市</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="address">详细地址</label>
+                            <input type="text" class="form-input" id="address" placeholder="请输入详细地址，如街道、门牌号等" required>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="zipCode">邮政编码</label>
+                            <input type="text" class="form-input" id="zipCode" placeholder="请输入邮政编码">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="backToHomeBtn">取消</button>
+                        <button type="button" class="btn btn-primary" id="nextStep1Btn">下一步</button>
+                    </div>
+                </div>
+                
+                <!-- 步骤2：产品选择 -->
+                <div class="step-content" data-step="2">
+                    <div class="form-section">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="form-section-title !mb-0 !border-0">产品列表</h3>
+                            <button type="button" class="btn btn-text" id="scanProductBtn">
+                                <i class="fas fa-qrcode mr-1"></i> 扫码添加
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <input type="text" class="form-input" id="searchProduct" placeholder="搜索产品名称、SKU、批次号...">
+                        </div>
+                        
+                        <div class="product-list" id="productList">
+                            <!-- 产品项 -->
+                            <div class="product-item">
+                                <img src="assets/images/product-1.jpg" alt="有机猪肉" class="product-img">
+                                <div class="product-details">
+                                    <div class="product-title">有机黑猪肉</div>
+                                    <div class="product-meta">
+                                        SKU: P20230512 | 批次: BT2023060801 | 库存: 186kg
+                                    </div>
+                                    <div class="product-price">¥68.00/kg</div>
+                                </div>
+                                <div class="product-actions">
+                                    <div class="qty-control">
+                                        <div class="qty-btn minus">-</div>
+                                        <input type="number" min="0" value="0" class="qty-input" data-product-id="P20230512">
+                                        <div class="qty-btn plus">+</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="product-item">
+                                <img src="assets/images/product-2.jpg" alt="猪排" class="product-img">
+                                <div class="product-details">
+                                    <div class="product-title">精选猪里脊</div>
+                                    <div class="product-meta">
+                                        SKU: P20230518 | 批次: BT2023060802 | 库存: 95kg
+                                    </div>
+                                    <div class="product-price">¥72.50/kg</div>
+                                </div>
+                                <div class="product-actions">
+                                    <div class="qty-control">
+                                        <div class="qty-btn minus">-</div>
+                                        <input type="number" min="0" value="0" class="qty-input" data-product-id="P20230518">
+                                        <div class="qty-btn plus">+</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="product-item">
+                                <img src="assets/images/product-3.jpg" alt="猪五花" class="product-img">
+                                <div class="product-details">
+                                    <div class="product-title">优质五花肉</div>
+                                    <div class="product-meta">
+                                        SKU: P20230521 | 批次: BT2023060803 | 库存: 124kg
+                                    </div>
+                                    <div class="product-price">¥58.80/kg</div>
+                                </div>
+                                <div class="product-actions">
+                                    <div class="qty-control">
+                                        <div class="qty-btn minus">-</div>
+                                        <input type="number" min="0" value="0" class="qty-input" data-product-id="P20230521">
+                                        <div class="qty-btn plus">+</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3 class="form-section-title">已选产品</h3>
+                        <div id="selectedProducts" class="mb-4">
+                            <div class="text-center text-gray-500 py-4">暂无选择产品</div>
+                        </div>
+                        <div class="flex justify-between items-center pt-2 border-t border-gray-200">
+                            <div class="text-sm text-gray-500">共 <span id="totalItems">0</span> 件商品</div>
+                            <div class="text-lg font-semibold">
+                                总计: <span class="text-red-500" id="totalPrice">¥0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="prevStep2Btn">上一步</button>
+                        <button type="button" class="btn btn-primary" id="nextStep2Btn">下一步</button>
+                    </div>
+                </div>
+                
+                <!-- 步骤3：物流信息 -->
+                <div class="step-content" data-step="3">
+                    <div class="form-section">
+                        <h3 class="form-section-title">配送信息</h3>
+                        <div class="form-field">
+                            <label class="form-label" for="deliveryDate">期望配送日期</label>
+                            <input type="date" class="form-input" id="deliveryDate" min="" required>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="deliveryTime">期望配送时间</label>
+                            <select class="form-input" id="deliveryTime" required>
+                                <option value="morning">上午 (9:00-12:00)</option>
+                                <option value="afternoon">下午 (13:00-18:00)</option>
+                                <option value="evening">晚上 (19:00-21:00)</option>
+                                <option value="anytime">全天均可</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="deliveryMethod">配送方式</label>
+                            <select class="form-input" id="deliveryMethod" required>
+                                <option value="standard">标准配送</option>
+                                <option value="express">加急配送</option>
+                                <option value="cold_chain">冷链配送</option>
+                                <option value="self_pickup">客户自提</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3 class="form-section-title">运输要求</h3>
+                        <div class="form-field">
+                            <label class="form-label" for="temperatureRequirement">温度要求</label>
+                            <select class="form-input" id="temperatureRequirement">
+                                <option value="ambient">常温</option>
+                                <option value="refrigerated">冷藏 (0°C ~ 7°C)</option>
+                                <option value="frozen">冷冻 (-18°C 以下)</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="packagingRequirement">包装要求</label>
+                            <select class="form-input" id="packagingRequirement">
+                                <option value="standard">标准包装</option>
+                                <option value="gift">礼品包装</option>
+                                <option value="customized">定制包装</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="specialRequirements">特殊要求</label>
+                            <textarea class="form-textarea" id="specialRequirements" placeholder="如有特殊要求请在此说明..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3 class="form-section-title">发票信息</h3>
+                        <div class="form-field">
+                            <label class="form-label mb-2">是否需要发票</label>
+                            <div class="flex items-center">
+                                <label class="flex items-center mr-4">
+                                    <input type="radio" name="invoice" value="no" class="mr-2" checked> 不需要
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="invoice" value="yes" class="mr-2"> 需要
+                                </label>
+                            </div>
+                        </div>
+                        <div id="invoiceFields" class="hidden">
+                            <div class="form-field">
+                                <label class="form-label" for="invoiceType">发票类型</label>
+                                <select class="form-input" id="invoiceType">
+                                    <option value="regular">普通发票</option>
+                                    <option value="specialized">专用发票</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label" for="invoiceTitle">发票抬头</label>
+                                <input type="text" class="form-input" id="invoiceTitle" placeholder="请输入发票抬头">
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label" for="taxNumber">税号</label>
+                                <input type="text" class="form-input" id="taxNumber" placeholder="请输入税号">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="prevStep3Btn">上一步</button>
+                        <button type="button" class="btn btn-primary" id="nextStep3Btn">下一步</button>
+                    </div>
+                </div>
+                
+                <!-- 步骤4：确认订单 -->
+                <div class="step-content" data-step="4">
+                    <div class="form-section">
+                        <h3 class="form-section-title">订单摘要</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <div class="font-medium">客户信息</div>
+                                <button type="button" class="text-blue-500 text-sm" data-edit-step="1">
+                                    <i class="fas fa-edit mr-1"></i>编辑
+                                </button>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-1"><span id="summaryCustomerName">-</span> (<span id="summaryCustomerType">-</span>)</div>
+                            <div class="text-sm text-gray-600 mb-1">联系人: <span id="summaryContactPerson">-</span></div>
+                            <div class="text-sm text-gray-600 mb-1">联系电话: <span id="summaryContactPhone">-</span></div>
+                            <div class="text-sm text-gray-600">送货地址: <span id="summaryAddress">-</span></div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <div class="font-medium">订单商品</div>
+                                <button type="button" class="text-blue-500 text-sm" data-edit-step="2">
+                                    <i class="fas fa-edit mr-1"></i>编辑
+                                </button>
+                            </div>
+                            <div id="summaryProducts" class="text-sm text-gray-600">
+                                <div class="text-center py-2">暂无选择产品</div>
+                            </div>
+                            <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                                <div>总计</div>
+                                <div class="font-semibold text-red-500" id="summaryTotalPrice">¥0.00</div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <div class="font-medium">物流信息</div>
+                                <button type="button" class="text-blue-500 text-sm" data-edit-step="3">
+                                    <i class="fas fa-edit mr-1"></i>编辑
+                                </button>
+                            </div>
+                            <div class="text-sm text-gray-600 mb-1">配送日期: <span id="summaryDeliveryDate">-</span></div>
+                            <div class="text-sm text-gray-600 mb-1">配送时间: <span id="summaryDeliveryTime">-</span></div>
+                            <div class="text-sm text-gray-600 mb-1">配送方式: <span id="summaryDeliveryMethod">-</span></div>
+                            <div class="text-sm text-gray-600 mb-1">温度要求: <span id="summaryTemperature">-</span></div>
+                            <div class="text-sm text-gray-600">特殊要求: <span id="summarySpecialRequirements">-</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3 class="form-section-title">附加备注</h3>
+                        <div class="form-field">
+                            <textarea class="form-textarea" id="orderRemark" placeholder="如有其他备注信息，请在此处添加..."></textarea>
+                        </div>
+                        <div class="form-field">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="agreeTerms" class="mr-2" required>
+                                <span class="text-sm text-gray-600">我已阅读并同意<a href="javascript:void(0)" class="text-blue-500">《配送条款与须知》</a></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="prevStep4Btn">上一步</button>
+                        <button type="submit" class="btn btn-primary" id="submitOrderBtn">提交订单</button>
+                    </div>
+                </div>
+            </form>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <div class="bottom-nav">
+          <ul class="nav-items">
+            <li class="nav-item">
+              <img src="assets/icons/home-gray.svg" alt="首页">
+              <span>首页</span>
+            </li>
+            <li class="nav-item active">
+              <img src="assets/icons/record-blue.svg" alt="信息管理">
+              <span>信息管理</span>
+            </li>
+            <li class="nav-item">
+              <img src="assets/icons/user-gray.svg" alt="我的">
+              <span>我的</span>
+            </li>
+          </ul>
+        </div>
+    </div>
+
+    <!-- 通用JS脚本 -->
+    <script src="components/trace-common.js"></script>
+    
+    <!-- 页面特定脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面
+            initPage();
+            
+            // 设置日期控件最小值为今天
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            document.getElementById('deliveryDate').min = formattedDate;
+            
+            // 步骤导航
+            setupSteps();
+            
+            // 产品数量控制
+            setupProductQuantity();
+            
+            // 返回主页按钮
+            document.getElementById('backToHomeBtn').addEventListener('click', function() {
+                if (confirm('确定要取消创建订单吗？已填写的信息将不会保存。')) {
+                    window.location.href = 'home-logistics.html';
+                }
+            });
+            
+            // 发票信息显示/隐藏
+            document.querySelectorAll('input[name="invoice"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const invoiceFields = document.getElementById('invoiceFields');
+                    if (this.value === 'yes') {
+                        invoiceFields.classList.remove('hidden');
+                    } else {
+                        invoiceFields.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // 表单提交
+            document.getElementById('orderForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (!document.getElementById('agreeTerms').checked) {
+                    traceUI.showToast('请阅读并同意配送条款与须知', 'error');
+                    return;
+                }
+                
+                // 显示加载状态
+                const submitBtn = document.getElementById('submitOrderBtn');
+                traceUI.showLoading(submitBtn, '提交中...');
+                
+                // 模拟提交过程
+                setTimeout(function() {
+                    traceUI.hideLoading(submitBtn);
+                    
+                    // 显示成功提示
+                    traceUI.showToast('订单提交成功！', 'success');
+                    
+                    // 跳转到订单列表
+                    setTimeout(function() {
+                        window.location.href = 'logistics-list.html';
+                    }, 1500);
+                }, 2000);
+            });
+            
+            // 帮助按钮
+            document.getElementById('helpBtn').addEventListener('click', function() {
+                traceUI.showToast('正在获取帮助信息...', 'info');
+            });
+            
+            // 扫码添加产品按钮
+            document.getElementById('scanProductBtn').addEventListener('click', function() {
+                traceUI.showToast('正在打开扫码功能...', 'info');
+            });
+            
+            // 产品搜索
+            document.getElementById('searchProduct').addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                const productItems = document.querySelectorAll('.product-item');
+                
+                productItems.forEach(item => {
+                    const productName = item.querySelector('.product-title').textContent.toLowerCase();
+                    const productMeta = item.querySelector('.product-meta').textContent.toLowerCase();
+                    
+                    if (productName.includes(query) || productMeta.includes(query)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            
+            // 摘要页中的编辑按钮
+            document.querySelectorAll('[data-edit-step]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const stepNumber = this.dataset.editStep;
+                    goToStep(parseInt(stepNumber));
+                });
+            });
+            
+            // 调整主内容区域的填充
+            adjustMainPadding();
+            window.addEventListener('resize', adjustMainPadding);
+        });
+        
+        /**
+         * 初始化页面
+         */
+        function initPage() {
+            // 初始化各种组件和数据
+            console.log('物流订单创建页面已初始化');
+        }
+        
+        /**
+         * 设置步骤导航
+         */
+        function setupSteps() {
+            // 下一步按钮事件
+            document.getElementById('nextStep1Btn').addEventListener('click', function() {
+                if (validateStep(1)) {
+                    goToStep(2);
+                }
+            });
+            
+            document.getElementById('prevStep2Btn').addEventListener('click', function() {
+                goToStep(1);
+            });
+            
+            document.getElementById('nextStep2Btn').addEventListener('click', function() {
+                if (validateStep(2)) {
+                    goToStep(3);
+                }
+            });
+            
+            document.getElementById('prevStep3Btn').addEventListener('click', function() {
+                goToStep(2);
+            });
+            
+            document.getElementById('nextStep3Btn').addEventListener('click', function() {
+                if (validateStep(3)) {
+                    updateOrderSummary();
+                    goToStep(4);
+                }
+            });
+            
+            document.getElementById('prevStep4Btn').addEventListener('click', function() {
+                goToStep(3);
+            });
+        }
+        
+        /**
+         * 跳转到指定步骤
+         * @param {number} stepNumber - 步骤编号
+         */
+        function goToStep(stepNumber) {
+            // 更新步骤指示器
+            document.querySelectorAll('.step').forEach(step => {
+                const step_num = parseInt(step.dataset.step);
+                step.classList.remove('active', 'completed');
+                
+                if (step_num < stepNumber) {
+                    step.classList.add('completed');
+                } else if (step_num === stepNumber) {
+                    step.classList.add('active');
+                }
+            });
+            
+            // 更新步骤内容显示
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.remove('active');
+                if (parseInt(content.dataset.step) === stepNumber) {
+                    content.classList.add('active');
+                }
+            });
+            
+            // 滚动到顶部
+            window.scrollTo(0, 0);
+        }
+        
+        /**
+         * 验证当前步骤
+         * @param {number} stepNumber - 步骤编号
+         * @returns {boolean} 是否验证通过
+         */
+        function validateStep(stepNumber) {
+            let isValid = true;
+            
+            if (stepNumber === 1) {
+                // 验证客户信息
+                const requiredFields = ['customerType', 'customerName', 'contactPerson', 'contactPhone', 'province', 'city', 'district', 'address'];
+                requiredFields.forEach(field => {
+                    const element = document.getElementById(field);
+                    if (!element.value.trim()) {
+                        element.classList.add('border-red-500');
+                        isValid = false;
+                    } else {
+                        element.classList.remove('border-red-500');
+                    }
+                });
+                
+                if (!isValid) {
+                    traceUI.showToast('请填写所有必填字段', 'error');
+                }
+            } 
+            else if (stepNumber === 2) {
+                // 验证产品选择
+                const totalItems = parseInt(document.getElementById('totalItems').textContent);
+                if (totalItems === 0) {
+                    traceUI.showToast('请至少选择一个产品', 'error');
+                    isValid = false;
+                }
+            } 
+            else if (stepNumber === 3) {
+                // 验证物流信息
+                const requiredFields = ['deliveryDate', 'deliveryTime', 'deliveryMethod'];
+                requiredFields.forEach(field => {
+                    const element = document.getElementById(field);
+                    if (!element.value) {
+                        element.classList.add('border-red-500');
+                        isValid = false;
+                    } else {
+                        element.classList.remove('border-red-500');
+                    }
+                });
+                
+                if (!isValid) {
+                    traceUI.showToast('请填写所有必填字段', 'error');
+                }
+            }
+            
+            return isValid;
+        }
+        
+        /**
+         * 设置产品数量控制
+         */
+        function setupProductQuantity() {
+            // 加减按钮事件
+            document.querySelectorAll('.qty-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const input = this.parentElement.querySelector('.qty-input');
+                    let value = parseInt(input.value);
+                    
+                    if (this.classList.contains('plus')) {
+                        value++;
+                    } else if (this.classList.contains('minus')) {
+                        value = Math.max(0, value - 1);
+                    }
+                    
+                    input.value = value;
+                    updateSelectedProducts();
+                });
+            });
+            
+            // 输入框变化事件
+            document.querySelectorAll('.qty-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    // 确保值为非负整数
+                    let value = parseInt(this.value);
+                    if (isNaN(value) || value < 0) {
+                        value = 0;
+                    }
+                    this.value = value;
+                    updateSelectedProducts();
+                });
+            });
+        }
+        
+        /**
+         * 更新已选产品列表
+         */
+        function updateSelectedProducts() {
+            const selectedProducts = [];
+            let totalItems = 0;
+            let totalPrice = 0;
+            
+            document.querySelectorAll('.qty-input').forEach(input => {
+                const quantity = parseInt(input.value);
+                if (quantity > 0) {
+                    const productItem = input.closest('.product-item');
+                    const title = productItem.querySelector('.product-title').textContent;
+                    const priceText = productItem.querySelector('.product-price').textContent;
+                    const price = parseFloat(priceText.replace('¥', '').replace('/kg', ''));
+                    
+                    selectedProducts.push({
+                        id: input.dataset.productId,
+                        title: title,
+                        price: price,
+                        quantity: quantity,
+                        total: price * quantity
+                    });
+                    
+                    totalItems += quantity;
+                    totalPrice += price * quantity;
+                }
+            });
+            
+            // 更新总数和总价
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('totalPrice').textContent = `¥${totalPrice.toFixed(2)}`;
+            
+            // 更新已选产品列表
+            const selectedProductsContainer = document.getElementById('selectedProducts');
+            if (selectedProducts.length === 0) {
+                selectedProductsContainer.innerHTML = '<div class="text-center text-gray-500 py-4">暂无选择产品</div>';
+            } else {
+                let html = '';
+                selectedProducts.forEach(product => {
+                    html += `
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <div class="flex-1">
+                                <div class="font-medium">${product.title}</div>
+                                <div class="text-sm text-gray-500">单价: ¥${product.price.toFixed(2)}/kg × ${product.quantity}kg</div>
+                            </div>
+                            <div class="font-medium text-red-500">¥${product.total.toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+                selectedProductsContainer.innerHTML = html;
+            }
+        }
+        
+        /**
+         * 更新订单摘要信息
+         */
+        function updateOrderSummary() {
+            // 客户信息
+            const customerType = document.getElementById('customerType');
+            const customerTypeText = customerType.options[customerType.selectedIndex].text;
+            document.getElementById('summaryCustomerName').textContent = document.getElementById('customerName').value;
+            document.getElementById('summaryCustomerType').textContent = customerTypeText;
+            document.getElementById('summaryContactPerson').textContent = document.getElementById('contactPerson').value;
+            document.getElementById('summaryContactPhone').textContent = document.getElementById('contactPhone').value;
+            
+            // 收货地址
+            const province = document.getElementById('province');
+            const city = document.getElementById('city');
+            const district = document.getElementById('district');
+            const provinceText = province.options[province.selectedIndex].text;
+            const cityText = city.options[city.selectedIndex].text;
+            const districtText = district.options[district.selectedIndex].text;
+            const address = document.getElementById('address').value;
+            document.getElementById('summaryAddress').textContent = `${provinceText}${cityText}${districtText}${address}`;
+            
+            // 产品信息
+            const summaryProducts = document.getElementById('summaryProducts');
+            const selectedProducts = document.getElementById('selectedProducts').innerHTML;
+            if (selectedProducts.includes('暂无选择产品')) {
+                summaryProducts.innerHTML = '<div class="text-center py-2">暂无选择产品</div>';
+            } else {
+                summaryProducts.innerHTML = selectedProducts;
+            }
+            document.getElementById('summaryTotalPrice').textContent = document.getElementById('totalPrice').textContent;
+            
+            // 物流信息
+            const deliveryDate = document.getElementById('deliveryDate').value;
+            document.getElementById('summaryDeliveryDate').textContent = deliveryDate;
+            
+            const deliveryTime = document.getElementById('deliveryTime');
+            const deliveryTimeText = deliveryTime.options[deliveryTime.selectedIndex].text;
+            document.getElementById('summaryDeliveryTime').textContent = deliveryTimeText;
+            
+            const deliveryMethod = document.getElementById('deliveryMethod');
+            const deliveryMethodText = deliveryMethod.options[deliveryMethod.selectedIndex].text;
+            document.getElementById('summaryDeliveryMethod').textContent = deliveryMethodText;
+            
+            const temperature = document.getElementById('temperatureRequirement');
+            const temperatureText = temperature.options[temperature.selectedIndex].text;
+            document.getElementById('summaryTemperature').textContent = temperatureText;
+            
+            const specialRequirements = document.getElementById('specialRequirements').value || '无';
+            document.getElementById('summarySpecialRequirements').textContent = specialRequirements;
+        }
+        
+        /**
+         * 动态调整主内容区域的填充
+         */
+        function adjustMainPadding() {
+            const mainElement = document.querySelector('.content-container');
+            if (!mainElement) return;
+            
+            const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 64;
+            const bottomTabHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bottom-tab-height')) || 60;
+            
+            const topPadding = navHeight + 16;
+            const bottomPadding = bottomTabHeight + 20;
+            
+            mainElement.style.paddingTop = `${topPadding}px`;
+            mainElement.style.paddingBottom = `${bottomPadding}px`;
+        }
+    </script>
+
+  <!-- 自动按钮升级脚本 (自动注入) -->
+  <script src="/components/autoload-button-upgrade.js"></script>
+  </body>
+</html> 

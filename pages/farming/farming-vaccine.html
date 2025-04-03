@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>疫苗录入 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        /* 设计系统变量 */
+        :root {
+            /* 主色调变量 */
+            --primary-color: #1677FF;
+            --primary-hover: #4096FF;
+            --primary-active: #0958D9;
+            
+            /* 状态色变量 */
+            --success-color: #52C41A;
+            --success-hover: #73D13D;
+            --warning-color: #FA8C16;
+            --warning-hover: #FFA940;
+            --error-color: #FF4D4F;
+            --error-hover: #FF7875;
+            --purple-color: #722ED1;
+            --purple-hover: #9254DE;
+            
+            /* 图标背景色变量 */
+            --icon-bg-primary: #E6F7FF;
+            --icon-bg-success: #F6FFED;
+            --icon-bg-warning: #FFF7E6;
+            --icon-bg-error: #FFF1F0;
+            --icon-bg-purple: #F9F0FF;
+            
+            /* 文本颜色变量 */
+            --text-primary: rgba(0, 0, 0, 0.85);
+            --text-secondary: rgba(0, 0, 0, 0.65);
+            --text-disabled: rgba(0, 0, 0, 0.45);
+            
+            /* 背景色变量 */
+            --bg-layout: #F0F2F5;
+            --bg-container: #FFFFFF;
+            --bg-mask: rgba(0, 0, 0, 0.45);
+            
+            /* 边框变量 */
+            --border-color: #f0f0f0;
+            --border-color-split: #f0f0f0;
+            --border-radius-base: 8px;
+            
+            /* 阴影变量 */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+            
+            /* 动画变量 */
+            --transition-base: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+            
+            /* 间距变量 */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            
+            /* 组件尺寸 */
+            --icon-size-normal: 48px;
+            --nav-height: 64px;
+            --bottom-tab-height: 60px;
+            --safe-area-bottom: env(safe-area-inset-bottom, 0);
+        }
+
+        /* 页面容器 */
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            background-color: var(--bg-layout);
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background-color: var(--bg-container);
+            border-radius: var(--border-radius-base);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-md);
+            overflow: hidden;
+            transition: var(--transition-base);
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            color: var(--text-primary);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color-split);
+        }
+        
+        .card-body {
+            padding: 16px;
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base);
+            transition: var(--transition-base);
+            font-size: 14px;
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+            outline: none;
+        }
+        
+        .form-input.error {
+            border-color: var(--error-color);
+        }
+        
+        .form-error {
+            color: var(--error-color);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base);
+            transition: var(--transition-base);
+            font-size: 14px;
+            background-color: white;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+            outline: none;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            display: inline-block;
+            font-weight: 400;
+            text-align: center;
+            cursor: pointer;
+            padding: 10px 15px;
+            font-size: 14px;
+            border-radius: var(--border-radius-base);
+            transition: var(--transition-base);
+            border: 1px solid transparent;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .btn-primary:active {
+            background-color: var(--primary-active);
+        }
+        
+        .btn-outline {
+            background-color: white;
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .btn-outline:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        /* 状态标签 */
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-tag.success {
+            background-color: var(--icon-bg-success);
+            color: var(--success-color);
+        }
+        
+        .status-tag.warning {
+            background-color: var(--icon-bg-warning);
+            color: var(--warning-color);
+        }
+        
+        .status-tag.info {
+            background-color: var(--icon-bg-primary);
+            color: var(--primary-color);
+        }
+        
+        .status-tag.error {
+            background-color: var(--icon-bg-error);
+            color: var(--error-color);
+        }
+        
+        /* 列表项样式 */
+        .list-item {
+            display: flex;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color-split);
+            background-color: white;
+            transition: var(--transition-base);
+        }
+        
+        .list-item:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-item-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            background-color: var(--icon-bg-primary);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+        
+        .list-item-content {
+            flex: 1;
+        }
+        
+        .list-item-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+            color: var(--text-primary);
+        }
+        
+        .list-item-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* 顶部导航 */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 999;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .top-nav-container {
+            max-width: 390px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-md);
+        }
+        
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-base);
+            background-color: rgba(255, 255, 255, 0.1);
+            margin: 0 4px;
+        }
+        
+        .icon-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        
+        /* 底部导航栏样式 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #ffffff;
+            border-top: 1px solid #eeeeee;
+            z-index: 999;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .bottom-nav-container {
+            max-width: 390px;
+            height: 100%;
+            margin: 0 auto;
+        }
+        
+        .bottom-nav-items {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            justify-content: space-around;
+            align-items: stretch;
+        }
+        
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 33.33%;
+            height: 100%;
+            color: #999999;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .bottom-nav-item.active {
+            color: #1677FF;
+        }
+        
+        .bottom-nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .bottom-nav-text {
+            line-height: 1.2;
+            transition: all 0.2s ease;
+        }
+        
+        /* 主内容区域 */
+        .content-container {
+            padding-top: calc(var(--nav-height) + var(--spacing-md));
+            padding-bottom: calc(var(--bottom-tab-height) + var(--safe-area-bottom) + var(--spacing-md));
+        }
+        
+        .content-area {
+            max-width: 390px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-md);
+        }
+        
+        /* 疫苗记录项目 */
+        .vaccine-record {
+            margin-bottom: 10px;
+            transition: var(--transition-base);
+        }
+        
+        .vaccine-record:hover {
+            transform: translateY(-2px);
+        }
+        
+        .vaccine-item-header {
+            display: flex;
+            justify-content: space-between;
+            background-color: var(--icon-bg-primary);
+            padding: 8px 12px;
+            border-top-left-radius: var(--border-radius-base);
+            border-top-right-radius: var(--border-radius-base);
+            color: var(--primary-color);
+        }
+        
+        .vaccine-item-body {
+            padding: 12px;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: var(--border-radius-base);
+            border-bottom-right-radius: var(--border-radius-base);
+        }
+        
+        .vaccine-detail {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .vaccine-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .vaccine-detail-label {
+            width: 80px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .vaccine-detail-value {
+            flex: 1;
+            font-size: 12px;
+            color: var(--text-primary);
+        }
+        
+        /* 按钮工具栏 */
+        .button-toolbar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .button-toolbar .btn {
+            flex: 1;
+            margin: 0 5px;
+        }
+        
+        .button-toolbar .btn:first-child {
+            margin-left: 0;
+        }
+        
+        .button-toolbar .btn:last-child {
+            margin-right: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="page-container">
+        <!-- 顶部导航栏 -->
+        <header class="top-nav">
+            <div class="top-nav-container">
+                <div class="flex items-center">
+                    <a href="../home/home-farming.html" class="icon-btn mr-3">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-lg font-medium">疫苗录入</h1>
+                </div>
+                <div class="flex items-center">
+                    <button class="icon-btn mr-2" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="icon-btn" id="settingsBtn">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="content-container">
+            <div class="content-area">
+                <!-- 疫苗录入表单 -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-syringe text-primary mr-2"></i>
+                            疫苗接种录入
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="vaccineForm">
+                            <div class="form-group">
+                                <label class="form-label" for="batchNumber">批次编号</label>
+                                <select class="form-select" id="batchNumber" required>
+                                    <option value="">选择养殖批次</option>
+                                    <option value="B202304001">B202304001 - 猪群A区</option>
+                                    <option value="B202304002">B202304002 - 猪群B区</option>
+                                    <option value="B202304003">B202304003 - 牛群A区</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="livestockType">畜禽类型</label>
+                                <select class="form-select" id="livestockType" required>
+                                    <option value="">请选择畜禽类型</option>
+                                    <optgroup label="普通畜禽">
+                                        <option value="普通猪">普通猪</option>
+                                        <option value="肉牛">肉牛</option>
+                                        <option value="肉羊">肉羊</option>
+                                        <option value="家禽">家禽</option>
+                                    </optgroup>
+                                    <optgroup label="高端畜禽">
+                                        <option value="和牛">和牛</option>
+                                        <option value="藏香猪">藏香猪</option>
+                                        <option value="伊比利亚猪">伊比利亚猪</option>
+                                        <option value="安格斯牛">安格斯牛</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="vaccineType">疫苗类型</label>
+                                <select class="form-select" id="vaccineType" required>
+                                    <option value="">选择疫苗类型</option>
+                                    <option value="口蹄疫疫苗">口蹄疫疫苗</option>
+                                    <option value="猪瘟疫苗">猪瘟疫苗</option>
+                                    <option value="牛结核疫苗">牛结核疫苗</option>
+                                    <option value="蓝耳病疫苗">蓝耳病疫苗</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="vaccineManufacturer">生产厂家</label>
+                                <input type="text" class="form-input" id="vaccineManufacturer" placeholder="输入疫苗生产厂家" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="vaccineBatch">疫苗批号</label>
+                                <input type="text" class="form-input" id="vaccineBatch" placeholder="输入疫苗批号" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="vaccineDate">接种日期</label>
+                                <input type="date" class="form-input" id="vaccineDate" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="vaccineOperator">接种人员</label>
+                                <input type="text" class="form-input" id="vaccineOperator" placeholder="输入接种人员姓名" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="vaccineAmount">接种数量</label>
+                                <input type="number" class="form-input" id="vaccineAmount" placeholder="输入接种动物数量" required>
+                            </div>
+                            
+                            <!-- 高端畜禽扩展字段 -->
+                            <div id="highendFields" class="mt-6 p-4 bg-[#F0F5FF] rounded-lg" style="display: none;">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-shield-virus text-[#722ED1] mr-2"></i>
+                                        <h3 class="text-base font-medium text-[#722ED1]">高端畜禽疫苗扩展信息</h3>
+                                    </div>
+                                    <button type="button" id="toggleHighendBtn" class="text-sm text-[#722ED1]">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                
+                                <div id="highendFieldsContent" class="space-y-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="vaccineOrigin">疫苗产地要求</label>
+                                        <select class="form-select" id="vaccineOrigin">
+                                            <option value="">请选择产地要求</option>
+                                            <option value="国产认证">国产认证</option>
+                                            <option value="进口澳洲">进口澳洲</option>
+                                            <option value="进口欧盟">进口欧盟</option>
+                                            <option value="进口美国">进口美国</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="form-group">
+                                            <label class="form-label" for="veterinarianName">兽医姓名</label>
+                                            <input type="text" class="form-input" id="veterinarianName" placeholder="输入兽医姓名">
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label class="form-label" for="veterinarianLicense">执业证号</label>
+                                            <input type="text" class="form-input" id="veterinarianLicense" placeholder="输入兽医执业证号">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label class="form-label" for="specialMeasures">特殊防控措施</label>
+                                        <textarea class="form-input" id="specialMeasures" rows="2" placeholder="输入特殊防控措施"></textarea>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label class="form-label">电子签名确认</label>
+                                        <div class="border border-gray-200 rounded-lg p-3 bg-white relative">
+                                            <div id="signatureArea" class="h-24 flex items-center justify-center bg-gray-50 mb-2 cursor-pointer">
+                                                <span class="text-gray-400" id="signaturePrompt">点击此处进行电子签名</span>
+                                            </div>
+                                            <button type="button" id="clearSignature" class="text-xs text-[#1890FF] absolute bottom-3 right-3">
+                                                清除签名
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white p-3 rounded-lg border border-gray-200">
+                                        <div class="flex items-start">
+                                            <i class="fas fa-info-circle text-[#1890FF] mt-1 mr-2"></i>
+                                            <div class="text-xs text-gray-600">
+                                                高端畜禽疫苗信息将作为品牌认证和溯源的重要环节，请确保所有信息准确无误。
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="vaccineRemarks">备注信息</label>
+                                <textarea class="form-input" id="vaccineRemarks" rows="3" placeholder="输入备注信息（可选）"></textarea>
+                            </div>
+                            
+                            <div class="button-toolbar">
+                                <button type="button" class="btn btn-outline" id="resetBtn">重置</button>
+                                <button type="submit" class="btn btn-primary" id="submitBtn">提交记录</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 最近疫苗记录 -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-history text-primary mr-2"></i>
+                            最近疫苗记录
+                        </h2>
+                        <a href="javascript:void(0)" class="text-primary text-sm" id="viewAllBtn">查看全部 <i class="fas fa-chevron-right text-xs"></i></a>
+                    </div>
+                    <div class="card-body p-0" id="recentRecordsContainer">
+                        <!-- 疫苗记录1 -->
+                        <div class="vaccine-record">
+                            <div class="vaccine-item-header">
+                                <div class="text-sm font-medium">B202304001</div>
+                                <div class="text-sm">2023-04-15</div>
+                            </div>
+                            <div class="vaccine-item-body">
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">疫苗类型:</div>
+                                    <div class="vaccine-detail-value">口蹄疫疫苗</div>
+                                </div>
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">生产厂家:</div>
+                                    <div class="vaccine-detail-value">国药集团生物制品有限公司</div>
+                                </div>
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">批号:</div>
+                                    <div class="vaccine-detail-value">20230301-A</div>
+                                </div>
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">接种数量:</div>
+                                    <div class="vaccine-detail-value">200头</div>
+                                </div>
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">接种人员:</div>
+                                    <div class="vaccine-detail-value">李明</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 疫苗记录2 -->
+                        <div class="vaccine-record">
+                            <div class="vaccine-item-header">
+                                <div class="text-sm font-medium">B202304002</div>
+                                <div class="text-sm">2023-04-10</div>
+                            </div>
+                            <div class="vaccine-item-body">
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">疫苗类型:</div>
+                                    <div class="vaccine-detail-value">猪瘟疫苗</div>
+                                </div>
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">生产厂家:</div>
+                                    <div class="vaccine-detail-value">哈药集团生物疫苗有限公司</div>
+                                </div>
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">批号:</div>
+                                    <div class="vaccine-detail-value">20230215-B</div>
+                                </div>
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">接种数量:</div>
+                                    <div class="vaccine-detail-value">150头</div>
+                                </div>
+                                <div class="vaccine-detail">
+                                    <div class="vaccine-detail-label">接种人员:</div>
+                                    <div class="vaccine-detail-value">张伟</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 疫苗接种日历 -->
+                <div class="card mb-6">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-calendar-alt text-primary mr-2"></i>
+                            接种日历
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-sm text-gray-500 mb-3">
+                            <i class="fas fa-info-circle mr-1"></i> 点击日期查看当天接种计划
+                        </div>
+                        <div class="bg-gray-100 p-3 rounded-lg">
+                            <div class="text-center mb-2">
+                                <span class="font-medium">2023年4月</span>
+                            </div>
+                            <!-- 简化版日历 -->
+                            <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                                <div class="text-gray-500">日</div>
+                                <div class="text-gray-500">一</div>
+                                <div class="text-gray-500">二</div>
+                                <div class="text-gray-500">三</div>
+                                <div class="text-gray-500">四</div>
+                                <div class="text-gray-500">五</div>
+                                <div class="text-gray-500">六</div>
+                                
+                                <!-- 日期 -->
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                                <div class="p-1">1</div>
+                                
+                                <div class="p-1">2</div>
+                                <div class="p-1">3</div>
+                                <div class="p-1">4</div>
+                                <div class="p-1">5</div>
+                                <div class="p-1">6</div>
+                                <div class="p-1">7</div>
+                                <div class="p-1">8</div>
+                                
+                                <div class="p-1">9</div>
+                                <div class="p-1 bg-blue-100 rounded text-primary font-bold">10</div>
+                                <div class="p-1">11</div>
+                                <div class="p-1">12</div>
+                                <div class="p-1">13</div>
+                                <div class="p-1">14</div>
+                                <div class="p-1 bg-blue-100 rounded text-primary font-bold">15</div>
+                                
+                                <div class="p-1">16</div>
+                                <div class="p-1">17</div>
+                                <div class="p-1">18</div>
+                                <div class="p-1">19</div>
+                                <div class="p-1">20</div>
+                                <div class="p-1 bg-blue-100 rounded text-primary font-bold">21</div>
+                                <div class="p-1">22</div>
+                                
+                                <div class="p-1">23</div>
+                                <div class="p-1">24</div>
+                                <div class="p-1">25</div>
+                                <div class="p-1 bg-blue-100 rounded text-primary font-bold">26</div>
+                                <div class="p-1">27</div>
+                                <div class="p-1">28</div>
+                                <div class="p-1">29</div>
+                                
+                                <div class="p-1">30</div>
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                                <div class="p-1"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="text-sm font-medium mb-2">近期接种安排:</div>
+                            <div class="bg-white p-2 rounded border border-gray-200 text-sm">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div>
+                                        <i class="fas fa-calendar-check text-primary mr-1"></i>
+                                        04月26日
+                                    </div>
+                                    <div class="status-tag info">待接种</div>
+                                </div>
+                                <div>牛群A区 - 牛结核疫苗 (计划接种180头)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <div class="bottom-nav">
+            <div class="bottom-nav-container">
+                <div class="bottom-nav-items">
+                    <a href="../home/home-selector.html" class="bottom-nav-item">
+                        <img src="../../assets/icons/home-gray.svg" alt="主页" class="bottom-nav-icon">
+                        <span class="bottom-nav-text">主页</span>
+                    </a>
+                    <a href="../home/home-farming.html" class="bottom-nav-item active">
+                        <img src="../../assets/icons/info-blue.svg" alt="信息管理" class="bottom-nav-icon">
+                        <span class="bottom-nav-text">信息管理</span>
+                    </a>
+                    <a href="../profile/profile.html" class="bottom-nav-item">
+                        <img src="../../assets/icons/user-gray.svg" alt="我的" class="bottom-nav-icon">
+                        <span class="bottom-nav-text">我的</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用脚本 -->
+    <script src="../../components/trace-common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面
+            initPage();
+            
+            // 绑定事件处理
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                refreshData();
+            });
+            
+            document.getElementById('settingsBtn').addEventListener('click', function() {
+                traceUI.showToast('设置功能开发中', 'info');
+            });
+            
+            document.getElementById('livestockType').addEventListener('change', function() {
+                const isHighEndType = ['和牛', '藏香猪', '伊比利亚猪', '安格斯牛'].includes(this.value);
+                toggleHighEndFields(isHighEndType);
+            });
+            
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                document.getElementById('vaccineForm').reset();
+                traceUI.showToast('表单已重置', 'info');
+                
+                // 重置后根据当前畜禽类型决定是否显示高端字段
+                const selectedType = document.getElementById('livestockType').value;
+                const isHighEnd = ['和牛', '藏香猪', '伊比利亚猪', '安格斯牛'].includes(selectedType);
+                toggleHighEndFields(isHighEnd);
+            });
+            
+            document.getElementById('vaccineForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitVaccineRecord();
+            });
+            
+            document.getElementById('viewAllBtn').addEventListener('click', function() {
+                traceUI.showToast('查看全部记录功能开发中', 'info');
+            });
+            
+            // 签名区域事件
+            document.getElementById('signatureArea').addEventListener('click', function() {
+                const prompt = document.getElementById('signaturePrompt');
+                prompt.style.display = 'none';
+                
+                // 模拟签名完成
+                this.innerHTML = '<img src="assets/images/signature-placeholder.png" alt="电子签名" class="h-full mx-auto">';
+            });
+            
+            document.getElementById('clearSignature').addEventListener('click', function() {
+                const signatureArea = document.getElementById('signatureArea');
+                const prompt = document.getElementById('signaturePrompt');
+                
+                signatureArea.innerHTML = '';
+                signatureArea.appendChild(prompt);
+                prompt.style.display = 'block';
+            });
+            
+            // 自动登录并授权（开发模式）
+            autoLogin();
+            
+            // 初始化高端畜禽状态
+            initLivestockType();
+        });
+        
+        function initLivestockType() {
+            // 从localStorage获取已保存的畜禽类型
+            const savedType = localStorage.getItem('livestock_type') || 'normal';
+            
+            // 如果是高端畜禽，默认展开高端字段
+            if (savedType === 'highend') {
+                const highEndElement = document.getElementById('highendFields');
+                highEndElement.style.display = 'block';
+                
+                // 默认选择一个高端畜禽类型
+                const selectElement = document.getElementById('livestockType');
+                if (selectElement.value === '') {
+                    selectElement.value = '和牛';
+                }
+                
+                // 触发一次change事件，确保表单状态一致
+                const event = new Event('change');
+                selectElement.dispatchEvent(event);
+            }
+        }
+        
+        function toggleHighEndFields(isHighEnd) {
+            const highEndElement = document.getElementById('highendFields');
+            highEndElement.style.display = isHighEnd ? 'block' : 'none';
+            
+            // 如果关闭高端字段，确保内容区域可见（用于下次打开）
+            if (!isHighEnd) {
+                document.getElementById('highendFieldsContent').style.display = 'block';
+            }
+        }
+        
+        function autoLogin() {
+            // 强制登录并授予权限（开发模式）
+            traceAuth.login({
+                id: '001',
+                name: '张三',
+                role: '管理员',
+                permissions: ['farming.create', 'farming.vaccine', 'farming.breeding', 'farming.monitor']
+            });
+            
+            // 避免检查权限函数重定向
+            traceAuth.user.isAuthenticated = true;
+        }
+        
+        function initPage() {
+            // 设置当前日期为默认值
+            document.getElementById('vaccineDate').valueAsDate = new Date();
+            
+            // 初始化底部导航
+            traceNav.init('records', 'farming');
+        }
+        
+        function refreshData() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            traceUI.showLoading(refreshBtn);
+            
+            // 模拟数据刷新
+            setTimeout(() => {
+                loadRecentRecords();
+                traceUI.hideLoading(refreshBtn);
+                traceUI.showToast('数据已更新', 'success');
+            }, 1000);
+        }
+        
+        function loadRecentRecords() {
+            // 此处实际项目中应从API获取数据
+            // 模拟数据已在HTML中静态展示
+        }
+        
+        function checkUserPermission() {
+            // 开发模式下跳过权限检查
+            return true;
+        }
+        
+        function submitVaccineRecord() {
+            const submitBtn = document.getElementById('submitBtn');
+            traceUI.showLoading(submitBtn, '提交中...');
+            
+            // 获取表单数据
+            const vaccineData = {
+                batchNumber: document.getElementById('batchNumber').value,
+                livestockType: document.getElementById('livestockType').value,
+                vaccineType: document.getElementById('vaccineType').value,
+                manufacturer: document.getElementById('vaccineManufacturer').value,
+                batchCode: document.getElementById('vaccineBatch').value,
+                vaccineDate: document.getElementById('vaccineDate').value,
+                operator: document.getElementById('vaccineOperator').value,
+                amount: document.getElementById('vaccineAmount').value,
+                remarks: document.getElementById('vaccineRemarks').value
+            };
+            
+            // 检查是否为高端畜禽
+            const isHighEnd = ['和牛', '藏香猪', '伊比利亚猪', '安格斯牛'].includes(vaccineData.livestockType);
+            
+            // 如果是高端畜禽，获取扩展字段
+            if (isHighEnd) {
+                vaccineData.highEndInfo = {
+                    vaccineOrigin: document.getElementById('vaccineOrigin').value,
+                    veterinarianName: document.getElementById('veterinarianName').value,
+                    veterinarianLicense: document.getElementById('veterinarianLicense').value,
+                    specialMeasures: document.getElementById('specialMeasures').value,
+                    hasSignature: document.getElementById('signaturePrompt').style.display === 'none'
+                };
+            }
+            
+            // 保存畜禽类型到localStorage
+            localStorage.setItem('livestock_type', isHighEnd ? 'highend' : 'normal');
+            
+            // 模拟API提交
+            setTimeout(() => {
+                console.log('提交疫苗记录:', vaccineData);
+                
+                // 提交成功后的处理
+                traceUI.hideLoading(submitBtn);
+                traceUI.showToast('疫苗记录提交成功', 'success');
+                
+                // 重置表单
+                document.getElementById('vaccineForm').reset();
+                document.getElementById('vaccineDate').valueAsDate = new Date();
+                
+                // 重置签名区域
+                const signatureArea = document.getElementById('signatureArea');
+                const prompt = document.getElementById('signaturePrompt');
+                if (prompt) {
+                    signatureArea.innerHTML = '';
+                    signatureArea.appendChild(prompt);
+                    prompt.style.display = 'block';
+                }
+                
+                // 根据提交的畜禽类型决定是否显示高端字段
+                toggleHighEndFields(isHighEnd);
+                
+                // 刷新最近记录
+                refreshData();
+            }, 1500);
+        }
+    </script>
+
+  <!-- 自动按钮升级脚本 (自动注入) -->
+  <script src="/components/autoload-button-upgrade.js"></script>
+  </body>
+</html> 

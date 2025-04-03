@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>食品溯源系统测试报告</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f5f5f5;
+      border-radius: 5px;
+    }
+    .summary {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .test-results {
+      margin-bottom: 30px;
+    }
+    .test-case {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .pass {
+      border-left: 5px solid #4CAF50;
+    }
+    .fail {
+      border-left: 5px solid #f44336;
+    }
+    .button-test-summary {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>食品溯源系统测试报告</h1>
+      <p>测试执行时间: 2025/4/2 22:46:21</p>
+    </div>
+    
+    <div class="summary">
+      <h2>测试摘要</h2>
+      <p>总测试数: 9</p>
+      <p>通过: 9</p>
+      <p>失败: 0</p>
+      <p>总耗时: 168.02秒</p>
+    </div>
+
+    <div class="button-test-summary">
+      <h2>按钮测试摘要</h2>
+      <div id="buttonTestResults">
+        <h3>按钮检测结果</h3>
+        <ul>
+          <li>检测到的按钮总数: <span id="totalButtons">计算中...</span></li>
+          <li>标准按钮元素: <span id="standardButtons">计算中...</span></li>
+          <li>类按钮元素: <span id="buttonLikeElements">计算中...</span></li>
+        </ul>
+        
+        <h3>按钮交互测试</h3>
+        <ul>
+          <li>测试的按钮数: <span id="testedButtons">计算中...</span></li>
+          <li>交互成功: <span id="successfulInteractions">计算中...</span></li>
+          <li>交互失败: <span id="failedInteractions">计算中...</span></li>
+        </ul>
+        
+        <h3>按钮改进验证</h3>
+        <ul>
+          <li>改进的按钮数: <span id="improvedButtons">计算中...</span></li>
+          <li>添加的ARIA属性: <span id="addedAriaAttributes">计算中...</span></li>
+          <li>修复的可访问性问题: <span id="fixedAccessibilityIssues">计算中...</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="test-results">
+      <h2>详细测试结果</h2>
+      
+          <div class="test-case pass">
+            <h3>单元测试</h3>
+            <p>脚本: run-unit-tests.js</p>
+            <p>状态: 通过</p>
+            <p>开始时间: 2025/4/2 22:46:21</p>
+            <p>结束时间: 2025/4/2 22:46:26</p>
+            <p>耗时: 4.05秒</p>
+          </div>
+        
+          <div class="test-case pass">
+            <h3>资源加载验证</h3>
+            <p>脚本: validation/scripts/check-resource.js</p>
+            <p>状态: 通过</p>
+            <p>开始时间: 2025/4/2 22:46:26</p>
+            <p>结束时间: 2025/4/2 22:46:28</p>
+            <p>耗时: 2.95秒</p>
+          </div>
+        
+          <div class="test-case pass">
+            <h3>UI元素验证</h3>
+            <p>脚本: validation/scripts/check-ui.js</p>
+            <p>状态: 通过</p>
+            <p>开始时间: 2025/4/2 22:46:28</p>
+            <p>结束时间: 2025/4/2 22:46:31</p>
+            <p>耗时: 2.62秒</p>
+          </div>
+        
+          <div class="test-case pass">
+            <h3>HTML结构验证</h3>
+            <p>脚本: validation/scripts/check-html-structure.js</p>
+            <p>状态: 通过</p>
+            <p>开始时间: 2025/4/2 22:46:31</p>
+            <p>结束时间: 2025/4/2 22:46:31</p>
+            <p>耗时: 0.07秒</p>
+          </div>
+        
+          <div class="test-case pass">
+            <h3>页面导航验证</h3>
+            <p>脚本: validation/scripts/check-page-transitions.js</p>
+            <p>状态: 通过</p>
+            <p>开始时间: 2025/4/2 22:46:31</p>
+            <p>结束时间: 2025/4/2 22:46:52</p>
+            <p>耗时: 20.62秒</p>
+          </div>
+        
+          <div class="test-case pass">
+            <h3>功能测试</h3>
+            <p>脚本: validation/scripts/check-functionality.js</p>
+            <p>状态: 通过</p>
+            <p>开始时间: 2025/4/2 22:46:52</p>
+            <p>结束时间: 2025/4/2 22:46:59</p>
+            <p>耗时: 6.87秒</p>
+          </div>
+        
+          <div class="test-case pass">
+            <h3>按钮检测测试</h3>
+            <p>脚本: validation/scripts/run-button-test-with-screenshots.js</p>
+            <p>状态: 通过</p>
+            <p>开始时间: 2025/4/2 22:46:59</p>
+            <p>结束时间: 2025/4/2 22:47:05</p>
+            <p>耗时: 6.60秒</p>
+          </div>
+        
+          <div class="test-case pass">
+            <h3>按钮交互测试</h3>
+            <p>脚本: validation/scripts/run-button-interaction-test.js</p>
+            <p>状态: 通过</p>
+            <p>开始时间: 2025/4/2 22:47:05</p>
+            <p>结束时间: 2025/4/2 22:49:02</p>
+            <p>耗时: 116.43秒</p>
+          </div>
+        
+          <div class="test-case pass">
+            <h3>按钮改进验证</h3>
+            <p>脚本: validation/scripts/validate-button-improvements.js</p>
+            <p>状态: 通过</p>
+            <p>开始时间: 2025/4/2 22:49:02</p>
+            <p>结束时间: 2025/4/2 22:49:09</p>
+            <p>耗时: 7.81秒</p>
+          </div>
+        
+    </div>
+  </div>
+  
+  <script>
+    // 这里可以添加动态加载按钮测试结果的JavaScript代码
+    async function loadButtonTestResults() {
+      try {
+        const response = await fetch('validation/button-test-results.json');
+        const data = await response.json();
+        
+        // 更新按钮测试结果
+        document.getElementById('totalButtons').textContent = data.totalButtons || '未知';
+        document.getElementById('standardButtons').textContent = data.standardButtons || '未知';
+        document.getElementById('buttonLikeElements').textContent = data.buttonLikeElements || '未知';
+        document.getElementById('testedButtons').textContent = data.testedButtons || '未知';
+        document.getElementById('successfulInteractions').textContent = data.successfulInteractions || '未知';
+        document.getElementById('failedInteractions').textContent = data.failedInteractions || '未知';
+        document.getElementById('improvedButtons').textContent = data.improvedButtons || '未知';
+        document.getElementById('addedAriaAttributes').textContent = data.addedAriaAttributes || '未知';
+        document.getElementById('fixedAccessibilityIssues').textContent = data.fixedAccessibilityIssues || '未知';
+      } catch (error) {
+        console.error('加载按钮测试结果失败:', error);
+      }
+    }
+    
+    loadButtonTestResults();
+  </script>
+</body>
+</html>
+  

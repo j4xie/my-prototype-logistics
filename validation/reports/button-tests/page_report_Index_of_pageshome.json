@@ -1,0 +1,18 @@
+{
+  "url": "http://localhost:8888/pages/home/",
+  "title": "Index of /pages/home/",
+  "module": "首页",
+  "screenshot": "page_Index_of_pageshome.png",
+  "buttons": [],
+  "buttonResults": [],
+  "analysis": {
+    "url": "http://localhost:8888/pages/home/",
+    "module": "首页",
+    "buttonCount": 0,
+    "successfulInteractions": 0,
+    "failedInteractions": 0,
+    "mainIssues": "无主要问题",
+    "overallAssessment": "无按钮可评估",
+    "buttonAnalysis": []
+  }
+}

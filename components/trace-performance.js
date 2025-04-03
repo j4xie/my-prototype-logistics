@@ -1,8 +1,692 @@
 /**
- * 食品溯源系统 - 性能优化组件
- * 提供代码分割、延迟加载、资源预加载和性能监控功能
+ * @module tracePerformance
+ * @description 食品溯源系统 - 性能监控与优化组件
+ * @version 1.0.0
+ * @author 食品溯源系统开发团队
  */
 
+// 性能指标阈值配置
+const performanceThresholds = {
+  pageLoad: 2000,        // 页面加载时间阈值（毫秒）
+  serverResponse: 500,   // 服务器响应时间阈值（毫秒）
+  resourceCount: 30,     // 资源数量阈值
+  memoryUsage: 50,       // 内存使用百分比阈值
+  longTasks: 50,         // 长任务阈值（毫秒）
+  firstContentfulPaint: 1000 // 首次内容绘制时间阈值（毫秒）
+};
+
+// 性能日志
+const performanceLogs = [];
+
+// 日志级别
+const LOG_LEVELS = {
+  INFO: 'info',
+  WARNING: 'warning',
+  ERROR: 'error',
+  DEBUG: 'debug'
+};
+
+/**
+ * 性能监控模块
+ */
+const tracePerformance = {
+  /**
+   * 初始化性能监控
+   * @param {Object} options - 配置选项
+   * @param {boolean} options.autoMonitor - 是否自动监控性能
+   * @param {boolean} options.reportToServer - 是否向服务器报告性能指标
+   * @param {string} options.reportEndpoint - 性能报告服务端点
+   * @param {Object} options.customThresholds - 自定义性能阈值
+   */
+  init(options = {}) {
+    // 合并配置
+    this.config = {
+      autoMonitor: true,
+      reportToServer: false,
+      reportEndpoint: '/api/performance/report',
+      reportInterval: 60000, // 1分钟
+      ...options
+    };
+    
+    // 合并自定义阈值
+    if (options.customThresholds) {
+      Object.assign(performanceThresholds, options.customThresholds);
+    }
+    
+    // 初始化性能观察器
+    this.initPerformanceObservers();
+    
+    // 添加性能事件监听器
+    this.addPerformanceListeners();
+    
+    // 启动自动监控
+    if (this.config.autoMonitor) {
+      this.startAutoMonitoring();
+    }
+    
+    // 注册解析性能标记的函数
+    window.getTracePerformanceMarks = this.getPerformanceMarks.bind(this);
+    
+    // 加载历史日志
+    this.loadLogsFromStorage();
+    
+    return true;
+  },
+  
+  /**
+   * 初始化性能观察器
+   */
+  initPerformanceObservers() {
+    // 观察长任务
+    if (window.PerformanceObserver && window.PerformanceLongTaskTiming) {
+      try {
+        const longTaskObserver = new PerformanceObserver(entries => {
+          entries.getEntries().forEach(entry => {
+            const taskDuration = entry.duration;
+            if (taskDuration > performanceThresholds.longTasks) {
+              this.log(
+                LOG_LEVELS.WARNING,
+                `检测到长任务: ${Math.round(taskDuration)}ms`,
+                { taskDuration, threshold: performanceThresholds.longTasks }
+              );
+            }
+          });
+        });
+        
+        longTaskObserver.observe({ entryTypes: ['longtask'] });
+        
+      } catch (error) {
+        this.log(LOG_LEVELS.ERROR, '无法初始化长任务观察器', { error: error.message });
+      }
+    }
+    
+    // 观察资源加载
+    if (window.PerformanceObserver && window.PerformanceResourceTiming) {
+      try {
+        const resourceObserver = new PerformanceObserver(entries => {
+          entries.getEntries().forEach(entry => {
+            if (entry.duration > performanceThresholds.serverResponse) {
+              this.log(
+                LOG_LEVELS.WARNING,
+                `资源加载过慢: ${entry.name}`,
+                { 
+                  resource: entry.name,
+                  duration: entry.duration,
+                  threshold: performanceThresholds.serverResponse
+                }
+              );
+            }
+          });
+        });
+        
+        resourceObserver.observe({ entryTypes: ['resource'] });
+        
+      } catch (error) {
+        this.log(LOG_LEVELS.ERROR, '无法初始化资源观察器', { error: error.message });
+      }
+    }
+    
+    // 观察绘制性能
+    if (window.PerformanceObserver && window.PerformancePaintTiming) {
+      try {
+        const paintObserver = new PerformanceObserver(entries => {
+          entries.getEntries().forEach(entry => {
+            if (entry.name === 'first-contentful-paint') {
+              const paintTime = entry.startTime;
+              
+              this.log(
+                LOG_LEVELS.INFO,
+                `首次内容绘制: ${Math.round(paintTime)}ms`,
+                { paintTime }
+              );
+              
+              if (paintTime > performanceThresholds.firstContentfulPaint) {
+                this.log(
+                  LOG_LEVELS.WARNING,
+                  `首次内容绘制过慢: ${Math.round(paintTime)}ms`,
+                  { 
+                    paintTime,
+                    threshold: performanceThresholds.firstContentfulPaint
+                  }
+                );
+                    }
+                }
+            });
+        });
+        
+            paintObserver.observe({ entryTypes: ['paint'] });
+            
+      } catch (error) {
+        this.log(LOG_LEVELS.ERROR, '无法初始化绘制观察器', { error: error.message });
+      }
+    }
+  },
+  
+  /**
+   * 添加性能事件监听器
+   */
+  addPerformanceListeners() {
+    // 页面加载完成事件
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        this.measurePagePerformance();
+      }, 0);
+    });
+    
+    // 页面可见性变化事件
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.markPerformance('page_visible');
+      }
+    });
+    
+    // 页面卸载前保存日志
+    window.addEventListener('beforeunload', () => {
+      this.saveLogsToStorage();
+    });
+  },
+  
+  /**
+   * 开始自动监控
+   */
+  startAutoMonitoring() {
+    // 定期检查性能
+    this.monitoringInterval = setInterval(() => {
+      this.checkMemoryUsage();
+      this.checkResourceUsage();
+      
+      // 定期报告性能指标
+      if (this.config.reportToServer) {
+        this.reportPerformanceToServer();
+      }
+    }, this.config.reportInterval);
+    
+    // 标记监控开始
+    this.markPerformance('monitoring_started');
+    
+    this.log(LOG_LEVELS.INFO, '性能监控已启动');
+  },
+  
+  /**
+   * 停止自动监控
+   */
+  stopAutoMonitoring() {
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = null;
+      
+      // 标记监控停止
+      this.markPerformance('monitoring_stopped');
+      
+      this.log(LOG_LEVELS.INFO, '性能监控已停止');
+    }
+  },
+  
+  /**
+   * 测量页面性能
+   */
+  measurePagePerformance() {
+    if (!window.performance || !window.performance.timing) {
+      this.log(LOG_LEVELS.ERROR, '浏览器不支持性能API');
+      return;
+    }
+    
+    const timing = window.performance.timing;
+    
+    // 计算性能指标
+    const pageLoadTime = timing.loadEventEnd - timing.navigationStart;
+    const domReadyTime = timing.domComplete - timing.domLoading;
+    const serverResponseTime = timing.responseEnd - timing.requestStart;
+    
+    // 记录性能指标
+    this.log(
+      LOG_LEVELS.INFO,
+      `页面加载性能指标`,
+      {
+        pageLoadTime,
+        domReadyTime,
+        serverResponseTime
+      }
+    );
+    
+    // 检查是否超过阈值
+    if (pageLoadTime > performanceThresholds.pageLoad) {
+      this.log(
+        LOG_LEVELS.WARNING,
+        `页面加载时间过长: ${pageLoadTime}ms`,
+        { 
+          metric: 'pageLoadTime',
+          value: pageLoadTime,
+          threshold: performanceThresholds.pageLoad
+        }
+      );
+    }
+    
+    if (serverResponseTime > performanceThresholds.serverResponse) {
+      this.log(
+        LOG_LEVELS.WARNING,
+        `服务器响应时间过长: ${serverResponseTime}ms`,
+        { 
+          metric: 'serverResponseTime',
+          value: serverResponseTime,
+          threshold: performanceThresholds.serverResponse
+        }
+      );
+    }
+    
+    // 返回测量结果
+    return {
+      pageLoadTime,
+      domReadyTime,
+      serverResponseTime
+    };
+  },
+  
+  /**
+   * 检查内存使用情况
+   */
+  checkMemoryUsage() {
+    if (!window.performance || !window.performance.memory) {
+      return;
+    }
+    
+    const memory = window.performance.memory;
+    const memoryUsage = (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100;
+    
+    if (memoryUsage > performanceThresholds.memoryUsage) {
+      this.log(
+        LOG_LEVELS.WARNING,
+        `内存使用率过高: ${Math.round(memoryUsage)}%`,
+        { 
+          memoryUsage,
+          usedJSHeapSize: memory.usedJSHeapSize,
+          jsHeapSizeLimit: memory.jsHeapSizeLimit,
+          threshold: performanceThresholds.memoryUsage
+        }
+      );
+    }
+  },
+  
+  /**
+   * 检查资源使用情况
+   */
+  checkResourceUsage() {
+    if (!window.performance || !window.performance.getEntriesByType) {
+      return;
+    }
+    
+    const resources = window.performance.getEntriesByType('resource');
+    
+    if (resources.length > performanceThresholds.resourceCount) {
+      this.log(
+        LOG_LEVELS.WARNING,
+        `资源数量过多: ${resources.length}`,
+        { 
+          resourceCount: resources.length,
+          threshold: performanceThresholds.resourceCount
+        }
+      );
+    }
+    
+    // 分析资源加载情况
+    const slowResources = resources.filter(res => res.duration > performanceThresholds.serverResponse);
+    
+    if (slowResources.length > 0) {
+      this.log(
+        LOG_LEVELS.INFO,
+        `检测到 ${slowResources.length} 个慢资源`,
+        { 
+          slowResourcesCount: slowResources.length,
+          slowResources: slowResources.map(res => ({
+            name: res.name,
+            duration: res.duration
+          }))
+        }
+      );
+    }
+  },
+  
+  /**
+   * 标记性能时间点
+   * @param {string} markName - 标记名称
+   * @param {Object} [data] - 附加数据
+   */
+  markPerformance(markName, data = {}) {
+    if (!window.performance || !window.performance.mark) {
+      return;
+    }
+    
+    const fullMarkName = `trace-${markName}`;
+    
+    try {
+      // 创建性能标记
+      window.performance.mark(fullMarkName);
+      
+      // 使用自定义数据扩展标记
+      const existingMarks = window.performance.getEntriesByName(fullMarkName);
+      if (existingMarks.length > 0) {
+        const mark = existingMarks[0];
+        mark.customData = data;
+      }
+      
+      this.log(
+        LOG_LEVELS.DEBUG,
+        `已创建性能标记: ${markName}`,
+        { markName, timestamp: Date.now(), data }
+      );
+    } catch (error) {
+      this.log(LOG_LEVELS.ERROR, `创建性能标记失败: ${error.message}`);
+    }
+  },
+  
+  /**
+   * 测量两个标记之间的性能
+   * @param {string} measureName - 测量名称
+   * @param {string} startMark - 开始标记
+   * @param {string} endMark - 结束标记
+   * @returns {number|null} 测量结果（毫秒）
+   */
+  measurePerformance(measureName, startMark, endMark) {
+    if (!window.performance || !window.performance.measure) {
+      return null;
+    }
+    
+    try {
+      // 添加前缀
+      const fullStartMark = startMark.startsWith('trace-') ? startMark : `trace-${startMark}`;
+      const fullEndMark = endMark.startsWith('trace-') ? endMark : `trace-${endMark}`;
+      const fullMeasureName = `trace-measure-${measureName}`;
+      
+      // 创建测量
+      window.performance.measure(fullMeasureName, fullStartMark, fullEndMark);
+      
+      // 获取测量结果
+      const measures = window.performance.getEntriesByName(fullMeasureName);
+      if (measures.length > 0) {
+        const duration = measures[0].duration;
+        
+        this.log(
+          LOG_LEVELS.INFO,
+          `性能测量: ${measureName}`,
+          { measureName, duration, startMark, endMark }
+        );
+        
+        return duration;
+      }
+    } catch (error) {
+      this.log(LOG_LEVELS.ERROR, `性能测量失败: ${error.message}`);
+    }
+    
+    return null;
+  },
+  
+  /**
+   * 获取性能标记
+   * @returns {Array} 性能标记数组
+   */
+  getPerformanceMarks() {
+    if (!window.performance || !window.performance.getEntriesByType) {
+      return [];
+    }
+    
+    return window.performance.getEntriesByType('mark')
+      .filter(mark => mark.name.startsWith('trace-'))
+      .map(mark => ({
+        name: mark.name.replace('trace-', ''),
+        startTime: mark.startTime,
+        customData: mark.customData || {}
+      }));
+  },
+  
+  /**
+   * 向服务器报告性能指标
+   */
+  reportPerformanceToServer() {
+    if (!this.config.reportToServer || !this.config.reportEndpoint) {
+      return;
+    }
+    
+    // 收集要报告的性能指标
+    const reportData = {
+      timestamp: Date.now(),
+      url: window.location.href,
+      performance: {
+        timing: window.performance && window.performance.timing ? 
+          this.measurePagePerformance() : null,
+        memory: window.performance && window.performance.memory ? {
+          usedJSHeapSize: window.performance.memory.usedJSHeapSize,
+          totalJSHeapSize: window.performance.memory.totalJSHeapSize,
+          jsHeapSizeLimit: window.performance.memory.jsHeapSizeLimit
+        } : null,
+        navigation: window.performance && window.performance.navigation ? {
+          type: window.performance.navigation.type,
+          redirectCount: window.performance.navigation.redirectCount
+        } : null
+      },
+      resourceCount: window.performance && window.performance.getEntriesByType ? 
+        window.performance.getEntriesByType('resource').length : 0,
+      marks: this.getPerformanceMarks(),
+      logs: performanceLogs.slice(-20) // 只发送最近的20条日志
+    };
+    
+    // 发送数据
+    try {
+      fetch(this.config.reportEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(reportData),
+        // 使用keepalive确保数据在页面关闭后仍能发送
+        keepalive: true
+      }).then(response => {
+        if (!response.ok) {
+          this.log(LOG_LEVELS.ERROR, `性能数据上报失败: ${response.status}`, { status: response.status });
+        }
+      }).catch(error => {
+        this.log(LOG_LEVELS.ERROR, `性能数据上报错误: ${error.message}`, { error: error.message });
+      });
+    } catch (error) {
+      this.log(LOG_LEVELS.ERROR, `性能数据上报异常: ${error.message}`, { error: error.message });
+    }
+  },
+  
+  /**
+   * 记录性能日志
+   * @param {string} level - 日志级别
+   * @param {string} message - 日志消息
+   * @param {Object} [data] - 附加数据
+   */
+  log(level, message, data = {}) {
+    const logEntry = {
+      timestamp: Date.now(),
+      level,
+      message,
+      data,
+      url: window.location.href
+    };
+    
+    // 添加到日志数组
+    performanceLogs.push(logEntry);
+    
+    // 限制日志数量，防止内存泄漏
+    if (performanceLogs.length > 1000) {
+      performanceLogs.shift();
+    }
+    
+    // 输出控制台日志（仅在开发模式下）
+    if (process.env.NODE_ENV === 'development') {
+      const consoleMethod = level === LOG_LEVELS.ERROR ? 'error' :
+                            level === LOG_LEVELS.WARNING ? 'warn' :
+                            level === LOG_LEVELS.DEBUG ? 'debug' : 'log';
+      
+      console[consoleMethod](`[性能监控] ${message}`, data);
+    }
+  },
+  
+  /**
+   * 保存日志到本地存储
+   */
+  saveLogsToStorage() {
+    try {
+      // 只保存警告和错误日志
+      const logsToSave = performanceLogs.filter(log => 
+        log.level === LOG_LEVELS.WARNING || log.level === LOG_LEVELS.ERROR
+      );
+      
+      // 限制保存的日志数量
+      const trimmedLogs = logsToSave.slice(-100);
+      
+      localStorage.setItem('trace-performance-logs', JSON.stringify(trimmedLogs));
+        } catch (error) {
+      console.error('无法保存性能日志到本地存储:', error);
+    }
+  },
+  
+  /**
+   * 从本地存储加载日志
+   */
+  loadLogsFromStorage() {
+    try {
+      const savedLogs = localStorage.getItem('trace-performance-logs');
+      if (savedLogs) {
+        const parsedLogs = JSON.parse(savedLogs);
+        
+        // 将保存的日志添加到当前日志中
+        performanceLogs.push(...parsedLogs);
+        
+        this.log(LOG_LEVELS.INFO, `已从本地存储加载 ${parsedLogs.length} 条日志记录`);
+      }
+        } catch (error) {
+      this.log(LOG_LEVELS.ERROR, '无法从本地存储加载性能日志', { error: error.message });
+    }
+  },
+  
+  /**
+   * 获取性能优化建议
+   * @returns {Array<Object>} 优化建议数组
+   */
+  getPerformanceRecommendations() {
+    const recommendations = [];
+    
+    // 分析日志以生成建议
+    const warnings = performanceLogs.filter(log => log.level === LOG_LEVELS.WARNING);
+    
+    // 检查页面加载时间
+    const pageLoadWarnings = warnings.filter(log => log.data && log.data.metric === 'pageLoadTime');
+    if (pageLoadWarnings.length > 0) {
+      recommendations.push({
+        id: 'page-load-time',
+        title: '优化页面加载时间',
+        description: '页面加载时间过长，可能影响用户体验',
+        impact: 'high',
+        suggestions: [
+          '减少初始HTML的大小',
+          '延迟加载非关键资源',
+          '优化关键渲染路径',
+          '使用资源预加载和预连接'
+        ]
+      });
+    }
+    
+    // 检查服务器响应时间
+    const serverResponseWarnings = warnings.filter(log => log.data && log.data.metric === 'serverResponseTime');
+    if (serverResponseWarnings.length > 0) {
+      recommendations.push({
+        id: 'server-response-time',
+        title: '优化服务器响应时间',
+        description: '服务器响应时间过长，可能导致页面加载延迟',
+        impact: 'high',
+        suggestions: [
+          '优化服务器处理逻辑',
+          '使用缓存减少数据库查询',
+          '启用服务器端压缩',
+          '考虑使用CDN分发内容'
+        ]
+      });
+    }
+    
+    // 检查内存使用
+    const memoryWarnings = warnings.filter(log => log.message && log.message.includes('内存使用率过高'));
+    if (memoryWarnings.length > 0) {
+      recommendations.push({
+        id: 'memory-usage',
+        title: '优化内存使用',
+        description: '检测到内存使用率过高，可能导致性能下降或崩溃',
+        impact: 'medium',
+        suggestions: [
+          '检查内存泄漏问题',
+          '优化大型数据结构的使用',
+          '实现数据分页或虚拟滚动',
+          '定期清理不必要的缓存和引用'
+        ]
+      });
+    }
+    
+    // 检查资源加载情况
+    const resourceWarnings = warnings.filter(log => log.message && log.message.includes('资源加载过慢'));
+    if (resourceWarnings.length > 0) {
+      recommendations.push({
+        id: 'resource-loading',
+        title: '优化资源加载',
+        description: '多个资源加载缓慢，影响页面性能',
+        impact: 'medium',
+        suggestions: [
+          '优化图片大小和格式',
+          '合并和压缩CSS/JavaScript文件',
+          '使用适当的缓存策略',
+          '考虑使用更快的CDN'
+        ]
+      });
+    }
+    
+    return recommendations;
+  },
+  
+  /**
+   * 清理性能数据
+   */
+  clearPerformanceData() {
+    // 清理性能测量
+    if (window.performance && window.performance.clearMarks) {
+      window.performance.getEntriesByType('mark')
+        .filter(mark => mark.name.startsWith('trace-'))
+        .forEach(mark => {
+          window.performance.clearMarks(mark.name);
+        });
+    }
+    
+    if (window.performance && window.performance.clearMeasures) {
+      window.performance.getEntriesByType('measure')
+        .filter(measure => measure.name.startsWith('trace-measure-'))
+        .forEach(measure => {
+          window.performance.clearMeasures(measure.name);
+        });
+    }
+    
+    // 清理日志
+    performanceLogs.length = 0;
+    
+    // 清理本地存储
+    try {
+      localStorage.removeItem('trace-performance-logs');
+    } catch (error) {
+      console.error('无法清除本地存储的性能日志:', error);
+    }
+    
+    this.log(LOG_LEVELS.INFO, '性能数据已清理');
+  }
+};
+
+// 导出模块
+window.tracePerformance = tracePerformance;
+
+// 如果定义了模块系统，也通过模块系统导出
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = tracePerformance;
+} else if (typeof define === 'function' && define.amd) {
+  define([], function() { return tracePerformance; });
+} 
 const TracePerformance = (function() {
     // 配置
     const config = {

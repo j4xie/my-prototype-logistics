@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <script src="../../components/trace-common.js"></script>
+    <script type="module" src="../../components/trace-error-handler.js"></script>
+    <script type="module" src="../../components/trace-store.js"></script>
+    <script type="module" src="../../components/trace-ux.js"></script>
+    <script type="module" src="../../components/trace-a11y.js"></script>
+    <script src="../../components/trace-nav.js"></script>
+    
+    <script type="module">
+        import { traceStore } from '../../components/trace-store.js';
+        import { traceErrorHandler } from '../../components/trace-error-handler.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                initProfilePage();
+            } catch (error) {
+                console.error("初始化个人中心页面失败:", error);
+                // 使用默认值填充页面，防止白屏
+                updatePageState({
+                    name: '访客用户',
+                    role: 'guest',
+                    email: '未登录',
+                    isAuthenticated: false
+                });
+                
+                // 显示友好错误提示
+                traceErrorHandler.handleError({
+                    type: 'runtime',
+                    message: '加载个人中心数据失败',
+                    error: error,
+                    timestamp: new Date().toISOString(),
+                    retryCallback: () => window.location.reload()
+                });
+            }
+        });
+        
+        function initProfilePage() {
+            const isInIframe = window !== window.parent;
+            let userInfo = { isAuthenticated: false };
+            
+            // 尝试获取用户信息
+            try {
+                userInfo = traceStore.user || {};
+                
+                // 确保用户对象至少有基本属性
+                if (!userInfo) {
+                    userInfo = { isAuthenticated: false };
+                }
+            } catch (error) {
+                console.warn("获取用户信息失败:", error);
+            }
+            
+            // 检查用户是否已认证
+            if (!userInfo.isAuthenticated) {
+                if (!isInIframe) {
+                    window.location.href = '../auth/login.html';
+                }
+                return;
+            }
+            
+            // 更新页面状态
+            updatePageState(userInfo);
+            
+            // 设置底部导航
+            try {
+                if (window.traceNav && typeof window.traceNav.init === 'function') {
+                    window.traceNav.init('profile', null);
+                } else {
+                    setupNavigationEvents();
+                }
+            } catch (error) {
+                console.warn("初始化导航失败:", error);
+                // 如果traceNav不可用，使用基本导航
+                setupNavigationEvents();
+            }
+            
+            // 设置退出登录事件
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    try {
+                        traceStore.logout();
+                        
+                        if (isInIframe) {
+                            window.parent.postMessage({
+                                type: 'LOGOUT'
+                            }, window.location.origin);
+                        } else {
+                            window.location.href = '../auth/login.html';
+                        }
+                    } catch (error) {
+                        console.error("登出失败:", error);
+                        // 即使登出失败，也直接跳转到登录页
+                        window.location.href = '../auth/login.html';
+                    }
+                });
+            }
+        }
+        
+        function setupNavigationEvents() {
+            // 基本导航事件处理，作为备用方案
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const text = this.querySelector('span').textContent;
+                    
+                    if (text === '首页') {
+                        // 跳转到上次访问的模块首页
+                        const lastModule = localStorage.getItem('last_module') || 'farming';
+                        window.location.href = `../home/home-${lastModule}.html`;
+                    } else if (text === '信息管理') {
+                        // 跳转到信息管理页
+                        const lastModule = localStorage.getItem('last_module') || 'farming';
+                        if (lastModule === 'farming') {
+                            window.location.href = '../farming/farming-breeding.html';
+                        } else if (lastModule === 'processing') {
+                            window.location.href = '../processing/processing-reports.html';
+                        } else if (lastModule === 'logistics') {
+                            window.location.href = '../logistics/logistics-report.html';
+                        }
+                    } else if (text === '我的') {
+                        // 当前页面，不跳转
+                    }
+                });
+            });
+        }
+        
+        function updatePageState(user) {
+            try {
+                const userNameEl = document.getElementById('user-name');
+                const userRoleEl = document.getElementById('user-role');
+                const userEmailEl = document.getElementById('user-email');
+                
+                // 使用空值合并运算符确保有默认值
+                if (userNameEl) userNameEl.textContent = user?.name || '未知用户';
+                if (userRoleEl) userRoleEl.textContent = translateRole(user?.role) || '访客';
+                if (userEmailEl) userEmailEl.textContent = user?.email || '未设置邮箱';
+            } catch (error) {
+                console.error("更新用户信息失败:", error);
+            }
+        }
+        
+        function translateRole(role) {
+            if (!role) return '访客';
+            
+            const roleMap = {
+                'admin': '管理员',
+                'user': '普通用户',
+                'guest': '访客'
+            };
+            
+            return roleMap[role] || role;
+        }
+    </script>
+</head>
+<body class="bg-[#F7F8FA]">
+    <div class="max-w-[390px] mx-auto min-h-screen pb-16">
+        <div class="bg-[#1890FF] text-white pt-12 px-5 pb-8 rounded-b-2xl shadow-md">
+            <div class="flex items-center mb-6">
+                <div id="user-avatar" class="w-16 h-16 rounded-full bg-white/30 mr-4 flex items-center justify-center">
+                    <i class="fas fa-user text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h2 id="user-name" class="text-xl font-medium text-white">加载中...</h2>
+                    <p id="user-role" class="text-sm text-white/90 mt-1">加载中...</p>
+                    <p id="user-email" class="text-sm text-white/90 mt-1">加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-5 mt-6">
+            <div class="bg-white rounded-xl shadow-sm divide-y">
+                <a href="profile-edit.html" class="flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                            <i class="fas fa-user-edit text-[#1890FF]"></i>
+                        </div>
+                        <span class="font-medium">编辑资料</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </a>
+                
+                <a href="change-password.html" class="flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                            <i class="fas fa-lock text-[#1890FF]"></i>
+                        </div>
+                        <span class="font-medium">修改密码</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </a>
+                
+                <a href="notifications.html" class="flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                            <i class="fas fa-bell text-[#1890FF]"></i>
+                        </div>
+                        <span class="font-medium">消息通知</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </a>
+                
+                <a href="settings.html" class="flex items-center justify-between p-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                            <i class="fas fa-cog text-[#1890FF]"></i>
+                        </div>
+                        <span class="font-medium">系统设置</span>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </a>
+            </div>
+            
+            <button id="logout-btn" class="w-full bg-white text-red-500 font-medium py-4 rounded-xl shadow-sm mt-6 hover:bg-red-50 transition-colors">
+                退出登录
+            </button>
+        </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <nav class="bottom-nav">
+        <div class="footer-container">
+            <div class="nav-items">
+                <div class="nav-item" data-route="home">
+                    <a href="../home/home-selector.html">
+                        <img src="../../assets/icons/home-gray.svg" alt="首页" class="nav-icon">
+                        <span>首页</span>
+                    </a>
+                </div>
+                <div class="nav-item" data-route="info">
+                    <a href="../home/home-farming.html">
+                        <img src="../../assets/icons/record-gray.svg" alt="信息管理" class="nav-icon">
+                        <span>信息管理</span>
+                    </a>
+                </div>
+                <div class="nav-item active" data-route="profile">
+                    <img src="../../assets/icons/user-blue.svg" alt="我的" class="nav-icon">
+                    <span>我的</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <style>
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: var(--bottom-tab-height, 60px);
+        background: white;
+        border-top: 1px solid #eee;
+        padding-bottom: var(--safe-area-bottom, 0);
+        z-index: 999;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .footer-container {
+        max-width: 390px;
+        margin: 0 auto;
+        height: 100%;
+    }
+    
+    .nav-items {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 33.33%;
+        height: 100%;
+        color: #999;
+        font-size: 12px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .nav-item.active {
+        color: #1677FF;
+    }
+    
+    .nav-item img {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 4px;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-item span {
+        transition: all 0.2s ease;
+    }
+    </style>
+
+  <!-- 自动按钮升级脚本 (自动注入) -->
+  <script src="/components/autoload-button-upgrade.js"></script>
+  </body>
+</html> 

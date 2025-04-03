@@ -1,0 +1,480 @@
+{
+  "timestamp": "2025-04-03T04:18:00.196Z",
+  "summary": {
+    "total": 14,
+    "correctlyIdentified": 14,
+    "incorrectlyIdentified": 0
+  },
+  "pages": [
+    {
+      "path": "/pages/trace/trace-map.html",
+      "expectedType": "prototype",
+      "actualType": "prototype",
+      "correctlyIdentified": true,
+      "buttonCount": 9,
+      "error": null,
+      "details": {
+        "buttons": [
+          {
+            "text": "全部产品",
+            "tagName": "BUTTON",
+            "classes": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "和牛肉",
+            "tagName": "BUTTON",
+            "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "大闸蟹",
+            "tagName": "BUTTON",
+            "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "猕猴桃",
+            "tagName": "BUTTON",
+            "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "葡萄酒",
+            "tagName": "BUTTON",
+            "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200",
+            "id": "",
+            "disabled": false
+          }
+        ],
+        "title": "溯源地图 - 食品溯源系统",
+        "structure": {
+          "headings": [
+            "产销分布地图",
+            "产地概览"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 0
+        }
+      }
+    },
+    {
+      "path": "/pages/trace/trace-list.html",
+      "expectedType": "prototype",
+      "actualType": "prototype",
+      "correctlyIdentified": true,
+      "buttonCount": 14,
+      "error": null,
+      "details": {
+        "buttons": [
+          {
+            "text": "今日",
+            "tagName": "BUTTON",
+            "classes": "bg-blue-50 text-[#00467F] rounded px-3 py-1 text-xs border border-blue-100",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "近7天",
+            "tagName": "BUTTON",
+            "classes": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "近30天",
+            "tagName": "BUTTON",
+            "classes": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "全部",
+            "tagName": "BUTTON",
+            "classes": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1.5 shadow-sm",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "已完成",
+            "tagName": "BUTTON",
+            "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm",
+            "id": "",
+            "disabled": false
+          }
+        ],
+        "title": "溯源记录 - 食品溯源系统",
+        "structure": {
+          "headings": [
+            "列表记录"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 0
+        }
+      }
+    },
+    {
+      "path": "/pages/trace/trace-detail.html",
+      "expectedType": "prototype",
+      "actualType": "prototype",
+      "correctlyIdentified": true,
+      "buttonCount": 9,
+      "error": null,
+      "details": {
+        "buttons": [
+          {
+            "text": "基本信息",
+            "tagName": "BUTTON",
+            "classes": "tab-button active",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "溯源流程",
+            "tagName": "BUTTON",
+            "classes": "tab-button",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "证书与检测",
+            "tagName": "BUTTON",
+            "classes": "tab-button",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "查看照片(3)",
+            "tagName": "BUTTON",
+            "classes": "trace-button trace-button-secondary text-xs py-1 image-view-link",
+            "id": "",
+            "disabled": false
+          },
+          {
+            "text": "查看照片(2)",
+            "tagName": "BUTTON",
+            "classes": "trace-button trace-button-secondary text-xs py-1 image-view-link",
+            "id": "",
+            "disabled": false
+          }
+        ],
+        "title": "溯源详情 - 食品溯源系统",
+        "structure": {
+          "headings": [
+            "和牛肉 #WG25031701",
+            "产品详情",
+            "生产商信息"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 0
+        }
+      }
+    },
+    {
+      "path": "/pages/home/home-selector.html",
+      "expectedType": "prototype",
+      "actualType": "prototype",
+      "correctlyIdentified": true,
+      "buttonCount": 6,
+      "error": null,
+      "details": {
+        "buttons": [
+          {
+            "text": "养殖管理\n\n动物饲养、疫苗、繁育信息管理",
+            "tagName": "A",
+            "classes": "module-card p-4",
+            "id": "farmingModule",
+            "disabled": false
+          },
+          {
+            "text": "生产加工\n\n屠宰、检验、包装等加工环节管理",
+            "tagName": "A",
+            "classes": "module-card p-4",
+            "id": "processingModule",
+            "disabled": false
+          },
+          {
+            "text": "销售物流\n\n运输、配送、订单跟踪管理",
+            "tagName": "A",
+            "classes": "module-card p-4",
+            "id": "logisticsModule",
+            "disabled": false
+          },
+          {
+            "text": "追溯查询\n\n产品全链路溯源和质量追踪",
+            "tagName": "A",
+            "classes": "module-card p-4",
+            "id": "traceModule",
+            "disabled": false
+          },
+          {
+            "text": "用户管理\n\n账号、权限配置",
+            "tagName": "A",
+            "classes": "module-card p-4",
+            "id": "userManageModule",
+            "disabled": false
+          }
+        ],
+        "title": "功能模块选择 - 食品溯源系统",
+        "structure": {
+          "headings": [
+            "张三",
+            "系统状态",
+            "功能模块"
+          ],
+          "mainElements": true,
+          "iframes": 0,
+          "tables": 0
+        }
+      }
+    },
+    {
+      "path": "/pages/auth/login.html",
+      "expectedType": "prototype",
+      "actualType": "prototype",
+      "correctlyIdentified": true,
+      "buttonCount": 2,
+      "error": null,
+      "details": {
+        "buttons": [
+          {
+            "text": "显示密码",
+            "tagName": "BUTTON",
+            "classes": "password-toggle",
+            "id": "password-toggle",
+            "disabled": false
+          },
+          {
+            "text": "登录",
+            "tagName": "BUTTON",
+            "classes": "ant-btn ant-btn-primary w-full transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]",
+            "id": "login-btn",
+            "disabled": false
+          }
+        ],
+        "title": "登录 - 食品溯源系统",
+        "structure": {
+          "headings": [
+            "食品溯源系统"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 0
+        }
+      }
+    },
+    {
+      "path": "/pages/product-trace.html",
+      "expectedType": "prototype",
+      "actualType": "prototype",
+      "correctlyIdentified": true,
+      "buttonCount": 5,
+      "error": null,
+      "details": {
+        "buttons": [
+          {
+            "text": "返回",
+            "tagName": "BUTTON",
+            "classes": "back-button",
+            "id": "backButton",
+            "disabled": false
+          },
+          {
+            "text": "开始扫描",
+            "tagName": "BUTTON",
+            "classes": "button",
+            "id": "scanButton",
+            "disabled": false
+          },
+          {
+            "text": "手动输入溯源码",
+            "tagName": "BUTTON",
+            "classes": "button secondary",
+            "id": "inputCodeButton",
+            "disabled": false
+          },
+          {
+            "text": "开始扫描",
+            "tagName": "BUTTON",
+            "classes": "button",
+            "id": "scanButton",
+            "disabled": false
+          },
+          {
+            "text": "手动输入溯源码",
+            "tagName": "BUTTON",
+            "classes": "button secondary",
+            "id": "inputCodeButton",
+            "disabled": false
+          }
+        ],
+        "title": "产品溯源 - 食品溯源系统",
+        "structure": {
+          "headings": [],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 0
+        }
+      }
+    },
+    {
+      "path": "/pages/trace/",
+      "expectedType": "directory",
+      "actualType": "directory",
+      "correctlyIdentified": true,
+      "buttonCount": 0,
+      "error": null,
+      "details": {
+        "title": "Index of /pages/trace/",
+        "structure": {
+          "headings": [
+            "Index of /pages/trace/"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 1
+        }
+      }
+    },
+    {
+      "path": "/pages/home/",
+      "expectedType": "directory",
+      "actualType": "directory",
+      "correctlyIdentified": true,
+      "buttonCount": 0,
+      "error": null,
+      "details": {
+        "title": "Index of /pages/home/",
+        "structure": {
+          "headings": [
+            "Index of /pages/home/"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 1
+        }
+      }
+    },
+    {
+      "path": "/pages/auth/",
+      "expectedType": "directory",
+      "actualType": "directory",
+      "correctlyIdentified": true,
+      "buttonCount": 0,
+      "error": null,
+      "details": {
+        "title": "Index of /pages/auth/",
+        "structure": {
+          "headings": [
+            "Index of /pages/auth/"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 1
+        }
+      }
+    },
+    {
+      "path": "/pages/farming/",
+      "expectedType": "directory",
+      "actualType": "directory",
+      "correctlyIdentified": true,
+      "buttonCount": 0,
+      "error": null,
+      "details": {
+        "title": "Index of /pages/farming/",
+        "structure": {
+          "headings": [
+            "Index of /pages/farming/"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 1
+        }
+      }
+    },
+    {
+      "path": "/pages/processing/",
+      "expectedType": "directory",
+      "actualType": "directory",
+      "correctlyIdentified": true,
+      "buttonCount": 0,
+      "error": null,
+      "details": {
+        "title": "Index of /pages/processing/",
+        "structure": {
+          "headings": [
+            "Index of /pages/processing/"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 1
+        }
+      }
+    },
+    {
+      "path": "/pages/logistics/",
+      "expectedType": "directory",
+      "actualType": "directory",
+      "correctlyIdentified": true,
+      "buttonCount": 0,
+      "error": null,
+      "details": {
+        "title": "Index of /pages/logistics/",
+        "structure": {
+          "headings": [
+            "Index of /pages/logistics/"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 1
+        }
+      }
+    },
+    {
+      "path": "/pages/profile/",
+      "expectedType": "directory",
+      "actualType": "directory",
+      "correctlyIdentified": true,
+      "buttonCount": 0,
+      "error": null,
+      "details": {
+        "title": "Index of /pages/profile/",
+        "structure": {
+          "headings": [
+            "Index of /pages/profile/"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 1
+        }
+      }
+    },
+    {
+      "path": "/pages/admin/",
+      "expectedType": "directory",
+      "actualType": "directory",
+      "correctlyIdentified": true,
+      "buttonCount": 0,
+      "error": null,
+      "details": {
+        "title": "Index of /pages/admin/",
+        "structure": {
+          "headings": [
+            "Index of /pages/admin/"
+          ],
+          "mainElements": false,
+          "iframes": 0,
+          "tables": 1
+        }
+      }
+    }
+  ]
+}
