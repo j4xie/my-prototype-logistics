@@ -404,5 +404,69 @@
 
   <!-- 自动按钮升级脚本 (自动注入) -->
   <script src="/components/autoload-button-upgrade.js"></script>
+
+    <!-- 底部导航容器 -->
+    <div id="nav-container"></div>
+
+    <!-- 通用脚本 -->
+    <script src="../../components/trace-common.js"></script>
+    <script src="../../components/trace-nav.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面
+            initPage();
+            
+            // 绑定事件
+            document.getElementById('filterBtn').addEventListener('click', function() {
+                document.getElementById('filterPanel').classList.toggle('hidden');
+            });
+            
+            document.getElementById('scanBtn').addEventListener('click', function() {
+                // 这里实际项目中应该启动扫码功能
+                window.location.href = 'trace-detail.html?traceCode=TR202304150001&source=scan';
+            });
+            
+            document.getElementById('manualInputBtn').addEventListener('click', function() {
+                const traceCode = prompt('请输入溯源码', 'TR202304150001');
+                if (traceCode) {
+                    window.location.href = `trace-detail.html?traceCode=${traceCode}&source=manual`;
+                }
+            });
+            
+            document.getElementById('addNewBtn').addEventListener('click', function() {
+                window.location.href = 'trace-edit.html?mode=new';
+            });
+            
+            document.getElementById('applyFilterBtn').addEventListener('click', function() {
+                applyFilters();
+            });
+            
+            document.getElementById('resetFilterBtn').addEventListener('click', function() {
+                resetFilters();
+            });
+            
+            // 模拟加载溯源记录
+            loadTraceRecords();
+        });
+        
+        function initPage() {
+            // 检查权限
+            checkPermission();
+            
+            // 初始化导航菜单
+            window.traceNav.init('nav-container', 'info');
+            
+            // 更新日期选择器的最大值为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').max = today;
+            document.getElementById('endDate').max = today;
+            
+            // 默认设置日期范围为最近一个月
+            const lastMonth = new Date();
+            lastMonth.setMonth(lastMonth.getMonth() - 1);
+            document.getElementById('startDate').value = lastMonth.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today;
+        }
+    </script>
   </body>
 </html> 

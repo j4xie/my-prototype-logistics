@@ -34,42 +34,6 @@
                 transform: translateY(-20px);
             }
         }
-
-        /* 底部导航栏样式 */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: white;
-            border-top: 1px solid #f0f0f0;
-            padding-bottom: env(safe-area-inset-bottom, 0);
-            z-index: 100;
-        }
-        
-        .nav-items {
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0;
-        }
-        
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #999;
-            font-size: 12px;
-        }
-        
-        .nav-item.active {
-            color: #1677FF;
-        }
-        
-        .nav-item img {
-            width: 24px;
-            height: 24px;
-            margin-bottom: 4px;
-        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -115,30 +79,12 @@
             </div>
         </main>
 
-        <!-- 底部导航栏 -->
-        <nav class="bottom-nav">
-            <ul class="nav-items">
-                <li class="nav-item" id="homeNavItem">
-                    <a href="../pages/home/home-selector.html">
-                        <img src="../assets/icons/home-gray.svg" alt="首页" class="nav-icon">
-                        <span>首页</span>
-                    </a>
-                </li>
-                <li class="nav-item" id="infoNavItem">
-                    <a href="../pages/home/home-farming.html">
-                        <img src="../assets/icons/record-gray.svg" alt="信息管理" class="nav-icon">
-                        <span>信息管理</span>
-                    </a>
-                </li>
-                <li class="nav-item" id="profileNavItem">
-                    <a href="../pages/profile/profile.html">
-                        <img src="../assets/icons/user-gray.svg" alt="我的" class="nav-icon">
-                        <span>我的</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
+        <!-- 底部导航容器 -->
+        <div id="nav-container"></div>
     </div>
+
+    <!-- 通用JS脚本 -->
+    <script src="../components/trace-nav.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -159,51 +105,23 @@
             // 更新文档标题
             document.title = pageTitle + ' - 食品溯源系统';
             
-            // 设置正确的底部导航激活状态
-            updateBottomNavActiveState(source);
+            // 初始化底部导航栏
+            // 根据来源确定当前激活的菜单项
+            let activeItem = 'home';
+            if (source.includes('farming')) {
+                activeItem = 'info';
+            } else if (source.includes('profile')) {
+                activeItem = 'profile';
+            }
+            
+            // 初始化导航
+            window.traceNav.init('nav-container', activeItem);
             
             // 刷新按钮功能
             document.getElementById('refreshBtn').addEventListener('click', function() {
                 location.reload();
             });
         });
-        
-        function updateBottomNavActiveState(source) {
-            // 重置所有导航项
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-                const img = item.querySelector('img');
-                if (img) {
-                    if (img.src.includes('-blue.svg')) {
-                        img.src = img.src.replace('-blue.svg', '-gray.svg');
-                    }
-                }
-            });
-            
-            // 根据来源页面设置活动项
-            if (source.includes('farming')) {
-                const infoItem = document.getElementById('infoNavItem');
-                infoItem.classList.add('active');
-                const img = infoItem.querySelector('img');
-                if (img) {
-                    img.src = img.src.replace('-gray.svg', '-blue.svg');
-                }
-            } else if (source.includes('profile')) {
-                const profileItem = document.getElementById('profileNavItem');
-                profileItem.classList.add('active');
-                const img = profileItem.querySelector('img');
-                if (img) {
-                    img.src = img.src.replace('-gray.svg', '-blue.svg');
-                }
-            } else {
-                const homeItem = document.getElementById('homeNavItem');
-                homeItem.classList.add('active');
-                const img = homeItem.querySelector('img');
-                if (img) {
-                    img.src = img.src.replace('-gray.svg', '-blue.svg');
-                }
-            }
-        }
     </script>
 </body>
 </html> 
