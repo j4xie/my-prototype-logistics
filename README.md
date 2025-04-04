@@ -59,8 +59,14 @@ npm run setup:all
 ### 启动开发服务器
 
 ```bash
-npm start
+npm run start
 ```
+
+服务器将启动在以下地址：
+- 本地访问：http://localhost:3000, http://localhost:8080 或 http://localhost:8081 (根据端口占用情况)
+- 本地UI：http://localhost:3001, http://localhost:3002 或 http://localhost:3003 (根据端口占用情况)
+
+系统使用browser-sync启动服务器，会自动监控文件变化并刷新浏览器。
 
 ### 运行测试
 
@@ -73,7 +79,20 @@ npm run test:unit
 
 # 仅运行集成测试
 npm run test:integration
+
+# 按钮改进验证测试
+npm run validate:buttons
 ```
+
+如需一次性启动服务器并运行所有按钮测试，可以使用：
+
+```bash
+npm run start && npm run validate:buttons
+```
+
+测试报告将保存在：
+- JSON报告：validation/reports/button_improvements_report.json
+- HTML报告：validation/reports/button_improvements_report.html 
 
 ### 运行验证测试
 
@@ -134,6 +153,63 @@ debug           # 启动默认调试
 debug-chrome    # 使用Chrome启动调试
 debug-edge      # 使用Edge启动调试
 ```
+
+## 按钮标准规范
+
+所有按钮必须符合以下标准：
+
+### 1. 唯一ID
+
+每个按钮必须有唯一的ID属性，以便于测试和访问。
+
+```html
+<button id="unique-button-id">按钮文本</button>
+```
+
+### 2. 无障碍属性
+
+按钮必须包含适当的无障碍属性，包括：
+- `aria-label`：为屏幕阅读器提供描述
+- `tabindex="0"`：确保按钮可以通过键盘访问
+
+```html
+<button id="submit-btn" aria-label="提交表单" tabindex="0">提交</button>
+```
+
+### 3. 视觉反馈
+
+按钮必须提供视觉反馈，包括：
+- 悬停状态（:hover）
+- 聚焦状态（:focus）
+- 点击状态（:active）
+
+所有CSS样式已在`assets/css/trace-components.css`中定义：
+
+```css
+.btn:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.btn:focus {
+  outline: 2px solid #0070f3;
+  outline-offset: 2px;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+```
+
+### 4. 按钮验证
+
+使用以下命令验证按钮是否符合上述所有标准：
+
+```bash
+npm run validate:buttons
+```
+
+验证脚本将检查所有页面上的按钮，并生成详细报告。
 
 ## 部署
 

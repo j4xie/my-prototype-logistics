@@ -20,8 +20,18 @@
     "failure": "net::ERR_ABORTED"
   },
   {
+    "url": "http://localhost:8080/pages/processing/assets/styles.css",
+    "resourceType": "stylesheet",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
     "url": "http://localhost:8080/pages/processing/components/trace-common.js",
     "resourceType": "script",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "url": "http://localhost:8080/pages/processing/assets/styles.css",
+    "resourceType": "stylesheet",
     "failure": "net::ERR_ABORTED"
   },
   {

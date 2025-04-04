@@ -17,7 +17,7 @@
     "test:html": "node validation/scripts/check-html-structure.js",
     "test:buttons": "node validation/scripts/check-buttons.js",
     "fix:html": "node validation/scripts/fix-html-structure.js",
-    "start": "browser-sync start --server --files \"assets/**/*.*\"",
+    "start": "browser-sync start --server --port 8080 --files \"assets/**/*.*\"",
     "lint": "eslint 'components/**/*.{js,jsx}' 'pages/**/*.{js,jsx}'",
     "build:css": "postcss styles/index.css -o assets/css/main.css",
     "deploy": "npm run build:css && npm run deploy:assets",

@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-04-03T10:43:02.000Z",
+  "timestamp": "2025-04-03T22:30:35.815Z",
   "summary": {
-    "totalButtons": 253,
-    "buttonsWithUniqueId": 253,
-    "buttonsWithAccessibility": 253,
-    "buttonsWithVisualFeedback": 253,
+    "totalButtons": 259,
+    "buttonsWithUniqueId": 259,
+    "buttonsWithAccessibility": 259,
+    "buttonsWithVisualFeedback": 259,
     "percentageWithUniqueId": "100.00%",
     "percentageWithAccessibility": "100.00%",
     "percentageWithVisualFeedback": "100.00%"
@@ -20,8 +20,8 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-admin-admin-dashboard-html-1743676982559-1-819",
-          "text": "Trace btn pages admin admin dashboard html 1743676982559 1 819",
+          "id": "trace-btn-pages-admin-admin-dashboard-html-1743719436199-1-9775",
+          "text": "Trace btn pages admin admin dashboard html 1743719436199 1 9775",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -30,7 +30,7 @@
           "className": "text-gray-500 hover:text-gray-700 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-dashboard-html-1743676982560-2-1339",
+          "id": "trace-btn-pages-admin-admin-dashboard-html-1743719436200-2-1412",
           "text": "新建溯源",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -40,7 +40,7 @@
           "className": "bg-[#00467F] text-white py-2 px-4 rounded-md hover:bg-blue-800 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-dashboard-html-1743676982560-3-4250",
+          "id": "trace-btn-pages-admin-admin-dashboard-html-1743719436200-3-3690",
           "text": "近7天",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -50,7 +50,7 @@
           "className": "bg-blue-100 text-[#00467F] px-3 py-1 rounded-md text-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-dashboard-html-1743676982560-4-6974",
+          "id": "trace-btn-pages-admin-admin-dashboard-html-1743719436200-4-9574",
           "text": "近30天",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -60,7 +60,7 @@
           "className": "bg-gray-100 text-gray-600 px-3 py-1 rounded-md text-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-dashboard-html-1743676982561-5-1588",
+          "id": "trace-btn-pages-admin-admin-dashboard-html-1743719436200-5-4105",
           "text": "全年",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -70,8 +70,8 @@
           "className": "bg-gray-100 text-gray-600 px-3 py-1 rounded-md text-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-dashboard-html-1743676982561-6-6798",
-          "text": "Trace btn pages admin admin dashboard html 1743676982561 6 6798",
+          "id": "trace-btn-pages-admin-admin-dashboard-html-1743719436201-6-5730",
+          "text": "Trace btn pages admin admin dashboard html 1743719436201 6 5730",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -80,7 +80,7 @@
           "className": "text-[#00467F] text-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-dashboard-html-1743676982561-7-8019",
+          "id": "trace-btn-pages-admin-admin-dashboard-html-1743719436201-7-2649",
           "text": "处理",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -90,7 +90,7 @@
           "className": "px-3 py-1 bg-[#00467F] text-white text-xs rounded-md trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-dashboard-html-1743676982561-8-3345",
+          "id": "trace-btn-pages-admin-admin-dashboard-html-1743719436201-8-9908",
           "text": "处理",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -100,7 +100,7 @@
           "className": "px-3 py-1 bg-[#00467F] text-white text-xs rounded-md trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-dashboard-html-1743676982561-9-6097",
+          "id": "trace-btn-pages-admin-admin-dashboard-html-1743719436201-9-8283",
           "text": "处理",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -121,7 +121,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984799-1-3451",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438573-1-5542",
           "text": "添加产品",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -131,7 +131,7 @@
           "className": "btn-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984799-2-5400",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438574-2-3871",
           "text": "更多筛选",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -141,7 +141,7 @@
           "className": "btn-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984800-3-2298",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438574-3-3255",
           "text": "搜索",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -151,8 +151,8 @@
           "className": "btn-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984800-4-3030",
-          "text": "Trace btn pages admin admin products html 1743676984800 4 3030",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438574-4-5777",
+          "text": "Trace btn pages admin admin products html 1743719438574 4 5777",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -161,8 +161,8 @@
           "className": "text-primary hover:text-primary-dark trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984800-5-1340",
-          "text": "Trace btn pages admin admin products html 1743676984800 5 1340",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438575-5-4939",
+          "text": "Trace btn pages admin admin products html 1743719438575 5 4939",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -171,7 +171,7 @@
           "className": "text-red-600 hover:text-red-900 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984800-6-6159",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438575-6-1064",
           "text": "上一页",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -181,7 +181,7 @@
           "className": "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984801-7-6376",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438575-7-1360",
           "text": "下一页",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -191,7 +191,7 @@
           "className": "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984801-8-294",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438575-8-5269",
           "text": "上一页",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -201,7 +201,7 @@
           "className": "relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984801-9-8345",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438576-9-6555",
           "text": "1",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -211,7 +211,7 @@
           "className": "relative inline-flex items-center px-4 py-2 border border-primary bg-primary text-sm font-medium text-white trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984801-10-8374",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438576-10-3146",
           "text": "2",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -221,7 +221,7 @@
           "className": "relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984801-11-8625",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438576-11-8620",
           "text": "3",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -231,7 +231,7 @@
           "className": "relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984801-12-9858",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438576-12-5655",
           "text": "下一页",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -241,7 +241,7 @@
           "className": "relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984802-13-4826",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438577-13-5654",
           "text": "上传",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -251,7 +251,7 @@
           "className": "ml-2 btn-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984802-14-3366",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438577-14-3025",
           "text": "保存",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -261,7 +261,7 @@
           "className": "btn-primary sm:ml-3 sm:w-auto trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-products-html-1743676984802-15-7430",
+          "id": "trace-btn-pages-admin-admin-products-html-1743719438577-15-2933",
           "text": "取消",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -282,7 +282,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987017-1-9394",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440801-1-9379",
           "text": "添加角色",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -292,7 +292,7 @@
           "className": "bg-[#00467F] text-white py-2 px-4 rounded-md hover:bg-blue-800 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987020-2-8292",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440803-2-9764",
           "text": "角色列表",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -302,7 +302,7 @@
           "className": "tab-active inline-block py-4 px-4 text-sm font-medium trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987020-3-9578",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440803-3-9984",
           "text": "权限管理",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -312,7 +312,7 @@
           "className": "inline-block py-4 px-4 text-sm font-medium text-gray-500 hover:text-gray-700 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987020-4-3251",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440804-4-7524",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -322,7 +322,7 @@
           "className": "text-gray-400 cursor-not-allowed trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987021-5-4762",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440804-5-6586",
           "text": "删除",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -332,7 +332,7 @@
           "className": "text-gray-400 cursor-not-allowed trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987021-6-8454",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440804-6-6766",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -342,7 +342,7 @@
           "className": "text-[#00467F] hover:text-blue-800 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987021-7-6715",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440804-7-1495",
           "text": "删除",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -352,7 +352,7 @@
           "className": "text-gray-400 cursor-not-allowed trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987021-8-5593",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440804-8-375",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -362,7 +362,7 @@
           "className": "text-[#00467F] hover:text-blue-800 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987021-9-3789",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440804-9-4542",
           "text": "删除",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -372,7 +372,7 @@
           "className": "text-red-600 hover:text-red-800 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987021-10-3571",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440805-10-2601",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -382,7 +382,7 @@
           "className": "text-[#00467F] hover:text-blue-800 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987022-11-6445",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440805-11-2385",
           "text": "删除",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -392,7 +392,7 @@
           "className": "text-red-600 hover:text-red-800 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987022-12-1209",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440805-12-9594",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -402,7 +402,7 @@
           "className": "text-[#00467F] hover:text-blue-800 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987022-13-9367",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440805-13-607",
           "text": "删除",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -412,7 +412,7 @@
           "className": "text-red-600 hover:text-red-800 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987022-14-223",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440805-14-1257",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -422,7 +422,7 @@
           "className": "text-[#00467F] hover:text-blue-800 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987022-15-4645",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440805-15-1084",
           "text": "删除",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -432,7 +432,7 @@
           "className": "text-gray-400 cursor-not-allowed trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987022-16-2674",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440805-16-9706",
           "text": "(全选)",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -442,7 +442,7 @@
           "className": "ml-2 text-xs text-[#00467F] trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987022-17-6586",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440805-17-5650",
           "text": "(全选)",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -452,7 +452,7 @@
           "className": "ml-2 text-xs text-[#00467F] trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987022-18-3430",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440806-18-5908",
           "text": "(全选)",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -462,7 +462,7 @@
           "className": "ml-2 text-xs text-[#00467F] trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987023-19-5144",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440806-19-1593",
           "text": "(全选)",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -472,7 +472,7 @@
           "className": "ml-2 text-xs text-[#00467F] trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987023-20-2203",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440806-20-5625",
           "text": "取消",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -482,7 +482,7 @@
           "className": "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987023-21-1933",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440806-21-8349",
           "text": "保存配置",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -492,8 +492,8 @@
           "className": "px-4 py-2 bg-[#00467F] text-white rounded-md hover:bg-blue-800 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987023-22-7973",
-          "text": "Trace btn pages admin admin roles html 1743676987023 22 7973",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440806-22-3382",
+          "text": "Trace btn pages admin admin roles html 1743719440806 22 3382",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -502,7 +502,7 @@
           "className": "text-gray-400 hover:text-gray-500 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987023-23-6505",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440807-23-7348",
           "text": "取消",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -512,7 +512,7 @@
           "className": "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-roles-html-1743676987023-24-8772",
+          "id": "trace-btn-pages-admin-admin-roles-html-1743719440807-24-9246",
           "text": "创建角色",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -533,7 +533,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-admin-admin-settings-html-1743676989214-1-1651",
+          "id": "trace-btn-pages-admin-admin-settings-html-1743719443068-1-550",
           "text": "上传",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -543,7 +543,7 @@
           "className": "ml-2 btn-secondary sm:text-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-settings-html-1743676989215-2-5272",
+          "id": "trace-btn-pages-admin-admin-settings-html-1743719443069-2-3532",
           "text": "立即备份",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -553,7 +553,7 @@
           "className": "btn-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-settings-html-1743676989215-3-8731",
+          "id": "trace-btn-pages-admin-admin-settings-html-1743719443070-3-2762",
           "text": "恢复数据",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -563,7 +563,7 @@
           "className": "btn-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-settings-html-1743676989215-4-1478",
+          "id": "trace-btn-pages-admin-admin-settings-html-1743719443070-4-7113",
           "text": "取消",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -573,7 +573,7 @@
           "className": "btn-secondary mr-3 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-settings-html-1743676989216-5-5396",
+          "id": "trace-btn-pages-admin-admin-settings-html-1743719443070-5-555",
           "text": "保存设置",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -594,7 +594,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-admin-admin-system-html-1743676991406-1-4181",
+          "id": "trace-btn-pages-admin-admin-system-html-1743719445332-1-5795",
           "text": "上传Logo",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -654,7 +654,7 @@
           "className": "btn btn-default rounded-l-none border-l-0 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-system-html-1743676991409-2-5260",
+          "id": "trace-btn-pages-admin-admin-system-html-1743719445335-2-9339",
           "text": "配置",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -664,7 +664,7 @@
           "className": "btn btn-default btn-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-system-html-1743676991409-3-6322",
+          "id": "trace-btn-pages-admin-admin-system-html-1743719445335-3-9641",
           "text": "配置",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -674,7 +674,7 @@
           "className": "btn btn-default btn-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-system-html-1743676991409-4-429",
+          "id": "trace-btn-pages-admin-admin-system-html-1743719445335-4-3163",
           "text": "配置",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -705,7 +705,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-admin-admin-users-html-1743676993642-1-8769",
+          "id": "trace-btn-pages-admin-admin-users-html-1743719447614-1-8799",
           "text": "添加用户",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -715,7 +715,7 @@
           "className": "bg-[#00467F] text-white py-2 px-4 rounded-md hover:bg-blue-800 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-users-html-1743676993645-2-6026",
+          "id": "trace-btn-pages-admin-admin-users-html-1743719447615-2-1221",
           "text": "批量删除",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -725,7 +725,7 @@
           "className": "bg-red-50 text-red-600 px-3 py-1.5 text-sm rounded-md hover:bg-red-100 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-users-html-1743676993645-3-936",
+          "id": "trace-btn-pages-admin-admin-users-html-1743719447615-3-2537",
           "text": "批量激活",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -735,7 +735,7 @@
           "className": "bg-green-50 text-green-600 px-3 py-1.5 text-sm rounded-md hover:bg-green-100 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-users-html-1743676993645-4-3700",
+          "id": "trace-btn-pages-admin-admin-users-html-1743719447616-4-2933",
           "text": "批量锁定",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -745,7 +745,7 @@
           "className": "bg-orange-50 text-orange-600 px-3 py-1.5 text-sm rounded-md hover:bg-orange-100 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-users-html-1743676993646-5-7804",
+          "id": "trace-btn-pages-admin-admin-users-html-1743719447616-5-2385",
           "text": "导出选中",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -755,8 +755,8 @@
           "className": "bg-blue-50 text-[#00467F] px-3 py-1.5 text-sm rounded-md hover:bg-blue-100 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-users-html-1743676993646-6-9539",
-          "text": "Trace btn pages admin admin users html 1743676993646 6 9539",
+          "id": "trace-btn-pages-admin-admin-users-html-1743719447616-6-4313",
+          "text": "Trace btn pages admin admin users html 1743719447616 6 4313",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -765,7 +765,7 @@
           "className": "text-gray-400 hover:text-gray-500 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-users-html-1743676993646-7-6576",
+          "id": "trace-btn-pages-admin-admin-users-html-1743719447616-7-3607",
           "text": "取消",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -775,7 +775,7 @@
           "className": "px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-admin-users-html-1743676993646-8-5535",
+          "id": "trace-btn-pages-admin-admin-users-html-1743719447617-8-1453",
           "text": "保存用户",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -796,8 +796,8 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-admin-data-import-html-1743676995844-1-325",
-          "text": "Trace btn pages admin data import html 1743676995844 1 325",
+          "id": "trace-btn-pages-admin-data-import-html-1743719449790-1-2612",
+          "text": "Trace btn pages admin data import html 1743719449790 1 2612",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -806,7 +806,7 @@
           "className": "w-10 h-10 rounded-full flex items-center justify-center trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-data-import-html-1743676995844-2-8512",
+          "id": "trace-btn-pages-admin-data-import-html-1743719449791-2-1693",
           "text": "选择文件",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -898,7 +898,7 @@
           "className": "w-10 h-10 rounded-full flex items-center justify-center trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-system-logs-html-1743677000211-1-1906",
+          "id": "trace-btn-pages-admin-system-logs-html-1743719454290-1-5575",
           "text": "筛选",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -908,8 +908,8 @@
           "className": "trace-button w-full trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-system-logs-html-1743677000211-2-1112",
-          "text": "Trace btn pages admin system logs html 1743677000211 2 1112",
+          "id": "trace-btn-pages-admin-system-logs-html-1743719454290-2-4516",
+          "text": "Trace btn pages admin system logs html 1743719454290 2 4516",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -929,8 +929,8 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002392-1-9346",
-          "text": "Trace btn pages admin user management html 1743677002392 1 9346",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456500-1-9235",
+          "text": "Trace btn pages admin user management html 1743719456500 1 9235",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -939,7 +939,7 @@
           "className": "w-10 h-10 rounded-full flex items-center justify-center trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002393-2-4146",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456501-2-8151",
           "text": "筛选",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -949,7 +949,7 @@
           "className": "text-sm text-gray-600 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002393-3-6795",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456502-3-3112",
           "text": "排序",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -959,8 +959,8 @@
           "className": "text-sm text-gray-600 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002393-4-8628",
-          "text": "Trace btn pages admin user management html 1743677002393 4 8628",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456502-4-166",
+          "text": "Trace btn pages admin user management html 1743719456502 4 166",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -969,8 +969,8 @@
           "className": "text-[#00467F] trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002393-5-8246",
-          "text": "Trace btn pages admin user management html 1743677002393 5 8246",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456502-5-6805",
+          "text": "Trace btn pages admin user management html 1743719456502 5 6805",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -979,8 +979,8 @@
           "className": "text-red-500 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002394-6-9438",
-          "text": "Trace btn pages admin user management html 1743677002394 6 9438",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456502-6-9149",
+          "text": "Trace btn pages admin user management html 1743719456502 6 9149",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -989,8 +989,8 @@
           "className": "text-[#00467F] trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002394-7-8224",
-          "text": "Trace btn pages admin user management html 1743677002394 7 8224",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456502-7-8298",
+          "text": "Trace btn pages admin user management html 1743719456502 7 8298",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -999,8 +999,8 @@
           "className": "text-red-500 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002394-8-578",
-          "text": "Trace btn pages admin user management html 1743677002394 8 578",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456503-8-601",
+          "text": "Trace btn pages admin user management html 1743719456503 8 601",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -1009,7 +1009,7 @@
           "className": "text-gray-500 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002394-9-4958",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456503-9-3613",
           "text": "取消",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1019,7 +1019,7 @@
           "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-admin-user-management-html-1743677002394-10-1199",
+          "id": "trace-btn-pages-admin-user-management-html-1743719456503-10-1938",
           "text": "添加",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1111,7 +1111,7 @@
           "className": "trace-button trace-button-danger trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-demo-button-demo-html-1743677006752-1-5607",
+          "id": "trace-btn-pages-demo-button-demo-html-1743719460913-1-2935",
           "text": "普通状态",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1121,7 +1121,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-demo-button-demo-html-1743677006752-2-5725",
+          "id": "trace-btn-pages-demo-button-demo-html-1743719460913-2-9921",
           "text": "悬停状态",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1131,7 +1131,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-demo-button-demo-html-1743677006753-3-9271",
+          "id": "trace-btn-pages-demo-button-demo-html-1743719460914-3-2133",
           "text": "激活状态",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1141,7 +1141,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-demo-button-demo-html-1743677006753-4-286",
+          "id": "trace-btn-pages-demo-button-demo-html-1743719460914-4-6104",
           "text": "禁用状态",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1151,7 +1151,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-primary-1743677006757-1",
+          "id": "trace-btn-primary-1743719460935-1",
           "text": "确认",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1161,7 +1161,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-secondary-1743677006757-2",
+          "id": "trace-btn-secondary-1743719460936-2",
           "text": "取消",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1171,7 +1171,7 @@
           "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-secondary-1743677006757-3",
+          "id": "trace-btn-secondary-1743719460936-3",
           "text": "返回",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1181,7 +1181,7 @@
           "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-primary-1743677006758-4",
+          "id": "trace-btn-primary-1743719460936-4",
           "text": "保存",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1191,7 +1191,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-primary-1743677006758-5",
+          "id": "trace-btn-primary-1743719460936-5",
           "text": "添加",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1201,7 +1201,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-danger-1743677006758-6",
+          "id": "trace-btn-danger-1743719460936-6",
           "text": "删除",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1211,7 +1211,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-secondary-1743677006758-7",
+          "id": "trace-btn-secondary-1743719460936-7",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1221,7 +1221,7 @@
           "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-primary-1743677006758-8",
+          "id": "trace-btn-primary-1743719460936-8",
           "text": "搜索",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1231,7 +1231,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-secondary-1743677006758-9",
+          "id": "trace-btn-secondary-1743719460936-9",
           "text": "导出",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1241,7 +1241,7 @@
           "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-secondary-1743677006758-10",
+          "id": "trace-btn-secondary-1743719460936-10",
           "text": "导入",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1251,7 +1251,7 @@
           "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-secondary-1743677006758-11",
+          "id": "trace-btn-secondary-1743719460936-11",
           "text": "刷新",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1261,7 +1261,7 @@
           "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-icon-1743677006758-12",
+          "id": "trace-btn-icon-1743719460936-12",
           "text": "圆形图标按钮",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1271,7 +1271,7 @@
           "className": "trace-button trace-button-icon trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-save-1743677006758-13",
+          "id": "trace-btn-save-1743719460936-13",
           "text": "保存",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1281,7 +1281,7 @@
           "className": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-secondary-1743677006758-14",
+          "id": "trace-btn-secondary-1743719460936-14",
           "text": "取消",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1291,7 +1291,7 @@
           "className": "trace-button trace-button-secondary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-delete-1743677006758-15",
+          "id": "trace-btn-delete-1743719460936-15",
           "text": "删除",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1352,7 +1352,7 @@
           "className": "text-sm text-[#722ED1] trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-farming-create-trace-html-1743677009079-1-5730",
+          "id": "trace-btn-pages-farming-create-trace-html-1743719463340-1-4030",
           "text": "选择文件",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1362,7 +1362,7 @@
           "className": "btn bg-[#1677FF] hover:bg-[#4096FF] text-white px-6 py-2 rounded-lg transition-all active:scale-95 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-farming-create-trace-html-1743677009079-2-9481",
+          "id": "trace-btn-pages-farming-create-trace-html-1743719463340-2-4573",
           "text": "保存草稿",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1372,7 +1372,7 @@
           "className": "btn flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-200 transition-all active:scale-95 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-farming-create-trace-html-1743677009079-3-882",
+          "id": "trace-btn-pages-farming-create-trace-html-1743719463340-3-6491",
           "text": "下一步",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1474,7 +1474,7 @@
           "className": "text-[#1890FF] text-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-farming-farming-monitor-html-1743677013578-1-7087",
+          "id": "trace-btn-pages-farming-farming-monitor-html-1743719467933-1-1694",
           "text": "查看历史",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1484,7 +1484,7 @@
           "className": "btn btn-outline text-xs py-1 px-3 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-farming-farming-monitor-html-1743677013578-2-396",
+          "id": "trace-btn-pages-farming-farming-monitor-html-1743719467933-2-3983",
           "text": "调整投喂量",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1636,8 +1636,8 @@
           "className": "action-btn trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-home-home-farming-html-1743677018019-1-4840",
-          "text": "Trace btn pages home home farming html 1743677018019 1 4840",
+          "id": "trace-btn-pages-home-home-farming-html-1743719472459-1-1117",
+          "text": "Trace btn pages home home farming html 1743719472459 1 1117",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -1646,8 +1646,8 @@
           "className": "btn-icon trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-home-home-farming-html-1743677018019-2-684",
-          "text": "Trace btn pages home home farming html 1743677018019 2 684",
+          "id": "trace-btn-pages-home-home-farming-html-1743719472459-2-906",
+          "text": "Trace btn pages home home farming html 1743719472459 2 906",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -1769,7 +1769,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-home-home-selector-html-1743677024568-1-3715",
+          "id": "trace-btn-pages-home-home-selector-html-1743719479140-1-159",
           "text": "个人中心",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1920,7 +1920,7 @@
           "className": "btn btn-primary trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-logistics-logistics-create-html-1743677026744-1-8649",
+          "id": "trace-btn-pages-logistics-logistics-create-html-1743719481309-1-4843",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1930,7 +1930,7 @@
           "className": "text-blue-500 text-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-logistics-logistics-create-html-1743677026745-2-9557",
+          "id": "trace-btn-pages-logistics-logistics-create-html-1743719481309-2-1163",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1940,7 +1940,7 @@
           "className": "text-blue-500 text-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-logistics-logistics-create-html-1743677026745-3-7454",
+          "id": "trace-btn-pages-logistics-logistics-create-html-1743719481310-3-1300",
           "text": "编辑",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -1991,8 +1991,8 @@
           "className": "export-btn trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-logistics-logistics-report-html-1743677028970-1-7078",
-          "text": "Trace btn pages logistics logistics report html 1743677028970 1 7078",
+          "id": "trace-btn-pages-logistics-logistics-report-html-1743719483609-1-9958",
+          "text": "Trace btn pages logistics logistics report html 1743719483609 1 9958",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -2001,7 +2001,7 @@
           "className": "page-btn trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-logistics-logistics-report-html-1743677028971-2-3129",
+          "id": "trace-btn-pages-logistics-logistics-report-html-1743719483610-2-791",
           "text": "1",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2011,7 +2011,7 @@
           "className": "page-btn active trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-logistics-logistics-report-html-1743677028971-3-2277",
+          "id": "trace-btn-pages-logistics-logistics-report-html-1743719483610-3-3695",
           "text": "2",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2021,7 +2021,7 @@
           "className": "page-btn trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-logistics-logistics-report-html-1743677028971-4-8213",
+          "id": "trace-btn-pages-logistics-logistics-report-html-1743719483610-4-3021",
           "text": "3",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2031,8 +2031,8 @@
           "className": "page-btn trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-logistics-logistics-report-html-1743677028971-5-8836",
-          "text": "Trace btn pages logistics logistics report html 1743677028971 5 8836",
+          "id": "trace-btn-pages-logistics-logistics-report-html-1743719483610-5-669",
+          "text": "Trace btn pages logistics logistics report html 1743719483610 5 669",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -2124,7 +2124,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-processing-process-detail-html-1743677036036-1-6433",
+          "id": "trace-btn-pages-processing-process-detail-html-1743719490854-1-3842",
           "text": "导出报告",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2134,7 +2134,7 @@
           "className": "btn bg-blue-500 text-white py-2 rounded-lg w-full flex items-center justify-center trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-processing-process-detail-html-1743677036037-2-7668",
+          "id": "trace-btn-pages-processing-process-detail-html-1743719490855-2-5",
           "text": "设置提醒",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2179,12 +2179,73 @@
     "/pages/processing/processing-photos.html": {
       "url": "http://localhost:8080/pages/processing/processing-photos.html",
       "stats": {
-        "totalButtons": 0,
-        "buttonsWithUniqueId": 0,
-        "buttonsWithAccessibility": 0,
-        "buttonsWithVisualFeedback": 0
+        "totalButtons": 6,
+        "buttonsWithUniqueId": 6,
+        "buttonsWithAccessibility": 6,
+        "buttonsWithVisualFeedback": 6
       },
-      "buttons": []
+      "buttons": [
+        {
+          "id": "camera-retry-btn-1",
+          "text": "重试",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary trace-button trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "retake-btn-2",
+          "text": "重拍",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-outline trace-button trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "upload-btn-3",
+          "text": "上传",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-primary trace-button trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "clear-all-btn-4",
+          "text": "清空",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "text-sm text-[#FF4D4F] trace-button trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "submit-all-btn-5",
+          "text": "提交所有照片",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-success trace-button trace-button-hover trace-button-active trace-button-focus"
+        },
+        {
+          "id": "upload-close-btn-6",
+          "text": "关闭",
+          "hasUniqueId": true,
+          "isAccessible": true,
+          "hasVisualFeedback": true,
+          "buttonType": "button",
+          "tagName": "BUTTON",
+          "className": "btn btn-outline trace-button trace-button-hover trace-button-active trace-button-focus"
+        }
+      ]
     },
     "/pages/processing/processing-quality.html": {
       "url": "http://localhost:8080/pages/processing/processing-quality.html",
@@ -2330,8 +2391,8 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-profile-help-center-html-1743677051597-1-1383",
-          "text": "Trace btn pages profile help center html 1743677051597 1 1383",
+          "id": "trace-btn-pages-profile-help-center-html-1743719506646-1-8190",
+          "text": "Trace btn pages profile help center html 1743719506646 1 8190",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -2361,7 +2422,7 @@
           "className": "w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-profile-notifications-html-1743677053767-1-4757",
+          "id": "trace-btn-pages-profile-notifications-html-1743719508884-1-5729",
           "text": "筛选",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2371,7 +2432,7 @@
           "className": "text-[#00467F] text-sm font-medium trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-profile-notifications-html-1743677053767-2-7827",
+          "id": "trace-btn-pages-profile-notifications-html-1743719508884-2-952",
           "text": "高对比度",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2402,7 +2463,7 @@
           "className": "w-full bg-white text-red-500 font-medium py-4 rounded-xl shadow-sm mt-6 hover:bg-red-50 transition-colors trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-profile-profile-html-1743677055967-1-1754",
+          "id": "trace-btn-pages-profile-profile-html-1743719511149-1-5470",
           "text": "高对比度",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2423,7 +2484,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-profile-settings-html-1743677058152-1-1503",
+          "id": "trace-btn-pages-profile-settings-html-1743719513360-1-906",
           "text": "检查更新",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2433,7 +2494,7 @@
           "className": "bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded hover:bg-gray-200 transition-all trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-profile-settings-html-1743677058153-2-7791",
+          "id": "trace-btn-pages-profile-settings-html-1743719513362-2-7837",
           "text": "高对比度",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2454,7 +2515,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-trace-trace-certificate-html-1743677060361-1-7810",
+          "id": "trace-btn-pages-trace-trace-certificate-html-1743719515629-1-7130",
           "text": "返回详情",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2464,7 +2525,7 @@
           "className": "trace-button trace-button-secondary text-center trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-certificate-html-1743677060362-2-68",
+          "id": "trace-btn-pages-trace-trace-certificate-html-1743719515632-2-2094",
           "text": "分享证书",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2485,7 +2546,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062646-1-1878",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517928-1-9743",
           "text": "基本信息",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2495,7 +2556,7 @@
           "className": "tab-button active trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062650-2-4342",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517930-2-6143",
           "text": "溯源流程",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2505,7 +2566,7 @@
           "className": "tab-button trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062650-3-7386",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517930-3-9931",
           "text": "证书与检测",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2515,7 +2576,7 @@
           "className": "tab-button trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062650-4-6823",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517930-4-8819",
           "text": "查看照片(3)",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2525,7 +2586,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1 image-view-link trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062651-5-1395",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517930-5-8199",
           "text": "查看照片(2)",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2535,7 +2596,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1 image-view-link trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062651-6-8210",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517931-6-9017",
           "text": "查看检测报告",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2545,7 +2606,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062651-7-3867",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517931-7-6220",
           "text": "查看温度记录",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2555,7 +2616,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062651-8-5348",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517931-8-8928",
           "text": "查看完整证书",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2565,7 +2626,7 @@
           "className": "trace-button trace-button-primary w-full text-center py-2 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062652-9-9798",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517931-9-3026",
           "text": "查看追溯码",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2575,7 +2636,7 @@
           "className": "trace-button trace-button-secondary flex items-center justify-center trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062652-10-3241",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517932-10-2931",
           "text": "查看溯源证书",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2595,7 +2656,7 @@
           "className": "absolute top-3 right-3 z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center text-gray-700 shadow-md trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-detail-html-1743677062653-11-4667",
+          "id": "trace-btn-pages-trace-trace-detail-html-1743719517933-11-9241",
           "text": "高对比度",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2626,7 +2687,7 @@
           "className": "w-10 h-10 rounded-full flex items-center justify-center trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-edit-html-1743677064907-1-5787",
+          "id": "trace-btn-pages-trace-trace-edit-html-1743719520276-1-1659",
           "text": "上传文件",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2636,7 +2697,7 @@
           "className": "trace-button trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-edit-html-1743677064907-2-5621",
+          "id": "trace-btn-pages-trace-trace-edit-html-1743719520276-2-6356",
           "text": "上传文件",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2657,7 +2718,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067142-1-1456",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522528-1-4097",
           "text": "今日",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2667,7 +2728,7 @@
           "className": "bg-blue-50 text-[#00467F] rounded px-3 py-1 text-xs border border-blue-100 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067145-2-69",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522529-2-5596",
           "text": "近7天",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2677,7 +2738,7 @@
           "className": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067145-3-7434",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522529-3-7909",
           "text": "近30天",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2687,7 +2748,7 @@
           "className": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067145-4-1141",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522529-4-454",
           "text": "全部",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2697,7 +2758,7 @@
           "className": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1.5 shadow-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067146-5-1085",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522529-5-1721",
           "text": "已完成",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2707,7 +2768,7 @@
           "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067146-6-3776",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522530-6-1830",
           "text": "待审核",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2717,7 +2778,7 @@
           "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067146-7-1338",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522530-7-317",
           "text": "异常",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2727,7 +2788,7 @@
           "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067146-8-1180",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522530-8-8518",
           "text": "草稿",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2737,7 +2798,7 @@
           "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067146-9-6383",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522530-9-2442",
           "text": "二维码",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2747,7 +2808,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067147-10-9378",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522531-10-4581",
           "text": "查看详情",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2757,7 +2818,7 @@
           "className": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067147-11-6864",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522531-11-7626",
           "text": "二维码",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2767,7 +2828,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067147-12-7634",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522531-12-5347",
           "text": "查看详情",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2777,7 +2838,7 @@
           "className": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067147-13-1809",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522532-13-9213",
           "text": "二维码",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2787,7 +2848,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067147-14-1713",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522532-14-1236",
           "text": "查看详情",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2797,7 +2858,7 @@
           "className": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067148-15-2156",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522532-15-64",
           "text": "二维码",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2807,7 +2868,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067148-16-5166",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522533-16-5443",
           "text": "查看详情",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2817,7 +2878,7 @@
           "className": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067148-17-1671",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522533-17-5656",
           "text": "上一页",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2827,7 +2888,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1.5 px-4 flex items-center trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-list-html-1743677067148-18-7689",
+          "id": "trace-btn-pages-trace-trace-list-html-1743719522533-18-9015",
           "text": "下一页",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2848,7 +2909,7 @@
       },
       "buttons": [
         {
-          "id": "trace-btn-pages-trace-trace-map-html-1743677069373-1-3885",
+          "id": "trace-btn-pages-trace-trace-map-html-1743719524738-1-628",
           "text": "全部产品",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2858,7 +2919,7 @@
           "className": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-map-html-1743677069376-2-8130",
+          "id": "trace-btn-pages-trace-trace-map-html-1743719524740-2-2104",
           "text": "和牛肉",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2868,7 +2929,7 @@
           "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-map-html-1743677069376-3-5043",
+          "id": "trace-btn-pages-trace-trace-map-html-1743719524740-3-8199",
           "text": "大闸蟹",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2878,7 +2939,7 @@
           "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-map-html-1743677069376-4-1793",
+          "id": "trace-btn-pages-trace-trace-map-html-1743719524741-4-3804",
           "text": "猕猴桃",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2888,7 +2949,7 @@
           "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-map-html-1743677069376-5-6245",
+          "id": "trace-btn-pages-trace-trace-map-html-1743719524741-5-2619",
           "text": "葡萄酒",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2898,8 +2959,8 @@
           "className": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-map-html-1743677069376-6-4798",
-          "text": "Trace btn pages trace trace map html 1743677069376 6 4798",
+          "id": "trace-btn-pages-trace-trace-map-html-1743719524741-6-8578",
+          "text": "Trace btn pages trace trace map html 1743719524741 6 8578",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -2908,8 +2969,8 @@
           "className": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-map-html-1743677069377-7-5374",
-          "text": "Trace btn pages trace trace map html 1743677069377 7 5374",
+          "id": "trace-btn-pages-trace-trace-map-html-1743719524741-7-4820",
+          "text": "Trace btn pages trace trace map html 1743719524741 7 4820",
           "hasUniqueId": true,
           "isAccessible": true,
           "hasVisualFeedback": true,
@@ -2918,7 +2979,7 @@
           "className": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-map-html-1743677069377-8-7276",
+          "id": "trace-btn-pages-trace-trace-map-html-1743719524742-8-1592",
           "text": "查看详情",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2928,7 +2989,7 @@
           "className": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-map-html-1743677069377-9-9251",
+          "id": "trace-btn-pages-trace-trace-map-html-1743719524742-9-7392",
           "text": "查看详情",
           "hasUniqueId": true,
           "isAccessible": true,
@@ -2979,7 +3040,7 @@
           "className": "text-gray-400 hover:text-gray-600 trace-button-hover trace-button-active trace-button-focus"
         },
         {
-          "id": "trace-btn-pages-trace-trace-query-html-1743677071571-1-303",
+          "id": "trace-btn-pages-trace-trace-query-html-1743719527016-1-3116",
           "text": "开始扫描",
           "hasUniqueId": true,
           "isAccessible": true,
