@@ -384,6 +384,9 @@
   <script src="../components/trace-blockchain.js"></script>
   <script src="../components/config-manager.js"></script>
   
+  <!-- 底部导航容器 -->
+  <div id="nav-container"></div>
+  
   <script>
     // 页面初始化
     document.addEventListener('DOMContentLoaded', async function() {
@@ -400,7 +403,7 @@
       
       // 初始化导航组件
       if (window.traceNav) {
-        window.traceNav.init();
+        window.traceNav.init('nav-container', 'trace');
       }
       
       // 初始化扫描组件

@@ -506,7 +506,10 @@
             </div>
         </main>
 
-        <!-- 底部导航栏将由traceNav组件自动生成和管理 -->
+        <!-- 主要内容结束 -->
+        
+        <!-- 底部导航容器 -->
+        <div id="nav-container"></div>
     </div>
 
     <!-- 脚本引用 -->
@@ -517,16 +520,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // 初始化导航组件
-            traceNav.init('home', {
-                moduleType: 'logistics',
-                renderNav: true
-            });
-            
-            // 修复导航图标问题
-            traceNav.fixModuleNavigation('logistics');
-            
-            // 其他页面特定初始化代码
-            // ... existing code ...
+            window.traceNav.init('nav-container', 'home');
             
             // 刷新按钮点击事件
             document.getElementById('refreshBtn').addEventListener('click', function() {

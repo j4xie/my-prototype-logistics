@@ -359,91 +359,105 @@
             </div>
         </main>
 
-        <!-- 底部导航栏 -->
-        <div class="bottom-nav">
-            <div class="bottom-nav-container">
-                <div class="bottom-nav-items">
-                    <a href="../home/home-selector.html" class="bottom-nav-item">
-                        <img src="../../assets/icons/home-gray.svg" alt="主页" class="bottom-nav-icon">
-                        <span class="bottom-nav-text">主页</span>
-                    </a>
-                    <a href="../home/home-farming.html" class="bottom-nav-item active">
-                        <img src="../../assets/icons/info-blue.svg" alt="信息管理" class="bottom-nav-icon">
-                        <span class="bottom-nav-text">信息管理</span>
-                    </a>
-                    <a href="../profile/profile.html" class="bottom-nav-item">
-                        <img src="../../assets/icons/user-gray.svg" alt="我的" class="bottom-nav-icon">
-                        <span class="bottom-nav-text">我的</span>
-                    </a>
-                </div>
-            </div>
-        </div>
+        <!-- 底部导航容器 -->
+        <div id="nav-container"></div>
     </div>
 
+    <!-- 通用脚本 -->
     <script src="../../components/trace-common.js"></script>
+    <script src="../../components/trace-nav.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 绑定畜禽类型选择事件
-            document.querySelectorAll('.livestock-type-card').forEach(card => {
-                card.addEventListener('click', function() {
-                    const type = this.getAttribute('data-type');
-                    selectLivestockType(type);
-                });
-            });
-
-            // 绑定摄像头缩略图点击事件
-            document.querySelectorAll('.camera-thumb').forEach(thumb => {
-                thumb.addEventListener('click', function() {
-                    // 移除其他缩略图的选中状态
-                    document.querySelectorAll('.camera-thumb img').forEach(img => {
-                        img.classList.remove('border', 'border-primary');
-                    });
-                    
-                    // 添加当前缩略图的选中状态
-                    const img = this.querySelector('img');
-                    img.classList.add('border', 'border-primary');
-                    
-                    // 更新主监控画面（实际项目中应切换视频源）
-                    const mainMonitor = document.querySelector('.relative img');
-                    mainMonitor.src = img.src;
-                    
-                    // 更新监控标题
-                    document.querySelector('.absolute.bottom-0').innerHTML = 
-                        this.querySelector('.text-xs').textContent + ' · 摄像头01 · ' + new Date().toLocaleString();
-                });
-            });
+            // 初始化页面
+            initPage();
             
-            // 绑定全屏按钮点击事件
-            document.getElementById('fullScreenBtn').addEventListener('click', function() {
-                const mainMonitor = document.querySelector('.relative');
-                if (mainMonitor.requestFullscreen) {
-                    mainMonitor.requestFullscreen();
-                } else if (mainMonitor.webkitRequestFullscreen) {
-                    mainMonitor.webkitRequestFullscreen();
-                } else if (mainMonitor.msRequestFullscreen) {
-                    mainMonitor.msRequestFullscreen();
-                }
-            });
-            
-            // 绑定饲料调整按钮点击事件（高端畜禽专属）
-            const adjustFeedBtn = document.getElementById('adjustFeedBtn');
-            if (adjustFeedBtn) {
-                adjustFeedBtn.addEventListener('click', function() {
-                    traceUI.showToast('调整饲料投喂功能开发中', 'info');
-                });
-            }
-            
-            // 绑定刷新按钮事件
+            // 添加事件监听
             document.getElementById('refreshBtn').addEventListener('click', function() {
-                traceUI.showToast('刷新监控数据', 'info');
+                refreshData();
             });
             
-            // 初始化畜禽类型选择
-            initLivestockType();
+            document.getElementById('filterBtn').addEventListener('click', function() {
+                toggleFilterPanel();
+            });
             
-            // 初始化底部导航
-            traceNav.init('records', 'farming');
+            document.getElementById('applyFilterBtn').addEventListener('click', function() {
+                applyFilters();
+            });
+            
+            document.getElementById('resetFilterBtn').addEventListener('click', function() {
+                resetFilters();
+            });
+            
+            document.getElementById('startCamera').addEventListener('click', function() {
+                openCameraView();
+            });
+            
+            // 初始化图表
+            initCharts();
+            
+            // 模拟数据加载
+            loadMonitorData();
         });
+        
+        function initPage() {
+            // 初始化导航
+            window.traceNav.init('nav-container', 'info');
+            
+            // 设置今日日期
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+            document.getElementById('currentDate').textContent = dateStr;
+        }
+        
+        // 绑定畜禽类型选择事件
+        document.querySelectorAll('.livestock-type-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const type = this.getAttribute('data-type');
+                selectLivestockType(type);
+            });
+        });
+
+        // 绑定摄像头缩略图点击事件
+        document.querySelectorAll('.camera-thumb').forEach(thumb => {
+            thumb.addEventListener('click', function() {
+                // 移除其他缩略图的选中状态
+                document.querySelectorAll('.camera-thumb img').forEach(img => {
+                    img.classList.remove('border', 'border-primary');
+                });
+                
+                // 添加当前缩略图的选中状态
+                const img = this.querySelector('img');
+                img.classList.add('border', 'border-primary');
+                
+                // 更新主监控画面（实际项目中应切换视频源）
+                const mainMonitor = document.querySelector('.relative img');
+                mainMonitor.src = img.src;
+                
+                // 更新监控标题
+                document.querySelector('.absolute.bottom-0').innerHTML = 
+                    this.querySelector('.text-xs').textContent + ' · 摄像头01 · ' + new Date().toLocaleString();
+            });
+        });
+        
+        // 绑定全屏按钮点击事件
+        document.getElementById('fullScreenBtn').addEventListener('click', function() {
+            const mainMonitor = document.querySelector('.relative');
+            if (mainMonitor.requestFullscreen) {
+                mainMonitor.requestFullscreen();
+            } else if (mainMonitor.webkitRequestFullscreen) {
+                mainMonitor.webkitRequestFullscreen();
+            } else if (mainMonitor.msRequestFullscreen) {
+                mainMonitor.msRequestFullscreen();
+            }
+        });
+        
+        // 绑定饲料调整按钮点击事件（高端畜禽专属）
+        const adjustFeedBtn = document.getElementById('adjustFeedBtn');
+        if (adjustFeedBtn) {
+            adjustFeedBtn.addEventListener('click', function() {
+                traceUI.showToast('调整饲料投喂功能开发中', 'info');
+            });
+        }
         
         // 选择畜禽类型
         function selectLivestockType(type) {
@@ -471,13 +485,6 @@
             highEndElements.forEach(el => {
                 el.style.display = isHighEnd ? 'block' : 'none';
             });
-        }
-        
-        // 初始化畜禽类型
-        function initLivestockType() {
-            // 从localStorage获取已保存的畜禽类型
-            const savedType = localStorage.getItem('livestock_type') || 'normal';
-            selectLivestockType(savedType);
         }
     </script>
 

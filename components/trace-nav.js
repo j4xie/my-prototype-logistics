@@ -1,23 +1,26 @@
 /**
  * 食品溯源系统 - 导航菜单组件
- * 版本: 1.0.0
+ * 版本: 2.0.0
  */
 
 const traceNav = {
   /**
    * 初始化导航菜单
-   * @param {string} containerId - 容器元素ID
-   * @param {string} activeItem - 当前激活的菜单项
+   * @param {string} containerId - 容器元素ID (可选，默认为'nav-container')
+   * @param {string} activeItem - 当前激活的菜单项 (可选: 'home', 'info', 'profile'，默认为'home')
    */
-  init(containerId = 'nav-container', activeItem = null) {
+  init(containerId = 'nav-container', activeItem = 'home') {
+    // 检查容器是否存在
     const container = document.getElementById(containerId);
     if (!container) {
-      console.error(`导航容器不存在: #${containerId}`);
-      return;
+      console.warn(`导航容器不存在: #${containerId}`);
+      // 如果容器不存在，自动创建一个并添加到body
+      this.createNavContainer(containerId);
+      return this.init(containerId, activeItem);
     }
     
-    // 创建导航菜单
-    this.createNavMenu(container, activeItem);
+    // 创建底部导航栏
+    this.createBottomNav(container, activeItem);
     
     // 检查页面顶部是否已有导航
     this.createTopNav();
@@ -26,47 +29,62 @@ const traceNav = {
   },
   
   /**
-   * 创建导航菜单
+   * 创建导航容器
+   * @param {string} containerId - 容器元素ID
+   */
+  createNavContainer(containerId) {
+    const container = document.createElement('div');
+    container.id = containerId;
+    document.body.appendChild(container);
+    console.log(`已创建导航容器: #${containerId}`);
+  },
+  
+  /**
+   * 创建底部导航栏
    * @param {Element} container - 容器元素
    * @param {string} activeItem - 当前激活的菜单项
    */
-  createNavMenu(container, activeItem) {
+  createBottomNav(container, activeItem) {
+    // 清空容器
+    container.innerHTML = '';
+    
     // 创建导航元素
     const nav = document.createElement('nav');
-    nav.className = 'trace-nav';
+    nav.className = 'trace-bottom-nav';
     nav.setAttribute('role', 'navigation');
     
-    // 导航项配置
-    const menuItems = [
+    // 定义导航项
+    const navItems = [
       { id: 'home', text: '首页', icon: 'home', url: this.getHomeUrl() },
-      { id: 'farming', text: '种植', icon: 'leaf', url: this.getModuleUrl('farming') },
-      { id: 'processing', text: '加工', icon: 'industry', url: this.getModuleUrl('processing') },
-      { id: 'logistics', text: '物流', icon: 'truck', url: this.getModuleUrl('logistics') },
-      { id: 'trace', text: '溯源', icon: 'qrcode', url: this.getModuleUrl('trace') },
-      { id: 'profile', text: '我的', icon: 'user', url: this.getModuleUrl('profile') }
+      { id: 'info', text: '信息管理', icon: 'file-alt', url: this.getInfoUrl() },
+      { id: 'profile', text: '我的', icon: 'user', url: this.getProfileUrl() }
     ];
     
-    // 创建菜单HTML
+    // 创建底部导航HTML
     nav.innerHTML = `
       <div class="trace-nav-container">
-        <ul class="trace-nav-list">
-          ${menuItems.map(item => this.createNavItem(item, activeItem)).join('')}
-        </ul>
+        ${navItems.map(item => `
+          <a href="${item.url}" class="trace-nav-item ${activeItem === item.id ? 'active' : ''}" 
+             data-nav-id="${item.id}" aria-label="${item.text}" tabindex="0">
+            <i class="fas fa-${item.icon}"></i>
+            <span>${item.text}</span>
+          </a>
+        `).join('')}
       </div>
     `;
     
-    // 添加样式
-    this.addNavStyles();
+    // 添加导航样式
+    this.addBottomNavStyles();
     
     // 添加到容器
     container.appendChild(nav);
     
-    // 绑定点击事件
+    // 绑定导航事件，仅绑定到导航项元素上
     this.bindNavEvents(nav);
   },
   
   /**
-   * 创建顶部导航
+   * 创建顶部导航栏 (保留之前的实现)
    */
   createTopNav() {
     // 检查是否已存在顶部导航
@@ -109,7 +127,7 @@ const traceNav = {
         left: 0;
         right: 0;
         z-index: 999;
-        background-color: #1890FF;
+        background-color: #1677FF;
         color: white;
         height: 56px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -189,7 +207,7 @@ const traceNav = {
   },
   
   /**
-   * 绑定顶部导航按钮事件
+   * 绑定顶部导航按钮事件 (保留之前的实现)
    * @param {Element} topNav - 顶部导航元素
    */
   bindTopNavEvents(topNav) {
@@ -234,7 +252,7 @@ const traceNav = {
   },
   
   /**
-   * 显示更多选项菜单
+   * 显示更多选项菜单 (保留之前的实现)
    * @param {Element} button - 更多选项按钮元素
    */
   showMoreOptions(button) {
@@ -254,9 +272,9 @@ const traceNav = {
     // 菜单选项
     const options = [
       { text: '刷新页面', icon: 'sync', action: () => location.reload() },
-      { text: '系统设置', icon: 'cog', action: () => location.href = this.getModuleUrl('profile') + 'settings.html' },
+      { text: '系统设置', icon: 'cog', action: () => location.href = this.getProfileUrl() + 'settings.html' },
       { text: '帮助中心', icon: 'question-circle', action: () => alert('帮助中心即将上线') },
-      { text: '关于我们', icon: 'info-circle', action: () => alert('食品溯源系统 V1.0.0') }
+      { text: '关于我们', icon: 'info-circle', action: () => alert('食品溯源系统 V2.0.0') }
     ];
     
     // 创建菜单HTML
@@ -330,83 +348,111 @@ const traceNav = {
   },
   
   /**
-   * 创建导航项
-   * @param {Object} item - 导航项配置
-   * @param {string} activeItem - 当前激活的导航项
-   * @returns {string} 导航项HTML
+   * 添加底部导航样式
    */
-  createNavItem(item, activeItem) {
-    const isActive = activeItem === item.id || 
-                    (activeItem === null && item.id === 'home') ||
-                    window.location.pathname.includes(`/${item.id}/`);
-    
-    return `
-      <li class="trace-nav-item ${isActive ? 'active' : ''}">
-        <a href="${item.url}" class="trace-nav-link" data-nav-id="${item.id}">
-          <i class="fas fa-${item.icon}"></i>
-          <span>${item.text}</span>
-        </a>
-      </li>
-    `;
-  },
-  
-  /**
-   * 添加导航样式
-   */
-  addNavStyles() {
+  addBottomNavStyles() {
     // 检查是否已添加样式
-    if (document.getElementById('trace-nav-styles')) {
+    if (document.getElementById('trace-bottom-nav-styles')) {
       return;
     }
     
     // 创建样式元素
     const style = document.createElement('style');
-    style.id = 'trace-nav-styles';
+    style.id = 'trace-bottom-nav-styles';
     
     // 设置样式
     style.textContent = `
-      .trace-nav {
+      .trace-bottom-nav {
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
         background-color: white;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
         z-index: 900;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        pointer-events: none; /* 防止导航容器捕获点击事件 */
       }
+      
       .trace-nav-container {
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-      .trace-nav-list {
         display: flex;
-        justify-content: space-around;
-        list-style: none;
-        margin: 0;
-        padding: 0;
+        max-width: 390px;
+        margin: 0 auto;
+        justify-content: space-between;
+        pointer-events: none; /* 防止容器捕获点击事件 */
       }
+      
       .trace-nav-item {
-        flex: 1;
-        text-align: center;
-      }
-      .trace-nav-link {
         display: flex;
         flex-direction: column;
         align-items: center;
-        color: #555;
+        justify-content: center;
         text-decoration: none;
-        padding: 8px 0;
-        transition: color 0.2s;
+        color: #7F7F7F;
+        transition: color 0.2s ease;
+        width: 33.333%;
+        padding: 10px 0;
+        position: relative;
+        pointer-events: auto; /* 只允许导航项捕获点击事件 */
       }
-      .trace-nav-link i {
-        font-size: 1.2rem;
+      
+      .trace-nav-item i {
+        font-size: 22px;
         margin-bottom: 4px;
+        display: block;
+        text-align: center;
+        width: 100%;
+        position: relative;
       }
-      .trace-nav-link span {
-        font-size: 0.8rem;
+      
+      /* 确保信息管理图标完美居中 */
+      .trace-nav-item[data-nav-id="info"] i {
+        transform: translateX(0);
       }
-      .trace-nav-item.active .trace-nav-link {
-        color: #1890FF;
+      
+      .trace-nav-item span {
+        font-size: 12px;
+        text-align: center;
+        display: block;
+        width: 100%;
+      }
+      
+      .trace-nav-item.active {
+        color: #1677FF;
+      }
+      
+      /* 增大触摸区域 */
+      .trace-nav-item::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 0;
+        right: 0;
+        bottom: -10px;
+        z-index: -1;
+      }
+      
+      .trace-nav-item:active {
+        opacity: 0.8;
+      }
+      
+      /* 适应不同尺寸的屏幕 */
+      @media (max-width: 360px) {
+        .trace-nav-item i {
+          font-size: 20px;
+        }
+        
+        .trace-nav-item span {
+          font-size: 11px;
+        }
+      }
+      
+      @media (min-width: 500px) {
+        .trace-nav-container {
+          max-width: 500px;
+        }
       }
     `;
     
@@ -419,31 +465,74 @@ const traceNav = {
    * @param {Element} nav - 导航元素
    */
   bindNavEvents(nav) {
-    nav.querySelectorAll('.trace-nav-link').forEach(link => {
-      link.addEventListener('click', (e) => {
-        const navId = link.getAttribute('data-nav-id');
+    nav.querySelectorAll('.trace-nav-item').forEach(item => {
+      // 点击事件
+      item.addEventListener('click', (e) => {
+        // 获取导航项ID
+        const navId = item.getAttribute('data-nav-id');
+        
+        // 设置活动状态
+        this.setActiveNavItem(navId);
         
         // 如果点击当前页，阻止导航
-        if (this.isCurrentPage(navId)) {
+        if (this.isCurrentSection(navId)) {
           e.preventDefault();
           return false;
         }
+      });
+      
+      // 键盘事件
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          item.click();
+        }
+      });
+      
+      // 触摸反馈
+      item.addEventListener('touchstart', () => {
+        item.style.opacity = '0.7';
+      });
+      
+      item.addEventListener('touchend', () => {
+        item.style.opacity = '1';
       });
     });
   },
   
   /**
-   * 检查是否是当前页
-   * @param {string} navId - 导航ID
-   * @returns {boolean} 是否是当前页
+   * 设置活动导航项
+   * @param {string} navId - 导航项ID
    */
-  isCurrentPage(navId) {
+  setActiveNavItem(navId) {
+    document.querySelectorAll('.trace-nav-item').forEach(item => {
+      if (item.getAttribute('data-nav-id') === navId) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  },
+  
+  /**
+   * 检查是否是当前部分
+   * @param {string} navId - 导航ID
+   * @returns {boolean} 是否是当前部分
+   */
+  isCurrentSection(navId) {
     if (navId === 'home') {
-      return window.location.pathname === '/' || 
+      return window.location.pathname.endsWith('/home-selector.html') || 
+             window.location.pathname === '/' || 
              window.location.pathname === '/index.html';
+    } else if (navId === 'info') {
+      return window.location.pathname.includes('/home-farming.html') ||
+             window.location.pathname.includes('/farming/') ||
+             window.location.pathname.includes('/farming-');
+    } else if (navId === 'profile') {
+      return window.location.pathname.includes('/profile/');
     }
     
-    return window.location.pathname.includes(`/${navId}/`);
+    return false;
   },
   
   /**
@@ -451,31 +540,64 @@ const traceNav = {
    * @returns {string} 首页URL
    */
   getHomeUrl() {
-    // 获取当前应用的基础URL
-    const baseUrl = window.location.pathname.includes('/pages/') 
-      ? '../'
-      : './';
-    
-    return baseUrl;
+    return this.getBaseUrl() + 'pages/home/home-selector.html';
   },
   
   /**
-   * 获取模块URL
-   * @param {string} module - 模块名称
-   * @returns {string} 模块URL
+   * 获取信息管理URL
+   * @returns {string} 信息管理URL
    */
-  getModuleUrl(module) {
-    // 获取当前应用的基础URL
-    const baseUrl = window.location.pathname.includes('/pages/') 
-      ? '../'
-      : './';
+  getInfoUrl() {
+    return this.getBaseUrl() + 'pages/home/home-farming.html';
+  },
+  
+  /**
+   * 获取个人中心URL
+   * @returns {string} 个人中心URL
+   */
+  getProfileUrl() {
+    return this.getBaseUrl() + 'pages/profile/profile.html';
+  },
+  
+  /**
+   * 获取基础URL
+   * @returns {string} 基础URL
+   */
+  getBaseUrl() {
+    const currentPath = window.location.pathname;
     
-    return `${baseUrl}pages/${module}/`;
+    // 如果已经在pages目录下
+    if (currentPath.includes('/pages/')) {
+      const pathParts = currentPath.split('/pages/');
+      return pathParts[0] + '/';
+    }
+    
+    // 如果在根目录
+    return './';
   }
 };
 
-// 初始化
+// 自动初始化顶部导航
 document.addEventListener('DOMContentLoaded', () => {
   // 初始化顶部导航
-  traceNav.init();
+  if (document.querySelector('.trace-top-nav') === null) {
+    traceNav.createTopNav();
+  }
+  
+  // 尝试查找默认容器并初始化底部导航
+  const defaultContainer = document.getElementById('nav-container');
+  if (defaultContainer && document.querySelector('.trace-bottom-nav') === null) {
+    // 尝试从当前URL确定活动项
+    let activeItem = 'home';
+    
+    if (window.location.pathname.includes('/home-farming.html') || 
+        window.location.pathname.includes('/farming/') ||
+        window.location.pathname.includes('/farming-')) {
+      activeItem = 'info';
+    } else if (window.location.pathname.includes('/profile/')) {
+      activeItem = 'profile';
+    }
+    
+    traceNav.init('nav-container', activeItem);
+  }
 }); 

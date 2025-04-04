@@ -688,34 +688,13 @@
             </div>
         </main>
 
-        <!-- 底部导航 -->
-        <div class="bottom-nav">
-            <ul class="nav-items">
-                <li class="nav-item">
-                    <a href="home-selector.html" aria-label="首页" tabindex="0">
-                        <i class="fas fa-home"></i>
-                        <span>首页</span>
-                    </a>
-                </li>
-                <li class="nav-item active">
-                    <a href="../farming/farming-breeding.html" aria-label="信息管理" tabindex="0">
-                        <i class="fas fa-clipboard-list"></i>
-                        <span>信息管理</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="../profile/profile.html" aria-label="我的" tabindex="0">
-                        <i class="fas fa-user"></i>
-                        <span>我的</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
+        <!-- 底部导航容器 -->
+        <div id="nav-container"></div>
     </div>
 
-    <!-- 导入公共脚本 -->
-    <script src="../../assets/trace-common.js"></script>
-    <script src="../../components/trace-ui.js"></script>
+    <!-- 通用JS文件 -->
+    <script src="../../components/trace-common.js"></script>
+    <script src="../../components/trace-nav.js"></script>
     <script>
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -736,41 +715,47 @@
                     left: 0;
                     right: 0;
                     background-color: white;
-                    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+                    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.05);
                     z-index: 900;
-                    padding-bottom: env(safe-area-inset-bottom, 0);
+                    padding: 10px 0;
+                    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0));
                 }
-                .nav-items {
+                
+                .nav-container {
                     display: flex;
-                    justify-content: space-around;
-                    list-style: none;
-                    margin: 0;
-                    padding: 0;
                     max-width: 390px;
                     margin: 0 auto;
+                    justify-content: center;
                 }
+                
                 .nav-item {
-                    flex: 1;
-                    text-align: center;
-                }
-                .nav-item a {
                     display: flex;
-                    flex-direction: column;
+                    flex-direction: row;
                     align-items: center;
-                    color: #555;
                     text-decoration: none;
-                    padding: 8px 0;
-                    transition: color 0.2s;
+                    color: #7F7F7F;
+                    transition: color 0.2s ease;
+                    padding: 5px 15px;
+                    border-radius: 20px;
                 }
+                
                 .nav-item i {
-                    font-size: 1.2rem;
-                    margin-bottom: 4px;
+                    font-size: 20px;
+                    margin-right: 8px;
                 }
+                
                 .nav-item span {
-                    font-size: 0.8rem;
+                    font-size: 14px;
+                    font-weight: 500;
                 }
-                .nav-item.active a {
+                
+                .nav-item:hover {
                     color: #1890FF;
+                    background-color: rgba(24, 144, 255, 0.08);
+                }
+                
+                .nav-item:active {
+                    opacity: 0.8;
                 }
             `;
             document.head.appendChild(navStyle);
@@ -855,6 +840,35 @@
                 }
             });
         }
+    </script>
+
+    <!-- 添加交互增强脚本 -->
+    <script>
+        // 添加导航项点击的触觉反馈和视觉反馈
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // 如果设备支持触觉反馈
+                if (navigator.vibrate) {
+                    navigator.vibrate(10); // 轻微振动10毫秒
+                }
+                
+                // 移除所有导航项的活动状态
+                document.querySelectorAll('.nav-item').forEach(navItem => {
+                    navItem.classList.remove('active');
+                });
+                
+                // 添加当前项的活动状态
+                this.classList.add('active');
+            });
+            
+            // 添加键盘导航支持
+            item.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.click();
+                }
+            });
+        });
     </script>
 
   <!-- 自动按钮升级脚本 (自动注入) -->
