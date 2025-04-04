@@ -811,29 +811,13 @@
             </div>
         </main>
 
-        <!-- 底部导航栏 -->
-        <div class="bottom-nav">
-            <div class="bottom-nav-container">
-                <div class="bottom-nav-items">
-                    <a href="../home/home-selector.html" class="bottom-nav-item">
-                        <img src="../../assets/icons/home-gray.svg" alt="主页" class="bottom-nav-icon">
-                        <span class="bottom-nav-text">主页</span>
-                    </a>
-                    <a href="../home/home-farming.html" class="bottom-nav-item active">
-                        <img src="../../assets/icons/info-blue.svg" alt="信息管理" class="bottom-nav-icon">
-                        <span class="bottom-nav-text">信息管理</span>
-                    </a>
-                    <a href="../profile/profile.html" class="bottom-nav-item">
-                        <img src="../../assets/icons/user-gray.svg" alt="我的" class="bottom-nav-icon">
-                        <span class="bottom-nav-text">我的</span>
-                    </a>
-                </div>
-            </div>
-        </div>
+        <!-- 底部导航容器 -->
+        <div id="nav-container"></div>
     </div>
 
     <!-- 通用脚本 -->
     <script src="../../components/trace-common.js"></script>
+    <script src="../../components/trace-nav.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // 初始化页面
@@ -946,7 +930,7 @@
             document.getElementById('vaccineDate').valueAsDate = new Date();
             
             // 初始化底部导航
-            traceNav.init('records', 'farming');
+            window.traceNav.init('nav-container', 'info');
         }
         
         function refreshData() {

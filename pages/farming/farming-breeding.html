@@ -23,7 +23,6 @@
             --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
             --spacing-md: 16px;
             --nav-height: 64px;
-            --bottom-tab-height: 60px;
             --safe-area-bottom: env(safe-area-inset-bottom, 0);
         }
         .page-container { max-width: 390px; margin: 0 auto; min-height: 100vh; background-color: var(--bg-layout); }
@@ -31,11 +30,11 @@
         .top-nav-container { max-width: 390px; margin: 0 auto; height: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--spacing-md); }
         .icon-btn { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.1); margin-right: 8px; transition: all 0.3s ease; }
         .icon-btn:hover { background-color: rgba(255,255,255,0.2); transform: scale(1.05); }
-        .content-container { padding-top: calc(var(--nav-height) + var(--spacing-md)); padding-bottom: calc(var(--bottom-tab-height) + var(--safe-area-bottom) + var(--spacing-md)); }
+        .content-container { padding-top: calc(var(--nav-height) + var(--spacing-md)); padding-bottom: calc(var(--spacing-md) + var(--safe-area-bottom)); }
         .content-area { max-width: 390px; margin: 0 auto; padding: 0 var(--spacing-md); }
         .card { background-color: var(--bg-container); border-radius: var(--border-radius-base); box-shadow: var(--shadow-sm); margin-bottom: var(--spacing-md); overflow: hidden; transition: all 0.3s ease; }
         .card:hover { box-shadow: var(--shadow-md); }
-        .card-header { padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; }
+        .card-header { padding:.75rem 1rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; }
         .card-header h2 { font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.85); }
         .card-body { padding: 16px; }
         .form-group { margin-bottom: 16px; }
@@ -48,59 +47,6 @@
         .btn-primary { background-color: var(--primary-color); color: white; }
         .btn-primary:hover { background-color: var(--primary-hover); }
         .btn-outline { background-color: white; border: 1px solid var(--border-color); color: rgba(0,0,0,0.85); }
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: rgba(0,0,0,0.45); padding: 4px 0; }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            height: var(--bottom-tab-height);
-            background: white;
-            border-top: 1px solid #eee;
-            padding-bottom: var(--safe-area-bottom);
-            z-index: 999;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-        }
-        .footer-container {
-            max-width: 390px;
-            margin: 0 auto;
-            height: 100%;
-        }
-        .nav-items {
-            display: flex;
-            width: 100%;
-            height: 100%;
-            justify-content: space-around;
-            align-items: center;
-            padding: 0;
-            margin: 0;
-        }
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 33.33%;
-            height: 100%;
-            color: #999;
-            font-size: 12px;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .nav-item.active {
-            color: #1677FF;
-        }
-        .nav-item img {
-            width: 24px;
-            height: 24px;
-            margin-bottom: 4px;
-            transition: all 0.2s ease;
-        }
-        .nav-item span {
-            transition: all 0.2s ease;
-        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -271,36 +217,16 @@
             </div>
         </main>
 
-        <!-- 底部导航栏 -->
-        <nav class="bottom-nav">
-            <div class="footer-container">
-                <div class="nav-items">
-                    <div class="nav-item" data-route="home">
-                        <a href="../home/home-selector.html">
-                            <img src="../../assets/icons/home-gray.svg" alt="首页" class="nav-icon">
-                            <span>首页</span>
-                        </a>
-                    </div>
-                    <div class="nav-item active" data-route="info">
-                        <a href="../home/home-farming.html">
-                            <img src="../../assets/icons/record-blue.svg" alt="信息管理" class="nav-icon">
-                            <span>信息管理</span>
-                        </a>
-                    </div>
-                    <div class="nav-item" data-route="profile">
-                        <a href="../profile/profile.html">
-                            <img src="../../assets/icons/user-gray.svg" alt="我的" class="nav-icon">
-                            <span>我的</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </nav>
+        <!-- 底部导航容器 -->
+        <div id="nav-container"></div>
     </div>
 
+    <!-- 脚本 -->
     <script src="../../components/trace-common.js"></script>
+    <script src="../../components/trace-nav.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面
             initPage();
             initLivestockType();
             
@@ -338,7 +264,7 @@
             document.getElementById('breedingDate').valueAsDate = new Date();
             
             // 初始化底部导航
-            traceNav.init('records', 'farming');
+            window.traceNav.init('nav-container', 'info');
         }
         
         function initLivestockType() {
