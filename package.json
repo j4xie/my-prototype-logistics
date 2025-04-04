@@ -29,6 +29,7 @@
     "validate:navigation": "node validation/scripts/check-page-transitions.js",
     "validate:resources": "node validation/scripts/check-resource.js",
     "validate:ui": "node validation/scripts/check-ui.js",
+    "validate:farming": "node validation/scripts/run-farming-tests.js",
     "validate:migrate": "node scripts/validation/migrate-validation-scripts.js",
     "setup:validation": "powershell -ExecutionPolicy Bypass -File scripts/validation/setup.ps1",
     "setup:git": "powershell -ExecutionPolicy Bypass -File g.ps1",
