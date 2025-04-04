@@ -1,51 +1,4255 @@
 {
-  "timestamp": "2025-04-03T10:44:33.703Z",
+  "timestamp": "2025-04-03T22:12:10.287Z",
   "results": {
-    "unit_tests": false,
+    "unit_tests": true,
     "ui_validation": true,
-    "functionality": true,
-    "html_structure": null,
-    "button_tests": true,
-    "resource_validation": true,
-    "navigation_validation": true
+    "functionality": false,
+    "html_structure": true,
+    "button_tests": null,
+    "resource_validation": false,
+    "navigation_validation": true,
+    "button_basic": true,
+    "button_interaction": true,
+    "button_improvements": false
   },
   "details": {
     "unit_tests": {
       "passed": 0,
       "failed": 0,
-      "message": "测试失败: Command failed: node C:\\Users\\Steve\\heiniu\\tests\\run-unit-tests.js"
+      "message": "所有单元测试通过"
     },
     "ui_validation": {
-      "passed": 0,
-      "failed": 0,
-      "message": "UI元素验证通过"
+      "message": "UI元素验证通过",
+      "result": {
+        "导航菜单": {
+          "selector": "nav",
+          "count": 0,
+          "status": "失败",
+          "details": "未找到元素"
+        },
+        "按钮": {
+          "selector": "button",
+          "count": 0,
+          "status": "失败",
+          "details": "未找到元素"
+        },
+        "链接": {
+          "selector": "a",
+          "count": 0,
+          "status": "失败",
+          "details": "未找到元素"
+        },
+        "图片": {
+          "selector": "img",
+          "count": 0,
+          "status": "失败",
+          "details": "未找到元素"
+        },
+        "标题": {
+          "selector": "h1",
+          "count": 1,
+          "status": "通过",
+          "details": "找到1个元素"
+        },
+        "页脚": {
+          "selector": "footer",
+          "count": 1,
+          "status": "通过",
+          "details": "找到1个元素"
+        }
+      }
     },
     "functionality": {
-      "passed": 0,
-      "failed": 0,
-      "message": "功能测试通过"
+      "message": "功能验证测试失败: screenshotDir is not defined",
+      "error": "ReferenceError: screenshotDir is not defined\n    at Object.<anonymous> (C:\\Users\\Steve\\heiniu\\validation\\scripts\\check-functionality.js:16:20)\n    at Module._compile (node:internal/modules/cjs/loader:1554:14)\n    at Object..js (node:internal/modules/cjs/loader:1706:10)\n    at Module.load (node:internal/modules/cjs/loader:1289:32)\n    at Function._load (node:internal/modules/cjs/loader:1108:12)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)\n    at Module.require (node:internal/modules/cjs/loader:1311:12)\n    at require (node:internal/modules/helpers:136:16)\n    at runTestScript (C:\\Users\\Steve\\heiniu\\validation\\scripts\\run-all-tests.js:74:24)"
     },
     "html_structure": {
+      "message": "HTML结构验证通过",
+      "result": {
+        "timestamp": "2025-04-03T22:10:03.283Z",
+        "results": {
+          "totalFiles": 46,
+          "valid": 46,
+          "invalid": 0,
+          "issues": []
+        },
+        "status": "success"
+      }
+    },
+    "button_tests": {
       "passed": 0,
       "failed": 0,
       "message": ""
     },
-    "button_tests": {
-      "message": "按钮测试完成，但无法解析详细结果"
-    },
     "resource_validation": {
-      "message": "资源加载验证通过"
+      "message": "资源加载测试失败: browser is not defined",
+      "error": "ReferenceError: browser is not defined\n    at Object.run (C:\\Users\\Steve\\heiniu\\validation\\scripts\\check-resource.js:84:5)\n    at async runTestScript (C:\\Users\\Steve\\heiniu\\validation\\scripts\\run-all-tests.js:77:22)\n    at async runAllTests (C:\\Users\\Steve\\heiniu\\validation\\scripts\\run-all-tests.js:148:20)"
     },
     "navigation_validation": {
-      "message": "页面导航验证通过"
+      "message": "页面跳转测试通过",
+      "result": {
+        "timestamp": "2025-04-03T22:10:41.669Z",
+        "totalPages": 14,
+        "successCount": 7,
+        "failCount": 7,
+        "results": [
+          {
+            "name": "首页",
+            "url": "http://localhost:8080/",
+            "status": 200,
+            "title": "食品溯源系统 - 原型界面",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\首页_page.png",
+            "success": true,
+            "errorMessage": null
+          },
+          {
+            "name": "养殖主页",
+            "url": "http://localhost:8080/pages/farming/",
+            "status": 404,
+            "title": "Error",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\养殖主页_page.png",
+            "success": false,
+            "errorMessage": "HTTP错误: 404"
+          },
+          {
+            "name": "养殖-繁育信息",
+            "url": "http://localhost:8080/pages/farming/farming-breeding.html",
+            "status": 200,
+            "title": "繁育信息管理 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\养殖-繁育信息_page.png",
+            "success": true,
+            "errorMessage": null
+          },
+          {
+            "name": "养殖-饲养管理",
+            "url": "http://localhost:8080/pages/farming/farming-feeding.html",
+            "status": 404,
+            "title": "Error",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\养殖-饲养管理_page.png",
+            "success": false,
+            "errorMessage": "HTTP错误: 404"
+          },
+          {
+            "name": "加工主页",
+            "url": "http://localhost:8080/pages/processing/",
+            "status": 404,
+            "title": "Error",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\加工主页_page.png",
+            "success": false,
+            "errorMessage": "HTTP错误: 404"
+          },
+          {
+            "name": "加工-屠宰处理",
+            "url": "http://localhost:8080/pages/processing/processing-slaughter.html",
+            "status": 200,
+            "title": "屠宰信息录入 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\加工-屠宰处理_page.png",
+            "success": true,
+            "errorMessage": null
+          },
+          {
+            "name": "物流主页",
+            "url": "http://localhost:8080/pages/logistics/",
+            "status": 404,
+            "title": "Error",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\物流主页_page.png",
+            "success": false,
+            "errorMessage": "HTTP错误: 404"
+          },
+          {
+            "name": "物流-创建运单",
+            "url": "http://localhost:8080/pages/logistics/logistics-create.html",
+            "status": 200,
+            "title": "创建物流订单 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\物流-创建运单_page.png",
+            "success": true,
+            "errorMessage": null
+          },
+          {
+            "name": "溯源主页",
+            "url": "http://localhost:8080/pages/trace/",
+            "status": 404,
+            "title": "Error",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\溯源主页_page.png",
+            "success": false,
+            "errorMessage": "HTTP错误: 404"
+          },
+          {
+            "name": "溯源-地图",
+            "url": "http://localhost:8080/pages/trace/trace-map.html",
+            "status": 200,
+            "title": "溯源地图 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\溯源-地图_page.png",
+            "success": true,
+            "errorMessage": null
+          },
+          {
+            "name": "个人档案",
+            "url": "http://localhost:8080/pages/profile/",
+            "status": 404,
+            "title": "Error",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\个人档案_page.png",
+            "success": false,
+            "errorMessage": "HTTP错误: 404"
+          },
+          {
+            "name": "系统管理",
+            "url": "http://localhost:8080/pages/admin/",
+            "status": 404,
+            "title": "Error",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\系统管理_page.png",
+            "success": false,
+            "errorMessage": "HTTP错误: 404"
+          },
+          {
+            "name": "首页选择器",
+            "url": "http://localhost:8080/pages/home/home-selector.html",
+            "status": 200,
+            "title": "功能模块选择 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\首页选择器_page.png",
+            "success": true,
+            "errorMessage": null
+          },
+          {
+            "name": "登录",
+            "url": "http://localhost:8080/pages/auth/login.html",
+            "status": 200,
+            "title": "登录 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\登录_page.png",
+            "success": true,
+            "errorMessage": null
+          }
+        ],
+        "status": "success"
+      }
+    },
+    "button_basic": {
+      "message": "按钮基础测试通过",
+      "result": {
+        "timestamp": "2025-04-03T22:11:11.421Z",
+        "baseUrl": "http://localhost:8080",
+        "results": [
+          {
+            "path": "/pages/trace/trace-map.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "溯源地图 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "全部产品",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-map-html-1743718242402-1-436",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 73,
+                  "width": 88,
+                  "height": 30
+                }
+              },
+              {
+                "text": "和牛肉",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-map-html-1743718242403-2-3252",
+                "disabled": false,
+                "rect": {
+                  "x": 112,
+                  "y": 73,
+                  "width": 76,
+                  "height": 30
+                }
+              },
+              {
+                "text": "大闸蟹",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-map-html-1743718242403-3-6059",
+                "disabled": false,
+                "rect": {
+                  "x": 196,
+                  "y": 73,
+                  "width": 76,
+                  "height": 30
+                }
+              },
+              {
+                "text": "猕猴桃",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-map-html-1743718242403-4-6685",
+                "disabled": false,
+                "rect": {
+                  "x": 280,
+                  "y": 73,
+                  "width": 76,
+                  "height": 30
+                }
+              },
+              {
+                "text": "葡萄酒",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-map-html-1743718242403-5-5101",
+                "disabled": false,
+                "rect": {
+                  "x": 364,
+                  "y": 73,
+                  "width": 76,
+                  "height": 30
+                }
+              },
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-map-html-1743718242403-6-7349",
+                "disabled": false,
+                "rect": {
+                  "x": 1176,
+                  "y": 151,
+                  "width": 32,
+                  "height": 32
+                }
+              },
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-map-html-1743718242404-7-332",
+                "disabled": false,
+                "rect": {
+                  "x": 1216,
+                  "y": 151,
+                  "width": 32,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看详情",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-map-html-1743718242404-8-5524",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 861,
+                  "width": 100,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看详情",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-map-html-1743718242404-9-2590",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 1058,
+                  "width": 100,
+                  "height": 32
+                }
+              },
+              {
+                "text": "",
+                "tagName": "A",
+                "classes": "w-10 h-10 rounded-full flex items-center justify-center",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 21,
+                  "width": 40,
+                  "height": 40
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_trace_trace-map.png"
+          },
+          {
+            "path": "/pages/trace/trace-list.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "溯源记录 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "今日",
+                "tagName": "BUTTON",
+                "classes": "bg-blue-50 text-[#00467F] rounded px-3 py-1 text-xs border border-blue-100 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243287-1-8915",
+                "disabled": false,
+                "rect": {
+                  "x": 1074.59375,
+                  "y": 126,
+                  "width": 50,
+                  "height": 26
+                }
+              },
+              {
+                "text": "近7天",
+                "tagName": "BUTTON",
+                "classes": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243287-2-8859",
+                "disabled": false,
+                "rect": {
+                  "x": 1132.59375,
+                  "y": 126,
+                  "width": 56.46875,
+                  "height": 26
+                }
+              },
+              {
+                "text": "近30天",
+                "tagName": "BUTTON",
+                "classes": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243287-3-4771",
+                "disabled": false,
+                "rect": {
+                  "x": 1197.0625,
+                  "y": 126,
+                  "width": 62.9375,
+                  "height": 26
+                }
+              },
+              {
+                "text": "全部",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1.5 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243288-4-2213",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 176,
+                  "width": 60,
+                  "height": 34
+                }
+              },
+              {
+                "text": "已完成",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243288-5-2219",
+                "disabled": false,
+                "rect": {
+                  "x": 88,
+                  "y": 176,
+                  "width": 95.84375,
+                  "height": 34
+                }
+              },
+              {
+                "text": "待审核",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243288-6-8295",
+                "disabled": false,
+                "rect": {
+                  "x": 191.84375,
+                  "y": 176,
+                  "width": 95.84375,
+                  "height": 34
+                }
+              },
+              {
+                "text": "异常",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243288-7-5329",
+                "disabled": false,
+                "rect": {
+                  "x": 295.6875,
+                  "y": 176,
+                  "width": 81.84375,
+                  "height": 34
+                }
+              },
+              {
+                "text": "草稿",
+                "tagName": "BUTTON",
+                "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243288-8-9548",
+                "disabled": false,
+                "rect": {
+                  "x": 385.53125,
+                  "y": 176,
+                  "width": 81.84375,
+                  "height": 34
+                }
+              },
+              {
+                "text": "二维码",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243288-9-6516",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 514,
+                  "width": 84.25,
+                  "height": 32
+                }
+              },
+              {
+                "text": "二维码",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243289-11-7112",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 683,
+                  "width": 84.25,
+                  "height": 32
+                }
+              },
+              {
+                "text": "二维码",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243290-13-3695",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 902,
+                  "width": 84.25,
+                  "height": 32
+                }
+              },
+              {
+                "text": "二维码",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243290-15-8971",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 1071,
+                  "width": 84.25,
+                  "height": 32
+                }
+              },
+              {
+                "text": "上一页",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1.5 px-4 flex items-center trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243291-17-3040",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 1139,
+                  "width": 82.75,
+                  "height": 32
+                }
+              },
+              {
+                "text": "下一页",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-primary text-xs py-1.5 px-4 flex items-center trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243291-18-7307",
+                "disabled": false,
+                "rect": {
+                  "x": 1179.234375,
+                  "y": 1139,
+                  "width": 80.75,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看详情",
+                "tagName": "A",
+                "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243289-10-8426",
+                "disabled": false,
+                "rect": {
+                  "x": 108.09375,
+                  "y": 514,
+                  "width": 99.75,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看详情",
+                "tagName": "A",
+                "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243289-12-5332",
+                "disabled": false,
+                "rect": {
+                  "x": 108.09375,
+                  "y": 683,
+                  "width": 99.75,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看详情",
+                "tagName": "A",
+                "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243290-14-2484",
+                "disabled": false,
+                "rect": {
+                  "x": 108.09375,
+                  "y": 902,
+                  "width": 99.75,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看详情",
+                "tagName": "A",
+                "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-list-html-1743718243290-16-5038",
+                "disabled": false,
+                "rect": {
+                  "x": 108.09375,
+                  "y": 1071,
+                  "width": 99.75,
+                  "height": 32
+                }
+              },
+              {
+                "text": "",
+                "tagName": "A",
+                "classes": "w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 21,
+                  "width": 40,
+                  "height": 40
+                }
+              },
+              {
+                "text": "",
+                "tagName": "A",
+                "classes": "w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all ml-1",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 44,
+                  "y": 21,
+                  "width": 40,
+                  "height": 40
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_trace_trace-list.png"
+          },
+          {
+            "path": "/pages/trace/trace-detail.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "溯源详情 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "基本信息",
+                "tagName": "BUTTON",
+                "classes": "tab-button active trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244056-1-9596",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 357,
+                  "width": 77.84375,
+                  "height": 21
+                }
+              },
+              {
+                "text": "溯源流程",
+                "tagName": "BUTTON",
+                "classes": "tab-button trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244056-2-1231",
+                "disabled": false,
+                "rect": {
+                  "x": 81.6875,
+                  "y": 357,
+                  "width": 79.59375,
+                  "height": 21
+                }
+              },
+              {
+                "text": "证书与检测",
+                "tagName": "BUTTON",
+                "classes": "tab-button trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244057-3-1806",
+                "disabled": false,
+                "rect": {
+                  "x": 165.125,
+                  "y": 357,
+                  "width": 91.84375,
+                  "height": 21
+                }
+              },
+              {
+                "text": "查看照片(3)",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1 image-view-link trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244057-4-8757",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 1331,
+                  "width": 118.828125,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看照片(2)",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1 image-view-link trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244057-5-1655",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 1589,
+                  "width": 118.828125,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看检测报告",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244057-6-951",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 1819,
+                  "width": 124.5,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看温度记录",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244057-7-5503",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 2077,
+                  "width": 128,
+                  "height": 32
+                }
+              },
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "absolute top-3 right-3 z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center text-gray-700 shadow-md trace-button-hover trace-button-active trace-button-focus",
+                "id": "close-image-modal",
+                "disabled": false,
+                "rect": {
+                  "x": 468,
+                  "y": 2956,
+                  "width": 32,
+                  "height": 32
+                }
+              },
+              {
+                "text": "高对比度",
+                "tagName": "BUTTON",
+                "classes": "contrast-toggle trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244059-11-7812",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 2965,
+                  "width": 56,
+                  "height": 21
+                }
+              },
+              {
+                "text": "查看完整证书",
+                "tagName": "A",
+                "classes": "trace-button trace-button-primary w-full text-center py-2 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244058-8-5478",
+                "disabled": false,
+                "rect": {
+                  "x": 32,
+                  "y": 2326,
+                  "width": 1216,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看追溯码",
+                "tagName": "A",
+                "classes": "trace-button trace-button-secondary flex items-center justify-center trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244058-9-413",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 2912,
+                  "width": 634,
+                  "height": 32
+                }
+              },
+              {
+                "text": "查看溯源证书",
+                "tagName": "A",
+                "classes": "trace-button trace-button-primary flex items-center justify-center trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-detail-html-1743718244058-10-2381",
+                "disabled": false,
+                "rect": {
+                  "x": 646,
+                  "y": 2912,
+                  "width": 634,
+                  "height": 32
+                }
+              },
+              {
+                "text": "",
+                "tagName": "A",
+                "classes": "w-10 h-10 rounded-full flex items-center justify-center",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 61,
+                  "width": 40,
+                  "height": 40
+                }
+              },
+              {
+                "text": "",
+                "tagName": "A",
+                "classes": "w-10 h-10 rounded-full flex items-center justify-center",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 40,
+                  "y": 61,
+                  "width": 40,
+                  "height": 40
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_trace_trace-detail.png"
+          },
+          {
+            "path": "/pages/trace/trace-certificate.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "溯源证书 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "分享证书",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-primary trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-certificate-html-1743718244898-2-8813",
+                "disabled": false,
+                "rect": {
+                  "x": 646,
+                  "y": 1162,
+                  "width": 618,
+                  "height": 32
+                }
+              },
+              {
+                "text": "返回详情",
+                "tagName": "A",
+                "classes": "trace-button trace-button-secondary text-center trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-certificate-html-1743718244897-1-3617",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 1162,
+                  "width": 618,
+                  "height": 32
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_trace_trace-certificate.png"
+          },
+          {
+            "path": "/pages/trace/trace-edit.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "编辑溯源记录 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "w-10 h-10 rounded-full flex items-center justify-center trace-button-hover trace-button-active trace-button-focus",
+                "id": "saveBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 61,
+                  "width": 40,
+                  "height": 40
+                }
+              },
+              {
+                "text": "上传文件",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-edit-html-1743718246320-1-345",
+                "disabled": false,
+                "rect": {
+                  "x": 40,
+                  "y": 1140,
+                  "width": 102,
+                  "height": 32
+                }
+              },
+              {
+                "text": "上传文件",
+                "tagName": "BUTTON",
+                "classes": "trace-button trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-trace-trace-edit-html-1743718246320-2-5016",
+                "disabled": false,
+                "rect": {
+                  "x": 40,
+                  "y": 1212,
+                  "width": 102,
+                  "height": 32
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_trace_trace-edit.png"
+          },
+          {
+            "path": "/pages/home/home-selector.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "功能模块选择 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "个人中心",
+                "tagName": "A",
+                "classes": "btn-secondary px-3 py-1 text-xs trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-home-home-selector-html-1743718247076-1-9023",
+                "disabled": false,
+                "rect": {
+                  "x": 729,
+                  "y": 107.5,
+                  "width": 74,
+                  "height": 26
+                }
+              },
+              {
+                "text": "养殖管理\n\n动物饲养、疫苗、繁育信息管理",
+                "tagName": "A",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "farmingModule",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 388,
+                  "width": 171,
+                  "height": 147
+                }
+              },
+              {
+                "text": "生产加工\n\n屠宰、检验、包装等加工环节管理",
+                "tagName": "A",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "processingModule",
+                "disabled": false,
+                "rect": {
+                  "x": 648,
+                  "y": 388,
+                  "width": 171,
+                  "height": 147
+                }
+              },
+              {
+                "text": "销售物流\n\n运输、配送、订单跟踪管理",
+                "tagName": "A",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "logisticsModule",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 551,
+                  "width": 171,
+                  "height": 147
+                }
+              },
+              {
+                "text": "追溯查询\n\n产品全链路溯源和质量追踪",
+                "tagName": "A",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "traceModule",
+                "disabled": false,
+                "rect": {
+                  "x": 648,
+                  "y": 551,
+                  "width": 171,
+                  "height": 147
+                }
+              },
+              {
+                "text": "用户管理\n\n账号、权限配置",
+                "tagName": "A",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "userManageModule",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 775,
+                  "width": 171,
+                  "height": 131
+                }
+              },
+              {
+                "text": "系统配置\n\n设置、备份、维护",
+                "tagName": "A",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "systemConfigModule",
+                "disabled": false,
+                "rect": {
+                  "x": 648,
+                  "y": 775,
+                  "width": 171,
+                  "height": 131
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_home_home-selector.png"
+          },
+          {
+            "path": "/pages/home/home-farming.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "养殖管理 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "icon-btn mr-2 trace-button-hover trace-button-active trace-button-focus",
+                "id": "refreshBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 739,
+                  "y": 14,
+                  "width": 36,
+                  "height": 36
+                }
+              },
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "icon-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "settingsBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 783,
+                  "y": 14,
+                  "width": 36,
+                  "height": 36
+                }
+              },
+              {
+                "text": "创建养殖记录",
+                "tagName": "BUTTON",
+                "classes": "action-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "createRecordBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 309,
+                  "width": 173,
+                  "height": 111
+                }
+              },
+              {
+                "text": "动物疫苗录入",
+                "tagName": "BUTTON",
+                "classes": "action-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "vaccineBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 646,
+                  "y": 309,
+                  "width": 173,
+                  "height": 111
+                }
+              },
+              {
+                "text": "繁育信息管理",
+                "tagName": "BUTTON",
+                "classes": "action-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "breedingBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 432,
+                  "width": 173,
+                  "height": 111
+                }
+              },
+              {
+                "text": "场地视频监控",
+                "tagName": "BUTTON",
+                "classes": "action-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "monitorBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 646,
+                  "y": 432,
+                  "width": 173,
+                  "height": 111
+                }
+              },
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "btn-icon trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-home-home-farming-html-1743718247815-1-71",
+                "disabled": false,
+                "rect": {
+                  "x": 754,
+                  "y": 645.5,
+                  "width": 32,
+                  "height": 32
+                }
+              },
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "btn-icon trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-home-home-farming-html-1743718247815-2-551",
+                "disabled": false,
+                "rect": {
+                  "x": 754,
+                  "y": 711.5,
+                  "width": 32,
+                  "height": 32
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_home_home-farming.png"
+          },
+          {
+            "path": "/pages/home/home-processing.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "生产加工 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "屠宰信息录入",
+                "tagName": "BUTTON",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "slaughterInfoBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 1060,
+                  "width": 171,
+                  "height": 114
+                }
+              },
+              {
+                "text": "肉质等级评定",
+                "tagName": "BUTTON",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "qualityBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 648,
+                  "y": 1060,
+                  "width": 171,
+                  "height": 114
+                }
+              },
+              {
+                "text": "加工环境拍照",
+                "tagName": "BUTTON",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "environmentPhotoBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 1190,
+                  "width": 171,
+                  "height": 114
+                }
+              },
+              {
+                "text": "质检报告查阅",
+                "tagName": "BUTTON",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "reportBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 648,
+                  "y": 1190,
+                  "width": 171,
+                  "height": 114
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_home_home-processing.png"
+          },
+          {
+            "path": "/pages/home/home-logistics.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "销售物流 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "创建订单",
+                "tagName": "BUTTON",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "createOrderBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 876,
+                  "width": 171,
+                  "height": 114
+                }
+              },
+              {
+                "text": "扫码出库",
+                "tagName": "BUTTON",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "scanCodeBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 648,
+                  "y": 876,
+                  "width": 171,
+                  "height": 114
+                }
+              },
+              {
+                "text": "车辆监控",
+                "tagName": "BUTTON",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "vehicleMonitorBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 1006,
+                  "width": 171,
+                  "height": 114
+                }
+              },
+              {
+                "text": "客户管理",
+                "tagName": "BUTTON",
+                "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                "id": "clientManageBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 648,
+                  "y": 1006,
+                  "width": 171,
+                  "height": 114
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_home_home-logistics.png"
+          },
+          {
+            "path": "/pages/home/home-admin.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_home_home-admin.png"
+          },
+          {
+            "path": "/pages/auth/login.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "登录 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "登录",
+                "tagName": "BUTTON",
+                "classes": "ant-btn ant-btn-primary w-full transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] trace-button-hover trace-button-active trace-button-focus",
+                "id": "login-btn",
+                "disabled": false,
+                "rect": {
+                  "x": 441,
+                  "y": 489,
+                  "width": 398,
+                  "height": 48
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_auth_login.png"
+          },
+          {
+            "path": "/pages/auth/register.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_auth_register.png"
+          },
+          {
+            "path": "/pages/auth/forgot-password.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_auth_forgot-password.png"
+          },
+          {
+            "path": "/pages/auth/reset-password.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_auth_reset-password.png"
+          },
+          {
+            "path": "/pages/farming/farming-breeding.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "繁育信息管理 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "icon-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "refreshBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 775,
+                  "y": 14,
+                  "width": 36,
+                  "height": 36
+                }
+              },
+              {
+                "text": "重置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-outline trace-button-hover trace-button-active trace-button-focus",
+                "id": "resetBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 494,
+                  "y": 716,
+                  "width": 64,
+                  "height": 43
+                }
+              },
+              {
+                "text": "提交记录",
+                "tagName": "BUTTON",
+                "classes": "btn btn-primary trace-button-hover trace-button-active trace-button-focus",
+                "id": "submitBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 698,
+                  "y": 716,
+                  "width": 88,
+                  "height": 43
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_farming_farming-breeding.png"
+          },
+          {
+            "path": "/pages/farming/farming-feeding.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_farming_farming-feeding.png"
+          },
+          {
+            "path": "/pages/farming/farming-health.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_farming_farming-health.png"
+          },
+          {
+            "path": "/pages/farming/farming-environment.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_farming_farming-environment.png"
+          },
+          {
+            "path": "/pages/farming/farming-statistics.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_farming_farming-statistics.png"
+          },
+          {
+            "path": "/pages/farming/farming-monitor.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "场地监控 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "icon-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "refreshBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 775,
+                  "y": 14,
+                  "width": 36,
+                  "height": 36
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_farming_farming-monitor.png"
+          },
+          {
+            "path": "/pages/farming/farming-vaccine.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "疫苗录入 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "icon-btn mr-2 trace-button-hover trace-button-active trace-button-focus",
+                "id": "refreshBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 735,
+                  "y": 14,
+                  "width": 36,
+                  "height": 36
+                }
+              },
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "icon-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "settingsBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 779,
+                  "y": 14,
+                  "width": 36,
+                  "height": 36
+                }
+              },
+              {
+                "text": "重置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-outline trace-button-hover trace-button-active trace-button-focus",
+                "id": "resetBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 494,
+                  "y": 969,
+                  "width": 141,
+                  "height": 43
+                }
+              },
+              {
+                "text": "提交记录",
+                "tagName": "BUTTON",
+                "classes": "btn btn-primary trace-button-hover trace-button-active trace-button-focus",
+                "id": "submitBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 645,
+                  "y": 969,
+                  "width": 141,
+                  "height": 43
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_farming_farming-vaccine.png"
+          },
+          {
+            "path": "/pages/farming/create-trace.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "创建溯源记录 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "选择文件",
+                "tagName": "BUTTON",
+                "classes": "btn bg-[#1677FF] hover:bg-[#4096FF] text-white px-6 py-2 rounded-lg transition-all active:scale-95 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-farming-create-trace-html-1743718257673-1-9739",
+                "disabled": false,
+                "rect": {
+                  "x": 596,
+                  "y": 1443,
+                  "width": 88,
+                  "height": 37
+                }
+              },
+              {
+                "text": "保存草稿",
+                "tagName": "BUTTON",
+                "classes": "btn flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-200 transition-all active:scale-95 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-farming-create-trace-html-1743718257673-2-2978",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 671,
+                  "width": 616,
+                  "height": 37
+                }
+              },
+              {
+                "text": "下一步",
+                "tagName": "BUTTON",
+                "classes": "btn flex-1 bg-[#1677FF] text-white px-4 py-3 rounded-lg hover:bg-[#4096FF] transition-all active:scale-95 trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-farming-create-trace-html-1743718257674-3-3973",
+                "disabled": false,
+                "rect": {
+                  "x": 648,
+                  "y": 671,
+                  "width": 616,
+                  "height": 37
+                }
+              },
+              {
+                "text": "",
+                "tagName": "A",
+                "classes": "nav-icon",
+                "id": "helpBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 779,
+                  "y": 12,
+                  "width": 40,
+                  "height": 40
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_farming_create-trace.png"
+          },
+          {
+            "path": "/pages/processing/processing-slaughter.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "屠宰信息录入 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "保存并提交",
+                "tagName": "BUTTON",
+                "classes": "submit-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "submitForm",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 2390.671875,
+                  "width": 1248,
+                  "height": 48
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_processing_processing-slaughter.png"
+          },
+          {
+            "path": "/pages/processing/processing-quality.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "肉质等级评定 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "icon-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "helpBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 775,
+                  "y": 14,
+                  "width": 36,
+                  "height": 36
+                }
+              },
+              {
+                "text": "重置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-outline trace-button-hover trace-button-active trace-button-focus",
+                "id": "resetBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 461,
+                  "y": 1296,
+                  "width": 175,
+                  "height": 43
+                }
+              },
+              {
+                "text": "提交评定",
+                "tagName": "BUTTON",
+                "classes": "btn btn-primary trace-button-hover trace-button-active trace-button-focus",
+                "id": "submitBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 644,
+                  "y": 1296,
+                  "width": 175,
+                  "height": 43
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_processing_processing-quality.png"
+          },
+          {
+            "path": "/pages/processing/processing-environment.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "加工环境拍照 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "上传环境照片",
+                "tagName": "BUTTON",
+                "classes": "upload-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "uploadBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 16,
+                  "y": 1986.671875,
+                  "width": 1248,
+                  "height": 48
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_processing_processing-environment.png"
+          },
+          {
+            "path": "/pages/processing/processing-reports.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "质检报告查询 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "icon-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "refreshBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 775,
+                  "y": 14,
+                  "width": 36,
+                  "height": 36
+                }
+              },
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "search-btn trace-button-hover trace-button-active trace-button-focus",
+                "id": "searchBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 757,
+                  "y": 96,
+                  "width": 46,
+                  "height": 43
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_processing_processing-reports.png"
+          },
+          {
+            "path": "/pages/logistics/logistics-create.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "创建物流订单 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "取消",
+                "tagName": "BUTTON",
+                "classes": "btn btn-secondary trace-button-hover trace-button-active trace-button-focus",
+                "id": "backToHomeBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 1267,
+                  "width": 32,
+                  "height": 24
+                }
+              },
+              {
+                "text": "下一步",
+                "tagName": "BUTTON",
+                "classes": "btn btn-primary trace-button-hover trace-button-active trace-button-focus",
+                "id": "nextStep1Btn",
+                "disabled": false,
+                "rect": {
+                  "x": 1232,
+                  "y": 1267,
+                  "width": 48,
+                  "height": 24
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_logistics_logistics-create.png"
+          },
+          {
+            "path": "/pages/logistics/logistics-list.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_logistics_logistics-list.png"
+          },
+          {
+            "path": "/pages/logistics/logistics-detail.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_logistics_logistics-detail.png"
+          },
+          {
+            "path": "/pages/logistics/vehicle-monitor.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "车辆监控 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "联系司机",
+                "tagName": "BUTTON",
+                "classes": "btn btn-primary btn-small trace-button-hover trace-button-active trace-button-focus",
+                "id": "callDriverBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 48,
+                  "y": 886,
+                  "width": 389.328125,
+                  "height": 24
+                }
+              },
+              {
+                "text": "查看订单",
+                "tagName": "BUTTON",
+                "classes": "btn btn-secondary btn-small trace-button-hover trace-button-active trace-button-focus",
+                "id": "viewOrderBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 445.328125,
+                  "y": 886,
+                  "width": 389.328125,
+                  "height": 24
+                }
+              },
+              {
+                "text": "调整温度",
+                "tagName": "BUTTON",
+                "classes": "btn btn-secondary btn-small trace-button-hover trace-button-active trace-button-focus",
+                "id": "changeTempBtn",
+                "disabled": false,
+                "rect": {
+                  "x": 842.65625,
+                  "y": 886,
+                  "width": 389.328125,
+                  "height": 24
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_logistics_vehicle-monitor.png"
+          },
+          {
+            "path": "/pages/logistics/client-management.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "Error",
+            "buttons": [],
+            "error": null,
+            "screenshot": "_pages_logistics_client-management.png"
+          },
+          {
+            "path": "/pages/profile/profile.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "个人中心 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "退出登录",
+                "tagName": "BUTTON",
+                "classes": "w-full bg-white text-red-500 font-medium py-4 rounded-xl shadow-sm mt-6 hover:bg-red-50 transition-colors trace-button-hover trace-button-active trace-button-focus",
+                "id": "logout-btn",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 519,
+                  "width": 1240,
+                  "height": 53
+                }
+              },
+              {
+                "text": "高对比度",
+                "tagName": "BUTTON",
+                "classes": "contrast-toggle trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-profile-profile-html-1743718265465-1-4409",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 720,
+                  "width": 56,
+                  "height": 21
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_profile_profile.png"
+          },
+          {
+            "path": "/pages/profile/notifications.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "消息通知 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "",
+                "tagName": "BUTTON",
+                "classes": "w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all trace-button-hover trace-button-active trace-button-focus",
+                "id": "mark-all-read",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 61,
+                  "width": 40,
+                  "height": 40
+                }
+              },
+              {
+                "text": "筛选",
+                "tagName": "BUTTON",
+                "classes": "text-[#00467F] text-sm font-medium trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-profile-notifications-html-1743718266176-1-8622",
+                "disabled": false,
+                "rect": {
+                  "x": 1236,
+                  "y": 118,
+                  "width": 28,
+                  "height": 20
+                }
+              },
+              {
+                "text": "高对比度",
+                "tagName": "BUTTON",
+                "classes": "contrast-toggle trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-profile-notifications-html-1743718266176-2-6735",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 720,
+                  "width": 56,
+                  "height": 21
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_profile_notifications.png"
+          },
+          {
+            "path": "/pages/profile/settings.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "系统设置 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "检查更新",
+                "tagName": "BUTTON",
+                "classes": "bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded hover:bg-gray-200 transition-all trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-profile-settings-html-1743718266902-1-4446",
+                "disabled": false,
+                "rect": {
+                  "x": 1172,
+                  "y": 1142,
+                  "width": 72,
+                  "height": 24
+                }
+              },
+              {
+                "text": "高对比度",
+                "tagName": "BUTTON",
+                "classes": "contrast-toggle trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-profile-settings-html-1743718266903-2-8144",
+                "disabled": false,
+                "rect": {
+                  "x": 0,
+                  "y": 1461,
+                  "width": 56,
+                  "height": 21
+                }
+              },
+              {
+                "text": "",
+                "tagName": "A",
+                "classes": "w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 1228,
+                  "y": 137,
+                  "width": 32,
+                  "height": 32
+                }
+              },
+              {
+                "text": "界面主题\n深蓝色",
+                "tagName": "A",
+                "classes": "flex items-center justify-between p-4 border-b border-gray-100 hover:bg-blue-50 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 249,
+                  "width": 1240,
+                  "height": 73
+                }
+              },
+              {
+                "text": "语言设置\n简体中文",
+                "tagName": "A",
+                "classes": "flex items-center justify-between p-4 border-b border-gray-100 hover:bg-blue-50 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 322,
+                  "width": 1240,
+                  "height": 73
+                }
+              },
+              {
+                "text": "通知设置\n已开启",
+                "tagName": "A",
+                "classes": "flex items-center justify-between p-4 hover:bg-blue-50 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 395,
+                  "width": 1240,
+                  "height": 72
+                }
+              },
+              {
+                "text": "用户权限管理\n管理用户角色与权限",
+                "tagName": "A",
+                "classes": "flex items-center justify-between p-4 border-b border-gray-100 hover:bg-blue-50 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 594,
+                  "width": 1240,
+                  "height": 75
+                }
+              },
+              {
+                "text": "企业信息设置\n配置公司基本信息与证书",
+                "tagName": "A",
+                "classes": "flex items-center justify-between p-4 border-b border-gray-100 hover:bg-blue-50 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 669,
+                  "width": 1240,
+                  "height": 75
+                }
+              },
+              {
+                "text": "数据备份恢复\n管理系统数据备份",
+                "tagName": "A",
+                "classes": "flex items-center justify-between p-4 hover:bg-blue-50 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 744,
+                  "width": 1240,
+                  "height": 74
+                }
+              },
+              {
+                "text": "数据分析中心\n查看溯源数据统计与趋势",
+                "tagName": "A",
+                "classes": "flex items-center justify-between p-4 border-b border-gray-100 hover:bg-blue-50 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 870,
+                  "width": 1240,
+                  "height": 75
+                }
+              },
+              {
+                "text": "二维码配置中心\n自定义溯源码样式与规则",
+                "tagName": "A",
+                "classes": "flex items-center justify-between p-4 border-b border-gray-100 hover:bg-blue-50 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 945,
+                  "width": 1240,
+                  "height": 75
+                }
+              },
+              {
+                "text": "API接口管理\n管理第三方系统集成",
+                "tagName": "A",
+                "classes": "flex items-center justify-between p-4 hover:bg-blue-50 transition-all",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 1020,
+                  "width": 1240,
+                  "height": 74
+                }
+              },
+              {
+                "text": "退出登录",
+                "tagName": "A",
+                "classes": "block w-full py-3 bg-red-50 text-red-600 rounded-xl font-medium text-center hover:bg-red-100 transition-all",
+                "id": "logout-btn",
+                "disabled": false,
+                "rect": {
+                  "x": 20,
+                  "y": 1242,
+                  "width": 1240,
+                  "height": 45
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_profile_settings.png"
+          },
+          {
+            "path": "/pages/admin/admin-dashboard.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "后台管理系统 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "新建溯源",
+                "tagName": "BUTTON",
+                "classes": "bg-[#00467F] text-white py-2 px-4 rounded-md hover:bg-blue-800 transition-all trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-dashboard-html-1743718267648-2-3835",
+                "disabled": false,
+                "rect": {
+                  "x": 1151.90625,
+                  "y": 20,
+                  "width": 108.09375,
+                  "height": 37
+                }
+              },
+              {
+                "text": "近7天",
+                "tagName": "BUTTON",
+                "classes": "bg-blue-100 text-[#00467F] px-3 py-1 rounded-md text-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-dashboard-html-1743718267649-3-8643",
+                "disabled": false,
+                "rect": {
+                  "x": 707.359375,
+                  "y": 249,
+                  "width": 59.546875,
+                  "height": 28
+                }
+              },
+              {
+                "text": "近30天",
+                "tagName": "BUTTON",
+                "classes": "bg-gray-100 text-gray-600 px-3 py-1 rounded-md text-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-dashboard-html-1743718267649-4-2570",
+                "disabled": false,
+                "rect": {
+                  "x": 774.90625,
+                  "y": 249,
+                  "width": 67.09375,
+                  "height": 28
+                }
+              },
+              {
+                "text": "全年",
+                "tagName": "BUTTON",
+                "classes": "bg-gray-100 text-gray-600 px-3 py-1 rounded-md text-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-dashboard-html-1743718267649-5-3404",
+                "disabled": false,
+                "rect": {
+                  "x": 850,
+                  "y": 249,
+                  "width": 52,
+                  "height": 28
+                }
+              },
+              {
+                "text": "处理",
+                "tagName": "BUTTON",
+                "classes": "px-3 py-1 bg-[#00467F] text-white text-xs rounded-md trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-dashboard-html-1743718267649-7-5450",
+                "disabled": false,
+                "rect": {
+                  "x": 1180,
+                  "y": 723,
+                  "width": 48,
+                  "height": 24
+                }
+              },
+              {
+                "text": "处理",
+                "tagName": "BUTTON",
+                "classes": "px-3 py-1 bg-[#00467F] text-white text-xs rounded-md trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-dashboard-html-1743718267650-8-3115",
+                "disabled": false,
+                "rect": {
+                  "x": 1180,
+                  "y": 836,
+                  "width": 48,
+                  "height": 24
+                }
+              },
+              {
+                "text": "处理",
+                "tagName": "BUTTON",
+                "classes": "px-3 py-1 bg-[#00467F] text-white text-xs rounded-md trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-dashboard-html-1743718267650-9-1268",
+                "disabled": false,
+                "rect": {
+                  "x": 1180,
+                  "y": 949,
+                  "width": 48,
+                  "height": 24
+                }
+              },
+              {
+                "text": "查看全部",
+                "tagName": "A",
+                "classes": "text-sm text-[#00467F]",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 677,
+                  "y": 621.5,
+                  "width": 56,
+                  "height": 20
+                }
+              },
+              {
+                "text": "查看全部",
+                "tagName": "A",
+                "classes": "text-sm text-[#00467F]",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 1184,
+                  "y": 621.5,
+                  "width": 56,
+                  "height": 20
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_admin_admin-dashboard.png"
+          },
+          {
+            "path": "/pages/admin/admin-system.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "系统配置 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "上传Logo",
+                "tagName": "BUTTON",
+                "classes": "btn btn-default trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-system-html-1743718268385-1-9631",
+                "disabled": false,
+                "rect": {
+                  "x": 365,
+                  "y": 616.5,
+                  "width": 114,
+                  "height": 39
+                }
+              },
+              {
+                "text": "保存设置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-primary trace-button-hover trace-button-active trace-button-focus",
+                "id": "saveBaseSettings",
+                "disabled": false,
+                "rect": {
+                  "x": 1108.75,
+                  "y": 755,
+                  "width": 106.25,
+                  "height": 37
+                }
+              },
+              {
+                "text": "保存设置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-primary trace-button-hover trace-button-active trace-button-focus",
+                "id": "saveSecuritySettings",
+                "disabled": false,
+                "rect": {
+                  "x": 1108.75,
+                  "y": 1389,
+                  "width": 106.25,
+                  "height": 37
+                }
+              },
+              {
+                "text": "清除缓存",
+                "tagName": "BUTTON",
+                "classes": "btn btn-default trace-button-hover trace-button-active trace-button-focus",
+                "id": "clearCache",
+                "disabled": false,
+                "rect": {
+                  "x": 285,
+                  "y": 1687,
+                  "width": 113.5,
+                  "height": 39
+                }
+              },
+              {
+                "text": "保存设置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-primary trace-button-hover trace-button-active trace-button-focus",
+                "id": "saveOptimizationSettings",
+                "disabled": false,
+                "rect": {
+                  "x": 1108.75,
+                  "y": 2023,
+                  "width": 106.25,
+                  "height": 37
+                }
+              },
+              {
+                "text": "重新生成",
+                "tagName": "BUTTON",
+                "classes": "btn btn-default rounded-l-none border-l-0 trace-button-hover trace-button-active trace-button-focus",
+                "id": "regenerateApiKey",
+                "disabled": false,
+                "rect": {
+                  "x": 1113.53125,
+                  "y": 2362,
+                  "width": 101.46875,
+                  "height": 60
+                }
+              },
+              {
+                "text": "配置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-default btn-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-system-html-1743718268386-2-3073",
+                "disabled": false,
+                "rect": {
+                  "x": 1139,
+                  "y": 2510,
+                  "width": 64,
+                  "height": 39
+                }
+              },
+              {
+                "text": "配置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-default btn-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-system-html-1743718268386-3-9406",
+                "disabled": false,
+                "rect": {
+                  "x": 1139,
+                  "y": 2587,
+                  "width": 64,
+                  "height": 39
+                }
+              },
+              {
+                "text": "配置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-default btn-sm trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-system-html-1743718268386-4-818",
+                "disabled": false,
+                "rect": {
+                  "x": 1139,
+                  "y": 2664,
+                  "width": 64,
+                  "height": 39
+                }
+              },
+              {
+                "text": "保存设置",
+                "tagName": "BUTTON",
+                "classes": "btn btn-primary trace-button-hover trace-button-active trace-button-focus",
+                "id": "saveIntegrationSettings",
+                "disabled": false,
+                "rect": {
+                  "x": 1108.75,
+                  "y": 2781,
+                  "width": 106.25,
+                  "height": 37
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_admin_admin-system.png"
+          },
+          {
+            "path": "/pages/admin/admin-users.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "用户管理 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "添加用户",
+                "tagName": "BUTTON",
+                "classes": "bg-[#00467F] text-white py-2 px-4 rounded-md hover:bg-blue-800 transition-all trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-users-html-1743718269189-1-5836",
+                "disabled": false,
+                "rect": {
+                  "x": 1151.90625,
+                  "y": 20,
+                  "width": 108.09375,
+                  "height": 37
+                }
+              },
+              {
+                "text": "批量删除",
+                "tagName": "BUTTON",
+                "classes": "bg-red-50 text-red-600 px-3 py-1.5 text-sm rounded-md hover:bg-red-100 transition-all trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-users-html-1743718269189-2-2117",
+                "disabled": false,
+                "rect": {
+                  "x": 816.125,
+                  "y": 759,
+                  "width": 100.09375,
+                  "height": 32
+                }
+              },
+              {
+                "text": "批量激活",
+                "tagName": "BUTTON",
+                "classes": "bg-green-50 text-green-600 px-3 py-1.5 text-sm rounded-md hover:bg-green-100 transition-all trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-users-html-1743718269189-3-7969",
+                "disabled": false,
+                "rect": {
+                  "x": 924.21875,
+                  "y": 759,
+                  "width": 101.84375,
+                  "height": 32
+                }
+              },
+              {
+                "text": "批量锁定",
+                "tagName": "BUTTON",
+                "classes": "bg-orange-50 text-orange-600 px-3 py-1.5 text-sm rounded-md hover:bg-orange-100 transition-all trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-users-html-1743718269190-4-264",
+                "disabled": false,
+                "rect": {
+                  "x": 1034.0625,
+                  "y": 759,
+                  "width": 100.09375,
+                  "height": 32
+                }
+              },
+              {
+                "text": "导出选中",
+                "tagName": "BUTTON",
+                "classes": "bg-blue-50 text-[#00467F] px-3 py-1.5 text-sm rounded-md hover:bg-blue-100 transition-all trace-button-hover trace-button-active trace-button-focus",
+                "id": "trace-btn-pages-admin-admin-users-html-1743718269190-5-1478",
+                "disabled": false,
+                "rect": {
+                  "x": 1142.15625,
+                  "y": 759,
+                  "width": 101.84375,
+                  "height": 32
+                }
+              },
+              {
+                "text": "",
+                "tagName": "A",
+                "classes": "relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 974.0625,
+                  "y": 665,
+                  "width": 25.5,
+                  "height": 38
+                }
+              },
+              {
+                "text": "1",
+                "tagName": "A",
+                "classes": "relative inline-flex items-center px-4 py-2 border border-gray-300 bg-[#00467F] text-sm font-medium text-white hover:bg-blue-700",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 998.5625,
+                  "y": 665,
+                  "width": 39.640625,
+                  "height": 38
+                }
+              },
+              {
+                "text": "2",
+                "tagName": "A",
+                "classes": "relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 1037.203125,
+                  "y": 665,
+                  "width": 41.78125,
+                  "height": 38
+                }
+              },
+              {
+                "text": "3",
+                "tagName": "A",
+                "classes": "relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 1077.984375,
+                  "y": 665,
+                  "width": 41.78125,
+                  "height": 38
+                }
+              },
+              {
+                "text": "26",
+                "tagName": "A",
+                "classes": "relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 1161.90625,
+                  "y": 665,
+                  "width": 49.59375,
+                  "height": 38
+                }
+              },
+              {
+                "text": "",
+                "tagName": "A",
+                "classes": "relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50",
+                "id": "",
+                "disabled": false,
+                "rect": {
+                  "x": 1210.5,
+                  "y": 665,
+                  "width": 25.5,
+                  "height": 38
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_admin_admin-users.png"
+          },
+          {
+            "path": "/pages/product-trace.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "产品溯源 - 食品溯源系统",
+            "buttons": [
+              {
+                "text": "返回",
+                "tagName": "BUTTON",
+                "classes": "back-button trace-button-hover trace-button-active trace-button-focus",
+                "id": "backButton",
+                "disabled": false,
+                "rect": {
+                  "x": 40,
+                  "y": 20.5,
+                  "width": 53,
+                  "height": 21
+                }
+              },
+              {
+                "text": "开始扫描",
+                "tagName": "BUTTON",
+                "classes": "button trace-button-hover trace-button-active trace-button-focus",
+                "id": "scanButton",
+                "disabled": false,
+                "rect": {
+                  "x": 80,
+                  "y": 483.796875,
+                  "width": 1120,
+                  "height": 45
+                }
+              },
+              {
+                "text": "手动输入溯源码",
+                "tagName": "BUTTON",
+                "classes": "button secondary trace-button-hover trace-button-active trace-button-focus",
+                "id": "inputCodeButton",
+                "disabled": false,
+                "rect": {
+                  "x": 80,
+                  "y": 538.796875,
+                  "width": 1120,
+                  "height": 45
+                }
+              }
+            ],
+            "error": null,
+            "screenshot": "_pages_product-trace.png"
+          }
+        ],
+        "status": "success",
+        "summary": {
+          "totalPages": 38,
+          "totalButtons": 148,
+          "errorPages": 0
+        }
+      }
+    },
+    "button_interaction": {
+      "message": "按钮交互测试通过",
+      "result": {
+        "timestamp": "2025-04-03T22:12:10.104Z",
+        "baseUrl": "http://localhost:8080",
+        "results": [
+          {
+            "path": "/pages/trace/trace-map.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "溯源地图 - 食品溯源系统",
+            "buttons": [
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-map-html-1743718272166-1-6435",
+                  "text": "全部产品",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272166-1-6435\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 16,
+                    "y": 73,
+                    "width": 88,
+                    "height": 30
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-map-html-1743718272167-2-2050",
+                  "text": "和牛肉",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272167-2-2050\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 112,
+                    "y": 73,
+                    "width": 76,
+                    "height": 30
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-map-html-1743718272167-3-6963",
+                  "text": "大闸蟹",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272167-3-6963\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 196,
+                    "y": 73,
+                    "width": 76,
+                    "height": 30
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-map-html-1743718272167-4-7877",
+                  "text": "猕猴桃",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272167-4-7877\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 280,
+                    "y": 73,
+                    "width": 76,
+                    "height": 30
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-map-html-1743718272168-5-137",
+                  "text": "葡萄酒",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-5-137\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 364,
+                    "y": 73,
+                    "width": 76,
+                    "height": 30
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-map-html-1743718272168-6-6049",
+                  "text": "",
+                  "tagName": "BUTTON",
+                  "classes": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-6-6049\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 1176,
+                    "y": 151,
+                    "width": 32,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-map-html-1743718272168-7-8920",
+                  "text": "",
+                  "tagName": "BUTTON",
+                  "classes": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-7-8920\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 1216,
+                    "y": 151,
+                    "width": 32,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-map-html-1743718272168-8-8480",
+                  "text": "查看详情",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-8-8480\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 16,
+                    "y": 861,
+                    "width": 100,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-map-html-1743718272168-9-756",
+                  "text": "查看详情",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-9-756\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 16,
+                    "y": 1058,
+                    "width": 100,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "button-9-1743718272901",
+                  "text": "",
+                  "tagName": "A",
+                  "classes": "w-10 h-10 rounded-full flex items-center justify-center",
+                  "xpath": "//html[1]/body[1]/div[1]/div[1]/div[2]/a[1]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 0,
+                    "y": 21,
+                    "width": 40,
+                    "height": 40
+                  },
+                  "attributes": {
+                    "href": "#",
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/trace/trace-map.html#"
+                  },
+                  "beforeScreenshot": "_pages_trace_trace-map.html_button_button-9-1743718272901_before.png",
+                  "afterScreenshot": "_pages_trace_trace-map.html_button_button-9-1743718272901_after.png"
+                }
+              }
+            ],
+            "error": null,
+            "pageScreenshot": "_pages_trace_trace-map.html_page.png"
+          },
+          {
+            "path": "/pages/trace/trace-list.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "溯源记录 - 食品溯源系统",
+            "buttons": [
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279503-1-8922",
+                  "text": "今日",
+                  "tagName": "BUTTON",
+                  "classes": "bg-blue-50 text-[#00467F] rounded px-3 py-1 text-xs border border-blue-100 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279503-1-8922\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 1074.59375,
+                    "y": 126,
+                    "width": 50,
+                    "height": 26
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279503-2-261",
+                  "text": "近7天",
+                  "tagName": "BUTTON",
+                  "classes": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279503-2-261\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 1132.59375,
+                    "y": 126,
+                    "width": 56.46875,
+                    "height": 26
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279503-3-5592",
+                  "text": "近30天",
+                  "tagName": "BUTTON",
+                  "classes": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279503-3-5592\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 1197.0625,
+                    "y": 126,
+                    "width": 62.9375,
+                    "height": 26
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279503-4-5598",
+                  "text": "全部",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1.5 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279503-4-5598\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 20,
+                    "y": 176,
+                    "width": 60,
+                    "height": 34
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279504-5-6715",
+                  "text": "已完成",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279504-5-6715\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 88,
+                    "y": 176,
+                    "width": 95.84375,
+                    "height": 34
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279504-6-3124",
+                  "text": "待审核",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279504-6-3124\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 191.84375,
+                    "y": 176,
+                    "width": 95.84375,
+                    "height": 34
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279504-7-2168",
+                  "text": "异常",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279504-7-2168\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 295.6875,
+                    "y": 176,
+                    "width": 81.84375,
+                    "height": 34
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279504-8-7999",
+                  "text": "草稿",
+                  "tagName": "BUTTON",
+                  "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279504-8-7999\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 385.53125,
+                    "y": 176,
+                    "width": 81.84375,
+                    "height": 34
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279505-9-472",
+                  "text": "二维码",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279505-9-472\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 20,
+                    "y": 514,
+                    "width": 84.25,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279506-11-91",
+                  "text": "二维码",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279506-11-91\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 20,
+                    "y": 683,
+                    "width": 84.25,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279506-13-9313",
+                  "text": "二维码",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279506-13-9313\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 20,
+                    "y": 902,
+                    "width": 84.25,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279507-15-7280",
+                  "text": "二维码",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279507-15-7280\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 20,
+                    "y": 1071,
+                    "width": 84.25,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279507-17-5190",
+                  "text": "上一页",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1.5 px-4 flex items-center trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279507-17-5190\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 20,
+                    "y": 1139,
+                    "width": 82.75,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279507-18-2672",
+                  "text": "下一页",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-primary text-xs py-1.5 px-4 flex items-center trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279507-18-2672\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 1179.234375,
+                    "y": 1139,
+                    "width": 80.75,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279505-10-8395",
+                  "text": "查看详情",
+                  "tagName": "A",
+                  "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279505-10-8395\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 108.09375,
+                    "y": 514,
+                    "width": 99.75,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": "trace-detail.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279506-12-7134",
+                  "text": "查看详情",
+                  "tagName": "A",
+                  "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279506-12-7134\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 108.09375,
+                    "y": 683,
+                    "width": 99.75,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": "trace-detail.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279506-14-4617",
+                  "text": "查看详情",
+                  "tagName": "A",
+                  "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279506-14-4617\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 108.09375,
+                    "y": 902,
+                    "width": 99.75,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": "trace-detail.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-list-html-1743718279507-16-3639",
+                  "text": "查看详情",
+                  "tagName": "A",
+                  "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279507-16-3639\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 108.09375,
+                    "y": 1071,
+                    "width": 99.75,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": "trace-detail.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "button-18-1743718280219",
+                  "text": "",
+                  "tagName": "A",
+                  "classes": "w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all",
+                  "xpath": "//html[1]/body[1]/div[1]/div[1]/div[2]/a[1]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 0,
+                    "y": 21,
+                    "width": 40,
+                    "height": 40
+                  },
+                  "attributes": {
+                    "href": "#",
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/trace/trace-list.html#"
+                  },
+                  "beforeScreenshot": "_pages_trace_trace-list.html_button_button-18-1743718280219_before.png",
+                  "afterScreenshot": "_pages_trace_trace-list.html_button_button-18-1743718280219_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "button-19-1743718280219",
+                  "text": "",
+                  "tagName": "A",
+                  "classes": "w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all ml-1",
+                  "xpath": "//html[1]/body[1]/div[1]/div[1]/div[2]/a[2]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 44,
+                    "y": 21,
+                    "width": 40,
+                    "height": 40
+                  },
+                  "attributes": {
+                    "href": "#",
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/trace/trace-list.html#"
+                  },
+                  "beforeScreenshot": "_pages_trace_trace-list.html_button_button-19-1743718280219_before.png",
+                  "afterScreenshot": "_pages_trace_trace-list.html_button_button-19-1743718280219_after.png"
+                }
+              }
+            ],
+            "error": null,
+            "pageScreenshot": "_pages_trace_trace-list.html_page.png"
+          },
+          {
+            "path": "/pages/trace/trace-detail.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "溯源详情 - 食品溯源系统",
+            "buttons": [
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293444-1-5062",
+                  "text": "基本信息",
+                  "tagName": "BUTTON",
+                  "classes": "tab-button active trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293444-1-5062\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 0,
+                    "y": 357,
+                    "width": 77.84375,
+                    "height": 21
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293444-2-1053",
+                  "text": "溯源流程",
+                  "tagName": "BUTTON",
+                  "classes": "tab-button trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293444-2-1053\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 81.6875,
+                    "y": 357,
+                    "width": 79.59375,
+                    "height": 21
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293444-3-5479",
+                  "text": "证书与检测",
+                  "tagName": "BUTTON",
+                  "classes": "tab-button trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293444-3-5479\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 165.125,
+                    "y": 357,
+                    "width": 91.84375,
+                    "height": 21
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293445-4-8162",
+                  "text": "查看照片(3)",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1 image-view-link trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293445-4-8162\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 16,
+                    "y": 1331,
+                    "width": 118.828125,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293445-5-7639",
+                  "text": "查看照片(2)",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1 image-view-link trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293445-5-7639\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 16,
+                    "y": 1589,
+                    "width": 118.828125,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293445-6-1728",
+                  "text": "查看检测报告",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293445-6-1728\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 16,
+                    "y": 1819,
+                    "width": 124.5,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293445-7-6915",
+                  "text": "查看温度记录",
+                  "tagName": "BUTTON",
+                  "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293445-7-6915\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 16,
+                    "y": 2077,
+                    "width": 128,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "close-image-modal",
+                  "text": "",
+                  "tagName": "BUTTON",
+                  "classes": "absolute top-3 right-3 z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center text-gray-700 shadow-md trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"close-image-modal\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 468,
+                    "y": 2956,
+                    "width": 32,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": false,
+                    "newUrl": null
+                  },
+                  "beforeScreenshot": "_pages_trace_trace-detail.html_button_close-image-modal_before.png",
+                  "afterScreenshot": "_pages_trace_trace-detail.html_button_close-image-modal_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293447-11-4014",
+                  "text": "高对比度",
+                  "tagName": "BUTTON",
+                  "classes": "contrast-toggle trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293447-11-4014\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 0,
+                    "y": 2965,
+                    "width": 56,
+                    "height": 21
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293446-8-4407",
+                  "text": "查看完整证书",
+                  "tagName": "A",
+                  "classes": "trace-button trace-button-primary w-full text-center py-2 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293446-8-4407\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 32,
+                    "y": 2326,
+                    "width": 1216,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": "trace-certificate.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293446-9-7722",
+                  "text": "查看追溯码",
+                  "tagName": "A",
+                  "classes": "trace-button trace-button-secondary flex items-center justify-center trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293446-9-7722\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 0,
+                    "y": 2912,
+                    "width": 634,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": "#",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "trace-btn-pages-trace-trace-detail-html-1743718293446-10-3051",
+                  "text": "查看溯源证书",
+                  "tagName": "A",
+                  "classes": "trace-button trace-button-primary flex items-center justify-center trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293446-10-3051\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 646,
+                    "y": 2912,
+                    "width": 634,
+                    "height": 32
+                  },
+                  "attributes": {
+                    "href": "trace-certificate.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "button-12-1743718294243",
+                  "text": "",
+                  "tagName": "A",
+                  "classes": "w-10 h-10 rounded-full flex items-center justify-center",
+                  "xpath": "//html[1]/body[1]/div[1]/div[1]/div[2]/a[1]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 0,
+                    "y": 61,
+                    "width": 40,
+                    "height": 40
+                  },
+                  "attributes": {
+                    "href": "#",
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/trace/trace-detail.html#"
+                  },
+                  "beforeScreenshot": "_pages_trace_trace-detail.html_button_button-12-1743718294243_before.png",
+                  "afterScreenshot": "_pages_trace_trace-detail.html_button_button-12-1743718294243_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "button-13-1743718294243",
+                  "text": "",
+                  "tagName": "A",
+                  "classes": "w-10 h-10 rounded-full flex items-center justify-center",
+                  "xpath": "//html[1]/body[1]/div[1]/div[1]/div[2]/a[2]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 40,
+                    "y": 61,
+                    "width": 40,
+                    "height": 40
+                  },
+                  "attributes": {
+                    "href": "#",
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/trace/trace-detail.html#"
+                  },
+                  "beforeScreenshot": "_pages_trace_trace-detail.html_button_button-13-1743718294243_before.png",
+                  "afterScreenshot": "_pages_trace_trace-detail.html_button_button-13-1743718294243_after.png"
+                }
+              }
+            ],
+            "error": null,
+            "pageScreenshot": "_pages_trace_trace-detail.html_page.png"
+          },
+          {
+            "path": "/pages/home/home-selector.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "功能模块选择 - 食品溯源系统",
+            "buttons": [
+              {
+                "button": {
+                  "id": "trace-btn-pages-home-home-selector-html-1743718305919-1-5252",
+                  "text": "个人中心",
+                  "tagName": "A",
+                  "classes": "btn-secondary px-3 py-1 text-xs trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"trace-btn-pages-home-home-selector-html-1743718305919-1-5252\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 729,
+                    "y": 107.5,
+                    "width": 74,
+                    "height": 26
+                  },
+                  "attributes": {
+                    "href": "../profile/profile.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": false,
+                  "error": "无法通过XPath定位按钮",
+                  "response": null,
+                  "beforeScreenshot": null,
+                  "afterScreenshot": null
+                }
+              },
+              {
+                "button": {
+                  "id": "farmingModule",
+                  "text": "养殖管理\n\n动物饲养、疫苗、繁育信息管理",
+                  "tagName": "A",
+                  "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"farmingModule\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 461,
+                    "y": 388,
+                    "width": 171,
+                    "height": 147
+                  },
+                  "attributes": {
+                    "href": "home-farming.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/home/home-farming.html"
+                  },
+                  "beforeScreenshot": "_pages_home_home-selector.html_button_farmingModule_before.png",
+                  "afterScreenshot": "_pages_home_home-selector.html_button_farmingModule_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "processingModule",
+                  "text": "生产加工\n\n屠宰、检验、包装等加工环节管理",
+                  "tagName": "A",
+                  "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"processingModule\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 648,
+                    "y": 388,
+                    "width": 171,
+                    "height": 147
+                  },
+                  "attributes": {
+                    "href": "home-processing.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/home/home-processing.html"
+                  },
+                  "beforeScreenshot": "_pages_home_home-selector.html_button_processingModule_before.png",
+                  "afterScreenshot": "_pages_home_home-selector.html_button_processingModule_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "logisticsModule",
+                  "text": "销售物流\n\n运输、配送、订单跟踪管理",
+                  "tagName": "A",
+                  "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"logisticsModule\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 461,
+                    "y": 551,
+                    "width": 171,
+                    "height": 147
+                  },
+                  "attributes": {
+                    "href": "home-logistics.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/home/home-logistics.html"
+                  },
+                  "beforeScreenshot": "_pages_home_home-selector.html_button_logisticsModule_before.png",
+                  "afterScreenshot": "_pages_home_home-selector.html_button_logisticsModule_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "traceModule",
+                  "text": "追溯查询\n\n产品全链路溯源和质量追踪",
+                  "tagName": "A",
+                  "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"traceModule\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 648,
+                    "y": 551,
+                    "width": 171,
+                    "height": 147
+                  },
+                  "attributes": {
+                    "href": "../trace/trace-query.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/trace/trace-query.html"
+                  },
+                  "beforeScreenshot": "_pages_home_home-selector.html_button_traceModule_before.png",
+                  "afterScreenshot": "_pages_home_home-selector.html_button_traceModule_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "userManageModule",
+                  "text": "用户管理\n\n账号、权限配置",
+                  "tagName": "A",
+                  "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"userManageModule\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 461,
+                    "y": 775,
+                    "width": 171,
+                    "height": 131
+                  },
+                  "attributes": {
+                    "href": "../admin/admin-users.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/admin/admin-users.html"
+                  },
+                  "beforeScreenshot": "_pages_home_home-selector.html_button_userManageModule_before.png",
+                  "afterScreenshot": "_pages_home_home-selector.html_button_userManageModule_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "systemConfigModule",
+                  "text": "系统配置\n\n设置、备份、维护",
+                  "tagName": "A",
+                  "classes": "module-card p-4 trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"systemConfigModule\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 648,
+                    "y": 775,
+                    "width": 171,
+                    "height": 131
+                  },
+                  "attributes": {
+                    "href": "../admin/admin-system.html",
+                    "onclick": null,
+                    "role": "button",
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": true,
+                    "newUrl": "http://localhost:8080/pages/admin/admin-system.html"
+                  },
+                  "beforeScreenshot": "_pages_home_home-selector.html_button_systemConfigModule_before.png",
+                  "afterScreenshot": "_pages_home_home-selector.html_button_systemConfigModule_after.png"
+                }
+              }
+            ],
+            "error": null,
+            "pageScreenshot": "_pages_home_home-selector.html_page.png"
+          },
+          {
+            "path": "/pages/auth/login.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "登录 - 食品溯源系统",
+            "buttons": [
+              {
+                "button": {
+                  "id": "login-btn",
+                  "text": "登录",
+                  "tagName": "BUTTON",
+                  "classes": "ant-btn ant-btn-primary w-full transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"login-btn\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 441,
+                    "y": 489,
+                    "width": 398,
+                    "height": 48
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": "submit"
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": false,
+                    "newUrl": null
+                  },
+                  "beforeScreenshot": "_pages_auth_login.html_button_login-btn_before.png",
+                  "afterScreenshot": "_pages_auth_login.html_button_login-btn_after.png"
+                }
+              }
+            ],
+            "error": null,
+            "pageScreenshot": "_pages_auth_login.html_page.png"
+          },
+          {
+            "path": "/pages/product-trace.html",
+            "isPrototype": true,
+            "isDirectoryListing": false,
+            "title": "产品溯源 - 食品溯源系统",
+            "buttons": [
+              {
+                "button": {
+                  "id": "backButton",
+                  "text": "返回",
+                  "tagName": "BUTTON",
+                  "classes": "back-button trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"backButton\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 40,
+                    "y": 20.5,
+                    "width": 53,
+                    "height": 21
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": false,
+                    "newUrl": null
+                  },
+                  "beforeScreenshot": "_pages_product-trace.html_button_backButton_before.png",
+                  "afterScreenshot": "_pages_product-trace.html_button_backButton_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "scanButton",
+                  "text": "开始扫描",
+                  "tagName": "BUTTON",
+                  "classes": "button trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"scanButton\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 80,
+                    "y": 483.796875,
+                    "width": 1120,
+                    "height": 45
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": false,
+                    "newUrl": null
+                  },
+                  "beforeScreenshot": "_pages_product-trace.html_button_scanButton_before.png",
+                  "afterScreenshot": "_pages_product-trace.html_button_scanButton_after.png"
+                }
+              },
+              {
+                "button": {
+                  "id": "inputCodeButton",
+                  "text": "手动输入溯源码",
+                  "tagName": "BUTTON",
+                  "classes": "button secondary trace-button-hover trace-button-active trace-button-focus",
+                  "xpath": "//*[@id=\"inputCodeButton\"]",
+                  "disabled": false,
+                  "rect": {
+                    "x": 80,
+                    "y": 538.796875,
+                    "width": 1120,
+                    "height": 45
+                  },
+                  "attributes": {
+                    "href": null,
+                    "onclick": null,
+                    "role": null,
+                    "type": null
+                  }
+                },
+                "interactionResult": {
+                  "success": true,
+                  "response": {
+                    "urlChanged": false,
+                    "newUrl": null
+                  },
+                  "beforeScreenshot": "_pages_product-trace.html_button_inputCodeButton_before.png",
+                  "afterScreenshot": "_pages_product-trace.html_button_inputCodeButton_after.png"
+                }
+              }
+            ],
+            "error": null,
+            "pageScreenshot": "_pages_product-trace.html_page.png"
+          }
+        ],
+        "status": "success",
+        "summary": {
+          "totalPages": 6,
+          "totalButtons": 55,
+          "errorPages": 0,
+          "interactionErrors": 39
+        }
+      }
+    },
+    "button_improvements": {
+      "message": "按钮改进验证失败: 测试脚本 validate-button-improvements.js 没有导出 run 函数",
+      "error": "Error: 测试脚本 validate-button-improvements.js 没有导出 run 函数\n    at runTestScript (C:\\Users\\Steve\\heiniu\\validation\\scripts\\run-all-tests.js:88:13)\n    at runAllTests (C:\\Users\\Steve\\heiniu\\validation\\scripts\\run-all-tests.js:148:26)"
     }
   },
   "duration": {
-    "total": "95.28",
-    "unit_tests": "0.96",
-    "ui_validation": "0.55",
-    "functionality": "0.55",
-    "button_tests": "92.13"
+    "total": "137.35",
+    "unit_tests": "4.13",
+    "resource_validation": "2.62",
+    "ui_validation": "3.57",
+    "html_structure": "0.03",
+    "navigation_validation": "38.56",
+    "functionality": "0.00",
+    "button_basic": "29.75",
+    "button_interaction": "58.69",
+    "button_improvements": "0.01"
   },
   "overall_status": "失败"
 }

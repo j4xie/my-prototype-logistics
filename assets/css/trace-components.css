@@ -358,4 +358,61 @@
 .trace-tag-error {
   background-color: rgba(255, 77, 79, 0.1);
   color: var(--error-color);
+}
+
+/* 波纹动画效果 */
+@keyframes trace-button-ripple-effect {
+  from {
+    transform: scale(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* 按钮基础样式 */
+.trace-button {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 按钮悬停效果 */
+.trace-button-hover:hover {
+  transform: scale(var(--button-hover-scale, 1.03));
+  z-index: 1;
+}
+
+/* 按钮激活效果 */
+.trace-button-active:active {
+  transform: scale(var(--button-active-scale, 0.98));
+}
+
+/* 按钮焦点效果 */
+.trace-button-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+}
+
+/* 按钮禁用状态 */
+.trace-button-disabled,
+button[disabled],
+.trace-button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 波纹效果 */
+.trace-button-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  animation: trace-button-ripple-effect 0.8s ease-out forwards;
+  pointer-events: none;
 } 
