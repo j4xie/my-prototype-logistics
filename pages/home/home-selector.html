@@ -835,5 +835,51 @@
 
   <!-- 自动按钮升级脚本 (自动注入) -->
   <script src="/components/autoload-button-upgrade.js"></script>
+  
+  <!-- 卡片导航脚本 -->
+  <script>
+    // 避免JS错误
+    window.traceAuth = window.traceAuth || { 
+      init: function() { console.log('模拟Auth初始化'); },
+      isLoggedIn: function() { return true; }
+    };
+    
+    // 添加直接导航处理
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('正在初始化卡片点击处理...');
+      
+      // 处理所有模块卡片的点击
+      const moduleCards = document.querySelectorAll('.module-card');
+      console.log('找到模块卡片数量:', moduleCards.length);
+      
+      moduleCards.forEach(card => {
+        card.style.cursor = 'pointer';
+        
+        card.addEventListener('click', function(e) {
+          const target = this.getAttribute('data-target');
+          const module = this.getAttribute('data-module');
+          
+          // 目标页面映射
+          const pageMap = {
+            'farming': '../farming/farming-monitor.html',
+            'trace': '../trace/trace-list.html',
+            'logistics': '../logistics/logistics-tracking.html',
+            'processing': '../processing/processing-monitor.html',
+            'admin': '../admin/admin-system.html',
+            'profile': '../profile/profile.html',
+            'settings': '../profile/settings.html'
+          };
+          
+          if (target && pageMap[target]) {
+            console.log('点击卡片，导航到:', pageMap[target]);
+            window.location.href = pageMap[target];
+          } else if (module) {
+            console.log('点击模块:', module);
+            // 可以扩展处理基于模块的点击
+          }
+        });
+      });
+    });
+  </script>
   </body>
 </html> 
