@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认证模块测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .admin-only {
+            border: 2px dashed red;
+            background-color: #fff5f5;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-lg mx-auto bg-white rounded shadow p-6">
+        <h1 class="text-2xl font-bold mb-6">认证模块测试</h1>
+        
+        <!-- 状态显示 -->
+        <div class="mb-6 p-4 bg-blue-50 rounded">
+            <h2 class="text-lg font-bold mb-2">当前状态</h2>
+            <div>
+                <div class="mb-1"><strong>用户名:</strong> <span id="userName">未登录</span></div>
+                <div class="mb-1"><strong>角色:</strong> <span id="userRole">无</span></div>
+                <div class="mb-1"><strong>权限:</strong> <span id="userPermissions">无</span></div>
+                <div class="mb-1"><strong>登录状态:</strong> <span id="loginStatus">未登录</span></div>
+            </div>
+        </div>
+        
+        <!-- 按钮组 -->
+        <div class="mb-6 grid grid-cols-2 gap-4">
+            <button id="loginBtn" class="bg-blue-500 text-white p-2 rounded">模拟登录 (管理员)</button>
+            <button id="loginUserBtn" class="bg-green-500 text-white p-2 rounded">模拟登录 (普通用户)</button>
+            <button id="logoutBtn" class="bg-red-500 text-white p-2 rounded">退出登录</button>
+            <button id="checkPermissionBtn" class="bg-purple-500 text-white p-2 rounded">检查管理员权限</button>
+        </div>
+        
+        <!-- 权限测试区域 -->
+        <div class="mb-6">
+            <h2 class="text-lg font-bold mb-2">权限测试区域</h2>
+            <div class="grid grid-cols-1 gap-4">
+                <!-- 普通用户可见 -->
+                <div class="p-4 bg-green-50 rounded border border-green-200">
+                    <h3 class="font-bold">普通功能</h3>
+                    <p>所有用户可见的内容</p>
+                </div>
+                
+                <!-- 仅管理员可见 -->
+                <div class="p-4 admin-only rounded">
+                    <h3 class="font-bold">系统配置</h3>
+                    <p>仅管理员可见的内容</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 错误信息 -->
+        <div id="errorInfo" class="text-red-500 mb-6 hidden"></div>
+        
+        <!-- 调试信息 -->
+        <h2 class="text-lg font-bold mb-2">控制台日志</h2>
+        <div id="logs" class="bg-gray-800 text-green-400 p-4 rounded font-mono text-sm h-40 overflow-y-auto whitespace-pre"></div>
+    </div>
+    
+    <!-- 添加脚本 -->
+    <script src="components/trace-auth.js"></script>
+    <script>
+        // 辅助函数 - 记录日志
+        function log(message) {
+            const logsElement = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsElement.appendChild(logEntry);
+            logsElement.scrollTop = logsElement.scrollHeight;
+            console.log(message);
+        }
+        
+        // 辅助函数 - 显示错误
+        function showError(message) {
+            const errorInfo = document.getElementById('errorInfo');
+            errorInfo.textContent = message;
+            errorInfo.classList.remove('hidden');
+            setTimeout(() => {
+                errorInfo.classList.add('hidden');
+            }, 5000);
+            log(`错误: ${message}`);
+        }
+        
+        // 辅助函数 - 更新UI
+        function updateUI() {
+            try {
+                const isAuthenticated = traceAuth.isAuthenticated();
+                const user = traceAuth.getCurrentUser();
+                
+                document.getElementById('loginStatus').textContent = isAuthenticated ? '已登录' : '未登录';
+                
+                if (user) {
+                    document.getElementById('userName').textContent = user.name || '未知';
+                    document.getElementById('userRole').textContent = user.role || '无角色';
+                    document.getElementById('userPermissions').textContent = 
+                        user.permissions ? user.permissions.join(', ') : '无特定权限';
+                } else {
+                    document.getElementById('userName').textContent = '未登录';
+                    document.getElementById('userRole').textContent = '无';
+                    document.getElementById('userPermissions').textContent = '无';
+                }
+                
+                // 检查管理员权限
+                checkAdminPermission();
+                
+                log('界面已更新');
+            } catch (error) {
+                showError(`更新UI时出错: ${error.message}`);
+            }
+        }
+        
+        // 检查管理员权限函数
+        function checkAdminPermission() {
+            try {
+                // 获取所有管理员专属元素
+                const adminElements = document.querySelectorAll('.admin-only');
+                
+                // 检查当前用户是否有管理员权限
+                let isAdmin = false;
+                
+                if (traceAuth.isAuthenticated()) {
+                    isAdmin = traceAuth.hasPermission('admin.system');
+                }
+                
+                log(`管理员权限检查: ${isAdmin ? '有权限' : '无权限'}`);
+                
+                // 根据权限控制元素可见性
+                adminElements.forEach(element => {
+                    if (isAdmin) {
+                        element.classList.remove('hidden');
+                        element.style.opacity = '1';
+                    } else {
+                        element.classList.add('hidden');
+                        element.style.opacity = '0.3';
+                    }
+                });
+            } catch (error) {
+                showError(`权限检查时出错: ${error.message}`);
+            }
+        }
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成');
+            
+            try {
+                // 检查traceAuth是否可用
+                if (typeof traceAuth === 'undefined') {
+                    showError('traceAuth 对象未定义，请检查 trace-auth.js 是否正确加载');
+                    return;
+                }
+                
+                log('traceAuth 已加载');
+                
+                // 初始化界面
+                updateUI();
+                
+                // 绑定按钮事件
+                document.getElementById('loginBtn').addEventListener('click', function() {
+                    try {
+                        const loginResult = traceAuth.login({
+                            id: '001',
+                            name: '张三',
+                            role: '系统管理员',
+                            permissions: ['admin', 'admin.system', 'trace.view']
+                        });
+                        
+                        log(`管理员登录${loginResult ? '成功' : '失败'}`);
+                        updateUI();
+                    } catch (error) {
+                        showError(`登录时出错: ${error.message}`);
+                    }
+                });
+                
+                document.getElementById('loginUserBtn').addEventListener('click', function() {
+                    try {
+                        const loginResult = traceAuth.login({
+                            id: '002',
+                            name: '李四',
+                            role: '普通用户',
+                            permissions: ['trace.view']
+                        });
+                        
+                        log(`普通用户登录${loginResult ? '成功' : '失败'}`);
+                        updateUI();
+                    } catch (error) {
+                        showError(`登录时出错: ${error.message}`);
+                    }
+                });
+                
+                document.getElementById('logoutBtn').addEventListener('click', function() {
+                    try {
+                        const logoutResult = traceAuth.logout();
+                        log(`退出登录${logoutResult ? '成功' : '失败'}`);
+                        updateUI();
+                    } catch (error) {
+                        showError(`退出登录时出错: ${error.message}`);
+                    }
+                });
+                
+                document.getElementById('checkPermissionBtn').addEventListener('click', function() {
+                    try {
+                        const hasAdminPermission = traceAuth.hasPermission('admin.system');
+                        log(`管理员权限检查结果: ${hasAdminPermission ? '有权限' : '无权限'}`);
+                        alert(`当前用户${hasAdminPermission ? '有' : '没有'}管理员权限`);
+                    } catch (error) {
+                        showError(`检查权限时出错: ${error.message}`);
+                    }
+                });
+                
+            } catch (error) {
+                showError(`初始化时出错: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html> 

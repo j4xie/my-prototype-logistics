@@ -17,9 +17,11 @@ async function run() {
   console.log('启动资源加载验证...');
   console.log('使用配置:', JSON.stringify(config, null, 2));
   
+  let browser;
+  
   try {
     console.log('正在启动浏览器...');
-    const browser = await chromium.launch({
+    browser = await chromium.launch({
       headless: false
     });
     console.log('浏览器启动成功');
@@ -80,8 +82,25 @@ async function run() {
     fs.writeFileSync(config.reportPath, JSON.stringify(report, null, 2));
     
     return report;
+  } catch (error) {
+    console.error('资源加载验证失败:', error);
+    
+    // 生成错误报告
+    const errorReport = {
+      timestamp: new Date().toISOString(),
+      status: 'error',
+      errorMessage: error.message,
+      errorStack: error.stack
+    };
+    
+    fs.writeFileSync(config.reportPath, JSON.stringify(errorReport, null, 2));
+    
+    return errorReport;
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close();
+      console.log('浏览器已关闭');
+    }
   }
 }
 

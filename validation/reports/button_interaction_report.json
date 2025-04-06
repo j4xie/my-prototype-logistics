@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-04-03T22:12:10.104Z",
+  "timestamp": "2025-04-06T00:39:07.301Z",
   "baseUrl": "http://localhost:8080",
   "results": [
     {
@@ -10,11 +10,11 @@
       "buttons": [
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-map-html-1743718272166-1-6435",
+            "id": "trace-btn-pages-trace-trace-map-html-1743899873940-1-211",
             "text": "全部产品",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272166-1-6435\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743899873940-1-211\"]",
             "disabled": false,
             "rect": {
               "x": 16,
@@ -39,11 +39,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-map-html-1743718272167-2-2050",
+            "id": "trace-btn-pages-trace-trace-map-html-1743899873941-2-131",
             "text": "和牛肉",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272167-2-2050\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743899873941-2-131\"]",
             "disabled": false,
             "rect": {
               "x": 112,
@@ -68,11 +68,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-map-html-1743718272167-3-6963",
+            "id": "trace-btn-pages-trace-trace-map-html-1743899873941-3-7564",
             "text": "大闸蟹",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272167-3-6963\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743899873941-3-7564\"]",
             "disabled": false,
             "rect": {
               "x": 196,
@@ -97,11 +97,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-map-html-1743718272167-4-7877",
+            "id": "trace-btn-pages-trace-trace-map-html-1743899873942-4-7583",
             "text": "猕猴桃",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272167-4-7877\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743899873942-4-7583\"]",
             "disabled": false,
             "rect": {
               "x": 280,
@@ -126,11 +126,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-map-html-1743718272168-5-137",
+            "id": "trace-btn-pages-trace-trace-map-html-1743899873942-5-405",
             "text": "葡萄酒",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1 border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-5-137\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743899873942-5-405\"]",
             "disabled": false,
             "rect": {
               "x": 364,
@@ -155,11 +155,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-map-html-1743718272168-6-6049",
+            "id": "trace-btn-pages-trace-trace-map-html-1743899873942-6-730",
             "text": "",
             "tagName": "BUTTON",
             "classes": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-6-6049\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743899873942-6-730\"]",
             "disabled": false,
             "rect": {
               "x": 1176,
@@ -184,11 +184,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-map-html-1743718272168-7-8920",
+            "id": "trace-btn-pages-trace-trace-map-html-1743899873942-7-2149",
             "text": "",
             "tagName": "BUTTON",
             "classes": "bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center text-gray-600 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-7-8920\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743899873942-7-2149\"]",
             "disabled": false,
             "rect": {
               "x": 1216,
@@ -213,11 +213,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-map-html-1743718272168-8-8480",
+            "id": "trace-btn-pages-trace-trace-map-html-1743899873943-8-7608",
             "text": "查看详情",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-8-8480\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743899873943-8-7608\"]",
             "disabled": false,
             "rect": {
               "x": 16,
@@ -242,11 +242,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-map-html-1743718272168-9-756",
+            "id": "trace-btn-pages-trace-trace-map-html-1743899873943-9-3386",
             "text": "查看详情",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743718272168-9-756\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-map-html-1743899873943-9-3386\"]",
             "disabled": false,
             "rect": {
               "x": 16,
@@ -271,7 +271,7 @@
         },
         {
           "button": {
-            "id": "button-9-1743718272901",
+            "id": "button-9-1743899874766",
             "text": "",
             "tagName": "A",
             "classes": "w-10 h-10 rounded-full flex items-center justify-center",
@@ -296,8 +296,8 @@
               "urlChanged": true,
               "newUrl": "http://localhost:8080/pages/trace/trace-map.html#"
             },
-            "beforeScreenshot": "_pages_trace_trace-map.html_button_button-9-1743718272901_before.png",
-            "afterScreenshot": "_pages_trace_trace-map.html_button_button-9-1743718272901_after.png"
+            "beforeScreenshot": "_pages_trace_trace-map.html_button_button-9-1743899874766_before.png",
+            "afterScreenshot": "_pages_trace_trace-map.html_button_button-9-1743899874766_after.png"
           }
         }
       ],
@@ -312,15 +312,108 @@
       "buttons": [
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279503-1-8922",
+            "id": "nav-back-button",
+            "text": "",
+            "tagName": "BUTTON",
+            "classes": "trace-top-nav-back trace-button-hover trace-button-active trace-button-focus",
+            "xpath": "//*[@id=\"nav-back-button\"]",
+            "disabled": false,
+            "rect": {
+              "x": 56,
+              "y": 10,
+              "width": 36,
+              "height": 36
+            },
+            "attributes": {
+              "href": null,
+              "onclick": null,
+              "role": null,
+              "type": null
+            }
+          },
+          "interactionResult": {
+            "success": true,
+            "response": {
+              "urlChanged": true,
+              "newUrl": "http://localhost:8080/pages/trace/trace-map.html#"
+            },
+            "beforeScreenshot": "_pages_trace_trace-list.html_button_nav-back-button_before.png",
+            "afterScreenshot": "_pages_trace_trace-list.html_button_nav-back-button_after.png"
+          }
+        },
+        {
+          "button": {
+            "id": "nav-search-button",
+            "text": "",
+            "tagName": "BUTTON",
+            "classes": "trace-top-nav-button trace-button-hover trace-button-active trace-button-focus",
+            "xpath": "//*[@id=\"nav-search-button\"]",
+            "disabled": false,
+            "rect": {
+              "x": 1144,
+              "y": 10,
+              "width": 36,
+              "height": 36
+            },
+            "attributes": {
+              "href": null,
+              "onclick": null,
+              "role": null,
+              "type": null
+            }
+          },
+          "interactionResult": {
+            "success": true,
+            "response": {
+              "urlChanged": false,
+              "newUrl": null
+            },
+            "beforeScreenshot": "_pages_trace_trace-list.html_button_nav-search-button_before.png",
+            "afterScreenshot": "_pages_trace_trace-list.html_button_nav-search-button_after.png"
+          }
+        },
+        {
+          "button": {
+            "id": "nav-more-button",
+            "text": "",
+            "tagName": "BUTTON",
+            "classes": "trace-top-nav-button trace-button-hover trace-button-active trace-button-focus",
+            "xpath": "//*[@id=\"nav-more-button\"]",
+            "disabled": false,
+            "rect": {
+              "x": 1188,
+              "y": 10,
+              "width": 36,
+              "height": 36
+            },
+            "attributes": {
+              "href": null,
+              "onclick": null,
+              "role": null,
+              "type": null
+            }
+          },
+          "interactionResult": {
+            "success": true,
+            "response": {
+              "urlChanged": false,
+              "newUrl": null
+            },
+            "beforeScreenshot": "_pages_trace_trace-list.html_button_nav-more-button_before.png",
+            "afterScreenshot": "_pages_trace_trace-list.html_button_nav-more-button_after.png"
+          }
+        },
+        {
+          "button": {
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881548-1-3856",
             "text": "今日",
             "tagName": "BUTTON",
             "classes": "bg-blue-50 text-[#00467F] rounded px-3 py-1 text-xs border border-blue-100 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279503-1-8922\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881548-1-3856\"]",
             "disabled": false,
             "rect": {
               "x": 1074.59375,
-              "y": 126,
+              "y": 182,
               "width": 50,
               "height": 26
             },
@@ -341,15 +434,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279503-2-261",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881548-2-4172",
             "text": "近7天",
             "tagName": "BUTTON",
             "classes": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279503-2-261\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881548-2-4172\"]",
             "disabled": false,
             "rect": {
               "x": 1132.59375,
-              "y": 126,
+              "y": 182,
               "width": 56.46875,
               "height": 26
             },
@@ -370,15 +463,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279503-3-5592",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881548-3-4789",
             "text": "近30天",
             "tagName": "BUTTON",
             "classes": "bg-white text-gray-600 rounded px-3 py-1 text-xs border border-gray-200 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279503-3-5592\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881548-3-4789\"]",
             "disabled": false,
             "rect": {
               "x": 1197.0625,
-              "y": 126,
+              "y": 182,
               "width": 62.9375,
               "height": 26
             },
@@ -399,15 +492,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279503-4-5598",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881549-4-1509",
             "text": "全部",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-[#00467F] text-white rounded-full text-sm px-4 py-1.5 shadow-sm trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279503-4-5598\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881549-4-1509\"]",
             "disabled": false,
             "rect": {
               "x": 20,
-              "y": 176,
+              "y": 232,
               "width": 60,
               "height": 34
             },
@@ -428,15 +521,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279504-5-6715",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881549-5-5562",
             "text": "已完成",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279504-5-6715\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881549-5-5562\"]",
             "disabled": false,
             "rect": {
               "x": 88,
-              "y": 176,
+              "y": 232,
               "width": 95.84375,
               "height": 34
             },
@@ -457,15 +550,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279504-6-3124",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881549-6-3527",
             "text": "待审核",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279504-6-3124\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881549-6-3527\"]",
             "disabled": false,
             "rect": {
               "x": 191.84375,
-              "y": 176,
+              "y": 232,
               "width": 95.84375,
               "height": 34
             },
@@ -486,15 +579,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279504-7-2168",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881549-7-3268",
             "text": "异常",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279504-7-2168\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881549-7-3268\"]",
             "disabled": false,
             "rect": {
               "x": 295.6875,
-              "y": 176,
+              "y": 232,
               "width": 81.84375,
               "height": 34
             },
@@ -515,15 +608,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279504-8-7999",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881550-8-845",
             "text": "草稿",
             "tagName": "BUTTON",
             "classes": "flex-shrink-0 bg-white text-gray-600 rounded-full text-sm px-4 py-1.5 border border-gray-200 shadow-sm trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279504-8-7999\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881550-8-845\"]",
             "disabled": false,
             "rect": {
               "x": 385.53125,
-              "y": 176,
+              "y": 232,
               "width": 81.84375,
               "height": 34
             },
@@ -544,15 +637,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279505-9-472",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881550-9-9247",
             "text": "二维码",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279505-9-472\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881550-9-9247\"]",
             "disabled": false,
             "rect": {
               "x": 20,
-              "y": 514,
+              "y": 570,
               "width": 84.25,
               "height": 32
             },
@@ -573,15 +666,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279506-11-91",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881551-11-2692",
             "text": "二维码",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279506-11-91\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881551-11-2692\"]",
             "disabled": false,
             "rect": {
               "x": 20,
-              "y": 683,
+              "y": 739,
               "width": 84.25,
               "height": 32
             },
@@ -602,15 +695,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279506-13-9313",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881552-13-7131",
             "text": "二维码",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279506-13-9313\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881552-13-7131\"]",
             "disabled": false,
             "rect": {
               "x": 20,
-              "y": 902,
+              "y": 958,
               "width": 84.25,
               "height": 32
             },
@@ -631,15 +724,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279507-15-7280",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881553-15-7348",
             "text": "二维码",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1.5 px-3 mr-2 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279507-15-7280\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881553-15-7348\"]",
             "disabled": false,
             "rect": {
               "x": 20,
-              "y": 1071,
+              "y": 1127,
               "width": 84.25,
               "height": 32
             },
@@ -660,15 +753,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279507-17-5190",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881554-17-5047",
             "text": "上一页",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1.5 px-4 flex items-center trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279507-17-5190\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881554-17-5047\"]",
             "disabled": false,
             "rect": {
               "x": 20,
-              "y": 1139,
+              "y": 1195,
               "width": 82.75,
               "height": 32
             },
@@ -689,15 +782,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279507-18-2672",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881554-18-1274",
             "text": "下一页",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-primary text-xs py-1.5 px-4 flex items-center trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279507-18-2672\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881554-18-1274\"]",
             "disabled": false,
             "rect": {
               "x": 1179.234375,
-              "y": 1139,
+              "y": 1195,
               "width": 80.75,
               "height": 32
             },
@@ -718,15 +811,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279505-10-8395",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881550-10-4994",
             "text": "查看详情",
             "tagName": "A",
             "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279505-10-8395\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881550-10-4994\"]",
             "disabled": false,
             "rect": {
               "x": 108.09375,
-              "y": 514,
+              "y": 570,
               "width": 99.75,
               "height": 32
             },
@@ -747,15 +840,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279506-12-7134",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881551-12-5642",
             "text": "查看详情",
             "tagName": "A",
             "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279506-12-7134\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881551-12-5642\"]",
             "disabled": false,
             "rect": {
               "x": 108.09375,
-              "y": 683,
+              "y": 739,
               "width": 99.75,
               "height": 32
             },
@@ -776,15 +869,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279506-14-4617",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881552-14-4193",
             "text": "查看详情",
             "tagName": "A",
             "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279506-14-4617\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881552-14-4193\"]",
             "disabled": false,
             "rect": {
               "x": 108.09375,
-              "y": 902,
+              "y": 958,
               "width": 99.75,
               "height": 32
             },
@@ -805,15 +898,15 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-list-html-1743718279507-16-3639",
+            "id": "trace-btn-pages-trace-trace-list-html-1743899881553-16-2320",
             "text": "查看详情",
             "tagName": "A",
             "classes": "trace-button trace-button-primary text-xs py-1.5 px-3 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743718279507-16-3639\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-list-html-1743899881553-16-2320\"]",
             "disabled": false,
             "rect": {
               "x": 108.09375,
-              "y": 1071,
+              "y": 1127,
               "width": 99.75,
               "height": 32
             },
@@ -834,7 +927,7 @@
         },
         {
           "button": {
-            "id": "button-18-1743718280219",
+            "id": "button-21-1743899882297",
             "text": "",
             "tagName": "A",
             "classes": "w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all",
@@ -842,7 +935,7 @@
             "disabled": false,
             "rect": {
               "x": 0,
-              "y": 21,
+              "y": 77,
               "width": 40,
               "height": 40
             },
@@ -859,13 +952,13 @@
               "urlChanged": true,
               "newUrl": "http://localhost:8080/pages/trace/trace-list.html#"
             },
-            "beforeScreenshot": "_pages_trace_trace-list.html_button_button-18-1743718280219_before.png",
-            "afterScreenshot": "_pages_trace_trace-list.html_button_button-18-1743718280219_after.png"
+            "beforeScreenshot": "_pages_trace_trace-list.html_button_button-21-1743899882297_before.png",
+            "afterScreenshot": "_pages_trace_trace-list.html_button_button-21-1743899882297_after.png"
           }
         },
         {
           "button": {
-            "id": "button-19-1743718280219",
+            "id": "button-22-1743899882297",
             "text": "",
             "tagName": "A",
             "classes": "w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all ml-1",
@@ -873,7 +966,7 @@
             "disabled": false,
             "rect": {
               "x": 44,
-              "y": 21,
+              "y": 77,
               "width": 40,
               "height": 40
             },
@@ -890,8 +983,8 @@
               "urlChanged": true,
               "newUrl": "http://localhost:8080/pages/trace/trace-list.html#"
             },
-            "beforeScreenshot": "_pages_trace_trace-list.html_button_button-19-1743718280219_before.png",
-            "afterScreenshot": "_pages_trace_trace-list.html_button_button-19-1743718280219_after.png"
+            "beforeScreenshot": "_pages_trace_trace-list.html_button_button-22-1743899882297_before.png",
+            "afterScreenshot": "_pages_trace_trace-list.html_button_button-22-1743899882297_after.png"
           }
         }
       ],
@@ -906,11 +999,11 @@
       "buttons": [
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293444-1-5062",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902444-1-5348",
             "text": "基本信息",
             "tagName": "BUTTON",
             "classes": "tab-button active trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293444-1-5062\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902444-1-5348\"]",
             "disabled": false,
             "rect": {
               "x": 0,
@@ -935,11 +1028,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293444-2-1053",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902445-2-3788",
             "text": "溯源流程",
             "tagName": "BUTTON",
             "classes": "tab-button trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293444-2-1053\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902445-2-3788\"]",
             "disabled": false,
             "rect": {
               "x": 81.6875,
@@ -964,11 +1057,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293444-3-5479",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902445-3-8800",
             "text": "证书与检测",
             "tagName": "BUTTON",
             "classes": "tab-button trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293444-3-5479\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902445-3-8800\"]",
             "disabled": false,
             "rect": {
               "x": 165.125,
@@ -993,11 +1086,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293445-4-8162",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902445-4-7227",
             "text": "查看照片(3)",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1 image-view-link trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293445-4-8162\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902445-4-7227\"]",
             "disabled": false,
             "rect": {
               "x": 16,
@@ -1022,11 +1115,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293445-5-7639",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902446-5-3843",
             "text": "查看照片(2)",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1 image-view-link trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293445-5-7639\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902446-5-3843\"]",
             "disabled": false,
             "rect": {
               "x": 16,
@@ -1051,11 +1144,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293445-6-1728",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902446-6-6400",
             "text": "查看检测报告",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293445-6-1728\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902446-6-6400\"]",
             "disabled": false,
             "rect": {
               "x": 16,
@@ -1080,11 +1173,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293445-7-6915",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902447-7-5291",
             "text": "查看温度记录",
             "tagName": "BUTTON",
             "classes": "trace-button trace-button-secondary text-xs py-1 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293445-7-6915\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902447-7-5291\"]",
             "disabled": false,
             "rect": {
               "x": 16,
@@ -1140,11 +1233,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293447-11-4014",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902448-11-5741",
             "text": "高对比度",
             "tagName": "BUTTON",
             "classes": "contrast-toggle trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293447-11-4014\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902448-11-5741\"]",
             "disabled": false,
             "rect": {
               "x": 0,
@@ -1169,11 +1262,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293446-8-4407",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902447-8-1308",
             "text": "查看完整证书",
             "tagName": "A",
             "classes": "trace-button trace-button-primary w-full text-center py-2 trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293446-8-4407\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902447-8-1308\"]",
             "disabled": false,
             "rect": {
               "x": 32,
@@ -1198,11 +1291,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293446-9-7722",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902447-9-997",
             "text": "查看追溯码",
             "tagName": "A",
             "classes": "trace-button trace-button-secondary flex items-center justify-center trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293446-9-7722\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902447-9-997\"]",
             "disabled": false,
             "rect": {
               "x": 0,
@@ -1227,11 +1320,11 @@
         },
         {
           "button": {
-            "id": "trace-btn-pages-trace-trace-detail-html-1743718293446-10-3051",
+            "id": "trace-btn-pages-trace-trace-detail-html-1743899902448-10-2837",
             "text": "查看溯源证书",
             "tagName": "A",
             "classes": "trace-button trace-button-primary flex items-center justify-center trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743718293446-10-3051\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-trace-trace-detail-html-1743899902448-10-2837\"]",
             "disabled": false,
             "rect": {
               "x": 646,
@@ -1256,7 +1349,7 @@
         },
         {
           "button": {
-            "id": "button-12-1743718294243",
+            "id": "button-12-1743899903283",
             "text": "",
             "tagName": "A",
             "classes": "w-10 h-10 rounded-full flex items-center justify-center",
@@ -1281,13 +1374,13 @@
               "urlChanged": true,
               "newUrl": "http://localhost:8080/pages/trace/trace-detail.html#"
             },
-            "beforeScreenshot": "_pages_trace_trace-detail.html_button_button-12-1743718294243_before.png",
-            "afterScreenshot": "_pages_trace_trace-detail.html_button_button-12-1743718294243_after.png"
+            "beforeScreenshot": "_pages_trace_trace-detail.html_button_button-12-1743899903283_before.png",
+            "afterScreenshot": "_pages_trace_trace-detail.html_button_button-12-1743899903283_after.png"
           }
         },
         {
           "button": {
-            "id": "button-13-1743718294243",
+            "id": "button-13-1743899903283",
             "text": "",
             "tagName": "A",
             "classes": "w-10 h-10 rounded-full flex items-center justify-center",
@@ -1312,8 +1405,8 @@
               "urlChanged": true,
               "newUrl": "http://localhost:8080/pages/trace/trace-detail.html#"
             },
-            "beforeScreenshot": "_pages_trace_trace-detail.html_button_button-13-1743718294243_before.png",
-            "afterScreenshot": "_pages_trace_trace-detail.html_button_button-13-1743718294243_after.png"
+            "beforeScreenshot": "_pages_trace_trace-detail.html_button_button-13-1743899903283_before.png",
+            "afterScreenshot": "_pages_trace_trace-detail.html_button_button-13-1743899903283_after.png"
           }
         }
       ],
@@ -1328,15 +1421,108 @@
       "buttons": [
         {
           "button": {
-            "id": "trace-btn-pages-home-home-selector-html-1743718305919-1-5252",
+            "id": "nav-back-button",
+            "text": "",
+            "tagName": "BUTTON",
+            "classes": "trace-top-nav-back trace-button-hover trace-button-active trace-button-focus",
+            "xpath": "//*[@id=\"nav-back-button\"]",
+            "disabled": false,
+            "rect": {
+              "x": 56,
+              "y": 10,
+              "width": 36,
+              "height": 36
+            },
+            "attributes": {
+              "href": null,
+              "onclick": null,
+              "role": null,
+              "type": null
+            }
+          },
+          "interactionResult": {
+            "success": true,
+            "response": {
+              "urlChanged": false,
+              "newUrl": null
+            },
+            "beforeScreenshot": "_pages_home_home-selector.html_button_nav-back-button_before.png",
+            "afterScreenshot": "_pages_home_home-selector.html_button_nav-back-button_after.png"
+          }
+        },
+        {
+          "button": {
+            "id": "nav-search-button",
+            "text": "",
+            "tagName": "BUTTON",
+            "classes": "trace-top-nav-button trace-button-hover trace-button-active trace-button-focus",
+            "xpath": "//*[@id=\"nav-search-button\"]",
+            "disabled": false,
+            "rect": {
+              "x": 1144,
+              "y": 10,
+              "width": 36,
+              "height": 36
+            },
+            "attributes": {
+              "href": null,
+              "onclick": null,
+              "role": null,
+              "type": null
+            }
+          },
+          "interactionResult": {
+            "success": true,
+            "response": {
+              "urlChanged": false,
+              "newUrl": null
+            },
+            "beforeScreenshot": "_pages_home_home-selector.html_button_nav-search-button_before.png",
+            "afterScreenshot": "_pages_home_home-selector.html_button_nav-search-button_after.png"
+          }
+        },
+        {
+          "button": {
+            "id": "nav-more-button",
+            "text": "",
+            "tagName": "BUTTON",
+            "classes": "trace-top-nav-button trace-button-hover trace-button-active trace-button-focus",
+            "xpath": "//*[@id=\"nav-more-button\"]",
+            "disabled": false,
+            "rect": {
+              "x": 1188,
+              "y": 10,
+              "width": 36,
+              "height": 36
+            },
+            "attributes": {
+              "href": null,
+              "onclick": null,
+              "role": null,
+              "type": null
+            }
+          },
+          "interactionResult": {
+            "success": true,
+            "response": {
+              "urlChanged": false,
+              "newUrl": null
+            },
+            "beforeScreenshot": "_pages_home_home-selector.html_button_nav-more-button_before.png",
+            "afterScreenshot": "_pages_home_home-selector.html_button_nav-more-button_after.png"
+          }
+        },
+        {
+          "button": {
+            "id": "trace-btn-pages-home-home-selector-html-1743899915177-1-8047",
             "text": "个人中心",
             "tagName": "A",
             "classes": "btn-secondary px-3 py-1 text-xs trace-button-hover trace-button-active trace-button-focus",
-            "xpath": "//*[@id=\"trace-btn-pages-home-home-selector-html-1743718305919-1-5252\"]",
+            "xpath": "//*[@id=\"trace-btn-pages-home-home-selector-html-1743899915177-1-8047\"]",
             "disabled": false,
             "rect": {
               "x": 729,
-              "y": 107.5,
+              "y": 163.5,
               "width": 74,
               "height": 26
             },
@@ -1365,7 +1551,7 @@
             "disabled": false,
             "rect": {
               "x": 461,
-              "y": 388,
+              "y": 444,
               "width": 171,
               "height": 147
             },
@@ -1396,7 +1582,7 @@
             "disabled": false,
             "rect": {
               "x": 648,
-              "y": 388,
+              "y": 444,
               "width": 171,
               "height": 147
             },
@@ -1427,7 +1613,7 @@
             "disabled": false,
             "rect": {
               "x": 461,
-              "y": 551,
+              "y": 607,
               "width": 171,
               "height": 147
             },
@@ -1442,7 +1628,7 @@
             "success": true,
             "response": {
               "urlChanged": true,
-              "newUrl": "http://localhost:8080/pages/home/home-logistics.html"
+              "newUrl": "http://localhost:8080/pages/home/home-farming.html"
             },
             "beforeScreenshot": "_pages_home_home-selector.html_button_logisticsModule_before.png",
             "afterScreenshot": "_pages_home_home-selector.html_button_logisticsModule_after.png"
@@ -1458,7 +1644,7 @@
             "disabled": false,
             "rect": {
               "x": 648,
-              "y": 551,
+              "y": 607,
               "width": 171,
               "height": 147
             },
@@ -1473,7 +1659,7 @@
             "success": true,
             "response": {
               "urlChanged": true,
-              "newUrl": "http://localhost:8080/pages/trace/trace-query.html"
+              "newUrl": "http://localhost:8080/pages/farming/data-collection-center.html"
             },
             "beforeScreenshot": "_pages_home_home-selector.html_button_traceModule_before.png",
             "afterScreenshot": "_pages_home_home-selector.html_button_traceModule_after.png"
@@ -1489,7 +1675,7 @@
             "disabled": false,
             "rect": {
               "x": 461,
-              "y": 775,
+              "y": 831,
               "width": 171,
               "height": 131
             },
@@ -1520,7 +1706,7 @@
             "disabled": false,
             "rect": {
               "x": 648,
-              "y": 775,
+              "y": 831,
               "width": 171,
               "height": 131
             },
@@ -1693,7 +1879,7 @@
   "status": "success",
   "summary": {
     "totalPages": 6,
-    "totalButtons": 55,
+    "totalButtons": 61,
     "errorPages": 0,
     "interactionErrors": 39
   }

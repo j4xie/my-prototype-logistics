@@ -580,4 +580,9 @@ function generateHtmlReport(data) {
 validateButtonImprovements().catch(error => {
   console.error('执行验证脚本时出错:', error);
   process.exit(1);
-}); 
+});
+
+// 导出run函数，供其他脚本调用
+module.exports = {
+  run: validateButtonImprovements
+}; 

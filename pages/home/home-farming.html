@@ -7,6 +7,8 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="../../assets/styles.css">
+    <!-- 添加Chart.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <style>
         /* 设计系统变量 */
         :root {
@@ -640,6 +642,40 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- 数据趋势预测 (新增) -->
+                <div class="card mb-5">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-chart-area text-primary mr-2"></i>
+                            数据趋势预测
+                        </h2>
+                        <a href="../farming/prediction-analytics.html" class="text-primary text-sm" aria-label="数据趋势预测详情" tabindex="0">详情 <i class="fas fa-chevron-right text-xs"></i></a>
+                    </div>
+                    <div class="p-3">
+                        <!-- 预测趋势简要信息 -->
+                        <div class="p-3 bg-gray-50 rounded-lg mb-3">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm font-medium">饲料成本预测</span>
+                                <span class="text-xs text-red-500">↑ 5.2%</span>
+                            </div>
+                            <div class="h-12 w-full">
+                                <canvas id="costPredictionChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- 关键建议 -->
+                        <div class="flex items-start space-x-3">
+                            <div class="bg-orange-50 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-lightbulb text-orange-500 text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium">建议提前采购下季度饲料</h3>
+                                <p class="text-xs text-gray-500 mt-1">预计可节省约4.2%成本</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- 饲养趋势 -->
                 <div class="card mb-5">
@@ -695,16 +731,25 @@
     <!-- 通用JS文件 -->
     <script src="../../components/trace-common.js"></script>
     <script src="../../components/trace-nav.js"></script>
+    <script src="../../components/trace-prediction.js"></script>
     <script>
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', function() {
             initPage();
+            
+            // 加载底部导航
+            if (window.traceNav) {
+                traceNav.init('nav-container', 'home');
+            }
             
             // 绑定刷新按钮点击事件
             document.getElementById('refreshBtn').addEventListener('click', refreshData);
             
             // 检查权限并初始化按钮状态
             checkActionPermissions();
+            
+            // 初始化成本预测趋势图表
+            initCostPredictionChart();
             
             // 添加底部导航栏样式
             const navStyle = document.createElement('style');
@@ -837,6 +882,117 @@
                     lockIcon.className = 'fas fa-lock text-gray-400 absolute top-2 right-2 text-xs';
                     linkElement.style.position = 'relative';
                     linkElement.appendChild(lockIcon);
+                }
+            });
+        }
+
+        // 初始化成本预测趋势图表
+        function initCostPredictionChart() {
+            const ctx = document.getElementById('costPredictionChart').getContext('2d');
+            
+            // 如果存在预测模块，从模块获取预测数据
+            if (window.tracePrediction) {
+                // 获取预测数据
+                tracePrediction.getPrediction('cost', {
+                    batchId: 'B-2023-12',
+                    days: 5
+                }).then(prediction => {
+                    // 提取历史数据和预测数据
+                    const historicalData = prediction.historicalData.map(d => d.value);
+                    const predictionData = prediction.predictionData.map(d => d.value);
+                    
+                    // 创建图表
+                    createCostChart(ctx, historicalData, predictionData);
+                    
+                    // 更新趋势变化
+                    const trendElement = document.querySelector('.p-3.bg-gray-50 .flex.justify-between .text-xs');
+                    if (trendElement) {
+                        trendElement.textContent = `${prediction.trend === 'up' ? '↑' : (prediction.trend === 'down' ? '↓' : '→')} ${Math.abs(prediction.changePercent)}%`;
+                        trendElement.className = `text-xs ${prediction.trend === 'up' ? 'text-red-500' : (prediction.trend === 'down' ? 'text-green-500' : 'text-gray-400')}`;
+                    }
+                    
+                    // 更新建议内容
+                    if (prediction.recommendations && prediction.recommendations.length > 0) {
+                        const recommendation = prediction.recommendations[0];
+                        const titleElement = document.querySelector('.flex.items-start .text-sm.font-medium');
+                        const descElement = document.querySelector('.flex.items-start .text-xs.text-gray-500');
+                        
+                        if (titleElement) {
+                            titleElement.textContent = recommendation.title;
+                        }
+                        
+                        if (descElement) {
+                            descElement.textContent = recommendation.impact;
+                        }
+                    }
+                }).catch(error => {
+                    console.error('获取预测数据失败:', error);
+                    // 使用默认数据作为回退
+                    const historicalData = [11.5, 11.7, 11.9, 12.1, 12.3];
+                    const predictionData = [12.6, 12.8, 13.0, 13.2, 13.5];
+                    createCostChart(ctx, historicalData, predictionData);
+                });
+            } else {
+                // 使用默认数据
+                const historicalData = [11.5, 11.7, 11.9, 12.1, 12.3];
+                const predictionData = [12.6, 12.8, 13.0, 13.2, 13.5];
+                createCostChart(ctx, historicalData, predictionData);
+            }
+        }
+        
+        // 创建成本图表
+        function createCostChart(ctx, historicalData, predictionData) {
+            // 创建图表
+            const costChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['', '', '', '', '', '', '', '', '', ''],
+                    datasets: [
+                        {
+                            label: '历史数据',
+                            data: [...historicalData, null, null, null, null, null],
+                            borderColor: '#333333',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            tension: 0.4
+                        },
+                        {
+                            label: '预测数据',
+                            data: [null, null, null, null, historicalData[historicalData.length - 1], ...predictionData],
+                            borderColor: '#1890FF',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            tension: 0.4,
+                            borderDash: [3, 3]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false,
+                            min: Math.min(...historicalData) * 0.95,
+                            max: Math.max(...predictionData) * 1.05
+                        }
+                    },
+                    elements: {
+                        line: {
+                            tension: 0.4
+                        }
+                    }
                 }
             });
         }
