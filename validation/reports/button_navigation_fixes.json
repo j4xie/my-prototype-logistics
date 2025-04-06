@@ -1,0 +1,32 @@
+{
+  "timestamp": "2025-04-06T05:06:10.909Z",
+  "totalFiles": 6,
+  "fixedFiles": 2,
+  "fixedButtons": 0,
+  "addedButtons": 1,
+  "jsFixesAdded": 1,
+  "details": [
+    {
+      "file": "pages/admin/admin-system.html",
+      "fixes": [
+        {
+          "button": "新增按钮",
+          "selector": ".menu-item:contains(\"返回\")",
+          "template": "<a class=\"menu-item\" href=\"../../pages/home/home-selector.html\" data-target=\"home\"><i class=\"fas fa-arrow-left\"></i> 返回</a>",
+          "added": true
+        }
+      ]
+    },
+    {
+      "file": "pages/farming/farming-monitor.html",
+      "fixes": [
+        {
+          "type": "javascript",
+          "additions": [
+            "document.addEventListener('DOMContentLoaded', function() {\n          // 获取所有操作容器\n          const actionContainers = document.querySelectorAll('.monitoring-card, .control-panel, .data-container');\n          \n          // 为每个容器添加点击事件委托\n          actionContainers.forEach(container => {\n            container.addEventListener('click', function(e) {\n              // 检查点击的是否是按钮或其子元素\n              let target = e.target;\n              let buttonFound = false;\n              \n              // 向上查找最近的按钮\n              while (target !== container && !buttonFound) {\n                if (\n                  target.tagName === 'BUTTON' || \n                  target.classList.contains('btn') ||\n                  target.classList.contains('action-btn') ||\n                  target.classList.contains('control-btn') ||\n                  target.hasAttribute('role') && target.getAttribute('role') === 'button'\n                ) {\n                  buttonFound = true;\n                  \n                  // 如果按钮是隐藏的或被阻止点击\n                  const rect = target.getBoundingClientRect();\n                  const isOffscreen = (rect.bottom < 0 || rect.top > window.innerHeight);\n                  \n                  // 如果按钮有href属性，模拟导航\n                  if (target.hasAttribute('href')) {\n                    window.location.href = target.getAttribute('href');\n                    e.preventDefault();\n                  }\n                  \n                  // 如果按钮有onclick属性但被阻止了，手动执行\n                  if (target.hasAttribute('onclick') && (target.style.pointerEvents === 'none' || isOffscreen)) {\n                    const onclickCode = target.getAttribute('onclick');\n                    try {\n                      eval(onclickCode);\n                      e.preventDefault();\n                    } catch(err) {\n                      console.error('执行按钮点击失败:', err);\n                    }\n                  }\n                  \n                  // 如果按钮有data-href属性，模拟导航\n                  if (target.hasAttribute('data-href')) {\n                    window.location.href = target.getAttribute('data-href');\n                    e.preventDefault();\n                  }\n                  \n                  // 如果按钮有data-action属性，触发自定义事件\n                  if (target.hasAttribute('data-action')) {\n                    const actionEvent = new CustomEvent('trace-action', {\n                      detail: { action: target.getAttribute('data-action'), element: target }\n                    });\n                    document.dispatchEvent(actionEvent);\n                    e.preventDefault();\n                  }\n                }\n                \n                target = target.parentElement;\n                if (!target) break;\n              }\n            }, true); // 使用捕获模式，确保这个处理程序最先运行\n          });\n          \n          // 特别处理 \"查看历史\" 和 \"调整投喂量\" 按钮\n          const specialButtons = [\n            { selector: 'button:contains(\"查看历史\")', action: function() { \n              console.log('触发查看历史功能');\n              // 通常是打开一个历史数据视图\n              window.openHistoryView && window.openHistoryView(); \n            }},\n            { selector: 'button:contains(\"调整投喂量\")', action: function() { \n              console.log('触发调整投喂量功能');\n              // 通常是打开调整饲料量的对话框\n              window.openFeedingAdjustment && window.openFeedingAdjustment(); \n            }}\n          ];\n          \n          // 通过DOM查找或创建这些按钮\n          specialButtons.forEach(btn => {\n            let button = document.querySelector(btn.selector);\n            if (!button) {\n              console.log('未找到按钮，尝试查找类似按钮');\n              // 尝试通过部分文本匹配查找\n              const allButtons = document.querySelectorAll('button');\n              for (const b of allButtons) {\n                if (b.textContent && b.textContent.includes(btn.selector.match(/:contains\\(\"(.+)\"\\)/)[1])) {\n                  button = b;\n                  break;\n                }\n              }\n            }\n            \n            if (button) {\n              // 确保按钮可见且可交互\n              button.style.zIndex = '100';\n              button.style.position = 'relative';\n              button.style.pointerEvents = 'auto';\n              \n              // 替换现有的点击处理程序\n              button.onclick = btn.action;\n              \n              console.log('已修复特殊按钮:', btn.selector);\n            } else {\n              console.log('找不到按钮，无法修复:', btn.selector);\n            }\n          });\n        });"
+          ]
+        }
+      ]
+    }
+  ]
+}

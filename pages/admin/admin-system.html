@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<!DOCTYPE html><html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>系统配置 - 食品溯源系统</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="../../assets/styles.css">
     <style>
         :root {
             --primary-color: #1677FF;
@@ -308,7 +306,7 @@
     <header class="app-header">
         <div class="header-container">
             <div class="flex items-center">
-                <a href="pages/home/home-selector.html" class="nav-icon mr-2">
+                <a href="javascript:void(0)" class="nav-icon mr-2" id="backButton">
                     <i class="fas fa-arrow-left"></i>
                 </a>
                 <h1 class="header-title">系统配置</h1>
@@ -347,7 +345,7 @@
             </a>
             
             <div class="menu-group">系统管理</div>
-            <a href="admin-system.html" class="menu-item active">
+            <a href="../../pages/admin/admin-settings.html" class="menu-item active" data-target="admin-settings">
                 <i class="fas fa-cogs"></i>
                 <span>系统设置</span>
             </a>
@@ -409,7 +407,7 @@
                             <div class="w-16 h-16 rounded bg-gray-200 flex items-center justify-center mr-4">
                                 <i class="fas fa-image text-gray-400 text-xl"></i>
                             </div>
-                            <button type="button" class="btn btn-default">
+                            <button type="button" class="btn btn-default hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-admin-admin-system-html-0-1743912419070" aria-label="上传Logo" tabindex="0">
                                 <i class="fas fa-upload"></i>
                                 上传Logo
                             </button>
@@ -419,7 +417,7 @@
                 </form>
             </div>
             <div class="card-footer">
-                <button type="button" class="btn btn-primary" id="saveBaseSettings">
+                <button type="button" class="btn btn-primary hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="saveBaseSettings" aria-label="保存设置" tabindex="0">
                     <i class="fas fa-save"></i>
                     保存设置
                 </button>
@@ -452,7 +450,7 @@
                                 <div class="text-sm text-gray-500">连续登录失败5次后锁定账号10分钟</div>
                             </div>
                             <label class="switch">
-                                <input type="checkbox" id="loginLock" checked>
+                                <input type="checkbox" id="loginLock" checked="">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -462,7 +460,7 @@
                         <label class="form-label" for="sessionTimeout">会话超时时间</label>
                         <select id="sessionTimeout" class="form-select">
                             <option value="30">30分钟</option>
-                            <option value="60" selected>1小时</option>
+                            <option value="60" selected="">1小时</option>
                             <option value="120">2小时</option>
                             <option value="240">4小时</option>
                             <option value="480">8小时</option>
@@ -474,14 +472,14 @@
                         <label class="form-label" for="passwordPolicy">密码策略</label>
                         <select id="passwordPolicy" class="form-select">
                             <option value="simple">简单 (最少6位字符)</option>
-                            <option value="medium" selected>中等 (最少8位，包含字母和数字)</option>
+                            <option value="medium" selected="">中等 (最少8位，包含字母和数字)</option>
                             <option value="strong">强 (最少10位，包含大小写字母、数字和特殊字符)</option>
                         </select>
                     </div>
                 </form>
             </div>
             <div class="card-footer">
-                <button type="button" class="btn btn-primary" id="saveSecuritySettings">
+                <button type="button" class="btn btn-primary hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="saveSecuritySettings" aria-label="保存设置" tabindex="0">
                     <i class="fas fa-save"></i>
                     保存设置
                 </button>
@@ -503,13 +501,13 @@
                                 <div class="text-sm text-gray-500">缓存频繁访问的数据以提高系统响应速度</div>
                             </div>
                             <label class="switch">
-                                <input type="checkbox" id="enableCache" checked>
+                                <input type="checkbox" id="enableCache" checked="">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         
                         <div class="mt-3">
-                            <button type="button" class="btn btn-default" id="clearCache">
+                            <button type="button" class="btn btn-default hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="clearCache" aria-label="清除缓存" tabindex="0">
                                 <i class="fas fa-broom"></i>
                                 清除缓存
                             </button>
@@ -522,7 +520,7 @@
                         <select id="dataRetention" class="form-select">
                             <option value="30">保留30天</option>
                             <option value="90">保留90天</option>
-                            <option value="180" selected>保留180天</option>
+                            <option value="180" selected="">保留180天</option>
                             <option value="365">保留1年</option>
                             <option value="0">永久保留</option>
                         </select>
@@ -545,7 +543,7 @@
                 </form>
             </div>
             <div class="card-footer">
-                <button type="button" class="btn btn-primary" id="saveOptimizationSettings">
+                <button type="button" class="btn btn-primary hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="saveOptimizationSettings" aria-label="保存设置" tabindex="0">
                     <i class="fas fa-save"></i>
                     保存设置
                 </button>
@@ -567,7 +565,7 @@
                                 <div class="text-sm text-gray-500">允许第三方系统通过API访问数据</div>
                             </div>
                             <label class="switch">
-                                <input type="checkbox" id="enableApi" checked>
+                                <input type="checkbox" id="enableApi" checked="">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -576,8 +574,8 @@
                     <div class="form-group">
                         <label class="form-label" for="apiKey">API密钥</label>
                         <div class="flex">
-                            <input type="text" id="apiKey" class="form-input rounded-r-none" value="sk_test_51K2MwJGjR8ZZZ" readonly>
-                            <button type="button" class="btn btn-default rounded-l-none border-l-0" id="regenerateApiKey">
+                            <input type="text" id="apiKey" class="form-input rounded-r-none" value="sk_test_51K2MwJGjR8ZZZ" readonly="">
+                            <button type="button" class="btn btn-default rounded-l-none border-l-0 hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="regenerateApiKey" aria-label="重新生成" tabindex="0">
                                 <i class="fas fa-sync-alt"></i>
                                 重新生成
                             </button>
@@ -593,7 +591,7 @@
                                 <div class="font-medium">微信公众号</div>
                                 <div class="text-sm text-gray-500">关联微信公众号以发送通知</div>
                             </div>
-                            <button type="button" class="btn btn-default btn-sm">配置</button>
+                            <button type="button" class="btn btn-default btn-sm hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-admin-admin-system-html-6-1743912419071" aria-label="配置" tabindex="0">配置</button>
                         </div>
                         
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md mt-3">
@@ -601,7 +599,7 @@
                                 <div class="font-medium">短信服务</div>
                                 <div class="text-sm text-gray-500">配置短信服务以发送验证码和通知</div>
                             </div>
-                            <button type="button" class="btn btn-default btn-sm">配置</button>
+                            <button type="button" class="btn btn-default btn-sm hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-admin-admin-system-html-7-1743912419071" aria-label="配置" tabindex="0">配置</button>
                         </div>
                         
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md mt-3">
@@ -609,13 +607,13 @@
                                 <div class="font-medium">邮件服务</div>
                                 <div class="text-sm text-gray-500">配置SMTP服务以发送邮件通知</div>
                             </div>
-                            <button type="button" class="btn btn-default btn-sm">配置</button>
+                            <button type="button" class="btn btn-default btn-sm hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-admin-admin-system-html-8-1743912419071" aria-label="配置" tabindex="0">配置</button>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="card-footer">
-                <button type="button" class="btn btn-primary" id="saveIntegrationSettings">
+                <button type="button" class="btn btn-primary hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="saveIntegrationSettings" aria-label="保存设置" tabindex="0">
                     <i class="fas fa-save"></i>
                     保存设置
                 </button>
@@ -623,10 +621,10 @@
         </div>
     </main>
 
-    <!-- 通用JS脚本 -->
-    <script src="components/trace-common.js"></script>
-    
-    <!-- 页面特定脚本 -->
+    <!-- 脚本引入 -->
+    <script src="../../components/trace-common.js"></script>
+    <script src="../../components/trace-nav.js"></script>
+    <script src="../../components/trace-auth.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // 初始化页面
@@ -649,32 +647,12 @@
                 saveSettings('integrationSettingsForm', '接口和集成');
             });
             
-            // 清除缓存按钮
-            document.getElementById('clearCache').addEventListener('click', function() {
-                traceUI.showLoading(this);
-                
-                // 模拟清除缓存操作
-                setTimeout(() => {
-                    traceUI.hideLoading(this);
-                    traceUI.showToast('缓存已清除', 'success');
-                }, 1500);
+            // 设置返回按钮
+            document.getElementById('backButton').addEventListener('click', function() {
+                handleBackNavigation();
             });
             
-            // 重新生成API密钥
-            document.getElementById('regenerateApiKey').addEventListener('click', function() {
-                if(confirm('确定要重新生成API密钥吗？这将使当前的密钥失效，需要更新所有使用API的应用。')) {
-                    traceUI.showLoading(this);
-                    
-                    // 模拟重新生成密钥操作
-                    setTimeout(() => {
-                        document.getElementById('apiKey').value = 'sk_test_' + Math.random().toString(36).substring(2, 15);
-                        traceUI.hideLoading(this);
-                        traceUI.showToast('API密钥已重新生成', 'success');
-                    }, 1000);
-                }
-            });
-            
-            // 菜单切换按钮
+            // 绑定移动端菜单切换
             document.getElementById('menuToggle').addEventListener('click', function() {
                 document.getElementById('adminSidebar').classList.toggle('active');
             });
@@ -701,59 +679,135 @@
          * 初始化页面
          */
         function initPage() {
-            // 检查权限
-            if(!traceAuth.hasPermission('admin.system')) {
-                // 无权限时重定向
-                window.location.href = 'home-selector.html?error=' + encodeURIComponent('您没有访问系统配置的权限');
-                return;
-            }
+            // 检查用户权限
+            checkUserPermission();
             
-            // 加载设置数据
-            loadSettings();
+            // 其他初始化逻辑...
         }
         
         /**
-         * 加载设置数据
+         * 处理返回导航
+         * 根据来源页面决定返回的地址
          */
-        function loadSettings() {
-            // 实际应用中应该从API获取设置数据
-            console.log('加载设置数据');
+        function handleBackNavigation() {
+            // 获取引用来源
+            const referrer = document.referrer;
             
-            // 这里使用模拟数据
+            // 如果是从个人中心设置页面来的
+            if (referrer.includes('/profile/settings.html')) {
+                window.location.href = '../profile/settings.html';
+            }
+            // 如果是从其他管理页面来的或无引用来源，返回到功能选择页
+            else {
+                window.location.href = '../home/home-selector.html';
+            }
+        }
+        
+        /**
+         * 检查用户权限
+         */
+        function checkUserPermission() {
+            // 从 localStorage 或 traceAuth 获取用户信息
+            let isAdmin = false;
+            
+            if (typeof traceAuth !== 'undefined' && traceAuth.isAuthenticated()) {
+                // 使用 traceAuth 检查权限
+                isAdmin = traceAuth.hasPermission('admin.system');
+            } else {
+                // 从 localStorage 获取用户信息
+                const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                isAdmin = userData.role === '系统管理员' || 
+                         (userData.permissions && userData.permissions.includes('admin.system'));
+            }
+            
+            // 如果没有管理员权限，重定向到403页面
+            if (!isAdmin) {
+                window.location.href = '../errors/403.html';
+            }
         }
         
         /**
          * 保存设置
+         * @param {string} formId - 表单ID
+         * @param {string} settingType - 设置类型
          */
         function saveSettings(formId, settingType) {
-            const saveBtn = document.getElementById('save' + settingType.replace(/\s/g, ''));
-            traceUI.showLoading(saveBtn);
+            // 模拟保存过程
+            const saveBtn = document.querySelector(`#${formId}`).closest('.card').querySelector('.btn-primary');
+            const originalText = saveBtn.innerHTML;
             
-            // 收集表单数据
-            const formData = new FormData(document.getElementById(formId));
-            const formValues = {};
-            for(const [key, value] of formData.entries()) {
-                formValues[key] = value;
+            // 显示保存中状态
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+            saveBtn.disabled = true;
+            
+            // 模拟异步保存
+            setTimeout(function() {
+                saveBtn.innerHTML = '<i class="fas fa-check"></i> 已保存';
+                
+                // 显示成功提示
+                showNotification(`${settingType}已成功保存`);
+                
+                // 恢复按钮状态
+                setTimeout(function() {
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.disabled = false;
+                }, 1500);
+            }, 1000);
+        }
+        
+        /**
+         * 显示通知
+         * @param {string} message - 通知消息
+         */
+        function showNotification(message) {
+            // 检查是否已存在通知元素
+            let notification = document.querySelector('.notification');
+            
+            if (!notification) {
+                // 创建通知元素
+                notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.position = 'fixed';
+                notification.style.top = '20px';
+                notification.style.right = '20px';
+                notification.style.backgroundColor = '#52C41A';
+                notification.style.color = 'white';
+                notification.style.padding = '12px 24px';
+                notification.style.borderRadius = '4px';
+                notification.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                notification.style.zIndex = '1000';
+                notification.style.transition = 'all 0.3s';
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateY(-20px)';
+                
+                document.body.appendChild(notification);
             }
             
-            // 额外收集开关状态
-            const switches = document.getElementById(formId).querySelectorAll('input[type="checkbox"]');
-            switches.forEach(sw => {
-                formValues[sw.id] = sw.checked;
-            });
+            // 设置消息
+            notification.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ${message}`;
             
-            // 模拟保存操作
-            console.log('保存' + settingType + ':', formValues);
-            
-            // 模拟API请求延迟
+            // 显示通知
             setTimeout(() => {
-                traceUI.hideLoading(saveBtn);
-                traceUI.showToast(settingType + '已保存', 'success');
-            }, 1000);
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateY(0)';
+            }, 10);
+            
+            // 自动隐藏通知
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateY(-20px)';
+                
+                // 在动画完成后移除元素
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
         }
     </script>
 
   <!-- 自动按钮升级脚本 (自动注入) -->
   <script src="/components/autoload-button-upgrade.js"></script>
-  </body>
-</html> 
+  
+ </body></html>

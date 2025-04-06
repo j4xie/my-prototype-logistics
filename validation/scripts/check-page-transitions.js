@@ -52,6 +52,11 @@ if (!fs.existsSync(reportsDir)) {
 
 async function run() {
   console.log('启动页面导航验证...');
+  
+  // 强制生成详细报告
+  const isDetailedReport = true;
+  console.log('将生成详细报告...');
+  
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();

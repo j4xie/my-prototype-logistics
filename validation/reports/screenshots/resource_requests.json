@@ -128,26 +128,6 @@
     "resourceType": "document"
   },
   {
-    "url": "http://localhost:8080/pages/profile/help-center.html",
-    "resourceType": "document"
-  },
-  {
-    "url": "http://localhost:8080/pages/admin/admin-dashboard.html",
-    "resourceType": "document"
-  },
-  {
-    "url": "http://localhost:8080/pages/admin/data-import.html",
-    "resourceType": "document"
-  },
-  {
-    "url": "http://localhost:8080/pages/admin/user-management.html",
-    "resourceType": "document"
-  },
-  {
-    "url": "http://localhost:8080/pages/admin/system-logs.html",
-    "resourceType": "document"
-  },
-  {
     "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
     "resourceType": "stylesheet"
   },
@@ -192,16 +172,84 @@
     "resourceType": "stylesheet"
   },
   {
-    "url": "http://localhost:8080/assets/icons/home-blue.svg",
-    "resourceType": "image"
+    "url": "http://localhost:8080/components/trace-common.js",
+    "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/assets/icons/record-gray.svg",
-    "resourceType": "image"
+    "url": "http://localhost:8080/components/trace-nav.js",
+    "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/assets/icons/user-gray.svg",
-    "resourceType": "image"
+    "url": "http://localhost:8080/components/trace-ui.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8080/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-nav.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-prediction.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8080/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8080/assets/styles.css",
+    "resourceType": "stylesheet"
   },
   {
     "url": "http://localhost:8080/components/trace-common.js",
@@ -228,103 +276,11 @@
     "resourceType": "stylesheet"
   },
   {
-    "url": "http://localhost:8080/assets/icons/home-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/record-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
     "url": "http://localhost:8080/components/trace-common.js",
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/assets/styles.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-common.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/assets/styles.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/home-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/info-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-common.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/assets/styles.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/home-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/record-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-common.js",
+    "url": "http://localhost:8080/components/trace-nav.js",
     "resourceType": "script"
   },
   {
@@ -364,19 +320,11 @@
     "resourceType": "image"
   },
   {
-    "url": "http://localhost:8080/assets/icons/home-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/info-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
     "url": "http://localhost:8080/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-nav.js",
     "resourceType": "script"
   },
   {
@@ -412,32 +360,40 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/components/trace-routes.js",
+    "url": "http://localhost:8080/pages/profile/help-center.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8080/pages/admin/admin-dashboard.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8080/pages/admin/data-import.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8080/pages/admin/user-management.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8080/pages/admin/system-logs.html",
+    "resourceType": "document"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmUI",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
-    "resourceType": "image"
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
   },
   {
-    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
-    "resourceType": "image"
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-regular-400.woff2",
+    "resourceType": "font"
   },
   {
     "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
@@ -456,10 +412,6 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2k5",
-    "resourceType": "xhr"
-  },
-  {
     "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
     "resourceType": "stylesheet"
   },
@@ -472,19 +424,11 @@
     "resourceType": "stylesheet"
   },
   {
-    "url": "http://localhost:8080/pages/processing/assets/icons/home-gray.svg",
-    "resourceType": "image"
+    "url": "http://localhost:8080/components/trace-common.js",
+    "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/pages/processing/assets/icons/record-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/processing/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/processing/components/trace-common.js",
+    "url": "http://localhost:8080/components/trace-nav.js",
     "resourceType": "script"
   },
   {
@@ -504,23 +448,19 @@
     "resourceType": "stylesheet"
   },
   {
-    "url": "http://localhost:8080/pages/processing/assets/icons/home-gray.svg",
-    "resourceType": "image"
+    "url": "http://localhost:8080/components/trace-common.js",
+    "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/pages/processing/assets/icons/record-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/processing/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/processing/components/trace-common.js",
+    "url": "http://localhost:8080/components/trace-nav.js",
     "resourceType": "script"
   },
   {
     "url": "http://localhost:8080/components/autoload-button-upgrade.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
     "resourceType": "script"
   },
   {
@@ -544,6 +484,10 @@
     "resourceType": "script"
   },
   {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
     "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
     "resourceType": "stylesheet"
   },
@@ -569,6 +513,10 @@
   },
   {
     "url": "http://localhost:8080/components/autoload-button-upgrade.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
     "resourceType": "script"
   },
   {
@@ -632,12 +580,48 @@
     "resourceType": "script"
   },
   {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff2",
-    "resourceType": "font"
+    "url": "http://localhost:8080/components/trace-common.js",
+    "resourceType": "script"
   },
   {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-regular-400.woff2",
-    "resourceType": "font"
+    "url": "http://localhost:8080/components/trace-nav.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
   },
   {
     "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
@@ -680,35 +664,7 @@
     "resourceType": "script"
   },
   {
-    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/assets/styles.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-error-handler.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-store.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ux.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-a11y.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
+    "url": "http://localhost:8080/components/trace-button-config.js",
     "resourceType": "script"
   },
   {
@@ -748,24 +704,20 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
+    "resourceType": "font"
   },
   {
     "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
     "resourceType": "stylesheet"
   },
   {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css",
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
     "resourceType": "stylesheet"
   },
   {
     "url": "http://localhost:8080/assets/styles.css",
     "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-common.js",
-    "resourceType": "script"
   },
   {
     "url": "http://localhost:8080/components/trace-error-handler.js",
@@ -784,19 +736,35 @@
     "resourceType": "script"
   },
   {
+    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8080/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-auth.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-common.js",
+    "resourceType": "script"
+  },
+  {
     "url": "http://localhost:8080/components/trace-nav.js",
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/assets/icons/home-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/record-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/assets/icons/user-blue.svg",
+    "url": "http://localhost:8080/assets/images/avatar.jpg",
     "resourceType": "image"
   },
   {
@@ -856,30 +824,6 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/pages/admin/assets/styles.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
     "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
     "resourceType": "stylesheet"
   },
@@ -912,62 +856,30 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "url": "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8080/pages/admin/assets/styles.css",
+    "resourceType": "stylesheet"
+  },
+  {
+    "url": "http://localhost:8080/components/autoload-button-upgrade.js",
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2me&sid=cAv9FN7W1YhsZHjMAAJA",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmZ4&sid=FJwnax2Pp4i0wZiRAApE",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2mf&sid=cAv9FN7W1YhsZHjMAAJA",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmZ6&sid=FJwnax2Pp4i0wZiRAApE",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/pages/processing/assets/styles.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/pages/processing/assets/styles.css",
-    "resourceType": "stylesheet"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
-    "resourceType": "font"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
     "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
     "resourceType": "script"
   },
@@ -981,46 +893,6 @@
   },
   {
     "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
     "resourceType": "script"
   },
   {
@@ -1096,6 +968,178 @@
     "resourceType": "script"
   },
   {
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
     "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
     "resourceType": "script"
   },
@@ -1112,136 +1156,48 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/components/trace-button-config.js",
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
     "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-routes.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
-    "resourceType": "image"
   },
   {
     "url": "http://localhost:8080/components/trace-button-config.js",
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/components/trace-routes.js",
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
     "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
-    "resourceType": "image"
   },
   {
     "url": "http://localhost:8080/components/trace-button-config.js",
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/components/trace-routes.js",
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
     "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
-    "resourceType": "image"
   },
   {
     "url": "http://localhost:8080/components/trace-button-config.js",
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/components/trace-routes.js",
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
-    "resourceType": "image"
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
-    "resourceType": "image"
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmbh",
+    "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
-    "resourceType": "image"
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmbn&sid=FJwnax2Pp4i0wZiRAApE",
+    "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/default-icon.svg",
-    "resourceType": "image"
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmbp&sid=FJwnax2Pp4i0wZiRAApE",
+    "resourceType": "xhr"
   },
   {
     "url": "http://localhost:8080/components/trace-error-handler.js",
@@ -1258,6 +1214,98 @@
   {
     "url": "http://localhost:8080/components/trace-button-config.js",
     "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
   },
   {
     "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
@@ -1308,51 +1356,67 @@
     "resourceType": "font"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2s0&sid=cAv9FN7W1YhsZHjMAAJA",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2s1&sid=cAv9FN7W1YhsZHjMAAJA",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-routes.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
-    "resourceType": "image"
-  },
-  {
     "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/webfonts/fa-solid-900.woff2",
     "resourceType": "font"
   },
   {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmeW",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-button-config.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmem",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmer",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmew",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xme_",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmf3",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-ui-components.js",
     "resourceType": "script"
   },
   {
@@ -1390,26 +1454,6 @@
   {
     "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
     "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2sQ",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/browser-sync-client.js?v=2.29.3",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2sf",
-    "resourceType": "xhr"
   },
   {
     "url": "http://localhost:8080/components/trace-error-handler.js",
@@ -1436,8 +1480,12 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2sp",
-    "resourceType": "xhr"
+    "url": "http://localhost:8080/pages/admin/components/trace-error-handler.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/admin/components/trace-store.js",
+    "resourceType": "script"
   },
   {
     "url": "http://localhost:8080/pages/admin/components/trace-error-handler.js",
@@ -1448,43 +1496,11 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2st",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmfT&sid=6j7zenP2Fm5Vm-3IAApG",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/pages/admin/components/trace-error-handler.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/pages/admin/components/trace-store.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2t0",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2t5",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2t9",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-regular-400.woff2",
-    "resourceType": "font"
-  },
-  {
-    "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/webfonts/fa-solid-900.woff2",
-    "resourceType": "font"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2tS",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmfU&sid=6j7zenP2Fm5Vm-3IAApG",
     "resourceType": "xhr"
   },
   {
@@ -1492,31 +1508,11 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2tX",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmfb",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-button-config.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2tc",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2te&sid=79JpWD0zyLf3m1wWAAJC",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2tf&sid=79JpWD0zyLf3m1wWAAJC",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2th",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmfg",
     "resourceType": "xhr"
   },
   {
@@ -1524,11 +1520,7 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2to",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2tq",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmg0",
     "resourceType": "xhr"
   },
   {
@@ -1536,39 +1528,15 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/components/trace-routes.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
-    "resourceType": "image"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2tw&sid=aDT0f31rt5X4UMfFAAJD",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmg2&sid=dq5P50LTJs2zNElYAApH",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2tw.0&sid=aDT0f31rt5X4UMfFAAJD",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmg3&sid=dq5P50LTJs2zNElYAApH",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmg6",
     "resourceType": "xhr"
   },
   {
@@ -1576,23 +1544,15 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2tz",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgB",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2u1",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgD&sid=g3WbLywrWG4eu0bbAApI",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2u5",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgD.0&sid=g3WbLywrWG4eu0bbAApI",
     "resourceType": "xhr"
   },
   {
@@ -1600,7 +1560,11 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2u9",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgF&sid=-_a62He_pBelVaAdAApJ",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgG&sid=-_a62He_pBelVaAdAApJ",
     "resourceType": "xhr"
   },
   {
@@ -1608,175 +1572,7 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uE&sid=j2D_1GlHshqSRMWFAAJE",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uE.0&sid=j2D_1GlHshqSRMWFAAJE",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uH",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uI&sid=fwzfbxh-zZg__4sAAAJF",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uJ&sid=fwzfbxh-zZg__4sAAAJF",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uM",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uP",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uU",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uY&sid=sfnK6zQ9suikOO3-AAJG",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uY.0&sid=sfnK6zQ9suikOO3-AAJG",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2ub&sid=gIL5RUKRF-JGznDIAAJH",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uc&sid=gIL5RUKRF-JGznDIAAJH",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2uc&sid=q9hYcW9ok9EXSS63AAJI",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2ud&sid=q9hYcW9ok9EXSS63AAJI",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2vv&sid=-bE03g0LIIR_G60CAAJJ",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2vw&sid=-bE03g0LIIR_G60CAAJJ",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2vx&sid=6Cu0U1DGEpMUoB6zAAJK",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2vx.0&sid=6Cu0U1DGEpMUoB6zAAJK",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2v_",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2w2&sid=lauRu0mqmAdB-pCoAAJL",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2w3&sid=lauRu0mqmAdB-pCoAAJL",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/components/trace-ui-components.js",
-    "resourceType": "script"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2w7",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wB",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wF&sid=79JpWD0zyLf3m1wWAAJC",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wG&sid=79JpWD0zyLf3m1wWAAJC",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wG&sid=5A7uAAqYKKddPyhUAAJN",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wH&sid=5A7uAAqYKKddPyhUAAJN",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wI&sid=oGR0BXRzDdY7E3ejAAJO",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wI.0&sid=oGR0BXRzDdY7E3ejAAJO",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wJ&sid=_DMLXedfXRphCuLJAAJP",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wJ.0&sid=_DMLXedfXRphCuLJAAJP",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgL",
     "resourceType": "xhr"
   },
   {
@@ -1808,147 +1604,35 @@
     "resourceType": "image"
   },
   {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgR&sid=-Om0zkRtnkxND1kUAApK",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgS&sid=-Om0zkRtnkxND1kUAApK",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgV",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgX&sid=uUJqMJFGtd2DZ4J4AApL",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgY&sid=uUJqMJFGtd2DZ4J4AApL",
+    "resourceType": "xhr"
+  },
+  {
     "url": "http://localhost:8080/components/trace-ui-components.js",
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wT",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmgZ&sid=jLoRbjokkUcxmY90AApM",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wV&sid=aDT0f31rt5X4UMfFAAJD",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wW&sid=aDT0f31rt5X4UMfFAAJD",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wW&sid=T0wnA7_ejYO18KdtAAJR",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wX&sid=T0wnA7_ejYO18KdtAAJR",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wY&sid=FvXUzFG2UEQvo-wJAAJS",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wY.0&sid=FvXUzFG2UEQvo-wJAAJS",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wZ&sid=r8VOXXZ4C3rkqxz4AAJT",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wZ.0&sid=r8VOXXZ4C3rkqxz4AAJT",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wb&sid=owOeydt5-tUsBG5RAAJU",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wc&sid=owOeydt5-tUsBG5RAAJU",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2we&sid=j2D_1GlHshqSRMWFAAJE",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2we.0&sid=j2D_1GlHshqSRMWFAAJE",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wf&sid=pGPttXblTuPke_KtAAJW",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wg&sid=pGPttXblTuPke_KtAAJW",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wh&sid=fwzfbxh-zZg__4sAAAJF",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wj&sid=fwzfbxh-zZg__4sAAAJF",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wk&sid=abVhfBwt-6FCG3l0AAJY",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wk.0&sid=abVhfBwt-6FCG3l0AAJY",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wl&sid=BUFXdFIynp2tGY5oAAJZ",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wm&sid=BUFXdFIynp2tGY5oAAJZ",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wm&sid=FP7Wnc9HiUkqht1TAAJa",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wn&sid=FP7Wnc9HiUkqht1TAAJa",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wr&sid=sfnK6zQ9suikOO3-AAJG",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2ws&sid=sfnK6zQ9suikOO3-AAJG",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wt&sid=gIL5RUKRF-JGznDIAAJH",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wu&sid=gIL5RUKRF-JGznDIAAJH",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2wv&sid=q9hYcW9ok9EXSS63AAJI",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2ww&sid=q9hYcW9ok9EXSS63AAJI",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2x6&sid=-bE03g0LIIR_G60CAAJJ",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2x7&sid=-bE03g0LIIR_G60CAAJJ",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2x8&sid=6Cu0U1DGEpMUoB6zAAJK",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2x8.0&sid=6Cu0U1DGEpMUoB6zAAJK",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2x9&sid=m56WbGEgvIRtK9YtAAJg",
-    "resourceType": "xhr"
-  },
-  {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2x9.0&sid=m56WbGEgvIRtK9YtAAJg",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmga&sid=jLoRbjokkUcxmY90AApM",
     "resourceType": "xhr"
   },
   {
@@ -1960,123 +1644,395 @@
     "resourceType": "script"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xB&sid=lauRu0mqmAdB-pCoAAJL",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmgj",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xD&sid=lauRu0mqmAdB-pCoAAJL",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmgq",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xE&sid=Rk50Sj0dn9O77k8MAAJi",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmgv",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xF&sid=Rk50Sj0dn9O77k8MAAJi",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmg_",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xH&sid=oNqUqrAQJPv3vkbbAAJj",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmh4",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xH.0&sid=oNqUqrAQJPv3vkbbAAJj",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmh9",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xR&sid=5A7uAAqYKKddPyhUAAJN",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmhD",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xS&sid=5A7uAAqYKKddPyhUAAJN",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmhI",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xT&sid=oGR0BXRzDdY7E3ejAAJO",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmhN",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xT.0&sid=oGR0BXRzDdY7E3ejAAJO",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmhV&sid=6j7zenP2Fm5Vm-3IAApG",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xU&sid=_DMLXedfXRphCuLJAAJP",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmhW&sid=6j7zenP2Fm5Vm-3IAApG",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xV&sid=_DMLXedfXRphCuLJAAJP",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiE&sid=bUK-wfPA5cIjgL1fAApO",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xW&sid=vm6SQgoQs9Ap-rm2AAJn",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiF&sid=bUK-wfPA5cIjgL1fAApO",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xW.0&sid=vm6SQgoQs9Ap-rm2AAJn",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiH&sid=FILm3VT-FKR67Y08AApP",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xi&sid=T0wnA7_ejYO18KdtAAJR",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiI&sid=FILm3VT-FKR67Y08AApP",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xj&sid=T0wnA7_ejYO18KdtAAJR",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiL",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xk&sid=FvXUzFG2UEQvo-wJAAJS",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiO&sid=7-KugRwt1kFxbVX3AApQ",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xk.0&sid=FvXUzFG2UEQvo-wJAAJS",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiO.0&sid=7-KugRwt1kFxbVX3AApQ",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xl&sid=r8VOXXZ4C3rkqxz4AAJT",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiQ&sid=dq5P50LTJs2zNElYAApH",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xm&sid=r8VOXXZ4C3rkqxz4AAJT",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiR&sid=dq5P50LTJs2zNElYAApH",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xn&sid=owOeydt5-tUsBG5RAAJU",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiR&sid=nkuIWogWdvK3m18DAApS",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xn.0&sid=owOeydt5-tUsBG5RAAJU",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiS&sid=nkuIWogWdvK3m18DAApS",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xu&sid=pGPttXblTuPke_KtAAJW",
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiU&sid=rSGRBXRzKQjWN20hAApT",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xu.0&sid=pGPttXblTuPke_KtAAJW",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmiV&sid=rSGRBXRzKQjWN20hAApT",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2xz&sid=abVhfBwt-6FCG3l0AAJY",
+    "url": "http://localhost:8080/components/trace-routes.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/home-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/record-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-gray.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/pages/assets/icons/user-blue.svg",
+    "resourceType": "image"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmig&sid=g3WbLywrWG4eu0bbAApI",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2x-&sid=abVhfBwt-6FCG3l0AAJY",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmih&sid=g3WbLywrWG4eu0bbAApI",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2y2&sid=BUFXdFIynp2tGY5oAAJZ",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmij&sid=-_a62He_pBelVaAdAApJ",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2y2.0&sid=BUFXdFIynp2tGY5oAAJZ",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmik&sid=-_a62He_pBelVaAdAApJ",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2y3&sid=FP7Wnc9HiUkqht1TAAJa",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmil&sid=tb66Z1yAqthlbI0IAApW",
     "resourceType": "xhr"
   },
   {
-    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PNzj2y4&sid=FP7Wnc9HiUkqht1TAAJa",
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmim&sid=tb66Z1yAqthlbI0IAApW",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmin&sid=-Om0zkRtnkxND1kUAApK",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmio&sid=-Om0zkRtnkxND1kUAApK",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmiq&sid=v2hpfA2dJKVL6ApUAApY",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmiq.0&sid=v2hpfA2dJKVL6ApUAApY",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmis&sid=uUJqMJFGtd2DZ4J4AApL",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmis.0&sid=uUJqMJFGtd2DZ4J4AApL",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmiu&sid=jLoRbjokkUcxmY90AApM",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmiv&sid=jLoRbjokkUcxmY90AApM",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmix&sid=W_iaokK6SB63BjF8AApb",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmix.0&sid=W_iaokK6SB63BjF8AApb",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmi-&sid=UdnPw3XsnAMmrdlUAApc",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmi-.0&sid=UdnPw3XsnAMmrdlUAApc",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/components/trace-ui-components.js",
+    "resourceType": "script"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj0&sid=eutfnigKoUJLBkP6AApd",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj1&sid=eutfnigKoUJLBkP6AApd",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj3",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj5&sid=x89gZgYFRkMXk_8xAApe",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj5.0&sid=x89gZgYFRkMXk_8xAApe",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj6&sid=rbr3SX_H1-lJUYRaAApf",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj7&sid=rbr3SX_H1-lJUYRaAApf",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj8&sid=AbwKi136XRnXZS08AApg",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj8.0&sid=AbwKi136XRnXZS08AApg",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj9&sid=VpjIUyaGBmqdWN8cAAph",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj9.0&sid=VpjIUyaGBmqdWN8cAAph",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmjB&sid=u-igZbyaNxTgfUfwAApi",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmjB.0&sid=u-igZbyaNxTgfUfwAApi",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmjC&sid=NzsAbVOPyrFePIyrAApj",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmjD&sid=NzsAbVOPyrFePIyrAApj",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmjV&sid=bUK-wfPA5cIjgL1fAApO",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmjW&sid=bUK-wfPA5cIjgL1fAApO",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmjY&sid=FILm3VT-FKR67Y08AApP",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmjY.0&sid=FILm3VT-FKR67Y08AApP",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmjZ&sid=5gtlYikIl0IWd-ncAApm",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmja&sid=5gtlYikIl0IWd-ncAApm",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmjh&sid=7-KugRwt1kFxbVX3AApQ",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmji&sid=7-KugRwt1kFxbVX3AApQ",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmjn&sid=nkuIWogWdvK3m18DAApS",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmjn.0&sid=nkuIWogWdvK3m18DAApS",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmjo&sid=rSGRBXRzKQjWN20hAApT",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmjp&sid=rSGRBXRzKQjWN20hAApT",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmjw&sid=tb66Z1yAqthlbI0IAApW",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmjx&sid=tb66Z1yAqthlbI0IAApW",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmjz&sid=v2hpfA2dJKVL6ApUAApY",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmj-&sid=v2hpfA2dJKVL6ApUAApY",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmlV&sid=PFgR1MYoi1akh06aAApv",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8XmlW&sid=PFgR1MYoi1akh06aAApv",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmlm&sid=NzsAbVOPyrFePIyrAApj",
+    "resourceType": "xhr"
+  },
+  {
+    "url": "http://localhost:8080/browser-sync/socket.io/?EIO=4&transport=polling&t=PO8Xmln&sid=NzsAbVOPyrFePIyrAApj",
     "resourceType": "xhr"
   }
 ]

@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<!DOCTYPE html><html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>场地监控 - 食品溯源系统</title>
@@ -96,21 +94,43 @@
             line-height: 1.2;
             transition: all 0.2s ease;
         }
-    </style>
-</head>
+    
+/* 按钮视觉反馈样式 */
+.trace-button-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  opacity: 0.9;
+}
+
+.trace-button-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.trace-button-active:active {
+  transform: scale(0.97);
+}</style>
+<style class="button-navigation-fix">.top-nav * { pointer-events: auto; }
+.header-actions, .header-buttons { z-index: 10; }
+.action-btn, .control-btn, .monitor-action, .farming-action { position: relative; z-index: 15; }.top-nav * { pointer-events: auto; }
+.header-actions, .header-buttons { z-index: 10; }
+.action-btn, .control-btn, .monitor-action, .farming-action { position: relative; z-index: 15; }
+.monitoring-card, .control-panel, .data-container { z-index: 5 !important; }
+.monitoring-action button, .control-panel button { z-index: 20 !important; }
+button, .btn, a.button, [role="button"] { pointer-events: auto !important; }
+.hidden-action, [data-visibility="hidden"] { opacity: 0.5; pointer-events: auto !important; }</style></head>
 <body class="bg-gray-100">
     <div class="page-container">
         <!-- 顶部导航栏 -->
-        <header class="top-nav">
+        <header class="top-nav" style="pointer-events: none;">
             <div class="top-nav-container">
                 <div class="flex items-center">
-                    <a href="../home/home-farming.html" class="icon-btn">
+                    <a href="../home/home-farming.html" class="icon-btn hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-farming-monitor-html-0-1743912419125" aria-label="arrow left" tabindex="0">
                         <i class="fas fa-arrow-left"></i>
                     </a>
                     <h1 class="text-lg font-medium">场地监控</h1>
                 </div>
                 <div class="flex items-center">
-                    <button class="icon-btn" id="refreshBtn">
+                    <button class="icon-btn trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="refreshBtn" aria-label="sync alt" tabindex="0">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
@@ -155,7 +175,7 @@
                             <i class="fas fa-video text-primary mr-2"></i>
                             实时监控
                         </h2>
-                        <button class="text-primary text-sm" id="fullScreenBtn">
+                        <button class="text-primary text-sm trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="fullScreenBtn" aria-label="expand alt" tabindex="0">
                             <i class="fas fa-expand-alt"></i>
                         </button>
                     </div>
@@ -293,7 +313,7 @@
                             <i class="fas fa-utensils text-[#1890FF] mr-2"></i>
                             饲料投喂监控
                         </h2>
-                        <button class="text-[#1890FF] text-sm" id="adjustFeedBtn">
+                        <button class="text-[#1890FF] text-sm trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="adjustFeedBtn" aria-label="cog" tabindex="0">
                             <i class="fas fa-cog"></i>
                         </button>
                     </div>
@@ -332,8 +352,8 @@
                         </div>
                         
                         <div class="mt-3 flex justify-between">
-                            <button class="btn btn-outline text-xs py-1 px-3">查看历史</button>
-                            <button class="btn btn-primary text-xs py-1 px-3">调整投喂量</button>
+                            <button class="btn btn-outline text-xs py-1 px-3 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-farming-monitor-html-1743899089409-3" aria-label="查看历史" tabindex="0">查看历史</button>
+                            <button class="btn btn-primary text-xs py-1 px-3 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-farming-monitor-html-1743899089409-4" aria-label="调整投喂量" tabindex="0">调整投喂量</button>
                         </div>
                     </div>
                 </div>
@@ -490,5 +510,225 @@
 
   <!-- 自动按钮升级脚本 (自动注入) -->
   <script src="/components/autoload-button-upgrade.js"></script>
-  </body>
-</html> 
+  
+ <script type="text/javascript" class="button-fix-script">
+document.addEventListener('DOMContentLoaded', function() {
+          // 获取所有操作容器
+          const actionContainers = document.querySelectorAll('.monitoring-card, .control-panel, .data-container');
+          
+          // 为每个容器添加点击事件委托
+          actionContainers.forEach(container => {
+            container.addEventListener('click', function(e) {
+              // 检查点击的是否是按钮或其子元素
+              let target = e.target;
+              let buttonFound = false;
+              
+              // 向上查找最近的按钮
+              while (target !== container && !buttonFound) {
+                if (
+                  target.tagName === 'BUTTON' || 
+                  target.classList.contains('btn') ||
+                  target.classList.contains('action-btn') ||
+                  target.classList.contains('control-btn') ||
+                  target.hasAttribute('role') && target.getAttribute('role') === 'button'
+                ) {
+                  buttonFound = true;
+                  
+                  // 如果按钮是隐藏的或被阻止点击
+                  const rect = target.getBoundingClientRect();
+                  const isOffscreen = (rect.bottom < 0 || rect.top > window.innerHeight);
+                  
+                  // 如果按钮有href属性，模拟导航
+                  if (target.hasAttribute('href')) {
+                    window.location.href = target.getAttribute('href');
+                    e.preventDefault();
+                  }
+                  
+                  // 如果按钮有onclick属性但被阻止了，手动执行
+                  if (target.hasAttribute('onclick') && (target.style.pointerEvents === 'none' || isOffscreen)) {
+                    const onclickCode = target.getAttribute('onclick');
+                    try {
+                      eval(onclickCode);
+                      e.preventDefault();
+                    } catch(err) {
+                      console.error('执行按钮点击失败:', err);
+                    }
+                  }
+                  
+                  // 如果按钮有data-href属性，模拟导航
+                  if (target.hasAttribute('data-href')) {
+                    window.location.href = target.getAttribute('data-href');
+                    e.preventDefault();
+                  }
+                  
+                  // 如果按钮有data-action属性，触发自定义事件
+                  if (target.hasAttribute('data-action')) {
+                    const actionEvent = new CustomEvent('trace-action', {
+                      detail: { action: target.getAttribute('data-action'), element: target }
+                    });
+                    document.dispatchEvent(actionEvent);
+                    e.preventDefault();
+                  }
+                }
+                
+                target = target.parentElement;
+                if (!target) break;
+              }
+            }, true); // 使用捕获模式，确保这个处理程序最先运行
+          });
+          
+          // 特别处理 "查看历史" 和 "调整投喂量" 按钮
+          const specialButtons = [
+            { selector: 'button:contains("查看历史")', action: function() { 
+              console.log('触发查看历史功能');
+              // 通常是打开一个历史数据视图
+              window.openHistoryView && window.openHistoryView(); 
+            }},
+            { selector: 'button:contains("调整投喂量")', action: function() { 
+              console.log('触发调整投喂量功能');
+              // 通常是打开调整饲料量的对话框
+              window.openFeedingAdjustment && window.openFeedingAdjustment(); 
+            }}
+          ];
+          
+          // 通过DOM查找或创建这些按钮
+          specialButtons.forEach(btn => {
+            let button = document.querySelector(btn.selector);
+            if (!button) {
+              console.log('未找到按钮，尝试查找类似按钮');
+              // 尝试通过部分文本匹配查找
+              const allButtons = document.querySelectorAll('button');
+              for (const b of allButtons) {
+                if (b.textContent && b.textContent.includes(btn.selector.match(/:contains\("(.+)"\)/)[1])) {
+                  button = b;
+                  break;
+                }
+              }
+            }
+            
+            if (button) {
+              // 确保按钮可见且可交互
+              button.style.zIndex = '100';
+              button.style.position = 'relative';
+              button.style.pointerEvents = 'auto';
+              
+              // 替换现有的点击处理程序
+              button.onclick = btn.action;
+              
+              console.log('已修复特殊按钮:', btn.selector);
+            } else {
+              console.log('找不到按钮，无法修复:', btn.selector);
+            }
+          });
+        });
+</script><script type="text/javascript" class="button-fix-script">
+document.addEventListener('DOMContentLoaded', function() {
+          // 获取所有操作容器
+          const actionContainers = document.querySelectorAll('.monitoring-card, .control-panel, .data-container');
+          
+          // 为每个容器添加点击事件委托
+          actionContainers.forEach(container => {
+            container.addEventListener('click', function(e) {
+              // 检查点击的是否是按钮或其子元素
+              let target = e.target;
+              let buttonFound = false;
+              
+              // 向上查找最近的按钮
+              while (target !== container && !buttonFound) {
+                if (
+                  target.tagName === 'BUTTON' || 
+                  target.classList.contains('btn') ||
+                  target.classList.contains('action-btn') ||
+                  target.classList.contains('control-btn') ||
+                  target.hasAttribute('role') && target.getAttribute('role') === 'button'
+                ) {
+                  buttonFound = true;
+                  
+                  // 如果按钮是隐藏的或被阻止点击
+                  const rect = target.getBoundingClientRect();
+                  const isOffscreen = (rect.bottom < 0 || rect.top > window.innerHeight);
+                  
+                  // 如果按钮有href属性，模拟导航
+                  if (target.hasAttribute('href')) {
+                    window.location.href = target.getAttribute('href');
+                    e.preventDefault();
+                  }
+                  
+                  // 如果按钮有onclick属性但被阻止了，手动执行
+                  if (target.hasAttribute('onclick') && (target.style.pointerEvents === 'none' || isOffscreen)) {
+                    const onclickCode = target.getAttribute('onclick');
+                    try {
+                      eval(onclickCode);
+                      e.preventDefault();
+                    } catch(err) {
+                      console.error('执行按钮点击失败:', err);
+                    }
+                  }
+                  
+                  // 如果按钮有data-href属性，模拟导航
+                  if (target.hasAttribute('data-href')) {
+                    window.location.href = target.getAttribute('data-href');
+                    e.preventDefault();
+                  }
+                  
+                  // 如果按钮有data-action属性，触发自定义事件
+                  if (target.hasAttribute('data-action')) {
+                    const actionEvent = new CustomEvent('trace-action', {
+                      detail: { action: target.getAttribute('data-action'), element: target }
+                    });
+                    document.dispatchEvent(actionEvent);
+                    e.preventDefault();
+                  }
+                }
+                
+                target = target.parentElement;
+                if (!target) break;
+              }
+            }, true); // 使用捕获模式，确保这个处理程序最先运行
+          });
+          
+          // 特别处理 "查看历史" 和 "调整投喂量" 按钮
+          const specialButtons = [
+            { selector: 'button:contains("查看历史")', action: function() { 
+              console.log('触发查看历史功能');
+              // 通常是打开一个历史数据视图
+              window.openHistoryView && window.openHistoryView(); 
+            }},
+            { selector: 'button:contains("调整投喂量")', action: function() { 
+              console.log('触发调整投喂量功能');
+              // 通常是打开调整饲料量的对话框
+              window.openFeedingAdjustment && window.openFeedingAdjustment(); 
+            }}
+          ];
+          
+          // 通过DOM查找或创建这些按钮
+          specialButtons.forEach(btn => {
+            let button = document.querySelector(btn.selector);
+            if (!button) {
+              console.log('未找到按钮，尝试查找类似按钮');
+              // 尝试通过部分文本匹配查找
+              const allButtons = document.querySelectorAll('button');
+              for (const b of allButtons) {
+                if (b.textContent && b.textContent.includes(btn.selector.match(/:contains\("(.+)"\)/)[1])) {
+                  button = b;
+                  break;
+                }
+              }
+            }
+            
+            if (button) {
+              // 确保按钮可见且可交互
+              button.style.zIndex = '100';
+              button.style.position = 'relative';
+              button.style.pointerEvents = 'auto';
+              
+              // 替换现有的点击处理程序
+              button.onclick = btn.action;
+              
+              console.log('已修复特殊按钮:', btn.selector);
+            } else {
+              console.log('找不到按钮，无法修复:', btn.selector);
+            }
+          });
+        });
+</script></body></html>

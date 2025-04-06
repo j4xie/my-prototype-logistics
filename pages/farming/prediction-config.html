@@ -1,0 +1,696 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>预测模型配置 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        :root {
+            --primary-color: #1890FF;
+            --primary-hover: #4096FF;
+            --primary-active: #0958D9;
+            --success-color: #52C41A;
+            --warning-color: #FA8C16;
+            --error-color: #FF4D4F;
+            --bg-layout: #F0F2F5;
+            --bg-container: #FFFFFF;
+            --border-color: #f0f0f0;
+            --border-radius-base: 8px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+            --spacing-md: 16px;
+            --nav-height: 56px;
+            --safe-area-bottom: env(safe-area-inset-bottom, 0);
+        }
+        
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            background-color: var(--bg-layout);
+        }
+        
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 999;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .top-nav-container {
+            max-width: 390px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-md);
+        }
+        
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .icon-btn:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius-base);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        .card-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            color: rgba(0,0,0,0.85);
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: rgba(0,0,0,0.65);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+            outline: none;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base);
+            font-size: 14px;
+            background-color: white;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0aec0'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 22px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: var(--border-radius-base);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .btn-default {
+            background-color: white;
+            color: rgba(0,0,0,0.65);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-default:hover {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+    
+/* 按钮视觉反馈样式 */
+.trace-button-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  opacity: 0.9;
+}
+
+.trace-button-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.trace-button-active:active {
+  transform: scale(0.97);
+}
+
+/* 按钮视觉反馈样式 */
+button, .btn {
+    transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+button:hover, .btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+button:active, .btn:active {
+    transform: translateY(0);
+    opacity: 0.75;
+}
+
+button:focus-visible, .btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+button::after, .btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%, -50%);
+    transform-origin: 50% 50%;
+}
+
+button:active::after, .btn:active::after {
+    opacity: 1;
+    transform: scale(20, 20) translate(-50%, -50%);
+    transition: all 0.5s;
+}
+</style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- 顶部导航栏 -->
+        <header class="top-nav">
+            <div class="top-nav-container">
+                <div class="flex items-center">
+                    <a href="prediction-analytics.html" class="icon-btn mr-3 hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-prediction-config-html-0-1743912419179" aria-label="arrow left" tabindex="0">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-lg font-medium">预测模型配置</h1>
+                </div>
+                <div class="flex items-center">
+                    <button class="icon-btn trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-prediction-config-html-1743910820551-1013" aria-label="刷新" tabindex="0">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="pt-16 px-4 pb-16">
+            <!-- 说明卡片 -->
+            <div class="card mb-4">
+                <div class="p-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-primary mt-1 mr-3"></i>
+                        <p class="text-sm text-gray-600">
+                            在此页面配置数据趋势预测功能的系统参数。这些设置将影响所有预测模型的行为和性能。
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 预测功能开关 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-toggle-on text-primary mr-2"></i>
+                        功能开关
+                    </h2>
+                </div>
+                <div class="p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <div class="font-medium">启用预测分析</div>
+                            <div class="text-xs text-gray-500 mt-1">开启后系统将定期计算预测数据</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked="" id="enablePredictionSwitch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <div class="font-medium">自动优化模型</div>
+                            <div class="text-xs text-gray-500 mt-1">系统将根据实际结果自动调整模型参数</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked="" id="autoOptimizeSwitch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-medium">异常指标预警</div>
+                            <div class="text-xs text-gray-500 mt-1">当指标超出预期范围时发送通知</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked="" id="abnormalAlertSwitch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 数据同步设置 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-sync text-primary mr-2"></i>
+                        数据同步
+                    </h2>
+                </div>
+                <div class="p-4">
+                    <div class="form-group">
+                        <label class="form-label" for="syncFrequency">数据同步频率</label>
+                        <select class="form-select" id="syncFrequency">
+                            <option value="10min">每10分钟</option>
+                            <option value="30min">每30分钟</option>
+                            <option value="1hour" selected="">每小时</option>
+                            <option value="6hour">每6小时</option>
+                            <option value="12hour">每12小时</option>
+                            <option value="daily">每天</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="dataRetention">数据保留期限</label>
+                        <select class="form-select" id="dataRetention">
+                            <option value="30days">30天</option>
+                            <option value="90days" selected="">90天</option>
+                            <option value="180days">180天</option>
+                            <option value="1year">1年</option>
+                            <option value="forever">永久保留</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-medium">仅在Wi-Fi下同步</div>
+                            <div class="text-xs text-gray-500 mt-1">开启以节省移动数据流量</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="wifiOnlySwitch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 预测模型设置 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-cog text-primary mr-2"></i>
+                        模型配置
+                    </h2>
+                </div>
+                <div class="p-4">
+                    <div class="form-group">
+                        <label class="form-label" for="defaultPredictionPeriod">默认预测周期</label>
+                        <select class="form-select" id="defaultPredictionPeriod">
+                            <option value="7days">7天</option>
+                            <option value="14days">14天</option>
+                            <option value="30days" selected="">30天</option>
+                            <option value="90days">90天</option>
+                            <option value="180days">180天</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="confidenceLevel">默认置信水平</label>
+                        <select class="form-select" id="confidenceLevel">
+                            <option value="80">80%</option>
+                            <option value="85">85%</option>
+                            <option value="90">90%</option>
+                            <option value="95" selected="">95%</option>
+                            <option value="99">99%</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="outlierThreshold">异常值阈值 (标准差)</label>
+                        <select class="form-select" id="outlierThreshold">
+                            <option value="2">2σ (宽松)</option>
+                            <option value="2.5">2.5σ</option>
+                            <option value="3" selected="">3σ (标准)</option>
+                            <option value="3.5">3.5σ</option>
+                            <option value="4">4σ (严格)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="seasonalityStrength">季节性因素强度</label>
+                        <input type="range" class="w-full" min="1" max="10" value="7" id="seasonalityStrength">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>弱</span>
+                            <span>强</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 通知设置 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-bell text-primary mr-2"></i>
+                        通知设置
+                    </h2>
+                </div>
+                <div class="p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <div class="font-medium">成本异常预警</div>
+                            <div class="text-xs text-gray-500 mt-1">当成本预测超出阈值时通知</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked="" id="costAlertSwitch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <div class="font-medium">产量异常预警</div>
+                            <div class="text-xs text-gray-500 mt-1">当产量预测低于目标时通知</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked="" id="productionAlertSwitch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <div class="font-medium">质量异常预警</div>
+                            <div class="text-xs text-gray-500 mt-1">当质量指标预测异常时通知</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked="" id="qualityAlertSwitch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="alertThreshold">预警阈值 (%)</label>
+                        <input type="number" class="form-control" id="alertThreshold" value="10" min="1" max="50">
+                        <div class="text-xs text-gray-500 mt-1">当指标变化超过此百分比时触发预警</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 权限设置 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-lock text-primary mr-2"></i>
+                        权限设置
+                    </h2>
+                </div>
+                <div class="p-4">
+                    <div class="form-group">
+                        <label class="form-label" for="viewPermission">查看预测数据权限</label>
+                        <select class="form-select" id="viewPermission">
+                            <option value="all">所有用户</option>
+                            <option value="staff" selected="">工作人员及以上</option>
+                            <option value="manager">管理员及以上</option>
+                            <option value="admin">仅系统管理员</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="editPermission">编辑模型参数权限</label>
+                        <select class="form-select" id="editPermission">
+                            <option value="staff">工作人员及以上</option>
+                            <option value="manager" selected="">管理员及以上</option>
+                            <option value="admin">仅系统管理员</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 变量权重设置 -->
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-sm font-medium">温度影响因子</label>
+                    <span class="text-xs text-blue-600">40%</span>
+                </div>
+                <input type="range" min="0" max="100" value="40" class="w-full" id="temperatureWeightSlider">
+            </div>
+
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-sm font-medium">湿度影响因子</label>
+                    <span class="text-xs text-blue-600">30%</span>
+                </div>
+                <input type="range" min="0" max="100" value="30" class="w-full" id="humidityWeightSlider">
+            </div>
+
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-sm font-medium">原料价格影响因子</label>
+                    <span class="text-xs text-blue-600">20%</span>
+                </div>
+                <input type="range" min="0" max="100" value="20" class="w-full" id="priceWeightSlider">
+            </div>
+
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-sm font-medium">季节因子</label>
+                    <span class="text-xs text-blue-600">10%</span>
+                </div>
+                <input type="range" min="0" max="100" value="10" class="w-full" id="seasonWeightSlider">
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex justify-end space-x-3 mt-5">
+                <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg btn trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-prediction-config-html-1743910820551-5701" aria-label="重置为默认值" tabindex="0">
+                    重置为默认值
+                </button>
+                <button class="px-4 py-2 bg-primary text-white rounded-lg btn trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-prediction-config-html-1743910820551-375" aria-label="保存配置" tabindex="0">
+                    保存配置
+                </button>
+            </div>
+        </main>
+
+        <!-- 底部导航栏占位 -->
+        <div id="nav-container"></div>
+    </div>
+
+    <!-- 脚本区域 -->
+    <script src="../../components/trace-nav.js"></script>
+    <script src="../../components/trace-store.js"></script>
+    <script src="../../components/trace-prediction.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化导航
+            if (window.traceNav) {
+                traceNav.init('nav-container', 'info');
+            }
+            
+            // 添加所有按钮的视觉反馈类
+            const allButtons = document.querySelectorAll('button');
+            allButtons.forEach(button => {
+                if (!button.classList.contains('trace-button-hover')) {
+                    button.classList.add('trace-button-hover', 'trace-button-focus', 'trace-button-active', 'btn');
+                }
+            });
+            
+            // 绑定开关事件
+            const switches = document.querySelectorAll('input[type="checkbox"]');
+            switches.forEach(switchEl => {
+                switchEl.addEventListener('change', function() {
+                    console.log(`${switchEl.id} 状态已更改为: ${switchEl.checked}`);
+                });
+            });
+            
+            // 绑定同步频率选择事件
+            const syncFrequency = document.getElementById('syncFrequency');
+            if (syncFrequency) {
+                syncFrequency.addEventListener('change', function() {
+                    console.log(`数据同步频率已更改为: ${this.value}`);
+                });
+            }
+            
+            // 绑定保存按钮事件
+            const saveConfigBtn = document.getElementById('saveConfigBtn');
+            if (saveConfigBtn) {
+                saveConfigBtn.addEventListener('click', function() {
+                    // 显示保存中状态
+                    this.disabled = true;
+                    this.innerHTML = '保存中...';
+                    
+                    // 模拟保存过程
+                    setTimeout(() => {
+                        // 恢复按钮状态
+                        this.disabled = false;
+                        this.innerHTML = '保存配置';
+                        
+                        // 显示保存成功提示
+                        alert('配置已成功保存！');
+                    }, 1000);
+                });
+            }
+            
+            // 绑定重置按钮事件
+            const resetBtn = document.getElementById('resetBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    // 询问用户确认
+                    if (confirm('确定要重置所有设置为默认值吗？')) {
+                        // 重置所有设置
+                        resetAllSettings();
+                    }
+                });
+            }
+            
+            // 绑定滑块事件
+            const sliders = document.querySelectorAll('input[type="range"]');
+            sliders.forEach(slider => {
+                slider.addEventListener('input', function() {
+                    // 更新显示的百分比值
+                    const percentDisplay = this.previousElementSibling.querySelector('.text-xs');
+                    if (percentDisplay) {
+                        percentDisplay.textContent = `${this.value}%`;
+                    }
+                });
+            });
+        });
+        
+        // 重置所有设置函数
+        function resetAllSettings() {
+            // 重置所有开关
+            document.querySelectorAll('input[type="checkbox"]').forEach(switchEl => {
+                switchEl.checked = true;
+            });
+            
+            // 重置同步频率
+            const syncFrequency = document.getElementById('syncFrequency');
+            if (syncFrequency) {
+                syncFrequency.value = '30min';
+            }
+            
+            // 重置滑块值
+            document.getElementById('temperatureWeightSlider').value = 40;
+            document.getElementById('humidityWeightSlider').value = 30;
+            document.getElementById('priceWeightSlider').value = 20;
+            document.getElementById('seasonWeightSlider').value = 10;
+            
+            // 更新滑块显示值
+            document.querySelectorAll('input[type="range"]').forEach(slider => {
+                const percentDisplay = slider.previousElementSibling.querySelector('.text-xs');
+                if (percentDisplay) {
+                    percentDisplay.textContent = `${slider.value}%`;
+                }
+            });
+            
+            // 显示重置成功提示
+            alert('所有设置已重置为默认值。');
+        }
+    </script>
+
+ </body></html>

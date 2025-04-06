@@ -250,37 +250,18 @@ class TraceErrorHandler {
       try {
         originalSetItem.apply(this, arguments);
       } catch (e) {
-        const error = {
-          message: 'LocalStorage写入失败',
-          details: { key, errorMessage: e.message },
-          stack: e.stack,
-          type: 'storage'
-        };
-        
-        window.traceErrorHandler.handleError(error);
-        window.traceErrorHandler.showErrorMessage({
-          message: '数据存储失败，可能浏览器存储空间已满',
-          type: 'storage'
-        });
-        
-        // 尝试清理旧数据
-        try {
-          // 移除一些可能的缓存键
-          const possibleCacheKeys = ['trace_cache', 'temp_data', 'user_preferences'];
-          for (const cacheKey of possibleCacheKeys) {
-            if (localStorage.getItem(cacheKey)) {
-              localStorage.removeItem(cacheKey);
-              break;
-            }
-          }
-          // 再尝试保存
-          originalSetItem.apply(this, arguments);
-        } catch (retryError) {
-          // 如果仍然失败，告知用户清理存储
-          window.traceErrorHandler.showErrorMessage({
-            message: '数据存储空间已满，请清理浏览器缓存',
+        // 可能的 QuotaExceededError
+        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+          const error = {
+            message: '本地存储空间已满',
+            details: { key, size: String(value).length },
             type: 'storage'
-          });
+          };
+          
+          self.handleError(error);
+          self.showErrorMessage(error);
+        } else {
+          throw e; // 重新抛出其他错误
         }
       }
     };
@@ -296,8 +277,9 @@ class TraceErrorHandler {
       level: 'error',
       message: error.message || '未知错误',
       details: error.details || error,
-      stack: error.stack,
-      type: error.type || 'javascript'
+      stack: error.stack || '未知堆栈',
+      type: error.type || 'general',
+      timestamp: new Date().toISOString()
     });
     
     // 开发环境控制台输出
@@ -345,6 +327,11 @@ class TraceErrorHandler {
     
     // 控制台输出
     this.consoleLog(logEntry);
+    
+    // 如果启用了远程日志，则发送
+    if (this.config.logRemote && log.level !== 'debug') {
+      this.sendToRemote(log);
+    }
   }
   
   /**
@@ -380,8 +367,7 @@ class TraceErrorHandler {
         console.warn(prefix, log.message, log.details || '');
         break;
       case 'error':
-        console.error(prefix, log.message, log.details || '');
-        if (log.stack) console.error(log.stack);
+        console.error(prefix, log.message, log.details || '', log.stack || '');
         break;
       default:
         console.log(prefix, log.message, log.details || '');
@@ -426,87 +412,108 @@ class TraceErrorHandler {
     // 获取用户友好的错误消息
     const { message, type } = this.getUserFriendlyMessage(error);
     
-    // 如果有traceUI可用，使用其toast功能
-    if (window.traceUI && window.traceUI.showToast) {
-      // 创建带有重试选项的UI
-      if (type === 'network' || type === 'resource') {
-        // 为网络和资源错误创建带有重试按钮的提示
-        const toast = document.createElement('div');
-        toast.className = 'trace-toast error-toast';
-        
-        toast.innerHTML = `
-          <div class="flex items-center bg-red-50 text-red-800 px-4 py-3 rounded shadow-lg">
-            <div class="mr-3">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-              </svg>
-            </div>
-            <div class="flex-1">${message}</div>
-            <button class="ml-3 px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 text-xs rounded retry-button">
-              重试
-            </button>
-          </div>
-        `;
-        
-        // 添加样式
-        const style = document.createElement('style');
-        style.textContent = `
-          .trace-toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            animation: fadeInUp 0.3s ease forwards;
-          }
-          .error-toast {
-            max-width: 90%;
-            width: 320px;
-          }
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translate(-50%, 20px);
-            }
-            to {
-              opacity: 1;
-              transform: translate(-50%, 0);
-            }
-          }
-        `;
-        document.head.appendChild(style);
-        
-        // 添加到页面
-        document.body.appendChild(toast);
-        
-        // 绑定重试按钮事件
-        const retryButton = toast.querySelector('.retry-button');
-        retryButton.addEventListener('click', () => {
-          document.body.removeChild(toast);
-          this.handleRetry(error);
-        });
-        
-        // 自动移除
-        setTimeout(() => {
-          if (document.body.contains(toast)) {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.3s ease';
-            
-            setTimeout(() => {
-              if (document.body.contains(toast)) {
-                document.body.removeChild(toast);
-              }
-            }, 300);
-          }
-        }, 5000);
-      } else {
-        // 普通错误使用标准toast
-        window.traceUI.showToast(message, 'error', 5000);
-      }
-    } else {
-      // 降级到alert
-      alert(message);
+    // 已存在错误提示则不重复显示
+    if (document.querySelector('.trace-error-toast')) {
+      return;
     }
+    
+    // 创建错误提示元素
+    const toast = document.createElement('div');
+    toast.className = 'trace-error-toast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 12px 20px;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      z-index: 10000;
+      max-width: 90%;
+      word-break: break-word;
+      display: flex;
+      align-items: center;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+    `;
+    
+    // 错误图标
+    const icon = document.createElement('i');
+    icon.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="9" stroke="#721c24" stroke-width="2"/>
+        <rect x="9" y="5" width="2" height="7" rx="1" fill="#721c24"/>
+        <circle cx="10" cy="14" r="1" fill="#721c24"/>
+      </svg>
+    `;
+    icon.style.marginRight = '8px';
+    
+    // 错误文本
+    const textContainer = document.createElement('div');
+    textContainer.style.flex = '1';
+    
+    const text = document.createElement('div');
+    text.textContent = message;
+    
+    textContainer.appendChild(text);
+    
+    // 如果有 retry 函数，添加重试按钮
+    if (error.canRetry) {
+      const retryBtn = document.createElement('button');
+      retryBtn.textContent = '重试';
+      retryBtn.style.cssText = `
+        background: none;
+        border: none;
+        color: #0275d8;
+        text-decoration: underline;
+        cursor: pointer;
+        margin-left: 12px;
+        padding: 0;
+        font: inherit;
+      `;
+      
+      retryBtn.addEventListener('click', () => {
+        this.handleRetry(error);
+        toast.remove();
+      });
+      
+      textContainer.appendChild(retryBtn);
+    }
+    
+    // 关闭按钮
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = `
+      background: none;
+      border: none;
+      color: #721c24;
+      font-size: 20px;
+      margin-left: 12px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    `;
+    
+    closeBtn.addEventListener('click', () => {
+      toast.remove();
+    });
+    
+    // 组装错误提示
+    toast.appendChild(icon);
+    toast.appendChild(textContainer);
+    toast.appendChild(closeBtn);
+    
+    // 添加到页面
+    document.body.appendChild(toast);
+    
+    // 自动关闭
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.remove();
+      }
+    }, 8000);
   }
   
   /**
@@ -515,30 +522,23 @@ class TraceErrorHandler {
    * @returns {Object} 用户友好的错误消息
    */
   getUserFriendlyMessage(error) {
-    // 默认错误消息
-    let message = '操作出现了问题';
-    let type = error.type || 'javascript';
-    
-    if (error.message) {
-      if (error.message.includes('NetworkError') || 
-          error.message.includes('网络') || 
-          error.message.includes('XHR') || 
-          error.message.includes('Fetch')) {
-        message = '网络连接异常，请检查您的网络';
-        type = 'network';
-      } else if (error.message.includes('资源') || error.message.includes('image') || error.message.includes('script')) {
-        message = '资源加载失败，请刷新页面';
-        type = 'resource';
-      } else if (error.message.includes('存储') || error.message.includes('Storage')) {
-        message = '数据存储失败，可能浏览器存储空间已满';
-        type = 'storage';
-      } else {
-        // 普通JavaScript错误，使用原始消息
-        message = error.message;
-      }
+    if (error.userMessage) {
+      return error.userMessage;
     }
     
-    return { message, type };
+    if (error.type === 'network') {
+      if (error.message.includes('超时')) {
+        return '请求超时，请检查您的网络连接并稍后再试。';
+      }
+      
+      return '网络连接失败，请检查您的网络并稍后再试。';
+    }
+    
+    if (error.type === 'storage') {
+      return '本地存储空间已满，请清理浏览器缓存。';
+    }
+    
+    return '系统遇到了一个问题，请稍后再试。';
   }
   
   /**
@@ -613,7 +613,7 @@ class TraceErrorHandler {
     this._reportDebounce = setTimeout(() => {
       // 获取最近的错误日志
       const errorLogs = this.logs
-        .filter(log => log.level === 'error')
+        .filter(log => log.level === 'error' || log.level === 'warn')
         .slice(-10); // 最近10条
       
       if (errorLogs.length === 0) return;
@@ -622,7 +622,7 @@ class TraceErrorHandler {
       if (this.config.logRemote) {
         // 批量上报
         this.sendToRemote({
-          level: 'error',
+          level: 'warn',
           message: '批量错误上报',
           details: {
             errorCount: errorLogs.length,
@@ -681,3 +681,4 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
   window.traceErrorHandler = traceErrorHandler;
   window.TraceErrorHandler = TraceErrorHandler;
+}

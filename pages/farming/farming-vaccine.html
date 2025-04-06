@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<!DOCTYPE html><html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>疫苗录入 - 食品溯源系统</title>
@@ -465,7 +463,21 @@
         .button-toolbar .btn:last-child {
             margin-right: 0;
         }
-    </style>
+    
+/* 按钮视觉反馈样式 */
+.trace-button-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  opacity: 0.9;
+}
+
+.trace-button-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.trace-button-active:active {
+  transform: scale(0.97);
+}</style>
 </head>
 <body class="bg-gray-100">
     <div class="page-container">
@@ -473,16 +485,16 @@
         <header class="top-nav">
             <div class="top-nav-container">
                 <div class="flex items-center">
-                    <a href="../home/home-farming.html" class="icon-btn mr-3">
+                    <a href="../home/home-farming.html" class="icon-btn mr-3 hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-farming-vaccine-html-0-1743912419131" aria-label="arrow left" tabindex="0">
                         <i class="fas fa-arrow-left"></i>
                     </a>
                     <h1 class="text-lg font-medium">疫苗录入</h1>
                 </div>
                 <div class="flex items-center">
-                    <button class="icon-btn mr-2" id="refreshBtn">
+                    <button class="icon-btn mr-2 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="refreshBtn" aria-label="sync alt" tabindex="0">
                         <i class="fas fa-sync-alt"></i>
                     </button>
-                    <button class="icon-btn" id="settingsBtn">
+                    <button class="icon-btn trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="settingsBtn" aria-label="ellipsis v" tabindex="0">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                 </div>
@@ -504,7 +516,7 @@
                         <form id="vaccineForm">
                             <div class="form-group">
                                 <label class="form-label" for="batchNumber">批次编号</label>
-                                <select class="form-select" id="batchNumber" required>
+                                <select class="form-select" id="batchNumber" required="">
                                     <option value="">选择养殖批次</option>
                                     <option value="B202304001">B202304001 - 猪群A区</option>
                                     <option value="B202304002">B202304002 - 猪群B区</option>
@@ -514,7 +526,7 @@
                             
                             <div class="form-group">
                                 <label class="form-label" for="livestockType">畜禽类型</label>
-                                <select class="form-select" id="livestockType" required>
+                                <select class="form-select" id="livestockType" required="">
                                     <option value="">请选择畜禽类型</option>
                                     <optgroup label="普通畜禽">
                                         <option value="普通猪">普通猪</option>
@@ -533,7 +545,7 @@
                             
                             <div class="form-group">
                                 <label class="form-label" for="vaccineType">疫苗类型</label>
-                                <select class="form-select" id="vaccineType" required>
+                                <select class="form-select" id="vaccineType" required="">
                                     <option value="">选择疫苗类型</option>
                                     <option value="口蹄疫疫苗">口蹄疫疫苗</option>
                                     <option value="猪瘟疫苗">猪瘟疫苗</option>
@@ -544,27 +556,27 @@
                             
                             <div class="form-group">
                                 <label class="form-label" for="vaccineManufacturer">生产厂家</label>
-                                <input type="text" class="form-input" id="vaccineManufacturer" placeholder="输入疫苗生产厂家" required>
+                                <input type="text" class="form-input" id="vaccineManufacturer" placeholder="输入疫苗生产厂家" required="">
                             </div>
                             
                             <div class="form-group">
                                 <label class="form-label" for="vaccineBatch">疫苗批号</label>
-                                <input type="text" class="form-input" id="vaccineBatch" placeholder="输入疫苗批号" required>
+                                <input type="text" class="form-input" id="vaccineBatch" placeholder="输入疫苗批号" required="">
                             </div>
                             
                             <div class="form-group">
                                 <label class="form-label" for="vaccineDate">接种日期</label>
-                                <input type="date" class="form-input" id="vaccineDate" required>
+                                <input type="date" class="form-input" id="vaccineDate" required="">
                             </div>
                             
                             <div class="form-group">
                                 <label class="form-label" for="vaccineOperator">接种人员</label>
-                                <input type="text" class="form-input" id="vaccineOperator" placeholder="输入接种人员姓名" required>
+                                <input type="text" class="form-input" id="vaccineOperator" placeholder="输入接种人员姓名" required="">
                             </div>
                             
                             <div class="form-group">
                                 <label class="form-label" for="vaccineAmount">接种数量</label>
-                                <input type="number" class="form-input" id="vaccineAmount" placeholder="输入接种动物数量" required>
+                                <input type="number" class="form-input" id="vaccineAmount" placeholder="输入接种动物数量" required="">
                             </div>
                             
                             <!-- 高端畜禽扩展字段 -->
@@ -574,7 +586,7 @@
                                         <i class="fas fa-shield-virus text-[#722ED1] mr-2"></i>
                                         <h3 class="text-base font-medium text-[#722ED1]">高端畜禽疫苗扩展信息</h3>
                                     </div>
-                                    <button type="button" id="toggleHighendBtn" class="text-sm text-[#722ED1]">
+                                    <button type="button" id="toggleHighendBtn" class="text-sm text-[#722ED1] trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" aria-label="chevron down" tabindex="0">
                                         <i class="fas fa-chevron-down"></i>
                                     </button>
                                 </div>
@@ -614,7 +626,7 @@
                                             <div id="signatureArea" class="h-24 flex items-center justify-center bg-gray-50 mb-2 cursor-pointer">
                                                 <span class="text-gray-400" id="signaturePrompt">点击此处进行电子签名</span>
                                             </div>
-                                            <button type="button" id="clearSignature" class="text-xs text-[#1890FF] absolute bottom-3 right-3">
+                                            <button type="button" id="clearSignature" class="text-xs text-[#1890FF] absolute bottom-3 right-3 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" aria-label="清除签名" tabindex="0">
                                                 清除签名
                                             </button>
                                         </div>
@@ -637,8 +649,8 @@
                             </div>
                             
                             <div class="button-toolbar">
-                                <button type="button" class="btn btn-outline" id="resetBtn">重置</button>
-                                <button type="submit" class="btn btn-primary" id="submitBtn">提交记录</button>
+                                <button type="button" class="btn btn-outline trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="resetBtn" aria-label="重置" tabindex="0">重置</button>
+                                <button type="submit" class="btn btn-primary trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="submitBtn" aria-label="提交记录" tabindex="0">提交记录</button>
                             </div>
                         </form>
                     </div>
@@ -1021,5 +1033,5 @@
 
   <!-- 自动按钮升级脚本 (自动注入) -->
   <script src="/components/autoload-button-upgrade.js"></script>
-  </body>
-</html> 
+  
+ </body></html>

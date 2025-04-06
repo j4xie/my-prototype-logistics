@@ -184,6 +184,19 @@
                     </div>
                     <i class="fas fa-chevron-right text-sm text-gray-500"></i>
                 </a>
+                <!-- 系统配置设置项 -->
+                <a href="../../pages/admin/admin-system.html?from=settings" class="flex items-center justify-between p-4 border-t border-gray-100 hover:bg-blue-50 transition-all">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-cogs text-[#00467F]"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium block">系统配置</span>
+                            <span class="text-xs text-gray-500">管理系统核心设置与功能</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-sm text-gray-500"></i>
+                </a>
             </div>
         </div>
 
@@ -217,6 +230,7 @@
                     </div>
                     <i class="fas fa-chevron-right text-sm text-gray-500"></i>
                 </a>
+                <!-- 系统配置设置项（仅管理员可见）- 移除这里的系统配置入口 -->
                 <!-- 设置项3 -->
                 <a href="#" class="flex items-center justify-between p-4 hover:bg-blue-50 transition-all">
                     <div class="flex items-center">
@@ -291,5 +305,16 @@
 
   <!-- 自动按钮升级脚本 (自动注入) -->
   <script src="/components/autoload-button-upgrade.js"></script>
+  
+  <!-- 导入认证模块 -->
+  <script src="../../components/trace-auth.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化页面
+        console.log('设置页面初始化完成');
+        console.log('系统配置已开放给所有用户访问');
+    });
+  </script>
   </body>
 </html> 
