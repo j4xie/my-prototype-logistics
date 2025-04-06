@@ -17,7 +17,19 @@
     "test:html": "node validation/scripts/check-html-structure.js",
     "test:buttons": "node validation/scripts/check-buttons.js",
     "fix:html": "node validation/scripts/fix-html-structure.js",
-    "start": "browser-sync start --server --port 8080 --files \"assets/**/*.*\"",
+    "fix:buttons": "node scripts/validation/scripts/fix-button-attributes.js",
+    "fix:buttons:check": "npm run validate:buttons && npm run fix:buttons && npm run validate:buttons:after-fix",
+    "fix:buttons:report": "node scripts/validation/scripts/generate-button-issues.js",
+    "fix:specific-buttons": "node scripts/fix-specific-buttons.js",
+    "fix:page-transitions": "node scripts/fix-page-transitions.js",
+    "fix:button-navigation": "node scripts/fix-button-navigation.js",
+    "validate:buttons:after-fix": "node validation/scripts/validate-button-improvements.js --output=validation/reports/button_validation_after_fix.json",
+    "validate:buttons:compare": "node scripts/validation/scripts/validate-fixed-buttons.js",
+    "validate:farming:buttons": "node scripts/validation/scripts/validate-farming-buttons.js",
+    "fix:farming:buttons": "node scripts/validation/scripts/fix-farming-buttons.js",
+    "fix:farming:all": "npm run fix:farming:buttons && npm run validate:farming:buttons",
+    "start": "serve -l 8080",
+    "dev": "serve -l 8081",
     "lint": "eslint 'components/**/*.{js,jsx}' 'pages/**/*.{js,jsx}'",
     "build:css": "postcss styles/index.css -o assets/css/main.css",
     "deploy": "npm run build:css && npm run deploy:assets",
@@ -27,6 +39,7 @@
     "validate:buttons": "node validation/scripts/validate-button-improvements.js",
     "validate:functionality": "node validation/scripts/check-functionality.js",
     "validate:navigation": "node validation/scripts/check-page-transitions.js",
+    "validate:page-transitions": "node validation/scripts/check-page-transitions.js --detailed-report",
     "validate:resources": "node validation/scripts/check-resource.js",
     "validate:ui": "node validation/scripts/check-ui.js",
     "validate:farming": "node validation/scripts/run-farming-tests.js",
@@ -34,7 +47,9 @@
     "setup:validation": "powershell -ExecutionPolicy Bypass -File scripts/validation/setup.ps1",
     "setup:git": "powershell -ExecutionPolicy Bypass -File g.ps1",
     "setup:debug": "powershell -ExecutionPolicy Bypass -File start-debug.ps1",
-    "setup:all": "npm run setup:validation && npm run setup:git && npm run setup:debug"
+    "setup:all": "npm run setup:validation && npm run setup:git && npm run setup:debug",
+    "generate:navigation-report": "node validation/scripts/create-navigation-report.js",
+    "test:button-navigation": "node scripts/test-button-navigation.js"
   },
   "keywords": [
     "food",
@@ -45,8 +60,10 @@
   "license": "ISC",
   "dependencies": {
     "@playwright/test": "^1.35.1",
+    "@zxing/library": "^0.20.0",
     "axios": "^1.6.7",
     "chart.js": "^4.4.1",
+    "cheerio": "^1.0.0-rc.12",
     "date-fns": "^3.3.1",
     "dexie": "^3.2.4",
     "exceljs": "^4.4.0",
@@ -58,8 +75,8 @@
     "pako": "^2.1.0",
     "papaparse": "^5.4.1",
     "pdfjs-dist": "^4.0.379",
-    "qrcode": "^1.5.3",
-    "zxing-js": "^0.20.0"
+    "puppeteer": "^24.6.0",
+    "qrcode": "^1.5.3"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",

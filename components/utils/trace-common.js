@@ -1,8 +1,22 @@
 /**
  * 食品溯源系统 - 通用JavaScript工具函数
- * Neo Minimal iOS-Style Admin UI
+ * 此文件为向后兼容文件，重定向到模块化版本
  * 版本: 1.0.0
  */
+
+// 导入模块化版本
+import { traceCommon as modulesTraceCommon } from '../modules/trace-common.js';
+
+// 为了向后兼容，使用相同的变量名
+const traceLoader = modulesTraceCommon.traceLoader;
+const traceAuth = modulesTraceCommon.traceAuth;
+
+// 暴露给全局对象
+window.traceLoader = traceLoader;
+window.traceAuth = traceAuth;
+
+// 输出重定向信息
+console.log('通用工具(utils/trace-common.js)已重定向到模块化版本');
 
 // 确保trace-routes.js已加载
 document.addEventListener('DOMContentLoaded', function() {
@@ -45,259 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(script);
     }
 });
-
-// 资源加载管理
-const traceLoader = {
-    // 缓存已加载的资源
-    loadedResources: {},
-    
-    /**
-     * 初始化资源加载器
-     */
-    init() {
-        // 预加载常用图标
-        this.preloadIcons(['home', 'record', 'user']);
-        
-        // 添加错误处理
-        window.addEventListener('error', this.handleResourceError.bind(this), true);
-        
-        return this;
-    },
-    
-    /**
-     * 预加载图标资源
-     * @param {Array} iconNames - 图标名称数组
-     */
-    preloadIcons(iconNames) {
-        if (!window.traceRoutes || !window.traceRoutes.getIconPath) {
-            // 如果traceRoutes未定义或缺少getIconPath方法，使用默认图标路径
-            iconNames.forEach(name => {
-                // 计算相对路径
-                let iconPath = '';
-                const pagePath = window.location.pathname;
-                
-                if (pagePath.includes('/pages/')) {
-                    // 在子页面中
-                    const depth = pagePath.split('/').filter(Boolean).length - 1;
-                    iconPath = '../'.repeat(depth) + 'assets/icons/';
-                } else {
-                    // 在根目录
-                    iconPath = './assets/icons/';
-                }
-                
-                const iconUrl = `${iconPath}${name}.svg`;
-                this.preloadImage(iconUrl);
-            });
-            return;
-        }
-        
-        iconNames.forEach(name => {
-            // 预加载灰色和蓝色图标
-            [false, true].forEach(isActive => {
-                const iconUrl = window.traceRoutes.getIconPath(name, isActive);
-                this.preloadImage(iconUrl);
-            });
-        });
-    },
-    
-    /**
-     * 预加载图片
-     * @param {string} url - 图片URL
-     * @returns {Promise} - 加载完成的Promise
-     */
-    preloadImage(url) {
-        if (this.loadedResources[url]) {
-            return Promise.resolve(this.loadedResources[url]);
-        }
-        
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-                this.loadedResources[url] = img;
-                resolve(img);
-            };
-            img.onerror = (err) => {
-                console.error(`图片加载失败: ${url}`, err);
-                reject(err);
-            };
-            img.src = url;
-        });
-    },
-    
-    /**
-     * 处理资源加载错误
-     * @param {Event} event - 错误事件
-     */
-    handleResourceError(event) {
-        if (event.target && (event.target.tagName === 'IMG' || event.target.tagName === 'SCRIPT' || event.target.tagName === 'LINK')) {
-            console.error(`资源加载失败: ${event.target.src || event.target.href}`);
-            
-            // 图标加载错误时使用备用图标
-            if (event.target.tagName === 'IMG' && event.target.src.includes('/icons/')) {
-                event.preventDefault();
-                // 计算备用图标路径
-                let fallbackPath = '';
-                const pagePath = window.location.pathname;
-                
-                if (pagePath.includes('/pages/')) {
-                    // 在子页面中
-                    const depth = pagePath.split('/').filter(Boolean).length - 1;
-                    fallbackPath = '../'.repeat(depth) + 'assets/icons/default-icon.svg';
-                } else {
-                    // 在根目录
-                    fallbackPath = './assets/icons/default-icon.svg';
-                }
-                
-                // 替换为备用图标
-                event.target.src = fallbackPath;
-                // 使用灰色背景表示异常
-                event.target.style.backgroundColor = '#f5f5f5';
-                event.target.style.borderRadius = '4px';
-                event.target.style.padding = '2px';
-            }
-        }
-    }
-};
-
-// 用户与权限管理
-const traceAuth = {
-    // 用户信息缓存
-    user: {
-        id: '',
-        name: '',
-        role: '',
-        permissions: [],
-        isAuthenticated: false
-    },
-    
-    /**
-     * 检查用户是否已认证
-     * @returns {boolean} 认证状态
-     */
-    isAuthenticated() {
-        // 开发模式：始终返回true
-        return true;
-        
-        // 正式代码（暂时注释）
-        /*
-        // 从localStorage获取认证状态
-        const userStr = localStorage.getItem('trace_user');
-        if (userStr) {
-            try {
-                const userData = JSON.parse(userStr);
-                this.user = { ...userData, isAuthenticated: true };
-                return true;
-            } catch (e) {
-                console.error('认证数据解析错误', e);
-                this.logout();
-                return false;
-            }
-        }
-        return false;
-        */
-    },
-    
-    /**
-     * 检查用户是否拥有指定权限
-     * @param {string|Array} permission - 权限名称或权限数组
-     * @returns {boolean} 是否有权限
-     */
-    hasPermission(permission) {
-        // 开发模式：始终返回true
-        return true;
-        
-        // 正式代码（暂时注释）
-        /*
-        if (!this.user.isAuthenticated) return false;
-        
-        if (Array.isArray(permission)) {
-            return permission.some(p => this.user.permissions.includes(p));
-        }
-        
-        return this.user.permissions.includes(permission);
-        */
-    },
-    
-    /**
-     * 用户登录
-     * @param {Object} userData - 用户数据对象
-     */
-    login(userData) {
-        this.user = {
-            ...userData,
-            isAuthenticated: true
-        };
-        
-        // 存储到localStorage
-        localStorage.setItem('trace_user', JSON.stringify(this.user));
-    },
-    
-    /**
-     * 用户登出
-     */
-    logout() {
-        this.user = {
-            id: '',
-            name: '',
-            role: '',
-            permissions: [],
-            isAuthenticated: false
-        };
-        
-        // 清除localStorage
-        localStorage.removeItem('trace_user');
-        
-        // 跳转到登录页
-        try {
-            // 使用相对路径计算跳转
-            const pathSegments = window.location.pathname.split('/').filter(Boolean);
-            let loginPath;
-            
-            if (pathSegments.length <= 1 || !pathSegments.includes('pages')) {
-                // 如果在根目录或浅层目录
-                loginPath = './pages/auth/login.html';
-            } else if (pathSegments.length === 2 && pathSegments[0] === 'pages') {
-                // 如果在pages下的直接子目录
-                loginPath = './auth/login.html';
-            } else {
-                // 如果在更深的目录
-                const depth = pathSegments.length - pathSegments.indexOf('pages') - 1;
-                loginPath = '../'.repeat(depth) + 'auth/login.html';
-            }
-            
-            window.location.href = loginPath;
-        } catch (error) {
-            console.error('导航到登录页时出错', error);
-            // 使用绝对路径作为最后手段
-            window.location.href = '/pages/auth/login.html';
-        }
-    },
-    
-    /**
-     * 检查权限或重定向
-     * @param {string|Array} requiredPermission - 所需权限
-     * @param {string} redirectUrl - 重定向URL（可选）
-     * @returns {boolean} - 是否有权限
-     */
-    checkPermissionOrRedirect(requiredPermission, redirectUrl = null) {
-        if (this.hasPermission(requiredPermission)) {
-            return true;
-        }
-        
-        // 重定向到指定URL或登录页
-        if (!redirectUrl) {
-            const isRoot = window.location.pathname === '/' || window.location.pathname.endsWith('/index.html');
-            redirectUrl = isRoot ? './pages/auth/login.html' : '../auth/login.html';
-        }
-        
-        this.showToast('无权限访问此功能', 'error');
-        setTimeout(() => {
-            window.location.href = redirectUrl;
-        }, 1500);
-        
-        return false;
-    }
-};
 
 // 通用UI工具函数
 const traceUI = {
@@ -567,10 +328,7 @@ const traceUI = {
 };
 
 // 将traceAuth和traceUI绑定到window对象
-window.traceAuth = traceAuth;
 window.traceUI = traceUI;
-window.traceLoader = traceLoader;
-window.traceCommon = { ...traceAuth, ...traceUI, ...traceLoader }; // 兼容性
 
 // 文档加载完成后自动初始化
 document.addEventListener('DOMContentLoaded', function() {

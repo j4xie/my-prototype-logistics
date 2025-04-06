@@ -57,6 +57,7 @@ const traceNav = {
     const navItems = [
       { id: 'home', text: '首页', icon: 'home', url: this.getHomeUrl() },
       { id: 'info', text: '信息管理', icon: 'file-alt', url: this.getInfoUrl() },
+      { id: 'data-collection', text: '数据采集', icon: 'database', url: this.getBaseUrl() + 'pages/farming/data-collection-center.html' },
       { id: 'profile', text: '我的', icon: 'user', url: this.getProfileUrl() }
     ];
     
@@ -392,7 +393,7 @@ const traceNav = {
         text-decoration: none;
         color: #7F7F7F;
         transition: color 0.2s ease;
-        width: 33.333%;
+        width: 25%;
         padding: 10px 0;
         position: relative;
         pointer-events: auto; /* 只允许导航项捕获点击事件 */

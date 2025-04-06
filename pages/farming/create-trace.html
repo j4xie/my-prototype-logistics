@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<!DOCTYPE html><html lang="zh-CN"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>创建溯源记录 - 食品溯源系统</title>
@@ -127,7 +125,21 @@
             color: var(--error-color);
             margin-left: 4px;
         }
-    </style>
+    
+/* 按钮视觉反馈样式 */
+.trace-button-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  opacity: 0.9;
+}
+
+.trace-button-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.trace-button-active:active {
+  transform: scale(0.97);
+}</style>
 </head>
 <body class="bg-[#F0F2F5]">
     <div class="max-w-[390px] mx-auto min-h-screen">
@@ -141,7 +153,7 @@
                     <span class="header-title">创建溯源记录</span>
                 </div>
                 <div class="flex items-center">
-                    <a href="#" class="nav-icon" id="helpBtn">
+                    <a href="#" class="nav-icon hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="helpBtn" aria-label="question circle" tabindex="0">
                         <i class="fas fa-question-circle text-white"></i>
                     </a>
                 </div>
@@ -170,7 +182,7 @@
                     </h2>
                     <div class="grid grid-cols-2 gap-4">
                         <label class="type-card bg-white rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer selected" data-type="highend" data-category="livestock">
-                            <input type="radio" name="product-type" class="hidden" checked>
+                            <input type="radio" name="product-type" class="hidden" checked="">
                             <div class="w-12 h-12 rounded-full bg-[#E6F7FF] flex items-center justify-center mb-3">
                                 <i class="fas fa-trophy text-[#1677FF] text-xl"></i>
                             </div>
@@ -213,34 +225,29 @@
                     <div class="space-y-4">
                         <div class="form-group">
                             <label class="form-label form-required" for="batch-no">批次号</label>
-                            <input type="text" id="batch-no" class="form-input" 
-                                placeholder="例如：WG-2503-A" value="WG-2503-A">
+                            <input type="text" id="batch-no" class="form-input" placeholder="例如：WG-2503-A" value="WG-2503-A">
                             <div class="form-help">批次号将用于追踪整批产品</div>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label form-required" for="product-name">产品名称</label>
-                            <input type="text" id="product-name" class="form-input" 
-                                placeholder="输入产品名称" value="A5级和牛肉">
+                            <input type="text" id="product-name" class="form-input" placeholder="输入产品名称" value="A5级和牛肉">
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="form-group">
                                 <label class="form-label form-required" for="production-date">生产日期</label>
-                                <input type="date" id="production-date" class="form-input" 
-                                    value="2025-03-15">
+                                <input type="date" id="production-date" class="form-input" value="2025-03-15">
                             </div>
                             <div class="form-group">
                                 <label class="form-label form-required" for="shelf-life">保质期(天)</label>
-                                <input type="number" id="shelf-life" class="form-input" 
-                                    placeholder="例如：90" value="90">
+                                <input type="number" id="shelf-life" class="form-input" placeholder="例如：90" value="90">
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label form-required" for="origin">产地</label>
-                            <input type="text" id="origin" class="form-input" 
-                                placeholder="输入产地信息" value="日本北海道">
+                            <input type="text" id="origin" class="form-input" placeholder="输入产地信息" value="日本北海道">
                         </div>
 
                         <!-- 畜禽类型选择 (如果选择了畜禽类别才显示) -->
@@ -269,7 +276,7 @@
                                     <i class="fas fa-medal text-[#722ED1] mr-2"></i>
                                     <h3 class="text-base font-medium text-[#722ED1]">高端畜禽特有信息</h3>
                                 </div>
-                                <button type="button" id="toggle-highend-fields" class="text-sm text-[#722ED1]">
+                                <button type="button" id="toggle-highend-fields" class="text-sm text-[#722ED1] trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" aria-label="chevron up" tabindex="0">
                                     <i class="fas fa-chevron-up"></i>
                                 </button>
                             </div>
@@ -277,8 +284,7 @@
                                 <div class="grid grid-cols-2 gap-4 mb-3">
                                     <div class="form-group">
                                         <label class="form-label" for="bloodline-cert">血统证书编号</label>
-                                        <input type="text" id="bloodline-cert" class="form-input" 
-                                            placeholder="输入证书编号">
+                                        <input type="text" id="bloodline-cert" class="form-input" placeholder="输入证书编号">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label" for="breed-level">品种等级</label>
@@ -292,13 +298,11 @@
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" for="special-feed">特殊饲料</label>
-                                    <input type="text" id="special-feed" class="form-input" 
-                                        placeholder="输入特殊饲料信息">
+                                    <input type="text" id="special-feed" class="form-input" placeholder="输入特殊饲料信息">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" for="premium-features">优质特性描述</label>
-                                    <textarea id="premium-features" class="form-input" rows="2" 
-                                      placeholder="描述该畜禽的优质特性，如肉质特点、生长环境等"></textarea>
+                                    <textarea id="premium-features" class="form-input" rows="2" placeholder="描述该畜禽的优质特性，如肉质特点、生长环境等"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -328,7 +332,7 @@
                         </div>
                         <p class="text-base text-gray-700 mb-2">点击或拖拽上传图片</p>
                         <p class="text-sm text-gray-500 mb-4">支持 JPG、PNG 格式，单个文件不超过 5MB</p>
-                        <button class="btn bg-[#1677FF] hover:bg-[#4096FF] text-white px-6 py-2 rounded-lg transition-all active:scale-95">
+                        <button class="btn bg-[#1677FF] text-white px-6 py-2 rounded-lg transition-all trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-create-trace-html-1743899089357-1" aria-label="选择文件" tabindex="0">
                             选择文件
                         </button>
                         <input type="file" class="hidden" accept="image/*">
@@ -342,8 +346,7 @@
                         产品描述
                     </h2>
                     <div class="form-group">
-                        <textarea id="description" class="form-input" rows="4" 
-                              placeholder="输入产品描述信息">日本A5和牛肉，北海道产。肉质细嫩多汁，雪花纹理均匀，脂肪分布理想。适合涮火锅、煎烤等烹饪方式。</textarea>
+                        <textarea id="description" class="form-input" rows="4" placeholder="输入产品描述信息">日本A5和牛肉，北海道产。肉质细嫩多汁，雪花纹理均匀，脂肪分布理想。适合涮火锅、煎烤等烹饪方式。</textarea>
                     </div>
                 </div>
 
@@ -518,10 +521,10 @@
         <!-- 底部操作栏 -->
         <div class="fixed-bottom-bar">
             <div class="max-w-[390px] mx-auto flex space-x-4">
-                <button class="btn flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-200 transition-all active:scale-95">
+                <button class="btn flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-lg transition-all trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-create-trace-html-1743899089357-2" aria-label="保存草稿" tabindex="0">
                     保存草稿
                 </button>
-                <button class="btn flex-1 bg-[#1677FF] text-white px-4 py-3 rounded-lg hover:bg-[#4096FF] transition-all active:scale-95">
+                <button class="btn flex-1 bg-[#1677FF] text-white px-4 py-3 rounded-lg transition-all trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-create-trace-html-1743899089357-3" aria-label="下一步" tabindex="0">
                     下一步
                 </button>
             </div>
@@ -773,5 +776,5 @@
 
   <!-- 自动按钮升级脚本 (自动注入) -->
   <script src="/components/autoload-button-upgrade.js"></script>
-  </body>
-</html> 
+  
+ </body></html>

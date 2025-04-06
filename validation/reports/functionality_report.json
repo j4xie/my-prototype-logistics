@@ -1,81 +1,12 @@
 {
-  "timestamp": "2025-04-03T08:26:39.863Z",
-  "page": "/pages/trace/trace-map.html",
-  "tests": [
-    {
-      "name": "导航菜单验证",
-      "success": false,
-      "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\functionality\\navigation.png",
-      "error": "未找到导航菜单元素",
-      "details": {
-        "selectors": [
-          ".trace-nav",
-          ".trace-top-nav",
-          "#nav-container",
-          "nav",
-          "[role=\"navigation\"]",
-          "header"
-        ],
-        "pageTitle": "溯源地图 - 食品溯源系统"
-      }
-    },
-    {
-      "name": "资源加载验证",
-      "success": false,
-      "details": {
-        "resourceCounts": {
-          "total": 8,
-          "byType": {
-            "document": 1,
-            "stylesheet": 3,
-            "image": 3,
-            "font": 1
-          }
-        },
-        "criticalResources": [
-          {
-            "resource": "/components/trace-core.js",
-            "loaded": false
-          },
-          {
-            "resource": "/components/trace-ui.js",
-            "loaded": false
-          },
-          {
-            "resource": "/components/trace-scanner.js",
-            "loaded": false
-          },
-          {
-            "resource": "/components/trace-map.js",
-            "loaded": false
-          },
-          {
-            "resource": "/components/trace-blockchain.js",
-            "loaded": false
-          },
-          {
-            "resource": "/components/config-manager.js",
-            "loaded": false
-          },
-          {
-            "resource": "/assets/styles/styles.css",
-            "loaded": true
-          }
-        ],
-        "failedResources": [
-          {
-            "url": "https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-            "type": "image",
-            "failure": "net::ERR_BLOCKED_BY_ORB"
-          }
-        ]
-      }
-    }
-  ],
-  "status": "failed",
-  "summary": {
-    "total": 2,
-    "passed": 0,
-    "failed": 2
-  }
+  "timestamp": "2025-04-06T00:37:20.567Z",
+  "url": "http://localhost:8080/",
+  "hasNavigation": false,
+  "hasFooter": true,
+  "hasMainContent": false,
+  "buttonCount": 0,
+  "buttonClickable": false,
+  "formCount": 0,
+  "screenshotPath": "C:\\Users\\Steve\\heiniu\\validation\\screenshots\\functionality_test_final.png",
+  "status": "success"
 }

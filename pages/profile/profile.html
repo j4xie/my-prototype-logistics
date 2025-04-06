@@ -165,7 +165,7 @@
             }
             
             // 更新用户信息显示
-            const user = traceAuth.getUser();
+            const user = traceAuth.getCurrentUser();
             if (user) {
                 document.getElementById('userName').textContent = user.name || '用户';
                 document.getElementById('userRole').textContent = user.role || '普通用户';
