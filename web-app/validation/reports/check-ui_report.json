@@ -1,0 +1,38 @@
+{
+  "导航菜单": {
+    "selector": "nav",
+    "count": 0,
+    "status": "失败",
+    "details": "未找到元素"
+  },
+  "按钮": {
+    "selector": "button",
+    "count": 0,
+    "status": "失败",
+    "details": "未找到元素"
+  },
+  "链接": {
+    "selector": "a",
+    "count": 0,
+    "status": "失败",
+    "details": "未找到元素"
+  },
+  "图片": {
+    "selector": "img",
+    "count": 0,
+    "status": "失败",
+    "details": "未找到元素"
+  },
+  "标题": {
+    "selector": "h1",
+    "count": 0,
+    "status": "失败",
+    "details": "未找到元素"
+  },
+  "页脚": {
+    "selector": "footer",
+    "count": 0,
+    "status": "失败",
+    "details": "未找到元素"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-04-03T00:43:08.183Z",
+  "totalRequests": 263,
+  "failedRequests": 7,
+  "failureRate": "2.66%",
+  "details": [
+    {
+      "url": "http://localhost:8888/pages/processing/assets/styles.css",
+      "resourceType": "stylesheet",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:8888/pages/processing/assets/styles.css",
+      "resourceType": "stylesheet",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:8888/pages/processing/assets/styles.css",
+      "resourceType": "stylesheet",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:8888/pages/processing/components/trace-common.js",
+      "resourceType": "script",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://localhost:8888/pages/processing/components/trace-common.js",
+      "resourceType": "script",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://via.placeholder.com/200x50?text=Food+Trace+Logo",
+      "resourceType": "image",
+      "failure": "net::ERR_NAME_NOT_RESOLVED"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+      "resourceType": "image",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    }
+  ]
+}

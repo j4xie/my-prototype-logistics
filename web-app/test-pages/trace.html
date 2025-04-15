@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食品溯源系统 - 产品溯源测试</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .test-info {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 25px;
+            border-left: 4px solid #4CAF50;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .button-group {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .search-btn {
+            background-color: #4CAF50;
+            color: white;
+            flex-grow: 1;
+        }
+        .test-btn {
+            background-color: #FF9800;
+            color: white;
+        }
+        .reset-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .message {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        .error {
+            background-color: #FFEBEE;
+            border-left: 4px solid #F44336;
+            color: #D32F2F;
+        }
+        .success {
+            background-color: #E8F5E9;
+            border-left: 4px solid #4CAF50;
+            color: #2E7D32;
+        }
+        .result-container {
+            margin-top: 30px;
+            display: none;
+        }
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+        .result-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin: 0;
+        }
+        .result-id {
+            font-size: 16px;
+            color: #666;
+            background-color: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        .result-section {
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .info-label {
+            width: 120px;
+            color: #666;
+            font-weight: bold;
+        }
+        .info-value {
+            flex-grow: 1;
+            color: #333;
+        }
+        .certification-tag {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .test-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .test-table th {
+            background-color: #f0f0f0;
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        .test-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        .test-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .test-result-pass {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .auth-status {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #E3F2FD;
+            border-radius: 4px;
+            color: #1976D2;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>食品溯源系统 - 产品溯源测试</h1>
+        <p>此页面用于测试产品溯源查询功能，可直接在浏览器中打开使用。</p>
+        
+        <div class="test-info">
+            <h3>测试产品信息</h3>
+            <p><strong>有机西红柿：</strong> TR123456</p>
+            <p><strong>生态猪肉：</strong> TR789012</p>
+            <p><strong>纯天然蜂蜜：</strong> TR345678</p>
+        </div>
+
+        <div class="auth-status" id="authStatus">未登录</div>
+
+        <form id="traceForm">
+            <div class="form-group">
+                <label for="traceId">产品溯源码：</label>
+                <input type="text" id="traceId" name="traceId" placeholder="请输入产品溯源码（如TR123456）" required>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" class="search-btn">查询溯源信息</button>
+                <button type="button" class="test-btn" id="fillTestData">测试数据</button>
+                <button type="button" class="reset-btn" id="resetBtn">重置</button>
+            </div>
+        </form>
+        
+        <div id="errorMessage" class="message error"></div>
+        
+        <div id="loadingIndicator" class="loading">
+            <div class="loading-spinner"></div>
+            <div>正在加载溯源数据...</div>
+        </div>
+        
+        <div id="traceResult" class="result-container">
+            <div class="result-header">
+                <h2 class="result-title" id="productName"></h2>
+                <div class="result-id" id="productId"></div>
+            </div>
+            
+            <div class="result-section">
+                <h3 class="section-title">基本信息</h3>
+                <div class="info-row">
+                    <div class="info-label">生产企业</div>
+                    <div class="info-value" id="producer"></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">生产日期</div>
+                    <div class="info-value" id="productDate"></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">生产地点</div>
+                    <div class="info-value" id="location"></div>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3 class="section-title">详细信息</h3>
+                <div id="detailsContainer"></div>
+            </div>
+            
+            <div class="result-section">
+                <h3 class="section-title">认证信息</h3>
+                <div id="certificationsContainer"></div>
+            </div>
+            
+            <div class="result-section">
+                <h3 class="section-title">质量检测记录</h3>
+                <table class="test-table">
+                    <thead>
+                        <tr>
+                            <th>检测日期</th>
+                            <th>检测项目</th>
+                            <th>检测结果</th>
+                        </tr>
+                    </thead>
+                    <tbody id="qualityTestsContainer">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 测试数据
+        const mockTraceData = {
+            'TR123456': {
+                id: 'TR123456',
+                name: '有机西红柿',
+                producer: '绿色农场',
+                date: '2025-03-15',
+                location: '山东省潍坊市',
+                details: {
+                    plantDate: '2025-01-10',
+                    harvestDate: '2025-03-10',
+                    fertilizer: '有机肥',
+                    pesticide: '无',
+                    certifications: ['有机认证', '绿色食品'],
+                    qualityTests: [
+                        { date: '2025-03-12', result: '合格', items: '农药残留,重金属,微生物' },
+                        { date: '2025-03-14', result: '合格', items: '包装,标签,感官' }
+                    ]
+                }
+            },
+            'TR789012': {
+                id: 'TR789012',
+                name: '生态猪肉',
+                producer: '健康牧场',
+                date: '2025-04-01',
+                location: '河南省郑州市',
+                details: {
+                    breed: '本地黑猪',
+                    feedType: '有机饲料',
+                    slaughterDate: '2025-03-30',
+                    certifications: ['无抗生素', '动物福利认证'],
+                    qualityTests: [
+                        { date: '2025-03-30', result: '合格', items: '兽药残留,寄生虫检测' },
+                        { date: '2025-04-01', result: '合格', items: '微生物,感官' }
+                    ]
+                }
+            },
+            'TR345678': {
+                id: 'TR345678',
+                name: '纯天然蜂蜜',
+                producer: '野花蜂场',
+                date: '2025-02-20',
+                location: '云南省昆明市',
+                details: {
+                    flowerSource: '野生百花',
+                    harvestSeason: '2025年初春',
+                    processing: '低温脱水',
+                    certifications: ['无添加', '野生认证'],
+                    qualityTests: [
+                        { date: '2025-02-18', result: '合格', items: '重金属,农药残留' },
+                        { date: '2025-02-19', result: '合格', items: '水分,质量指标' }
+                    ]
+                }
+            }
+        };
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            initPage();
+        });
+
+        function initPage() {
+            // 表单提交事件
+            document.getElementById('traceForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                queryTraceData();
+            });
+
+            // 填充测试数据按钮
+            document.getElementById('fillTestData').addEventListener('click', function() {
+                fillRandomTestData();
+            });
+
+            // 重置按钮
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                resetForm();
+            });
+
+            // 检查认证状态
+            checkAuthStatus();
+        }
+
+        // 更新认证状态显示
+        function updateAuthStatusDisplay() {
+            const token = localStorage.getItem('auth_token');
+            const statusElem = document.getElementById('authStatus');
+            
+            if (token) {
+                try {
+                    // 尝试解析JWT令牌
+                    const parts = token.split('.');
+                    if (parts.length === 3) {
+                        const payload = JSON.parse(atob(parts[1]));
+                        statusElem.textContent = `已登录：${payload.name}（${payload.role === 'admin' ? '管理员' : '普通用户'}）`;
+                    } else {
+                        statusElem.textContent = '已登录，但令牌格式无效';
+                    }
+                } catch (e) {
+                    statusElem.textContent = '已登录，但无法解析令牌内容';
+                }
+            } else {
+                statusElem.textContent = '未登录状态，访客模式';
+            }
+        }
+
+        // 检查认证状态
+        function checkAuthStatus() {
+            updateAuthStatusDisplay();
+        }
+
+        // 显示错误消息
+        function showError(message) {
+            const errorElem = document.getElementById('errorMessage');
+            errorElem.textContent = message;
+            errorElem.style.display = 'block';
+            
+            // 隐藏结果和加载指示器
+            document.getElementById('traceResult').style.display = 'none';
+            document.getElementById('loadingIndicator').style.display = 'none';
+        }
+
+        // 填充随机测试数据
+        function fillRandomTestData() {
+            const traceIds = Object.keys(mockTraceData);
+            const randomIndex = Math.floor(Math.random() * traceIds.length);
+            document.getElementById('traceId').value = traceIds[randomIndex];
+        }
+
+        // 重置表单
+        function resetForm() {
+            document.getElementById('traceForm').reset();
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('traceResult').style.display = 'none';
+            document.getElementById('loadingIndicator').style.display = 'none';
+        }
+
+        // 查询溯源数据
+        function queryTraceData() {
+            const traceId = document.getElementById('traceId').value.trim();
+            
+            if (!traceId) {
+                showError('请输入产品溯源码');
+                return;
+            }
+            
+            // 隐藏错误消息
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // 显示加载指示器
+            document.getElementById('loadingIndicator').style.display = 'block';
+            
+            // 模拟API请求延迟
+            setTimeout(() => {
+                if (mockTraceData[traceId]) {
+                    displayTraceData(mockTraceData[traceId]);
+                } else {
+                    showError(`未找到溯源码为"${traceId}"的产品信息`);
+                }
+                
+                // 隐藏加载指示器
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }, 800); // 模拟网络请求延迟
+        }
+
+        // 显示溯源数据
+        function displayTraceData(data) {
+            // 基本信息
+            document.getElementById('productName').textContent = data.name;
+            document.getElementById('productId').textContent = data.id;
+            document.getElementById('producer').textContent = data.producer;
+            document.getElementById('productDate').textContent = data.date;
+            document.getElementById('location').textContent = data.location;
+            
+            // 详细信息
+            const detailsContainer = document.getElementById('detailsContainer');
+            detailsContainer.innerHTML = '';
+            
+            const details = data.details;
+            Object.keys(details).forEach(key => {
+                // 跳过认证和质量检测，这些会单独显示
+                if (key !== 'certifications' && key !== 'qualityTests') {
+                    const row = document.createElement('div');
+                    row.className = 'info-row';
+                    
+                    const label = document.createElement('div');
+                    label.className = 'info-label';
+                    label.textContent = formatDetailLabel(key);
+                    
+                    const value = document.createElement('div');
+                    value.className = 'info-value';
+                    value.textContent = details[key];
+                    
+                    row.appendChild(label);
+                    row.appendChild(value);
+                    detailsContainer.appendChild(row);
+                }
+            });
+            
+            // 认证信息
+            const certificationsContainer = document.getElementById('certificationsContainer');
+            certificationsContainer.innerHTML = '';
+            
+            if (details.certifications && details.certifications.length > 0) {
+                details.certifications.forEach(cert => {
+                    const tag = document.createElement('span');
+                    tag.className = 'certification-tag';
+                    tag.textContent = cert;
+                    certificationsContainer.appendChild(tag);
+                });
+            } else {
+                certificationsContainer.textContent = '无认证信息';
+            }
+            
+            // 质量检测记录
+            const qualityTestsContainer = document.getElementById('qualityTestsContainer');
+            qualityTestsContainer.innerHTML = '';
+            
+            if (details.qualityTests && details.qualityTests.length > 0) {
+                details.qualityTests.forEach(test => {
+                    const row = document.createElement('tr');
+                    
+                    const dateCell = document.createElement('td');
+                    dateCell.textContent = test.date;
+                    
+                    const itemsCell = document.createElement('td');
+                    itemsCell.textContent = test.items;
+                    
+                    const resultCell = document.createElement('td');
+                    resultCell.className = test.result.includes('合格') ? 'test-result-pass' : '';
+                    resultCell.textContent = test.result;
+                    
+                    row.appendChild(dateCell);
+                    row.appendChild(itemsCell);
+                    row.appendChild(resultCell);
+                    
+                    qualityTestsContainer.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 3;
+                cell.textContent = '无质量检测记录';
+                row.appendChild(cell);
+                qualityTestsContainer.appendChild(row);
+            }
+            
+            // 显示结果容器
+            document.getElementById('traceResult').style.display = 'block';
+        }
+
+        // 格式化详细信息标签
+        function formatDetailLabel(key) {
+            const labels = {
+                'plantDate': '种植日期',
+                'harvestDate': '采收日期',
+                'fertilizer': '使用肥料',
+                'pesticide': '农药使用',
+                'breed': '品种',
+                'feedType': '饲料类型',
+                'slaughterDate': '屠宰日期',
+                'flowerSource': '花源',
+                'harvestSeason': '采集季节',
+                'processing': '加工工艺'
+            };
+            
+            return labels[key] || key;
+        }
+    </script>
+</body>
+</html> 

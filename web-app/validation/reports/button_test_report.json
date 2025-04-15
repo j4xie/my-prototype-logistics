@@ -1,0 +1,316 @@
+{
+  "timestamp": "2025-04-12T11:23:37.455Z",
+  "baseUrl": "http://localhost:8080",
+  "results": [
+    {
+      "path": "/pages/trace/trace-map.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-map.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-map.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/trace/trace-list.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-list.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-list.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/trace/trace-detail.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-detail.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-detail.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/trace/trace-certificate.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-certificate.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-certificate.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/trace/trace-edit.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-edit.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-edit.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/home/home-selector.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-selector.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-selector.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/home/home-farming.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-farming.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-farming.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/home/home-processing.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-processing.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-processing.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/home/home-logistics.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-logistics.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-logistics.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/home/home-admin.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-admin.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-admin.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/auth/login.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/login.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/login.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/auth/register.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/register.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/register.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/auth/forgot-password.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/forgot-password.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/forgot-password.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/auth/reset-password.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/reset-password.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/reset-password.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/farming/farming-breeding.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-breeding.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-breeding.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/farming/farming-feeding.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-feeding.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-feeding.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/farming/farming-health.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-health.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-health.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/farming/farming-environment.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-environment.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-environment.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/farming/farming-statistics.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-statistics.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-statistics.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/farming/farming-monitor.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-monitor.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-monitor.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/farming/farming-vaccine.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-vaccine.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-vaccine.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/farming/create-trace.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/create-trace.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/create-trace.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/processing/processing-slaughter.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-slaughter.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-slaughter.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/processing/processing-quality.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-quality.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-quality.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/processing/processing-environment.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-environment.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-environment.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/processing/processing-reports.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-reports.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-reports.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/logistics/logistics-create.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/logistics-create.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/logistics-create.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/logistics/logistics-list.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/logistics-list.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/logistics-list.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/logistics/logistics-detail.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/logistics-detail.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/logistics-detail.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/logistics/vehicle-monitor.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/vehicle-monitor.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/vehicle-monitor.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/logistics/client-management.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/client-management.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/client-management.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/profile/profile.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/profile.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/profile.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/profile/notifications.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/notifications.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/notifications.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/profile/settings.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/settings.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/settings.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/admin/admin-dashboard.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-dashboard.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-dashboard.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/admin/admin-system.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-system.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-system.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/admin/admin-users.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-users.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-users.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    },
+    {
+      "path": "/pages/product-trace.html",
+      "isPrototype": false,
+      "isDirectoryListing": false,
+      "buttons": [],
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/product-trace.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/product-trace.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "screenshot": null
+    }
+  ],
+  "status": "success",
+  "summary": {
+    "totalPages": 38,
+    "totalButtons": 0,
+    "errorPages": 38
+  }
+}

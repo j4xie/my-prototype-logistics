@@ -1,0 +1,162 @@
+{
+  "timestamp": "2025-04-12T11:22:48.809Z",
+  "totalPages": 17,
+  "successCount": 0,
+  "failCount": 17,
+  "results": [
+    {
+      "name": "首页",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\index.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\index.html",
+      "title": null,
+      "screenshot": null,
+      "success": false,
+      "errorMessage": "导航错误: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"file:///C:/Users/Steve/heiniu/web-app/index.html\", waiting until \"networkidle\"\u001b[22m\n"
+    },
+    {
+      "name": "养殖-繁育信息",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\farming-breeding.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\farming-breeding.html",
+      "title": "繁育信息管理 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\养殖-繁育信息_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "养殖-饲养管理",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\farming-monitor.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\farming-monitor.html",
+      "title": "场地监控 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\养殖-饲养管理_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "加工-屠宰处理",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\processing\\processing-slaughter.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\processing\\processing-slaughter.html",
+      "title": "屠宰信息录入 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\加工-屠宰处理_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "物流-创建运单",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\logistics\\logistics-create.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\logistics\\logistics-create.html",
+      "title": "创建物流订单 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\物流-创建运单_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "溯源-地图",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\trace\\trace-map.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\trace\\trace-map.html",
+      "title": "溯源地图 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\溯源-地图_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "系统管理",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\admin\\admin-system.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\admin\\admin-system.html",
+      "title": "403 访问被拒绝 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\系统管理_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 403 - 禁止访问"
+    },
+    {
+      "name": "登录",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\auth\\login.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\auth\\login.html",
+      "title": "用户登录 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\登录_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "数据采集中心",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\data-collection-center.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\data-collection-center.html",
+      "title": "数据采集中心 - 养殖管理系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\数据采集中心_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "手动采集",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\manual-collection.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\manual-collection.html",
+      "title": "手动数据采集 - 养殖管理系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\手动采集_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "二维码采集",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\qrcode-collection.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\qrcode-collection.html",
+      "title": "二维码数据采集 - 养殖管理系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\二维码采集_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "自动监控",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\auto-monitoring.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\auto-monitoring.html",
+      "title": "自动数据监控 - 养殖管理系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\自动监控_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "指标详情",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\indicator-detail.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\indicator-detail.html",
+      "title": "指标详情分析 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\指标详情_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "创建溯源",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\create-trace.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\create-trace.html",
+      "title": "创建溯源记录 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\创建溯源_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "预测分析",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\prediction-analytics.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\prediction-analytics.html",
+      "title": "数据趋势预测 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\预测分析_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "预测配置",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\prediction-config.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\prediction-config.html",
+      "title": "预测模型配置 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\预测配置_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    },
+    {
+      "name": "模型管理",
+      "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\model-management.html",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\model-management.html",
+      "title": "预测模型管理 - 食品溯源系统",
+      "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\模型管理_page.png",
+      "success": false,
+      "errorMessage": "页面错误: 500 - 服务器错误"
+    }
+  ],
+  "status": "success"
+}

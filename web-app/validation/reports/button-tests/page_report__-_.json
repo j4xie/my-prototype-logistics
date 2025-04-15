@@ -1,0 +1,216 @@
+{
+  "url": "http://localhost:8888/",
+  "title": "食品溯源系统 - 原型界面",
+  "module": "首页",
+  "screenshot": "page__-_.png",
+  "buttons": [
+    {
+      "text": "返回",
+      "type": {
+        "element": "button"
+      },
+      "identifiers": {
+        "id": "nav-back-button",
+        "class": "trace-top-nav-back",
+        "hasOnclick": false
+      },
+      "state": {
+        "isVisible": true,
+        "isEnabled": true
+      },
+      "location": {
+        "x": 56,
+        "y": 10,
+        "width": 36,
+        "height": 36
+      },
+      "selector": "#nav-back-button"
+    },
+    {
+      "text": "搜索",
+      "type": {
+        "element": "button"
+      },
+      "identifiers": {
+        "id": "nav-search-button",
+        "class": "trace-top-nav-button",
+        "hasOnclick": false
+      },
+      "state": {
+        "isVisible": true,
+        "isEnabled": true
+      },
+      "location": {
+        "x": 1144,
+        "y": 10,
+        "width": 36,
+        "height": 36
+      },
+      "selector": "#nav-search-button"
+    },
+    {
+      "text": "更多选项",
+      "type": {
+        "element": "button"
+      },
+      "identifiers": {
+        "id": "nav-more-button",
+        "class": "trace-top-nav-button",
+        "hasOnclick": false
+      },
+      "state": {
+        "isVisible": true,
+        "isEnabled": true
+      },
+      "location": {
+        "x": 1188,
+        "y": 10,
+        "width": 36,
+        "height": 36
+      },
+      "selector": "#nav-more-button"
+    }
+  ],
+  "buttonResults": [
+    {
+      "button": {
+        "text": "返回",
+        "type": {
+          "element": "button"
+        },
+        "identifiers": {
+          "id": "nav-back-button",
+          "class": "trace-top-nav-back",
+          "hasOnclick": false
+        },
+        "state": {
+          "isVisible": true,
+          "isEnabled": true
+        },
+        "location": {
+          "x": 56,
+          "y": 10,
+          "width": 36,
+          "height": 36
+        },
+        "selector": "#nav-back-button"
+      },
+      "interactionResult": {
+        "success": true,
+        "action": "dom_update",
+        "responseType": "dom_change",
+        "error": null,
+        "screenshot": "after_click_.png"
+      }
+    },
+    {
+      "button": {
+        "text": "搜索",
+        "type": {
+          "element": "button"
+        },
+        "identifiers": {
+          "id": "nav-search-button",
+          "class": "trace-top-nav-button",
+          "hasOnclick": false
+        },
+        "state": {
+          "isVisible": true,
+          "isEnabled": true
+        },
+        "location": {
+          "x": 1144,
+          "y": 10,
+          "width": 36,
+          "height": 36
+        },
+        "selector": "#nav-search-button"
+      },
+      "interactionResult": {
+        "success": false,
+        "action": "unknown",
+        "responseType": "none",
+        "error": "按钮不可见，无法交互",
+        "screenshot": null
+      }
+    },
+    {
+      "button": {
+        "text": "更多选项",
+        "type": {
+          "element": "button"
+        },
+        "identifiers": {
+          "id": "nav-more-button",
+          "class": "trace-top-nav-button",
+          "hasOnclick": false
+        },
+        "state": {
+          "isVisible": true,
+          "isEnabled": true
+        },
+        "location": {
+          "x": 1188,
+          "y": 10,
+          "width": 36,
+          "height": 36
+        },
+        "selector": "#nav-more-button"
+      },
+      "interactionResult": {
+        "success": false,
+        "action": "unknown",
+        "responseType": "none",
+        "error": "按钮不可见，无法交互",
+        "screenshot": null
+      }
+    }
+  ],
+  "analysis": {
+    "url": "http://localhost:8888/",
+    "module": "首页",
+    "buttonCount": 3,
+    "successfulInteractions": 1,
+    "failedInteractions": 2,
+    "mainIssues": "2个按钮交互失败",
+    "overallAssessment": "差，多数按钮存在问题，需要全面检查",
+    "buttonAnalysis": [
+      {
+        "button": "返回",
+        "analysis": {
+          "type": "button",
+          "state": "可见, 可用",
+          "interactionSuccess": true,
+          "actionType": "dom_update",
+          "responseType": "dom_change",
+          "error": null,
+          "recommendation": "功能正常，无需改进"
+        }
+      },
+      {
+        "button": "搜索",
+        "analysis": {
+          "type": "button",
+          "state": "可见, 可用",
+          "interactionSuccess": false,
+          "actionType": "unknown",
+          "responseType": "none",
+          "error": "按钮不可见，无法交互",
+          "recommendation": "修复按钮交互功能，错误: 按钮不可见，无法交互"
+        }
+      },
+      {
+        "button": "更多选项",
+        "analysis": {
+          "type": "button",
+          "state": "可见, 可用",
+          "interactionSuccess": false,
+          "actionType": "unknown",
+          "responseType": "none",
+          "error": "按钮不可见，无法交互",
+          "recommendation": "修复按钮交互功能，错误: 按钮不可见，无法交互"
+        }
+      }
+    ]
+  }
+}

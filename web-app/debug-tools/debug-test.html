@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试工具测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .error-button {
+            background-color: #f44336;
+        }
+    </style>
+<script src="components/trace-common.js"></script><script src="components/trace-error-handler.js"></script><script src="components/trace-ui.js"></script><script src="components/trace-nav.js"></script><script src="components/trace-a11y.js"></script><script src="components/trace-store.js"></script></head>
+<body>
+    <h1>调试工具测试页面</h1>
+    
+    <div class="card">
+        <h2>调试控制面板</h2>
+        <button onclick="window.showDebugPanel()">显示调试面板</button>
+        <button onclick="console.log('这是一条日志消息', {data: '测试数据'})">记录日志</button>
+        <button class="error-button" onclick="console.error('这是一条错误消息')">记录错误</button>
+        <button onclick="triggerError()">触发错误</button>
+    </div>
+    
+    <div class="card">
+        <h2>存储数据测试</h2>
+        <button onclick="localStorage.setItem('test_' + Date.now(), 'test value: ' + Date.now())">添加测试数据</button>
+        <button onclick="showStorageUsage()">查看存储使用情况</button>
+    </div>
+    
+    <div class="card">
+        <h2>性能数据</h2>
+        <button onclick="showPerformanceData()">查看性能数据</button>
+    </div>
+    
+    <div class="card">
+        <h2>错误日志</h2>
+        <button onclick="showErrorLogs()">查看错误日志</button>
+        <button onclick="window.debugTools.clearErrorLogs()">清除错误日志</button>
+    </div>
+    
+    <script>
+        function triggerError() {
+            try {
+                // 故意制造错误
+                const obj = null;
+                obj.nonExistentMethod();
+            } catch (err) {
+                console.error('捕获到错误:', err.message);
+                throw new Error('重新抛出的错误');
+            }
+        }
+        
+        function showStorageUsage() {
+            var total = 0;
+            var items = {};
+            
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+                var value = localStorage.getItem(key);
+                var size = (key.length + value.length) * 2; // UTF-16字符占用2字节
+                
+                total += size;
+                items[key] = (size / 1024).toFixed(2) + " KB";
+            }
+            
+            var result = {
+                "总使用量": (total / 1024).toFixed(2) + " KB",
+                "限制": "5 MB (通常)",
+                "使用率": ((total / (5 * 1024 * 1024)) * 100).toFixed(2) + "%",
+                "详细": items
+            };
+            
+            alert(JSON.stringify(result, null, 2));
+        }
+        
+        function showPerformanceData() {
+            alert(JSON.stringify(window.debugTools.getPerformanceData(), null, 2));
+        }
+        
+        function showErrorLogs() {
+            var logs = window.debugTools.getErrorLogs();
+            alert("错误日志数量: " + logs.length + "\n\n" + JSON.stringify(logs, null, 2));
+        }
+    </script>
+    
+    <!-- 引入调试脚本 -->
+    <script src="debug.js"></script>
+
+ </body></html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>食品溯源系统 - 测试登录</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #333;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    p {
+      color: #666;
+      margin-bottom: 20px;
+    }
+    .login-info {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 25px;
+      border-left: 4px solid #4CAF50;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    .button-group {
+      margin-top: 25px;
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .login-btn {
+      background-color: #4CAF50;
+      color: white;
+      flex-grow: 1;
+    }
+    .test-btn {
+      background-color: #2196F3;
+      color: white;
+    }
+    .fill-admin {
+      background-color: #FF9800;
+      color: white;
+    }
+    .fill-user {
+      background-color: #9C27B0;
+      color: white;
+    }
+    .message {
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 4px;
+      display: none;
+    }
+    .error {
+      background-color: #FFEBEE;
+      border-left: 4px solid #F44336;
+      color: #D32F2F;
+    }
+    .success {
+      background-color: #E8F5E9;
+      border-left: 4px solid #4CAF50;
+      color: #2E7D32;
+    }
+    .status-display {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #E3F2FD;
+      border-radius: 4px;
+    }
+    .status-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #1976D2;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>食品溯源系统 - 测试登录</h1>
+    <p>此页面用于测试登录功能，可直接在浏览器中打开使用。</p>
+    
+    <div class="login-info">
+      <h3>测试账户信息</h3>
+      <p><strong>管理员账户：</strong> admin / admin123</p>
+      <p><strong>普通用户：</strong> user / user123</p>
+    </div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">用户名：</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">密码：</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      
+      <div class="button-group">
+        <button type="submit" class="login-btn">登录</button>
+        <button type="button" class="test-btn" id="testAuth">测试认证</button>
+        <button type="button" class="fill-admin" id="fillAdmin">管理员</button>
+        <button type="button" class="fill-user" id="fillUser">用户</button>
+      </div>
+    </form>
+    
+    <div id="errorMessage" class="message error"></div>
+    <div id="successMessage" class="message success"></div>
+    
+    <div class="status-display">
+      <div class="status-title">认证状态：</div>
+      <pre id="authStatus">未登录</pre>
+    </div>
+  </div>
+
+  <script>
+    // 初始化页面
+    document.addEventListener('DOMContentLoaded', function() {
+      initPage();
+    });
+
+    function initPage() {
+      // 表单提交事件
+      document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleLogin();
+      });
+
+      // 测试认证按钮
+      document.getElementById('testAuth').addEventListener('click', function() {
+        checkAuthStatus();
+      });
+
+      // 填充管理员账户按钮
+      document.getElementById('fillAdmin').addEventListener('click', function() {
+        fillTestAccount('admin');
+      });
+
+      // 填充普通用户账户按钮
+      document.getElementById('fillUser').addEventListener('click', function() {
+        fillTestAccount('user');
+      });
+
+      // 初始检查认证状态
+      updateStatusDisplay();
+    }
+
+    // 更新状态显示
+    function updateStatusDisplay() {
+      const token = localStorage.getItem('auth_token');
+      const statusElem = document.getElementById('authStatus');
+      
+      if (token) {
+        try {
+          // 尝试解析JWT令牌（简化版，仅展示目的）
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            statusElem.textContent = '已登录\n\n令牌信息：\n' + JSON.stringify(payload, null, 2);
+          } else {
+            statusElem.textContent = '已登录，但令牌格式无效';
+          }
+        } catch (e) {
+          statusElem.textContent = '已登录，但无法解析令牌内容';
+        }
+      } else {
+        statusElem.textContent = '未登录';
+      }
+    }
+
+    // 显示错误消息
+    function showError(message) {
+      const errorElem = document.getElementById('errorMessage');
+      errorElem.textContent = message;
+      errorElem.style.display = 'block';
+      
+      document.getElementById('successMessage').style.display = 'none';
+    }
+
+    // 显示成功消息
+    function showSuccess(message) {
+      const successElem = document.getElementById('successMessage');
+      successElem.textContent = message;
+      successElem.style.display = 'block';
+      
+      document.getElementById('errorMessage').style.display = 'none';
+    }
+
+    // 处理登录请求
+    function handleLogin() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      // 简单的模拟验证（实际应用中应使用真实API请求）
+      if ((username === 'admin' && password === 'admin123') || 
+          (username === 'user' && password === 'user123')) {
+        
+        // 创建模拟JWT令牌
+        const now = Math.floor(Date.now() / 1000);
+        const payload = {
+          sub: username,
+          name: username === 'admin' ? '管理员' : '普通用户',
+          role: username === 'admin' ? 'admin' : 'user',
+          iat: now,
+          exp: now + 3600, // 1小时过期
+        };
+        
+        const encodedPayload = btoa(JSON.stringify(payload));
+        const mockToken = `header.${encodedPayload}.signature`;
+        
+        // 将令牌存储在localStorage中
+        localStorage.setItem('auth_token', mockToken);
+        
+        showSuccess(`登录成功！欢迎回来，${payload.name}`);
+        updateStatusDisplay();
+      } else {
+        showError('登录失败：用户名或密码不正确');
+      }
+    }
+
+    // 检查认证状态
+    function checkAuthStatus() {
+      const token = localStorage.getItem('auth_token');
+      
+      if (token) {
+        try {
+          // 解析JWT令牌（简化版）
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            const now = Math.floor(Date.now() / 1000);
+            
+            if (payload.exp && payload.exp < now) {
+              showError('认证已过期，请重新登录');
+              localStorage.removeItem('auth_token');
+            } else {
+              showSuccess(`认证有效，用户：${payload.name}，角色：${payload.role}`);
+            }
+          } else {
+            showError('认证无效：令牌格式不正确');
+          }
+        } catch (e) {
+          showError('认证无效：无法解析令牌');
+        }
+      } else {
+        showError('未登录状态');
+      }
+      
+      updateStatusDisplay();
+    }
+
+    // 填充测试账户
+    function fillTestAccount(type) {
+      if (type === 'admin') {
+        document.getElementById('username').value = 'admin';
+        document.getElementById('password').value = 'admin123';
+      } else if (type === 'user') {
+        document.getElementById('username').value = 'user';
+        document.getElementById('password').value = 'user123';
+      }
+    }
+  </script>
+</body>
+</html> 
