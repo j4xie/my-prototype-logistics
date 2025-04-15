@@ -1,0 +1,240 @@
+/* 食品溯源系统组件样式
+ * 版本: 1.0.0
+ * 包含按钮、表单元素等基础UI组件的样式
+ */
+
+/* 基础按钮样式 */
+.trace-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  background-color: #00467F;
+  color: #ffffff;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 次要按钮样式 */
+.trace-button-secondary {
+  background-color: #ffffff;
+  color: #00467F;
+  border: 1px solid #00467F;
+}
+
+/* 按钮悬停和焦点状态 */
+.trace-button:hover,
+.trace-button:focus {
+  background-color: #003566;
+  text-decoration: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.trace-button-secondary:hover,
+.trace-button-secondary:focus {
+  background-color: #f0f7ff;
+  border-color: #003566;
+}
+
+/* 按钮活动状态 - 点击时 */
+.trace-button:active {
+  background-color: #002b53;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.trace-button-secondary:active {
+  background-color: #e6f0fd;
+  border-color: #002b53;
+}
+
+/* 禁用状态 */
+.trace-button:disabled,
+.trace-button.disabled {
+  opacity: 0.65;
+  pointer-events: none;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 图标按钮样式 */
+.trace-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  background-color: transparent;
+  color: #00467F;
+  border: 1px solid #e0e0e0;
+  border-radius: 50%;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.trace-icon-button:hover,
+.trace-icon-button:focus {
+  background-color: #f0f7ff;
+  border-color: #00467F;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.trace-icon-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 按钮内容布局 */
+.button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.button-icon + .button-text {
+  margin-left: 0.5rem;
+}
+
+/* 按钮加载状态 */
+.trace-button-loading {
+  position: relative;
+  color: transparent !important;
+}
+
+.trace-button-loading .loading-spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1rem;
+  height: 1rem;
+  margin-left: -0.5rem;
+  margin-top: -0.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: trace-button-spinner 0.8s infinite linear;
+}
+
+.trace-button-secondary.trace-button-loading .loading-spinner {
+  border: 2px solid rgba(0, 70, 127, 0.2);
+  border-top-color: #00467F;
+}
+
+.trace-button-loading .loading-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@keyframes trace-button-spinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 焦点状态 - 辅助功能 */
+.trace-button:focus-visible,
+.trace-icon-button:focus-visible {
+  outline: 2px solid #00467F;
+  outline-offset: 2px;
+}
+
+/* 按钮涟漪效果 */
+.trace-button-with-feedback {
+  overflow: hidden;
+}
+
+.trace-button-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.4);
+  transform: scale(0);
+  animation: trace-button-ripple 0.6s linear;
+  pointer-events: none;
+}
+
+.trace-button-secondary .trace-button-ripple,
+.trace-icon-button .trace-button-ripple {
+  background-color: rgba(0, 70, 127, 0.2);
+}
+
+@keyframes trace-button-ripple {
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* 标签按钮 - 用于溯源详情页面的标签切换 */
+.tab-button {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4a5568;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.tab-button:hover {
+  color: #00467F;
+}
+
+.tab-button.active {
+  color: #00467F;
+  border-bottom-color: #00467F;
+}
+
+/* 模块卡片 - 用于首页模块选择 */
+.module-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+  color: #333333;
+  cursor: pointer;
+}
+
+.module-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  border-color: #c0c0c0;
+}
+
+.module-card:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.module-card:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 70, 127, 0.2);
+} 

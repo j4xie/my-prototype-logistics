@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食品溯源系统 - 测试覆盖率报告</title>
+    <style>
+        :root {
+            --primary: #3b7c6e;
+            --primary-light: #4c9d8c;
+            --primary-dark: #2a5b4f;
+            --secondary: #f39c12;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --info: #3498db;
+            --gray: #95a5a6;
+            --gray-light: #ecf0f1;
+            --gray-dark: #7f8c8d;
+            --text: #2c3e50;
+            --bg: #f9f9f9;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            padding: 0;
+            margin: 0;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 500;
+        }
+        
+        header p {
+            margin: 0.5rem 0 0;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .summary {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .summary h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            border-bottom: 1px solid var(--gray-light);
+            padding-bottom: 0.5rem;
+        }
+        
+        .metrics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .metric-card {
+            flex: 1;
+            min-width: 220px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .metric-card h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--gray-dark);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .metric-value .change {
+            font-size: 0.9rem;
+            margin-left: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .change.positive {
+            color: var(--success);
+            background-color: rgba(46, 204, 113, 0.15);
+        }
+        
+        .change.negative {
+            color: var(--danger);
+            background-color: rgba(231, 76, 60, 0.15);
+        }
+        
+        .metric-card p {
+            font-size: 0.9rem;
+            color: var(--gray-dark);
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: var(--gray-light);
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+        
+        .progress-high {
+            background-color: var(--success);
+        }
+        
+        .progress-medium {
+            background-color: var(--warning);
+        }
+        
+        .progress-low {
+            background-color: var(--danger);
+        }
+        
+        .modules {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .modules h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            border-bottom: 1px solid var(--gray-light);
+            padding-bottom: 0.5rem;
+        }
+        
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .module-card {
+            background-color: white;
+            border-radius: 8px;
+            padding:.5rem 1.5rem 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .module-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        
+        .module-card.high::before {
+            background-color: var(--success);
+        }
+        
+        .module-card.medium::before {
+            background-color: var(--warning);
+        }
+        
+        .module-card.low::before {
+            background-color: var(--danger);
+        }
+        
+        .module-card h3 {
+            font-size: 1.2rem;
+            margin: 0.75rem 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .module-card h3 .coverage {
+            font-size: 0.9rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .coverage.high {
+            color: var(--success);
+            background-color: rgba(46, 204, 113, 0.15);
+        }
+        
+        .coverage.medium {
+            color: var(--warning);
+            background-color: rgba(241, 196, 15, 0.15);
+        }
+        
+        .coverage.low {
+            color: var(--danger);
+            background-color: rgba(231, 76, 60, 0.15);
+        }
+        
+        .file-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .file-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--gray-light);
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .file-coverage {
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+        
+        .time-series {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .time-series h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            border-bottom: 1px solid var(--gray-light);
+            padding-bottom: 0.5rem;
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin-top: 1rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        thead th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background-color: var(--gray-light);
+            font-weight: 500;
+        }
+        
+        tbody td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        footer {
+            background-color: var(--primary-dark);
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        footer p {
+            margin: 0;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .generated {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .metrics {
+                flex-direction: column;
+            }
+            
+            .metric-card {
+                min-width: 100%;
+            }
+            
+            .module-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>食品溯源系统 - 测试覆盖率报告</h1>
+        <p>最新覆盖率数据 - 版本 1.0.2 (2025年5月)</p>
+    </header>
+
+    <div class="container">
+        <div class="summary">
+            <h2>覆盖率概览</h2>
+            <div class="metrics">
+                <div class="metric-card">
+                    <h3>语句覆盖率</h3>
+                    <div class="metric-value">
+                        73.42% <span class="change positive">+4.27%</span>
+                    </div>
+                    <p>被执行的语句占总语句数的百分比</p>
+                    <div class="progress-container">
+                        <div class="progress-bar progress-medium" style="width: 73.42%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <h3>分支覆盖率</h3>
+                    <div class="metric-value">
+                        51.78% <span class="change positive">+4.46%</span>
+                    </div>
+                    <p>被执行的分支占总分支数的百分比</p>
+                    <div class="progress-container">
+                        <div class="progress-bar progress-low" style="width: 51.78%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <h3>函数覆盖率</h3>
+                    <div class="metric-value">
+                        65.34% <span class="change positive">+4.56%</span>
+                    </div>
+                    <p>被调用的函数占总函数数的百分比</p>
+                    <div class="progress-container">
+                        <div class="progress-bar progress-medium" style="width: 65.34%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <h3>行覆盖率</h3>
+                    <div class="metric-value">
+                        73.82% <span class="change positive">+3.86%</span>
+                    </div>
+                    <p>被执行的代码行占总代码行的百分比</p>
+                    <div class="progress-container">
+                        <div class="progress-bar progress-medium" style="width: 73.82%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modules">
+            <h2>各模块覆盖率</h2>
+            <div class="module-grid">
+                <div class="module-card high">
+                    <h3>Utils <span class="coverage high">89.75%</span></h3>
+                    <ul class="file-list">
+                        <li class="file-item">
+                            <span class="file-name">string-utils.js</span>
+                            <span class="file-coverage coverage high">95.2%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">date-utils.js</span>
+                            <span class="file-coverage coverage high">92.8%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">validation.js</span>
+                            <span class="file-coverage coverage high">90.5%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">formatting.js</span>
+                            <span class="file-coverage coverage high">85.3%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">object-utils.js</span>
+                            <span class="file-coverage coverage high">84.9%</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="module-card medium">
+                    <h3>Auth <span class="coverage medium">78.62%</span></h3>
+                    <ul class="file-list">
+                        <li class="file-item">
+                            <span class="file-name">token.js</span>
+                            <span class="file-coverage coverage high">89.7%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">login.js</span>
+                            <span class="file-coverage coverage high">84.1%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">permissions.js</span>
+                            <span class="file-coverage coverage high">81.5%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">session.js</span>
+                            <span class="file-coverage coverage medium">74.3%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">loader.js</span>
+                            <span class="file-coverage coverage medium">63.5%</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="module-card medium">
+                    <h3>UI <span class="coverage medium">72.15%</span></h3>
+                    <ul class="file-list">
+                        <li class="file-item">
+                            <span class="file-name">icons.js</span>
+                            <span class="file-coverage coverage high">86.3%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">forms.js</span>
+                            <span class="file-coverage coverage high">82.7%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">buttons.js</span>
+                            <span class="file-coverage coverage medium">75.9%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">tables.js</span>
+                            <span class="file-coverage coverage medium">67.3%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">modals.js</span>
+                            <span class="file-coverage coverage medium">65.2%</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="module-card medium">
+                    <h3>Store <span class="coverage medium">65.47%</span></h3>
+                    <ul class="file-list">
+                        <li class="file-item">
+                            <span class="file-name">state-manager.js</span>
+                            <span class="file-coverage coverage high">80.2%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">store.js</span>
+                            <span class="file-coverage coverage medium">73.5%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">persistence.js</span>
+                            <span class="file-coverage coverage medium">62.1%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">mutations.js</span>
+                            <span class="file-coverage coverage medium">57.8%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">actions.js</span>
+                            <span class="file-coverage coverage low">54.1%</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="module-card low">
+                    <h3>Data <span class="coverage low">52.48%</span></h3>
+                    <ul class="file-list">
+                        <li class="file-item">
+                            <span class="file-name">mappers.js</span>
+                            <span class="file-coverage coverage medium">65.8%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">models.js</span>
+                            <span class="file-coverage coverage medium">59.2%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">repository.js</span>
+                            <span class="file-coverage coverage low">52.7%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">api-client.js</span>
+                            <span class="file-coverage coverage low">45.9%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">transform.js</span>
+                            <span class="file-coverage coverage low">38.8%</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="module-card low">
+                    <h3>API <span class="coverage low">47.31%</span></h3>
+                    <ul class="file-list">
+                        <li class="file-item">
+                            <span class="file-name">api-base.js</span>
+                            <span class="file-coverage coverage medium">62.3%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">auth-api.js</span>
+                            <span class="file-coverage coverage medium">57.1%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">product-api.js</span>
+                            <span class="file-coverage coverage low">46.7%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">trace-api.js</span>
+                            <span class="file-coverage coverage low">38.5%</span>
+                        </li>
+                        <li class="file-item">
+                            <span class="file-name">reporting-api.js</span>
+                            <span class="file-coverage coverage low">32.1%</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="time-series">
+            <h2>覆盖率趋势</h2>
+            <div class="chart-container">
+                <canvas id="coverageChart"></canvas>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>语句覆盖率</th>
+                        <th>分支覆盖率</th>
+                        <th>函数覆盖率</th>
+                        <th>行覆盖率</th>
+                        <th>变化</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>2025-05-04</td>
+                        <td>73.42%</td>
+                        <td>51.78%</td>
+                        <td>65.34%</td>
+                        <td>73.82%</td>
+                        <td><span class="change positive">+4.27%</span></td>
+                    </tr>
+                    <tr>
+                        <td>2025-04-20</td>
+                        <td>69.15%</td>
+                        <td>47.32%</td>
+                        <td>60.78%</td>
+                        <td>69.96%</td>
+                        <td><span class="change positive">+2.81%</span></td>
+                    </tr>
+                    <tr>
+                        <td>2025-04-05</td>
+                        <td>66.34%</td>
+                        <td>45.21%</td>
+                        <td>58.92%</td>
+                        <td>67.15%</td>
+                        <td><span class="change positive">+5.37%</span></td>
+                    </tr>
+                    <tr>
+                        <td>2025-03-22</td>
+                        <td>60.97%</td>
+                        <td>41.85%</td>
+                        <td>54.28%</td>
+                        <td>61.78%</td>
+                        <td><span class="change positive">+3.15%</span></td>
+                    </tr>
+                    <tr>
+                        <td>2025-03-08</td>
+                        <td>57.82%</td>
+                        <td>39.46%</td>
+                        <td>51.62%</td>
+                        <td>58.63%</td>
+                        <td><span class="change positive">+1.93%</span></td>
+                    </tr>
+                    <tr>
+                        <td>2025-02-23</td>
+                        <td>55.89%</td>
+                        <td>38.19%</td>
+                        <td>49.23%</td>
+                        <td>56.70%</td>
+                        <td>基准</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        <p>食品溯源系统 - 内部测试覆盖率报告</p>
+        <p class="generated">报告生成时间: 2025年5月4日 15:35:42</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('coverageChart').getContext('2d');
+            
+            const dates = [
+                '2025-02-23',
+                '2025-03-08',
+                '2025-03-22',
+                '2025-04-05',
+                '2025-04-20',
+                '2025-05-04'
+            ];
+            
+            const statementData = [55.89, 57.82, 60.97, 66.34, 69.15, 73.42];
+            const branchData = [38.19, 39.46, 41.85, 45.21, 47.32, 51.78];
+            const functionData = [49.23, 51.62, 54.28, 58.92, 60.78, 65.34];
+            const lineData = [56.70, 58.63, 61.78, 67.15, 69.96, 73.82];
+            
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: '语句覆盖率',
+                            data: statementData,
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '分支覆盖率',
+                            data: branchData,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '函数覆盖率',
+                            data: functionData,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '行覆盖率',
+                            data: lineData,
+                            borderColor: '#f39c12',
+                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 30,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 4,
+                            hoverRadius: 6
+                        }
+                    }
+                }
+            });
+            
+            // 为进度条添加渐变样式
+            document.querySelectorAll('.progress-bar').forEach(bar => {
+                const value = parseFloat(bar.style.width);
+                if (value >= 80) {
+                    bar.classList.remove('progress-medium', 'progress-low');
+                    bar.classList.add('progress-high');
+                } else if (value >= 60) {
+                    bar.classList.remove('progress-high', 'progress-low');
+                    bar.classList.add('progress-medium');
+                } else {
+                    bar.classList.remove('progress-high', 'progress-medium');
+                    bar.classList.add('progress-low');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
