@@ -1,0 +1,129 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试摘要报告</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+        color: #333;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+      }
+      .summary {
+        background-color: #f8f9fa;
+        border-left: 4px solid #3498db;
+        padding: 15px;
+        margin: 20px 0;
+      }
+      .status {
+        font-weight: bold;
+        padding: 5px 10px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+      .pass {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .fail {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .warn {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+      .test-item {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .timestamp {
+        color: #6c757d;
+        font-size: 0.9em;
+      }
+      .duration {
+        font-size: 0.9em;
+        color: #6c757d;
+        margin-left: 10px;
+      }
+      .report-links {
+        margin-top: 20px;
+      }
+      .report-link {
+        display: block;
+        margin: 5px 0;
+        padding: 10px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #495057;
+      }
+      .report-link:hover {
+        background-color: #dee2e6;
+      }
+      .details {
+        margin-top: 5px;
+        font-size: 0.9em;
+        color: #495057;
+      }
+    </style>
+  <script src="../components/trace-common.js"></script><script src="../components/trace-error-handler.js"></script><script src="../components/trace-ui.js"></script><script src="../components/trace-nav.js"></script><script src="../components/trace-a11y.js"></script><script src="../components/trace-store.js"></script></head>
+  <body>
+    <div class="container">
+      <h1>测试摘要报告</h1>
+      
+      <div class="summary">
+        <p>测试时间: <span class="timestamp">2025/4/5 17:41:06</span></p>
+        <p>整体状态: <span class="status fail">失败</span></p>
+        <p>总耗时: 287.93秒</p>
+        <p>通过测试: 9/10</p>
+      </div>
+      
+      <h2>测试结果</h2>
+      
+      <div class="test-item">
+        <h3>单元测试 <span class="duration">8.61秒</span></h3>
+        <p>状态: <span class="status pass">通过</span></p>
+        <p class="details">所有单元测试通过</p>
+      </div>
+      
+      <div class="test-item">
+        <h3>UI验证 <span class="duration">4.92秒</span></h3>
+        <p>状态: <span class="status pass">通过</span></p>
+        <p class="details">UI元素验证通过</p>
+      </div>
+      
+      <div class="test-item">
+        <h3>功能测试 <span class="duration">5.24秒</span></h3>
+        <p>状态: <span class="status pass">通过</span></p>
+        <p class="details">功能验证测试通过</p>
+      </div>
+      
+      <div class="test-item">
+        <h3>按钮功能测试 <span class="duration">119.06秒</span></h3>
+        <p>状态: <span class="status pass">全部通过</span></p>
+        <p class="details">按钮改进验证通过</p>
+      </div>
+      
+      <div class="report-links">
+        <h2>详细报告</h2>
+        <a href="functionality_test_report.json" class="report-link">功能测试详细报告</a>
+        <a href="ui_validation_report.json" class="report-link">UI验证详细报告</a>
+        <a href="button-tests/button_test_report.html" class="report-link">按钮功能测试详细报告</a>
+      </div>
+    </div>
+  
+  
+  </body></html>

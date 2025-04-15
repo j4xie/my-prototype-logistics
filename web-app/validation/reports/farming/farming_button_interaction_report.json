@@ -1,0 +1,81 @@
+{
+  "timestamp": "2025-04-04T03:57:52.835Z",
+  "summary": {
+    "totalTests": 10,
+    "successfulTests": 7,
+    "failedTests": 3,
+    "successRate": "70.00%"
+  },
+  "testResults": [
+    {
+      "name": "右上角刷新按钮",
+      "success": true,
+      "details": "按钮属性检查:\n- 可见性: ✓ 可见\n- 无障碍标签: ✓ 存在 (Refresh Btn)\n- 键盘可访问性: ✗ 不存在\n- 点击处理程序: ✓ 存在\n- 按钮内容: \n                        <i class=\"fas fa-sync-alt\"></i>\n                    \n\n刷新功能测试:\n- 时间戳变化: 2164ms\n- 显示刷新提示: ✗ 否\n✓ 刷新按钮功能正常",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\refresh_button_after.png",
+      "suggestion": ""
+    },
+    {
+      "name": "右上角三个点按钮",
+      "success": false,
+      "details": "按钮属性检查:\n- 可见性: ✓ 可见\n- 无障碍标签: ✓ 存在 (Settings Btn)\n- 键盘可访问性: ✗ 不存在\n- 点击处理程序: ✓ 存在\n- 按钮内容: \n                        <i class=\"fas fa-ellipsis-v\"></i>\n                    \n\n交互功能测试:\n✗ 点击后没有菜单或弹窗出现\n✗ 点击后没有明显的按钮状态变化\n✗ 按钮可能没有交互功能",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\settings_button_after.png",
+      "suggestion": "建议为三个点按钮添加菜单或设置面板，或者如果功能尚未实现，可以添加aria-label=\"设置（即将推出）\"并暂时禁用或隐藏按钮"
+    },
+    {
+      "name": "创建养殖记录按钮",
+      "success": false,
+      "details": "按钮属性检查:\n- 可见性: ✓ 可见\n- 可点击: ✓ 可点击\n- 无障碍标签: ✓ 存在 (创建养殖记录)\n- 键盘可访问性: ✓ 存在 (tabindex=0)\n- 按钮文本: 创建养殖记录\n\n跳转测试:\n✓ 成功跳转到: http://localhost:8080/pages/farming/create-trace.html\n✓ 跳转路径符合预期\n✓ 创建养殖记录按钮功能正常\n目标页面标题: 创建溯源记录 - 食品溯源系统\n✗ 目标页面可能不存在（检测到错误信息）\n",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\createRecordBtn_after.png",
+      "suggestion": "请确认/pages/farming/create-trace.html页面是否存在，或创建该页面"
+    },
+    {
+      "name": "动物疫苗录入按钮",
+      "success": true,
+      "details": "按钮属性检查:\n- 可见性: ✓ 可见\n- 可点击: ✓ 可点击\n- 无障碍标签: ✓ 存在 (动物疫苗录入)\n- 键盘可访问性: ✓ 存在 (tabindex=0)\n- 按钮文本: 动物疫苗录入\n\n跳转测试:\n✓ 成功跳转到: http://localhost:8080/pages/farming/farming-vaccine.html\n✓ 跳转路径符合预期\n✓ 动物疫苗录入按钮功能正常\n目标页面标题: 疫苗录入 - 食品溯源系统\n",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\vaccineBtn_after.png",
+      "suggestion": ""
+    },
+    {
+      "name": "繁育信息管理按钮",
+      "success": true,
+      "details": "按钮属性检查:\n- 可见性: ✓ 可见\n- 可点击: ✓ 可点击\n- 无障碍标签: ✓ 存在 (繁育信息管理)\n- 键盘可访问性: ✓ 存在 (tabindex=0)\n- 按钮文本: 繁育信息管理\n\n跳转测试:\n✓ 成功跳转到: http://localhost:8080/pages/farming/farming-breeding.html\n✓ 跳转路径符合预期\n✓ 繁育信息管理按钮功能正常\n目标页面标题: 繁育信息管理 - 食品溯源系统\n",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\breedingBtn_after.png",
+      "suggestion": ""
+    },
+    {
+      "name": "场地视频监控按钮",
+      "success": true,
+      "details": "按钮属性检查:\n- 可见性: ✓ 可见\n- 可点击: ✓ 可点击\n- 无障碍标签: ✓ 存在 (场地视频监控)\n- 键盘可访问性: ✓ 存在 (tabindex=0)\n- 按钮文本: 场地视频监控\n\n跳转测试:\n✓ 成功跳转到: http://localhost:8080/pages/farming/farming-monitor.html\n✓ 跳转路径符合预期\n✓ 场地视频监控按钮功能正常\n目标页面标题: 场地监控 - 食品溯源系统\n",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\monitorBtn_after.png",
+      "suggestion": ""
+    },
+    {
+      "name": "养殖状态监控详情按钮",
+      "success": true,
+      "details": "按钮属性检查:\n- 可见性: ✓ 可见\n- 链接地址: ../farming/farming-report.html\n- 文本内容: 详情\n- 无障碍标签: ✗ 不存在\n\n跳转测试:\n✓ 成功跳转到: http://localhost:8080/pages/farming/farming-report.html\n✓ 跳转路径符合预期\n✓ 养殖状态监控详情按钮功能正常\n目标页面标题: Error\n",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\养殖状态监控详情_after.png",
+      "suggestion": ""
+    },
+    {
+      "name": "饲养趋势详情按钮",
+      "success": true,
+      "details": "按钮属性检查:\n- 可见性: ✓ 可见\n- 链接地址: ../farming/farming-analytics.html\n- 文本内容: 详情\n- 无障碍标签: ✗ 不存在\n\n跳转测试:\n✓ 成功跳转到: http://localhost:8080/pages/farming/farming-analytics.html\n✓ 跳转路径符合预期\n✓ 饲养趋势详情按钮功能正常\n目标页面标题: Error\n",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\饲养趋势详情_after.png",
+      "suggestion": ""
+    },
+    {
+      "name": "畜禽类型选择功能",
+      "success": true,
+      "details": "畜禽类型选择UI检查:\n- 发现 2 个畜禽类型选项\n- 类型: normal, 文本: 普通畜禽\n常规养殖记录, 已选择: 否\n- 类型: highend, 文本: 高端畜禽\n精细养殖管理, 已选择: 否\n\n畜禽类型选择位置评估:\n✗ 畜禽类型选择不应该在首页显示，这是UI错误\n\n交互功能测试:\n✗ 切换畜禽类型失败，点击后状态未改变\n✓ 畜禽类型选择功能正常工作\n\n总结: 畜禽类型选择功能本身可能正常工作，但不应该显示在首页，这是一个UI/UX设计问题",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\livestock_type_selection.png",
+      "suggestion": "建议将畜禽类型选择移动到创建养殖记录表单中，从首页中移除"
+    },
+    {
+      "name": "底部导航栏",
+      "success": false,
+      "details": "底部导航栏检查:\n- 导航项数量: 3\n- 项目 1: 首页, 激活状态: 否, 有链接: 是, 链接地址: home-selector.html\n- 项目 2: 信息管理, 激活状态: 是, 有链接: 是, 链接地址: ../farming/farming-breeding.html\n- 项目 3: 我的, 激活状态: 否, 有链接: 是, 链接地址: ../profile/profile.html\n- 样式一致性: ✓ 一致\n\n\"信息管理\"导航项检查:\n✓ \"信息管理\"项链接正确\n\n\"信息管理\"项点击测试:\n✓ 成功跳转到繁育信息管理页面\n\n测试过程中出错: elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n",
+      "screenshotPath": "..\\reports\\farming\\screenshots\\bottom_nav_after_click.png",
+      "suggestion": ""
+    }
+  ]
+}

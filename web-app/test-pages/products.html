@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品列表测试页面 - 食品溯源系统</title>
+    <style>
+        :root {
+            --primary-color: #4caf50;
+            --primary-dark: #388e3c;
+            --primary-light: #a5d6a7;
+            --accent-color: #ff9800;
+            --text-color: #333;
+            --text-light: #666;
+            --background-color: #f5f5f5;
+            --card-color: #fff;
+            --border-color: #e0e0e0;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        h1 {
+            color: var(--primary-dark);
+            font-size: 1.8rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 8px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .secondary-button {
+            background-color: #f5f5f5;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .secondary-button:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .filter-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: var(--card-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+        
+        select, input {
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .product-card {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+        
+        .product-details {
+            padding: 15px;
+        }
+        
+        .product-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .product-category {
+            color: var(--primary-color);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .product-origin {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .product-price {
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .product-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+        
+        .star {
+            color: gold;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--card-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .login-form button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .page-button {
+            padding: 5px 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .page-button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .page-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            font-size: 16px;
+            color: var(--text-light);
+        }
+        
+        @media (max-width: 768px) {
+            .product-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }
+            
+            .filter-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>食品溯源系统 - 产品测试页面</h1>
+        <div class="user-info">
+            <div id="loggedInUser" class="hidden">
+                <span id="userName"></span>
+                <button id="logoutButton" class="secondary-button">退出登录</button>
+            </div>
+            <div id="notLoggedIn">
+                <button id="showLoginButton">登录</button>
+            </div>
+        </div>
+    </header>
+    
+    <div id="messageArea"></div>
+    
+    <div id="loginSection" class="hidden">
+        <div class="login-form">
+            <h2>用户登录</h2>
+            <div class="form-group">
+                <label for="username">用户名:</label>
+                <input type="text" id="username" placeholder="输入用户名">
+            </div>
+            <div class="form-group">
+                <label for="password">密码:</label>
+                <input type="password" id="password" placeholder="输入密码">
+            </div>
+            <button id="loginButton">登录</button>
+            <button id="cancelLoginButton" class="secondary-button">取消</button>
+        </div>
+    </div>
+    
+    <div id="productSection">
+        <div class="filter-section">
+            <div>
+                <label for="categoryFilter">类别:</label>
+                <select id="categoryFilter">
+                    <option value="">全部类别</option>
+                </select>
+            </div>
+            <div>
+                <label for="originFilter">产地:</label>
+                <select id="originFilter">
+                    <option value="">全部产地</option>
+                </select>
+            </div>
+            <div>
+                <label for="searchInput">搜索:</label>
+                <input type="text" id="searchInput" placeholder="输入关键词搜索">
+            </div>
+            <div>
+                <label for="pageSize">每页显示:</label>
+                <select id="pageSize">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <div style="align-self: end;">
+                <button id="applyFilters">应用筛选</button>
+            </div>
+        </div>
+        
+        <div id="productsLoading" class="loading">加载产品数据中...</div>
+        
+        <div id="productGrid" class="product-grid"></div>
+        
+        <div id="pagination" class="pagination"></div>
+    </div>
+    
+    <script>
+        // 全局变量
+        let currentPage = 1;
+        let pageSize = 10;
+        let categoryFilter = '';
+        let originFilter = '';
+        let searchFilter = '';
+        let productData = [];
+        let categoryData = [];
+        let originData = [];
+        let authToken = localStorage.getItem('authToken');
+        let userData = null;
+        
+        // DOM 元素
+        const productGrid = document.getElementById('productGrid');
+        const pagination = document.getElementById('pagination');
+        const productsLoading = document.getElementById('productsLoading');
+        const messageArea = document.getElementById('messageArea');
+        const categoryFilterEl = document.getElementById('categoryFilter');
+        const originFilterEl = document.getElementById('originFilter');
+        const searchInputEl = document.getElementById('searchInput');
+        const pageSizeEl = document.getElementById('pageSize');
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        const loginSection = document.getElementById('loginSection');
+        const productSection = document.getElementById('productSection');
+        const loginButton = document.getElementById('loginButton');
+        const cancelLoginButton = document.getElementById('cancelLoginButton');
+        const showLoginButton = document.getElementById('showLoginButton');
+        const logoutButton = document.getElementById('logoutButton');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loggedInUser = document.getElementById('loggedInUser');
+        const notLoggedIn = document.getElementById('notLoggedIn');
+        const userNameEl = document.getElementById('userName');
+        
+        // 辅助函数 - 显示消息
+        function showMessage(message, type = 'error') {
+            messageArea.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+        
+        // 辅助函数 - API 请求
+        async function fetchApi(endpoint, options = {}) {
+            try {
+                const url = `/api/${endpoint}`;
+                
+                // 默认选项
+                const defaultOptions = {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                // 如果有认证令牌，添加到请求头
+                if (authToken) {
+                    defaultOptions.headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
+                // 合并默认选项和用户提供的选项
+                const fetchOptions = { ...defaultOptions, ...options };
+                
+                const response = await fetch(url, fetchOptions);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || '请求失败');
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API 请求失败:', error);
+                showMessage(`API 请求失败: ${error.message}`);
+                return null;
+            }
+        }
+        
+        // 加载分类数据
+        async function loadCategories() {
+            const data = await fetchApi('categories');
+            if (data && data.categories) {
+                categoryData = data.categories;
+                
+                // 更新分类筛选下拉框
+                categoryData.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    categoryFilterEl.appendChild(option);
+                });
+            }
+        }
+        
+        // 加载产地数据
+        async function loadOrigins() {
+            const data = await fetchApi('origins');
+            if (data && data.origins) {
+                originData = data.origins;
+                
+                // 更新产地筛选下拉框
+                originData.forEach(origin => {
+                    const option = document.createElement('option');
+                    option.value = origin.id;
+                    option.textContent = origin.name;
+                    originFilterEl.appendChild(option);
+                });
+            }
+        }
+        
+        // 从 API 加载产品数据
+        async function loadProducts() {
+            productsLoading.classList.remove('hidden');
+            productGrid.innerHTML = '';
+            
+            // 构建查询参数
+            const queryParams = new URLSearchParams({
+                page: currentPage,
+                limit: pageSize
+            });
+            
+            if (categoryFilter) {
+                queryParams.append('category', categoryFilter);
+            }
+            
+            if (originFilter) {
+                queryParams.append('origin', originFilter);
+            }
+            
+            if (searchFilter) {
+                queryParams.append('search', searchFilter);
+            }
+            
+            const data = await fetchApi(`products?${queryParams.toString()}`);
+            
+            productsLoading.classList.add('hidden');
+            
+            if (data && data.products) {
+                renderProducts(data.products);
+                renderPagination(data.pagination);
+            }
+        }
+        
+        // 渲染产品列表
+        function renderProducts(products) {
+            if (products.length === 0) {
+                productGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px;">未找到符合条件的产品</div>';
+                return;
+            }
+            
+            productGrid.innerHTML = '';
+            
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                
+                // 生成星级评分
+                const rating = parseFloat(product.rating) || 0;
+                const fullStars = Math.floor(rating);
+                const hasHalfStar = rating % 1 >= 0.5;
+                
+                let starsHtml = '';
+                for (let i = 0; i < fullStars; i++) {
+                    starsHtml += '<span class="star">★</span>';
+                }
+                
+                if (hasHalfStar) {
+                    starsHtml += '<span class="star">☆</span>';
+                }
+                
+                for (let i = 0; i < 5 - fullStars - (hasHalfStar ? 1 : 0); i++) {
+                    starsHtml += '<span>☆</span>';
+                }
+                
+                card.innerHTML = `
+                    <img src="${product.imageUrl}" alt="${product.name}" class="product-image">
+                    <div class="product-details">
+                        <div class="product-title">${product.name}</div>
+                        <div class="product-category">${product.category}</div>
+                        <div class="product-origin">产地: ${product.origin}</div>
+                        <div class="product-price">¥${product.price.toFixed(2)}</div>
+                        <div class="product-footer">
+                            <div class="product-rating">
+                                ${starsHtml}
+                                <span>(${rating.toFixed(1)})</span>
+                            </div>
+                            <button class="secondary-button view-details" data-id="${product.id}">查看详情</button>
+                        </div>
+                    </div>
+                `;
+                
+                // 添加详情按钮点击事件
+                const detailsButton = card.querySelector('.view-details');
+                detailsButton.addEventListener('click', () => {
+                    alert(`产品ID: ${product.id}\n名称: ${product.name}\n价格: ¥${product.price.toFixed(2)}\n\n此为测试页面，详情功能未完全实现`);
+                });
+                
+                productGrid.appendChild(card);
+            });
+        }
+        
+        // 渲染分页控件
+        function renderPagination(paginationData) {
+            pagination.innerHTML = '';
+            
+            if (!paginationData || paginationData.total === 0) {
+                return;
+            }
+            
+            // 上一页按钮
+            const prevButton = document.createElement('button');
+            prevButton.className = 'page-button';
+            prevButton.textContent = '上一页';
+            prevButton.disabled = !paginationData.hasPrevPage;
+            prevButton.addEventListener('click', () => {
+                if (paginationData.hasPrevPage) {
+                    currentPage--;
+                    loadProducts();
+                }
+            });
+            pagination.appendChild(prevButton);
+            
+            // 页码按钮
+            const totalPages = paginationData.totalPages;
+            const currentPageNum = paginationData.page;
+            
+            // 显示的页码范围
+            let startPage = Math.max(1, currentPageNum - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            
+            if (endPage - startPage < 4 && totalPages > 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+            
+            // 第一页
+            if (startPage > 1) {
+                const firstButton = document.createElement('button');
+                firstButton.className = 'page-button';
+                firstButton.textContent = '1';
+                firstButton.addEventListener('click', () => {
+                    currentPage = 1;
+                    loadProducts();
+                });
+                pagination.appendChild(firstButton);
+                
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    pagination.appendChild(ellipsis);
+                }
+            }
+            
+            // 页码按钮
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.className = `page-button ${i === currentPageNum ? 'active' : ''}`;
+                pageButton.textContent = i;
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    loadProducts();
+                });
+                pagination.appendChild(pageButton);
+            }
+            
+            // 最后一页
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    pagination.appendChild(ellipsis);
+                }
+                
+                const lastButton = document.createElement('button');
+                lastButton.className = 'page-button';
+                lastButton.textContent = totalPages;
+                lastButton.addEventListener('click', () => {
+                    currentPage = totalPages;
+                    loadProducts();
+                });
+                pagination.appendChild(lastButton);
+            }
+            
+            // 下一页按钮
+            const nextButton = document.createElement('button');
+            nextButton.className = 'page-button';
+            nextButton.textContent = '下一页';
+            nextButton.disabled = !paginationData.hasNextPage;
+            nextButton.addEventListener('click', () => {
+                if (paginationData.hasNextPage) {
+                    currentPage++;
+                    loadProducts();
+                }
+            });
+            pagination.appendChild(nextButton);
+        }
+        
+        // 应用筛选条件
+        function applyFilters() {
+            categoryFilter = categoryFilterEl.value;
+            originFilter = originFilterEl.value;
+            searchFilter = searchInputEl.value.trim();
+            pageSize = parseInt(pageSizeEl.value);
+            currentPage = 1; // 重置到第一页
+            loadProducts();
+        }
+        
+        // 用户登录
+        async function login() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            
+            if (!username || !password) {
+                showMessage('请输入用户名和密码');
+                return;
+            }
+            
+            try {
+                const data = await fetchApi('login', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                if (data && data.success) {
+                    authToken = data.token;
+                    userData = data.user;
+                    
+                    // 保存令牌到本地存储
+                    localStorage.setItem('authToken', authToken);
+                    
+                    // 更新UI
+                    showLoggedInUI();
+                    loginSection.classList.add('hidden');
+                    showMessage('登录成功', 'success');
+                } else {
+                    showMessage(data.error || '登录失败，请检查用户名和密码');
+                }
+            } catch (error) {
+                showMessage(`登录失败: ${error.message}`);
+            }
+        }
+        
+        // 用户登出
+        async function logout() {
+            if (authToken) {
+                try {
+                    await fetchApi('logout', {
+                        method: 'POST'
+                    });
+                } catch (error) {
+                    console.error('登出出错:', error);
+                }
+            }
+            
+            // 清除本地令牌和用户数据
+            localStorage.removeItem('authToken');
+            authToken = null;
+            userData = null;
+            
+            // 更新UI
+            showLoggedOutUI();
+            showMessage('已成功登出', 'success');
+        }
+        
+        // 验证用户令牌
+        async function validateUserToken() {
+            if (!authToken) {
+                return;
+            }
+            
+            try {
+                const data = await fetchApi('validate-token');
+                
+                if (data && data.valid) {
+                    userData = data.user;
+                    showLoggedInUI();
+                } else {
+                    logout(); // 令牌无效，登出
+                }
+            } catch (error) {
+                console.error('验证令牌出错:', error);
+                logout(); // 出错时登出
+            }
+        }
+        
+        // 显示已登录UI
+        function showLoggedInUI() {
+            if (userData) {
+                userNameEl.textContent = userData.name || userData.username;
+                loggedInUser.classList.remove('hidden');
+                notLoggedIn.classList.add('hidden');
+            }
+        }
+        
+        // 显示未登录UI
+        function showLoggedOutUI() {
+            loggedInUser.classList.add('hidden');
+            notLoggedIn.classList.remove('hidden');
+        }
+        
+        // 事件监听
+        applyFiltersBtn.addEventListener('click', applyFilters);
+        
+        showLoginButton.addEventListener('click', () => {
+            loginSection.classList.remove('hidden');
+            usernameInput.focus();
+        });
+        
+        cancelLoginButton.addEventListener('click', () => {
+            loginSection.classList.add('hidden');
+        });
+        
+        loginButton.addEventListener('click', login);
+        
+        logoutButton.addEventListener('click', logout);
+        
+        // 搜索框回车事件
+        searchInputEl.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+        
+        // 初始化
+        async function init() {
+            // 尝试验证现有令牌
+            await validateUserToken();
+            
+            // 加载筛选器数据
+            await Promise.all([loadCategories(), loadOrigins()]);
+            
+            // 加载产品数据
+            await loadProducts();
+        }
+        
+        // 启动应用
+        init();
+    </script>
+</body>
+</html> 

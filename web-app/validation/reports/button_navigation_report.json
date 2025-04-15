@@ -1,0 +1,1168 @@
+{
+  "timestamp": "2025-04-06T04:32:50.706Z",
+  "totalPages": 8,
+  "results": [
+    {
+      "name": "首页",
+      "url": "http://localhost:8080/",
+      "buttonResults": [
+        {
+          "label": "主要按钮",
+          "selector": ".primary-btn, .btn-primary, .action-btn, button, a.btn, .card button, .card a",
+          "count": 0,
+          "success": false,
+          "error": "未找到按钮"
+        },
+        {
+          "label": "模块卡片",
+          "selector": ".module-card, .module-card a, .card-action, .card, a.card, [data-module], [data-action]",
+          "count": 25,
+          "buttons": [
+            {
+              "text": "登录页面",
+              "index": 0,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_1_before.png"
+            },
+            {
+              "text": "功能模块选择",
+              "index": 1,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_2_before.png"
+            },
+            {
+              "text": "养殖管理",
+              "index": 2,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_3_before.png"
+            },
+            {
+              "text": "创建溯源记录",
+              "index": 3,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_4_before.png"
+            },
+            {
+              "text": "疫苗录入",
+              "index": 4,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_5_before.png"
+            },
+            {
+              "text": "繁育信息管理",
+              "index": 5,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_6_before.png"
+            },
+            {
+              "text": "场地视频监控",
+              "index": 6,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_7_before.png"
+            },
+            {
+              "text": "生产加工",
+              "index": 7,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_8_before.png"
+            },
+            {
+              "text": "溯源记录编辑",
+              "index": 8,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_9_before.png"
+            },
+            {
+              "text": "质检报告查询",
+              "index": 9,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_10_before.png"
+            },
+            {
+              "text": "肉质等级评定\n\n专业评定肉品品质等级，包含颜色、纹理、瘦肉率等多项指标，符合国家标准GB/T 17238-2008。",
+              "index": 10,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_11_before.png"
+            },
+            {
+              "text": "加工拍照",
+              "index": 11,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_12_before.png"
+            },
+            {
+              "text": "销售物流",
+              "index": 12,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_13_before.png"
+            },
+            {
+              "text": "地图展示",
+              "index": 13,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_14_before.png"
+            },
+            {
+              "text": "溯源列表",
+              "index": 14,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_15_before.png"
+            },
+            {
+              "text": "溯源详情",
+              "index": 15,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_16_before.png"
+            },
+            {
+              "text": "溯源证书",
+              "index": 16,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_17_before.png"
+            },
+            {
+              "text": "系统设置",
+              "index": 17,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_18_before.png"
+            },
+            {
+              "text": "个人中心",
+              "index": 18,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_19_before.png"
+            },
+            {
+              "text": "模板配置器",
+              "index": 19,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_20_before.png"
+            },
+            {
+              "text": "帮助中心",
+              "index": 20,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_21_before.png"
+            },
+            {
+              "text": "管理员控制台",
+              "index": 21,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_22_before.png"
+            },
+            {
+              "text": "数据导入",
+              "index": 22,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_23_before.png"
+            },
+            {
+              "text": "用户管理",
+              "index": 23,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_24_before.png"
+            },
+            {
+              "text": "系统日志",
+              "index": 24,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/",
+              "afterUrl": "http://localhost:8080/",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\___button_25_before.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "功能选择器",
+      "url": "http://localhost:8080/pages/home/home-selector.html",
+      "buttonResults": [
+        {
+          "label": "功能模块",
+          "selector": ".trace-card, [data-module], .card, .card a, .card button, .module-card",
+          "count": 5,
+          "buttons": [
+            {
+              "text": "系统状态\n正常运行\n\n35\n\n今日记录\n\n14\n\n待处理任务\n\n17\n\n在线用户",
+              "index": 0,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_1_before.png"
+            },
+            {
+              "text": "养殖管理\n\n动物饲养、疫苗、繁育信息管理",
+              "index": 1,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-farming.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_2_after.png"
+            },
+            {
+              "text": "生产加工\n\n屠宰、检验、包装等加工环节管理",
+              "index": 2,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-processing.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_3_after.png"
+            },
+            {
+              "text": "销售物流\n\n运输、配送、订单跟踪管理",
+              "index": 3,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-logistics.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_4_after.png"
+            },
+            {
+              "text": "追溯查询\n\n产品全链路溯源和质量追踪",
+              "index": 4,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-query.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_5_after.png"
+            }
+          ]
+        },
+        {
+          "label": "模块链接",
+          "selector": ".module-link, a[href], button[data-href], [data-action], [onclick]",
+          "count": 11,
+          "buttons": [
+            {
+              "text": "",
+              "index": 0,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/profile/notifications.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_1_after.png"
+            },
+            {
+              "text": "",
+              "index": 1,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/profile/settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_2_after.png"
+            },
+            {
+              "text": "个人中心",
+              "index": 2,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/profile/profile.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_3_after.png"
+            },
+            {
+              "text": "养殖管理\n\n动物饲养、疫苗、繁育信息管理",
+              "index": 3,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-farming.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_4_after.png"
+            },
+            {
+              "text": "生产加工\n\n屠宰、检验、包装等加工环节管理",
+              "index": 4,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-processing.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_5_after.png"
+            },
+            {
+              "text": "销售物流\n\n运输、配送、订单跟踪管理",
+              "index": 5,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-logistics.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_6_after.png"
+            },
+            {
+              "text": "追溯查询\n\n产品全链路溯源和质量追踪",
+              "index": 6,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-query.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_7_after.png"
+            },
+            {
+              "text": "首页",
+              "index": 7,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_8_before.png"
+            },
+            {
+              "text": "信息管理",
+              "index": 8,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-farming.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_9_after.png"
+            },
+            {
+              "text": "数据采集",
+              "index": 9,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/farming/data-collection-center.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_10_after.png"
+            },
+            {
+              "text": "我的",
+              "index": 10,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "afterUrl": "http://localhost:8080/pages/profile/profile.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\______button_11_after.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "个人中心",
+      "url": "http://localhost:8080/pages/profile/profile.html",
+      "buttonResults": [
+        {
+          "label": "个人设置项",
+          "selector": ".profile-action, .setting-item, .card, .card-body a, .card button, button, a.btn",
+          "count": 4,
+          "buttons": [
+            {
+              "text": "",
+              "index": 0,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/profile/profile.html",
+              "afterUrl": "about:blank",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_1_after.png"
+            },
+            {
+              "text": "",
+              "index": 1,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/profile/profile.html",
+              "afterUrl": "http://localhost:8080/pages/profile/profile.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_2_before.png"
+            },
+            {
+              "text": "",
+              "index": 2,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/profile/profile.html",
+              "afterUrl": "http://localhost:8080/pages/profile/profile.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_3_before.png"
+            },
+            {
+              "text": "退出登录",
+              "index": 3,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/profile/profile.html",
+              "afterUrl": "http://localhost:8080/pages/profile/profile.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_4_before.png"
+            }
+          ]
+        },
+        {
+          "label": "导航项",
+          "selector": ".menu-item, .nav-item, .sidebar-item, nav a, .sidebar a, .main-menu a, .nav a",
+          "count": 4,
+          "buttons": [
+            {
+              "text": "首页",
+              "index": 0,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/profile/profile.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_1_after.png"
+            },
+            {
+              "text": "信息管理",
+              "index": 1,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/profile/profile.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-farming.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_2_after.png"
+            },
+            {
+              "text": "数据采集",
+              "index": 2,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/profile/profile.html",
+              "afterUrl": "http://localhost:8080/pages/farming/data-collection-center.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_3_after.png"
+            },
+            {
+              "text": "我的",
+              "index": 3,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/profile/profile.html",
+              "afterUrl": "http://localhost:8080/pages/profile/profile.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_4_before.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "设置页面",
+      "url": "http://localhost:8080/pages/profile/settings.html",
+      "buttonResults": [
+        {
+          "label": "设置项",
+          "selector": ".setting-card, .setting-item, .settings a, .card, .card a, .card button, button, a.btn, [data-action]",
+          "count": 2,
+          "buttons": [
+            {
+              "text": "检查更新",
+              "index": 0,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/profile/settings.html",
+              "afterUrl": "http://localhost:8080/pages/profile/settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_1_before.png"
+            },
+            {
+              "text": "高对比度",
+              "index": 1,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/profile/settings.html",
+              "afterUrl": "http://localhost:8080/pages/profile/settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_2_before.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "系统管理",
+      "url": "http://localhost:8080/pages/admin/admin-system.html",
+      "buttonResults": [
+        {
+          "label": "菜单项",
+          "selector": ".menu-item, .sidebar-item, .main-menu a, .sidebar a, aside a, nav a, .nav-link, a[href], [data-menu]",
+          "count": 2,
+          "buttons": [
+            {
+              "text": "返回上一页",
+              "index": 0,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/errors/403.html",
+              "afterUrl": "about:blank",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_1_after.png"
+            },
+            {
+              "text": "返回首页",
+              "index": 1,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/errors/403.html",
+              "afterUrl": "http://localhost:8080/pages/home/home-selector.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_2_after.png"
+            }
+          ]
+        },
+        {
+          "label": "功能按钮",
+          "selector": ".action-btn, .function-btn, button, a.btn, .card button, .card a, input[type=\"button\"], input[type=\"submit\"], [role=\"button\"], [data-action], .control-action",
+          "count": 0,
+          "success": false,
+          "error": "未找到按钮"
+        },
+        {
+          "label": "内容交互元素",
+          "selector": ".main-content a, .content a, .content button, .content [data-action]",
+          "count": 0,
+          "success": false,
+          "error": "未找到按钮"
+        },
+        {
+          "label": "系统配置项",
+          "selector": ".config-item, .system-action, .admin-action, .settings-action",
+          "count": 0,
+          "success": false,
+          "error": "未找到按钮"
+        }
+      ]
+    },
+    {
+      "name": "管理设置",
+      "url": "http://localhost:8080/pages/admin/admin-settings.html",
+      "buttonResults": [
+        {
+          "label": "所有按钮",
+          "selector": "button, a.btn, input[type=\"button\"], input[type=\"submit\"], [role=\"button\"], .btn, .button, .action-button, [data-action]",
+          "count": 8,
+          "buttons": [
+            {
+              "text": "应用",
+              "index": 0,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_1_before.png"
+            },
+            {
+              "text": "应用",
+              "index": 1,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_2_before.png"
+            },
+            {
+              "text": "保存配置",
+              "index": 2,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_3_before.png"
+            },
+            {
+              "text": "生成新Token",
+              "index": 3,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_4_before.png"
+            },
+            {
+              "text": "复制",
+              "index": 4,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_5_before.png"
+            },
+            {
+              "text": "配置",
+              "index": 5,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_6_before.png"
+            },
+            {
+              "text": "配置",
+              "index": 6,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_7_before.png"
+            },
+            {
+              "text": "保存配置",
+              "index": 7,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_8_before.png"
+            }
+          ]
+        },
+        {
+          "label": "设置卡片",
+          "selector": ".card, .card a, .card button, .settings-card, .settings-item, .action-card",
+          "count": 10,
+          "buttons": [
+            {
+              "text": "系统性能设置\n资源优化\n\n图片自动压缩\n\n上传图片时自动压缩以节省存储空间\n\n中等(70%)\n高(80%)\n低(60%)\n不压缩\n应用\n\n静态资源缓存\n\n配置JS、CSS等资源的缓存策略\n\n强缓存(7天)\n标准(1天)\n最小(1小时)\n禁用缓存\n应用\n数据库设置\n\n数据库连接池\n\n配置数据库并发连接数\n\n定时备份\n\n设置自动备份数据库的频率\n\n每天\n每周\n每月\n不自动备份\n保存配置",
+              "index": 0,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_1_before.png"
+            },
+            {
+              "text": "应用",
+              "index": 1,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_2_before.png"
+            },
+            {
+              "text": "应用",
+              "index": 2,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_3_before.png"
+            },
+            {
+              "text": "保存配置",
+              "index": 3,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_4_before.png"
+            },
+            {
+              "text": "API与集成设置\nAPI访问控制\n生成新Token\n\nAPI访问Token\n\n复制\n\n注意：此Token具有管理员权限，请妥善保管\n\nAPI调用限制\n\n请求/小时\n\n超过限制的请求将被拒绝，防止API滥用\n\n第三方集成\n\n微信公众号集成\n\n绑定微信公众号以便消费者扫码查询\n\n配置\n已连接\n\nERP系统对接\n\n与企业ERP系统进行数据同步\n\n配置\n未连接\n保存配置",
+              "index": 4,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_5_before.png"
+            },
+            {
+              "text": "生成新Token",
+              "index": 5,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_6_before.png"
+            },
+            {
+              "text": "复制",
+              "index": 6,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_7_before.png"
+            },
+            {
+              "text": "配置",
+              "index": 7,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_8_before.png"
+            },
+            {
+              "text": "配置",
+              "index": 8,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_9_before.png"
+            },
+            {
+              "text": "保存配置",
+              "index": 9,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "afterUrl": "http://localhost:8080/pages/admin/admin-settings.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_10_before.png"
+            }
+          ]
+        },
+        {
+          "label": "表单操作",
+          "selector": "form button, form input[type=\"submit\"], .form-action",
+          "count": 0,
+          "success": false,
+          "error": "未找到按钮"
+        }
+      ]
+    },
+    {
+      "name": "农场监控",
+      "url": "http://localhost:8080/pages/farming/farming-monitor.html",
+      "buttonResults": [
+        {
+          "label": "操作按钮",
+          "selector": "button, a.btn, .action-btn, .control-btn, .monitor-action, .farming-action",
+          "count": 8,
+          "buttons": [
+            {
+              "text": "",
+              "index": 0,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/farming/farming-monitor.html",
+              "afterUrl": "about:blank",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_1_after.png"
+            },
+            {
+              "text": "",
+              "index": 1,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/farming/farming-monitor.html",
+              "afterUrl": "http://localhost:8080/pages/farming/farming-monitor.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_2_before.png"
+            },
+            {
+              "text": "",
+              "index": 2,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/farming/farming-monitor.html",
+              "afterUrl": "http://localhost:8080/pages/farming/farming-monitor.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_3_before.png"
+            },
+            {
+              "text": "",
+              "index": 3,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/farming/farming-monitor.html",
+              "afterUrl": "http://localhost:8080/pages/farming/farming-monitor.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_4_before.png"
+            },
+            {
+              "text": "",
+              "index": 4,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/farming/farming-monitor.html",
+              "afterUrl": "http://localhost:8080/pages/farming/farming-monitor.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_5_before.png"
+            },
+            {
+              "index": 5,
+              "success": false,
+              "error": "点击按钮失败: elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+            },
+            {
+              "index": 6,
+              "success": false,
+              "error": "点击按钮失败: elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+            },
+            {
+              "index": 7,
+              "success": false,
+              "error": "点击按钮失败: elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    59 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+            }
+          ]
+        },
+        {
+          "label": "数据卡片",
+          "selector": ".data-card, .data-card button, .data-card a, .monitoring-card, .monitoring-item",
+          "count": 0,
+          "success": false,
+          "error": "未找到按钮"
+        }
+      ]
+    },
+    {
+      "name": "追溯记录",
+      "url": "http://localhost:8080/pages/trace/trace-list.html",
+      "buttonResults": [
+        {
+          "label": "记录项",
+          "selector": ".trace-item, .list-item, .item, tr, .record-item, .data-row, a.btn, button",
+          "count": 17,
+          "buttons": [
+            {
+              "text": "",
+              "index": 0,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "about:blank",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_1_after.png"
+            },
+            {
+              "text": "",
+              "index": 1,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_2_before.png"
+            },
+            {
+              "text": "",
+              "index": 2,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_3_before.png"
+            },
+            {
+              "index": 3,
+              "success": false,
+              "error": "点击按钮失败: elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"trace-top-nav-container\">…</div> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m  14 × retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"trace-top-nav-container\">…</div> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"trace-top-nav-container\">…</div> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n"
+            },
+            {
+              "index": 4,
+              "success": false,
+              "error": "点击按钮失败: elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <button aria-label=\"搜索\" data-upgraded=\"true\" aria-disabled=\"false\" id=\"nav-search-button\" data-has-unique-id=\"true\" data-is-accessible=\"true\" data-feedback-added=\"true\" data-test-accessible=\"true\" data-keyboard-handled=\"true\" data-has-visual-feedback=\"true\" data-test-id=\"nav-search-button\" data-upgrade-feedback-added=\"true\" class=\"trace-top-nav-button trace-button-hover trace-button-active\">…</button> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m  14 × retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <button aria-label=\"搜索\" data-upgraded=\"true\" aria-disabled=\"false\" id=\"nav-search-button\" data-has-unique-id=\"true\" data-is-accessible=\"true\" data-feedback-added=\"true\" data-test-accessible=\"true\" data-keyboard-handled=\"true\" data-has-visual-feedback=\"true\" data-test-id=\"nav-search-button\" data-upgrade-feedback-added=\"true\" class=\"trace-top-nav-button trace-button-hover trace-button-active\">…</button> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <button aria-label=\"搜索\" data-upgraded=\"true\" aria-disabled=\"false\" id=\"nav-search-button\" data-has-unique-id=\"true\" data-is-accessible=\"true\" data-feedback-added=\"true\" data-test-accessible=\"true\" data-keyboard-handled=\"true\" data-has-visual-feedback=\"true\" data-test-id=\"nav-search-button\" data-upgrade-feedback-added=\"true\" class=\"trace-top-nav-button trace-button-hover trace-button-active\">…</button> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n"
+            },
+            {
+              "index": 5,
+              "success": false,
+              "error": "点击按钮失败: elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"trace-top-nav-container\">…</div> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m  14 × retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"trace-top-nav-container\">…</div> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"trace-top-nav-container\">…</div> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n"
+            },
+            {
+              "text": "全部",
+              "index": 6,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_7_before.png"
+            },
+            {
+              "text": "已完成",
+              "index": 7,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_8_before.png"
+            },
+            {
+              "text": "待审核",
+              "index": 8,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_9_before.png"
+            },
+            {
+              "text": "异常",
+              "index": 9,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_10_before.png"
+            },
+            {
+              "text": "草稿",
+              "index": 10,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_11_before.png"
+            },
+            {
+              "text": "二维码",
+              "index": 11,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_12_before.png"
+            },
+            {
+              "text": "二维码",
+              "index": 12,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_13_before.png"
+            },
+            {
+              "text": "二维码",
+              "index": 13,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_14_before.png"
+            },
+            {
+              "text": "二维码",
+              "index": 14,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_15_before.png"
+            },
+            {
+              "text": "上一页",
+              "index": 15,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_16_before.png"
+            },
+            {
+              "text": "下一页",
+              "index": 16,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_17_before.png"
+            }
+          ]
+        },
+        {
+          "label": "操作按钮",
+          "selector": ".action-btn, .filter-btn, .search-btn, .btn, button, a.btn, input[type=\"button\"]",
+          "count": 17,
+          "buttons": [
+            {
+              "text": "",
+              "index": 0,
+              "success": true,
+              "navigated": true,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "about:blank",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_1_after.png"
+            },
+            {
+              "text": "",
+              "index": 1,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_2_before.png"
+            },
+            {
+              "text": "",
+              "index": 2,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_3_before.png"
+            },
+            {
+              "index": 3,
+              "success": false,
+              "error": "点击按钮失败: elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"trace-top-nav-container\">…</div> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m  14 × retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"trace-top-nav-container\">…</div> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"trace-top-nav-container\">…</div> from <header class=\"trace-top-nav\">…</header> subtree intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <li data-action=\"关于我们\" class=\"trace-more-menu-item\">…</li> from <div class=\"trace-more-menu visible\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n"
+            },
+            {
+              "text": "近7天",
+              "index": 4,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_5_before.png"
+            },
+            {
+              "text": "近30天",
+              "index": 5,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_6_before.png"
+            },
+            {
+              "text": "全部",
+              "index": 6,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_7_before.png"
+            },
+            {
+              "text": "已完成",
+              "index": 7,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_8_before.png"
+            },
+            {
+              "text": "待审核",
+              "index": 8,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_9_before.png"
+            },
+            {
+              "index": 9,
+              "success": false,
+              "error": "page.screenshot: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n"
+            },
+            {
+              "index": 10,
+              "success": false,
+              "error": "page.screenshot: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n"
+            },
+            {
+              "text": "二维码",
+              "index": 11,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_12_before.png"
+            },
+            {
+              "text": "二维码",
+              "index": 12,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_13_before.png"
+            },
+            {
+              "text": "二维码",
+              "index": 13,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_14_before.png"
+            },
+            {
+              "text": "二维码",
+              "index": 14,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_15_before.png"
+            },
+            {
+              "text": "上一页",
+              "index": 15,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_16_before.png"
+            },
+            {
+              "text": "下一页",
+              "index": 16,
+              "success": true,
+              "navigated": false,
+              "beforeUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "afterUrl": "http://localhost:8080/pages/trace/trace-list.html",
+              "screenshot": "C:\\Users\\Steve\\heiniu\\validation\\reports\\screenshots\\button-navigation\\_____button_17_before.png"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "totalButtons": 113,
+    "navigatedButtons": 23,
+    "newWindowButtons": 0,
+    "errorButtons": 9,
+    "nonNavigatingButtons": 81
+  }
+}

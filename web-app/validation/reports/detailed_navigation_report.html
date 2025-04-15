@@ -1,0 +1,201 @@
+<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>页面导航详细报告</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .summary { margin-bottom: 20px; }
+      .page-result { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+      .success { border-left: 5px solid #4CAF50; }
+      .failure { border-left: 5px solid #F44336; }
+      .screenshot { max-width: 100%; margin-top: 10px; border: 1px solid #ddd; }
+      .stats { display: flex; margin: 20px 0; }
+      .stat-box { flex: 1; padding: 15px; margin: 0 10px; text-align: center; border-radius: 5px; }
+      .total { background-color: #E3F2FD; }
+      .success-stat { background-color: #E8F5E9; }
+      .failure-stat { background-color: #FFEBEE; }
+      .error-msg { color: #D32F2F; font-family: monospace; padding: 10px; background-color: #FFEBEE; }
+    </style>
+  <script src="../components/trace-common.js"></script><script src="../components/trace-error-handler.js"></script><script src="../components/trace-ui.js"></script><script src="../components/trace-nav.js"></script><script src="../components/trace-a11y.js"></script><script src="../components/trace-store.js"></script></head>
+  <body>
+    <h1>页面导航详细报告</h1>
+    <div class="summary">
+      <h2>测试摘要</h2>
+      <p>执行时间: 2025/4/12 19:22:48</p>
+      
+      <div class="stats">
+        <div class="stat-box total">
+          <h3>总页面数</h3>
+          <div style="font-size: 2em;">17</div>
+        </div>
+        <div class="stat-box success-stat">
+          <h3>成功</h3>
+          <div style="font-size: 2em;">0</div>
+        </div>
+        <div class="stat-box failure-stat">
+          <h3>失败</h3>
+          <div style="font-size: 2em;">17</div>
+        </div>
+      </div>
+    </div>
+    
+    <h2>页面详情</h2>
+    
+      <div class="page-result failure">
+        <h3>首页</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\index.html</p>
+        
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">导航错误: page.goto: Timeout 60000ms exceeded.
+Call log:
+[2m  - navigating to "file:///C:/Users/Steve/heiniu/web-app/index.html", waiting until "networkidle"[22m
+</div>
+        
+      </div>
+    
+      <div class="page-result failure">
+        <h3>养殖-繁育信息</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\farming-breeding.html</p>
+        <p><strong>标题:</strong> 繁育信息管理 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\养殖-繁育信息_page.png" alt="养殖-繁育信息截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>养殖-饲养管理</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\farming-monitor.html</p>
+        <p><strong>标题:</strong> 场地监控 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\养殖-饲养管理_page.png" alt="养殖-饲养管理截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>加工-屠宰处理</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\processing\processing-slaughter.html</p>
+        <p><strong>标题:</strong> 屠宰信息录入 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\加工-屠宰处理_page.png" alt="加工-屠宰处理截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>物流-创建运单</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\logistics\logistics-create.html</p>
+        <p><strong>标题:</strong> 创建物流订单 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\物流-创建运单_page.png" alt="物流-创建运单截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>溯源-地图</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\trace\trace-map.html</p>
+        <p><strong>标题:</strong> 溯源地图 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\溯源-地图_page.png" alt="溯源-地图截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>系统管理</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\admin\admin-system.html</p>
+        <p><strong>标题:</strong> 403 访问被拒绝 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 403 - 禁止访问</div>
+        <p><strong>截图:</strong></p><img src="screenshots\系统管理_page.png" alt="系统管理截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>登录</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\auth\login.html</p>
+        <p><strong>标题:</strong> 用户登录 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\登录_page.png" alt="登录截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>数据采集中心</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\data-collection-center.html</p>
+        <p><strong>标题:</strong> 数据采集中心 - 养殖管理系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\数据采集中心_page.png" alt="数据采集中心截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>手动采集</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\manual-collection.html</p>
+        <p><strong>标题:</strong> 手动数据采集 - 养殖管理系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\手动采集_page.png" alt="手动采集截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>二维码采集</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\qrcode-collection.html</p>
+        <p><strong>标题:</strong> 二维码数据采集 - 养殖管理系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\二维码采集_page.png" alt="二维码采集截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>自动监控</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\auto-monitoring.html</p>
+        <p><strong>标题:</strong> 自动数据监控 - 养殖管理系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\自动监控_page.png" alt="自动监控截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>指标详情</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\indicator-detail.html</p>
+        <p><strong>标题:</strong> 指标详情分析 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\指标详情_page.png" alt="指标详情截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>创建溯源</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\create-trace.html</p>
+        <p><strong>标题:</strong> 创建溯源记录 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\创建溯源_page.png" alt="创建溯源截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>预测分析</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\prediction-analytics.html</p>
+        <p><strong>标题:</strong> 数据趋势预测 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\预测分析_page.png" alt="预测分析截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>预测配置</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\prediction-config.html</p>
+        <p><strong>标题:</strong> 预测模型配置 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\预测配置_page.png" alt="预测配置截图" class="screenshot">
+      </div>
+    
+      <div class="page-result failure">
+        <h3>模型管理</h3>
+        <p><strong>路径:</strong> C:\Users\Steve\heiniu\web-app\pages\farming\model-management.html</p>
+        <p><strong>标题:</strong> 预测模型管理 - 食品溯源系统</p>
+        <p><strong>状态:</strong> 失败</p>
+        <p><strong>错误:</strong></p><div class="error-msg">页面错误: 500 - 服务器错误</div>
+        <p><strong>截图:</strong></p><img src="screenshots\模型管理_page.png" alt="模型管理截图" class="screenshot">
+      </div>
+    
+  
+  
+  </body></html>

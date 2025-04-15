@@ -1,0 +1,61 @@
+{
+  "timestamp": "2025-04-12T02:50:43.859Z",
+  "baseUrl": "http://localhost:8080",
+  "results": [
+    {
+      "path": "/pages/trace/trace-map.html",
+      "isPrototype": false,
+      "isDirectoryListing": true,
+      "buttons": [],
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "path": "/pages/trace/trace-list.html",
+      "isPrototype": false,
+      "isDirectoryListing": true,
+      "buttons": [],
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "path": "/pages/trace/trace-detail.html",
+      "isPrototype": false,
+      "isDirectoryListing": true,
+      "buttons": [],
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "path": "/pages/home/home-selector.html",
+      "isPrototype": false,
+      "isDirectoryListing": true,
+      "buttons": [],
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "path": "/pages/auth/login.html",
+      "isPrototype": false,
+      "isDirectoryListing": true,
+      "buttons": [],
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "path": "/pages/product-trace.html",
+      "isPrototype": false,
+      "isDirectoryListing": true,
+      "buttons": [],
+      "error": null,
+      "screenshot": null
+    }
+  ],
+  "status": "success",
+  "summary": {
+    "totalPages": 6,
+    "totalButtons": 0,
+    "errorPages": 0,
+    "interactionErrors": 0
+  }
+}

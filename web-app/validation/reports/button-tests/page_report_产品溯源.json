@@ -1,0 +1,71 @@
+[
+  {
+    "button": {
+      "text": "返回",
+      "tagName": "BUTTON",
+      "id": "backButton",
+      "classes": "back-button",
+      "disabled": false,
+      "visible": true,
+      "x": 40,
+      "y": 20.5,
+      "width": 53,
+      "height": 21,
+      "xpath": "/html[1]/body[1]/header[1]/div[1]/button[1]"
+    },
+    "success": false,
+    "triggered": "none",
+    "error": "点击后无明显反应",
+    "screenshotBefore": "C:\\Users\\Steve\\heiniu\\validation\\reports\\button-tests\\产品溯源_backButton_before.png",
+    "screenshotAfter": "C:\\Users\\Steve\\heiniu\\validation\\reports\\button-tests\\产品溯源_backButton_after.png",
+    "domChanges": false,
+    "navigationOccurred": false,
+    "responseTime": 2066
+  },
+  {
+    "button": {
+      "text": "开始扫描",
+      "tagName": "BUTTON",
+      "id": "scanButton",
+      "classes": "button",
+      "disabled": false,
+      "visible": true,
+      "x": 80,
+      "y": 483.796875,
+      "width": 1120,
+      "height": 45,
+      "xpath": "/html[1]/body[1]/div[1]/div[1]/div[1]/button[1]"
+    },
+    "success": false,
+    "triggered": "none",
+    "error": "点击后无明显反应",
+    "screenshotBefore": "C:\\Users\\Steve\\heiniu\\validation\\reports\\button-tests\\产品溯源_scanButton_before.png",
+    "screenshotAfter": "C:\\Users\\Steve\\heiniu\\validation\\reports\\button-tests\\产品溯源_scanButton_after.png",
+    "domChanges": false,
+    "navigationOccurred": false,
+    "responseTime": 2060
+  },
+  {
+    "button": {
+      "text": "手动输入溯源码",
+      "tagName": "BUTTON",
+      "id": "inputCodeButton",
+      "classes": "button secondary",
+      "disabled": false,
+      "visible": true,
+      "x": 80,
+      "y": 538.796875,
+      "width": 1120,
+      "height": 45,
+      "xpath": "/html[1]/body[1]/div[1]/div[1]/div[1]/button[2]"
+    },
+    "success": false,
+    "triggered": "none",
+    "error": "点击后无明显反应",
+    "screenshotBefore": "C:\\Users\\Steve\\heiniu\\validation\\reports\\button-tests\\产品溯源_inputCodeButton_before.png",
+    "screenshotAfter": "C:\\Users\\Steve\\heiniu\\validation\\reports\\button-tests\\产品溯源_inputCodeButton_after.png",
+    "domChanges": false,
+    "navigationOccurred": false,
+    "responseTime": 2071
+  }
+]

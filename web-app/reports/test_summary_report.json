@@ -1,0 +1,1257 @@
+{
+  "timestamp": "2025-04-12T11:18:39.454Z",
+  "tests": [
+    {
+      "name": "资源加载测试",
+      "description": "检查页面资源加载情况，包括脚本、样式、图片等资源",
+      "status": "通过",
+      "duration": 63573,
+      "script": "validation/scripts/check-resource.js",
+      "details": {
+        "timestamp": "2025-04-12T11:19:42.597Z",
+        "totalPages": 3,
+        "successPages": 2,
+        "failedPages": 1,
+        "totalRequests": 272,
+        "failedRequests": 72,
+        "failureRate": "26.47%",
+        "pageResults": [
+          {
+            "name": "首页",
+            "path": "/index.html",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\index.html",
+            "status": "failed",
+            "error": "page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"file:///C:/Users/Steve/heiniu/web-app/index.html\", waiting until \"networkidle\"\u001b[22m\n",
+            "resourceCount": 250,
+            "failedCount": 64
+          },
+          {
+            "name": "养殖-监控",
+            "path": "/pages/farming/farming-monitor.html",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\farming-monitor.html",
+            "title": "场地监控 - 食品溯源系统",
+            "status": "success",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\养殖-监控.png",
+            "resourceCount": 13,
+            "failedCount": 6,
+            "failureRate": "46.15%"
+          },
+          {
+            "name": "溯源-地图",
+            "path": "/pages/trace/trace-map.html",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\trace\\trace-map.html",
+            "title": "溯源地图 - 食品溯源系统",
+            "status": "success",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\溯源-地图.png",
+            "resourceCount": 9,
+            "failedCount": 2,
+            "failureRate": "22.22%"
+          }
+        ],
+        "failedResourceDetails": [
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-placeholder.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-thumb1.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-thumb2.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-thumb3.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-thumb4.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/assets/css/trace-components.css",
+            "resourceType": "stylesheet",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/assets/images/avatar.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/trace-common.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/trace-ui-components.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+            "resourceType": "image",
+            "failure": "net::ERR_BLOCKED_BY_ORB",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/static/js/debug-loader.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-data-import.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/components/trace-ui-components.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-data-import.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FAILED",
+            "page": "首页"
+          },
+          {
+            "url": "https://via.placeholder.com/200x50?text=Food+Trace+Logo",
+            "resourceType": "image",
+            "failure": "net::ERR_NAME_NOT_RESOLVED",
+            "page": "首页"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-placeholder.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "养殖-监控"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-thumb1.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "养殖-监控"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-thumb2.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "养殖-监控"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-thumb3.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "养殖-监控"
+          },
+          {
+            "url": "file:///C:/Users/Steve/heiniu/web-app/pages/farming/assets/images/monitor-thumb4.jpg",
+            "resourceType": "image",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "养殖-监控"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "养殖-监控"
+          },
+          {
+            "url": "file:///C:/components/autoload-button-upgrade.js",
+            "resourceType": "script",
+            "failure": "net::ERR_FILE_NOT_FOUND",
+            "page": "溯源-地图"
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+            "resourceType": "image",
+            "failure": "net::ERR_BLOCKED_BY_ORB",
+            "page": "溯源-地图"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UI元素验证",
+      "description": "验证页面中的UI元素，如导航、按钮、表单等",
+      "status": "通过",
+      "duration": 61086,
+      "script": "validation/scripts/check-ui.js",
+      "details": {
+        "timestamp": "2025-04-12T11:20:43.799Z",
+        "error": "page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"file:///C:/Users/Steve/heiniu/web-app/index.html\", waiting until \"networkidle\"\u001b[22m\n",
+        "status": "failed"
+      }
+    },
+    {
+      "name": "HTML结构验证",
+      "description": "检查HTML文档结构，确保标记格式正确",
+      "status": "通过",
+      "duration": 54,
+      "script": "validation/scripts/check-html-structure.js",
+      "details": {
+        "timestamp": "2025-04-12T11:20:44.169Z",
+        "results": {
+          "totalFiles": 57,
+          "valid": 57,
+          "invalid": 0,
+          "issues": []
+        },
+        "status": "success"
+      }
+    },
+    {
+      "name": "页面跳转测试",
+      "description": "验证页面间的导航跳转是否正常工作",
+      "status": "通过",
+      "duration": 125003,
+      "script": "validation/scripts/check-page-transitions.js",
+      "details": {
+        "timestamp": "2025-04-12T11:22:48.809Z",
+        "totalPages": 17,
+        "successCount": 0,
+        "failCount": 17,
+        "results": [
+          {
+            "name": "首页",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\index.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\index.html",
+            "title": null,
+            "screenshot": null,
+            "success": false,
+            "errorMessage": "导航错误: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"file:///C:/Users/Steve/heiniu/web-app/index.html\", waiting until \"networkidle\"\u001b[22m\n"
+          },
+          {
+            "name": "养殖-繁育信息",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\farming-breeding.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\farming-breeding.html",
+            "title": "繁育信息管理 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\养殖-繁育信息_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "养殖-饲养管理",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\farming-monitor.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\farming-monitor.html",
+            "title": "场地监控 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\养殖-饲养管理_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "加工-屠宰处理",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\processing\\processing-slaughter.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\processing\\processing-slaughter.html",
+            "title": "屠宰信息录入 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\加工-屠宰处理_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "物流-创建运单",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\logistics\\logistics-create.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\logistics\\logistics-create.html",
+            "title": "创建物流订单 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\物流-创建运单_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "溯源-地图",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\trace\\trace-map.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\trace\\trace-map.html",
+            "title": "溯源地图 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\溯源-地图_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "系统管理",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\admin\\admin-system.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\admin\\admin-system.html",
+            "title": "403 访问被拒绝 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\系统管理_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 403 - 禁止访问"
+          },
+          {
+            "name": "登录",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\auth\\login.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\auth\\login.html",
+            "title": "用户登录 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\登录_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "数据采集中心",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\data-collection-center.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\data-collection-center.html",
+            "title": "数据采集中心 - 养殖管理系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\数据采集中心_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "手动采集",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\manual-collection.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\manual-collection.html",
+            "title": "手动数据采集 - 养殖管理系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\手动采集_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "二维码采集",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\qrcode-collection.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\qrcode-collection.html",
+            "title": "二维码数据采集 - 养殖管理系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\二维码采集_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "自动监控",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\auto-monitoring.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\auto-monitoring.html",
+            "title": "自动数据监控 - 养殖管理系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\自动监控_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "指标详情",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\indicator-detail.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\indicator-detail.html",
+            "title": "指标详情分析 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\指标详情_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "创建溯源",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\create-trace.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\create-trace.html",
+            "title": "创建溯源记录 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\创建溯源_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "预测分析",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\prediction-analytics.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\prediction-analytics.html",
+            "title": "数据趋势预测 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\预测分析_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "预测配置",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\prediction-config.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\prediction-config.html",
+            "title": "预测模型配置 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\预测配置_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          },
+          {
+            "name": "模型管理",
+            "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\model-management.html",
+            "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\pages\\farming\\model-management.html",
+            "title": "预测模型管理 - 食品溯源系统",
+            "screenshot": "C:\\Users\\Steve\\heiniu\\web-app\\validation\\reports\\screenshots\\模型管理_page.png",
+            "success": false,
+            "errorMessage": "页面错误: 500 - 服务器错误"
+          }
+        ],
+        "status": "success"
+      }
+    },
+    {
+      "name": "按钮基础测试",
+      "description": "检查按钮的基本属性和外观",
+      "status": "通过",
+      "duration": 48608,
+      "script": "validation/scripts/run-button-test-with-screenshots.js",
+      "details": {
+        "timestamp": "2025-04-12T11:23:37.455Z",
+        "baseUrl": "http://localhost:8080",
+        "results": [
+          {
+            "path": "/pages/trace/trace-map.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-map.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-map.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/trace/trace-list.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-list.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-list.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/trace/trace-detail.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-detail.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-detail.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/trace/trace-certificate.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-certificate.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-certificate.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/trace/trace-edit.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-edit.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-edit.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/home/home-selector.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-selector.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-selector.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/home/home-farming.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-farming.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-farming.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/home/home-processing.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-processing.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-processing.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/home/home-logistics.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-logistics.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-logistics.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/home/home-admin.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-admin.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-admin.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/auth/login.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/login.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/login.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/auth/register.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/register.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/register.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/auth/forgot-password.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/forgot-password.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/forgot-password.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/auth/reset-password.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/reset-password.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/reset-password.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/farming/farming-breeding.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-breeding.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-breeding.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/farming/farming-feeding.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-feeding.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-feeding.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/farming/farming-health.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-health.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-health.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/farming/farming-environment.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-environment.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-environment.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/farming/farming-statistics.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-statistics.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-statistics.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/farming/farming-monitor.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-monitor.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-monitor.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/farming/farming-vaccine.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-vaccine.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-vaccine.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/farming/create-trace.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/create-trace.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/create-trace.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/processing/processing-slaughter.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-slaughter.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-slaughter.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/processing/processing-quality.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-quality.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-quality.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/processing/processing-environment.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-environment.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-environment.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/processing/processing-reports.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-reports.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-reports.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/logistics/logistics-create.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/logistics-create.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/logistics-create.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/logistics/logistics-list.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/logistics-list.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/logistics-list.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/logistics/logistics-detail.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/logistics-detail.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/logistics-detail.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/logistics/vehicle-monitor.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/vehicle-monitor.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/vehicle-monitor.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/logistics/client-management.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/client-management.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/client-management.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/profile/profile.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/profile.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/profile.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/profile/notifications.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/notifications.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/notifications.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/profile/settings.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/settings.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/settings.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/admin/admin-dashboard.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-dashboard.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-dashboard.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/admin/admin-system.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-system.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-system.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/admin/admin-users.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-users.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-users.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          },
+          {
+            "path": "/pages/product-trace.html",
+            "isPrototype": false,
+            "isDirectoryListing": false,
+            "buttons": [],
+            "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/product-trace.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/product-trace.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+            "screenshot": null
+          }
+        ],
+        "status": "success",
+        "summary": {
+          "totalPages": 38,
+          "totalButtons": 0,
+          "errorPages": 38
+        }
+      }
+    },
+    {
+      "name": "按钮改进验证",
+      "description": "验证按钮的改进情况，包括可访问性和用户体验属性",
+      "status": "通过",
+      "duration": 65263,
+      "script": "validation/scripts/validate-button-improvements.js",
+      "details": {
+        "success": true,
+        "message": "按钮改进测试完成",
+        "data": {
+          "timestamp": "2025-04-12T11:23:38.062Z",
+          "summary": {
+            "totalButtons": 0,
+            "buttonsWithUniqueId": 0,
+            "buttonsWithAccessibility": 0,
+            "buttonsWithVisualFeedback": 0,
+            "percentageWithUniqueId": "0%",
+            "percentageWithAccessibility": "0%",
+            "percentageWithVisualFeedback": "0%"
+          },
+          "pageResults": {
+            "/pages/admin/admin-dashboard.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-dashboard.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-dashboard.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/admin-products.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-products.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-products.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/admin-roles.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-roles.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-roles.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/admin-settings.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-settings.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-settings.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/admin-system.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-system.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-system.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/admin-users.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/admin-users.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/admin-users.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/auth/login.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/auth/login.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/auth/login.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/data-import.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/data-import.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/data-import.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/errors/403.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/errors/403.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/errors/403.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/product-register.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/product-register.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/product-register.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/system-logs.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/system-logs.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/system-logs.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/admin/user-management.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/admin/user-management.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/admin/user-management.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/auth/login.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/login.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/login.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/coming-soon.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/coming-soon.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/coming-soon.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/demo/button-demo.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/demo/button-demo.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/demo/button-demo.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/errors/403.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/errors/403.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/errors/403.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/auto-monitoring.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/auto-monitoring.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/auto-monitoring.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/create-trace.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/create-trace.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/create-trace.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/data-collection-center.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/data-collection-center.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/data-collection-center.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/data-verification.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/data-verification.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/data-verification.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/farming-breeding.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-breeding.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-breeding.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/farming-monitor.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-monitor.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-monitor.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/farming-vaccine.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/farming-vaccine.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/farming-vaccine.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/indicator-detail.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/indicator-detail.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/indicator-detail.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/manual-collection.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/manual-collection.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/manual-collection.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/model-management.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/model-management.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/model-management.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/prediction-analytics.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/prediction-analytics.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/prediction-analytics.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/prediction-config.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/prediction-config.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/prediction-config.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/farming/qrcode-collection.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/farming/qrcode-collection.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/farming/qrcode-collection.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/home/home-farming.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-farming.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-farming.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/home/home-logistics.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-logistics.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-logistics.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/home/home-processing.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-processing.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-processing.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/home/home-selector.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-selector.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-selector.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/logistics/logistics-create.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/logistics-create.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/logistics-create.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/logistics/logistics-report.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/logistics-report.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/logistics-report.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/logistics/sales-analytics.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/sales-analytics.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/sales-analytics.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/logistics/vehicle-monitor.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/logistics/vehicle-monitor.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/logistics/vehicle-monitor.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/processing/process-detail.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/process-detail.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/process-detail.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/processing/processing-environment.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-environment.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-environment.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/processing/processing-photos.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-photos.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-photos.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/processing/processing-quality.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-quality.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-quality.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/processing/processing-reports.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-reports.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-reports.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/processing/processing-slaughter.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/processing/processing-slaughter.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/processing/processing-slaughter.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/product-trace.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/product-trace.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/product-trace.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/profile/help-center.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/help-center.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/help-center.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/profile/notifications.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/notifications.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/notifications.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/profile/profile.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/profile.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/profile.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/profile/settings.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/profile/settings.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/profile/settings.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/trace/trace-certificate.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-certificate.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-certificate.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/trace/trace-detail.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-detail.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-detail.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/trace/trace-edit.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-edit.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-edit.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/trace/trace-list.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-list.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-list.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/trace/trace-map.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-map.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-map.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            },
+            "/pages/trace/trace-query.html": {
+              "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-query.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-query.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
+              "buttons": []
+            }
+          }
+        }
+      }
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "duration": 363593
+  }
+}
