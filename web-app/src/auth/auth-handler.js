@@ -6,6 +6,8 @@
 
 import EventEmitter from '../utils/event-emitter';
 import AuthCache from './AuthCache';
+// 引入ResourceLoader单例，用于在登出时清理资源
+import resourceLoader from '../network/resource-loader-instance';
 
 /**
  * 认证处理器类
@@ -60,6 +62,9 @@ class AuthHandler {
       // 没有刷新令牌，执行登出
       this.logout();
     }
+    
+    // 即使在令牌刷新过程中也清理AuthCache，防止内存泄漏 (INT-006)
+    AuthCache.clear();
   }
   
   /**
@@ -165,6 +170,17 @@ class AuthHandler {
       
       // 清除认证缓存
       AuthCache.clear();
+      
+      // 清理资源加载器，防止内存泄漏 (INT-006)
+      if (resourceLoader) {
+        try {
+          // 清除缓存
+          await resourceLoader.clearCache();
+          console.info('ResourceLoader cache cleared during logout');
+        } catch (error) {
+          console.warn('Failed to clear ResourceLoader cache:', error);
+        }
+      }
       
       // 触发登出事件
       EventEmitter.emit('auth:logout', {});
