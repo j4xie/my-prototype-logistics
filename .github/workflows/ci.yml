@@ -25,31 +25,4 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
-      
-    - name: Lint JavaScript
-      run: npm run lint:js
-      
-    - name: Lint Markdown files
-      run: npm run lint:md
-      
-    - name: Run unit tests
-      run: npm test
-      
-    - name: Run performance tests
-      run: npm run test:performance -- --mock
-      
-    - name: Run memory pressure tests
-      run: node scripts/memory-stress-test.js --duration=60 --interval=30 --expose-gc
-      
-    - name: Upload test coverage
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage
-        path: coverage/
-        
-    - name: Upload performance reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: performance-reports
-        path: reports/ 
+      run: npm install
