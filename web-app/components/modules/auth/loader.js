@@ -13,7 +13,8 @@ const traceLoader = {
     timeout: 15000, // 资源加载超时时间(ms)
     maxConcurrent: 6, // 最大并发加载数
     retryAttempts: 2, // 加载失败重试次数
-    iconBasePath: '../../../assets/icons/'
+    iconBasePath: '../../../assets/icons/',
+    retryDelay: 1000
   },
   
   // 内部状态
@@ -22,8 +23,10 @@ const traceLoader = {
     pendingLoads: 0, // 当前正在加载的资源数
     loadQueue: [], // 等待加载的资源队列
     listeners: new Map(), // 事件监听器
+    timers: [],
+    currentId: 0
   },
-
+  
   /**
    * 初始化资源加载器
    * @param {Object} options - 配置选项
@@ -53,7 +56,7 @@ const traceLoader = {
     
     return this;
   },
-
+  
   /**
    * 初始化事件系统
    * @private
@@ -65,7 +68,8 @@ const traceLoader = {
       LOAD_PROGRESS: 'loadProgress',
       LOAD_COMPLETE: 'loadComplete',
       LOAD_ERROR: 'loadError',
-      QUEUE_COMPLETE: 'queueComplete'
+      QUEUE_COMPLETE: 'queueComplete',
+      LOAD_RETRY: 'loadRetry'
     };
   },
 
@@ -191,7 +195,7 @@ const traceLoader = {
       priority
     });
   },
-
+  
   /**
    * 批量加载资源
    * @param {Array<Object>} resources - 资源配置对象数组
@@ -265,35 +269,90 @@ const traceLoader = {
       this.on(this.events.LOAD_ERROR, errorHandler);
     });
   },
-
+  
   /**
-   * 将资源添加到加载队列
+   * 将资源添加到加载队列中
    * @private
-   * @param {Object} resource - 资源配置
+   * @param {Object} resource - 资源配置对象
+   * @returns {Boolean} - 资源是否被添加到队列
    */
   _queueResource(resource) {
-    // 为资源添加默认属性
-    const enhancedResource = {
-      priority: 1, // 默认优先级
-      retryCount: 0,
-      ...resource,
-      id: resource.id || resource.url
-    };
+    console.log(`[DEBUG] 队列资源: ${resource.id || resource.url}`);
     
-    // 检查资源是否已在缓存中
-    if (this.config.cacheEnabled && this._state.loadedResources.has(enhancedResource.id)) {
-      // 直接触发完成事件
-      this._trigger(this.events.LOAD_COMPLETE, {
-        resource: enhancedResource,
-        element: this._state.loadedResources.get(enhancedResource.id),
-        fromCache: true
-      });
-      return;
+    // 检查资源参数
+    if (!resource || !resource.url) {
+      console.warn('[WARNING] 无效资源: 缺少必需的URL', resource);
+      return false;
     }
     
-    // 添加到加载队列，按优先级排序
-    this._state.loadQueue.push(enhancedResource);
+    // 使用默认值扩展资源对象
+    const normalizedResource = {
+      id: resource.id || resource.url,
+      type: resource.type || this._getResourceTypeByExtension(resource.url),
+      url: resource.url,
+      priority: resource.priority !== undefined ? resource.priority : 1,
+      timeout: resource.timeout || this.config.timeout,
+      cacheable: resource.cacheable !== undefined ? resource.cacheable : true,
+      retryAttempts: resource.retryAttempts || this.config.retryAttempts || 0,
+      retryDelay: resource.retryDelay || this.config.retryDelay || 1000,
+      currentRetry: 0,
+      ...resource
+    };
+    
+    // 设置资源标识符
+    if (!normalizedResource.id) {
+      normalizedResource.id = normalizedResource.url;
+    }
+    
+    // 检查缓存中是否已存在该资源
+    if (this.config.cacheEnabled && this._state.loadedResources.has(normalizedResource.id)) {
+      console.log(`[DEBUG] 资源已缓存，跳过队列: ${normalizedResource.id}`);
+      return false;
+    }
+    
+    // 检查此资源是否已经在队列中
+    if (this._state.loadQueue.some(item => item.id === normalizedResource.id)) {
+      console.log(`[DEBUG] 资源已在队列中: ${normalizedResource.id}`);
+      return false;
+    }
+    
+    // 检查此资源是否正在加载中
+    if (this._state.pendingLoads > 0 && this._state.loadQueue.some(item => item.id === normalizedResource.id)) {
+      console.log(`[DEBUG] 资源正在加载中: ${normalizedResource.id}`);
+      return false;
+    }
+    
+    // 将资源添加到队列
+    this._state.loadQueue.push(normalizedResource);
+    
+    // 按优先级排序队列（高优先级在前）
     this._state.loadQueue.sort((a, b) => b.priority - a.priority);
+    
+    // 尝试处理队列
+    this._processQueue();
+    
+    return true;
+  },
+  
+  /**
+   * 根据URL扩展名确定资源类型
+   * @private
+   * @param {String} url - 资源URL
+   * @returns {String} - 资源类型
+   */
+  _getResourceTypeByExtension(url) {
+    const ext = url.split('?')[0].split('.').pop().toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) {
+      return 'image';
+    } else if (['js'].includes(ext)) {
+      return 'script';
+    } else if (['css'].includes(ext)) {
+      return 'style';
+    }
+    
+    // 默认为脚本
+    return 'script';
   },
 
   /**
@@ -301,22 +360,32 @@ const traceLoader = {
    * @private
    */
   _processQueue() {
-    console.log(`[loader.js] _processQueue: 开始处理队列. 队列长度: ${this._state.loadQueue.length}, 正在加载: ${this._state.pendingLoads}, 最大并发: ${this.config.maxConcurrent}`);
+    console.log(`[DEBUG] _processQueue START: Queue=${this._state.loadQueue.length}, Pending=${this._state.pendingLoads}, Max=${this.config.maxConcurrent}`);
+    
     // 检查是否有等待的资源和可用的加载槽
+    let processedInLoop = 0;
+    let promises = [];
+    
+    // 预先处理队列中的资源，但不递归调用 _processQueue
     while (
       this._state.loadQueue.length > 0 && 
       this._state.pendingLoads < this.config.maxConcurrent
     ) {
+      processedInLoop++;
       // 获取下一个要加载的资源
       const resource = this._state.loadQueue.shift();
       this._state.pendingLoads++;
-      console.log(`[loader.js] _processQueue: 取出资源加载 ${resource.id || resource.url}. 队列剩余: ${this._state.loadQueue.length}, 正在加载: ${this._state.pendingLoads}`);
+      console.log(`[DEBUG] _processQueue LOOP: Took ${resource.id || resource.url}. Queue=${this._state.loadQueue.length}, Pending=${this._state.pendingLoads}`);
       
-      // 加载资源
-      this._loadResource(resource)
+      // 加载资源，保存 Promise 但不在这里链式调用 then/catch
+      const resourcePromise = this._loadResource(resource);
+      
+      // 包装 Promise 处理，避免在 then/catch 中递归调用 _processQueue
+      const wrappedPromise = resourcePromise
         .then(element => {
+          const previousPending = this._state.pendingLoads;
           this._state.pendingLoads--;
-          console.log(`[loader.js] _processQueue: 资源加载成功 ${resource.id || resource.url}. 队列剩余: ${this._state.loadQueue.length}, 正在加载: ${this._state.pendingLoads}`);
+          console.log(`[DEBUG] _processQueue THEN: Success ${resource.id || resource.url}. Pending: ${previousPending} -> ${this._state.pendingLoads}`);
           
           // 触发资源加载完成事件
           this._trigger(this.events.LOAD_COMPLETE, { 
@@ -325,32 +394,48 @@ const traceLoader = {
             remainingQueue: this._state.loadQueue.length 
           });
           
-          // 继续处理队列
-          this._processQueue();
-          
           // 检查队列是否已清空
           if (this._state.pendingLoads === 0 && this._state.loadQueue.length === 0) {
+            console.log(`[DEBUG] _processQueue THEN: Queue complete trigger.`);
             this._trigger(this.events.QUEUE_COMPLETE, { 
               totalLoaded: this._state.loadedResources.size 
             });
           }
+          
+          return element;
         })
         .catch(error => {
+          const previousPending = this._state.pendingLoads;
           this._state.pendingLoads--;
-          console.log(`[loader.js] _processQueue: 资源加载失败 ${resource.id || resource.url}. 错误: ${error.message}. 队列剩余: ${this._state.loadQueue.length}, 正在加载: ${this._state.pendingLoads}, 重试次数: ${resource.retryCount}`);
+          console.log(`[DEBUG] _processQueue CATCH: Fail ${resource.id || resource.url}. Err: ${error.message}. Pending: ${previousPending} -> ${this._state.pendingLoads}. Retry: ${resource.retryCount}/${this.config.retryAttempts}`);
           
           // 处理重试逻辑
           if (resource.retryCount < this.config.retryAttempts) {
             resource.retryCount++;
+            console.log(`[DEBUG] _processQueue CATCH: Re-queuing ${resource.id || resource.url}`);
             this._state.loadQueue.unshift(resource); // 将失败资源重新加入队列顶部
           } else {
+            console.log(`[DEBUG] _processQueue CATCH: Max retries reached for ${resource.id || resource.url}. Triggering LOAD_ERROR.`);
             // 触发加载错误事件
             this._trigger(this.events.LOAD_ERROR, { resource, error });
           }
           
-          // 继续处理队列
-          this._processQueue();
+          throw error; // 继续抛出错误
         });
+      
+      promises.push(wrappedPromise);
+    }
+    
+    console.log(`[DEBUG] _processQueue END: Exited while loop. Processed ${processedInLoop} items this call.`);
+    
+    // 添加一个处理器，在当前批次的资源完成后，再次调用 _processQueue
+    if (promises.length > 0) {
+      Promise.allSettled(promises).then(() => {
+        if (this._state.loadQueue.length > 0 && this._state.pendingLoads < this.config.maxConcurrent) {
+          console.log(`[DEBUG] _processQueue: Processing next batch of resources`);
+          this._processQueue();
+        }
+      });
     }
   },
 
@@ -358,15 +443,41 @@ const traceLoader = {
    * 加载单个资源
    * @private
    * @param {Object} resource - 资源配置
-   * @returns {Promise<HTMLElement>} - 加载的元素
+   * @returns {Promise} - 资源加载的Promise
    */
   _loadResource(resource) {
+    console.log(`[DEBUG] 开始加载资源: ${resource.id || resource.url} (type: ${resource.type})`);
+    
     // 触发加载开始事件
     this._trigger(this.events.LOAD_START, { resource });
-    console.log(`[loader.js] _loadResource: 开始加载 ${resource.id || resource.url}, 类型: ${resource.type}`);
     
+    // 检查是否已缓存
+    if (this.config.cacheEnabled && this._state.loadedResources.has(resource.url)) {
+      console.log(`[DEBUG] 使用缓存资源: ${resource.id}`);
+      const cachedResource = this._state.loadedResources.get(resource.url);
+      
+      // 触发加载完成事件
+      this._trigger(this.events.LOAD_COMPLETE, { 
+        resource, 
+        element: cachedResource,
+        fromCache: true 
+      });
+      
+      return Promise.resolve(cachedResource);
+    }
+    
+    // 设置超时处理
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      if (resource.timeout || this.config.timeout) {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`资源加载超时: ${resource.url}`));
+        }, resource.timeout || this.config.timeout);
+      }
+    });
+    
+    // 根据资源类型选择加载方法
     let loadPromise;
-    
     switch (resource.type) {
       case 'image':
         loadPromise = this._loadImageResource(resource);
@@ -381,35 +492,76 @@ const traceLoader = {
         return Promise.reject(new Error(`不支持的资源类型: ${resource.type}`));
     }
     
-    // 添加超时处理
-    const timeoutPromise = new Promise((_, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error(`资源加载超时: ${resource.url}`));
-      }, this.config.timeout);
-      
-      // 当资源加载完成时清除超时
-      loadPromise.then(() => clearTimeout(timeoutId)).catch(() => clearTimeout(timeoutId));
-    });
-    
-    // 返回第一个完成的Promise (成功或超时)
+    // 竞争超时与加载
     return Promise.race([loadPromise, timeoutPromise])
       .then(element => {
-        // 缓存已加载的资源
-        if (this.config.cacheEnabled) {
-          console.log(`[loader.js] _loadResource: 资源加载成功并缓存 ${resource.id || resource.url}`);
-          this._state.loadedResources.set(resource.id, element);
-        } else {
-          console.log(`[loader.js] _loadResource: 资源加载成功 (未缓存) ${resource.id || resource.url}`);
+        console.log(`[DEBUG] 资源加载成功: ${resource.id || resource.url}`);
+        clearTimeout(timeoutId); // 确保清除超时
+        
+        // 如果启用缓存且资源可缓存，则进行缓存
+        if (this.config.cacheEnabled && resource.cacheable !== false) {
+          console.log(`[DEBUG] 缓存资源: ${resource.id || resource.url}`);
+          this._state.loadedResources.set(resource.url, element);
         }
+        
+        // 触发加载完成事件
+        this._trigger(this.events.LOAD_COMPLETE, { resource, element, fromCache: false });
+        
         return element;
       })
       .catch(error => {
-        console.log(`[loader.js] _loadResource: 资源加载最终失败 (包括超时) ${resource.id || resource.url}: ${error.message}`);
+        console.log(`[DEBUG] _loadResource CATCH: ${error.message} - ${resource.id || resource.url}`);
+        clearTimeout(timeoutId); // 确保清除超时
+        // 处理资源加载错误
         this.handleResourceError(resource, error);
         throw error;
       });
   },
 
+  /**
+   * 处理资源加载错误
+   * @param {Object} resource - 资源配置
+   * @param {Error} error - 错误对象
+   */
+  handleResourceError(resource, error) {
+    console.error(`资源加载失败: ${resource.id || resource.url}`, error);
+    
+    // 检查是否达到最大重试次数
+    const currentRetries = resource.retries || 0;
+    
+    if (currentRetries < (resource.maxRetries || this.config.retryAttempts)) {
+      console.log(`[DEBUG] 资源加载重试 (${currentRetries + 1}/${resource.maxRetries || this.config.retryAttempts}): ${resource.id || resource.url}`);
+      
+      // 增加重试计数
+      resource.retries = currentRetries + 1;
+      
+      // 添加延迟，防止立即重试
+      setTimeout(() => {
+        // 重新加入队列，设置高优先级
+        resource.priority = 1; // 最高优先级
+        this._queueResource(resource);
+        this._processQueue();
+      }, 1000); // 1秒后重试
+      
+      // 触发重试事件
+      this._trigger(this.events.LOAD_RETRY, { 
+        resource, 
+        error, 
+        retryCount: resource.retries,
+        maxRetries: resource.maxRetries || this.config.retryAttempts 
+      });
+    } else {
+      // 达到最大重试次数，触发最终错误事件
+      this._trigger(this.events.LOAD_ERROR, { 
+        resource, 
+        error, 
+        retryCount: currentRetries,
+        maxRetries: resource.maxRetries || this.config.retryAttempts,
+        isFinal: true
+      });
+    }
+  },
+  
   /**
    * 加载图片资源
    * @private
@@ -418,15 +570,15 @@ const traceLoader = {
    */
   _loadImageResource(resource) {
     return new Promise((resolve, reject) => {
-      console.log(`[loader.js] _loadImageResource: 正在加载图片 ${resource.url}`);
       const img = new Image();
       
       img.onload = () => {
-        console.log(`[loader.js] _loadImageResource: 图片加载成功 ${resource.url}`);
+        console.log(`[DEBUG] 图片加载成功: ${resource.id || resource.url}`);
         resolve(img);
       };
-      img.onerror = () => {
-        console.log(`[loader.js] _loadImageResource: 图片加载失败 ${resource.url}`);
+      
+      img.onerror = (event) => {
+        console.log(`[DEBUG] 图片加载失败: ${resource.id || resource.url}`);
         reject(new Error(`图片加载失败: ${resource.url}`));
       };
       
@@ -434,16 +586,25 @@ const traceLoader = {
       if (img.addEventListener) {
         img.addEventListener('progress', event => {
           if (event.lengthComputable) {
+            const percentage = Math.round((event.loaded / event.total) * 100);
+            console.log(`[DEBUG] 图片加载进度: ${resource.id || resource.url} - ${percentage}%`);
+            
             this._trigger(this.events.LOAD_PROGRESS, {
               resource,
               loaded: event.loaded,
               total: event.total,
-              percentage: Math.round((event.loaded / event.total) * 100)
+              percentage: percentage
             });
           }
         });
       }
       
+      // 设置跨域属性，如果指定
+      if (resource.crossOrigin) {
+        img.crossOrigin = resource.crossOrigin;
+      }
+      
+      // 开始加载
       img.src = resource.url;
     });
   },
@@ -456,26 +617,38 @@ const traceLoader = {
    */
   _loadScriptResource(resource) {
     return new Promise((resolve, reject) => {
-      console.log(`[loader.js] _loadScriptResource: 正在加载脚本 ${resource.url}`);
       const script = document.createElement('script');
       script.type = 'text/javascript';
       script.src = resource.url;
       script.async = resource.async !== false;
       script.defer = resource.defer === true;
       
+      // 设置其他属性
+      if (resource.id) {
+        script.id = resource.id;
+      }
+      
+      if (resource.integrity) {
+        script.integrity = resource.integrity;
+        script.crossOrigin = resource.crossOrigin || 'anonymous';
+      } else if (resource.crossOrigin) {
+        script.crossOrigin = resource.crossOrigin;
+      }
+      
       script.onload = () => {
-        console.log(`[loader.js] _loadScriptResource: 脚本加载成功 ${resource.url}`);
+        console.log(`[DEBUG] 脚本加载成功: ${resource.id || resource.url}`);
         resolve(script);
       };
+      
       script.onerror = () => {
-        console.log(`[loader.js] _loadScriptResource: 脚本加载失败 ${resource.url}`);
+        console.log(`[DEBUG] 脚本加载失败: ${resource.id || resource.url}`);
         reject(new Error(`脚本加载失败: ${resource.url}`));
       };
       
       document.head.appendChild(script);
     });
   },
-
+  
   /**
    * 加载样式资源
    * @private
@@ -484,36 +657,41 @@ const traceLoader = {
    */
   _loadStyleResource(resource) {
     return new Promise((resolve, reject) => {
-      console.log(`[loader.js] _loadStyleResource: 正在加载样式 ${resource.url}`);
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.type = 'text/css';
       link.href = resource.url;
       
+      // 设置其他属性
+      if (resource.id) {
+        link.id = resource.id;
+      }
+      
+      if (resource.media) {
+        link.media = resource.media;
+      }
+      
+      if (resource.integrity) {
+        link.integrity = resource.integrity;
+        link.crossOrigin = resource.crossOrigin || 'anonymous';
+      } else if (resource.crossOrigin) {
+        link.crossOrigin = resource.crossOrigin;
+      }
+      
       link.onload = () => {
-        console.log(`[loader.js] _loadStyleResource: 样式加载成功 ${resource.url}`);
+        console.log(`[DEBUG] 样式表加载成功: ${resource.id || resource.url}`);
         resolve(link);
       };
+      
       link.onerror = () => {
-        console.log(`[loader.js] _loadStyleResource: 样式加载失败 ${resource.url}`);
+        console.log(`[DEBUG] 样式表加载失败: ${resource.id || resource.url}`);
         reject(new Error(`样式表加载失败: ${resource.url}`));
       };
       
       document.head.appendChild(link);
     });
   },
-
-  /**
-   * 处理资源加载错误
-   * @param {Object} resource - 资源配置
-   * @param {Error} error - 错误对象
-   */
-  handleResourceError(resource, error) {
-    console.error('资源加载失败:', resource.url, error);
-    // 触发错误事件
-    this._trigger(this.events.LOAD_ERROR, { resource, error });
-  },
-
+  
   /**
    * 清除资源缓存
    * @param {string} [resourceId] - 特定资源ID，不提供则清除所有缓存
@@ -545,13 +723,80 @@ const traceLoader = {
       pending: this._state.pendingLoads,
       queued: this._state.loadQueue.length
     };
+  },
+
+  /**
+   * 更新队列中资源的优先级
+   * @param {String} resourceId - 资源ID
+   * @param {Number} newPriority - 新的优先级级别
+   * @returns {Boolean} - 是否成功更新
+   */
+  updateResourcePriority(resourceId, newPriority) {
+    console.log(`[DEBUG] 更新资源优先级: ${resourceId} => ${newPriority}`);
+    
+    if (!resourceId || newPriority === undefined) {
+      return false;
+    }
+    
+    // 检查资源是否在队列中
+    const resourceIndex = this._state.loadQueue.findIndex(resource => resource.id === resourceId);
+    if (resourceIndex === -1) {
+      console.log(`[DEBUG] 资源不在队列中: ${resourceId}`);
+      return false;
+    }
+    
+    // 更新优先级
+    this._state.loadQueue[resourceIndex].priority = newPriority;
+    console.log(`[DEBUG] 资源优先级已更新: ${resourceId}`);
+    
+    // 重新排序队列
+    this._state.loadQueue.sort((a, b) => b.priority - a.priority);
+    
+    return true;
+  },
+
+  /**
+   * 重置加载器状态（用于测试）
+   * @returns {void}
+   */
+  reset() {
+    console.log('[DEBUG] 重置加载器状态');
+    
+    // 重置内部状态
+    this._state = {
+      initialized: false,
+      loadQueue: [],
+      loadedResources: new Map(),
+      pendingLoads: 0,
+      listeners: new Map(),
+      currentId: 0,
+      timers: []
+    };
+    
+    // 重置配置为默认值
+    this.config = {
+      cacheEnabled: true,
+      maxConcurrent: 4,
+      timeout: 30000,
+      retryAttempts: 2,
+      retryDelay: 1000,
+      iconBasePath: '../../../assets/icons/'
+    };
+    
+    // 清除所有定时器
+    if (typeof window !== 'undefined') {
+      const timers = this._state.timers || [];
+      timers.forEach(timerId => clearTimeout(timerId));
+    }
+    
+    console.log('[DEBUG] 加载器状态已重置');
   }
 };
 
 // 为了向后兼容，导出到全局对象
 if (typeof window !== 'undefined') {
   window.traceLoader = traceLoader;
-}
+} 
 
 // export default traceLoader; 
 // CommonJS导出

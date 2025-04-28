@@ -1,38 +1,82 @@
 {
-  "导航菜单": {
-    "selector": "nav",
-    "count": 0,
-    "status": "失败",
-    "details": "未找到元素"
-  },
-  "按钮": {
-    "selector": "button",
-    "count": 0,
-    "status": "失败",
-    "details": "未找到元素"
-  },
-  "链接": {
-    "selector": "a",
-    "count": 0,
-    "status": "失败",
-    "details": "未找到元素"
-  },
-  "图片": {
-    "selector": "img",
-    "count": 0,
-    "status": "失败",
-    "details": "未找到元素"
-  },
-  "标题": {
-    "selector": "h1",
-    "count": 0,
-    "status": "失败",
-    "details": "未找到元素"
-  },
-  "页脚": {
-    "selector": "footer",
-    "count": 0,
-    "status": "失败",
-    "details": "未找到元素"
+  "timestamp": "2025-04-15T15:18:22.997Z",
+  "url": "file://C:\\Users\\Steve\\heiniu\\web-app\\index.html",
+  "pagePath": "C:\\Users\\Steve\\heiniu\\web-app\\index.html",
+  "elements": [
+    {
+      "name": "导航菜单",
+      "selector": "nav",
+      "count": 0,
+      "status": "失败",
+      "details": "未找到元素"
+    },
+    {
+      "name": "页眉",
+      "selector": "header",
+      "count": 1,
+      "status": "通过",
+      "details": "找到1个元素"
+    },
+    {
+      "name": "按钮",
+      "selector": "button",
+      "count": 0,
+      "status": "失败",
+      "details": "未找到元素"
+    },
+    {
+      "name": "链接",
+      "selector": "a",
+      "count": 0,
+      "status": "失败",
+      "details": "未找到元素"
+    },
+    {
+      "name": "图片",
+      "selector": "img",
+      "count": 0,
+      "status": "失败",
+      "details": "未找到元素"
+    },
+    {
+      "name": "标题",
+      "selector": "h1, h2",
+      "count": 27,
+      "status": "通过",
+      "details": "找到27个元素"
+    },
+    {
+      "name": "输入框",
+      "selector": "input",
+      "count": 0,
+      "status": "失败",
+      "details": "未找到元素"
+    },
+    {
+      "name": "选择框",
+      "selector": "select",
+      "count": 0,
+      "status": "失败",
+      "details": "未找到元素"
+    },
+    {
+      "name": "表格",
+      "selector": "table",
+      "count": 0,
+      "status": "失败",
+      "details": "未找到元素"
+    },
+    {
+      "name": "页脚",
+      "selector": "footer",
+      "count": 1,
+      "status": "通过",
+      "details": "找到1个元素"
+    }
+  ],
+  "summary": {
+    "totalChecks": 10,
+    "passed": 3,
+    "failed": 7
   }
 }

@@ -1,53 +1,53 @@
 {
-  "timestamp": "2025-04-12T02:50:43.859Z",
+  "timestamp": "2025-04-15T15:15:35.007Z",
   "baseUrl": "http://localhost:8080",
   "results": [
     {
       "path": "/pages/trace/trace-map.html",
       "isPrototype": false,
-      "isDirectoryListing": true,
+      "isDirectoryListing": false,
       "buttons": [],
-      "error": null,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-map.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-map.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
       "screenshot": null
     },
     {
       "path": "/pages/trace/trace-list.html",
       "isPrototype": false,
-      "isDirectoryListing": true,
+      "isDirectoryListing": false,
       "buttons": [],
-      "error": null,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-list.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-list.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
       "screenshot": null
     },
     {
       "path": "/pages/trace/trace-detail.html",
       "isPrototype": false,
-      "isDirectoryListing": true,
+      "isDirectoryListing": false,
       "buttons": [],
-      "error": null,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/trace/trace-detail.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/trace/trace-detail.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
       "screenshot": null
     },
     {
       "path": "/pages/home/home-selector.html",
       "isPrototype": false,
-      "isDirectoryListing": true,
+      "isDirectoryListing": false,
       "buttons": [],
-      "error": null,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/home/home-selector.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/home/home-selector.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
       "screenshot": null
     },
     {
       "path": "/pages/auth/login.html",
       "isPrototype": false,
-      "isDirectoryListing": true,
+      "isDirectoryListing": false,
       "buttons": [],
-      "error": null,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/auth/login.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/auth/login.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
       "screenshot": null
     },
     {
       "path": "/pages/product-trace.html",
       "isPrototype": false,
-      "isDirectoryListing": true,
+      "isDirectoryListing": false,
       "buttons": [],
-      "error": null,
+      "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/pages/product-trace.html\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/pages/product-trace.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
       "screenshot": null
     }
   ],
@@ -55,7 +55,7 @@
   "summary": {
     "totalPages": 6,
     "totalButtons": 0,
-    "errorPages": 0,
+    "errorPages": 6,
     "interactionErrors": 0
   }
 }

@@ -7,9 +7,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// 模块目录
-const MODULES_DIR = path.join(__dirname, '..', 'components', 'modules');
-const MODULES = ['auth', 'data', 'store', 'ui', 'utils'];
+// 默认模块目录
+const DEFAULT_MODULES_DIR = path.join(__dirname, '..', 'components', 'modules');
+const DEFAULT_MODULES = ['auth', 'data', 'store', 'ui', 'utils'];
 
 // 处理文件
 function processFile(filePath) {
@@ -66,6 +66,12 @@ function processFile(filePath) {
     return `const ${name} = ${value};`;
   });
   
+  // 匹配类导出 export class Name {...
+  content = content.replace(/export\s+(class|function)\s+(\w+)/g, (match, type, name) => {
+    exports.push({ name, alias: name });
+    return `${type} ${name}`;
+  });
+  
   // 匹配对象字面量默认导出 export default { ... };
   content = content.replace(/export\s+default\s+({[\s\S]*?});/g, (match, objectContent) => {
     defaultExport.found = true;
@@ -116,15 +122,11 @@ function processFile(filePath) {
       }
     } else {
       // 只有命名导出
-      exports.forEach(exp => {
-        if (exp.value) {
-          // 如果是直接导出的常量
-          // 已经在前面转换为const声明，这里只需要导出
-          exportStatements += `module.exports.${exp.alias} = ${exp.name};\n`;
-        } else {
-          exportStatements += `module.exports.${exp.alias} = ${exp.name};\n`;
-        }
+      exportStatements += 'module.exports = {\n';
+      exports.forEach((exp, index) => {
+        exportStatements += `  ${exp.alias}${index < exports.length - 1 ? ',' : ''}\n`;
       });
+      exportStatements += '};\n';
     }
   }
   
@@ -155,16 +157,50 @@ function processDirectory(dir) {
   }
 }
 
-// 开始转换
-console.log('开始将ES模块语法转换为CommonJS语法...');
-
-// 处理所有模块目录
-for (const moduleName of MODULES) {
-  const moduleDir = path.join(MODULES_DIR, moduleName);
-  processDirectory(moduleDir);
+// 主函数
+function main() {
+  const args = process.argv.slice(2);
+  
+  if (args.length === 0) {
+    console.log('未指定目标文件或目录，使用默认设置...');
+    
+    // 处理所有默认模块目录
+    for (const moduleName of DEFAULT_MODULES) {
+      const moduleDir = path.join(DEFAULT_MODULES_DIR, moduleName);
+      if (fs.existsSync(moduleDir)) {
+        processDirectory(moduleDir);
+      }
+    }
+    
+    // 处理主索引文件
+    const indexFile = path.join(DEFAULT_MODULES_DIR, 'index.js');
+    if (fs.existsSync(indexFile)) {
+      processFile(indexFile);
+    }
+  } else {
+    // 处理指定的文件或目录
+    for (const target of args) {
+      const targetPath = path.resolve(target);
+      
+      if (fs.existsSync(targetPath)) {
+        const stat = fs.statSync(targetPath);
+        
+        if (stat.isDirectory()) {
+          console.log(`处理目录: ${targetPath}`);
+          processDirectory(targetPath);
+        } else if (stat.isFile() && targetPath.endsWith('.js')) {
+          processFile(targetPath);
+        } else {
+          console.error(`不是JavaScript文件: ${targetPath}`);
+        }
+      } else {
+        console.error(`目标不存在: ${targetPath}`);
+      }
+    }
+  }
+  
+  console.log('转换完成!');
 }
 
-// 处理主索引文件
-processFile(path.join(MODULES_DIR, 'index.js'));
-
-console.log('转换完成!'); 
+// 执行主函数
+main(); 

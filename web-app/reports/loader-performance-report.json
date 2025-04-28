@@ -1,0 +1,95 @@
+{
+  "timestamp": "2025-04-19T10:28:26.351Z",
+  "summary": {
+    "totalTests": 3,
+    "passedTests": 0,
+    "failedTests": 3,
+    "skippedTests": 0,
+    "averageExecutionTime": 91.33333333333333
+  },
+  "testResults": [
+    {
+      "name": "batch-size-optimization.test.js",
+      "success": false,
+      "duration": 102,
+      "performanceData": [],
+      "warnings": [],
+      "errors": [
+        "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\batch-size-optimization.test.js:10\r",
+        "describe('资源加载器 - 批量大小优化测试', () => {\r",
+        "^\r",
+        "\r",
+        "ReferenceError: describe is not defined\r",
+        "    at Object.<anonymous> (C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\batch-size-optimization.test.js:10:1)\r",
+        "    at Module._compile (node:internal/modules/cjs/loader:1554:14)\r",
+        "    at Object..js (node:internal/modules/cjs/loader:1706:10)\r",
+        "    at Module.load (node:internal/modules/cjs/loader:1289:32)\r",
+        "    at Function._load (node:internal/modules/cjs/loader:1108:12)\r",
+        "    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\r",
+        "    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)\r",
+        "    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)\r",
+        "    at node:internal/main/run_main_module:36:49\r",
+        "\r",
+        "Node.js v22.14.0\r"
+      ]
+    },
+    {
+      "name": "network-fast-switch.test.js",
+      "success": false,
+      "duration": 87,
+      "performanceData": [],
+      "warnings": [],
+      "errors": [
+        "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\network-fast-switch.test.js:10\r",
+        "describe('网络监控 - 网络状态快速切换测试', () => {\r",
+        "^\r",
+        "\r",
+        "ReferenceError: describe is not defined\r",
+        "    at Object.<anonymous> (C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\network-fast-switch.test.js:10:1)\r",
+        "    at Module._compile (node:internal/modules/cjs/loader:1554:14)\r",
+        "    at Object..js (node:internal/modules/cjs/loader:1706:10)\r",
+        "    at Module.load (node:internal/modules/cjs/loader:1289:32)\r",
+        "    at Function._load (node:internal/modules/cjs/loader:1108:12)\r",
+        "    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\r",
+        "    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)\r",
+        "    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)\r",
+        "    at node:internal/main/run_main_module:36:49\r",
+        "\r",
+        "Node.js v22.14.0\r"
+      ]
+    },
+    {
+      "name": "memory-usage-analysis.test.js",
+      "success": false,
+      "duration": 85,
+      "performanceData": [],
+      "warnings": [],
+      "errors": [
+        "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\memory-usage-analysis.test.js:9\r",
+        "describe('资源加载器 - 内存占用分析', () => {\r",
+        "^\r",
+        "\r",
+        "ReferenceError: describe is not defined\r",
+        "    at Object.<anonymous> (C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\memory-usage-analysis.test.js:9:1)\r",
+        "    at Module._compile (node:internal/modules/cjs/loader:1554:14)\r",
+        "    at Object..js (node:internal/modules/cjs/loader:1706:10)\r",
+        "    at Module.load (node:internal/modules/cjs/loader:1289:32)\r",
+        "    at Function._load (node:internal/modules/cjs/loader:1108:12)\r",
+        "    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\r",
+        "    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)\r",
+        "    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)\r",
+        "    at node:internal/main/run_main_module:36:49\r",
+        "\r",
+        "Node.js v22.14.0\r"
+      ]
+    }
+  ],
+  "environment": {
+    "nodeVersion": "v22.14.0",
+    "platform": "win32",
+    "arch": "x64",
+    "cpuCores": 16,
+    "totalMemory": "65419MB"
+  },
+  "totalExecutionTime": 276
+}

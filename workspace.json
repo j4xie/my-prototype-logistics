@@ -1,0 +1,11 @@
+{
+  "name": "food-traceability-system",
+  "version": "1.0.0",
+  "description": "食品溯源系统工作区配置",
+  "rootDir": "",
+  "createdAt": "2025-04-25T12:00:00.000Z",
+  "paths": {
+    "webApp": "web-app"
+  },
+  "comments": "此文件用于标记项目根目录，帮助脚本正确识别项目结构。请勿删除。"
+} 
