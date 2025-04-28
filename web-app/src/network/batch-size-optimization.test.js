@@ -3,9 +3,61 @@
  * @description 测试不同批量大小对资源加载性能的影响，以确定最佳批处理大小
  */
 
+// 添加Jest引用
+const jest = require('jest');
+
+// 模拟模块
+jest.mock('./resource-loader', () => ({
+  traceLoader: {
+    reset: jest.fn(),
+    configure: jest.fn(),
+    loadBatch: jest.fn().mockResolvedValue([]),
+    init: jest.fn().mockReturnValue({
+      loadBatch: jest.fn().mockResolvedValue([])
+    })
+  }
+}));
+
+jest.mock('./network-monitor', () => ({
+  NetworkMonitor: jest.fn().mockImplementation(() => ({
+    removeAllListeners: jest.fn(),
+    on: jest.fn(),
+    emit: jest.fn()
+  }))
+}));
+
+jest.mock('../utils/performance-test-tool', () => {
+  return jest.fn().mockImplementation(() => ({
+    startRecording: jest.fn(),
+    stopRecording: jest.fn(),
+    getSummary: jest.fn().mockReturnValue({}),
+    measure: jest.fn().mockResolvedValue({
+      average: 100,
+      min: 80,
+      max: 120,
+      median: 100,
+      stdDev: 10
+    })
+  }));
+});
+
 const { traceLoader } = require('./resource-loader');
 const { NetworkMonitor } = require('./network-monitor');
 const PerformanceTestTool = require('../utils/performance-test-tool');
+
+// 设置全局模拟
+global.performance = global.performance || {
+  now: jest.fn().mockReturnValue(Date.now()),
+  memory: {
+    usedJSHeapSize: 1000000,
+    totalJSHeapSize: 10000000,
+    jsHeapSizeLimit: 100000000
+  }
+};
+
+global.window = global.window || {
+  dispatchEvent: jest.fn()
+};
 
 describe('资源加载器 - 批量大小优化测试', () => {
   // 性能测试工具实例

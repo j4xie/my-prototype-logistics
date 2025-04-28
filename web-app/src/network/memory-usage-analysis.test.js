@@ -3,9 +3,73 @@
  * @description 测试资源加载器在不同工作负载下的内存占用情况
  */
 
+// 添加Jest引用
+const jest = require('jest');
+
+// 模拟模块
+jest.mock('./resource-loader', () => ({
+  traceLoader: {
+    reset: jest.fn(),
+    init: jest.fn().mockReturnValue({
+      loadBatch: jest.fn().mockResolvedValue([])
+    })
+  }
+}));
+
+jest.mock('../utils/performance-test-tool', () => {
+  return jest.fn().mockImplementation(() => ({
+    startRecording: jest.fn(),
+    stopRecording: jest.fn(),
+    getSummary: jest.fn().mockReturnValue({})
+  }));
+});
+
+// 模拟测试服务器的mockFetch
+jest.mock('../../../test/mock-server/mockFetch', () => ({
+  default: jest.fn().mockImplementation((url) => {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ url }),
+      text: () => Promise.resolve(`Content for ${url}`),
+      blob: () => Promise.resolve(new Blob([`Blob content for ${url}`]))
+    });
+  })
+}));
+
+// 模拟资源加载器
+jest.mock('./resource-loader', () => {
+  return {
+    withMock: jest.fn().mockImplementation((mockFetch, options) => ({
+      loadBatch: jest.fn().mockImplementation((urls, options = {}) => {
+        if (options.onProgress) {
+          // 模拟加载进度回调
+          urls.forEach((url, index) => {
+            setTimeout(() => options.onProgress(index + 1), 10 * (index + 1));
+          });
+        }
+        return Promise.resolve(urls.map(url => ({ url, loaded: true })));
+      })
+    })),
+    traceLoader: {
+      reset: jest.fn(),
+      init: jest.fn()
+    }
+  };
+});
+
 const { traceLoader } = require('./resource-loader');
 const PerformanceTestTool = require('../utils/performance-test-tool');
 const ResourceLoader = require('./resource-loader');
+
+// 设置全局模拟
+global.performance = global.performance || {
+  now: jest.fn().mockReturnValue(Date.now()),
+  memory: {
+    usedJSHeapSize: 1000000,
+    totalJSHeapSize: 10000000,
+    jsHeapSizeLimit: 100000000
+  }
+};
 
 describe('资源加载器 - 内存占用分析', () => {
   // 性能测试工具实例
