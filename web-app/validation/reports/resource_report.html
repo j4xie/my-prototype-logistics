@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>资源加载验证报告 - 2025/4/12 20:32:24</title>
+  <title>资源加载验证报告 - 2025/4/15 23:17:54</title>
   <style>
     :root {
       --primary-color: #00467F;
@@ -127,7 +127,7 @@
 </head>
 <body>
   <h1>资源加载验证报告</h1>
-  <p>生成时间: 2025/4/12 20:32:24</p>
+  <p>生成时间: 2025/4/15 23:17:54</p>
   
   <div class="summary">
     <h2>总体概况</h2>
@@ -138,23 +138,23 @@
       </div>
       <div class="stat-card">
         <div>成功页面数</div>
-        <div class="stat-value success">8</div>
+        <div class="stat-value success">9</div>
       </div>
       <div class="stat-card">
         <div>失败页面数</div>
-        <div class="stat-value error">1</div>
+        <div class="stat-value success">0</div>
       </div>
       <div class="stat-card">
         <div>总资源请求数</div>
-        <div class="stat-value">1239</div>
+        <div class="stat-value">493</div>
       </div>
       <div class="stat-card">
         <div>失败请求数</div>
-        <div class="stat-value error">592</div>
+        <div class="stat-value error">232</div>
       </div>
       <div class="stat-card">
         <div>失败率</div>
-        <div class="stat-value error">47.78%</div>
+        <div class="stat-value error">47.06%</div>
       </div>
     </div>
 
@@ -173,35 +173,35 @@
         
         <tr>
           <td>document</td>
-          <td>89</td>
+          <td>35</td>
           <td>0</td>
           <td>0.00%</td>
           <td class="success">SUCCESS</td>
         </tr>
         <tr>
           <td>script</td>
-          <td>708</td>
-          <td>582</td>
-          <td>82.20%</td>
+          <td>278</td>
+          <td>228</td>
+          <td>82.01%</td>
           <td class="error">ERROR</td>
         </tr>
         <tr>
           <td>stylesheet</td>
-          <td>267</td>
-          <td>3</td>
-          <td>1.12%</td>
+          <td>105</td>
+          <td>1</td>
+          <td>0.95%</td>
           <td class="warning">WARNING</td>
         </tr>
         <tr>
           <td>image</td>
-          <td>78</td>
-          <td>7</td>
-          <td>8.97%</td>
+          <td>36</td>
+          <td>3</td>
+          <td>8.33%</td>
           <td class="warning">WARNING</td>
         </tr>
         <tr>
           <td>font</td>
-          <td>97</td>
+          <td>39</td>
           <td>0</td>
           <td>0.00%</td>
           <td class="success">SUCCESS</td>
@@ -258,17 +258,54 @@
     <div class="page-card">
       <div class="page-header">
         <div>首页</div>
-        <div class="error">FAILED</div>
+        <div class="success">SUCCESS</div>
       </div>
       <div class="page-content">
         
-        <div class="error">加载失败: page.goto: Timeout 60000ms exceeded.
-Call log:
-[2m  - navigating to "file:///C:/Users/Steve/heiniu/web-app/index.html", waiting until "networkidle"[22m
-</div>
+        <img src="../../../C:/Users/Steve/heiniu/web-app/validation/reports/screenshots/首页.png" alt="首页 截图" class="page-screenshot">
+        <h3>食品溯源系统 - 原型界面</h3>
         <div>路径: /index.html</div>
-        <div>资源: 1119 请求</div>
-        <div>失败: 540 请求</div>
+        <div>资源: 373 请求</div>
+        <div>失败: 180 请求 (48.26%)</div>
+        
+        <div class="resource-bar">
+          <div class="resource-bar-fill" style="width: 51.74%"></div>
+        </div>
+        
+        <button class="expand-btn" onclick="toggleDetails('page-0')">显示详情</button>
+        <div id="page-0" class="details">
+          <h4>资源类型分布</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>类型</th>
+                <th>总数</th>
+                <th>失败数</th>
+              </tr>
+            </thead>
+            <tbody>
+              
+              <tr>
+                <td>critical</td>
+                <td>323</td>
+                <td>178</td>
+              </tr>
+              
+              <tr>
+                <td>media</td>
+                <td>50</td>
+                <td>2</td>
+              </tr>
+              
+              <tr>
+                <td>other</td>
+                <td>0</td>
+                <td>0</td>
+              </tr>
+              
+            </tbody>
+          </table>
+        </div>
         
       </div>
     </div>
@@ -729,140 +766,140 @@ Call log:
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js</td>
-        <td>82</td>
+        <td>32</td>
         <td>首页, 养殖-监控, 溯源-地图, 登录页, 养殖管理, 溯源详情, 溯源列表, 系统设置</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js</td>
-        <td>78</td>
+        <td>30</td>
         <td>首页, 养殖-监控, 溯源-地图, 登录页, 功能模块选择, 养殖管理, 溯源列表</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js</td>
-        <td>75</td>
+        <td>29</td>
         <td>首页, 养殖-监控, 溯源-地图, 功能模块选择, 养殖管理, 溯源详情, 溯源列表</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js</td>
-        <td>75</td>
+        <td>29</td>
         <td>首页, 养殖-监控, 溯源-地图, 功能模块选择, 养殖管理, 溯源详情, 溯源列表</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/components/autoload-button-upgrade.js</td>
-        <td>72</td>
+        <td>28</td>
         <td>首页, 登录页, 功能模块选择, 养殖管理, 溯源详情, 溯源列表, 系统设置</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js</td>
-        <td>49</td>
+        <td>19</td>
         <td>首页, 溯源-地图, 登录页, 溯源详情, 系统设置</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js</td>
-        <td>43</td>
+        <td>17</td>
         <td>首页, 溯源-地图, 登录页, 溯源详情, 系统设置</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js</td>
-        <td>17</td>
-        <td>首页, 登录页, 系统设置</td>
-        <td>net::ERR_FAILED</td>
-      </tr>
-      
-      <tr>
-        <td>file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js</td>
-        <td>17</td>
+        <td>7</td>
         <td>首页, 登录页, 系统设置</td>
         <td>net::ERR_FAILED</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js</td>
-        <td>15</td>
+        <td>7</td>
         <td>首页, 登录页, 溯源详情, 系统设置</td>
         <td>net::ERR_FAILED</td>
       </tr>
       
       <tr>
-        <td>file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js</td>
-        <td>9</td>
-        <td>首页</td>
-        <td>net::ERR_FAILED</td>
-      </tr>
-      
-      <tr>
-        <td>file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js</td>
-        <td>9</td>
-        <td>首页</td>
+        <td>file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js</td>
+        <td>7</td>
+        <td>首页, 登录页, 系统设置</td>
         <td>net::ERR_FAILED</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/pages/components/autoload-button-upgrade.js</td>
-        <td>8</td>
+        <td>4</td>
         <td>首页, 养殖-监控, 溯源-地图</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js</td>
-        <td>8</td>
+        <td>4</td>
         <td>首页, 溯源详情, 系统设置</td>
         <td>net::ERR_FAILED</td>
       </tr>
       
       <tr>
         <td>file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js</td>
-        <td>7</td>
+        <td>3</td>
         <td>首页, 登录页</td>
         <td>net::ERR_FAILED</td>
       </tr>
       
       <tr>
+        <td>file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js</td>
+        <td>3</td>
+        <td>首页</td>
+        <td>net::ERR_FAILED</td>
+      </tr>
+      
+      <tr>
+        <td>file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js</td>
+        <td>3</td>
+        <td>首页</td>
+        <td>net::ERR_FAILED</td>
+      </tr>
+      
+      <tr>
         <td>file:///C:/components/trace-ui-components.js</td>
-        <td>6</td>
+        <td>2</td>
         <td>首页</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80</td>
-        <td>4</td>
+        <td>2</td>
         <td>首页, 溯源-地图</td>
         <td>net::ERR_BLOCKED_BY_ORB</td>
       </tr>
       
       <tr>
         <td>file:///C:/assets/css/trace-components.css</td>
-        <td>3</td>
+        <td>1</td>
         <td>首页</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/components/trace-common.js</td>
-        <td>3</td>
+        <td>1</td>
         <td>首页</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>
       
       <tr>
         <td>file:///C:/static/js/debug-loader.js</td>
-        <td>3</td>
+        <td>1</td>
         <td>首页</td>
         <td>net::ERR_FILE_NOT_FOUND</td>
       </tr>

@@ -42,6 +42,14 @@ const testScripts = [
     script: 'validation/scripts/validate-button-improvements.js',
     requiresServer: false,
     description: '验证按钮的改进情况，包括可访问性和用户体验属性'
+  },
+  
+  // 性能基准测试
+  { 
+    name: '资源加载性能基准测试', 
+    script: 'src/network/performance-benchmark.test.js',
+    requiresServer: true,
+    description: '测试资源加载器在不同条件下的性能表现，包括加载时间、内存使用和响应性'
   }
 ];
 
@@ -58,6 +66,12 @@ const serverTests = [
     script: 'validation/scripts/run-button-interaction-test.js',
     requiresServer: true,
     description: '测试按钮的交互功能，如点击响应和事件处理'
+  },
+  { 
+    name: '资源批量处理测试',
+    script: 'src/network/batch-processing.test.js',
+    requiresServer: true,
+    description: '测试资源批量加载能力，包括优先级处理、并发控制和重试机制'
   }
 ];
 

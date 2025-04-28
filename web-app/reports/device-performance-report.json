@@ -1,0 +1,448 @@
+{
+  "summary": {
+    "timestamp": "2025-04-19T11:30:33.555Z",
+    "testResourceCount": 195,
+    "deviceResults": {
+      "lowEndDevice": {
+        "name": "低端安卓设备",
+        "optimalBatchSize": 5,
+        "optimalLoadTime": 0,
+        "averageThroughput": 0,
+        "timeToFirstResource": 0,
+        "p95LoadTime": 0,
+        "successRate": 0
+      },
+      "midRangeDevice": {
+        "name": "中端安卓设备",
+        "optimalBatchSize": 5,
+        "optimalLoadTime": 0,
+        "averageThroughput": 0,
+        "timeToFirstResource": 0,
+        "p95LoadTime": 0,
+        "successRate": 0
+      },
+      "highEndDevice": {
+        "name": "高端iOS设备",
+        "optimalBatchSize": 5,
+        "optimalLoadTime": 0,
+        "averageThroughput": 0,
+        "timeToFirstResource": 0,
+        "p95LoadTime": 0,
+        "successRate": 0
+      },
+      "tabletDevice": {
+        "name": "平板设备",
+        "optimalBatchSize": 5,
+        "optimalLoadTime": 0,
+        "averageThroughput": 0,
+        "timeToFirstResource": 0,
+        "p95LoadTime": 0,
+        "successRate": 0
+      },
+      "laptop": {
+        "name": "高端笔记本",
+        "optimalBatchSize": 5,
+        "optimalLoadTime": 0,
+        "averageThroughput": 0,
+        "timeToFirstResource": 0,
+        "p95LoadTime": 0,
+        "successRate": 0
+      }
+    },
+    "recommendations": {
+      "lowEndDevice": {
+        "recommendedBatchSize": 5,
+        "recommendedCacheSize": 51,
+        "loadingStrategy": "批量加载",
+        "prioritizationNeeded": true
+      },
+      "midRangeDevice": {
+        "recommendedBatchSize": 5,
+        "recommendedCacheSize": 102,
+        "loadingStrategy": "批量加载",
+        "prioritizationNeeded": true
+      },
+      "highEndDevice": {
+        "recommendedBatchSize": 5,
+        "recommendedCacheSize": 205,
+        "loadingStrategy": "批量加载",
+        "prioritizationNeeded": false
+      },
+      "tabletDevice": {
+        "recommendedBatchSize": 5,
+        "recommendedCacheSize": 154,
+        "loadingStrategy": "批量加载",
+        "prioritizationNeeded": false
+      },
+      "laptop": {
+        "recommendedBatchSize": 5,
+        "recommendedCacheSize": 410,
+        "loadingStrategy": "批量加载",
+        "prioritizationNeeded": false
+      }
+    }
+  },
+  "testResults": {
+    "lowEndDevice": {
+      "deviceInfo": {
+        "name": "低端安卓设备",
+        "cpu": {
+          "cores": 2,
+          "speed": "slow"
+        },
+        "memory": {
+          "limit": 536870912
+        },
+        "connection": {
+          "type": "3g",
+          "downlink": 1.5,
+          "uplink": 0.5,
+          "rtt": 300,
+          "jitter": 50,
+          "packetLoss": 3
+        }
+      },
+      "batchSizeResults": {
+        "5": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "10": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "20": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "50": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        }
+      },
+      "optimalBatchSize": 5,
+      "optimalLoadTime": 0
+    },
+    "midRangeDevice": {
+      "deviceInfo": {
+        "name": "中端安卓设备",
+        "cpu": {
+          "cores": 4,
+          "speed": "medium"
+        },
+        "memory": {
+          "limit": 1073741824
+        },
+        "connection": {
+          "type": "4g",
+          "downlink": 7,
+          "uplink": 2,
+          "rtt": 100,
+          "jitter": 20,
+          "packetLoss": 1
+        }
+      },
+      "batchSizeResults": {
+        "5": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "10": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "20": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "50": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        }
+      },
+      "optimalBatchSize": 5,
+      "optimalLoadTime": 0
+    },
+    "highEndDevice": {
+      "deviceInfo": {
+        "name": "高端iOS设备",
+        "cpu": {
+          "cores": 6,
+          "speed": "fast"
+        },
+        "memory": {
+          "limit": 2147483648
+        },
+        "connection": {
+          "type": "4g",
+          "downlink": 20,
+          "uplink": 5,
+          "rtt": 50,
+          "jitter": 10,
+          "packetLoss": 0.5
+        }
+      },
+      "batchSizeResults": {
+        "5": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "10": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "20": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "50": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        }
+      },
+      "optimalBatchSize": 5,
+      "optimalLoadTime": 0
+    },
+    "tabletDevice": {
+      "deviceInfo": {
+        "name": "平板设备",
+        "cpu": {
+          "cores": 4,
+          "speed": "medium"
+        },
+        "memory": {
+          "limit": 1610612736
+        },
+        "connection": {
+          "type": "wifi",
+          "downlink": 15,
+          "uplink": 8,
+          "rtt": 30,
+          "jitter": 5,
+          "packetLoss": 0.1
+        }
+      },
+      "batchSizeResults": {
+        "5": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "10": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "20": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "50": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        }
+      },
+      "optimalBatchSize": 5,
+      "optimalLoadTime": 0
+    },
+    "laptop": {
+      "deviceInfo": {
+        "name": "高端笔记本",
+        "cpu": {
+          "cores": 8,
+          "speed": "fast"
+        },
+        "memory": {
+          "limit": 4294967296
+        },
+        "connection": {
+          "type": "wifi",
+          "downlink": 50,
+          "uplink": 20,
+          "rtt": 10,
+          "jitter": 2,
+          "packetLoss": 0.05
+        }
+      },
+      "batchSizeResults": {
+        "5": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "10": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "20": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        },
+        "50": {
+          "avgLoadTime": 0,
+          "avgFirstResource": 0,
+          "avgThroughput": 0,
+          "p95LoadTime": 0,
+          "successRate": 0
+        }
+      },
+      "optimalBatchSize": 5,
+      "optimalLoadTime": 0
+    }
+  },
+  "testConfig": {
+    "deviceProfiles": {
+      "lowEndDevice": {
+        "name": "低端安卓设备",
+        "cpu": {
+          "cores": 2,
+          "speed": "slow"
+        },
+        "memory": {
+          "limit": 536870912
+        },
+        "connection": {
+          "type": "3g",
+          "downlink": 1.5,
+          "uplink": 0.5,
+          "rtt": 300,
+          "jitter": 50,
+          "packetLoss": 3
+        }
+      },
+      "midRangeDevice": {
+        "name": "中端安卓设备",
+        "cpu": {
+          "cores": 4,
+          "speed": "medium"
+        },
+        "memory": {
+          "limit": 1073741824
+        },
+        "connection": {
+          "type": "4g",
+          "downlink": 7,
+          "uplink": 2,
+          "rtt": 100,
+          "jitter": 20,
+          "packetLoss": 1
+        }
+      },
+      "highEndDevice": {
+        "name": "高端iOS设备",
+        "cpu": {
+          "cores": 6,
+          "speed": "fast"
+        },
+        "memory": {
+          "limit": 2147483648
+        },
+        "connection": {
+          "type": "4g",
+          "downlink": 20,
+          "uplink": 5,
+          "rtt": 50,
+          "jitter": 10,
+          "packetLoss": 0.5
+        }
+      },
+      "tabletDevice": {
+        "name": "平板设备",
+        "cpu": {
+          "cores": 4,
+          "speed": "medium"
+        },
+        "memory": {
+          "limit": 1610612736
+        },
+        "connection": {
+          "type": "wifi",
+          "downlink": 15,
+          "uplink": 8,
+          "rtt": 30,
+          "jitter": 5,
+          "packetLoss": 0.1
+        }
+      },
+      "laptop": {
+        "name": "高端笔记本",
+        "cpu": {
+          "cores": 8,
+          "speed": "fast"
+        },
+        "memory": {
+          "limit": 4294967296
+        },
+        "connection": {
+          "type": "wifi",
+          "downlink": 50,
+          "uplink": 20,
+          "rtt": 10,
+          "jitter": 2,
+          "packetLoss": 0.05
+        }
+      }
+    },
+    "resourceCount": 195,
+    "batchSizes": [
+      5,
+      10,
+      20,
+      50
+    ]
+  }
+}

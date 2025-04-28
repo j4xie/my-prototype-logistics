@@ -1,0 +1,8 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# 检查任务进度
+node scripts/check-progress-ticks.js
+
+# 运行测试
+npm test 

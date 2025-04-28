@@ -1,46 +1,39 @@
 @echo off
-:: Git Quick Push Script
-:: For quickly adding, committing and pushing changes
+setlocal
 
-setlocal enabledelayedexpansion
-
-echo ===== Git Quick Push Tool =====
-echo.
-
-:: Check if commit message is provided
+REM 检查是否提供了提交信息
 if "%~1"=="" (
-    echo Error: Please provide a commit message!
-    echo Usage: gitpush "Your commit message"
+    echo 错误：请提供提交信息！
+    echo 使用方法: gitpush "你的提交信息"
     exit /b 1
 )
 
-:: Save commit message
-set "commit_msg=%~1"
+REM 保存当前分支名称
+for /f "tokens=* USEBACKQ" %%F in (`git rev-parse --abbrev-ref HEAD`) do set branch=%%F
 
-:: Show current status
-echo Current Git Status:
-git status
-echo.
-
-:: Add all changes
-echo Adding all changes...
+REM 执行 git 操作
+echo 正在添加更改的文件...
 git add .
 
-:: Commit changes
-echo Committing changes...
-git commit -m "%commit_msg%"
-
-:: Push to remote
-echo Pushing to remote repository...
-git push
-
-:: Check if successful
-if %ERRORLEVEL% equ 0 (
-    echo.
-    echo Operation completed successfully!
-) else (
-    echo.
-    echo Error occurred, check messages above.
+if %ERRORLEVEL% NEQ 0 (
+    echo 错误：添加文件失败！
+    exit /b 1
 )
 
-endlocal 
+echo 正在提交更改...
+git commit -m "%~1"
+
+if %ERRORLEVEL% NEQ 0 (
+    echo 错误：提交更改失败！
+    exit /b 1
+)
+
+echo 正在推送到远程仓库 (当前分支: %branch%)...
+git push
+
+if %ERRORLEVEL% NEQ 0 (
+    echo 错误：推送到远程仓库失败！
+    exit /b 1
+)
+
+echo 已成功推送更改到远程仓库！ 

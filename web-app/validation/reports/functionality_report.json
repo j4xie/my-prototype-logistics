@@ -1,12 +1,6 @@
 {
-  "timestamp": "2025-04-12T02:50:17.713Z",
+  "timestamp": "2025-04-15T15:15:22.737Z",
   "url": "http://localhost:8080/",
-  "hasNavigation": false,
-  "hasFooter": false,
-  "hasMainContent": true,
-  "buttonCount": 0,
-  "buttonClickable": false,
-  "formCount": 0,
-  "screenshotPath": "C:\\Users\\Steve\\heiniu\\validation\\screenshots\\functionality_test_final.png",
-  "status": "success"
+  "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "status": "error"
 }
