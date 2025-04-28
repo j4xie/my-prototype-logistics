@@ -1648,6 +1648,80 @@ class ResourceLoader extends EventEmitter {
       });
     }
   }
+
+  /**
+   * 完全销毁资源加载器实例，释放所有资源和监听器
+   * 确保在页面切换或组件卸载时调用，以防止内存泄漏
+   */
+  destroy() {
+    logInfo('ResourceLoader destroy: 释放所有资源和监听器');
+    
+    // 清除所有正在进行的请求
+    this._state.activeRequests.forEach((details) => {
+      if (details.options && details.options.abortController) {
+        details.options.abortController.abort();
+      }
+    });
+    
+    // 清空队列
+    this._state.requestQueue = [];
+    this._state.activeRequests.clear();
+    this._state.pendingPromises.clear();
+    
+    // 销毁网络监视器
+    if (this.networkMonitor) {
+      this.networkMonitor.removeAllListeners();
+      this.networkMonitor.destroy();
+    }
+    
+    // 销毁性能跟踪器
+    if (this.performanceTracker) {
+      this.performanceTracker.stopTracking();
+    }
+    
+    // 销毁缓存
+    if (this.cache && typeof this.cache.destroy === 'function') {
+      this.cache.destroy();
+    }
+    
+    // 清除所有定时器
+    if (this._batchTimer) {
+      clearTimeout(this._batchTimer);
+      this._batchTimer = null;
+    }
+    
+    if (this._memoryCheckTimer) {
+      clearInterval(this._memoryCheckTimer);
+      this._memoryCheckTimer = null;
+    }
+    
+    if (this._batchSizeAdjustTimer) {
+      clearTimeout(this._batchSizeAdjustTimer);
+      this._batchSizeAdjustTimer = null;
+    }
+    
+    // 移除所有事件监听器
+    this.removeAllListeners();
+    
+    // 重置状态
+    this._state = {
+      isReady: false,
+      isLoading: false,
+      networkStatus: 'unknown',
+      activeRequests: new Map(),
+      pendingPromises: new Map(),
+      requestQueue: [],
+      batchesInProgress: 0,
+      totalLoaded: 0,
+      totalFailed: 0,
+      totalCached: 0,
+      totalMerged: 0,
+      memoryUsage: 0,
+      networkChanges: [],
+      memoryDetails: null,
+      memoryStatus: null
+    };
+  }
 }
 
 module.exports = ResourceLoader; 

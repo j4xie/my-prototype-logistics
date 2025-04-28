@@ -110,6 +110,89 @@ loader.performanceTracker.enable({
 ## 许可证
 本项目采用MIT许可证。请参阅[LICENSE](../LICENSE)文件获取更多信息。
 
+# 食品溯源系统项目文档
+
+<!-- updated for: 整合文档结构和内容 -->
+
+## 文档结构
+
+本目录包含食品溯源系统的所有技术文档、测试文档和开发指南。文档按以下类别组织：
+
+### 测试文档
+
+- [测试进度报告](./task-test-progress.md) - 当前测试进度、覆盖率和模块状态
+- [测试历史记录](./task-test-history.md) - 详细的测试历史，按时间倒序排列
+- [测试下一步计划](./task-test-next-steps.md) - 下一阶段测试任务计划
+- [测试执行报告](./test-execution-report.md) - 测试执行的详细状态报告
+- [每日测试报告](./task-test-daily-report.md) - 每日测试进度和发现
+
+### 集成与环境测试
+
+- [集成测试计划](./task-test-integration-plan.md) - 集成测试的详细计划
+- [集成测试状态](./task-integration-testing-status.md) - 当前集成测试完成情况
+- [测试环境设置](./task-test-environment-setup.md) - 测试环境配置指南
+- [测试数据准备](./task-test-data-preparation.md) - 测试数据生成和管理
+
+### 性能测试
+
+- [性能测试报告](./performance-test-report.md) - 性能测试结果和分析
+- [性能测试概述](./performance-test-overview.md) - 性能测试方法和指标
+- [基准测试计划](./benchmark-test-plan.md) - 性能基准测试详细计划
+
+### 浏览器兼容性
+
+- [浏览器兼容性总结](./browser-compatibility-summary.md) - 兼容性测试结果
+- [浏览器兼容性优化](./browser-compatibility-optimization.md) - 兼容性问题解决方案
+- [浏览器Polyfill计划](./browser-polyfill-plan.md) - 对旧浏览器的支持计划
+
+### 性能优化
+
+- [自适应加载优化计划](./adaptive-loading-optimization-plan.md) - 针对不同设备的加载优化
+
+### 用户体验测试
+
+- [用户体验测试清单](./task-ux-test-checklist.md) - 用户体验测试项目和标准
+
+## 文档使用指南
+
+### 开发人员
+
+开发人员应首先查看以下文档：
+
+1. [测试环境设置](./task-test-environment-setup.md) - 设置本地测试环境
+2. [测试下一步计划](./task-test-next-steps.md) - 了解当前开发优先级
+3. [性能优化计划](./adaptive-loading-optimization-plan.md) - 了解性能优化指南
+
+### 测试人员
+
+测试人员应重点关注：
+
+1. [测试进度报告](./task-test-progress.md) - 了解当前测试状态
+2. [测试数据准备](./task-test-data-preparation.md) - 准备测试数据
+3. [用户体验测试清单](./task-ux-test-checklist.md) - 进行用户体验测试
+
+### 项目管理
+
+项目经理应重点关注：
+
+1. [测试执行报告](./test-execution-report.md) - 了解测试总体情况
+2. [集成测试状态](./task-integration-testing-status.md) - 了解集成测试状态
+3. [性能测试报告](./performance-test-report.md) - 了解性能测试结果
+
+## 文档维护规则
+
+1. 所有文档应保持更新，每次修改应在文档顶部使用注释标记更新目的
+2. 文档应使用Markdown格式，保持一致的样式和结构
+3. 重要的测试发现应同时更新到相关文档和主测试报告中
+4. 文档命名应遵循一致的约定：`[类型]-[主题]-[子主题].md`
+
+## 更新日志
+
+- 2023-08-15: 整合文档结构，添加导航指南
+- 2023-08-10: 更新性能测试报告和基准测试计划
+- 2023-08-05: 添加浏览器兼容性文档
+- 2023-08-01: 创建初始文档结构
+
 # 食品溯源系统测试文档
 
 <!-- updated for: 文档整合和更新 -->
