@@ -3,9 +3,69 @@
  * @description 测试系统在网络状态频繁变化时的稳定性和性能
  */
 
+// 添加Jest引用
+const jest = require('jest');
+
+// 模拟模块
+jest.mock('./resource-loader', () => ({
+  traceLoader: {
+    reset: jest.fn(),
+    init: jest.fn().mockReturnValue({
+      loadBatch: jest.fn().mockImplementation(resources => {
+        return Promise.resolve(resources.map(r => ({...r, loaded: true})));
+      }),
+      configure: jest.fn()
+    })
+  }
+}));
+
+jest.mock('./network-monitor', () => ({
+  NetworkMonitor: jest.fn().mockImplementation((options) => ({
+    removeAllListeners: jest.fn(),
+    on: jest.fn(),
+    emit: jest.fn(),
+    configure: jest.fn(),
+    listeners: {},
+    on: function(event, callback) {
+      this.listeners[event] = callback;
+      return this;
+    },
+    emit: function(event, data) {
+      if (this.listeners[event]) {
+        this.listeners[event](data);
+      }
+      return this;
+    }
+  }))
+}));
+
+jest.mock('../utils/performance-test-tool', () => {
+  return jest.fn().mockImplementation(() => ({
+    startRecording: jest.fn(),
+    stopRecording: jest.fn(),
+    getSummary: jest.fn().mockReturnValue({})
+  }));
+});
+
 const { traceLoader } = require('./resource-loader');
 const { NetworkMonitor } = require('./network-monitor');
 const PerformanceTestTool = require('../utils/performance-test-tool');
+
+// 设置全局模拟
+global.navigator = global.navigator || {
+  onLine: true
+};
+
+global.window = global.window || {
+  dispatchEvent: jest.fn()
+};
+
+// 设置Event构造函数
+global.Event = class Event {
+  constructor(type) {
+    this.type = type;
+  }
+};
 
 describe('网络监控 - 网络状态快速切换测试', () => {
   // 性能测试工具实例

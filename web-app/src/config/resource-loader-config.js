@@ -221,7 +221,13 @@ const defaultConfig = {
   compression: true,
   adaptiveTimeouts: true,
   batchingStrategy: 'adaptive', // fixed, adaptive, predictive
-  requestDeduplication: true
+  requestDeduplication: true,
+  
+  // 请求合并设置
+  enableRequestMerging: true, // 启用请求合并功能
+  requestMergingStrategy: 'url-based', // url-based, url-params-based
+  maxPendingMergeTime: 5000, // 最大合并等待时间(ms)
+  mergeResponseType: 'auto' // 合并请求的响应类型处理策略: auto, original, clone
 };
 
 /**
@@ -232,21 +238,24 @@ const environmentConfigs = {
     logLevel: 'debug',
     performanceSampleRate: 1.0,
     analyticsEndpoint: '/dev-api/resource-metrics',
-    cacheTTL: 5 * 60 * 1000 // 5分钟（开发环境短TTL）
+    cacheTTL: 5 * 60 * 1000, // 5分钟（开发环境短TTL）
+    enableRequestMerging: true // 开发环境也启用请求合并
   },
   
   test: {
     logLevel: 'debug',
     performanceSampleRate: 1.0,
     cacheTTL: 60 * 60 * 1000, // 1小时
-    enableMockResponses: true
+    enableMockResponses: true,
+    enableRequestMerging: true // 测试环境启用请求合并
   },
   
   production: {
     logLevel: 'error',
     performanceSampleRate: 0.1,
     enableRecoveryMode: true,
-    compression: true
+    compression: true,
+    enableRequestMerging: true // 生产环境启用请求合并
   },
   
   enterprise: {
