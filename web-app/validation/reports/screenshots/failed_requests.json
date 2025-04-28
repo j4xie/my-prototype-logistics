@@ -4,4143 +4,1623 @@
     "resourceType": "stylesheet",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.214Z"
+    "timestamp": "2025-04-15T15:17:03.766Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.221Z"
+    "timestamp": "2025-04-15T15:17:03.945Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.221Z"
+    "timestamp": "2025-04-15T15:17:03.946Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.221Z"
+    "timestamp": "2025-04-15T15:17:03.946Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.221Z"
+    "timestamp": "2025-04-15T15:17:03.946Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.302Z"
+    "timestamp": "2025-04-15T15:17:03.946Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.302Z"
+    "timestamp": "2025-04-15T15:17:03.947Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.303Z"
+    "timestamp": "2025-04-15T15:17:03.947Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.303Z"
+    "timestamp": "2025-04-15T15:17:03.947Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.303Z"
+    "timestamp": "2025-04-15T15:17:03.947Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.304Z"
+    "timestamp": "2025-04-15T15:17:03.947Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.304Z"
+    "timestamp": "2025-04-15T15:17:03.948Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.304Z"
+    "timestamp": "2025-04-15T15:17:03.948Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.304Z"
+    "timestamp": "2025-04-15T15:17:03.948Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.331Z"
+    "timestamp": "2025-04-15T15:17:03.948Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.332Z"
+    "timestamp": "2025-04-15T15:17:03.972Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.332Z"
+    "timestamp": "2025-04-15T15:17:03.973Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.332Z"
+    "timestamp": "2025-04-15T15:17:03.973Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.332Z"
+    "timestamp": "2025-04-15T15:17:03.973Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.366Z"
+    "timestamp": "2025-04-15T15:17:03.974Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.366Z"
+    "timestamp": "2025-04-15T15:17:03.974Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.366Z"
+    "timestamp": "2025-04-15T15:17:03.995Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.368Z"
+    "timestamp": "2025-04-15T15:17:03.996Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.392Z"
+    "timestamp": "2025-04-15T15:17:03.997Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.392Z"
+    "timestamp": "2025-04-15T15:17:03.997Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.392Z"
+    "timestamp": "2025-04-15T15:17:03.997Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.393Z"
+    "timestamp": "2025-04-15T15:17:04.020Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.393Z"
+    "timestamp": "2025-04-15T15:17:04.020Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.421Z"
+    "timestamp": "2025-04-15T15:17:04.046Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.421Z"
+    "timestamp": "2025-04-15T15:17:04.046Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.421Z"
+    "timestamp": "2025-04-15T15:17:04.046Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.422Z"
+    "timestamp": "2025-04-15T15:17:04.046Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.422Z"
+    "timestamp": "2025-04-15T15:17:04.047Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.422Z"
+    "timestamp": "2025-04-15T15:17:04.047Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.447Z"
+    "timestamp": "2025-04-15T15:17:04.069Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.448Z"
+    "timestamp": "2025-04-15T15:17:04.069Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.448Z"
+    "timestamp": "2025-04-15T15:17:04.069Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.448Z"
+    "timestamp": "2025-04-15T15:17:04.069Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.448Z"
+    "timestamp": "2025-04-15T15:17:04.070Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.477Z"
+    "timestamp": "2025-04-15T15:17:04.094Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.478Z"
+    "timestamp": "2025-04-15T15:17:04.094Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.478Z"
+    "timestamp": "2025-04-15T15:17:04.094Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.478Z"
+    "timestamp": "2025-04-15T15:17:04.094Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.479Z"
+    "timestamp": "2025-04-15T15:17:04.095Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.710Z"
+    "timestamp": "2025-04-15T15:17:04.096Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.710Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.711Z"
+    "timestamp": "2025-04-15T15:17:04.096Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.711Z"
+    "timestamp": "2025-04-15T15:17:04.096Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.711Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.711Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.711Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.712Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.740Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.741Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.742Z"
+    "timestamp": "2025-04-15T15:17:04.120Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.742Z"
+    "timestamp": "2025-04-15T15:17:04.121Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.218Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.742Z"
+    "timestamp": "2025-04-15T15:17:04.219Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.219Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.224Z"
+  },
+  {
+    "url": "file:///C:/components/autoload-button-upgrade.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.229Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.235Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.235Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.235Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.742Z"
+    "timestamp": "2025-04-15T15:17:04.235Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.742Z"
+    "timestamp": "2025-04-15T15:17:04.236Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.742Z"
+    "timestamp": "2025-04-15T15:17:04.236Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.742Z"
+    "timestamp": "2025-04-15T15:17:04.236Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.766Z"
+    "timestamp": "2025-04-15T15:17:04.280Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.767Z"
+    "timestamp": "2025-04-15T15:17:04.280Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.767Z"
+    "timestamp": "2025-04-15T15:17:04.280Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.767Z"
+    "timestamp": "2025-04-15T15:17:04.280Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.768Z"
+    "timestamp": "2025-04-15T15:17:04.281Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.795Z"
+    "timestamp": "2025-04-15T15:17:04.281Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.795Z"
+    "timestamp": "2025-04-15T15:17:04.281Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.795Z"
+    "timestamp": "2025-04-15T15:17:04.307Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.796Z"
+    "timestamp": "2025-04-15T15:17:04.308Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.796Z"
+    "timestamp": "2025-04-15T15:17:04.308Z"
   },
   {
     "url": "file:///C:/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.797Z"
+    "timestamp": "2025-04-15T15:17:04.308Z"
   },
   {
     "url": "file:///C:/components/trace-ui-components.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.797Z"
+    "timestamp": "2025-04-15T15:17:04.308Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.797Z"
+    "timestamp": "2025-04-15T15:17:04.332Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.797Z"
+    "timestamp": "2025-04-15T15:17:04.332Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.825Z"
+    "timestamp": "2025-04-15T15:17:04.332Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.825Z"
+    "timestamp": "2025-04-15T15:17:04.332Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.825Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.853Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.854Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.854Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.854Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.855Z"
+    "timestamp": "2025-04-15T15:17:04.333Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.939Z"
+    "timestamp": "2025-04-15T15:17:04.356Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.939Z"
+    "timestamp": "2025-04-15T15:17:04.356Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.939Z"
+    "timestamp": "2025-04-15T15:17:04.357Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.939Z"
+    "timestamp": "2025-04-15T15:17:04.357Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.940Z"
+    "timestamp": "2025-04-15T15:17:04.357Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.940Z"
+    "timestamp": "2025-04-15T15:17:04.357Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.940Z"
+    "timestamp": "2025-04-15T15:17:04.357Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.973Z"
+    "timestamp": "2025-04-15T15:17:04.383Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.973Z"
+    "timestamp": "2025-04-15T15:17:04.383Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.974Z"
+    "timestamp": "2025-04-15T15:17:04.384Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.974Z"
+    "timestamp": "2025-04-15T15:17:04.384Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.974Z"
+    "timestamp": "2025-04-15T15:17:04.385Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.385Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.385Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.385Z"
+  },
+  {
+    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.386Z"
+  },
+  {
+    "url": "file:///C:/components/autoload-button-upgrade.js",
+    "resourceType": "script",
+    "failure": "net::ERR_FILE_NOT_FOUND",
+    "page": "首页",
+    "timestamp": "2025-04-15T15:17:04.407Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.975Z"
+    "timestamp": "2025-04-15T15:17:04.413Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.975Z"
+    "timestamp": "2025-04-15T15:17:04.413Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:08.976Z"
+    "timestamp": "2025-04-15T15:17:04.438Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.001Z"
+    "timestamp": "2025-04-15T15:17:04.438Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.002Z"
+    "timestamp": "2025-04-15T15:17:04.439Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.002Z"
+    "timestamp": "2025-04-15T15:17:04.439Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.004Z"
+    "timestamp": "2025-04-15T15:17:04.439Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.004Z"
+    "timestamp": "2025-04-15T15:17:04.439Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.004Z"
+    "timestamp": "2025-04-15T15:17:04.440Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.005Z"
+    "timestamp": "2025-04-15T15:17:04.440Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.005Z"
-  },
-  {
-    "url": "https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-    "resourceType": "image",
-    "failure": "net::ERR_BLOCKED_BY_ORB",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.130Z"
+    "timestamp": "2025-04-15T15:17:04.440Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.130Z"
+    "timestamp": "2025-04-15T15:17:04.468Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.130Z"
+    "timestamp": "2025-04-15T15:17:04.469Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.131Z"
+    "timestamp": "2025-04-15T15:17:04.469Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.131Z"
+    "timestamp": "2025-04-15T15:17:04.469Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.131Z"
+    "timestamp": "2025-04-15T15:17:04.469Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.131Z"
+    "timestamp": "2025-04-15T15:17:04.470Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.131Z"
+    "timestamp": "2025-04-15T15:17:04.470Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.131Z"
+    "timestamp": "2025-04-15T15:17:04.470Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.162Z"
+    "timestamp": "2025-04-15T15:17:04.494Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.162Z"
+    "timestamp": "2025-04-15T15:17:04.495Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.162Z"
+    "timestamp": "2025-04-15T15:17:04.495Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.162Z"
+    "timestamp": "2025-04-15T15:17:04.495Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.194Z"
+    "timestamp": "2025-04-15T15:17:04.522Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.194Z"
+    "timestamp": "2025-04-15T15:17:04.522Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.195Z"
+    "timestamp": "2025-04-15T15:17:04.522Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.195Z"
+    "timestamp": "2025-04-15T15:17:04.522Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.195Z"
+    "timestamp": "2025-04-15T15:17:04.523Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.224Z"
+    "timestamp": "2025-04-15T15:17:04.594Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.224Z"
+    "timestamp": "2025-04-15T15:17:04.594Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.225Z"
+    "timestamp": "2025-04-15T15:17:04.595Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.225Z"
+    "timestamp": "2025-04-15T15:17:04.595Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.225Z"
+    "timestamp": "2025-04-15T15:17:04.595Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.225Z"
+    "timestamp": "2025-04-15T15:17:04.595Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.225Z"
+    "timestamp": "2025-04-15T15:17:04.596Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.260Z"
+    "timestamp": "2025-04-15T15:17:04.618Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.260Z"
+    "timestamp": "2025-04-15T15:17:04.618Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.260Z"
+    "timestamp": "2025-04-15T15:17:04.618Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.260Z"
+    "timestamp": "2025-04-15T15:17:04.619Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.260Z"
+    "timestamp": "2025-04-15T15:17:04.619Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.260Z"
+    "timestamp": "2025-04-15T15:17:04.619Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.261Z"
+    "timestamp": "2025-04-15T15:17:04.619Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.289Z"
+    "timestamp": "2025-04-15T15:17:04.645Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.289Z"
+    "timestamp": "2025-04-15T15:17:04.645Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.290Z"
+    "timestamp": "2025-04-15T15:17:04.645Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.290Z"
+    "timestamp": "2025-04-15T15:17:04.646Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.290Z"
+    "timestamp": "2025-04-15T15:17:04.646Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.290Z"
+    "timestamp": "2025-04-15T15:17:04.646Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.290Z"
+    "timestamp": "2025-04-15T15:17:04.646Z"
   },
   {
     "url": "file:///C:/static/js/debug-loader.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.291Z"
+    "timestamp": "2025-04-15T15:17:04.646Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.315Z"
+    "timestamp": "2025-04-15T15:17:04.776Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.316Z"
+    "timestamp": "2025-04-15T15:17:04.776Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.316Z"
+    "timestamp": "2025-04-15T15:17:04.776Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.316Z"
+    "timestamp": "2025-04-15T15:17:04.777Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.316Z"
+    "timestamp": "2025-04-15T15:17:04.777Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.316Z"
+    "timestamp": "2025-04-15T15:17:04.777Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.343Z"
+    "timestamp": "2025-04-15T15:17:04.803Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.344Z"
+    "timestamp": "2025-04-15T15:17:04.803Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.344Z"
+    "timestamp": "2025-04-15T15:17:04.803Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.344Z"
+    "timestamp": "2025-04-15T15:17:04.804Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.345Z"
+    "timestamp": "2025-04-15T15:17:04.804Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.345Z"
+    "timestamp": "2025-04-15T15:17:04.804Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.345Z"
+    "timestamp": "2025-04-15T15:17:04.804Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.379Z"
+    "timestamp": "2025-04-15T15:17:04.829Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.379Z"
+    "timestamp": "2025-04-15T15:17:04.830Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.380Z"
+    "timestamp": "2025-04-15T15:17:04.830Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.380Z"
+    "timestamp": "2025-04-15T15:17:04.830Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.380Z"
+    "timestamp": "2025-04-15T15:17:04.830Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.380Z"
+    "timestamp": "2025-04-15T15:17:04.830Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.380Z"
+    "timestamp": "2025-04-15T15:17:04.831Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.759Z"
+    "timestamp": "2025-04-15T15:17:05.124Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.759Z"
+    "timestamp": "2025-04-15T15:17:05.124Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-data-import.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.759Z"
+    "timestamp": "2025-04-15T15:17:05.125Z"
   },
   {
     "url": "file:///C:/components/trace-ui-components.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.759Z"
+    "timestamp": "2025-04-15T15:17:05.125Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.759Z"
+    "timestamp": "2025-04-15T15:17:05.125Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.760Z"
+    "timestamp": "2025-04-15T15:17:05.126Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.760Z"
+    "timestamp": "2025-04-15T15:17:05.126Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.760Z"
+    "timestamp": "2025-04-15T15:17:05.126Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-data-import.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.760Z"
+    "timestamp": "2025-04-15T15:17:05.126Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.760Z"
+    "timestamp": "2025-04-15T15:17:05.127Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.761Z"
+    "timestamp": "2025-04-15T15:17:05.127Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.761Z"
+    "timestamp": "2025-04-15T15:17:05.127Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:09.761Z"
-  },
-  {
-    "url": "https://via.placeholder.com/200x50?text=Food+Trace+Logo",
-    "resourceType": "image",
-    "failure": "net::ERR_NAME_NOT_RESOLVED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:20.983Z"
-  },
-  {
-    "url": "file:///C:/assets/css/trace-components.css",
-    "resourceType": "stylesheet",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.498Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.579Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.579Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.580Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.580Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.580Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.580Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.580Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.581Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.581Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.581Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.606Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.607Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.607Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.607Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.607Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.608Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.608Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.608Z"
+    "timestamp": "2025-04-15T15:17:05.127Z"
   },
   {
     "url": "https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
     "resourceType": "image",
     "failure": "net::ERR_BLOCKED_BY_ORB",
     "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.659Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.750Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.751Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.752Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.754Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.754Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.754Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.754Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.754Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.755Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.755Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.755Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.755Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.756Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.756Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.757Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.757Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.757Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.757Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.757Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.758Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.801Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.802Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.802Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.802Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.803Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.832Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.833Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.833Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.833Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.834Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.889Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.889Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.890Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.890Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.891Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.917Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.918Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.918Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.918Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.918Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.918Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.918Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.949Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.950Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.950Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.952Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.953Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.979Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.980Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.980Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.980Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.981Z"
-  },
-  {
-    "url": "file:///C:/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.981Z"
-  },
-  {
-    "url": "file:///C:/components/trace-ui-components.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.981Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.981Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:57.982Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.009Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.010Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.010Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.041Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.041Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.042Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.042Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.043Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.077Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.077Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.077Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.078Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.078Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.078Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.078Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.126Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.127Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.127Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.128Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.128Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.129Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.129Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.130Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.130Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.130Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.130Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.161Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.161Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.201Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.202Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.202Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.202Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.202Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.202Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.203Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.203Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.203Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.203Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.203Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.235Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.235Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.235Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.235Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.263Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.263Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.263Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.263Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.263Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.292Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.292Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.293Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.293Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.293Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.293Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.293Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.321Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.321Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.321Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.322Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.322Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.322Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.322Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.348Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.348Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.349Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.349Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.349Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.349Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.349Z"
-  },
-  {
-    "url": "file:///C:/static/js/debug-loader.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.349Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.375Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.375Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.376Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.376Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.376Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.376Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.414Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.415Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.415Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.415Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.415Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.416Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.416Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.505Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.505Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.505Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.505Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.506Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.506Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.506Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.790Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.790Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-data-import.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.790Z"
-  },
-  {
-    "url": "file:///C:/components/trace-ui-components.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.791Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.791Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.791Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.791Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.791Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-data-import.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.792Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.792Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.792Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.792Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:29:58.792Z"
+    "timestamp": "2025-04-15T15:17:05.625Z"
   },
   {
     "url": "https://via.placeholder.com/200x50?text=Food+Trace+Logo",
     "resourceType": "image",
     "failure": "net::ERR_NAME_NOT_RESOLVED",
     "page": "首页",
-    "timestamp": "2025-04-12T12:30:19.856Z"
-  },
-  {
-    "url": "file:///C:/assets/css/trace-components.css",
-    "resourceType": "stylesheet",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.539Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.656Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.657Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.657Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.658Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.658Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.658Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.658Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.658Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.658Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.658Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.658Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.659Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.659Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.659Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.659Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.659Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.660Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.660Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.660Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.660Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.666Z"
-  },
-  {
-    "url": "https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-    "resourceType": "image",
-    "failure": "net::ERR_BLOCKED_BY_ORB",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.692Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.717Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.796Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.796Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.796Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.797Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.797Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.797Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.798Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.798Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.798Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.798Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.798Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.798Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.798Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.798Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.826Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.828Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.828Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.828Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.829Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.829Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.829Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.829Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.830Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.830Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.830Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.830Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.854Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.855Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.855Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.855Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.856Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.882Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.882Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.883Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.883Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.883Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.883Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.883Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.909Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.910Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.910Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.910Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.911Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.951Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.951Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.952Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.952Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.952Z"
-  },
-  {
-    "url": "file:///C:/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.953Z"
-  },
-  {
-    "url": "file:///C:/components/trace-ui-components.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.953Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.980Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.980Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.980Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.981Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:30:59.981Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.010Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.010Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.010Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.010Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.011Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.039Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.039Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.040Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.040Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.041Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.041Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.041Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.069Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.069Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.070Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.071Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.071Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.072Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.072Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.098Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.098Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.099Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.099Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.099Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.099Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.131Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.132Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.132Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.132Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.132Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.133Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.133Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.133Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.133Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.133Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.133Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.161Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.162Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.162Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.162Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.215Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.215Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.215Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.216Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.216Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.240Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.241Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.241Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.241Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.241Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.242Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.242Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.265Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.266Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.266Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.266Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.266Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.266Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.266Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.296Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.296Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.296Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.296Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.297Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.297Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.297Z"
-  },
-  {
-    "url": "file:///C:/static/js/debug-loader.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.297Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.321Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.322Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.322Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.322Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.322Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.322Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.347Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.347Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.347Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.347Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.348Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.348Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.348Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.381Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.381Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.381Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.382Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.382Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.382Z"
-  },
-  {
-    "url": "file:///C:/components/autoload-button-upgrade.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.382Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.668Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.668Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-data-import.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.668Z"
-  },
-  {
-    "url": "file:///C:/components/trace-ui-components.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FILE_NOT_FOUND",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.669Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.670Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.670Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.670Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.670Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-data-import.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.671Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.671Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.671Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-error-handler.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.671Z"
-  },
-  {
-    "url": "file:///C:/Users/Steve/heiniu/web-app/pages/admin/components/trace-store.js",
-    "resourceType": "script",
-    "failure": "net::ERR_FAILED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:00.671Z"
-  },
-  {
-    "url": "https://via.placeholder.com/200x50?text=Food+Trace+Logo",
-    "resourceType": "image",
-    "failure": "net::ERR_NAME_NOT_RESOLVED",
-    "page": "首页",
-    "timestamp": "2025-04-12T12:31:21.806Z"
+    "timestamp": "2025-04-15T15:17:27.350Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖-监控",
-    "timestamp": "2025-04-12T12:32:01.304Z"
+    "timestamp": "2025-04-15T15:17:31.003Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖-监控",
-    "timestamp": "2025-04-12T12:32:01.304Z"
+    "timestamp": "2025-04-15T15:17:31.005Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖-监控",
-    "timestamp": "2025-04-12T12:32:01.304Z"
+    "timestamp": "2025-04-15T15:17:31.005Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖-监控",
-    "timestamp": "2025-04-12T12:32:01.304Z"
+    "timestamp": "2025-04-15T15:17:31.005Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖-监控",
-    "timestamp": "2025-04-12T12:32:01.305Z"
+    "timestamp": "2025-04-15T15:17:31.048Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源-地图",
-    "timestamp": "2025-04-12T12:32:04.135Z"
+    "timestamp": "2025-04-15T15:17:33.846Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源-地图",
-    "timestamp": "2025-04-12T12:32:04.135Z"
+    "timestamp": "2025-04-15T15:17:33.847Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源-地图",
-    "timestamp": "2025-04-12T12:32:04.138Z"
+    "timestamp": "2025-04-15T15:17:33.847Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源-地图",
-    "timestamp": "2025-04-12T12:32:04.138Z"
+    "timestamp": "2025-04-15T15:17:33.847Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源-地图",
-    "timestamp": "2025-04-12T12:32:04.138Z"
+    "timestamp": "2025-04-15T15:17:33.848Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源-地图",
-    "timestamp": "2025-04-12T12:32:04.139Z"
+    "timestamp": "2025-04-15T15:17:33.848Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源-地图",
-    "timestamp": "2025-04-12T12:32:04.139Z"
+    "timestamp": "2025-04-15T15:17:33.848Z"
   },
   {
     "url": "https://images.unsplash.com/photo-1635707953487-81cfc8be52a4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
     "resourceType": "image",
     "failure": "net::ERR_BLOCKED_BY_ORB",
     "page": "溯源-地图",
-    "timestamp": "2025-04-12T12:32:04.289Z"
+    "timestamp": "2025-04-15T15:17:34.490Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-form-validation.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "登录页",
-    "timestamp": "2025-04-12T12:32:07.054Z"
+    "timestamp": "2025-04-15T15:17:37.256Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "登录页",
-    "timestamp": "2025-04-12T12:32:07.055Z"
+    "timestamp": "2025-04-15T15:17:37.257Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "登录页",
-    "timestamp": "2025-04-12T12:32:07.055Z"
+    "timestamp": "2025-04-15T15:17:37.257Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "登录页",
-    "timestamp": "2025-04-12T12:32:07.055Z"
+    "timestamp": "2025-04-15T15:17:37.258Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "登录页",
-    "timestamp": "2025-04-12T12:32:07.107Z"
+    "timestamp": "2025-04-15T15:17:37.259Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "登录页",
-    "timestamp": "2025-04-12T12:32:07.108Z"
+    "timestamp": "2025-04-15T15:17:37.302Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "登录页",
-    "timestamp": "2025-04-12T12:32:07.108Z"
+    "timestamp": "2025-04-15T15:17:37.303Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "登录页",
-    "timestamp": "2025-04-12T12:32:07.108Z"
+    "timestamp": "2025-04-15T15:17:37.303Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "登录页",
-    "timestamp": "2025-04-12T12:32:07.109Z"
+    "timestamp": "2025-04-15T15:17:37.303Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "功能模块选择",
-    "timestamp": "2025-04-12T12:32:09.872Z"
+    "timestamp": "2025-04-15T15:17:40.078Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "功能模块选择",
-    "timestamp": "2025-04-12T12:32:09.872Z"
+    "timestamp": "2025-04-15T15:17:40.078Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "功能模块选择",
-    "timestamp": "2025-04-12T12:32:09.872Z"
+    "timestamp": "2025-04-15T15:17:40.079Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "功能模块选择",
-    "timestamp": "2025-04-12T12:32:09.923Z"
+    "timestamp": "2025-04-15T15:17:40.120Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖管理",
-    "timestamp": "2025-04-12T12:32:12.711Z"
+    "timestamp": "2025-04-15T15:17:42.867Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖管理",
-    "timestamp": "2025-04-12T12:32:12.711Z"
+    "timestamp": "2025-04-15T15:17:42.867Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖管理",
-    "timestamp": "2025-04-12T12:32:12.711Z"
+    "timestamp": "2025-04-15T15:17:42.867Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖管理",
-    "timestamp": "2025-04-12T12:32:12.712Z"
+    "timestamp": "2025-04-15T15:17:42.867Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "养殖管理",
-    "timestamp": "2025-04-12T12:32:12.713Z"
+    "timestamp": "2025-04-15T15:17:42.868Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "溯源详情",
-    "timestamp": "2025-04-12T12:32:15.618Z"
+    "timestamp": "2025-04-15T15:17:45.720Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "溯源详情",
-    "timestamp": "2025-04-12T12:32:15.619Z"
+    "timestamp": "2025-04-15T15:17:45.720Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源详情",
-    "timestamp": "2025-04-12T12:32:15.620Z"
+    "timestamp": "2025-04-15T15:17:45.729Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源详情",
-    "timestamp": "2025-04-12T12:32:15.660Z"
+    "timestamp": "2025-04-15T15:17:45.757Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源详情",
-    "timestamp": "2025-04-12T12:32:15.660Z"
+    "timestamp": "2025-04-15T15:17:45.758Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源详情",
-    "timestamp": "2025-04-12T12:32:15.660Z"
+    "timestamp": "2025-04-15T15:17:45.758Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源详情",
-    "timestamp": "2025-04-12T12:32:15.661Z"
+    "timestamp": "2025-04-15T15:17:45.758Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源详情",
-    "timestamp": "2025-04-12T12:32:15.661Z"
+    "timestamp": "2025-04-15T15:17:45.758Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源列表",
-    "timestamp": "2025-04-12T12:32:18.701Z"
+    "timestamp": "2025-04-15T15:17:48.694Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源列表",
-    "timestamp": "2025-04-12T12:32:18.701Z"
+    "timestamp": "2025-04-15T15:17:48.731Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源列表",
-    "timestamp": "2025-04-12T12:32:18.702Z"
+    "timestamp": "2025-04-15T15:17:48.731Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源列表",
-    "timestamp": "2025-04-12T12:32:18.702Z"
+    "timestamp": "2025-04-15T15:17:48.731Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "溯源列表",
-    "timestamp": "2025-04-12T12:32:18.739Z"
+    "timestamp": "2025-04-15T15:17:48.732Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-error-handler.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "系统设置",
-    "timestamp": "2025-04-12T12:32:21.577Z"
+    "timestamp": "2025-04-15T15:17:51.536Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-store.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "系统设置",
-    "timestamp": "2025-04-12T12:32:21.577Z"
+    "timestamp": "2025-04-15T15:17:51.536Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-ux.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "系统设置",
-    "timestamp": "2025-04-12T12:32:21.578Z"
+    "timestamp": "2025-04-15T15:17:51.537Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/components/trace-a11y.js",
     "resourceType": "script",
     "failure": "net::ERR_FAILED",
     "page": "系统设置",
-    "timestamp": "2025-04-12T12:32:21.578Z"
+    "timestamp": "2025-04-15T15:17:51.537Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-common.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "系统设置",
-    "timestamp": "2025-04-12T12:32:21.578Z"
+    "timestamp": "2025-04-15T15:17:51.537Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-ui.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "系统设置",
-    "timestamp": "2025-04-12T12:32:21.626Z"
+    "timestamp": "2025-04-15T15:17:51.538Z"
   },
   {
     "url": "file:///C:/Users/Steve/heiniu/web-app/pages/components/trace-nav.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "系统设置",
-    "timestamp": "2025-04-12T12:32:21.627Z"
+    "timestamp": "2025-04-15T15:17:51.539Z"
   },
   {
     "url": "file:///C:/components/autoload-button-upgrade.js",
     "resourceType": "script",
     "failure": "net::ERR_FILE_NOT_FOUND",
     "page": "系统设置",
-    "timestamp": "2025-04-12T12:32:21.627Z"
+    "timestamp": "2025-04-15T15:17:51.539Z"
   }
 ]

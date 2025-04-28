@@ -1,58 +1,59 @@
 /**
- * 食品溯源系统 - Jest测试配置文件
- * 版本: 1.0.0
+ * @file Jest配置文件
+ * @description 食品溯源系统测试配置
  */
 
 module.exports = {
   // 测试环境
-  testEnvironment: "jsdom",
-  
-  // 转换配置
-  transform: {
-    "^.+\\.js$": "babel-jest"
-  },
+  testEnvironment: 'jsdom',
   
   // 测试文件匹配模式
   testMatch: [
-    "<rootDir>/tests/**/*.test.js",
-    "<rootDir>/tests/**/*.spec.js"
-  ],
-  
-  // 模块解析配置
-  moduleNameMapper: {
-    "^components/(.*)$": "<rootDir>/components/$1",
-    "^tests/(.*)$": "<rootDir>/tests/$1",
-    "^utils/(.*)$": "<rootDir>/utils/$1"
-  },
-  
-  // 安装文件
-  setupFiles: [
-    "<rootDir>/tests/setup.js"
+    "**/tests/**/*.test.js",
+    "**/src/**/*.test.js"
   ],
   
   // 覆盖率收集配置
   collectCoverage: true,
-  coverageDirectory: "coverage",
   collectCoverageFrom: [
-    "components/modules/**/*.js",
-    "api-router.js",
-    "test-data.js",
-    "server-config.js",
-    "local-server.js",
-    "api-test.js"
+    "components/**/*.js",
+    "!components/lib/**",
+    "!**/node_modules/**"
   ],
-  coverageReporters: [
-    "text",
-    "lcov",
-    "html"
+  coverageDirectory: "coverage",
+  
+  // 模块名称映射
+  moduleNameMapper: {
+    "\\.(css|less|scss|sass)$": "<rootDir>/tests/mocks/styleMock.js",
+    "\\.(gif|ttf|eot|svg|png)$": "<rootDir>/tests/mocks/fileMock.js"
+  },
+  
+  // 测试设置文件
+  setupFilesAfterEnv: [
+    "<rootDir>/tests/setupTests.js"
   ],
   
-  // 详细输出
-  verbose: true,
+  // 转换器配置
+  transform: {
+    "^.+\\.js$": "babel-jest"
+  },
   
-  // 忽略路径
-  testPathIgnorePatterns: [
-    "/node_modules/",
-    "/validation/"
+  // 转换忽略模式
+  transformIgnorePatterns: [
+    "/node_modules/"
+  ],
+  
+  // 模拟函数自动清理
+  clearMocks: true,
+  
+  // 测试超时设置
+  testTimeout: 10000,
+  
+  // 模块文件扩展名
+  moduleFileExtensions: [
+    "js",
+    "json",
+    "jsx",
+    "node"
   ]
 }; 
