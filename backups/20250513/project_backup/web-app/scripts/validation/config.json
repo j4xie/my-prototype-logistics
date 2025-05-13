@@ -1,0 +1,12 @@
+{
+    "reportsDir":  "validation/reports",
+    "defaultBrowser":  "chromium",
+    "viewport":  {
+                     "height":  800,
+                     "width":  1280
+                 },
+    "baseUrl":  "http://localhost:3000",
+    "screenshotsDir":  "validation/screenshots",
+    "runHeadless":  false,
+    "timeout":  30000
+}

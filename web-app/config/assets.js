@@ -1,137 +1,131 @@
-// 资源路径配置文件
-// 版本: 1.0.0
+/**
+ * @module config/assets
+ * @description 资源管理配置
+ */
 
+/**
+ * 资源配置
+ * @type {Object}
+ */
 const assetsConfig = {
-  // 基础URL配置
-  baseUrl: '/assets',
-  
-  // 图标资源
-  icons: {
-    base: '/assets/icons',
+  // 图像资源配置
+  images: {
+    // 图像路径配置
     paths: {
-      home: {
-        gray: '/home-gray.svg',
-        blue: '/home-blue.svg'
+      icons: './assets/icons',
+      photos: './assets/images',
+      logos: './assets/images/logos',
+      backgrounds: './assets/images/backgrounds',
+      thumbnails: './assets/monitoring/thumbnails'
+    },
+    // 图像格式配置
+    formats: {
+      supported: ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp'],
+      thumbnails: '.webp',
+      icons: '.svg'
+    },
+    // 图像尺寸配置
+    sizes: {
+      thumbnails: {
+        width: 150,
+        height: 150
       },
-      record: {
-        gray: '/record-gray.svg',
-        blue: '/record-blue.svg'
+      previews: {
+        width: 300,
+        height: 300
       },
-      user: {
-        gray: '/user-gray.svg',
-        blue: '/user-blue.svg'
-      },
-      info: {
-        blue: '/info-blue.svg'
+      default: {
+        width: 800,
+        height: 600
       }
     }
   },
   
-  // 样式文件
+  // 样式资源配置
   styles: {
-    base: '/assets/styles',
-    common: '/styles.css',
-    modules: {
-      processing: '/styles.css',
-      admin: '/styles.css'
-    }
+    // 样式路径配置
+    paths: {
+      css: './assets/css',
+      scss: './assets/styles',
+      themes: './assets/styles/themes'
+    },
+    // 主题配置
+    themes: ['light', 'dark', 'highContrast'],
+    defaultTheme: 'light'
   },
   
-  // JavaScript模块
+  // 字体资源配置
+  fonts: {
+    path: './assets/fonts',
+    formats: ['.woff2', '.woff', '.ttf'],
+    preload: ['main', 'icons']
+  },
+  
+  // 脚本资源配置
   scripts: {
-    base: '/components',
-    core: [
-      '/trace-core.js',
-      '/trace-ui.js',
-      '/trace-scanner.js',
-      '/trace-map.js',
-      '/trace-blockchain.js',
-      '/config-manager.js'
-    ],
-    modules: {
-      performance: '/trace-performance.js',
-      common: '/trace-common.js',
-      validation: '/trace-form-validation.js'
-    }
-  },
-  
-  // 图片资源
-  images: {
-    base: '/assets/images',
-    monitor: {
-      placeholder: '/monitor-placeholder.jpg',
-      thumbs: [
-        '/monitor-thumb1.jpg',
-        '/monitor-thumb2.jpg',
-        '/monitor-thumb3.jpg',
-        '/monitor-thumb4.jpg'
-      ]
-    }
-  },
-  
-  // 模块资源路径映射 - 统一处理各个目录下的资源请求
-  moduleAssets: {
-    farming: {
-      icons: '/assets/icons',
-      styles: '/assets/styles',
-      images: '/assets/images',
-      components: '/components'
-    },
-    processing: {
-      icons: '/assets/icons',
-      styles: '/assets/styles',
-      images: '/assets/images',
-      components: '/components'
-    },
-    logistics: {
-      icons: '/assets/icons',
-      styles: '/assets/styles',
-      images: '/assets/images',
-      components: '/components'
-    },
-    admin: {
-      icons: '/assets/icons',
-      styles: '/assets/styles',
-      components: '/components'
-    },
-    profile: {
-      icons: '/assets/icons',
-      styles: '/assets/styles',
-      components: '/components'
-    }
+    path: './assets/js',
+    modules: './assets/components'
   }
 };
 
-// 资源路径获取函数
-const getAssetPath = (type, name, module) => {
-  // 如果指定了模块，尝试从模块资源映射获取
-  if (module && assetsConfig.moduleAssets && assetsConfig.moduleAssets[module]) {
-    const moduleConfig = assetsConfig.moduleAssets[module];
-    if (moduleConfig[type]) {
-      return `${moduleConfig[type]}${name}`;
-    }
+/**
+ * 获取资源路径
+ * @param {string} type - 资源类型
+ * @param {string} name - 资源名称
+ * @param {Object} options - 额外选项
+ * @returns {string} - 资源路径
+ */
+function getAssetPath(type, name, options = {}) {
+  let basePath = '';
+  let extension = '';
+  
+  switch (type) {
+    case 'image':
+      const category = options.category || 'photos';
+      basePath = assetsConfig.images.paths[category] || assetsConfig.images.paths.photos;
+      extension = options.format || '.png';
+      break;
+      
+    case 'style':
+      const styleType = options.styleType || 'css';
+      basePath = assetsConfig.styles.paths[styleType] || assetsConfig.styles.paths.css;
+      extension = styleType === 'scss' ? '.scss' : '.css';
+      break;
+      
+    case 'font':
+      basePath = assetsConfig.fonts.path;
+      extension = options.format || '.woff2';
+      break;
+      
+    case 'script':
+      basePath = options.isModule ? assetsConfig.scripts.modules : assetsConfig.scripts.path;
+      extension = '.js';
+      break;
+      
+    default:
+      throw new Error(`未知的资源类型: ${type}`);
   }
   
-  const config = assetsConfig[type];
-  if (!config) throw new Error(`未知的资源类型: ${type}`);
-  
-  if (typeof name === 'string') {
-    return `${config.base}${name}`;
-  }
-  
-  return config;
-};
+  return `${basePath}/${name}${extension}`;
+}
 
-// 验证资源是否存在
-const validateAsset = async (path) => {
+/**
+ * 验证资源是否存在
+ * @param {string} path - 资源路径
+ * @returns {boolean} - 资源是否存在
+ */
+function validateAsset(path) {
+  // 在生产环境中，通常使用资源清单验证
+  // 在开发环境中，可以直接检查文件系统
+  // 此处简化实现，未来可扩展
   try {
-    const response = await fetch(path);
-    return response.ok;
+    const fs = require('fs');
+    return fs.existsSync(path);
   } catch (error) {
-    console.error(`资源验证失败: ${path}`, error);
+    console.warn(`验证资源时出错: ${path}`, error);
     return false;
   }
-};
+}
 
 module.exports = {
   assetsConfig,
