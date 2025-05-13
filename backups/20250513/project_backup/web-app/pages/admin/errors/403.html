@@ -1,0 +1,52 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 访问被拒绝 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../../../assets/styles.css">
+<script src="../../components/trace-common.js"></script><script src="../../components/trace-error-handler.js"></script><script src="../../components/trace-ui.js"></script><script src="../../components/trace-nav.js"></script><script src="../../components/trace-a11y.js"></script><script src="../../components/trace-store.js"></script></head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-red-500 p-6 text-center">
+                <i class="fas fa-exclamation-triangle text-white text-6xl mb-4"></i>
+                <h1 class="text-2xl font-bold text-white">访问被拒绝</h1>
+            </div>
+            <div class="p-6">
+                <div class="mb-6 text-center">
+                    <h2 class="text-xl font-medium text-gray-800 mb-2">您没有权限访问此页面</h2>
+                    <p class="text-gray-600">抱歉，您当前的用户权限不足以访问请求的页面。</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-yellow-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    如果您认为这是一个错误，请联系系统管理员。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center space-x-4">
+                        <a href="javascript:history.back()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            返回上一页
+                        </a>
+                        <a href="/pages/home/home-selector.html" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-home mr-2"></i>
+                            返回首页
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 text-center text-xs text-gray-500">
+                错误代码: 403 Forbidden
+            </div>
+        </div>
+    </div>
+
+ </body></html>

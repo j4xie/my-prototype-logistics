@@ -26,7 +26,7 @@ try {
 
 try {
   // 尝试导入服务器配置模块
-  const configModule = require('./server-config');
+  const configModule = require('./config/server/default');
   serverConfig = configModule.serverConfig;
 } catch (error) {
   console.log('服务器配置模块未找到，使用默认配置。');
