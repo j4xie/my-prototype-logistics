@@ -1,6 +1,8 @@
 # 食品溯源系统
 
-一个基于 Web 应用的食品溯源系统，用于跟踪农产品从农场到餐桌的整个过程，确保食品安全和透明度。
+<!-- updated for: 项目重构阶段一 - 文档统一与更新 -->
+
+一个基于Web应用的食品溯源系统，用于跟踪农产品从农场到餐桌的整个过程，确保食品安全和透明度。
 
 ## 功能特点
 
@@ -12,14 +14,12 @@
 - **数据统计与分析**：对溯源数据进行多维度统计和分析
 - **农业/养殖数据采集与监控**：支持自动化和手动数据采集
 - **数据趋势预测与分析**：基于历史数据进行趋势预测和分析
-- **企业环境集成**：优化的企业环境资源加载机制
-- **离线数据处理**：支持在网络不稳定情况下的数据处理
 
-## 快速开始 (Getting Started)
+## 快速开始
 
 ### 环境要求
-- Node.js (建议使用 LTS 版本)
-- npm 或 pnpm 包管理器
+- Node.js (14.x或更高版本)
+- npm、yarn或pnpm包管理器
 
 ### 安装步骤
 
@@ -32,96 +32,59 @@ cd food-traceability-system
 2. 安装依赖:
 ```bash
 npm install
-# 或使用 pnpm
+# 或使用其他包管理器
+yarn install
 pnpm install
+```
+
+3. 设置环境变量:
+```bash
+cp .env.example .env
+# 根据需要编辑.env文件
 ```
 
 ### 运行应用
 
-使用以下命令启动开发服务器：
-
 ```bash
 npm run start
-# 或使用 pnpm
+# 或使用其他包管理器
+yarn start
 pnpm start
 ```
 
-服务器通常会启动在 http://localhost:3000。它会自动监控文件变化并刷新浏览器。请留意终端输出获取确切的访问地址。
+服务器通常会启动在 http://localhost:3000
 
 ## 项目结构
+
+项目采用模块化的目录结构，便于维护和扩展：
 
 ```
 .
 ├── web-app/                   # Web应用主目录
-│   ├── components/            # 可复用的UI组件
-│   │   ├── modules/           # 按功能模块组织的组件
-│   │   │   ├── trace/         # 溯源功能相关组件
-│   │   │   ├── farming/       # 农业/养殖相关组件
-│   │   │   └── ...            # 其他功能模块组件
-│   ├── src/                   # 核心源代码
-│   │   ├── network/           # 网络请求和资源加载相关
-│   │   ├── storage/           # 存储和缓存相关
-│   │   └── utils/             # 工具函数
-│   ├── tests/                 # 测试目录
-│   │   ├── network/           # 网络相关测试
-│   │   └── ...                # 其他测试目录
-│   ├── reports/               # 测试报告和分析报告
-│   ├── test-coverage/         # 测试覆盖率报告
-│   └── ...                    # 其他配置文件
+│   ├── src/                   # 源代码目录
+│   │   ├── components/        # 组件目录
+│   │   ├── pages/             # 页面组件
+│   │   ├── hooks/             # 自定义Hooks
+│   │   ├── utils/             # 工具函数
+│   │   ├── services/          # API服务
+│   │   ├── store/             # 状态管理
+│   │   ├── styles/            # 全局样式
+│   │   └── types/             # 类型定义
+│   ├── public/                # 静态资源
+│   ├── tests/                 # 测试文件
+│   └── config/                # 配置文件
 ├── docs/                      # 项目文档
-│   ├── task-test-progress.md  # 测试进度文档
-│   └── task-test-next-steps.md # 下一步任务计划
-├── scripts/                   # 实用脚本
-│   ├── git/                   # Git相关脚本
-│   └── ...                    # 其他脚本目录
-├── gitpush.bat                # Git快捷命令 (Windows)
-├── gitpull.bat                # Git快捷命令 (Windows)
-├── gitpush.ps1                # Git快捷命令 (PowerShell)
-├── README.md                  # 项目说明文件 (本文档)
+│   ├── architecture/          # 架构文档
+│   ├── api/                   # API文档
+│   ├── components/            # 组件文档
+│   └── guides/                # 开发指南
+├── scripts/                   # 工具脚本
 └── ...                        # 其他配置文件
 ```
 
-## 开发工作流与脚本
+详细的目录结构说明请查看[目录结构文档](docs/architecture/directory.md)。
 
-### 核心脚本
-- `npm run start`: 启动开发服务器，支持热重载
-- `npm test`: 运行所有单元和集成测试
-
-### Git 快捷命令
-为了简化 Git 操作，项目提供了几个批处理脚本：
-
-#### Windows 批处理文件
-- `gitpush.bat "提交信息"`: 添加所有更改、提交并推送到远程仓库
-- `gitpull.bat`: 从远程仓库拉取最新更新
-
-#### PowerShell 脚本
-- `.\gitpush.ps1 -commitMessage "提交信息"`: 添加所有更改、提交并推送到远程仓库
-
-## 测试与验证
-
-### 性能测试
-项目包含多种性能测试工具，用于评估系统在不同环境下的表现：
-
-- **批量加载优化测试**: 测试不同批量大小下的资源加载性能
-- **网络切换稳定性测试**: 测试在网络状态快速变化下的系统稳定性
-- **内存使用分析**: 分析系统内存使用情况，检测潜在内存泄漏
-- **设备性能测试**: 测试在不同设备配置下的系统性能
-
-运行性能测试：
-```bash
-npm run test:performance
-```
-
-### 集成测试
-项目包含针对企业环境的集成测试，确保系统在企业环境中正常运行：
-
-```bash
-npm run test:integration
-```
-
-## 应用概览
-
-### 主要功能模块
+## 核心模块
 
 1. **认证 (Auth)**
    - 用户登录与认证
@@ -178,34 +141,66 @@ npm run test:integration
    - 系统设置
    - 系统日志
 
-## 当前开发状态
+## 文档
 
-目前项目处于MVP阶段，根据最新的测试进度报告，系统已完成734个测试，通过率为87.3%。主要工作重点包括：
+详细文档可在`docs`目录找到：
 
-1. **企业环境集成测试**：完成度65%，预计2023-08-22完成
-2. **内存泄漏修复验证**：完成度80%，预计2023-08-18完成
-3. **批量加载模拟测试改进**：完成度45%，预计2023-08-20完成
+- **架构文档**
+  - [系统架构概览](docs/architecture/overview.md)
+  - [目录结构说明](docs/architecture/directory.md)
+  - [技术栈说明](docs/architecture/technologies.md)
 
-关键风险和解决方案已在 `docs/task-test-progress.md` 和 `docs/task-test-next-steps.md` 中详细记录。
+- **API文档**
+  - [API概览](docs/api/overview.md)
+  - [认证API](docs/api/authentication.md)
+  - [溯源API](docs/api/trace.md)
+  - [农业/养殖API](docs/api/farming.md)
+  - [物流API](docs/api/logistics.md)
+  - [加工API](docs/api/processing.md)
 
-## 编码规范与指南
+- **组件文档**
+  - [组件概览](docs/components/overview.md)
+  - [通用组件](docs/components/common/index.md)
+  - [业务组件](docs/components/modules/index.md)
 
-为保证代码质量和一致性，项目采用以下规范：
+- **开发指南**
+  - [快速开始](docs/guides/getting-started.md)
+  - [开发流程](docs/guides/development.md)
+  - [测试指南](docs/guides/testing.md)
+  - [部署指南](docs/guides/deployment.md)
 
-1. **按钮标准**
-   - 每个按钮必须有唯一ID
-   - 按钮必须包含适当的无障碍属性
-   - 按钮功能应清晰明确
+## 开发工作流
 
-2. **性能优化**
-   - 资源加载批量大小优化
-   - 内存使用监控与优化
-   - 网络状态变化适应机制
+项目使用Git Flow工作流进行开发：
 
-3. **测试覆盖**
-   - 每个核心功能模块必须有对应的单元测试
-   - 关键用户流程必须有集成测试
-   - 性能关键点必须有性能测试
+- **main**: 生产环境分支
+- **develop**: 开发环境分支
+- **feature/xxx**: 新功能分支
+- **bugfix/xxx**: 错误修复分支
+- **release/xxx**: 发布准备分支
+
+贡献代码前，请阅读[开发流程文档](docs/guides/development.md)。
+
+## 测试
+
+项目包含多种测试类型，确保代码质量：
+
+```bash
+# 运行所有测试
+npm test
+
+# 运行单元测试
+npm run test:unit
+
+# 运行集成测试
+npm run test:integration
+
+# 运行端到端测试
+npm run test:e2e
+
+# 生成测试覆盖率报告
+npm test -- --coverage
+```
 
 ## 贡献指南
 
@@ -213,7 +208,7 @@ npm run test:integration
 
 1. Fork 本仓库
 2. 创建您的特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交您的更改 (`git commit -m '添加一些特性'`)
+3. 提交您的更改 (`git commit -m 'feat: add some feature'`)
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 打开一个 Pull Request
 

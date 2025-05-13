@@ -17,7 +17,7 @@ const url = require('url');
 const querystring = require('querystring');
 const crypto = require('crypto');
 const testData = require('./test-data');
-const serverConfig = require('./server-config');
+const serverConfig = require('./config/server/default');
 
 /**
  * 路由处理器类型定义
