@@ -1,6 +1,0 @@
-{
-  "timestamp": "2025-04-15T15:15:22.737Z",
-  "url": "http://localhost:8080/",
-  "error": "page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8080/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/\", waiting until \"domcontentloaded\"\u001b[22m\n",
-  "status": "error"
-}
