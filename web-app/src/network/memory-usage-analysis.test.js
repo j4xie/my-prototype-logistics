@@ -25,7 +25,7 @@ jest.mock('../utils/performance-test-tool', () => {
 });
 
 // 模拟测试服务器的mockFetch
-jest.mock('../../../test/mock-server/mockFetch', () => ({
+jest.mock('../../../tests/integration/mock-server/mockFetch', () => ({
   default: jest.fn().mockImplementation((url) => {
     return Promise.resolve({
       ok: true,
@@ -199,7 +199,7 @@ describe('资源加载器 - 内存占用分析', () => {
     const opts = { ...defaultOptions, ...options };
     
     // 导入mockFetch
-    const mockFetch = require('../../../test/mock-server/mockFetch').default;
+    const mockFetch = require('../../../tests/integration/mock-server/mockFetch').default;
     
     // 使用ResourceLoader.withMock创建加载器实例
     const loader = ResourceLoader.withMock(mockFetch, {

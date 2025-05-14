@@ -100,14 +100,18 @@ const traceRoutes = {
      * @returns {string} 相对路径
      */
     getRelativeToCurrentPage: function(targetPath) {
-        const currentPath = window.location.pathname;
-        return this.getRelativePath(currentPath, targetPath);
+        if (typeof window !== 'undefined') {
+            const currentPath = window.location.pathname;
+            return this.getRelativePath(currentPath, targetPath);
+        }
+        return targetPath;
     }
 };
 
 // 导出路由配置
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = traceRoutes;
-} else {
+module.exports = traceRoutes;
+
+// 在浏览器环境中，添加到window对象
+if (typeof window !== 'undefined') {
     window.traceRoutes = traceRoutes;
 } 

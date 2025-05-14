@@ -421,123 +421,88 @@ const PredefinedStrategies = {
    * @param {number} concurrency 并发数
    * @returns {Object} 策略配置
    */
-  fixed: (concurrency) => ({
-    id: `fixed-${concurrency}`,
-    name: `固定并发数 (${concurrency})`,
-    description: `使用固定的并发数 ${concurrency}`,
-    concurrencyProvider: () => concurrency
+  fixedConcurrency: (value) => ({
+    id: `fixed-${value}`,
+    name: `固定并发(${value})`,
+    description: `使用固定的并发数 ${value}`,
+    concurrencyProvider: () => value
   }),
   
   /**
-   * 设备类型适应策略
+   * 设备性能感知策略
    * @returns {Object} 策略配置
    */
-  deviceAdaptive: () => ({
-    id: 'device-adaptive',
-    name: '设备自适应',
-    description: '根据设备类型动态调整并发数',
+  deviceAwareConcurrency: () => ({
+    id: 'device-aware',
+    name: '设备感知并发',
+    description: '根据设备性能调整并发数',
     concurrencyProvider: (context) => {
-      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-      const isLowMemory = navigator.deviceMemory && navigator.deviceMemory < 4;
+      // 根据设备内存和CPU核心数确定并发数
+      const memory = context.deviceMemory || 4; // 默认4GB
+      const cores = context.cpuCores || 4; // 默认4核
       
-      if (isMobile) {
-        return isLowMemory ? 3 : 6;
-      }
-      
-      return isLowMemory ? 6 : 12;
+      // 基础并发数计算公式
+      return Math.max(2, Math.min(16, Math.floor(memory * 1.5 + cores * 0.5)));
     }
   }),
   
   /**
-   * 网络状况适应策略
+   * 网络感知策略
    * @returns {Object} 策略配置
    */
-  networkAdaptive: () => ({
-    id: 'network-adaptive',
-    name: '网络自适应',
-    description: '根据网络状况动态调整并发数',
+  networkAwareConcurrency: () => ({
+    id: 'network-aware',
+    name: '网络感知并发',
+    description: '根据网络状况调整并发数',
     concurrencyProvider: (context) => {
-      if (!navigator.connection) {
-        return 8;
-      }
+      // 网络类型和有效类型
+      const networkType = context.networkType || 'unknown';
+      const effectiveType = context.effectiveType || '3g';
       
-      const connection = navigator.connection;
+      // 根据网络类型确定基础并发数
+      let baseConcurrency = 6;
       
-      switch (connection.effectiveType) {
-        case '4g':
-          return 12;
-        case '3g':
-          return 8;
-        case '2g':
-          return 4;
-        case 'slow-2g':
-          return 2;
-        default:
-          return 6;
-      }
-    }
-  }),
-  
-  /**
-   * 综合自适应策略
-   * @returns {Object} 策略配置
-   */
-  comprehensive: () => ({
-    id: 'comprehensive',
-    name: '综合自适应',
-    description: '综合考虑设备性能、网络状况和电池状态',
-    concurrencyProvider: (context) => {
-      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-      const isLowMemory = navigator.deviceMemory && navigator.deviceMemory < 4;
-      
-      // 基础并发数
-      let concurrency = isMobile ? 6 : 12;
-      
-      // 调整内存
-      if (isLowMemory) {
-        concurrency = Math.max(2, Math.floor(concurrency * 0.6));
-      }
-      
-      // 调整网络
-      if (navigator.connection) {
-        const connection = navigator.connection;
-        
-        switch (connection.effectiveType) {
-          case '4g':
-            break; // 不调整
-          case '3g':
-            concurrency = Math.max(2, Math.floor(concurrency * 0.8));
-            break;
-          case '2g':
-            concurrency = Math.max(2, Math.floor(concurrency * 0.5));
-            break;
-          case 'slow-2g':
-            concurrency = 2;
-            break;
+      if (networkType === 'wifi' || networkType === 'ethernet') {
+        baseConcurrency = 12;
+      } else if (networkType === 'cellular') {
+        if (effectiveType === '4g') {
+          baseConcurrency = 8;
+        } else if (effectiveType === '3g') {
+          baseConcurrency = 4;
+        } else {
+          baseConcurrency = 2;
         }
       }
       
-      // 调整电池
-      if (context.batteryLevel && context.batteryLevel < 0.2 && !context.isCharging) {
-        concurrency = Math.max(2, Math.floor(concurrency * 0.7));
-      }
+      return baseConcurrency;
+    }
+  }),
+  
+  /**
+   * 自适应策略
+   * @returns {Object} 策略配置
+   */
+  adaptiveConcurrency: () => ({
+    id: 'adaptive',
+    name: '自适应并发',
+    description: '根据历史性能指标动态调整并发数',
+    concurrencyProvider: (context) => {
+      const lastSuccessRate = context.lastSuccessRate || 1.0;
+      const lastConcurrency = context.lastConcurrency || 6;
       
-      return concurrency;
+      // 如果成功率低于阈值，降低并发数；如果成功率高，尝试提高并发数
+      if (lastSuccessRate < 0.8) {
+        return Math.max(2, lastConcurrency - 2);
+      } else if (lastSuccessRate > 0.95) {
+        return Math.min(16, lastConcurrency + 1);
+      }
+      return lastConcurrency;
     }
   })
 };
 
-/**
- * 导出默认包含测试框架和预定义策略的对象
- */
-// export default {
-  ConcurrencyABTest,
-  PredefinedStrategies
-}; 
 // CommonJS导出
 module.exports = {
   ConcurrencyABTest,
   PredefinedStrategies
 };
-module.exports.PredefinedStrategies = PredefinedStrategies;
-module.exports.ConcurrencyABTest = ConcurrencyABTest;
