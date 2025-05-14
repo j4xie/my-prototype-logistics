@@ -30,7 +30,7 @@ const useMock = args.mock === true || args.mock === 'true';
 let mockFetch;
 if (useMock) {
   try {
-    mockFetch = require('../../../test/mock-server/mockFetch');
+    mockFetch = require('../../../tests/integration/mock-server/mockFetch');
     console.log('使用模拟fetch进行测试');
   } catch (error) {
     console.error('加载mockFetch失败:', error.message);
@@ -185,7 +185,7 @@ function generateTestResources(types = resourceTypes) {
 // 模拟基于设备配置的资源加载
 async function simulateResourceLoading(device, resources, batchSize = 10) {
   // 导入mockFetch
-  const mockFetch = require('../../../test/mock-server/mockFetch').default;
+  const mockFetch = require('../../../tests/integration/mock-server/mockFetch').default;
   
   // 创建网络监视器和资源加载器实例
   const networkMonitor = new NetworkMonitor({

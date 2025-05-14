@@ -9,7 +9,7 @@
     "serve": "cd web-app && npx serve -l 8080",
     "lint:md": "markdownlint docs/**/*.md README.md",
     "test:performance": "node web-app/src/network/run-device-performance-test.js --mock",
-    "mock-server": "node test/mock-server/index.js --delay=200"
+    "mock-server": "node web-app/tests/integration/mock-server/index.js --delay=200"
   },
   "engines": {
     "node": ">=16",

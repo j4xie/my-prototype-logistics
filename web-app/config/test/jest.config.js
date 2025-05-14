@@ -3,6 +3,8 @@
  * @description Jest测试框架配置
  */
 
+const path = require('path');
+
 /**
  * Jest配置
  * @type {Object}
@@ -13,20 +15,20 @@ module.exports = {
   
   // 测试文件匹配模式
   testMatch: [
-    "**/web-app/tests/unit/**/*.test.js",
-    "**/web-app/tests/integration/**/*.test.js",
-    "**/web-app/src/**/*.test.js"
+    "**/tests/unit/**/*.test.js",
+    "**/tests/integration/**/*.test.js",
+    "**/src/**/*.test.js"
   ],
   
   // 覆盖率收集配置
   collectCoverage: true,
   collectCoverageFrom: [
-    "web-app/src/**/*.js",
-    "web-app/components/**/*.js",
+    "src/**/*.js",
+    "components/**/*.js",
     "!**/node_modules/**",
     "!**/tests/**"
   ],
-  coverageDirectory: "web-app/coverage",
+  coverageDirectory: "coverage",
   
   // 模块名称映射
   moduleNameMapper: {
@@ -41,7 +43,7 @@ module.exports = {
   
   // 转换器配置
   transform: {
-    "^.+\\.js$": "babel-jest"
+    "^.+\\.js$": ["babel-jest", { configFile: path.resolve(__dirname, "babel.config.js") }]
   },
   
   // 转换忽略模式
