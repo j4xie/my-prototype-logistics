@@ -91,10 +91,10 @@ expect.extend({
 
 // 在测试前执行
 beforeAll(() => {
-  console.log(`🚀 测试环境初始化完成: ${environment}`);
+  console.log(`测试环境初始化完成: ${environment}`);
 });
 
 // 测试完成后执行
 afterAll(() => {
-  console.log('✅ 测试完成');
+  console.log('测试完成');
 }); 

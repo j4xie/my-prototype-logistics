@@ -4,6 +4,8 @@
 
 <!-- updated for: 项目重构阶段一 - 配置文件整合 -->
 
+<!-- updated for: 项目重构阶段一 - 重构验证与修复 -->
+
 ## 1. 根目录结构
 
 ```
@@ -27,15 +29,25 @@
 │   └── guides/                # 开发指南
 │       └── getting-started.md # 快速开始指南
 ├── scripts/                   # 工具脚本目录
-│   ├── dev/                   # 开发相关脚本
-│   │   ├── start.sh           # 开发服务器启动脚本
-│   │   └── debug.sh           # 调试模式启动脚本
 │   ├── build/                 # 构建相关脚本
-│   │   ├── build.sh           # 项目构建脚本
-│   │   └── analyze.sh         # 打包分析脚本
-│   └── deploy/                # 部署相关脚本
-│       ├── deploy-prod.sh     # 生产环境部署脚本
-│       └── deploy-test.sh     # 测试环境部署脚本
+│   ├── deploy/                # 部署相关脚本
+│   ├── dev/                   # 开发环境相关脚本
+│   │   ├── git/               # Git相关开发脚本
+│   │   │   ├── tools/         # Git工具脚本
+│   │   │   │   ├── git-tools.ps1  # PowerShell版本
+│   │   │   │   ├── git-tools.bat  # 批处理版本
+│   │   │   │   ├── git-tools.sh   # Shell版本
+│   │   │   │   └── README.md      # 使用说明
+│   │   └── debug/             # 调试相关脚本
+│   ├── data/                  # 数据处理相关脚本
+│   ├── utils/                 # 工具类脚本
+│   │   ├── modules/           # 模块相关工具脚本
+│   │   ├── button-fixes/      # 按钮修复相关脚本
+│   │   └── resource-fixes/    # 资源修复相关脚本
+│   ├── validation/            # 验证相关脚本
+│   │   └── scripts/           # 验证子脚本
+│   ├── README.md              # 脚本使用说明文档
+│   └── SCRIPT_INVENTORY.md    # 脚本清单
 ├── refactor/                  # 重构相关文档和脚本
 │   ├── docs/                  # 重构文档
 │   │   ├── plan.md            # 重构总体计划
@@ -43,7 +55,8 @@
 │   ├── phase-1/               # 阶段一：结构清理与统一
 │   │   ├── TASKS.md           # 任务列表
 │   │   ├── progress-reports/  # 进度报告
-│   │   │   └── task002_progress.md # TASK-002进度报告
+│   │   │   ├── task002_progress.md # TASK-002进度报告
+│   │   │   └── task007_progress.md # TASK-007进度报告
 │   │   └── results/           # 完成报告
 │   │       ├── TASK-001_completion_report.md # TASK-001完成报告
 │   │       ├── TASK-002_completion_report.md # TASK-002完成报告
@@ -191,51 +204,59 @@ web-app/
 │   ├── fonts/                 # 字体文件
 │   ├── favicon.ico            # 网站图标
 │   └── index.html             # HTML模板
-└── tests/                     # 测试文件
-    ├── e2e/                 # 端到端测试
-    │   ├── global-setup.js  # 全局测试设置
-    │   └── *.test.js        # 端到端测试用例
-    ├── integration/         # 集成测试
-    │   ├── mock-server/     # 模拟服务器
-    │   │   ├── index.js     # 模拟服务器实现
-    │   │   ├── mockFetch.js # Fetch请求模拟工具
-    │   │   └── static/      # 静态资源目录
-    │   └── *.test.js        # 集成测试用例
-    ├── unit/                # 单元测试
-    │   └── *.test.js        # 单元测试用例
-    ├── utils/               # 测试工具
-    │   ├── fileMock.js      # 文件模拟
-    │   └── styleMock.js     # 样式模拟
-    ├── setup.js             # 测试环境设置
-    ├── run-all-tests.js     # 测试运行脚本
-    └── README.md            # 测试使用指南
-└── config/                    # 配置文件
-    ├── default/               # 默认配置
-    │   ├── app.js             # 应用基本配置
-    │   ├── api.js             # API相关配置
-    │   ├── auth.js            # 认证相关配置
-    │   ├── ui.js              # UI相关配置
-    │   ├── features.js        # 功能特性配置
-    │   ├── storage.js         # 存储相关配置
-    │   ├── performance.js     # 性能相关配置
-    │   └── integration.js     # 第三方集成配置
-    ├── environments/          # 环境特定配置
-    │   ├── development.js     # 开发环境配置
-    │   ├── testing.js         # 测试环境配置
-    │   └── production.js      # 生产环境配置
-    ├── server/                # 服务器配置
-    │   ├── default.js         # 默认服务器配置
-    │   ├── development.js     # 开发环境服务器配置
-    │   ├── testing.js         # 测试环境服务器配置
-    │   └── production.js      # 生产环境服务器配置
-    ├── build/                 # 构建配置
-    │   ├── babel.config.js    # Babel配置
-    │   └── postcss.config.js  # PostCSS配置
-    ├── test/                  # 测试配置
-    │   ├── jest.config.js     # Jest主配置
-    │   ├── jest.setup.js      # Jest设置文件
-    │   └── test.config.js     # 通用测试配置
-    └── assets.js              # 资源管理配置
+├── dist/                      # 构建输出目录
+│   ├── bundle.js              # 打包后的JavaScript文件
+│   ├── *.js                   # 其他生成的JS文件
+│   └── assets/                # 打包后的资源文件
+├── tests/                     # 测试文件
+│   ├── e2e/                   # 端到端测试
+│   │   ├── global-setup.js    # 全局测试设置
+│   │   └── *.test.js          # 端到端测试用例
+│   ├── integration/           # 集成测试
+│   │   ├── mock-server/       # 模拟服务器
+│   │   │   ├── index.js       # 模拟服务器实现
+│   │   │   ├── mockFetch.js   # Fetch请求模拟工具
+│   │   │   └── static/        # 静态资源目录
+│   │   └── *.test.js          # 集成测试用例
+│   ├── unit/                  # 单元测试
+│   │   └── *.test.js          # 单元测试用例
+│   ├── utils/                 # 测试工具
+│   │   ├── fileMock.js        # 文件模拟
+│   │   └── styleMock.js       # 样式模拟
+│   ├── setup.js               # 测试环境设置
+│   ├── run-all-tests.js       # 测试运行脚本
+│   └── README.md              # 测试使用指南
+├── config/                    # 配置文件
+│   ├── default/               # 默认配置
+│   │   ├── app.js             # 应用基本配置
+│   │   ├── api.js             # API相关配置
+│   │   ├── auth.js            # 认证相关配置
+│   │   ├── ui.js              # UI相关配置
+│   │   ├── features.js        # 功能特性配置
+│   │   ├── storage.js         # 存储相关配置
+│   │   ├── performance.js     # 性能相关配置
+│   │   └── integration.js     # 第三方集成配置
+│   ├── environments/          # 环境特定配置
+│   │   ├── development.js     # 开发环境配置
+│   │   ├── testing.js         # 测试环境配置
+│   │   └── production.js      # 生产环境配置
+│   ├── server/                # 服务器配置
+│   │   ├── default.js         # 默认服务器配置
+│   │   ├── development.js     # 开发环境服务器配置
+│   │   ├── testing.js         # 测试环境服务器配置
+│   │   └── production.js      # 生产环境服务器配置
+│   ├── build/                 # 构建配置
+│   │   ├── webpack.config.js  # Webpack构建配置
+│   │   ├── babel.config.js    # Babel配置
+│   │   └── postcss.config.js  # PostCSS配置
+│   ├── test/                  # 测试配置
+│   │   ├── jest.config.js     # Jest主配置
+│   │   ├── jest.setup.js      # Jest设置文件
+│   │   └── playwright.config.js # Playwright端到端测试配置
+│   └── assets.js              # 资源管理配置
+├── webpack.config.js          # 根目录Webpack配置
+├── .babelrc                   # Babel配置文件
+└── .browserslistrc            # 浏览器支持列表
 ```
 
 ## 3. 目录结构说明
