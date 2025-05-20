@@ -222,7 +222,7 @@ function simulateResourceLoadTime(resource) {
   return Math.max(10, Math.round(loadTime)); // 最小10ms
 }
 
-// 导出工具函数
+// 导出工具函数 - 作为test-environment-mocks模块
 module.exports = {
   CONNECTION_TYPES,
   simulateResourceLoadTime,

@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="zh-CN"><head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <!-- 页面标题 -->
     <title>管理员登录 - 食品溯源系统</title>
     <!-- 引入 Tailwind CSS 框架 -->
@@ -17,6 +17,8 @@
     <script type="module" src="../../../components/trace-ux.js"></script>
     <!-- 引入数据存储脚本 -->
     <script type="module" src="../../../components/trace-store.js"></script>
+    <!-- 引入响应式辅助函数 -->
+    <script type="module" src="../../../src/utils/common/responsive-helper.js"></script>
     
     <style>
         /* Ant Design 风格样式定义 - 优化版 */
@@ -73,33 +75,38 @@
             background-color: #ffffff;
         }
         
-        /* 登录容器样式 */
+        /* 登录容器样式 - 响应式优化 */
         .login-container {
-            position: relative;
-            max-width: 400px;
             width: 100%;
-            margin: 0 auto;
-            padding: 24px 32px;
+            padding: 24px 20px; /* 移动端减少内边距 */
             box-sizing: border-box;
             background-color: #f9fafc;
             border-radius: var(--radius-md);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
         }
         
-        /* 按钮基础样式 */
+        @media (min-width: 640px) {
+            .login-container {
+                padding: 24px 32px; /* 大屏幕增加内边距 */
+            }
+        }
+        
+        /* 按钮基础样式 - 适配触屏操作 */
         .ant-btn {
-            height: 48px; /* 更新为设计规范需求 */
-            padding: 8px 16px;
+            height: 48px; /* 更新为适合触屏的高度 */
+            min-width: 48px; /* 确保最小点击区域 */
+            padding: 12px 16px; /* 增加内边距 */
             font-size: var(--font-md);
             border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
-            touch-action: manipulation;
+            touch-action: manipulation; /* 优化触摸操作 */
             border: none;
             font-weight: 500;
             box-shadow: 0 2px 5px rgba(22, 119, 255, 0.15);
+            cursor: pointer;
         }
         
         /* 主要按钮样式 */
@@ -107,10 +114,12 @@
             color: #fff;
             background-color: var(--primary-color);
             border-color: var(--primary-color);
+            width: 100%; /* 移动端按钮通常占满宽度 */
         }
         
         /* 主要按钮悬停状态 */
-        .ant-btn-primary:hover {
+        .ant-btn-primary:hover,
+        .ant-btn-primary:focus {
             background-color: var(--primary-color-hover);
             border-color: var(--primary-color-hover);
             box-shadow: 0 2px 8px rgba(22, 119, 255, 0.25);
@@ -120,6 +129,7 @@
         .ant-btn-primary:active {
             background-color: var(--primary-color-active);
             border-color: var(--primary-color-active);
+            transform: scale(0.98); /* 提供触摸反馈 */
         }
         
         /* 按钮加载状态动画 */
@@ -132,11 +142,10 @@
             animation: spin 1s infinite linear;
         }
         
-        /* 输入框样式 */
+        /* 输入框样式 - 优化触摸体验 */
         .ant-input {
             box-sizing: border-box;
             margin: 0;
-            padding: 0;
             font-variant: tabular-nums;
             list-style: none;
             font-feature-settings: "tnum";
@@ -144,10 +153,10 @@
             display: inline-block;
             width: 100%;
             min-width: 0;
-            padding: 8px 12px;
-            height: 44px; /* 更新为设计规范需求 */
+            padding: 12px 16px; /* 增加内边距 */
+            height: 48px; /* 增加高度适合触屏 */
             color: rgba(0, 0, 0, 0.85);
-            font-size: var(--font-md);
+            font-size: 16px; /* 移动端应至少16px避免自动缩放 */
             line-height: 1.5715;
             background-color: #fff;
             background-image: none;
@@ -171,7 +180,7 @@
             outline: 0;
         }
         
-        /* 新增：输入框错误状态 */
+        /* 输入框错误状态 */
         .ant-input-error {
             border-color: var(--error-color);
         }
@@ -180,7 +189,7 @@
             box-shadow: 0 0 0 2px rgba(245, 34, 45, 0.2);
         }
         
-        /* 新增：错误抖动动画 */
+        /* 错误抖动动画 */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -191,7 +200,7 @@
             animation: shake 0.6s ease-in-out;
         }
         
-        /* 新增：成功输入状态 */
+        /* 成功输入状态 */
         .ant-input-success {
             border-color: var(--success-color);
         }
@@ -200,18 +209,19 @@
             box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
         }
         
-        /* 新增：输入框图标位置统一调整 */
+        /* 输入框图标位置统一调整 */
         .input-prefix-icon {
             position: absolute;
-            left: 12px;
+            left: 16px; /* 增加间距 */
             top: 50%;
             transform: translateY(-50%);
             color: rgba(0, 0, 0, 0.45);
             pointer-events: none;
             transition: color 0.3s;
+            font-size: 18px; /* 增加图标大小 */
         }
         
-        /* 新增：输入框有值/聚焦时图标颜色变化 */
+        /* 输入框有值/聚焦时图标颜色变化 */
         .ant-form-item-control:focus-within .input-prefix-icon {
             color: var(--primary-color);
         }
@@ -219,7 +229,7 @@
         /* 密码框内的按钮样式 */
         .password-toggle {
             position: absolute;
-            right: 12px;
+            right: 16px; /* 增加间距 */
             top: 50%;
             transform: translateY(-50%);
             background: none;
@@ -227,6 +237,8 @@
             cursor: pointer;
             color: var(--text-secondary);
             z-index: 2;
+            padding: 8px; /* 增加点击区域 */
+            font-size: 18px; /* 增加图标大小 */
         }
         
         .password-toggle:hover {
@@ -248,20 +260,128 @@
             text-align: left;
             vertical-align: middle;
             margin-bottom: 8px;
+            font-size: 16px; /* 增加字体大小 */
         }
         
-        /* 表单标签文本样式 */
-        .ant-form-item-label label {
-            font-size: var(--font-md);
-            color: var(--text-primary);
-            font-weight: 500;
+        /* 错误提示样式优化 */
+        .error-feedback {
+            color: var(--error-color);
+            font-size: 14px;
+            margin-top: 4px;
+            display: block;
+            text-align: left;
         }
         
-        /* 表单控件容器样式 */
-        .ant-form-item-control {
+        /* 固定错误提示容器 */
+        .error-container {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            z-index: 1000;
+            background-color: rgba(245, 34, 45, 0.05);
+            border: 1px solid var(--error-color);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            color: var(--error-color);
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .error-container.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        /* 流式布局组件样式 */
+        .max-w-\[390px\] {
+            max-width: 390px;
+        }
+        
+        .min-h-screen {
+            min-height: 100vh;
+        }
+        
+        .mx-auto {
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .py-10 {
+            padding-top: 2.5rem;
+            padding-bottom: 2.5rem;
+        }
+        
+        .pt-\[80px\] {
+            padding-top: 80px;
+        }
+        
+        .pb-\[80px\] {
+            padding-bottom: 80px;
+        }
+        
+        /* 流式布局行组件样式 */
+        .flex {
             display: flex;
+        }
+        
+        .flex-col {
             flex-direction: column;
-            position: relative;
+        }
+        
+        .justify-start {
+            justify-content: flex-start;
+        }
+        
+        .justify-center {
+            justify-content: center;
+        }
+        
+        .justify-between {
+            justify-content: space-between;
+        }
+        
+        .items-center {
+            align-items: center;
+        }
+        
+        .gap-4 {
+            gap: 1rem;
+        }
+        
+        .flex-wrap {
+            flex-wrap: wrap;
+        }
+        
+        /* 流式布局列组件样式 */
+        .w-full {
+            width: 100%;
+        }
+        
+        .md\:w-1\/2 {
+            width: 50%;
+        }
+        
+        @media (min-width: 768px) {
+            .md\:w-1\/2 {
+                width: 50%;
+            }
+        }
+        
+        /* 管理员特定样式 */
+         .admin-badge {
+             display: inline-block;
+             background-color: #F6FFED;
+             border: 1px solid #B7EB8F;
+             color: #52C41A;
+             font-size: 12px;
+             padding: 2px 8px;
+             border-radius: 12px;
+             margin-left: 8px;
         }
         
         /* 复选框包装器样式 */
@@ -1050,121 +1170,343 @@
         });
     </script>
 <script src="../../components/trace-common.js"></script><script src="../../components/trace-ui.js"></script><script src="../../components/trace-nav.js"></script><script src="../../components/trace-a11y.js"></script></head>
-<body class="bg-[#F0F2F5]">
-    <!-- 页面主容器：垂直居中布局 -->
-    <div class="min-h-screen flex flex-col items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+<body class="bg-gray-100">
+    <!-- 使用流式布局容器 -->
+    <div class="mx-auto max-w-[390px] min-h-screen pt-[80px] pb-[80px] px-4">
+        <!-- 错误提示容器 -->
+        <div id="errorContainer" class="error-container">
+            <span id="errorMessage"></span>
+        </div>
+        
         <!-- 登录卡片 -->
-        <div class="ant-card max-w-md w-full py-8 px-6">
-            <!-- Hero Header 组件 -->
-            <div class="hero-header">
-                <!-- 品牌标志 -->
-                <div class="ant-logo">
-                    <i class="fas fa-shield-alt logo-icon"></i>
+        <div class="login-container">
+            <!-- 标题 -->
+            <div class="flex justify-center mb-8">
+                <img src="../../../assets/icons/logo.svg" alt="食品溯源系统" class="h-12">
+                <div class="ml-2">
+                    <h1 class="text-2xl font-medium text-center">食品溯源系统</h1>
+                    <div class="text-center"><span class="admin-badge">管理员平台</span></div>
                 </div>
-                <!-- 系统名称 -->
-                <h1 class="system-title">
-                    食品溯源系统 - 管理后台
-                </h1>
-                <!-- 系统简介 -->
-                <p class="page-subtitle">
-                    请输入您的管理员凭据
-                </p>
-            </div>
-            
-            <!-- 错误提示区域：初始状态隐藏 -->
-            <div id="error-message" class="ant-alert ant-alert-error mb-6 hidden" style="display: none;">
-                <i class="fas fa-exclamation-circle mr-2 text-[#FF4D4F]"></i>
-                <div class="ant-alert-message"></div>
             </div>
             
             <!-- 登录表单 -->
-            <form id="login-form" class="mt-4">
-                <!-- 用户名输入区域 -->
+            <form id="loginForm" class="ant-form" novalidate>
+                <!-- 用户名输入框 -->
                 <div class="ant-form-item">
-                    <div class="ant-form-item-label">
-                        <label for="username">用户名</label>
-                    </div>
-                    <div class="ant-form-item-control">
-                        <div class="relative">
-                            <!-- 用户图标 -->
-                            <span class="input-prefix-icon">
-                                <i class="fas fa-user"></i>
-                            </span>
-                            <!-- 用户名输入框 -->
-                            <input id="username" name="username" type="text" required="" class="ant-input pl-10" placeholder="请输入用户名" autocomplete="username">
-                            <!-- 验证图标 -->
-                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-green-500 hidden" id="username-valid-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </span>
-                        </div>
-                        <!-- 错误提示文本 -->
-                        <div class="text-xs text-red-500 error-text" id="username-error"></div>
+                    <label for="username" class="ant-form-item-label">管理员账号</label>
+                    <div class="ant-form-item-control relative">
+                        <span class="input-prefix-icon"><i class="fas fa-user-shield"></i></span>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            class="ant-input pl-10" 
+                            placeholder="请输入管理员账号" 
+                            required 
+                            autocomplete="username"
+                        >
+                        <div class="text-xs text-red-500 error-text mt-1" id="username-error"></div>
                     </div>
                 </div>
 
-                <!-- 密码输入区域 -->
+                <!-- 密码输入框 -->
                 <div class="ant-form-item">
-                    <div class="ant-form-item-label">
-                        <label for="password">密码</label>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="password" class="ant-form-item-label">密码</label>
+                        <a href="javascript:void(0)" id="forgot-password-link" class="text-sm text-blue-500 hover:text-blue-700 transition-colors">
+                            忘记密码?
+                        </a>
                     </div>
-                    <div class="ant-form-item-control">
-                        <div class="relative">
-                            <!-- 锁图标 -->
-                            <span class="input-prefix-icon">
-                                <i class="fas fa-lock"></i>
-                            </span>
-                            <!-- 密码输入框 -->
-                            <input id="password" name="password" type="password" required="" class="ant-input pl-10" placeholder="请输入密码" autocomplete="current-password">
-                            <!-- 密码可见性切换按钮 -->
-                            <button type="button" id="password-toggle" class="password-toggle" aria-label="显示密码">
-                                <i class="far fa-eye"></i>
+                    <div class="ant-form-item-control relative">
+                        <span class="input-prefix-icon"><i class="fas fa-lock"></i></span>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="ant-input pl-10" 
+                            placeholder="请输入密码" 
+                            required 
+                            autocomplete="current-password"
+                        >
+                        <button type="button" class="password-toggle" id="togglePassword">
+                            <i class="fas fa-eye-slash"></i>
                             </button>
-                        </div>
-                        <!-- 错误提示文本 -->
-                        <div class="text-xs text-red-500 error-text" id="password-error"></div>
+                        <div class="text-xs text-red-500 error-text mt-1" id="password-error"></div>
                     </div>
                 </div>
 
-                <!-- 记住密码和忘记密码区域 - 使用Flex水平排列 -->
-                <div class="flex items-center justify-between mb-6">
-                    <!-- 记住密码复选框 -->
-                    <div class="ant-checkbox-wrapper">
-                        <input type="checkbox" id="remember" class="ant-checkbox-input" aria-label="记住我">
-                        <span>记住我</span>
-                    </div>
-                    <!-- 忘记密码链接 -->
-                    <a href="javascript:void(0)" id="forgot-password-link" class="text-sm text-[#1677FF] hover:text-[#0958D9] transition-colors">
-                        忘记密码?
-                    </a>
+                <!-- 记住我选项 -->
+                <div class="flex justify-between items-center mb-6">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="rememberMe" name="rememberMe" class="mr-2">
+                        <span class="text-sm">记住我</span>
+                    </label>
                 </div>
 
                 <!-- 表单级错误提示区域 -->
                 <div id="form-error-message" class="hidden mt-4 mb-4 text-center text-red-500 text-sm font-medium"></div>
 
-                <!-- 登录按钮区域 -->
-                <div>
-                    <button type="submit" id="login-btn" class="ant-btn ant-btn-primary w-full transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]" aria-label="登录">
-                        登录
+                <!-- 登录按钮 -->
+                <div class="ant-form-item mb-3">
+                    <button 
+                        type="submit" 
+                        id="loginButton" 
+                        class="ant-btn ant-btn-primary"
+                    >
+                        <span>管理员登录</span>
                     </button>
+                </div>
+                
+                <!-- 登录提示 -->
+                <div class="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-md">
+                    <p class="text-sm text-gray-600 text-center">仅限授权管理员登录使用</p>
+                    <p class="text-xs text-gray-500 text-center mt-1">如需申请管理员权限，请联系系统管理员</p>
                 </div>
             </form>
             
-            <!-- 演示账号信息区域 - 优化为组件式布局 -->
-            <div class="demo-account-info">
-                <div class="demo-account-title">演示账号</div>
-                <div class="flex flex-wrap justify-center gap-2">
-                    <div class="demo-account-item">
+            <!-- 演示账号信息区域 -->
+            <div class="mt-5 pt-4 border-t border-gray-200">
+                <div class="text-center text-gray-500 text-sm mb-2">演示账号</div>
+                <div class="flex flex-wrap justify-center gap-2 text-xs text-gray-600">
+                    <div class="bg-gray-50 px-3 py-1 rounded">
                         <span class="font-medium">管理员:</span> admin / admin123
                     </div>
-                    <div class="demo-account-item">
+                    <div class="bg-gray-50 px-3 py-1 rounded">
                         <span class="font-medium">普通用户:</span> user / user123
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- 页脚版权信息 -->
+        <div class="mt-8 text-center text-gray-500 text-sm">
+            <p>© 2025 食品溯源系统 版权所有</p>
+        </div>
     </div>
 
-  <!-- 自动按钮升级脚本 (自动注入) -->
-  <script src="/components/autoload-button-upgrade.js"></script>
-  
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 引入工具函数
+            const isMobileView = (breakpoint = 640) => {
+                return window.innerWidth < breakpoint;
+            };
+            
+            // 密码显示切换
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.querySelector('i').classList.toggle('fa-eye');
+                this.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+            
+            // 表单验证
+            const loginForm = document.getElementById('loginForm');
+            const errorContainer = document.getElementById('errorContainer');
+            const errorMessage = document.getElementById('errorMessage');
+            const loginButton = document.getElementById('loginButton');
+            
+            loginForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                // 清除之前的错误
+                errorContainer.classList.remove('visible');
+                
+                // 获取输入值
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                
+                // 简单验证
+                if (!username) {
+                    showError('请输入管理员账号');
+                    document.getElementById('username').classList.add('ant-input-error');
+                    document.getElementById('username').classList.add('shake');
+                    setTimeout(() => {
+                        document.getElementById('username').classList.remove('shake');
+                    }, 600);
+                    return;
+                }
+                
+                if (!password) {
+                    showError('请输入密码');
+                    document.getElementById('password').classList.add('ant-input-error');
+                    document.getElementById('password').classList.add('shake');
+                    setTimeout(() => {
+                        document.getElementById('password').classList.remove('shake');
+                    }, 600);
+                    return;
+                }
+                
+                // 模拟登录
+                simulateLogin(username, password);
+            });
+            
+            // 输入框状态恢复
+            document.getElementById('username').addEventListener('input', function() {
+                this.classList.remove('ant-input-error');
+            });
+            
+            document.getElementById('password').addEventListener('input', function() {
+                this.classList.remove('ant-input-error');
+            });
+            
+            // 错误提示函数
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorContainer.classList.add('visible');
+                
+                // 自动隐藏错误提示
+                setTimeout(() => {
+                    errorContainer.classList.remove('visible');
+                }, 5000);
+            }
+            
+            // 模拟登录
+            function simulateLogin(username, password) {
+                // 显示加载状态
+                loginButton.disabled = true;
+                loginButton.innerHTML = '<i class="fas fa-spinner anticon-spin"></i><span class="ml-2">登录中...</span>';
+                
+                // 模拟网络请求
+                setTimeout(() => {
+                    // 模拟登录成功，实际项目中应调用API
+                    if (username === 'admin' && password === 'admin123') {
+                        // 登录成功
+                        loginButton.innerHTML = '<i class="fas fa-check"></i><span class="ml-2">登录成功</span>';
+                        // 跳转到管理后台首页
+                        setTimeout(() => {
+                            window.location.href = '../dashboard/index.html';
+                        }, 1000);
+                    } else {
+                        // 登录失败
+                        showError('管理员账号或密码错误');
+                        loginButton.disabled = false;
+                        loginButton.innerHTML = '<span>管理员登录</span>';
+                        // 抖动效果
+                        document.getElementById('username').classList.add('shake');
+                        document.getElementById('password').classList.add('shake');
+                        setTimeout(() => {
+                            document.getElementById('username').classList.remove('shake');
+                            document.getElementById('password').classList.remove('shake');
+                        }, 600);
+                    }
+                }, 1500);
+            }
+            
+            // 响应式调整
+            function adjustForMobile() {
+                if (isMobileView()) {
+                    // 移动设备适配
+                    document.body.classList.add('mobile-view');
+                    // 优化虚拟键盘弹出时的表现
+                    document.querySelectorAll('input').forEach(input => {
+                        input.addEventListener('focus', function() {
+                            // 滚动到输入框位置
+                            setTimeout(() => {
+                                this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 300);
+                        });
+                    });
+                } else {
+                    // 桌面设备适配
+                    document.body.classList.remove('mobile-view');
+                }
+            }
+            
+            // 初始调整
+            adjustForMobile();
+            
+            // 窗口大小变化时调整
+            window.addEventListener('resize', adjustForMobile);
+            
+            // 处理忘记密码点击事件
+            document.getElementById('forgot-password-link').addEventListener('click', (event) => {
+                event.preventDefault();
+                showForgotPasswordModal();
+            });
+            
+            // 创建忘记密码模态框
+            function createForgotPasswordModal() {
+                // 检查模态框是否已存在
+                if (document.getElementById('forgot-password-modal')) {
+                    return;
+                }
+                
+                // 创建模态框背景
+                const modalBackdrop = document.createElement('div');
+                modalBackdrop.id = 'forgot-password-modal';
+                modalBackdrop.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden';
+                
+                // 创建模态框内容
+                modalBackdrop.innerHTML = `
+                    <div class="bg-white rounded-lg max-w-md w-full mx-4 shadow-xl overflow-hidden">
+                        <div class="flex justify-between items-center p-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">找回密码</h3>
+                            <button type="button" id="modal-close" class="text-gray-400 hover:text-gray-500">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-sm text-gray-600">请联系系统管理员找回密码。</p>
+                            <p class="text-sm text-gray-600 mt-2">联系电话：<strong>400-123-4567</strong></p>
+                            <p class="text-sm text-gray-600 mt-1">工作时间：周一至周五 9:00-18:00</p>
+                        </div>
+                        <div class="flex justify-end p-4 border-t border-gray-200">
+                            <button type="button" id="modal-confirm" class="ant-btn ant-btn-primary px-4">确定</button>
+                        </div>
+                    </div>
+                `;
+                
+                // 将模态框添加到页面
+                document.body.appendChild(modalBackdrop);
+                
+                // 绑定关闭按钮事件
+                document.getElementById('modal-close').addEventListener('click', hideForgotPasswordModal);
+                document.getElementById('modal-confirm').addEventListener('click', hideForgotPasswordModal);
+                
+                // 点击背景关闭模态框
+                modalBackdrop.addEventListener('click', (event) => {
+                    if (event.target === modalBackdrop) {
+                        hideForgotPasswordModal();
+                    }
+                });
+                
+                // 按ESC键关闭模态框
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape' && !modalBackdrop.classList.contains('hidden')) {
+                        hideForgotPasswordModal();
+                    }
+                });
+            }
+            
+            // 显示忘记密码模态框
+            function showForgotPasswordModal() {
+                const modal = document.getElementById('forgot-password-modal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    // 阻止背景滚动
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    // 如果模态框不存在，则创建它
+                    createForgotPasswordModal();
+                    setTimeout(() => {
+                        document.getElementById('forgot-password-modal').classList.remove('hidden');
+                        document.body.style.overflow = 'hidden';
+                    }, 10);
+                }
+            }
+            
+            // 隐藏忘记密码模态框
+            function hideForgotPasswordModal() {
+                const modal = document.getElementById('forgot-password-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    // 恢复背景滚动
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+    </script>
  </body></html>

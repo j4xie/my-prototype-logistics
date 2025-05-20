@@ -2,7 +2,7 @@
  * 资源监控器（ResourceMonitor）的单元测试
  */
 
-const ResourceMonitor = require('./resource-monitor');
+const ResourceMonitor = require('../../../src/utils/performance/resource-monitor'); // 更新路径以反映模块化结构
 
 // 模拟 window.performance
 const mockPerformance = {
