@@ -3,6 +3,9 @@
  * @description 测试环境通用设置
  */
 
+// 引入测试环境模拟工具
+require('./utils/test-environment-mocks.js');
+
 // 设置测试环境
 const environment = process.env.NODE_ENV || 'test';
 
