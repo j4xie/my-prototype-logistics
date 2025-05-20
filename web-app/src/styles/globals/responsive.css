@@ -1,0 +1,23 @@
+/*
+ * Responsive Styles
+ *
+ * This file is intended for global responsive styles that cannot be easily achieved
+ * with Tailwind CSS utility classes directly in the components.
+ * However, prefer using Tailwind's responsive prefixes (sm:, md:, lg:, etc.) whenever possible.
+ *
+ * Standard breakpoints (from Tailwind default config):
+ * sm: min-width: 640px
+ * md: min-width: 768px
+ * lg: min-width: 1024px
+ * xl: min-width: 1280px
+ * 2xl: min-width: 1536px
+ *
+ * Mobile-first approach is encouraged.
+ */
+
+body {
+  /* Example: Ensure text is readable on all screen sizes */
+  /* This can also be achieved with Tailwind's text utilities */
+}
+
+/* Add any global responsive helper classes or overrides here if necessary */ 
