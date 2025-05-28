@@ -8,8 +8,8 @@
  * 负责检测网络连接状态变化，并发出相应事件
  */
 
-const EventEmitter = require('../utils/event-emitter');
-const { logInfo, logWarning, logDebug, logError } = require('../utils/logger');
+const EventEmitter = require('../utils/common/event-emitter');
+const { logInfo, logWarning, logDebug, logError } = require('../utils/common/logger');
 
 class NetworkMonitor extends EventEmitter {
   /**

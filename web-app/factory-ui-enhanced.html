@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工厂版增强界面 - 食品溯源系统</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #1890FF;
+            --success: #52C41A;
+            --warning: #FAAD14;
+            --danger: #FF4D4F;
+            --button-height: 80px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 18px;
+        }
+
+        .factory-container {
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: white;
+            position: relative;
+        }
+
+        .big-button {
+            height: var(--button-height);
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: none;
+            cursor: pointer;
+        }
+
+        .big-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .big-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #52C41A;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+        }
+
+        .time-display {
+            font-size: 16px;
+            color: rgba(255,255,255,0.9);
+        }
+
+        /* 确保文字正常横向显示 */
+        .status-card-text {
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+            direction: ltr;
+        }
+    </style>
+</head>
+<body>
+    <div class="factory-container">
+        <div id="factory-app"></div>
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 通知组件
+        const showNotification = (message, type = 'success') => {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            setTimeout(() => {
+                notification.className = 'notification';
+            }, 3000);
+        };
+
+        // 大按钮组件
+        const BigButton = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
+            const variantClasses = {
+                primary: 'bg-[#1890FF] text-white',
+                success: 'bg-[#52C41A] text-white',
+                warning: 'bg-[#FAAD14] text-white',
+                danger: 'bg-[#FF4D4F] text-white',
+                scan: 'bg-gradient-to-r from-green-400 to-blue-500 text-white'
+            };
+
+            const handleClick = () => {
+                if (!disabled && onClick) {
+                    // 触觉反馈（如果支持）
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                    onClick();
+                }
+            };
+
+            return (
+                <button 
+                    className={`big-button w-full flex flex-col items-center justify-center ${variantClasses[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${className}`}
+                    onClick={handleClick}
+                    disabled={disabled}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        // 状态卡片
+        const StatusCard = ({ title, value, status, icon, onClick }) => {
+            const statusColors = {
+                good: '#52C41A',
+                warning: '#FAAD14',
+                error: '#FF4D4F'
+            };
+
+            return (
+                <div 
+                    className={`bg-white rounded-xl p-4 shadow-lg border-2 border-gray-100 ${onClick ? 'cursor-pointer hover:shadow-xl transition-shadow' : ''}`}
+                    onClick={onClick}
+                    style={{ writingMode: 'horizontal-tb' }}
+                >
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                            <div className="flex items-center mb-2">
+                                <span 
+                                    className="status-indicator pulse" 
+                                    style={{ backgroundColor: statusColors[status] }}
+                                ></span>
+                                <h3 className="text-base font-bold text-gray-800 whitespace-nowrap status-card-text">{title}</h3>
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900 whitespace-nowrap status-card-text">{value}</p>
+                        </div>
+                        <div className="text-4xl ml-2">{icon}</div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 工厂版增强界面
+        const FactoryApp = () => {
+            const [currentUser, setCurrentUser] = useState('李师傅');
+            const [currentShift, setCurrentShift] = useState('早班');
+            const [todayTarget, setTodayTarget] = useState(200);
+            const [todayCompleted, setTodayCompleted] = useState(127);
+            const [quality, setQuality] = useState('良好');
+            const [currentTime, setCurrentTime] = useState(new Date());
+            const [lastScanTime, setLastScanTime] = useState(null);
+
+            // 更新时间
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setCurrentTime(new Date());
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            // 语音播报功能
+            const speak = (text) => {
+                console.log(`语音播报: ${text}`);
+                showNotification(`🔊 ${text}`);
+                // 实际项目中可以使用 Web Speech API
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'zh-CN';
+                    speechSynthesis.speak(utterance);
+                }
+            };
+
+            const handleScan = () => {
+                speak('请对准二维码扫描');
+                setLastScanTime(new Date());
+                // 模拟扫码成功
+                setTimeout(() => {
+                    setTodayCompleted(prev => prev + 1);
+                    showNotification('✅ 扫码成功！产品已记录');
+                    speak('扫码成功');
+                }, 2000);
+            };
+
+            const handleDataEntry = () => {
+                speak('进入数据录入');
+                showNotification('📝 数据录入模式');
+            };
+
+            const handleQualityCheck = () => {
+                speak('开始质量检查');
+                showNotification('🔍 质量检查模式');
+            };
+
+            const handleHelp = () => {
+                speak('正在呼叫管理员');
+                showNotification('🆘 管理员已收到求助信息');
+            };
+
+            const handleStatusClick = (type) => {
+                if (type === 'device') {
+                    showNotification('⚙️ 设备状态：运行正常，温度25°C');
+                } else if (type === 'quality') {
+                    showNotification('✅ 质量状态：今日合格率98.5%');
+                }
+            };
+
+            const completionRate = Math.round((todayCompleted / todayTarget) * 100);
+            const timeString = currentTime.toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+
+            return (
+                <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+                    {/* 顶部状态栏 */}
+                    <div className="bg-[#1890FF] text-white p-4 text-center">
+                        <h1 className="text-2xl font-bold">食品溯源系统</h1>
+                        <div className="flex justify-between items-center mt-2">
+                            <span className="text-lg">{currentUser} · {currentShift}</span>
+                            <span className="time-display">{timeString}</span>
+                        </div>
+                    </div>
+
+                    {/* 主要内容区域 */}
+                    <div className="p-4 space-y-6">
+                        {/* 今日任务进度 */}
+                        <div className="bg-white rounded-xl p-6 shadow-lg">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">📊 今日任务</h2>
+                            <div className="text-center">
+                                <div className="text-4xl font-bold text-[#1890FF] mb-2">
+                                    {todayCompleted}/{todayTarget}
+                                </div>
+                                <div className="text-lg text-gray-600 mb-4">完成进度: {completionRate}%</div>
+                                <div className="w-full bg-gray-200 rounded-full h-4">
+                                    <div 
+                                        className="bg-[#1890FF] h-4 rounded-full transition-all duration-500"
+                                        style={{ width: `${completionRate}%` }}
+                                    ></div>
+                                </div>
+                                {lastScanTime && (
+                                    <div className="text-sm text-gray-500 mt-2">
+                                        上次扫码: {lastScanTime.toLocaleTimeString('zh-CN')}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 状态监控 */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <StatusCard 
+                                title="设备状态" 
+                                value="正常" 
+                                status="good" 
+                                icon="⚙️"
+                                onClick={() => handleStatusClick('device')}
+                            />
+                            <StatusCard 
+                                title="质量状态" 
+                                value={quality} 
+                                status="good" 
+                                icon="✅"
+                                onClick={() => handleStatusClick('quality')}
+                            />
+                        </div>
+
+                        {/* 主要操作按钮 */}
+                        <div className="space-y-4">
+                            <BigButton variant="scan" onClick={handleScan}>
+                                <div className="text-5xl mb-1">▦</div>
+                                <div className="text-xl font-semibold">扫 码</div>
+                            </BigButton>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <BigButton variant="success" onClick={handleDataEntry}>
+                                    <div className="text-3xl mb-1">📝</div>
+                                    <div className="text-base font-semibold">录入</div>
+                                </BigButton>
+
+                                <BigButton variant="warning" onClick={handleQualityCheck}>
+                                    <div className="text-3xl mb-1">🔍</div>
+                                    <div className="text-base font-semibold">检查</div>
+                                </BigButton>
+                            </div>
+                        </div>
+
+                        {/* 紧急按钮 */}
+                        <BigButton variant="danger" onClick={handleHelp}>
+                            <div className="text-4xl mb-1">🆘</div>
+                            <div className="text-xl font-semibold">呼叫管理员</div>
+                            <div className="text-sm opacity-80">遇到问题点这里</div>
+                        </BigButton>
+
+                        {/* 简单提示 */}
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+                            <div className="text-3xl mb-2">💡</div>
+                            <p className="text-lg font-medium text-gray-800">
+                                有问题就点"呼叫管理员"
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 渲染应用
+        ReactDOM.render(<FactoryApp />, document.getElementById('factory-app'));
+    </script>
+</body>
+</html> 

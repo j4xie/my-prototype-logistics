@@ -1,4 +1,8 @@
 /**
+ * @deprecated 此组件已废弃，请使用 Row 组件: 
+ * import { Row } from '@/components/ui';
+ * 请查看迁移指南文档 refactor/phase-3/docs/MIGRATION-GUIDE.md 获取更多信息
+ * 
  * Row 组件
  * 
  * 提供响应式行布局组件，支持不同的对齐方式、间距控制和换行行为

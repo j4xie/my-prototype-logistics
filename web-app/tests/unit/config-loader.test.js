@@ -4,7 +4,7 @@
  */
 
 // 导入配置加载器
-const configLoader = require('../../src/utils/config-loader');
+const configLoader = require('../../src/utils/common/config-loader');
 
 describe('配置加载器', () => {
   // 在每个测试前重置configLoader

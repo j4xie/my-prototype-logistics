@@ -1,8 +1,24 @@
 # 食品溯源系统
 
-<!-- updated for: 项目重构阶段一 - 文档统一与更新 -->
+<!-- updated for: Phase-3技术栈现代化进行中，建立权威来源说明 -->
 
 一个基于Web应用的食品溯源系统，用于跟踪农产品从农场到餐桌的整个过程，确保食品安全和透明度。
+
+## 🚀 项目状态
+
+**当前阶段**: Phase-3 技术栈现代化 (进行中)  
+**完成度**: 35%  
+**权威来源**: `web-app-next/` 目录 (Next.js 14 + TypeScript)  
+
+### 技术栈迁移状态
+- ✅ **核心组件库**: 已完成迁移到TypeScript (8个组件)
+- ✅ **构建系统**: Next.js 14 + Turbopack (构建性能提升96%)
+- ✅ **类型系统**: TypeScript 5 (100%类型安全)
+- ✅ **可访问性**: WCAG 2.1 AA标准支持
+- 🔄 **业务组件**: 迁移进行中
+- 📋 **页面架构**: 等待迁移
+
+**详细进展请查看**: [Phase-3工作计划](refactor/phase-3/PHASE-3-WORK-PLAN.md)
 
 ## 功能特点
 
@@ -58,10 +74,25 @@ pnpm start
 
 项目采用模块化的目录结构，便于维护和扩展：
 
+⚠️ **重要说明**: 项目正在进行Phase-3技术栈现代化，存在两个应用目录：
+- `web-app-next/` - **权威来源** (Next.js 14 + TypeScript)
+- `web-app/` - 废弃来源 (React 18 + JavaScript)
+
+**新开发请使用** `web-app-next/` **目录**
+
 ```
 .
-├── web-app/                   # Web应用主目录
-│   ├── src/                   # 源代码目录
+├── web-app-next/             # 🎯 新应用目录 (权威来源)
+│   ├── src/                  # TypeScript源代码
+│   │   ├── components/       # 现代化组件库
+│   │   ├── app/              # Next.js App Router
+│   │   ├── lib/              # 工具函数库
+│   │   ├── store/            # 状态管理 (Zustand)
+│   │   ├── types/            # TypeScript类型定义
+│   │   └── hooks/            # React Hooks
+│   └── public/               # 静态资源
+├── web-app/                  # ⚠️ 旧应用目录 (废弃中)
+│   ├── src/                  # JavaScript源代码目录
 │   │   ├── components/        # 组件目录
 │   │   ├── pages/             # 页面组件
 │   │   ├── hooks/             # 自定义Hooks
@@ -82,7 +113,7 @@ pnpm start
 └── ...                        # 其他配置文件
 ```
 
-详细的目录结构说明请查看[目录结构文档](docs/architecture/directory.md)。
+详细的目录结构说明请查看[目录结构文档](DIRECTORY_STRUCTURE.md)。
 
 ## 核心模块
 
@@ -147,7 +178,7 @@ pnpm start
 
 - **架构文档**
   - [系统架构概览](docs/architecture/overview.md)
-  - [目录结构说明](docs/architecture/directory.md)
+  - [目录结构说明](DIRECTORY_STRUCTURE.md)
   - [技术栈说明](docs/architecture/technologies.md)
 
 - **API文档**

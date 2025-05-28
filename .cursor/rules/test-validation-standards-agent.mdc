@@ -1,0 +1,96 @@
+---
+description: 创建基于任务ID的验证脚本时 - 建立验证脚本与具体任务的强关联 - 组织任务导向的验证目录结构 - 确保验证脚本可追溯性和职责明确性 - 禁止通用验证脚本，要求明确任务关联
+globs: 
+alwaysApply: false
+---
+---
+description: 创建基于任务ID的验证脚本时 - 建立验证脚本与具体任务的强关联 - 组织任务导向的验证目录结构 - 确保验证脚本可追溯性和职责明确性 - 禁止通用验证脚本，要求明确任务关联
+globs: 
+alwaysApply: false
+---
+
+# 测试验证文件规范化规则
+
+## 使用场景
+- 创建基于具体任务的验证脚本
+- 组织和管理任务相关的所有验证内容
+- 建立验证脚本与任务ID的强关联关系
+- 确保验证脚本可追溯性和职责明确性
+
+## 关键规则
+- 验证脚本必须关联具体任务ID：`task-{任务ID}-{验证类型}-validation.js`
+- 优先使用任务目录组织：`scripts/validation/task-{任务ID}/`
+- 禁止创建无任务关联的通用验证脚本
+- 每个任务目录必须包含comprehensive-validation.js统筹该任务所有验证
+- 验证报告命名：`task-{任务ID}-{验证类型}-report.json`
+- 验证脚本内部必须包含VALIDATION_META元数据
+
+## 任务导向的验证脚本组织结构
+```
+scripts/validation/
+├── task-p2-001/                           # TASK-P2-001 移动端UI适配
+│   ├── mobile-adaptation-validation.js    # 移动端适配功能验证
+│   ├── performance-validation.js          # 性能指标验证
+│   ├── accessibility-validation.js        # 可访问性验证
+│   ├── comprehensive-validation.js        # 综合验证
+│   └── reports/                           # 该任务验证报告
+├── task-p2-002/                           # TASK-P2-002 UI组件梳理
+│   ├── component-structure-validation.js  # 组件结构验证
+│   ├── component-api-validation.js        # 组件API验证
+│   └── reports/
+├── task-p3-001/                           # TASK-P3-001 React迁移
+│   ├── react-migration-validation.js      # React迁移验证
+│   └── reports/
+└── common/                                # 仅限通用工具和setup脚本
+```
+
+## 验证脚本元数据标准
+验证脚本必须包含以下元数据：
+```javascript
+/**
+ * @task TASK-P2-001
+ * @module 移动端UI适配问题修复
+ * @validation-type mobile-adaptation
+ * @description 验证移动端UI适配的完成效果
+ * @reports-to refactor/phase-2/progress-reports/
+ */
+
+const VALIDATION_META = {
+  taskId: 'TASK-P2-001',
+  validationType: 'mobile-adaptation',
+  module: '移动端UI适配问题修复',
+  reportPath: 'refactor/phase-2/progress-reports/'
+};
+```
+
+## 示例
+
+<example>
+  符合规范的验证脚本组织：
+  - task-p2-001/mobile-adaptation-validation.js - TASK-P2-001的移动端适配验证
+  - task-p2-001/performance-validation.js - TASK-P2-001的性能验证
+  - task-p2-002/component-structure-validation.js - TASK-P2-002的组件结构验证
+  - task-p3-001/react-migration-validation.js - TASK-P3-001的React迁移验证
+  
+  验证脚本包含：
+  - 明确的任务ID关联(@task TASK-P2-001)
+  - 标准化VALIDATION_META元数据
+  - 任务目录下的reports/子目录
+  - comprehensive-validation.js统筹所有子验证
+</example>
+
+<example type="invalid">
+  不符合规范的验证脚本：
+  - mobile-adaptation-validation.js - 缺少任务ID关联
+  - general-performance-validation.js - 通用验证脚本(禁止)
+  - ui-validation.js - 验证范围不明确
+  - scripts/validation/performance.js - 目录组织错误
+  
+  验证脚本问题：
+  - 无法从名称判断验证哪个具体任务
+  - 缺少VALIDATION_META元数据
+  - 验证职责重叠和冲突
+  - 报告文件无法追溯到具体任务
+</example>
+
+

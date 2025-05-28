@@ -40,7 +40,7 @@
 
 创建了以下架构文档：
 - [系统架构概览](../../../docs/architecture/overview.md)
-- [目录结构说明](../../../docs/architecture/directory.md)
+- [目录结构说明](../../../DIRECTORY_STRUCTURE.md)
 - [技术栈说明](../../../docs/architecture/technologies.md)
 
 ### 4. API文档创建
