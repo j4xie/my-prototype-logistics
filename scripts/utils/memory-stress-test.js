@@ -11,7 +11,7 @@ const path = require('path');
 // 加载依赖模块
 const ResourceLoader = require('../web-app/src/network/resource-loader');
 const NetworkMonitor = require('../web-app/src/network/network-monitor');
-const PerformanceTracker = require('../web-app/src/utils/performance-tracker');
+const PerformanceTracker = require('../web-app/src/utils/performance/performance-tracker');
 
 // 命令行参数解析
 const args = process.argv.slice(2).reduce((acc, arg) => {

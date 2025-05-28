@@ -1,0 +1,370 @@
+---
+description: 开发并且执行phase-3的阶段的时候需要遵守的规则
+globs: 
+alwaysApply: false
+---
+# Phase-3 技术栈现代化代理规则
+
+## 使用场景
+- Phase-3技术栈现代化阶段
+- 前端框架迁移和现代化改造
+- Next.js + TypeScript + 现代状态管理实施
+- 避免重复工作并确保使用现有任务架构
+- 处理技术栈迁移中的复杂性管理
+
+## 关键规则
+
+### 任务管理规则
+- **严禁重复创建任务文档** - 检查现有任务ID避免冲突
+- **任务ID命名规范** - 使用TASK-P3-XXX格式，XXX为3位数字
+- **所有代码修改必须在任务文档变更记录表格中记录**
+- **完成任务后必须勾选对应的待办清单项**
+- **按照渐进式迁移策略顺序执行**
+- **每个迁移阶段完成后立即验证功能完整性**
+
+### 组件迁移状态管理规则 (必须每步执行)
+- **开始任何组件相关工作前必须先阅读** [refactor/phase-3/docs/COMPONENT-MIGRATION-GUIDE.md](mdc:refactor/phase-3/docs/COMPONENT-MIGRATION-GUIDE.md)
+- **权威来源原则**: `web-app-next/src/components/ui/` 为新组件权威来源，`web-app/src/components/ui/` 为废弃来源
+- **迁移状态更新**: 完成组件迁移后必须在COMPONENT-MIGRATION-GUIDE.md中更新状态 (🔄→✅)
+- **废弃标记**: 在旧组件文件中添加@deprecated标记，指向新版本
+- **导入路径规范**: 确保使用新版本导入路径，避免引用废弃组件
+- **API变化记录**: 在迁移表格中记录新旧API的差异和改进
+- **技术升级跟踪**: 记录TypeScript化、可访问性改进、性能提升等技术指标
+
+### Phase-3技术栈规范
+- **前端框架**: Next.js 14+ (App Router + SSR/SSG)
+- **类型系统**: TypeScript 5+ (严格类型检查)
+- **状态管理**: Zustand + React Query
+- **构建工具**: Next.js内置 + Turbopack
+- **样式方案**: Tailwind CSS (保持现有配置)
+- **测试框架**: Vitest + Testing Library
+- **代码质量**: ESLint + Prettier + TypeScript
+
+### 文档去重管理规则
+
+#### 单一信息源原则 (Phase-3扩展)
+- **Phase-3权威变更日志**: [refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md](mdc:refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md) - **最重要**
+- **Phase-3详细规划**: [refactor/phase-3/PHASE-3-WORK-PLAN.md](mdc:refactor/phase-3/PHASE-3-WORK-PLAN.md)
+- **技术选型决策**: [refactor/phase-3/docs/TECH-SELECTION.md](mdc:refactor/phase-3/docs/TECH-SELECTION.md)
+- **迁移策略文档**: [refactor/phase-3/docs/MIGRATION-STRATEGY.md](mdc:refactor/phase-3/docs/MIGRATION-STRATEGY.md)
+- **组件迁移状态**: [refactor/phase-3/docs/COMPONENT-MIGRATION-GUIDE.md](mdc:refactor/phase-3/docs/COMPONENT-MIGRATION-GUIDE.md)
+
+#### Phase-3文档层次关系
+```
+TASKS.md (总概览) → REFACTOR-PHASE3-CHANGELOG.md (Phase-3权威进展) → PHASE-3-WORK-PLAN.md (阶段计划) → TASK-P3-XXX.md (具体任务)
+                    ↳ REFACTOR_LOG.md (所有阶段参考)
+```
+
+### 迁移管理规则
+
+#### 渐进式迁移原则
+1. **基础设施搭建** (Week 1): Next.js项目创建、TypeScript配置、工具链设置
+2. **组件库迁移** (Week 2): 现有React组件TypeScript化
+3. **页面架构迁移** (Week 3-4): HTML页面转换为Next.js页面
+4. **状态管理整合** (Week 4-5): 全局状态架构实施
+5. **性能优化** (Week 6-8): 构建优化、运行时优化
+
+#### 兼容性保证规则
+- **新旧系统并存**: 迁移期间保持原系统可用
+- **数据迁移策略**: localStorage、sessionStorage状态迁移
+- **API兼容性**: 保持现有API接口不变
+- **回滚机制**: 每个迁移阶段都有回滚方案
+
+### 代码质量规则
+
+#### TypeScript迁移规范
+- **渐进式类型化**: 从`strict: false`开始，逐步严格化
+- **类型定义完整**: 建立完整的业务类型系统
+- **组件类型安全**: Props接口定义、forwardRef使用
+- **工具函数类型**: 泛型支持、类型推导优化
+
+#### 组件现代化规范
+- **React 18特性**: 使用Suspense、并发特性
+- **可访问性**: 保持WCAG 2.1 AA标准
+- **性能优化**: memo、useMemo、useCallback适当使用
+- **测试覆盖**: 新组件必须有单元测试
+
+### 技术债务管理
+
+#### 清理优先级
+1. **P0**: 移除废弃代码和依赖
+2. **P1**: 重构技术债务较高的模块
+3. **P2**: 优化性能瓶颈
+4. **P3**: 代码风格统一
+
+#### 质量门禁
+- **TypeScript编译**: 0错误
+- **ESLint检查**: 0错误，警告<10个
+- **单元测试**: 覆盖率>80%
+- **构建成功**: 100%成功率
+- **性能基准**: 首屏<2秒，构建<5秒
+
+## 必读文件清单（绝对不能重复创建）
+
+### Phase-3推荐阅读顺序：
+1. [refactor/phase-3/PHASE-3-WORK-PLAN.md](mdc:refactor/phase-3/PHASE-3-WORK-PLAN.md) - **最重要**：Phase-3总体目标、8周计划、5个阶段详细规划
+2. [refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md](mdc:refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md) - **权威**：Phase-3专门变更日志和当前进展记录
+3. [refactor/phase-3/PHASE-3-PLANNING.md](mdc:refactor/phase-3/PHASE-3-PLANNING.md) - 了解总体现代化规划思路
+4. [refactor/phase-3/docs/TECH-SELECTION.md](mdc:refactor/phase-3/docs/TECH-SELECTION.md) - 技术选型决策
+5. [refactor/phase-3/docs/MIGRATION-STRATEGY.md](mdc:refactor/phase-3/docs/MIGRATION-STRATEGY.md) - 迁移策略
+6. [refactor/phase-3/docs/COMPONENT-MIGRATION-GUIDE.md](mdc:refactor/phase-3/docs/COMPONENT-MIGRATION-GUIDE.md) - **权威**：组件迁移状态和指导
+7. [refactor/phase-3/docs/DEDUPLICATION-RESOLUTION.md](mdc:refactor/phase-3/docs/DEDUPLICATION-RESOLUTION.md) - 文档去重冲突解决记录
+8. [refactor/phase-3/tasks/TASK-P3-001_前端框架迁移评估与选型.md](mdc:refactor/phase-3/tasks/TASK-P3-001_前端框架迁移评估与选型.md) - 第一个核心任务
+
+### 上下文文档（按需阅读）：
+- **Phase-2成果参考**: [refactor/phase-2/](mdc:refactor/phase-2) - 了解现有代码基础
+- **项目重构方案**: [项目重构方案.md](mdc:项目重构方案.md) - 了解整体重构思路
+- **API文档**: [docs/api/](mdc:docs/api) - API接口规范
+
+## 模板位置（必须使用，不可重复创建）
+- [refactor/phase-3/tasks/TASK_TEMPLATE.md](mdc:refactor/phase-3/tasks/TASK_TEMPLATE.md) - 任务模板
+- [refactor/phase-3/progress-reports/PROGRESS_TEMPLATE.md](mdc:refactor/phase-3/progress-reports/PROGRESS_TEMPLATE.md) - 进度模板
+- [refactor/phase-3/review-notes/REVIEW_TEMPLATE.md](mdc:refactor/phase-3/review-notes/REVIEW_TEMPLATE.md) - 评审模板
+
+## 强制执行检查清单 (每次开始工作前必检)
+
+### 🎯 Phase-3整体规划检查 (最优先)
+- [ ] 已阅读 [refactor/phase-3/PHASE-3-WORK-PLAN.md](mdc:refactor/phase-3/PHASE-3-WORK-PLAN.md) 了解Phase-3总体目标、8周计划和5个阶段
+- [ ] 已确认当前处于哪个阶段 (基础设施→组件库→页面架构→状态管理→性能优化)
+- [ ] 已理解Phase-3技术栈规范 (Next.js 14 + TypeScript 5 + Zustand + React Query)
+- [ ] 已确认当前任务在总体规划中的位置和依赖关系
+- [ ] 已了解Phase-3验收标准和质量门禁要求
+
+### 📋 当前进展状态检查
+- [ ] 已阅读 [refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md](mdc:refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md) 了解Phase-3最新进展
+- [ ] 已确认Phase-3总体进度百分比和当前周次
+- [ ] 已了解最近完成的工作和即将进行的任务
+- [ ] 已确认是否有阻塞问题需要先解决
+
+### 🔄 组件迁移状态检查 (组件相关工作)
+- [ ] 已阅读 [refactor/phase-3/docs/COMPONENT-MIGRATION-GUIDE.md](mdc:refactor/phase-3/docs/COMPONENT-MIGRATION-GUIDE.md) 了解组件迁移状态
+- [ ] 已确认目标组件的当前迁移状态 (已完成✅/待迁移🔄)
+- [ ] 已确认使用正确的权威来源 (web-app-next/) 和废弃来源 (web-app/)
+- [ ] 已检查是否需要添加@deprecated废弃标记
+- [ ] 已规划API变化记录和技术升级跟踪方式
+
+### 📝 任务管理检查
+- [ ] 已检查任务ID是否与现有任务冲突 (TASK-P3-XXX格式)
+- [ ] 已确认不会重复创建已存在的文档或任务
+- [ ] 已明确当前任务的验收标准和完成定义
+- [ ] 已规划任务完成后需要更新的文档清单
+
+### 🛠️ 技术规范检查 
+- [ ] 已确认使用Next.js App Router目录结构标准
+- [ ] 已确认TypeScript严格模式和完整类型定义要求
+- [ ] 已确认组件现代化规范 (forwardRef、可访问性、测试)
+- [ ] 已确认代码质量门禁 (0 TypeScript错误、ESLint通过)
+
+### 📚 文档层次检查
+- [ ] 已确认更新的文档在Phase-3文档层次中的位置
+- [ ] 已规划避免信息冲突和重复的方案
+- [ ] 已确认遵循单一信息源原则
+
+## 工作流程
+
+### Phase-3特定工作流程
+1. **技术选型阶段**: 
+   - 使用TECH-SELECTION.md记录决策过程
+   - 建立技术栈评估矩阵
+   - 制定迁移风险评估
+2. **迁移实施阶段**:
+   - 在MIGRATION-STRATEGY.md记录迁移进展
+   - 每个迁移阶段结束后更新状态
+   - 记录遇到的问题和解决方案
+3. **质量验收阶段**:
+   - 建立Next.js项目验收标准
+   - TypeScript类型覆盖率验证
+   - 性能基准测试
+
+### 代码修改工作流程 (Phase-3扩展)
+1. **新技术栈代码**:
+   - 在web-app-next目录下开发
+   - 使用TypeScript严格模式
+   - 遵循Next.js App Router约定
+2. **变更记录**:
+   - 在任务文档变更记录表格中记录
+   - 包含新旧代码对比说明
+   - 记录迁移影响范围
+3. **目录结构变更**:
+   - 更新[DIRECTORY_STRUCTURE.md](mdc:DIRECTORY_STRUCTURE.md)
+   - 在[docs/directory-structure-changelog.md](mdc:docs/directory-structure-changelog.md)记录
+4. **任务进展**:
+   - 在[refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md](mdc:refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md)记录Phase-3所有进展
+   - 使用阶段化进度标记（基础设施→组件迁移→页面迁移→状态管理→优化）
+   - REFACTOR_LOG.md仅作为所有阶段的参考，不再是Phase-3的主要记录
+
+### Next.js项目规范
+
+#### 目录结构标准
+```
+web-app-next/
+├── src/
+│   ├── app/                 # App Router
+│   │   ├── (auth)/         # 认证路由组
+│   │   ├── (dashboard)/    # 仪表板路由组
+│   │   ├── trace/          # 溯源查询
+│   │   ├── api/            # API路由
+│   │   ├── globals.css     # 全局样式
+│   │   ├── layout.tsx      # 根布局
+│   │   └── page.tsx        # 首页
+│   ├── components/         # 组件库
+│   │   ├── ui/            # 基础UI组件
+│   │   ├── modules/       # 业务模块组件
+│   │   └── common/        # 通用组件
+│   ├── lib/               # 工具库
+│   ├── store/             # 状态管理
+│   ├── types/             # 类型定义
+│   ├── hooks/             # 自定义Hooks
+│   └── styles/            # 样式文件
+├── public/                # 静态资源
+├── package.json
+├── tsconfig.json
+├── tailwind.config.js
+└── next.config.js
+```
+
+#### 组件迁移规范
+- **文件命名**: 使用kebab-case，组件导出使用PascalCase
+- **类型定义**: 每个组件都有完整的Props接口
+- **forwardRef**: 支持ref传递的组件使用forwardRef
+- **可访问性**: 保持原有WCAG 2.1 AA标准
+- **测试**: 新组件必须有对应的.test.tsx文件
+
+## 验收标准
+
+### Phase-3技术指标
+- Next.js项目构建成功率：100%
+- TypeScript类型检查通过率：100%
+- 组件迁移覆盖率：>90%
+- 性能改善：首屏加载<2秒，构建时间<5秒
+- 测试覆盖率：>80%
+
+### Phase-3功能指标
+- 所有Phase-2功能无损迁移
+- 新增现代化特性（SSR/SSG、状态管理、性能优化）
+- 移动端体验提升
+- 开发效率提升50%+
+
+### Phase-3质量指标
+- 零TypeScript编译错误
+- ESLint规则100%通过
+- 可访问性标准保持
+- 用户体验无回归
+- 文档完整度>95%
+
+## 常见问题和解决方案
+
+### 任务ID冲突
+**问题**: 发现多个TASK-P3-001任务
+
+## 示例
+
+<example>
+  **正确的Phase-3工作流程执行**：
+  
+  **场景：需要迁移Badge组件**
+  1. ✅ 【整体规划检查】阅读 refactor/phase-3/PHASE-3-WORK-PLAN.md 确认当前处于"第2阶段-组件库现代化"
+  2. ✅ 【进展状态检查】阅读 refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md 了解当前37%进度
+  3. ✅ 【组件状态检查】阅读 refactor/phase-3/docs/COMPONENT-MIGRATION-GUIDE.md 确认Badge组件状态：🔄 待迁移
+  4. ✅ 【技术规范检查】确认使用Next.js App Router + TypeScript严格模式标准
+  5. ✅ 在web-app-next/src/components/ui/创建badge.tsx (TypeScript + forwardRef + 可访问性)
+  6. ✅ 在COMPONENT-MIGRATION-GUIDE.md更新状态：🔄→✅
+  7. ✅ 在旧Badge.js中添加@deprecated标记和迁移指导
+  8. ✅ 在演示页面添加完整功能展示
+  9. ✅ 验证Next.js构建成功 (0错误)
+  10. ✅ 更新REFACTOR-PHASE3-CHANGELOG.md记录完成的工作和技术改进
+  
+  **场景：创建新文档前**
+  1. ✅ 检查refactor-phase3-agent.mdc必读文件列表
+  2. ✅ 确认文档不重复现有内容
+  3. ✅ 规划文档在信息层次中的位置
+  4. ✅ 创建后立即更新refactor-phase3-agent.mdc必读列表
+</example>
+
+<example type="invalid">
+  **错误的执行方式（导致信息gap）**：
+  
+  **错误1：不遵循cursor rule**
+  - ❌ 直接开始工作，不检查必读文档
+  - ❌ 创建COMPONENT-MIGRATION-GUIDE.md但不先阅读现有规则
+  - ❌ 不更新cursor rule中的必读文件列表
+  
+  **错误2：迁移状态管理混乱**
+  - ❌ 不确认组件当前迁移状态就开始工作
+  - ❌ 迁移组件后不更新迁移指导文档
+  - ❌ 同时维护多个迁移状态信息源
+  
+  **错误3：文档信息冲突**
+  - ❌ 在多个地方维护相同信息
+  - ❌ 创建文档但不建立引用关系
+  - ❌ 重复创建已存在的任务或文档
+</example>
+
+**问题**: 发现多个TASK-P3-001任务
+**解决**: 
+1. 检查所有Phase-3任务文档
+2. 重新分配任务ID（按时间顺序）
+3. 更新所有引用
+
+### 迁移复杂度管理
+**问题**: 大规模迁移容易出错
+**解决**:
+1. 严格按照5阶段渐进式迁移
+2. 每阶段结束都进行完整性验证
+3. 建立回滚机制
+
+### 性能回归风险
+**问题**: 新技术栈可能影响性能
+**解决**:
+1. 建立性能基准测试
+2. 每次迁移后进行性能对比
+3. 及时优化性能瓶颈
+
+## 示例
+
+<example>
+**正确的Phase-3工作流程**：
+1. 阅读[refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md](mdc:refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md)了解Phase-3最新进展
+2. 查看[refactor/phase-3/docs/TECH-SELECTION.md](mdc:refactor/phase-3/docs/TECH-SELECTION.md)确认技术选型
+3. 按照[refactor/phase-3/docs/MIGRATION-STRATEGY.md](mdc:refactor/phase-3/docs/MIGRATION-STRATEGY.md)执行迁移
+4. 在任务文档中记录变更
+5. 更新REFACTOR-PHASE3-CHANGELOG.md记录所有Phase-3工作进展
+6. 验证迁移结果
+</example>
+
+<example type="invalid">
+**错误的工作方式**：
+1. 重复创建已存在的任务文档
+2. 不按渐进式迁移策略执行
+3. 忽略TypeScript类型安全
+4. 不记录变更和进度
+5. 没有性能基准测试
+6. **创建重复的TASK-P3-001任务**
+7. **忽略现有技术选型决策**
+</example>
+
+## 紧急修复检查清单
+
+在继续Phase-3工作前，必须先解决以下问题：
+
+- [ ] 解决TASK-P3-001任务ID冲突（前端框架迁移 vs 深色模式修复）
+- [ ] 检查所有Phase-3文档的一致性
+- [ ] 确认技术选型决策的正确性
+- [ ] 验证Next.js项目的构建状态
+- [ ] 建立Phase-3进度跟踪机制
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

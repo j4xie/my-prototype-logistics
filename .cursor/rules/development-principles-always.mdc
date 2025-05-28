@@ -1,0 +1,114 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: 项目核心开发原则和代码质量标准 - 适用于所有代码开发、项目管理和文档维护活动 - 包含项目理解、代码质量、任务执行和沟通规范
+globs: 
+alwaysApply: true
+---
+
+# 核心开发原则
+
+## 使用场景
+- 所有代码开发和修改活动
+- 项目管理和文档维护
+- 代码审查和质量控制
+
+## 关键规则
+
+### 项目理解与上下文
+- 始终参考 @DIRECTORY_STRUCTURE.md 了解项目目录结构和组织方式
+- 根据工作类型参考相应文档：
+  - **代码开发**：查看 web-app/README.md 和相关任务文档
+  - **重构工作**：参考 refactor/ 目录下的计划和任务文档
+  - **文档维护**：参考 docs/ 目录下的相关文档
+- **docs目录阅读指导**：
+  - **架构相关工作**：必读 [docs/architecture/design-principles.md](mdc:docs/architecture/design-principles.md)
+  - **API开发/集成**：必读 [docs/api/](mdc:docs/api) 相关文档
+  - **组件开发**：参考 [docs/components/](mdc:docs/components) 相关文档
+  - **项目规划/管理**：查看 [docs/project-management/](mdc:docs/project-management) 相关文档
+  - **新人入门**：阅读 [docs/guides/getting-started.md](mdc:docs/guides/getting-started.md)
+- 验证信息准确性，不做无证据的假设或推测
+- 逐文件进行更改，给用户发现错误的机会
+- **任何目录结构变更都必须同步更新目录结构文档**：
+  - 更新 [DIRECTORY_STRUCTURE.md](mdc:DIRECTORY_STRUCTURE.md) 保持当前最新目录结构（仅包含：1.根目录结构、2.web-app目录结构、3.目录结构说明表格）
+  - 在 [docs/directory-structure-changelog.md](mdc:docs/directory-structure-changelog.md) 记录变更历史（包含：历史更新记录、进展说明、变更详情）
+  - 架构设计原则在 [docs/architecture/design-principles.md](mdc:docs/architecture/design-principles.md) 中维护
+  - 未来演进计划在 [docs/project-management/evolution-roadmap.md](mdc:docs/project-management/evolution-roadmap.md) 中维护
+
+### 代码质量标准
+- 使用描述性、明确的变量名和函数名
+- 遵循项目现有编码风格保持一致性
+- 模块化设计提高可维护性和可重用性
+- 优先考虑代码性能和安全影响
+- 为新代码或修改代码提供测试覆盖
+- 实现健壮的错误处理和日志记录
+- 考虑并处理边缘情况
+- 将硬编码值替换为命名常量
+- 使用断言验证假设和尽早捕获错误
+
+### 任务执行原则
+- **功能开发**：如存在 implementation-plan.mdc，严格遵循并完成后添加"Done"标记
+- **重构工作**：遵循相应重构阶段的任务文档和计划
+- **维护工作**：优先保持现有结构和功能的完整性
+
+## 沟通规范
+- 不使用道歉性语言
+- 避免提供理解反馈或冗余确认
+- 不主动提供摘要，除非用户明确要求
+- 不讨论当前实现，除非解释更改影响时需要
+- 提供真实文件链接，非上下文生成的文件
+- 不发明超出明确请求的更改
+- 保留现有代码结构和不相关功能
+- 单块编辑，避免多步指令
+- 不建议空白更改或不必要的更新
+
+## 示例
+<example>
+  **正确的工作流程**：
+  
+  **代码开发场景**：
+  1. 查看 @DIRECTORY_STRUCTURE.md 了解项目结构
+  2. 检查 web-app/README.md 了解具体开发规范
+  3. 如有 implementation-plan.mdc，遵循其步骤
+  4. 使用描述性变量名：`const userAuthenticationStatus` 而不是 `const status`
+  5. 添加错误处理和测试用例
+  6. 完成后添加相应标记和总结
+  
+  **重构工作场景**：
+  1. 查看 @DIRECTORY_STRUCTURE.md 了解当前结构
+  2. 参考 refactor/phase-X/ 下的相关计划和任务
+  3. 按照重构文档中的步骤执行
+  4. 在任务文档中记录变更和进度
+</example>
+
+<example type="invalid">
+  **错误的工作方式**：
+  1. 直接开始工作而不了解项目结构和上下文
+  2. 强制应用不存在或不适用的计划文档
+  3. 使用模糊的变量名：`const data`, `const result`
+  4. 忽略错误处理，假设所有操作都会成功
+  5. 修改代码后不更新相关文档或任务记录
+  6. 提供道歉性回复："抱歉，我应该..."
+  7. 建议不必要的空白或格式更改
+  8. 在重构工作中强制遵循开发规范而忽略重构计划
+</example>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

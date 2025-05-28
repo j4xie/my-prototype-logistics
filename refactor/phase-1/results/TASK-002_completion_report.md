@@ -16,7 +16,7 @@ TASK-002 文档统一与更新任务的目标是统一项目文档，确保所�
 
 2. **创建了核心架构文档**：
    - [系统架构概览](../../docs/architecture/overview.md)：描述系统整体架构和模块关系
-   - [目录结构说明](../../docs/architecture/directory.md)：详述重构后的目录结构和用途
+   - [目录结构说明](../../DIRECTORY_STRUCTURE.md)：详述重构后的目录结构和用途
    - [技术栈说明](../../docs/architecture/technologies.md)：说明项目使用的技术栈和工具链
 
 3. **创建了API文档**：
