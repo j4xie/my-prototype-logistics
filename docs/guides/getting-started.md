@@ -226,7 +226,7 @@ pnpm start
 └── ...                        # 其他配置文件
 ```
 
-完整的目录结构和说明请参考 [目录结构文档](../architecture/directory.md)。
+完整的目录结构和说明请参考 [目录结构文档](../../DIRECTORY_STRUCTURE.md)。
 
 ## 7. 运行测试
 

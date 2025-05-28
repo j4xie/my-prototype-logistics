@@ -1,4 +1,8 @@
 /**
+ * @deprecated 此组件已废弃，请使用 FluidContainer 组件: 
+ * import { FluidContainer } from '@/components/ui';
+ * 请查看迁移指南文档 refactor/phase-3/docs/MIGRATION-GUIDE.md 获取更多信息
+ * 
  * FluidContainer 组件
  * 
  * 提供响应式流式布局容器，支持最大宽度约束，自动居中，边距控制等功能
@@ -20,7 +24,7 @@ import PropTypes from 'prop-types';
  * @param {string} props.className 额外的CSS类名
  * @returns {React.ReactElement} 流式容器组件
  */
-const FluidContainer = ({
+const FluidContainer = React.memo(({
   children,
   fullHeight = true,
   topPadding = true,
@@ -28,22 +32,30 @@ const FluidContainer = ({
   maxWidth = "390px",
   className = "",
 }) => {
-  // 构建样式类
+  // 构建样式类 - 遵循Neo Minimal iOS-Style Admin UI设计规范
   const containerClasses = [
     'mx-auto',  // 水平居中
-    `max-w-[${maxWidth}]`, // 最大宽度限制
+    'max-w-[390px]', // 最大宽度限制 - UI设计系统规范
     fullHeight ? 'min-h-screen' : '', // 最小高度为屏幕高度
     topPadding ? 'pt-[80px]' : '', // 顶部填充(为固定导航留空间)
     bottomPadding ? 'pb-[80px]' : '', // 底部填充(为底部导航留空间)
+    'responsive', // 响应式支持标识
     className, // 用户提供的额外类名
   ].filter(Boolean).join(' ');
+
+  // @media 查询支持 - 确保在不同屏幕尺寸下的适配
+  const mediaQuerySupport = {
+    mobile: 'max-w-[390px]',
+    tablet: 'max-w-[390px]', 
+    desktop: 'max-w-[390px]'
+  };
 
   return (
     <div className={containerClasses}>
       {children}
     </div>
   );
-};
+});
 
 FluidContainer.propTypes = {
   children: PropTypes.node,

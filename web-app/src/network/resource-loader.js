@@ -4,11 +4,11 @@
  * @version 1.5.5
  */
 
-const EventEmitter = require('../utils/event-emitter');
+const EventEmitter = require('../utils/common/event-emitter');
 const NetworkMonitor = require('./network-monitor');
 const ResourceCache = require('../storage/resource-cache');
-const PerformanceTracker = require('../utils/performance-tracker');
-const { logError, logWarning, logInfo, logDebug } = require('../utils/logger');
+const PerformanceTracker = require('../utils/performance/performance-tracker');
+const { logError, logWarning, logInfo, logDebug } = require('../utils/common/logger');
 const createResourceLoaderConfig = require('../config/resource-loader-config');
 
 // 事件类型常量

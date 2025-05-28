@@ -34,10 +34,10 @@
 
 4. 界面组件模块化
    - [x] 创建缺失的业务模块目录 (processing, logistics, admin) (初步完成)
-   - 将UI组件拆分为独立模块
-   - 实现组件属性和事件规范
-   - 构建组件层次结构
-   - 创建组件样式隔离
+   - [x] 将UI组件拆分为独立模块 (trace模块已完成现代化改造)
+   - [x] 实现组件属性和事件规范 (React组件标准化)
+   - [x] 构建组件层次结构 (建立模块导出索引)
+   - [ ] 创建组件样式隔离
 
 5. 工具函数模块化
    - 按功能分类工具函数
@@ -67,6 +67,20 @@
 
 | 文件路径 | 变更类型 | 变更说明 |
 |---------|---------|---------|
+| `/web-app/src/components/modules/trace/TraceRecordView.jsx` | 新增 | 现代化React版本的溯源记录视图组件 |
+| `/web-app/src/components/modules/trace/TraceRecordForm.jsx` | 新增 | 现代化React版本的溯源记录表单组件 |
+| `/web-app/src/components/modules/trace/index.js` | 新增 | 追溯模块组件导出索引 |
+| `/web-app/src/pages/trace/TraceDemo.jsx` | 新增 | 追溯模块演示页面 |
+| `/web-app/src/components/modules/farming/FarmingRecordView.jsx` | 新增 | 现代化React版本的养殖记录视图组件 |
+| `/web-app/src/components/modules/farming/index.js` | 新增 | 养殖模块组件导出索引 |
+| `/web-app/src/components/modules/processing/ProcessingRecordView.jsx` | 新增 | 现代化React版本的加工记录视图组件 |
+| `/web-app/src/components/modules/processing/index.js` | 新增 | 加工模块组件导出索引 |
+| `/web-app/src/components/modules/logistics/LogisticsRecordView.jsx` | 新增 | 现代化React版本的物流记录视图组件 |
+| `/web-app/src/components/modules/logistics/index.js` | 新增 | 物流模块组件导出索引 |
+| `/web-app/src/components/modules/admin/AdminDashboard.jsx` | 新增 | 现代化React版本的管理员仪表板组件 |
+| `/web-app/src/components/modules/admin/index.js` | 新增 | 管理员模块组件导出索引 |
+| `/web-app/src/components/modules/profile/UserProfile.jsx` | 新增 | 现代化React版本的用户档案组件 |
+| `/web-app/src/components/modules/profile/index.js` | 新增 | 用户档案模块组件导出索引 |
 | /web-app/src/components/modules/* | 修改 | 组件模块化改造 |
 | /web-app/src/utils/* | 修改 | 工具函数模块化 |
 | /web-app/src/services/* | 新增/修改 | 服务层模块化接口 |

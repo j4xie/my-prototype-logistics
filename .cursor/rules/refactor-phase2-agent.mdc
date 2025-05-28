@@ -1,0 +1,206 @@
+---
+description: Phase-2代码优化与模块化改造阶段 - 按照项目重构方案执行技术栈现代化 - 避免重复工作并确保使用现有任务架构
+globs: 
+alwaysApply: false
+---
+---
+description: Phase-2代码优化与模块化改造阶段 - 按照项目重构方案执行技术栈现代化 - 避免重复工作并确保使用现有任务架构
+globs: 
+alwaysApply: false
+---
+
+# Phase-2 代码优化与模块化改造规则
+
+## 使用场景
+- Phase-2代码优化与模块化改造阶段
+- 按照项目重构方案执行技术栈现代化
+- 避免重复工作并确保使用现有任务架构
+- 处理文档重复和状态冲突问题
+
+## 关键规则
+- 严禁重复创建任务文档，必须使用现有文件
+- 所有代码修改必须在任务文档变更记录表格中记录
+- 完成任务后必须勾选对应的待办清单项
+- 按照项目重构方案的四个子阶段顺序执行
+- 每个模块完成后立即验证功能完整性
+- 遵循推荐技术栈：React + TypeScript + Zustand
+- 更新任务状态并记录实际进度
+- **严格遵循文档去重管理规则，避免信息冲突**
+- **必须更新目录结构文档以反映变更**：
+  - 更新 [DIRECTORY_STRUCTURE.md](mdc:DIRECTORY_STRUCTURE.md) 保持当前最新目录结构（仅包含：1.根目录结构、2.web-app目录结构、3.目录结构说明表格）
+  - 在 [docs/directory-structure-changelog.md](mdc:docs/directory-structure-changelog.md) 记录变更历史（包含所有历史更新、进展记录、变更说明）
+  - 架构设计原则移至 [docs/architecture/design-principles.md](mdc:docs/architecture/design-principles.md)
+  - 未来演进计划移至 [docs/project-management/evolution-roadmap.md](mdc:docs/project-management/evolution-roadmap.md)
+
+## 文档去重管理规则
+
+### 单一信息源原则 (Single Source of Truth)
+- **权威任务状态来源**：[refactor/REFACTOR_LOG.md](mdc:refactor/REFACTOR_LOG.md)
+- **项目概览来源**：[TASKS.md](mdc:TASKS.md)（仅概览+引用）
+- **阶段详细规划**：[refactor/phase-2/PHASE-2-WORK-PLAN.md](mdc:refactor/phase-2/PHASE-2-WORK-PLAN.md)
+
+### 文档层次关系
+```
+根目录文档 (概览) → refactor/主文档 (详细) → phase-X/文档 (具体阶段)
+```
+
+### 处理重复内容的规则
+1. **识别权威来源**：确定哪个文档是信息的单一来源
+2. **添加引用标记**：在非权威文档顶部添加：
+   ```markdown
+   <!-- updated for: 更新为概览文档，详细信息请查看权威来源 -->
+   详细信息请参阅：[权威文档链接]
+   ```
+3. **保留历史记录**：不删除已有内容，添加说明其新定位
+4. **同步更新机制**：定期检查摘要信息与权威来源一致性
+
+### 当前严重冲突处理
+- **TASK-005状态冲突**：
+  - [TASKS.md](mdc:TASKS.md) 显示25%进度
+  - [refactor/phase-2/TASKS.md](mdc:refactor/phase-2/TASKS.md) 显示0%
+  - **解决方案**：以[refactor/REFACTOR_LOG.md](mdc:refactor/REFACTOR_LOG.md)为准
+
+### 文档职责明确划分
+
+#### 根目录级别（项目概览）
+- [TASKS.md](mdc:TASKS.md)：全项目任务状态概览，引用详细进展
+- [重构阶段记录.md](mdc:重构阶段记录.md)：高级进度摘要，引用详细日志
+- [README.md](mdc:README.md)：项目介绍和快速入门
+
+#### refactor级别（重构详细记录）
+- [refactor/REFACTOR_LOG.md](mdc:refactor/REFACTOR_LOG.md)：最详细的重构进度日志（权威来源）
+- [refactor/phase-2/PHASE-2-WORK-PLAN.md](mdc:refactor/phase-2/PHASE-2-WORK-PLAN.md)：阶段二详细工作计划
+
+#### phase级别（阶段具体实施）
+- [refactor/phase-1/TASKS.md](mdc:refactor/phase-1/TASKS.md)：阶段一历史记录（已完成）
+- [refactor/phase-2/TASKS.md](mdc:refactor/phase-2/TASKS.md)：阶段二内部规划
+- [refactor/phase-X/progress-reports/](mdc:refactor/phase-2/progress-reports)：具体进度报告
+
+## Phase-2 核心任务（基于项目重构方案）
+
+### 1. 代码清理与重构
+- 识别并清理重复代码
+- 优化模块间依赖关系
+- 抽取通用函数到utils目录
+- 规范化命名和代码风格
+
+### 2. 技术栈现代化
+**前端框架**：React（组件化模型适合复杂业务）
+- 搭建React基础项目结构
+- 实现概念验证页面
+- 开发核心UI组件库
+- 逐页面/逐模块迁移
+
+**状态管理**：React Context + Zustand
+**类型系统**：TypeScript（提升代码质量）
+
+### 3. 组件库构建
+**基础UI组件**：按钮、输入框、表单、卡片、列表、表格、导航栏、菜单、面包屑
+**业务组件**：溯源卡片、数据采集表单、地图组件
+**组件文档**：创建组件使用文档和示例
+
+### 4. 核心业务流程重构
+- 溯源链创建流程：统一溯源链服务、标准化数据录入
+- 物流追踪流程：实时位置更新、增强物流事件记录
+- 消费者查询体验：重设计查询界面、移动端访问优化
+
+## 必读文件清单（绝对不能重复创建）
+
+### Phase2重构推荐阅读顺序：
+1. [项目重构方案.md](mdc:项目重构方案.md) - 了解总体重构思路和Phase-2目标
+2. [refactor/REFACTOR_LOG.md](mdc:refactor/REFACTOR_LOG.md) - 查看权威进度记录，确认真实任务状态
+3. [refactor/phase-2/PHASE-2-WORK-PLAN.md](mdc:refactor/phase-2/PHASE-2-WORK-PLAN.md) - 详细工作计划和任务优先级
+4. [refactor/phase-2/README.md](mdc:refactor/phase-2/README.md) - 快速参考指南和工作流程
+5. [refactor/phase-2/TASKS.md](mdc:refactor/phase-2/TASKS.md) - 阶段内部任务清单
+6. [TASKS.md](mdc:TASKS.md) - 项目级任务概览（仅作参考）
+7. [重构阶段记录.md](mdc:重构阶段记录.md) - 高级进度摘要（仅作参考）
+
+### docs目录阅读指导（按需阅读）：
+- **架构重构时**：必读 [docs/architecture/design-principles.md](mdc:docs/architecture/design-principles.md) - 了解系统设计原则
+- **组件重构时**：参考 [docs/components/](mdc:docs/components) - 了解组件规范和文档
+- **API重构时**：参考 [docs/api/](mdc:docs/api) - 了解API设计规范
+- **长期规划参考**：查看 [docs/project-management/evolution-roadmap.md](mdc:docs/project-management/evolution-roadmap.md) - 了解未来演进计划
+
+## 模板位置（必须使用，不可重复创建）
+- [refactor/phase-2/tasks/TASK_TEMPLATE.md](mdc:refactor/phase-2/tasks/TASK_TEMPLATE.md) - 任务模板
+- [refactor/phase-2/templates/PROGRESS_REPORT_TEMPLATE.md](mdc:refactor/phase-2/templates/PROGRESS_REPORT_TEMPLATE.md) - 进度模板
+- [refactor/phase-2/review-notes/REVIEW_TEMPLATE.md](mdc:refactor/phase-2/review-notes/REVIEW_TEMPLATE.md) - 评审模板
+
+## 工作流程
+
+### 文档更新工作流程
+1. **查看权威来源**：始终以[refactor/REFACTOR_LOG.md](mdc:refactor/REFACTOR_LOG.md)为准
+2. **更新状态时**：只在权威文档中更新，其他文档通过引用同步
+3. **发现冲突时**：立即修复，以权威来源为准
+4. **创建新文档时**：检查是否已存在，避免重复
+
+### 代码修改工作流程
+1. **代码修改时**：在任务文档变更记录表格中记录文件路径、变更类型、变更说明
+2. **目录结构变更时**：
+   - 更新[DIRECTORY_STRUCTURE.md](mdc:DIRECTORY_STRUCTURE.md)保持当前最新目录结构（仅包含：1.根目录结构、2.web-app目录结构、3.目录结构说明表格，不包含：历史更新记录、进展说明、变更详情、架构设计原则、未来演进计划）
+   - 在[docs/directory-structure-changelog.md](mdc:docs/directory-structure-changelog.md)记录变更历史（包含：变更日期、类型、内容、影响范围、相关文档）
+3. **任务进展时**：在[refactor/REFACTOR_LOG.md](mdc:refactor/REFACTOR_LOG.md)更新任务状态（待开始→进行中→已完成→已验证）
+4. **完成模块时**：勾选对应待办清单项（[ ]→[x]）
+5. **遇到问题时**：使用PROGRESS_TEMPLATE.md记录
+6. **重要决策时**：使用REVIEW_TEMPLATE.md记录
+
+## 技术规范（基于重构方案推荐）
+
+### 目录结构标准
+```
+web-app/src/
+├── components/
+│   ├── common/      # 通用组件
+│   ├── modules/     # 业务模块组件
+│   └── ui/         # 基础UI组件
+├── pages/          # 页面组件
+├── hooks/          # 自定义Hooks
+├── utils/          # 工具函数
+├── services/       # API服务
+├── store/          # 状态管理
+├── styles/         # 全局样式
+└── types/          # 类型定义
+```
+
+### 验收标准
+- 测试覆盖率>80%
+- Lighthouse性能得分>85分
+- 首屏加载时间<3秒（3G网络）
+- 支持离线使用核心功能
+- 无明显安全漏洞
+- **文档无冲突**：所有任务状态信息一致
+
+## 示例
+
+<example>
+  **正确的Phase-2工作流程**：
+  1. 阅读[项目重构方案.md](mdc:项目重构方案.md)了解Phase-2具体任务
+  2. 查看[refactor/REFACTOR_LOG.md](mdc:refactor/REFACTOR_LOG.md)确认当前真实任务状态
+  3. 开始代码清理与重构工作
+  4. 修改代码时在变更记录表格中记录
+  5. 完成一个模块后勾选待办清单项
+  6. 在权威文档中更新任务状态并记录进度
+</example>
+
+<example type="invalid">
+  **错误的工作方式**：
+  1. 重复创建已存在的任务文档
+  2. 修改代码但不在变更记录中记录
+  3. 完成工作但不勾选待办清单
+  4. 不按照项目重构方案的技术栈推荐进行
+  5. 忽略现有模板直接创建新文档
+  6. **在多个文档中维护不同的任务状态信息**
+  7. **忽略文档冲突问题，使用错误的状态信息**
+</example>
+
+## 紧急修复检查清单
+
+在开始Phase-2工作前，必须先解决以下文档冲突：
+
+- [ ] 确认TASK-005的真实进度状态
+- [ ] 统一所有文档中的任务状态信息
+- [ ] 在非权威文档中添加引用说明
+- [ ] 检查所有文档链接的有效性
+- [ ] 建立文档同步更新机制
+
+

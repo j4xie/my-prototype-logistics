@@ -36,7 +36,7 @@
 
 2. **创建了核心架构文档**：
    - [系统架构概览](../../docs/architecture/overview.md)：描述系统整体架构和模块关系
-   - [目录结构说明](../../docs/architecture/directory.md)：详述重构后的目录结构和用途
+   - [目录结构说明](../../DIRECTORY_STRUCTURE.md)：详述重构后的目录结构和用途
    - [技术栈说明](../../docs/architecture/technologies.md)：说明项目使用的技术栈和工具链
 
 3. **创建了API文档**：
@@ -66,7 +66,7 @@
 | /README.md | 更新 | 统一项目说明和结构描述 |
 | /DIRECTORY_STRUCTURE.md | 新增 | 详细的项目目录结构说明 |
 | /docs/architecture/overview.md | 新增 | 系统架构概览文档 |
-| /docs/architecture/directory.md | 新增 | 目录结构说明文档 |
+| /docs/architecture/design-principles.md | 新增 | 架构设计原则文档 |
 | /docs/architecture/technologies.md | 新增 | 技术栈说明文档 |
 | /docs/api/overview.md | 新增 | API概览文档 |
 | /docs/api/trace.md | 新增 | 溯源API文档 |
