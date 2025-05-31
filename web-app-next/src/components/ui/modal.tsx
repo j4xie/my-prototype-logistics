@@ -97,13 +97,13 @@ export const Modal: React.FC<ModalProps> = ({
       aria-labelledby={title ? 'modal-title' : undefined}
     >
       {/* 背景遮罩 */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
-      
+      <div className="bg-opacity-50 fixed inset-0 bg-black transition-opacity" />
+
       {/* Modal内容 */}
       <div
         ref={modalRef}
         className={cn(
-          'relative bg-white rounded-lg shadow-xl w-full',
+          'relative w-full rounded-lg bg-white shadow-xl',
           sizeClasses[size],
           'max-h-[90vh] overflow-y-auto',
           'transform transition-all',
@@ -113,20 +113,23 @@ export const Modal: React.FC<ModalProps> = ({
       >
         {/* 头部 */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between border-b border-gray-200 p-4">
             {title && (
-              <h2 id="modal-title" className="text-lg font-medium text-gray-900">
+              <h2
+                id="modal-title"
+                className="text-lg font-medium text-gray-900"
+              >
                 {title}
               </h2>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-1 text-gray-400 transition-colors hover:text-gray-600"
                 aria-label="关闭对话框"
               >
                 <svg
-                  className="w-5 h-5"
+                  className="h-5 w-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -142,11 +145,9 @@ export const Modal: React.FC<ModalProps> = ({
             )}
           </div>
         )}
-        
+
         {/* 内容 */}
-        <div className="p-4">
-          {children}
-        </div>
+        <div className="p-4">{children}</div>
       </div>
     </div>
   );
@@ -160,9 +161,12 @@ export interface ModalHeaderProps {
   className?: string;
 }
 
-export const ModalHeader: React.FC<ModalHeaderProps> = ({ children, className }) => {
+export const ModalHeader: React.FC<ModalHeaderProps> = ({
+  children,
+  className,
+}) => {
   return (
-    <div className={cn('p-4 border-b border-gray-200', className)}>
+    <div className={cn('border-b border-gray-200 p-4', className)}>
       {children}
     </div>
   );
@@ -173,12 +177,11 @@ export interface ModalBodyProps {
   className?: string;
 }
 
-export const ModalBody: React.FC<ModalBodyProps> = ({ children, className }) => {
-  return (
-    <div className={cn('p-4', className)}>
-      {children}
-    </div>
-  );
+export const ModalBody: React.FC<ModalBodyProps> = ({
+  children,
+  className,
+}) => {
+  return <div className={cn('p-4', className)}>{children}</div>;
 };
 
 export interface ModalFooterProps {
@@ -186,10 +189,18 @@ export interface ModalFooterProps {
   className?: string;
 }
 
-export const ModalFooter: React.FC<ModalFooterProps> = ({ children, className }) => {
+export const ModalFooter: React.FC<ModalFooterProps> = ({
+  children,
+  className,
+}) => {
   return (
-    <div className={cn('flex items-center justify-end gap-2 p-4 border-t border-gray-200', className)}>
+    <div
+      className={cn(
+        'flex items-center justify-end gap-2 border-t border-gray-200 p-4',
+        className
+      )}
+    >
       {children}
     </div>
   );
-}; 
+};

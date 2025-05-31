@@ -26,46 +26,69 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-16">
         {/* 头部标题 */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+        <div className="mb-16 text-center">
+          <h1 className="mb-6 text-4xl font-bold text-gray-900 md:text-6xl">
             食品溯源系统
-            <span className="block text-2xl md:text-3xl text-[#1890FF] mt-2">
+            <span className="mt-2 block text-2xl text-[#1890FF] md:text-3xl">
               Phase-3 技术栈现代化
             </span>
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="mx-auto max-w-2xl text-lg text-gray-600">
             基于 Next.js 14 + TypeScript + Tailwind CSS 的现代化重构
           </p>
         </div>
 
         {/* 技术栈展示 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[
-            { name: 'Next.js 14', desc: 'App Router + SSR/SSG', color: 'bg-black text-white' },
-            { name: 'TypeScript', desc: '类型安全开发', color: 'bg-blue-600 text-white' },
-            { name: 'Tailwind CSS', desc: '原子化CSS框架', color: 'bg-cyan-500 text-white' },
-            { name: 'Zustand', desc: '轻量状态管理', color: 'bg-orange-500 text-white' },
+            {
+              name: 'Next.js 14',
+              desc: 'App Router + SSR/SSG',
+              color: 'bg-black text-white',
+            },
+            {
+              name: 'TypeScript',
+              desc: '类型安全开发',
+              color: 'bg-blue-600 text-white',
+            },
+            {
+              name: 'Tailwind CSS',
+              desc: '原子化CSS框架',
+              color: 'bg-cyan-500 text-white',
+            },
+            {
+              name: 'Zustand',
+              desc: '轻量状态管理',
+              color: 'bg-orange-500 text-white',
+            },
           ].map((tech, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-sm p-6 text-center">
-              <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium mb-3 ${tech.color}`}>
+            <div
+              key={index}
+              className="rounded-lg bg-white p-6 text-center shadow-sm"
+            >
+              <div
+                className={`mb-3 inline-block rounded-full px-3 py-1 text-sm font-medium ${tech.color}`}
+              >
                 {tech.name}
               </div>
-              <p className="text-gray-600 text-sm">{tech.desc}</p>
+              <p className="text-sm text-gray-600">{tech.desc}</p>
             </div>
           ))}
         </div>
 
         {/* 组件演示区域 */}
-        <div className="bg-white rounded-lg shadow-sm p-8 mb-16">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+        <div className="mb-16 rounded-lg bg-white p-8 shadow-sm">
+          <h2 className="mb-8 text-center text-2xl font-bold text-gray-900">
             现代化组件演示
           </h2>
-          
+
           <div className="space-y-8">
             {/* 按钮组件演示 */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Button 组件</h3>
-              <div className="flex flex-wrap gap-4 items-center">
+              <h3 className="mb-4 text-lg font-semibold text-gray-800">
+                Button 组件
+              </h3>
+              <div className="flex flex-wrap items-center gap-4">
                 <Button variant="primary" size="small">
                   Primary Small
                 </Button>
@@ -78,56 +101,62 @@ export default function HomePage() {
                 <Button variant="danger" disabled>
                   Disabled
                 </Button>
-                <Button variant="ghost">
-                  Ghost
-                </Button>
-                <Button 
-                  variant="primary" 
+                <Button variant="ghost">Ghost</Button>
+                <Button
+                  variant="primary"
                   loading={loading}
                   onClick={handleAsyncAction}
                 >
                   {loading ? '加载中...' : `异步操作 (${count})`}
+                </Button>
+                <Button 
+                  variant="secondary"
+                  onClick={() => window.open('/ai-demo', '_blank')}
+                >
+                  🤖 AI演示页面
                 </Button>
               </div>
             </div>
 
             {/* 功能特性展示 */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">现代化特性</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <h3 className="mb-4 text-lg font-semibold text-gray-800">
+                现代化特性
+              </h3>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     <span className="text-sm">TypeScript 类型安全</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     <span className="text-sm">React 18 并发特性</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     <span className="text-sm">Tailwind CSS 原子化样式</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     <span className="text-sm">WCAG 2.1 AA 可访问性</span>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                     <span className="text-sm">Zustand 状态管理</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                     <span className="text-sm">React Query 数据获取</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                     <span className="text-sm">App Router 路由系统</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                     <span className="text-sm">SSR/SSG 性能优化</span>
                   </div>
                 </div>
@@ -137,23 +166,43 @@ export default function HomePage() {
         </div>
 
         {/* 性能指标 */}
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+        <div className="rounded-lg bg-white p-8 shadow-sm">
+          <h2 className="mb-8 text-center text-2xl font-bold text-gray-900">
             性能提升目标
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
             {[
-              { metric: '首屏加载', current: '~5秒', target: '<2秒', improvement: '60%' },
-              { metric: '构建速度', current: '~45秒', target: '<5秒', improvement: '90%' },
-              { metric: '热重载', current: '~3秒', target: '<200ms', improvement: '95%' },
-              { metric: 'Lighthouse', current: '~70', target: '>90', improvement: '29%' },
+              {
+                metric: '首屏加载',
+                current: '~5秒',
+                target: '<2秒',
+                improvement: '60%',
+              },
+              {
+                metric: '构建速度',
+                current: '~45秒',
+                target: '<5秒',
+                improvement: '90%',
+              },
+              {
+                metric: '热重载',
+                current: '~3秒',
+                target: '<200ms',
+                improvement: '95%',
+              },
+              {
+                metric: 'Lighthouse',
+                current: '~70',
+                target: '>90',
+                improvement: '29%',
+              },
             ].map((item, index) => (
               <div key={index} className="text-center">
-                <div className="text-sm text-gray-600 mb-2">{item.metric}</div>
-                <div className="text-lg font-semibold text-gray-900 mb-1">
+                <div className="mb-2 text-sm text-gray-600">{item.metric}</div>
+                <div className="mb-1 text-lg font-semibold text-gray-900">
                   {item.current} → {item.target}
                 </div>
-                <div className="text-sm text-green-600 font-medium">
+                <div className="text-sm font-medium text-green-600">
                   提升 {item.improvement}
                 </div>
               </div>
@@ -162,11 +211,11 @@ export default function HomePage() {
         </div>
 
         {/* 底部信息 */}
-        <div className="text-center mt-16 text-gray-600">
+        <div className="mt-16 text-center text-gray-600">
           <p className="text-sm">
             Phase-3 技术栈现代化 - TASK-P3-001 前端框架迁移评估与选型
           </p>
-          <p className="text-xs mt-2">
+          <p className="mt-2 text-xs">
             基于 Next.js 14 + TypeScript + Zustand + React Query
           </p>
         </div>

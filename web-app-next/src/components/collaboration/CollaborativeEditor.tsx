@@ -31,10 +31,10 @@ export default function CollaborativeEditor({
 
   useEffect(() => {
     const ws = getWebSocket();
-    
+
     // 加入文档协作
     ws.emit('join_document', { documentId });
-    
+
     // 监听用户加入/离开
     ws.on('user_joined', (user: User) => {
       setConnectedUsers(prev => [...prev.filter(u => u.id !== user.id), user]);
@@ -45,21 +45,22 @@ export default function CollaborativeEditor({
     });
 
     // 监听文档变化
-    ws.on('document_changed', (data: { content: string; userId: string; timestamp: number }) => {
-      // 避免处理自己发出的变化
-      if (data.timestamp > lastChangeRef.current) {
-        setContent(data.content);
-        onContentChange?.(data.content);
+    ws.on(
+      'document_changed',
+      (data: { content: string; userId: string; timestamp: number }) => {
+        // 避免处理自己发出的变化
+        if (data.timestamp > lastChangeRef.current) {
+          setContent(data.content);
+          onContentChange?.(data.content);
+        }
       }
-    });
+    );
 
     // 监听光标位置变化
     ws.on('cursor_moved', (data: { userId: string; position: number }) => {
-      setConnectedUsers(prev => 
-        prev.map(user => 
-          user.id === data.userId 
-            ? { ...user, cursor: data.position }
-            : user
+      setConnectedUsers(prev =>
+        prev.map(user =>
+          user.id === data.userId ? { ...user, cursor: data.position } : user
         )
       );
     });
@@ -82,7 +83,7 @@ export default function CollaborativeEditor({
   const handleContentChange = (newContent: string) => {
     const timestamp = Date.now();
     lastChangeRef.current = timestamp;
-    
+
     setContent(newContent);
     onContentChange?.(newContent);
 
@@ -109,21 +110,23 @@ export default function CollaborativeEditor({
   return (
     <div className={`relative ${className}`}>
       {/* 连接状态指示器 */}
-      <div className="flex items-center justify-between mb-2 p-2 bg-gray-50 rounded-lg">
+      <div className="mb-2 flex items-center justify-between rounded-lg bg-gray-50 p-2">
         <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+          <div
+            className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
+          />
           <span className="text-sm text-gray-600">
             {isConnected ? '已连接' : '连接中...'}
           </span>
         </div>
-        
+
         {/* 在线用户 */}
         <div className="flex items-center space-x-1">
           <span className="text-sm text-gray-600">在线用户:</span>
           {connectedUsers.map(user => (
             <div
               key={user.id}
-              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs"
+              className="flex h-6 w-6 items-center justify-center rounded-full text-xs text-white"
               style={{ backgroundColor: user.color }}
               title={user.name}
             >
@@ -138,10 +141,10 @@ export default function CollaborativeEditor({
         <textarea
           ref={editorRef}
           value={content}
-          onChange={(e) => handleContentChange(e.target.value)}
+          onChange={e => handleContentChange(e.target.value)}
           onSelect={handleCursorMove}
           onKeyUp={handleCursorMove}
-          className="w-full h-64 p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+          className="h-64 w-full resize-none rounded-lg border border-gray-300 p-4 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
           placeholder="开始协作编辑..."
           disabled={!isConnected}
         />
@@ -149,16 +152,16 @@ export default function CollaborativeEditor({
         {/* 其他用户光标指示器 */}
         {connectedUsers.map(user => {
           if (user.cursor === undefined) return null;
-          
+
           // 简化的光标位置计算（实际项目中需要更精确的计算）
           const lines = content.substring(0, user.cursor).split('\n');
           const lineNumber = lines.length;
           const columnNumber = lines[lines.length - 1].length;
-          
+
           return (
             <div
               key={`cursor-${user.id}`}
-              className="absolute pointer-events-none"
+              className="pointer-events-none absolute"
               style={{
                 top: `${lineNumber * 1.5}rem`,
                 left: `${columnNumber * 0.6}rem`,
@@ -169,7 +172,7 @@ export default function CollaborativeEditor({
               }}
             >
               <div
-                className="absolute bottom-full left-0 px-1 py-0.5 text-xs text-white rounded whitespace-nowrap"
+                className="absolute bottom-full left-0 rounded px-1 py-0.5 text-xs whitespace-nowrap text-white"
                 style={{ backgroundColor: user.color }}
               >
                 {user.name}
@@ -185,4 +188,4 @@ export default function CollaborativeEditor({
       </div>
     </div>
   );
-} 
+}

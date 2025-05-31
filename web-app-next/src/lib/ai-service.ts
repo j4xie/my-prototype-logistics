@@ -96,7 +96,7 @@ class AIService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`,
+        Authorization: `Bearer ${this.config.apiKey}`,
         ...options.headers,
       },
       body: JSON.stringify({
@@ -108,7 +108,9 @@ class AIService {
     });
 
     if (!response.ok) {
-      throw new Error(`AI API 请求失败: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `AI API 请求失败: ${response.status} ${response.statusText}`
+      );
     }
 
     return response.json();
@@ -120,7 +122,7 @@ class AIService {
   async predict(request: PredictionRequest): Promise<PredictionResponse> {
     const cacheKey = this.getCacheKey('prediction', request);
     const cached = this.getFromCache<PredictionResponse>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -136,7 +138,9 @@ class AIService {
       return response;
     } catch (error) {
       console.error('预测分析失败:', error);
-      throw new Error(`预测分析失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      throw new Error(
+        `预测分析失败: ${error instanceof Error ? error.message : '未知错误'}`
+      );
     }
   }
 
@@ -157,7 +161,9 @@ class AIService {
       return response;
     } catch (error) {
       console.error('智能对话失败:', error);
-      throw new Error(`智能对话失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      throw new Error(
+        `智能对话失败: ${error instanceof Error ? error.message : '未知错误'}`
+      );
     }
   }
 
@@ -181,7 +187,7 @@ class AIService {
       const response = await fetch(`${this.config.endpoint}/analyze-document`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: formData,
       });
@@ -193,7 +199,9 @@ class AIService {
       return response.json();
     } catch (error) {
       console.error('文档分析失败:', error);
-      throw new Error(`文档分析失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      throw new Error(
+        `文档分析失败: ${error instanceof Error ? error.message : '未知错误'}`
+      );
     }
   }
 
@@ -204,16 +212,18 @@ class AIService {
     userProfile: Record<string, any>;
     currentData: Record<string, any>;
     preferences?: string[];
-  }): Promise<Array<{
-    title: string;
-    description: string;
-    priority: 'high' | 'medium' | 'low';
-    actionType: 'warning' | 'suggestion' | 'opportunity';
-    expectedImpact: string;
-  }>> {
+  }): Promise<
+    Array<{
+      title: string;
+      description: string;
+      priority: 'high' | 'medium' | 'low';
+      actionType: 'warning' | 'suggestion' | 'opportunity';
+      expectedImpact: string;
+    }>
+  > {
     const cacheKey = this.getCacheKey('recommendations', context);
     const cached = this.getFromCache<any>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -224,7 +234,9 @@ class AIService {
       return response;
     } catch (error) {
       console.error('获取推荐失败:', error);
-      throw new Error(`获取推荐失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      throw new Error(
+        `获取推荐失败: ${error instanceof Error ? error.message : '未知错误'}`
+      );
     }
   }
 
@@ -251,7 +263,9 @@ class AIService {
       return response;
     } catch (error) {
       console.error('风险评估失败:', error);
-      throw new Error(`风险评估失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      throw new Error(
+        `风险评估失败: ${error instanceof Error ? error.message : '未知错误'}`
+      );
     }
   }
 
@@ -280,7 +294,7 @@ let aiService: AIService;
 
 export const initAIService = (config: AIConfig): AIService => {
   aiService = new AIService(config);
-  
+
   // 定期清理缓存
   setInterval(() => {
     aiService.clearExpiredCache();
@@ -296,4 +310,4 @@ export const getAIService = (): AIService => {
   return aiService;
 };
 
-export default AIService; 
+export default AIService;

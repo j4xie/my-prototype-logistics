@@ -11,10 +11,10 @@ import { twMerge } from 'tailwind-merge';
 /**
  * 合并Tailwind CSS类名的工具函数
  * 支持条件类名和类名冲突解决
- * 
+ *
  * @param inputs - 类名输入
  * @returns 合并后的类名字符串
- * 
+ *
  * @example
  * cn('px-2 py-1', 'bg-blue-500', { 'text-white': true })
  * // => 'px-2 py-1 bg-blue-500 text-white'
@@ -79,7 +79,7 @@ export function throttle<T extends (...args: any[]) => any>(
     if (!inThrottle) {
       func(...args);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      setTimeout(() => (inThrottle = false), limit);
     }
   };
-} 
+}
