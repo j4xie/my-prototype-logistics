@@ -66,11 +66,11 @@ export const Loading: React.FC<LoadingProps> = ({
 
     return (
       <div className={cn('flex space-x-1', className)}>
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2].map(i => (
           <div
             key={i}
             className={cn(
-              'rounded-full animate-pulse',
+              'animate-pulse rounded-full',
               dotSize[size],
               colorClasses[color].replace('text-', 'bg-')
             )}
@@ -96,11 +96,7 @@ export const Loading: React.FC<LoadingProps> = ({
   return (
     <div className="flex flex-col items-center justify-center space-y-2">
       {renderLoading()}
-      {text && (
-        <p className={cn('text-sm', colorClasses[color])}>
-          {text}
-        </p>
-      )}
+      {text && <p className={cn('text-sm', colorClasses[color])}>{text}</p>}
     </div>
   );
-}; 
+};

@@ -44,7 +44,10 @@ export function Table<T = any>({
   size = 'md',
   onRowClick,
 }: TableProps<T>) {
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: null,
+    direction: 'asc',
+  });
 
   // 排序处理
   const handleSort = (key: string) => {
@@ -58,11 +61,11 @@ export function Table<T = any>({
   // 排序数据
   const sortedData = useMemo(() => {
     if (!sortConfig.key) return data;
-    
+
     return [...data].sort((a: any, b: any) => {
       const aValue = a[sortConfig.key!];
       const bValue = b[sortConfig.key!];
-      
+
       if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1;
       }
@@ -77,13 +80,13 @@ export function Table<T = any>({
   const sizeClasses = {
     sm: 'text-sm',
     md: 'text-base',
-    lg: 'text-lg'
+    lg: 'text-lg',
   };
 
   const paddingClasses = {
     sm: 'px-2 py-1',
     md: 'px-3 py-2',
-    lg: 'px-4 py-3'
+    lg: 'px-4 py-3',
   };
 
   // 基础表格样式
@@ -98,7 +101,7 @@ export function Table<T = any>({
     return (
       <div className={tableClasses}>
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
           <span className="ml-2 text-gray-600">加载中...</span>
         </div>
       </div>
@@ -123,21 +126,23 @@ export function Table<T = any>({
         <div
           key={index}
           className={cn(
-            'bg-white rounded-lg shadow-sm border border-gray-200 p-4',
-            onRowClick && 'cursor-pointer hover:shadow-md transition-shadow'
+            'rounded-lg border border-gray-200 bg-white p-4 shadow-sm',
+            onRowClick && 'cursor-pointer transition-shadow hover:shadow-md'
           )}
           onClick={() => onRowClick?.(row, index)}
         >
-          {columns.map((column) => (
-            <div key={column.key} className="flex justify-between items-center py-1">
+          {columns.map(column => (
+            <div
+              key={column.key}
+              className="flex items-center justify-between py-1"
+            >
               <span className="text-sm font-medium text-gray-600">
                 {column.title}
               </span>
               <span className="text-sm text-gray-900">
-                {column.render 
+                {column.render
                   ? column.render(row[column.key], row, index)
-                  : row[column.key]
-                }
+                  : row[column.key]}
               </span>
             </div>
           ))}
@@ -150,16 +155,17 @@ export function Table<T = any>({
   const DesktopTableLayout = () => (
     <div className="overflow-x-auto">
       <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
+        <thead className="border-b border-gray-200 bg-gray-50">
           <tr>
-            {columns.map((column) => (
+            {columns.map(column => (
               <th
                 key={column.key}
                 style={{ width: column.width }}
                 className={cn(
                   'text-left font-medium text-gray-700',
                   paddingClasses[size],
-                  column.sortable && 'cursor-pointer hover:bg-gray-100 select-none',
+                  column.sortable &&
+                    'cursor-pointer select-none hover:bg-gray-100',
                   {
                     'text-center': column.align === 'center',
                     'text-right': column.align === 'right',
@@ -173,8 +179,9 @@ export function Table<T = any>({
                     <div className="flex flex-col">
                       <svg
                         className={cn(
-                          'w-3 h-3 transition-colors',
-                          sortConfig.key === column.key && sortConfig.direction === 'asc'
+                          'h-3 w-3 transition-colors',
+                          sortConfig.key === column.key &&
+                            sortConfig.direction === 'asc'
                             ? 'text-blue-600'
                             : 'text-gray-400'
                         )}
@@ -185,8 +192,9 @@ export function Table<T = any>({
                       </svg>
                       <svg
                         className={cn(
-                          'w-3 h-3 transition-colors -mt-1',
-                          sortConfig.key === column.key && sortConfig.direction === 'desc'
+                          '-mt-1 h-3 w-3 transition-colors',
+                          sortConfig.key === column.key &&
+                            sortConfig.direction === 'desc'
                             ? 'text-blue-600'
                             : 'text-gray-400'
                         )}
@@ -214,22 +222,17 @@ export function Table<T = any>({
               )}
               onClick={() => onRowClick?.(row, index)}
             >
-              {columns.map((column) => (
+              {columns.map(column => (
                 <td
                   key={column.key}
-                  className={cn(
-                    'text-gray-900',
-                    paddingClasses[size],
-                    {
-                      'text-center': column.align === 'center',
-                      'text-right': column.align === 'right',
-                    }
-                  )}
+                  className={cn('text-gray-900', paddingClasses[size], {
+                    'text-center': column.align === 'center',
+                    'text-right': column.align === 'right',
+                  })}
                 >
-                  {column.render 
+                  {column.render
                     ? column.render(row[column.key], row, index)
-                    : row[column.key]
-                  }
+                    : row[column.key]}
                 </td>
               ))}
             </tr>
@@ -257,4 +260,4 @@ export function Table<T = any>({
       )}
     </div>
   );
-} 
+}

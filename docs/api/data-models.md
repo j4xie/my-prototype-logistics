@@ -1,6 +1,7 @@
 # 统一数据模型文档
 
 <!-- updated for: TASK-P2-007 API接口文档完善 - 创建统一数据模型文档 -->
+<!-- updated for: Phase-3技术栈现代化 - API文档与客户端封装同步优化 -->
 
 ## 概述
 
@@ -9,6 +10,30 @@
 **版本**: v1.0  
 **创建日期**: 2025-05-21  
 **最后更新**: 2025-05-21  
+
+## 🚀 Phase-3 TypeScript集成
+
+Phase-3的API客户端实现了完整的TypeScript类型支持。实际的类型定义位于：
+- `web-app-next/src/types/api.ts` - 核心API类型定义
+- `web-app-next/src/lib/api.ts` - API客户端和响应类型
+
+### 💡 使用建议
+
+开发时建议直接引用TypeScript类型定义：
+
+```typescript
+import type { 
+  ApiResponse, 
+  PaginatedResponse,
+  User,
+  Product,
+  TraceRecord 
+} from '@/types/api';
+
+// 使用类型化的API调用
+const userProfile = await apiClient.get<User>('/v1/profile/me');
+const products = await apiClient.get<PaginatedResponse<Product>>('/v1/products');
+```
 
 ## 基础数据类型
 

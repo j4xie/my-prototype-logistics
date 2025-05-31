@@ -64,6 +64,7 @@ alwaysApply: {true 或 false}
 - 核心规则：.cursor/rules/*.mdc
 - 语言规则：*.js, *.ts, *.py, *.cpp, *.hpp
 - 测试规则：*.test.js, *.test.ts, *.test.py, *.test.cpp, *.test.hpp
+- 验证规则：**/validation/**, **/test/**, **/*validation*.js, **/*test*.js, **/*spec*.js
 - 文档规则：docs/**/*.md, *.md
 - 配置规则：*.config.{js,json}, *.json, *.yaml, *.yml
 - 构建产物规则：dist/**/*

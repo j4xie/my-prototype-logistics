@@ -74,7 +74,7 @@ alwaysApply: false
 #### phase级别（阶段具体实施）
 - [refactor/phase-1/TASKS.md](mdc:refactor/phase-1/TASKS.md)：阶段一历史记录（已完成）
 - [refactor/phase-2/TASKS.md](mdc:refactor/phase-2/TASKS.md)：阶段二内部规划
-- [refactor/phase-X/progress-reports/](mdc:refactor/phase-2/progress-reports)：具体进度报告
+- [refactor/phase-2/progress-reports/](mdc:refactor/phase-2/progress-reports)：具体进度报告
 
 ## Phase-2 核心任务（基于项目重构方案）
 
@@ -123,7 +123,6 @@ alwaysApply: false
 
 ## 模板位置（必须使用，不可重复创建）
 - [refactor/phase-2/tasks/TASK_TEMPLATE.md](mdc:refactor/phase-2/tasks/TASK_TEMPLATE.md) - 任务模板
-- [refactor/phase-2/templates/PROGRESS_REPORT_TEMPLATE.md](mdc:refactor/phase-2/templates/PROGRESS_REPORT_TEMPLATE.md) - 进度模板
 - [refactor/phase-2/review-notes/REVIEW_TEMPLATE.md](mdc:refactor/phase-2/review-notes/REVIEW_TEMPLATE.md) - 评审模板
 
 ## 工作流程

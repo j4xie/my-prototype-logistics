@@ -83,7 +83,7 @@ export const useAuthStore = create<AuthStore>()(
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
       // 只持久化必要的字段
-      partialize: (state) => ({
+      partialize: state => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,
         token: state.token,
@@ -126,13 +126,13 @@ export const useAuth = () => {
 
 // 权限检查函数
 export const usePermissions = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore(state => state.user);
 
   const hasPermission = (resource: string, action: string): boolean => {
     if (!user) return false;
-    
+
     return user.permissions.some(
-      (permission) =>
+      permission =>
         permission.resource === resource && permission.action === action
     );
   };
@@ -150,4 +150,4 @@ export const usePermissions = () => {
     hasRole,
     hasAnyRole,
   };
-}; 
+};

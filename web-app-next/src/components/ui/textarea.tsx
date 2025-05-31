@@ -1,7 +1,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   helperText?: string;
@@ -10,25 +11,29 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({
-    className,
-    label,
-    error,
-    helperText,
-    resize = 'vertical',
-    showCharCount = false,
-    disabled,
-    required,
-    maxLength,
-    value,
-    id,
-    ...props
-  }, ref) => {
-    const textareaId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
-    
+  (
+    {
+      className,
+      label,
+      error,
+      helperText,
+      resize = 'vertical',
+      showCharCount = false,
+      disabled,
+      required,
+      maxLength,
+      value,
+      id,
+      ...props
+    },
+    ref
+  ) => {
+    const textareaId =
+      id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+
     // 计算字符数
     const characterCount = typeof value === 'string' ? value.length : 0;
-    
+
     // 调整大小样式映射
     const resizeClasses = {
       none: 'resize-none',
@@ -44,19 +49,19 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500',
       'disabled:cursor-not-allowed disabled:opacity-50',
       'transition-colors',
-      
+
       // 调整大小
       resizeClasses[resize],
-      
+
       // 移动端优化
       'touch-manipulation text-base sm:text-sm',
-      
+
       // 错误状态
       {
         'border-red-500 focus-visible:ring-red-500': error,
         'bg-gray-50': disabled,
       },
-      
+
       className
     );
 
@@ -65,13 +70,13 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={textareaId}
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
           >
             {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className="ml-1 text-red-500">*</span>}
           </label>
         )}
-        
+
         <div className="relative">
           <textarea
             id={textareaId}
@@ -83,19 +88,22 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             value={value}
             aria-invalid={!!error}
             aria-describedby={
-              error ? `${textareaId}-error` : 
-              helperText ? `${textareaId}-helper` : undefined
+              error
+                ? `${textareaId}-error`
+                : helperText
+                  ? `${textareaId}-helper`
+                  : undefined
             }
             {...props}
           />
-          
+
           {(showCharCount || maxLength) && (
-            <div className="absolute bottom-2 right-2 text-xs text-gray-400 bg-white/80 px-1 rounded">
+            <div className="absolute right-2 bottom-2 rounded bg-white/80 px-1 text-xs text-gray-400">
               {maxLength ? `${characterCount}/${maxLength}` : characterCount}
             </div>
           )}
         </div>
-        
+
         {error && (
           <p
             id={`${textareaId}-error`}
@@ -105,12 +113,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             {error}
           </p>
         )}
-        
+
         {helperText && !error && (
-          <p
-            id={`${textareaId}-helper`}
-            className="text-sm text-gray-500"
-          >
+          <p id={`${textareaId}-helper`} className="text-sm text-gray-500">
             {helperText}
           </p>
         )}
@@ -119,4 +124,4 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   }
 );
 
-Textarea.displayName = 'Textarea'; 
+Textarea.displayName = 'Textarea';
