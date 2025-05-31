@@ -5,13 +5,13 @@ export const APP_CONFIG = {
   name: process.env.NEXT_PUBLIC_APP_NAME || '食品溯源系统',
   version: process.env.NEXT_PUBLIC_APP_VERSION || '3.0.0',
   env: process.env.NEXT_PUBLIC_APP_ENV || 'development',
-} as const
+} as const;
 
 // API Configuration
 export const API_CONFIG = {
   baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api',
   timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '10000'),
-} as const
+} as const;
 
 // Route Constants
 export const ROUTES = {
@@ -26,7 +26,7 @@ export const ROUTES = {
   LOGISTICS: '/logistics',
   ADMIN: '/admin',
   COMPONENTS: '/components',
-} as const
+} as const;
 
 // Storage Keys
 export const STORAGE_KEYS = {
@@ -36,20 +36,20 @@ export const STORAGE_KEYS = {
   LANGUAGE: 'language',
   SEARCH_HISTORY: 'search_history',
   OFFLINE_DATA: 'offline_data',
-} as const
+} as const;
 
 // Theme Constants
 export const THEMES = {
   LIGHT: 'light',
   DARK: 'dark',
   SYSTEM: 'system',
-} as const
+} as const;
 
 // Language Constants
 export const LANGUAGES = {
   ZH_CN: 'zh-CN',
   EN_US: 'en-US',
-} as const
+} as const;
 
 // Validation Constants
 export const VALIDATION = {
@@ -59,7 +59,7 @@ export const VALIDATION = {
   EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   PHONE_REGEX: /^1[3-9]\d{9}$/,
   BATCH_ID_REGEX: /^[A-Z0-9]{8,16}$/,
-} as const
+} as const;
 
 // UI Constants
 export const UI_CONFIG = {
@@ -70,7 +70,7 @@ export const UI_CONFIG = {
   HEADER_HEIGHT: 64,
   FOOTER_HEIGHT: 80,
   SIDEBAR_WIDTH: 280,
-} as const
+} as const;
 
 // Animation Constants
 export const ANIMATIONS = {
@@ -80,7 +80,7 @@ export const ANIMATIONS = {
   EASING_DEFAULT: 'cubic-bezier(0.4, 0, 0.2, 1)',
   EASING_IN: 'cubic-bezier(0.4, 0, 1, 1)',
   EASING_OUT: 'cubic-bezier(0, 0, 0.2, 1)',
-} as const
+} as const;
 
 // Error Messages
 export const ERROR_MESSAGES = {
@@ -91,7 +91,7 @@ export const ERROR_MESSAGES = {
   SERVER_ERROR: '服务器内部错误，请稍后重试',
   VALIDATION_ERROR: '输入数据格式不正确',
   UNKNOWN_ERROR: '未知错误，请联系技术支持',
-} as const
+} as const;
 
 // Success Messages
 export const SUCCESS_MESSAGES = {
@@ -101,7 +101,7 @@ export const SUCCESS_MESSAGES = {
   DELETE_SUCCESS: '删除成功',
   UPDATE_SUCCESS: '更新成功',
   UPLOAD_SUCCESS: '上传成功',
-} as const
+} as const;
 
 // Feature Flags
 export const FEATURE_FLAGS = {
@@ -112,15 +112,27 @@ export const FEATURE_FLAGS = {
   ERROR_REPORTING: process.env.NEXT_PUBLIC_ENABLE_ERROR_REPORTING === 'true',
   DEBUG: process.env.NEXT_PUBLIC_DEBUG === 'true',
   MOCK_API: process.env.NEXT_PUBLIC_MOCK_API === 'true',
-} as const
+} as const;
 
 // Business Constants
 export const BUSINESS_CONFIG = {
   TRACE_STAGES: ['farming', 'processing', 'logistics', 'retail'] as const,
-  USER_ROLES: ['admin', 'farmer', 'processor', 'logistics', 'consumer'] as const,
-  PRODUCT_CATEGORIES: ['vegetables', 'fruits', 'grains', 'meat', 'dairy'] as const,
+  USER_ROLES: [
+    'admin',
+    'farmer',
+    'processor',
+    'logistics',
+    'consumer',
+  ] as const,
+  PRODUCT_CATEGORIES: [
+    'vegetables',
+    'fruits',
+    'grains',
+    'meat',
+    'dairy',
+  ] as const,
   QUALITY_LEVELS: ['A', 'B', 'C'] as const,
-} as const
+} as const;
 
 // Export all constants as a single object for convenience
 export const CONSTANTS = {
@@ -137,4 +149,4 @@ export const CONSTANTS = {
   SUCCESS_MESSAGES,
   FEATURE_FLAGS,
   BUSINESS_CONFIG,
-} as const 
+} as const;

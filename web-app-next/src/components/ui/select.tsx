@@ -42,7 +42,9 @@ export const Select: React.FC<SelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const [internalValue, setInternalValue] = useState(value || defaultValue || '');
+  const [internalValue, setInternalValue] = useState(
+    value || defaultValue || ''
+  );
   const selectRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -58,7 +60,10 @@ export const Select: React.FC<SelectProps> = ({
   // 点击外部关闭
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+      if (
+        selectRef.current &&
+        !selectRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
         setFocusedIndex(-1);
       }
@@ -154,7 +159,9 @@ export const Select: React.FC<SelectProps> = ({
   // 滚动到焦点项
   useEffect(() => {
     if (isOpen && focusedIndex >= 0 && listRef.current) {
-      const focusedElement = listRef.current.children[focusedIndex] as HTMLElement;
+      const focusedElement = listRef.current.children[
+        focusedIndex
+      ] as HTMLElement;
       if (focusedElement) {
         focusedElement.scrollIntoView({
           block: 'nearest',
@@ -168,58 +175,73 @@ export const Select: React.FC<SelectProps> = ({
       {label && (
         <label
           htmlFor={selectId}
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="ml-1 text-red-500">*</span>}
         </label>
       )}
 
       <div className="relative" ref={selectRef}>
-                  <div
-            id={selectId}
-            role="combobox"
-            aria-expanded={isOpen}
-            aria-haspopup="listbox"
-            aria-controls={`${selectId}-listbox`}
-            aria-required={required}
-            aria-invalid={!!error}
-            aria-describedby={
-              error ? `${selectId}-error` : 
-              helperText ? `${selectId}-helper` : undefined
-            }
-            tabIndex={disabled ? -1 : 0}
-            className={selectClasses}
-            onClick={() => !disabled && setIsOpen(!isOpen)}
-            onKeyDown={handleKeyDown}
+        <div
+          id={selectId}
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-controls={`${selectId}-listbox`}
+          aria-required={required}
+          aria-invalid={!!error}
+          aria-describedby={
+            error
+              ? `${selectId}-error`
+              : helperText
+                ? `${selectId}-helper`
+                : undefined
+          }
+          tabIndex={disabled ? -1 : 0}
+          className={selectClasses}
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onKeyDown={handleKeyDown}
+        >
+          <span
+            className={cn(
+              'block truncate pr-8',
+              !selectedOption ? 'text-gray-500' : 'text-gray-900'
+            )}
           >
-          <span className={cn(
-            'block truncate pr-8',
-            !selectedOption ? 'text-gray-500' : 'text-gray-900'
-          )}>
             {displayText}
           </span>
 
           {/* 下拉箭头 */}
-          <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
             <svg
               className={cn(
                 'h-4 w-4 text-gray-400 transition-transform duration-200',
-                isOpen && 'transform rotate-180'
+                isOpen && 'rotate-180 transform'
               )}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </span>
         </div>
 
         {/* 下拉选项 */}
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-            <ul ref={listRef} id={`${selectId}-listbox`} role="listbox" className="py-1">
+          <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+            <ul
+              ref={listRef}
+              id={`${selectId}-listbox`}
+              role="listbox"
+              className="py-1"
+            >
               {options.map((option, index) => (
                 <li
                   key={option.value}
@@ -227,16 +249,21 @@ export const Select: React.FC<SelectProps> = ({
                   aria-selected={option.value === internalValue}
                   aria-disabled={option.disabled}
                   className={cn(
-                    'px-3 py-2 cursor-pointer text-sm transition-colors duration-150',
+                    'cursor-pointer px-3 py-2 text-sm transition-colors duration-150',
                     {
                       'bg-blue-600 text-white': option.value === internalValue,
-                      'bg-gray-100': index === focusedIndex && option.value !== internalValue,
-                      'text-gray-900 hover:bg-gray-50': !option.disabled && option.value !== internalValue,
-                      'text-gray-400 cursor-not-allowed': option.disabled,
+                      'bg-gray-100':
+                        index === focusedIndex &&
+                        option.value !== internalValue,
+                      'text-gray-900 hover:bg-gray-50':
+                        !option.disabled && option.value !== internalValue,
+                      'cursor-not-allowed text-gray-400': option.disabled,
                     }
                   )}
                   onClick={() => !option.disabled && handleSelect(option.value)}
-                  onMouseEnter={() => !option.disabled && setFocusedIndex(index)}
+                  onMouseEnter={() =>
+                    !option.disabled && setFocusedIndex(index)
+                  }
                 >
                   {option.label}
                 </li>
@@ -257,13 +284,10 @@ export const Select: React.FC<SelectProps> = ({
       )}
 
       {helperText && !error && (
-        <p
-          id={`${selectId}-helper`}
-          className="text-sm text-gray-500"
-        >
+        <p id={`${selectId}-helper`} className="text-sm text-gray-500">
           {helperText}
         </p>
       )}
     </div>
   );
-}; 
+};

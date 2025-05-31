@@ -27,7 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       reconnection: true,
       timeout: 5000,
     };
-    
+
     try {
       const ws = initWebSocket(wsConfig);
       ws.connect().catch(console.error);
@@ -38,7 +38,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     // 初始化AI服务
     const aiConfig = {
       apiKey: process.env.NEXT_PUBLIC_AI_API_KEY || '',
-      endpoint: process.env.NEXT_PUBLIC_AI_ENDPOINT || 'http://localhost:8000/api/v1/ai',
+      endpoint:
+        process.env.NEXT_PUBLIC_AI_ENDPOINT ||
+        'http://localhost:8000/api/v1/ai',
       model: process.env.NEXT_PUBLIC_AI_MODEL || 'gpt-3.5-turbo',
       timeout: 30000,
     };
@@ -58,4 +60,4 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
-} 
+}

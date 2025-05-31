@@ -16,7 +16,13 @@ export type Timestamp = Date | string;
 // 用户和认证相关类型
 // ============================================================================
 
-export type UserRole = 'farmer' | 'processor' | 'logistics' | 'retailer' | 'consumer' | 'admin';
+export type UserRole =
+  | 'farmer'
+  | 'processor'
+  | 'logistics'
+  | 'retailer'
+  | 'consumer'
+  | 'admin';
 
 export interface User {
   id: ID;
@@ -51,8 +57,19 @@ export interface Permission {
 // 产品和批次相关类型
 // ============================================================================
 
-export type ProductCategory = 'vegetable' | 'fruit' | 'meat' | 'dairy' | 'grain' | 'seafood';
-export type BatchStatus = 'active' | 'processing' | 'shipped' | 'delivered' | 'recalled';
+export type ProductCategory =
+  | 'vegetable'
+  | 'fruit'
+  | 'meat'
+  | 'dairy'
+  | 'grain'
+  | 'seafood';
+export type BatchStatus =
+  | 'active'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'recalled';
 
 export interface Product {
   id: ID;
@@ -79,7 +96,7 @@ export interface Batch {
   expiryDate: Timestamp;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  
+
   // 溯源数据
   farmingData?: FarmingData;
   processingData?: ProcessingData;
@@ -335,7 +352,14 @@ export interface LoadingState {
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'date' | 'select' | 'textarea';
+  type:
+    | 'text'
+    | 'email'
+    | 'password'
+    | 'number'
+    | 'date'
+    | 'select'
+    | 'textarea';
   required?: boolean;
   placeholder?: string;
   options?: { label: string; value: string }[];
@@ -353,4 +377,4 @@ export interface FormData {
 
 export interface FormErrors {
   [key: string]: string;
-} 
+}

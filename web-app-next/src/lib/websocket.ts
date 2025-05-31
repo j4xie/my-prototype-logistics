@@ -51,14 +51,14 @@ class WebSocketManager {
       });
 
       // 连接失败
-      this.socket.on('connect_error', (error) => {
+      this.socket.on('connect_error', error => {
         console.error('❌ WebSocket 连接失败:', error);
         this.handleReconnect();
         reject(error);
       });
 
       // 断开连接
-      this.socket.on('disconnect', (reason) => {
+      this.socket.on('disconnect', reason => {
         console.warn('⚠️ WebSocket 连接断开:', reason);
         if (reason === 'io server disconnect') {
           // 服务器主动断开，需要重新连接
@@ -119,12 +119,16 @@ class WebSocketManager {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-      
-      console.log(`🔄 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})，${delay}ms 后重试`);
-      
+
+      console.log(
+        `🔄 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})，${delay}ms 后重试`
+      );
+
       setTimeout(() => {
         this.connect().catch(() => {
-          console.error(`重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+          console.error(
+            `重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+          );
         });
       }, delay);
     } else {
@@ -168,4 +172,4 @@ export const getWebSocket = (): WebSocketManager => {
   return wsManager;
 };
 
-export default WebSocketManager; 
+export default WebSocketManager;
