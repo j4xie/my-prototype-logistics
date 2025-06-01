@@ -1,14 +1,78 @@
 # Phase-3 重构变更历史记录
 
 <!-- updated for: Phase-3重构阶段详细变更历史，基于用户验证结果的重大修正记录 -->
-<!-- authority: refactor/phase-3/PHASE-3-PLANNING.md (当前状态), refactor/phase-3/PHASE-3-EMERGENCY-ASSESSMENT.md (验证结果) -->
-<!-- last-sync: 2025-01-31 06:42 -->
+<!-- authority: refactor/phase-3/PHASE-3-MASTER-STATUS.md (当前状态), refactor/phase-3/PHASE-3-COMPREHENSIVE-PLAN.md (合并规划) -->
+<!-- last-sync: 2025-06-01 19:30 -->
 
 ## 📋 文档定位说明
 
 **本文档专注于**: Phase-3重构阶段的**详细变更历史**和**决策记录**  
-**当前任务状态**: 请参阅权威来源 [PHASE-3-PLANNING.md](mdc:refactor/phase-3/PHASE-3-PLANNING.md)  
-**最新验证结果**: 请参阅 [PHASE-3-EMERGENCY-ASSESSMENT.md](mdc:refactor/phase-3/PHASE-3-EMERGENCY-ASSESSMENT.md)
+**当前任务状态**: 请参阅权威来源 [PHASE-3-MASTER-STATUS.md](mdc:refactor/phase-3/PHASE-3-MASTER-STATUS.md)  
+**最新规划方案**: 请参阅 [PHASE-3-COMPREHENSIVE-PLAN.md](mdc:refactor/phase-3/PHASE-3-COMPREHENSIVE-PLAN.md)
+
+## 📄 **重大文档整合记录** (2025-06-01)
+
+### **Phase-3文档结构简化 - 7文档→3文档工作流** ✅ **架构优化完成**
+
+**合并时间**: 2025年6月1日 19:30  
+**操作类型**: 文档架构优化 (按project-management-auto.mdc标准)  
+**目标**: 简化日常使用复杂度，提高文档管理效率
+
+#### **合并执行详情**
+- **源文件数量**: 4个独立规划文档 (1,438行总计)
+- **目标文件**: 1个综合规划文档 (602行)
+- **优化程度**: 58%体积减少，100%信息保真
+- **备份策略**: 完整归档至docs/merged-docs-archive/
+
+#### **合并文件清单** 
+| 原始文件 | 行数 | 新位置 | 状态 |
+|---------|------|--------|------|
+| PHASE-3-PLANNING.md | 409行 | docs/merged-docs-archive/PHASE-3-PLANNING-original.md | ✅ 已归档 |
+| PHASE-3-WORK-PLAN.md | 363行 | docs/merged-docs-archive/PHASE-3-WORK-PLAN-original.md | ✅ 已归档 |
+| PHASE-3-PROBLEM-ANALYSIS.md | 418行 | docs/merged-docs-archive/PHASE-3-PROBLEM-ANALYSIS-original.md | ✅ 已归档 |
+| PHASE-3-ARCHITECTURE-RESTORATION-PLAN-A.md | 248行 | docs/merged-docs-archive/PHASE-3-ARCHITECTURE-RESTORATION-PLAN-A-original.md | ✅ 已归档 |
+
+#### **新文档结构**
+- **创建**: refactor/phase-3/PHASE-3-COMPREHENSIVE-PLAN.md (602行)
+- **结构**: 4个逻辑部分，统一格式，消除800行重复内容
+- **内容组织**: 战略规划 → 工作计划 → 问题分析 → 技术实施
+
+#### **工作流程简化效果**
+```bash
+# 简化前 (7文档工作流)
+PHASE-3-MASTER-STATUS.md (权威)
+├── PHASE-3-PLANNING.md ❌ 已合并
+├── PHASE-3-WORK-PLAN.md ❌ 已合并  
+├── PHASE-3-PROBLEM-ANALYSIS.md ❌ 已合并
+├── PHASE-3-ARCHITECTURE-RESTORATION-PLAN-A.md ❌ 已合并
+├── PHASE-3-STATUS-UPDATE.md ✅ 保留
+└── REFACTOR-PHASE3-CHANGELOG.md ✅ 保留
+
+# 简化后 (3文档工作流)
+PHASE-3-MASTER-STATUS.md (权威)
+├── PHASE-3-COMPREHENSIVE-PLAN.md ✅ 新建(合并4个)
+├── PHASE-3-STATUS-UPDATE.md ✅ 保留
+└── REFACTOR-PHASE3-CHANGELOG.md ✅ 保留(本文档)
+```
+
+#### **信息保真度验证**
+- ✅ **任务定义**: 24个Phase-3任务完整保留
+- ✅ **技术分析**: 问题诊断和解决方案100%保留
+- ✅ **工作计划**: 分阶段执行方案完整保留
+- ✅ **架构设计**: 技术实施方案完整保留
+- ✅ **消除内容**: 仅重复任务表格、重复验证结果、冗余格式(800行)
+
+#### **合规性确认**
+- ✅ **project-management-auto规则**: 文档一致性和变更记录完整性
+- ✅ **零信息丢失原则**: 通过完整备份确保可恢复性
+- ✅ **权威文档保持**: PHASE-3-MASTER-STATUS.md继续作为单一信息源
+- ✅ **变更透明化**: 本记录详细记录合并过程和影响
+
+#### **后续维护指导**
+- **日常工作**: 参考3文档工作流（权威状态→综合规划→历史记录）
+- **内容更新**: 在PHASE-3-COMPREHENSIVE-PLAN.md中更新规划内容
+- **状态跟踪**: 在PHASE-3-MASTER-STATUS.md中更新任务状态
+- **恢复方法**: 如需恢复原结构，参考docs/merged-docs-archive/README.md
 
 ## 🚨 **重大修正记录** (2025-01-15)
 
@@ -126,7 +190,7 @@
 | refactor/phase-3/PHASE-3-MASTER-STATUS.md | 更新 | TASK-P3-016B状态更新为75%完成 | 06:42 |
 | refactor/phase-3/REFACTOR-PHASE3-CHANGELOG.md | 记录 | 验证过程和结果记录 | 06:42 |
 
-#### **状态更新依据** ✅ **遵循project-management-auto规则**
+#### **状态更新依据** ✅ **遵循development-management-unified规则**
 - **验证优先**: 基于scripts/validation/task-p3-016b/comprehensive-validation.js实际执行结果
 - **证据收集**: 所有状态声明基于具体验证数据
 - **问题透明**: 如实记录测试套件和集成验证待优化项
@@ -333,7 +397,7 @@
 
 **文档状态**: ✅ 实时更新  
 **文档类型**: 变更历史记录  
-**遵循规范**: refactor-phase3-agent.mdc, project-management-auto.mdc  
+**遵循规范**: refactor-phase3-agent.mdc, development-management-unified.mdc  
 **创建日期**: 2025-01-15  
 **最后更新**: 2025-01-15 23:45  
 **变更频率**: 重大修正时实时更新
@@ -716,7 +780,7 @@ export {
 
 **文档状态**: ✅ 实时更新  
 **文档类型**: 变更历史记录  
-**遵循规范**: refactor-phase3-agent.mdc, project-management-auto.mdc  
+**遵循规范**: refactor-phase3-agent.mdc, development-management-unified.mdc  
 **创建日期**: 2025-01-15  
 **最后更新**: 2025-01-15 23:45  
 **变更频率**: 重大修正时实时更新
