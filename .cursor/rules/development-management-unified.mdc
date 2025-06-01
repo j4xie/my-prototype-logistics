@@ -1,5 +1,198 @@
 ---
-description:
-globs:
-alwaysApply: false
+description: 
+globs: 
+alwaysApply: true
 ---
+# 统一开发管理规则
+
+<!-- created: 2025-02-02 -->
+<!-- version: 1.0.0 -->
+<!-- source: 融合自 project-management-auto + comprehensive-development-workflow-auto + development-principles-always -->
+<!-- backup-location: .cursor/rules/backup-2025-02-02/ -->
+<!-- authority: 主控规则，按需引用专业模块 -->
+
+## 🎯 **快速场景决策路由** (30秒内确定适用层级)
+
+| 用户询问场景 | 应用层级 | 智能引用建议 |
+|-------------|----------|-------------|
+| "开始新任务" / "制定计划" | 第1-3层 | → 引用 development-modules/core-principles-detailed.mdc |
+| "项目质量问题" / "管理规范" | 第2层 | → 引用 development-modules/project-management-detailed.mdc |
+| "验证任务" / "工作流程" | 第3层 | → 引用 development-modules/workflow-procedures-detailed.mdc |
+| "Phase-3重构" / "技术栈现代化" | 第4层 | → 引用现有 refactor-phase3-* 规则 |
+| "API任务" / "接口设计" | 第4层 | → 引用现有 api-* 规则 |
+
+## 📚 **第1层：核心开发原则速查** (适用：所有开发活动)
+
+### **项目理解与上下文**
+- **始终参考** @DIRECTORY_STRUCTURE.md 了解项目目录结构
+- **根据工作类型参考相应文档**：
+  - 代码开发 → web-app/README.md + 任务文档
+  - 重构工作 → refactor/ 目录下计划和任务文档
+  - 文档维护 → docs/ 目录下相关文档
+- **docs目录阅读指导**：
+  - 架构工作 → 必读 docs/architecture/design-principles.md
+  - API开发 → 必读 docs/api/ 相关文档
+  - 组件开发 → 参考 docs/components/ 相关文档
+- **验证信息准确性**，不做无证据假设或推测
+- **逐文件进行更改**，给用户发现错误的机会
+
+### **代码质量标准**
+- 使用描述性、明确的变量名和函数名
+- 遵循项目现有编码风格保持一致性
+- 模块化设计提高可维护性和可重用性
+- 优先考虑代码性能和安全影响
+- 为新代码或修改代码提供测试覆盖
+- 实现健壮的错误处理和日志记录
+
+### **验证与完成度标准**
+- **验证优先原则**：任何完成度声明必须基于实际功能验证
+- **关键路径识别**：识别项目核心组件给予特别验证关注
+- **质疑响应机制**：用户质疑时立即启动深度重新验证
+- **分层验证要求**：编译→构建→测试→功能验证→集成测试
+- **实证完成标准**：声称任务完成前必须通过实际运行和功能测试
+
+**→ 详细原则指导：** 引用 `development-modules/core-principles-detailed.mdc`
+
+## 📊 **第2层：项目管理与质量控制** (适用：管理、跟踪、质量控制)
+
+### **任务完成度报告真实性** (杜绝虚假进度)
+- ❌ **严禁基于预期的完成度报告**：必须基于实际验证结果
+- ✅ **技术验证优先**：声称"100%完成"前必须通过技术验收
+- ✅ **问题透明化**：发现技术债务立即如实记录
+- ✅ **状态及时修正**：发现虚假完成度立即修正所有相关文档
+
+### **架构决策管理**
+- **影响评估要求**：重大架构变更前必须评估长期影响和技术债务成本
+- **决策透明化**：清晰记录架构决策的动机、权衡和预期后果
+- **后果跟踪义务**：建立决策-影响-后果的追踪链条
+
+### **目录结构同步要求**
+**任何目录结构变更都必须同步更新**：
+- **DIRECTORY_STRUCTURE.md**: 更新实际目录树结构
+- **docs/directory-structure-changelog.md**: 记录变更历史
+- **职责区分**：前者记录当前状态，后者记录历史变更和原因
+
+**→ 详细管理规范：** 引用 `development-modules/project-management-detailed.mdc`
+
+## 🔄 **第3层：标准开发工作流程** (适用：具体开发任务执行)
+
+### **5阶段开发生命周期骨架**
+
+#### **阶段1：任务启动与规划**
+- **强制文档阅读检查** (遵循docs-reading-guide-agent)
+- **任务规范化创建** (遵循task-management-manual)
+- **API任务专门处理** (遵循api-rules-usage-guide-manual)
+
+#### **阶段2：开发与实施**
+- **架构规范遵循** (基于项目重构方案)
+- **实时变更记录** (强制变更记录机制)
+- **UI设计规范** (Neo Minimal iOS-Style Admin UI)
+
+#### **阶段3：验证与测试** - **核心阶段**
+- **任务导向验证脚本** (遵循test-validation-standards-agent)
+- **5层验证标准强制执行** (TypeScript+Build+Lint+Test+Integration)
+- **回归测试强制要求** (防止已修复问题重现)
+
+#### **阶段4：交付与部署**
+- **技术验收确认**
+- **文档同步更新**
+- **状态标记完成**
+
+#### **阶段5：维护与优化**
+- **持续监控**
+- **技术债务管理**
+- **性能优化跟踪**
+
+**→ 详细工作流程：** 引用 `development-modules/workflow-procedures-detailed.mdc`
+
+## 🎛️ **第4层：特定场景深度指引** (按需应用)
+
+### **Phase-3规则使用指南** (技术栈现代化专用)
+```bash
+工作内容判断：
+- 开始Phase-3、任务规划 → 使用 refactor-phase3-agent
+- 架构重构、技术栈升级 → 使用 refactor-phase3-core-agent  
+- 任务验证、功能测试 → 使用 refactor-phase3-validation-agent
+```
+
+### **API任务规则选择**
+```bash
+场景判断：
+- 设计API接口 → 使用 api-interface-design-agent
+- 实现API调用 → 使用 api-integration-agent
+- 修复API问题 → 使用 api-integration-agent
+- 更新API文档 → 使用 api-interface-design-agent
+```
+
+### **UI设计系统**
+```bash
+Neo Minimal iOS-Style Admin UI标准：
+- 布局: max-w-[390px] mx-auto
+- 卡片: bg-white rounded-lg shadow-sm p-4
+- 交互: hover:shadow-md hover:scale-[1.03]
+- 无障碍: aria-label, tabindex, 语义化标签
+```
+
+## 🧭 **智能引用导航系统**
+
+根据当前任务类型和阶段，系统自动推荐需要深入阅读的专业模块：
+
+### **开发任务场景**
+```markdown
+用户："开始新的功能开发任务"
+→ 应用第1-3层 + 引用 core-principles-detailed.mdc
+→ 如涉及API → 额外引用相关API规则
+→ 如涉及UI → 参考UI设计系统规范
+```
+
+### **项目管理场景**
+```markdown
+用户："项目进度出现问题"
+→ 应用第2层 + 引用 project-management-detailed.mdc
+→ 重点关注任务完成度真实性验证
+→ 执行问题透明化和状态修正机制
+```
+
+### **技术验证场景**
+```markdown
+用户："验证任务是否完成"
+→ 应用第3层 + 引用 workflow-procedures-detailed.mdc  
+→ 强制执行5层验证标准
+→ 重点关注回归测试要求
+```
+
+## 📋 **沟通规范速查**
+
+- 不使用道歉性语言
+- 避免提供理解反馈或冗余确认
+- 不主动提供摘要，除非用户明确要求
+- 提供真实文件链接，非上下文生成的文件
+- 不发明超出明确请求的更改
+- 保留现有代码结构和不相关功能
+- 单块编辑，避免多步指令
+
+## 📖 **使用说明**
+
+### **首次使用**
+1. 根据场景快速定位到相应层级
+2. 应用该层级的核心原则和要求
+3. 根据智能引用建议深入专业模块
+
+### **深度指导获取**
+- 需要详细原则 → 引用 development-modules/core-principles-detailed.mdc
+- 需要管理规范 → 引用 development-modules/project-management-detailed.mdc  
+- 需要工作流程 → 引用 development-modules/workflow-procedures-detailed.mdc
+
+### **特定场景处理**
+- Phase-3重构 → 使用现有refactor-phase3-*规则
+- API任务 → 使用现有api-*规则
+- 测试验证 → 使用test-validation-standards-agent
+
+---
+
+**维护信息**：
+- **创建日期**：2025-02-02
+- **融合来源**：project-management-auto + comprehensive-development-workflow-auto + development-principles-always
+- **下次更新**：根据使用反馈优化智能引用机制
+- **专业模块状态**：已创建 development-modules/ 目录和相关详细文件
+
