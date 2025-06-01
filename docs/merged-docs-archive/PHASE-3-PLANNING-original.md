@@ -404,6 +404,6 @@ Phase-3的核心目标是实现食品溯源系统的技术栈现代化，在Phas
 
 ---
 
-**文档维护**: 按照[refactor-phase3-agent.mdc](mdc:../.cursor/rules/refactor-phase3-agent.mdc), [task-management-manual.mdc](mdc:../.cursor/rules/task-management-manual.mdc)和[project-management-auto.mdc](mdc:../.cursor/rules/project-management-auto.mdc)规则管理  
+**文档维护**: 按照[refactor-phase3-agent.mdc](mdc:../.cursor/rules/refactor-phase3-agent.mdc), [task-management-manual.mdc](mdc:../.cursor/rules/task-management-manual.mdc)和[development-management-unified.mdc](mdc:../.cursor/rules/development-management-unified.mdc)规则管理  
 **最后更新**: 2025-01-15 23:45 (**基于用户真实验证结果重大修正**)
 **关键修正**: 识别构建成功vs运行时故障的严重脱节，修正虚假进度为真实状态 
