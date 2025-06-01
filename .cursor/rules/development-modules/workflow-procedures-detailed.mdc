@@ -620,12 +620,46 @@ alwaysApply: false
    - 确保响应的准确性
 
 **Phase-3详细文档**: refactor/phase-3/*.md (通过MASTER-STATUS引用)
-- **PHASE-3-PROBLEM-ANALYSIS.md** (问题分析和技术细节)
+- **PHASE-3-COMPREHENSIVE-PLAN.md** (问题分析和技术细节)
 - **TASK-P3-016A-真实状态追踪.md** (具体任务实时状态)
-- **PHASE-3-PLANNING.md** (完整任务列表规划)
-- **PHASE-3-WORK-PLAN.md** (工作执行计划)
-- **PHASE-3-ARCHITECTURE-RESTORATION-PLAN-A.md** (架构恢复计划)
+- **PHASE-3-COMPREHENSIVE-PLAN.md** (完整任务列表规划)
+- **PHASE-3-COMPREHENSIVE-PLAN.md** (工作执行计划)
+- **PHASE-3-COMPREHENSIVE-PLAN.md** (架构恢复计划)
 - **REFACTOR-PHASE3-CHANGELOG.md** (技术变更日志)
+```
+
+##### **Phase-3文档读取最佳顺序** (遵循3阶段工作流程)
+```bash
+# 推荐读取顺序 (总计5-8分钟，支持3阶段工作流程)
+
+**Stage 1 - 任务启动确认** (2-3分钟)
+1. 🚀 快速入口 (2-3分钟)
+   → PHASE-3-STATUS-UPDATE.md
+   - 获得整体状态概览和重要变更提醒
+   - 查看当前阶段可执行的任务列表
+   - 确定需要深入的领域和优先级
+   - 获取快速导航到具体文档的路径
+
+2. 🎯 权威状态 (3-5分钟)  
+   → PHASE-3-MASTER-STATUS.md
+   - 获取权威完成度数据和具体任务状态
+   - 确认当前可执行的任务和依赖关系
+   - 检查关键组件的修复状态和风险评估
+   - 获取技术验证的具体要求
+
+**Stage 2 & 3 - 开发执行和任务完成** (按需)
+3. 📋 按需详细 (按需访问)
+   → 通过权威文档引用深入特定领域
+   - 技术问题和架构细节 → COMPREHENSIVE-PLAN.md
+   - 具体任务实施细节 → 具体TASK文档  
+   - 变更历史和技术债务 → CHANGELOG.md
+   - 规划和依赖关系 → 相关规划文档
+
+**文档读取效率优化原则**:
+- **单一入口**: 始终从STATUS-UPDATE开始，避免直接跳转到详细文档
+- **层次访问**: 通过权威文档的引用链接访问详细信息，避免平行阅读
+- **上下文保护**: 不要同时读取多个Phase-3文档，防止信息混乱
+- **目标导向**: 根据当前工作阶段选择需要的详细信息深度
 ```
 
 ### **阶段5: 回顾与持续改进** (Review & Improvement Phase)
@@ -1045,4 +1079,7 @@ alwaysApply: false
 - **迁移日期**：2025-02-02
 - **完整性**：100%内容保持，大幅增加详细说明和操作指导
 - **引用方式**：被 development-management-unified.mdc 主控规则引用
+
+
+
 

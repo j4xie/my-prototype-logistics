@@ -134,26 +134,35 @@
 
 ### **5. 重构专用规则** (Refactor Phase)
 
-#### `refactor-phase2-agent.mdc` ⚙️ **Phase-2重构**
-- **类型**: Agent规则
-- **大小**: 9.7KB, 207行
-- **用途**: Phase-2代码优化与模块化改造
-- **核心功能**: 技术栈现代化、避免重复工作
+#### `refactor-management-unified.mdc` 🔄 **重构管理统一规则** (子主控规则) 🆕
+- **类型**: 子主控规则
+- **大小**: 约15KB, 400+行
+- **用途**: 重构领域统一管理，智能路由到具体重构流程
+- **整合来源**: 
+  - ✅ `refactor-phase2-agent.mdc` (已整合)
+  - ✅ `refactor-phase3-agent.mdc` (已整合)
+  - ✅ `refactor-phase3-core-agent.mdc` (已整合)
+  - ✅ `refactor-phase3-validation-agent.mdc` (已整合)
+- **核心功能**:
+  - 🎯 重构任务智能路由 (10秒内确定适用流程)
+  - 📚 重构核心原则 (渐进式重构、验证优先)
+  - 🔄 重构标准工作流程 (4阶段完整流程)
+  - 🛠️ Phase-2专用流程 (代码优化与模块化)
+  - 🚀 Phase-3管理流程 (技术栈现代化管理)
+  - 🏗️ Phase-3核心变更流程 (架构重构与升级)
+  - ✅ Phase-3验证流程 (任务验证与功能测试)
+- **使用场景**: 
+  - ✅ 任何重构相关工作 (统一入口)
+  - ✅ Phase-2代码优化 (专用流程)
+  - ✅ Phase-3技术栈现代化 (完整管理)
+  - ✅ 重构验证和质疑响应 (深度验证)
 
-#### `refactor-phase3-agent.mdc` 🚀 **Phase-3重构**
+#### `refactor-phase3-validation-agent.mdc` ✅ **Phase-3验证** (保留)
 - **类型**: Agent规则
-- **大小**: 5.5KB, 191行
-- **用途**: Phase-3技术栈现代化阶段管理
-- **关系**: 与refactor-phase3-validation-agent配合使用
-
-#### `refactor-phase3-core-agent.mdc` 🏗️ **Phase-3核心架构**
-- **类型**: Agent规则
-- **大小**: 实际7.1KB, 216行 (显示异常为47B)
-- **用途**: Phase-3核心架构变更管理
-- **特色功能**:
-  - 架构变更质量控制
-  - 技术债务管理
-  - 架构决策记录模板
+- **大小**: 14KB, 499行
+- **用途**: Phase-3专用深度验证流程
+- **关系**: 被 refactor-management-unified 引用，提供详细验证指导
+- **保留原因**: 验证流程复杂，需要独立的详细指导
 
 ---
 
@@ -250,6 +259,13 @@ api-rules-usage-guide-manual.mdc (API开发统一管理-子主控)
 ├── 指向 → api-interface-design-agent.mdc
 └── 指向 → api-integration-agent.mdc
 
+refactor-management-unified.mdc (重构管理统一-子主控) 🆕
+├── 整合 → Phase-2专用流程 (原refactor-phase2-agent)
+├── 整合 → Phase-3管理流程 (原refactor-phase3-agent)
+├── 整合 → Phase-3核心变更流程 (原refactor-phase3-core-agent)
+├── 整合 → Phase-3验证流程 (原refactor-phase3-validation-agent部分)
+└── 引用 → refactor-phase3-validation-agent.mdc (详细验证指导)
+
 comprehensive-rules-usage-guide-manual.mdc (综合指导)
 ├── 指向 → development-management-unified.mdc (新架构)
 └── 指向 → comprehensive-regression-testing-agent.mdc
@@ -263,6 +279,7 @@ comprehensive-rules-usage-guide-manual.mdc (综合指导)
 1. 首先使用: `development-management-unified.mdc` ⭐(新统一主控规则)
 2. 根据需要深入: `development-modules/` 下的详细模块
 3. 如果是API任务: 参考 `api-rules-usage-guide-manual.mdc` (API子主控规则)
+4. 如果是重构任务: 参考 `refactor-management-unified.mdc` (重构子主控规则) 🆕
 
 ### **我要验证任务完成**
 1. 主要使用: `comprehensive-regression-testing-agent.mdc`
@@ -290,11 +307,11 @@ comprehensive-rules-usage-guide-manual.mdc (综合指导)
 - **管理文档**: 1个 (RULES_INDEX.md 等)
 
 ### **按大小排序**
-1. `refactor-phase3-validation-agent.mdc` (14KB)
-2. `api-integration-agent.mdc` (13KB)
-3. `interactive-final-review-always.mdc` (12KB)
-4. `development-management-unified.mdc` (8KB) - 统一开发管理规则
-5. `refactor-phase2-agent.mdc` (9.7KB)
+1. `refactor-management-unified.mdc` (15KB) - 重构管理统一规则 🆕
+2. `refactor-phase3-validation-agent.mdc` (14KB)
+3. `api-integration-agent.mdc` (13KB)
+4. `interactive-final-review-always.mdc` (12KB)
+5. `development-management-unified.mdc` (8KB) - 统一开发管理规则
 
 ### **最后重构记录**
 - **重构时间**: 2025-02-02
