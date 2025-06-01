@@ -115,13 +115,13 @@ alwaysApply: true
 - 任务验证、功能测试 → 使用 refactor-phase3-validation-agent
 ```
 
-### **API任务规则选择**
+### **API任务智能管理** (已优化为子主控架构)
 ```bash
-场景判断：
-- 设计API接口 → 使用 api-interface-design-agent
-- 实现API调用 → 使用 api-integration-agent
-- 修复API问题 → 使用 api-integration-agent
-- 更新API文档 → 使用 api-interface-design-agent
+API任务智能路由：
+- API领域所有任务 → 首先引用 api-rules-usage-guide-manual (子主控)
+- 该规则提供10秒内智能路由到具体专业规则
+- 包含完整的API开发核心原则和质量标准
+- 与本主控规则协同工作，专注API专业指导
 ```
 
 ### **UI设计系统**
@@ -195,4 +195,5 @@ Neo Minimal iOS-Style Admin UI标准：
 - **融合来源**：project-management-auto + comprehensive-development-workflow-auto + development-principles-always
 - **下次更新**：根据使用反馈优化智能引用机制
 - **专业模块状态**：已创建 development-modules/ 目录和相关详细文件
+
 

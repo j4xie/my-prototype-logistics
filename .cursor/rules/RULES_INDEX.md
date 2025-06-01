@@ -109,7 +109,7 @@
 - **用途**: API接口设计和文档更新
 - **使用场景**: 设计API接口、更新API文档
 
-#### `api-rules-usage-guide-manual.mdc` 📖 **API规则使用指导**
+#### `api-rules-usage-guide-manual.mdc` 🎯 **API开发统一管理** (子主控规则)
 - **类型**: Manual规则
 - **大小**: 4.9KB, 174行
 - **用途**: API任务规则选择指导
@@ -246,7 +246,7 @@ comprehensive-regression-testing-agent.mdc (权威验证)
 └── 被引用 ← development-modules/workflow-procedures-detailed.mdc
 └── 扩展 ← refactor-phase3-validation-agent.mdc
 
-api-rules-usage-guide-manual.mdc (API规则指导)
+api-rules-usage-guide-manual.mdc (API开发统一管理-子主控)
 ├── 指向 → api-interface-design-agent.mdc
 └── 指向 → api-integration-agent.mdc
 
@@ -262,7 +262,7 @@ comprehensive-rules-usage-guide-manual.mdc (综合指导)
 ### **我要开始新任务**
 1. 首先使用: `development-management-unified.mdc` ⭐(新统一主控规则)
 2. 根据需要深入: `development-modules/` 下的详细模块
-3. 如果是API任务: 参考 `api-rules-usage-guide-manual.mdc`
+3. 如果是API任务: 参考 `api-rules-usage-guide-manual.mdc` (API子主控规则)
 
 ### **我要验证任务完成**
 1. 主要使用: `comprehensive-regression-testing-agent.mdc`
@@ -275,7 +275,7 @@ comprehensive-rules-usage-guide-manual.mdc (综合指导)
 
 ### **我不确定使用哪个规则**
 1. 查看: `comprehensive-rules-usage-guide-manual.mdc`
-2. 对于API任务: 查看 `api-rules-usage-guide-manual.mdc`
+2. 对于API任务: 查看 `api-rules-usage-guide-manual.mdc` (API子主控规则)
 
 ---
 
