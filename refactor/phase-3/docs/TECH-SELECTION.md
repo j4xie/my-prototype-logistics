@@ -348,4 +348,4 @@ Next.js 14 应用架构:
 ---
 
 **下一步**: 开始TASK-P3-002构建工具现代化实施  
-**文档维护**: 按照[project-management-auto.mdc](mdc:../../../.cursor/rules/project-management-auto.mdc)规则管理 
+**文档维护**: 按照[development-management-unified.mdc](mdc:../../../.cursor/rules/development-management-unified.mdc)规则管理 

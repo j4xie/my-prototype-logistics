@@ -349,7 +349,7 @@
 **文档状态**: ✅ 基于用户验证结果修正  
 **最后更新**: 2025-01-15 23:45  
 **下一步**: 🚨 执行第零阶段运行时稳定性紧急修复  
-**文档维护**: 按照[refactor-phase3-agent.mdc](mdc:../../.cursor/rules/refactor-phase3-agent.mdc), [task-management-manual.mdc](mdc:../../.cursor/rules/task-management-manual.mdc)和[project-management-auto.mdc](mdc:../../.cursor/rules/project-management-auto.mdc)规则管理 
+**文档维护**: 按照[refactor-phase3-agent.mdc](mdc:../../.cursor/rules/refactor-phase3-agent.mdc), [task-management-manual.mdc](mdc:../../.cursor/rules/task-management-manual.mdc)和[development-management-unified.mdc](mdc:../../.cursor/rules/development-management-unified.mdc)规则管理 
 
 ## 📊 整体进度追踪 (基于真实验证修正)
 

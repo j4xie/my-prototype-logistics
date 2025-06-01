@@ -133,5 +133,5 @@
 
 ---
 
-**文档维护**: 按照[task-management-manual.mdc](mdc:../../.cursor/rules/task-management-manual.mdc)和[project-management-auto.mdc](mdc:../../.cursor/rules/project-management-auto.mdc)规则管理  
+**文档维护**: 按照[task-management-manual.mdc](mdc:../../.cursor/rules/task-management-manual.mdc)和[development-management-unified.mdc](mdc:../../.cursor/rules/development-management-unified.mdc)规则管理  
 **最后更新**: 2025-05-27 
