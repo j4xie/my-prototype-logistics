@@ -33,6 +33,51 @@ alwaysApply: false
 
 ---
 
+## 🎯 **Phase-3状态文档结构**
+
+### **🏆 单一权威来源** (必须首先阅读)
+**主文档**: `refactor/phase-3/PHASE-3-MASTER-STATUS.md`
+- ✅ 核心状态概览 (整体完成度、关键任务状态)
+- ✅ 重要状态变更记录 (P0问题修复突破)  
+- ✅ 快速状态查询 (当前可做/不可做事项)
+- ✅ AI上下文优化 (单点信息源，减少文档负担)
+
+### **📋 详细信息文档** (按需要引用)
+当需要深入了解特定方面时，从主文档引用以下详细文档：
+
+**技术细节**:
+- `PHASE-3-PROBLEM-ANALYSIS.md` - 问题分析和技术细节
+- `TASK-P3-016A-真实状态追踪.md` - 具体任务实时状态
+- `TASK-P3-016A-标准化工作清单.md` - 任务执行清单
+
+**规划和工作计划**:
+- `PHASE-3-PLANNING.md` - 完整任务列表和规划
+- `PHASE-3-WORK-PLAN.md` - 工作执行计划
+- `PHASE-3-ARCHITECTURE-RESTORATION-PLAN-A.md` - 架构恢复计划
+
+**变更和历史**:
+- `REFACTOR-PHASE3-CHANGELOG.md` - 技术变更日志
+- `PHASE-3-STATUS-UPDATE.md` - 历史状态更新
+
+### **🤖 AI使用指导**
+```bash
+# 标准工作流程
+1. **首先阅读**: refactor/phase-3/PHASE-3-MASTER-STATUS.md
+   - 获取核心状态和当前可做的事情
+   - 查看最新的重要状态变更
+   - 确认整体完成度和关键任务状态
+
+2. **按需深入**: 根据master文档中的引用链接
+   - 技术问题 → 查看EMERGENCY-ASSESSMENT  
+   - 任务详情 → 查看具体TASK文档
+   - 规划问题 → 查看PLANNING和WORK-PLAN
+
+3. **避免多文档扫描**: 不要同时读取多个Phase-3文档
+   - 减少AI上下文负担
+   - 避免文档间的不一致性
+   - 提高信息获取效率
+```
+
 ## 使用场景
 - Phase-3技术栈现代化阶段的任务管理和协调
 - 按照项目重构方案执行技术栈现代化
