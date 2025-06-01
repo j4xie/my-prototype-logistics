@@ -15,7 +15,7 @@
 ### **Phase-3文档结构简化 - 7文档→3文档工作流** ✅ **架构优化完成**
 
 **合并时间**: 2025年6月1日 19:30  
-**操作类型**: 文档架构优化 (按project-management-auto.mdc标准)  
+**操作类型**: 文档架构优化 (按development-management-unified.mdc标准)  
 **目标**: 简化日常使用复杂度，提高文档管理效率
 
 #### **合并执行详情**
@@ -63,7 +63,7 @@ PHASE-3-MASTER-STATUS.md (权威)
 - ✅ **消除内容**: 仅重复任务表格、重复验证结果、冗余格式(800行)
 
 #### **合规性确认**
-- ✅ **project-management-auto规则**: 文档一致性和变更记录完整性
+- ✅ **development-management-unified规则**: 文档一致性和变更记录完整性
 - ✅ **零信息丢失原则**: 通过完整备份确保可恢复性
 - ✅ **权威文档保持**: PHASE-3-MASTER-STATUS.md继续作为单一信息源
 - ✅ **变更透明化**: 本记录详细记录合并过程和影响
@@ -110,7 +110,7 @@ PHASE-3-MASTER-STATUS.md (权威)
   - ❌ 增量验证错觉：认为修复编译错误等于功能完整
 
 #### **第三次状态修正** (2025-01-15 晚期) ✅ **基于用户质疑**
-- **基于comprehensive-development-workflow-auto规范**: 完整5层验证
+- **基于development-management-unified规范**: 完整5层验证
 - **实际验证结果**: 3/5层通过，真实完成度25-30%
 - **主要问题**: Jest配置系统性错误，内存泄漏完全阻塞
 - **修正原因**: 用户质疑触发深度技术验证，发现表面成功掩盖系统性问题
@@ -129,7 +129,7 @@ PHASE-3-MASTER-STATUS.md (权威)
 
 ### **2025-01-30 - TASK-P3-016A状态确认与文档一致性更新** ✅ **workflow规则执行**
 
-**按comprehensive-development-workflow-auto标准执行的验证更新**:
+**按development-management-unified标准执行的验证更新**:
 - ✅ **第1层**: TypeScript编译验证通过 (MVP功能完整性确认)
 - ✅ **第2层**: Next.js构建验证通过 (19.89秒构建时间)  
 - ✅ **第3层**: MVP功能验证通过 (14/14项功能检查全部通过)
@@ -154,11 +154,11 @@ PHASE-3-MASTER-STATUS.md (权威)
 **文档一致性管理**:
 - ✅ **权威文档更新**: PHASE-3-MASTER-STATUS.md作为单一信息源
 - ✅ **任务文档同步**: TASK-P3-016_API客户端功能扩展.md状态确认
-- ✅ **工作流程合规**: 严格按照comprehensive-development-workflow-auto规则执行
+- ✅ **工作流程合规**: 严格按照development-management-unified规则执行
 
 ### **2025-01-31 - TASK-P3-016B状态更新与验证脚本修正** ✅ **workflow标准执行**
 
-**按comprehensive-development-workflow-auto阶段4执行的技术验证与状态更新**:
+**按development-management-unified阶段4执行的技术验证与状态更新**:
 
 #### **验证脚本修正过程** ✅ **技术问题解决**
 - **06:20**: 发现验证脚本路径错误 (src/lib vs web-app-next/src/lib)
