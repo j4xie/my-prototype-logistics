@@ -115,6 +115,20 @@ alwaysApply: true
 - 任务验证、功能测试 → 使用 refactor-phase3-validation-agent
 ```
 
+### **Phase-3标准3阶段工作流程**
+```bash
+新增功能：遵循标准化3阶段执行流程
+- Stage 1 - 任务启动确认 (2-3分钟)
+  → STATUS-UPDATE.md (快速概览) → MASTER-STATUS.md (权威状态)
+- Stage 2 - 开发执行 (主要工作时间)  
+  → 5层验证 + 实时状态更新
+- Stage 3 - 任务完成确认 (5-10分钟)
+  → 完整验证 + 文档同步更新 + 状态标记完成
+
+**文档读取优化**: 单一入口 → 权威状态 → 按需深入
+**状态更新顺序**: MASTER-STATUS → CHANGELOG → STATUS-UPDATE
+```
+
 ### **API任务智能管理** (已优化为子主控架构)
 ```bash
 API任务智能路由：
@@ -195,5 +209,9 @@ Neo Minimal iOS-Style Admin UI标准：
 - **融合来源**：project-management-auto + comprehensive-development-workflow-auto + development-principles-always
 - **下次更新**：根据使用反馈优化智能引用机制
 - **专业模块状态**：已创建 development-modules/ 目录和相关详细文件
+
+
+
+
 
 
