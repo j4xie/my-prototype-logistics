@@ -292,7 +292,7 @@ async function validateTests() {
     validationResults.layers.test = {
       status: 'ERROR',
       details: {
-        error: error.message
+      error: error.message
       }
     };
   }
