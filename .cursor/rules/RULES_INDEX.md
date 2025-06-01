@@ -293,7 +293,7 @@ comprehensive-rules-usage-guide-manual.mdc (综合指导)
 1. `refactor-phase3-validation-agent.mdc` (14KB)
 2. `api-integration-agent.mdc` (13KB)
 3. `interactive-final-review-always.mdc` (12KB)
-4. `comprehensive-development-workflow-auto.mdc` (11KB)
+4. `development-management-unified.mdc` (8KB) - 统一开发管理规则
 5. `refactor-phase2-agent.mdc` (9.7KB)
 
 ### **最后重构记录**
