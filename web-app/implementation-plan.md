@@ -620,4 +620,4 @@ priority_e2e_scenarios = [
 **📋 文档版本**: v3.0 (AI增强版，基于Phase-3技术进展更新)  
 **📅 最后更新**: 2025年1月13日  
 **🎯 下一步**: 启动第零阶段 - TASK-P3-017状态管理最终集成  
-**维护规则**: 按照 [project-management-auto](../.cursor/rules/project-management-auto.mdc) 规则维护 
+**维护规则**: 按照 [development-management-unified](../.cursor/rules/development-management-unified.mdc) 统一开发管理规则维护 

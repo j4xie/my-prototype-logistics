@@ -25,8 +25,8 @@
 更新了所有相关的cursor规则文件，明确了目录结构变更时的工作流程：
 
 #### 更新的规则文件
-- `.cursor/rules/development-principles-always.mdc`
-- `.cursor/rules/project-management-auto.mdc`
+- `.cursor/rules/development-management-unified.mdc` (融合了原3个规则)
+- `.cursor/rules/development-modules/` (详细专业模块)
 - `.cursor/rules/task-management-manual.mdc`
 - `.cursor/rules/ui-design-system-auto.mdc`
 - `.cursor/rules/documentation-deduplication.mdc`
