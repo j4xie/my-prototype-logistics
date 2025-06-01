@@ -38,7 +38,7 @@ test.skip('应该定期重试失败的操作 - SKIPPED due to timer instability'
 ### 第二阶段：正确方法 - 深入分析
 
 **用户质疑触发深度思考**：
-> "为什么由于定时器相关测试在测试环境中不稳定，我们采用最保守的策略？就不能把不稳定的问题解决吗，这不符合@development-principles-always.mdc说的积极解决问题而不是逃避问题啊"
+> "为什么由于定时器相关测试在测试环境中不稳定，我们采用最保守的策略？就不能把不稳定的问题解决吗，这不符合@development-management-unified.mdc说的积极解决问题而不是逃避问题啊"
 
 **根因分析过程**：
 
@@ -268,7 +268,7 @@ await coreMethod();
 
 - [TASK-P3-016A-标准化工作清单.md](./TASK-P3-016A-标准化工作清单.md)
 - [PHASE-3-MASTER-STATUS.md](../progress-reports/PHASE-3-MASTER-STATUS.md)
-- [@development-principles-always.mdc](../../../.cursor/rules/development-principles-always.mdc)
+- [@development-management-unified.mdc](../../../.cursor/rules/development-management-unified.mdc)
 - [@refactor-phase3-validation-agent.mdc](../../../.cursor/rules/refactor-phase3-validation-agent.mdc)
 
 ---

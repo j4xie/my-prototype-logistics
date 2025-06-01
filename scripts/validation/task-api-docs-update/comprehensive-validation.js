@@ -5,7 +5,7 @@
  * 
  * 验证AI分析API文档的完整性、一致性和正确性
  * 
- * @fileoverview 按照comprehensive-development-workflow-auto规则要求创建
+ * @fileoverview 按照development-management-unified规则要求创建
  * @version 1.0.0
  * @date 2025-05-31
  */
