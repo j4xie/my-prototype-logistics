@@ -38,7 +38,7 @@
 
 ## 🔧 **已修复的具体问题**
 
-### **✅ 修复1: comprehensive-development-workflow-auto.mdc**
+### **✅ 修复1: development-management-unified.mdc** (已重构)
 **问题**: 模板化引用导致路径不明确
 ```diff
 - 路径: scripts/validation/task-{任务ID}/comprehensive-validation.js
@@ -59,7 +59,7 @@
 + # 删除了不存在的templates目录引用
 ```
 
-### **✅ 修复3: development-principles-always.mdc**
+### **✅ 修复3: development-management-unified.mdc** (已合并)
 **问题**: 模板化引用需要具体化
 ```diff
 - 2. 参考 refactor/phase-X/ 下的相关计划和任务
@@ -135,9 +135,9 @@
 - 🕒 **15:30** - 开始全面引用关系验证
 - 🕒 **15:45** - 识别出42个引用问题
 - 🕒 **16:00** - 开始逐个修复核心问题
-- 🕒 **16:15** - 修复comprehensive-development-workflow-auto.mdc
+- 🕒 **16:15** - 重构为development-management-unified.mdc
 - 🕒 **16:30** - 修复refactor-phase2-agent.mdc
-- 🕒 **16:45** - 修复development-principles-always.mdc
+- 🕒 **16:45** - 合并到development-management-unified.mdc
 - 🕒 **17:00** - 完成所有修复，验证通过
 
 ### **修复验证方法**
