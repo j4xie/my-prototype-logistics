@@ -225,8 +225,8 @@ export default function ApiTestPage() {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">API Hook系统测试 - MVP功能全覆盖</h1>
-        
-        {/* 登录测试 */}
+      
+      {/* 登录测试 */}
         <div className="mb-6">
           <h3 className="text-lg font-medium mb-3">登录测试</h3>
           <form onSubmit={handleLogin} className="flex space-x-2">
@@ -250,8 +250,8 @@ export default function ApiTestPage() {
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
             >
               {loginLoading ? '登录中...' : '登录'}
-            </button>
-          </form>
+          </button>
+        </form>
           {loginError && (
             <p className="text-red-600 text-sm mt-2">错误: {loginError}</p>
           )}
@@ -280,8 +280,8 @@ export default function ApiTestPage() {
           {cacheStats && (
             <div className="bg-gray-50 border rounded p-3">
               <pre className="text-xs">{JSON.stringify(cacheStats, null, 2)}</pre>
-            </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
 
@@ -334,10 +334,10 @@ export default function ApiTestPage() {
             <h4 className="font-medium mb-2">健康指标</h4>
             <DataDisplay {...healthMetrics} onRefetch={healthMetrics.refetch} />
           </div>
-          <div>
+              <div>
             <h4 className="font-medium mb-2">疫苗记录</h4>
             <DataDisplay {...vaccineRecords} onRefetch={vaccineRecords.refetch} />
-          </div>
+              </div>
           <div>
             <h4 className="font-medium mb-2">繁育信息</h4>
             <DataDisplay {...breedingInfo} onRefetch={breedingInfo.refetch} />
@@ -364,10 +364,10 @@ export default function ApiTestPage() {
             <h4 className="font-medium mb-2">加工记录</h4>
             <DataDisplay {...processingRecords} onRefetch={processingRecords.refetch} />
           </div>
-          <div>
+              <div>
             <h4 className="font-medium mb-2">包装信息</h4>
             <DataDisplay {...packagingInfo} onRefetch={packagingInfo.refetch} />
-          </div>
+              </div>
           <div>
             <h4 className="font-medium mb-2">温度日志</h4>
             <DataDisplay {...temperatureLogs} onRefetch={temperatureLogs.refetch} />
@@ -411,8 +411,8 @@ export default function ApiTestPage() {
           <div>
             <h4 className="font-medium mb-2">数据预处理</h4>
             <DataDisplay {...dataPreprocessing} onRefetch={dataPreprocessing.refetch} />
-          </div>
-        </div>
+      </div>
+      </div>
       </TestSection>
     </div>
   );
