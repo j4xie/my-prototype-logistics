@@ -190,10 +190,12 @@
 │   └── commit-msg             # 提交消息钩子
 ├── .cursor/                   # Cursor AI编辑器配置
 │   └── rules/                 # Cursor规则文件目录
-│       ├── development-principles-always.mdc      # 核心开发原则(自动应用)
-│       ├── project-management-auto.mdc            # 项目管理与文档规范
+│       ├── development-modules/                   # 专业模块目录 (新增)
+│       ├── development-management-unified.mdc     # 统一开发管理规则 (融合3个原规则)
 │       ├── task-management-manual.mdc             # 任务管理规范
-│       ├── comprehensive-development-workflow-auto.mdc # 综合开发工作流程规范 ✅ 新增
+│       │   ├── core-principles-detailed.mdc      # 核心开发原则详细指导
+│       │   ├── project-management-detailed.mdc   # 项目管理详细规范  
+│       │   └── workflow-procedures-detailed.mdc  # 工作流程详细规范
 │       ├── refactor-phase2-agent.mdc             # 重构阶段二代理规则
 │       ├── refactor-phase3-agent.mdc             # 重构阶段三代理规则(2025-05-27更新)
 │       ├── ui-design-system-auto.mdc             # UI设计系统规范
@@ -858,7 +860,7 @@ web-app/
 - **PHASE-3-STATUS-UPDATE.md**: 📈 调整状态概览，反映回归影响
 - **TASK-P3-016A-真实状态追踪.md**: 📋 记录回归问题发现和修复方案
 
-**更新依据**: 按照@project-management-auto.mdc规则，确保项目状态文档与真实技术状态同步
+**更新依据**: 按照@development-management-unified.mdc规则，确保项目状态文档与真实技术状态同步
 **更新重点**: 反映用户代码修复引发的API Client回归问题，保持文档透明度和准确性
 
 ---
