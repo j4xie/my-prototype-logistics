@@ -596,7 +596,7 @@ npm test
 
 **文档状态**: ✅ 合并完成，基于4个源文件内容  
 **文档类型**: 综合规划执行文档  
-**遵循规范**: refactor-phase3-agent.mdc, task-management-manual.mdc, comprehensive-development-workflow-auto.mdc  
+**遵循规范**: refactor-phase3-agent.mdc, task-management-manual.mdc, development-management-unified.mdc  
 **创建日期**: 2025-01-15  
 **最后更新**: 2025-01-15  
 **源文件**: PHASE-3-PLANNING.md, PHASE-3-WORK-PLAN.md, PHASE-3-PROBLEM-ANALYSIS.md, PHASE-3-ARCHITECTURE-RESTORATION-PLAN-A.md 

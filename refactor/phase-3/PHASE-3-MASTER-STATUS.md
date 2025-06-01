@@ -31,7 +31,7 @@
 - ✅ **代码质量**: TypeScript编译0错误，ESLint警告在可控范围
 - ✅ **功能完整性**: 所有AI组件功能验证通过，演示页面完全可用
 
-**文档一致性管理** (遵循 `project-management-auto`):
+**文档一致性管理** (遵循 `development-management-unified`):
 - ✅ **权威文档更新**: PHASE-3-MASTER-STATUS.md状态同步完成
 - ✅ **任务文档同步**: TASK-P3-016B相关文档状态已更新
 - ✅ **目录结构同步**: 所有新增AI组件文件已记录在目录结构文档中
