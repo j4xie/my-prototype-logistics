@@ -413,6 +413,6 @@ function safeSerialize(data) {
 **文档状态**: ✅ 深度分析完成  
 **分析方法**: 5层验证结果 + 根因分析 + 影响评估  
 **下一步**: 按优先级矩阵执行修复计划  
-**文档维护**: 按照[refactor-phase3-agent.mdc](mdc:../../.cursor/rules/refactor-phase3-agent.mdc)和[project-management-auto.mdc](mdc:../../.cursor/rules/project-management-auto.mdc)规则管理
+**文档维护**: 按照[refactor-phase3-agent.mdc](mdc:../../.cursor/rules/refactor-phase3-agent.mdc)和[development-management-unified.mdc](mdc:../../.cursor/rules/development-management-unified.mdc)规则管理
 
 **重要提醒**: 本次问题分析暴露了**表面指标与深层质量脱节**的严重风险，必须建立comprehensive的验证和监控机制避免类似问题。 

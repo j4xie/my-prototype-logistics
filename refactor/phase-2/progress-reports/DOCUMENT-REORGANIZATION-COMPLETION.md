@@ -123,7 +123,7 @@ refactor/ (重构根目录)
 ## 相关文档
 
 - [文档去重管理规则](.cursor/rules/documentation-deduplication.mdc)
-- [项目管理与文档规范](.cursor/rules/project-management-auto.mdc)
+- [项目管理与文档规范](.cursor/rules/development-management-unified.mdc)
 - [目录结构说明](../../DIRECTORY_STRUCTURE.md)
 - [重构日志](../REFACTOR_LOG.md)
 

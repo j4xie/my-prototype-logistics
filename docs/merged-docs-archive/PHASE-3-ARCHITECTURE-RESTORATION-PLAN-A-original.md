@@ -242,7 +242,7 @@
 
 **文档状态**: ✅ 基于真实验证结果更新  
 **文档类型**: 任务实施计划 (修正版)  
-**遵循规范**: refactor-phase3-core-agent.mdc, task-management-manual.mdc, project-management-auto.mdc  
+**遵循规范**: refactor-phase3-core-agent.mdc, task-management-manual.mdc, development-management-unified.mdc  
 **创建日期**: 2025-01-15  
 **最后更新**: 2025-01-15 23:45 (**基于用户5层验证结果修正**)
 **关键修正**: 从虚假的85%完成度修正为真实的45%，识别出严重的运行时稳定性问题
