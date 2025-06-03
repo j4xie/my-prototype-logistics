@@ -1,0 +1,98 @@
+{
+  "task": "TASK-005",
+  "type": "模块结构验证",
+  "timestamp": "2025-05-27T10:34:32.973Z",
+  "summary": {
+    "totalTests": 5,
+    "passedTests": 3,
+    "failedTests": 2,
+    "score": 60
+  },
+  "results": [
+    {
+      "name": "业务模块目录结构验证",
+      "passed": true,
+      "message": "所有必需业务模块都存在",
+      "timestamp": "2025-05-27T10:34:32.948Z"
+    },
+    {
+      "name": "现代化组件存在性验证",
+      "passed": true,
+      "message": "现代化组件完成率: 100.0% (7/7)",
+      "timestamp": "2025-05-27T10:34:32.950Z"
+    },
+    {
+      "name": "模块导出体系验证",
+      "passed": false,
+      "message": "模块导出完整率: 0.0% (0/6)",
+      "timestamp": "2025-05-27T10:34:32.953Z"
+    },
+    {
+      "name": "组件现代化质量验证",
+      "passed": false,
+      "message": "现代化质量平均分: 75.0%",
+      "timestamp": "2025-05-27T10:34:32.959Z"
+    },
+    {
+      "name": "模块依赖管理验证",
+      "passed": true,
+      "message": "依赖管理规范率: 100.0% (6/6)",
+      "timestamp": "2025-05-27T10:34:32.972Z"
+    }
+  ],
+  "moduleAnalysis": {
+    "trace": {
+      "exists": true,
+      "modernComponents": [
+        "TraceRecordView.jsx",
+        "TraceRecordForm.jsx"
+      ],
+      "hasIndex": true,
+      "qualityScore": 0
+    },
+    "farming": {
+      "exists": true,
+      "modernComponents": [
+        "FarmingRecordView.jsx"
+      ],
+      "hasIndex": true,
+      "qualityScore": 0
+    },
+    "processing": {
+      "exists": true,
+      "modernComponents": [
+        "ProcessingRecordView.jsx"
+      ],
+      "hasIndex": true,
+      "qualityScore": 0
+    },
+    "logistics": {
+      "exists": true,
+      "modernComponents": [
+        "LogisticsRecordView.jsx"
+      ],
+      "hasIndex": true,
+      "qualityScore": 0
+    },
+    "admin": {
+      "exists": true,
+      "modernComponents": [
+        "AdminDashboard.jsx"
+      ],
+      "hasIndex": true,
+      "qualityScore": 0
+    },
+    "profile": {
+      "exists": true,
+      "modernComponents": [
+        "UserProfile.jsx"
+      ],
+      "hasIndex": true,
+      "qualityScore": 0
+    }
+  },
+  "recommendations": [
+    "完善模块导出体系，为每个模块创建规范的index.js文件",
+    "提升组件现代化质量，确保使用React现代化语法和设计系统"
+  ]
+}
