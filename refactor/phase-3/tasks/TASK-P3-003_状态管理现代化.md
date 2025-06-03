@@ -4,7 +4,7 @@
 
 - **任务ID**: TASK-P3-003
 - **优先级**: P1
-- **状态**: 🚀 进行中
+- **状态**: 🔄 85%完成 (核心功能完成，离线支持和测试待完成)
 - **开始日期**: 2025-05-28
 - **完成日期**: -
 - **负责人**: Phase-3技术栈现代化团队
@@ -183,7 +183,7 @@ export const useAppStore = create<AppState>()(
       online: navigator.onLine,
       loading: false,
       sidebarCollapsed: false,
-      
+
       setTheme: (theme) => set({ theme }),
       setLanguage: (language) => set({ language }),
       setOnline: (online) => set({ online }),
@@ -191,10 +191,10 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'app-state',
-      partialize: (state) => ({ 
-        theme: state.theme, 
+      partialize: (state) => ({
+        theme: state.theme,
         language: state.language,
-        sidebarCollapsed: state.sidebarCollapsed 
+        sidebarCollapsed: state.sidebarCollapsed
       }),
     }
   )
@@ -273,4 +273,4 @@ export const useAppStore = create<AppState>()(
 - 避免过度的状态订阅导致的重渲染
 - 合理设计状态结构，避免深度嵌套
 - 使用状态分片减少不必要的组件更新
-- 离线队列大小控制，避免内存泄漏 
+- 离线队列大小控制，避免内存泄漏

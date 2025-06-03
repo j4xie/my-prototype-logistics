@@ -1,0 +1,218 @@
+{
+  "timestamp": "2025-05-27T10:34:32.876Z",
+  "config": "TASK-P2-001-性能验证",
+  "meta": {
+    "taskId": "TASK-P2-001",
+    "validationType": "performance",
+    "module": "移动端UI适配问题修复",
+    "reportPath": "refactor/phase-2/progress-reports/",
+    "version": "1.0.0"
+  },
+  "summary": {
+    "total": 10,
+    "passed": 6,
+    "failed": 4,
+    "score": 60
+  },
+  "details": {
+    "fileSizes": {
+      "passed": 6,
+      "failed": 0,
+      "items": [
+        {
+          "path": "src/utils/common/media-query-manager.js",
+          "description": "媒体查询管理器",
+          "status": "PASS",
+          "size": 6616,
+          "sizeKB": 6.46,
+          "maxSize": 15000,
+          "maxSizeKB": 14.65
+        },
+        {
+          "path": "src/components/ui/TouchGesture.js",
+          "description": "触摸手势组件",
+          "status": "PASS",
+          "size": 7822,
+          "sizeKB": 7.64,
+          "maxSize": 20000,
+          "maxSizeKB": 19.53
+        },
+        {
+          "path": "src/components/ui/navigation/MobileNav.js",
+          "description": "移动端导航组件",
+          "status": "PASS",
+          "size": 7224,
+          "sizeKB": 7.05,
+          "maxSize": 25000,
+          "maxSizeKB": 24.41
+        },
+        {
+          "path": "src/components/ui/navigation/MobileDrawer.js",
+          "description": "移动端抽屉组件",
+          "status": "PASS",
+          "size": 8814,
+          "sizeKB": 8.61,
+          "maxSize": 20000,
+          "maxSizeKB": 19.53
+        },
+        {
+          "path": "src/components/ui/layout/FluidContainer.js",
+          "description": "流式容器组件",
+          "status": "PASS",
+          "size": 2151,
+          "sizeKB": 2.1,
+          "maxSize": 10000,
+          "maxSizeKB": 9.77
+        },
+        {
+          "path": "src/components/ui/layout/PageLayout.js",
+          "description": "页面布局组件",
+          "status": "PASS",
+          "size": 6361,
+          "sizeKB": 6.21,
+          "maxSize": 15000,
+          "maxSizeKB": 14.65
+        }
+      ]
+    },
+    "performancePatterns": {
+      "passed": 0,
+      "failed": 3,
+      "items": [
+        {
+          "path": "src/utils/common/media-query-manager.js",
+          "description": "媒体查询管理器性能优化",
+          "status": "FAIL",
+          "score": 0,
+          "patterns": [
+            {
+              "pattern": "/useMemo/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "/useCallback/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "/React\\.memo/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "/lazy/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "debounce",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "pattern": "throttle",
+              "found": false,
+              "type": "string"
+            }
+          ],
+          "goodPatterns": 0,
+          "totalPatterns": 6
+        },
+        {
+          "path": "src/components/ui/TouchGesture.js",
+          "description": "触摸手势组件性能优化",
+          "status": "FAIL",
+          "score": 20,
+          "patterns": [
+            {
+              "pattern": "/useCallback/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "/preventDefault/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "/passive.*true/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "/removeEventListener/",
+              "found": true,
+              "type": "regex"
+            },
+            {
+              "pattern": "cleanup",
+              "found": false,
+              "type": "string"
+            }
+          ],
+          "goodPatterns": 1,
+          "totalPatterns": 5
+        },
+        {
+          "path": "src/components/ui/layout/PageLayout.js",
+          "description": "页面布局组件性能优化",
+          "status": "FAIL",
+          "score": 0,
+          "patterns": [
+            {
+              "pattern": "/React\\.memo/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "/useMemo/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "/shouldComponentUpdate/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "will-change",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "pattern": "transform3d",
+              "found": false,
+              "type": "string"
+            }
+          ],
+          "goodPatterns": 0,
+          "totalPatterns": 5
+        }
+      ]
+    },
+    "optimization": {
+      "passed": 0,
+      "failed": 1,
+      "items": [
+        {
+          "path": "src/components/ui/index.js",
+          "description": "UI组件加载优化",
+          "status": "FAIL",
+          "optimizations": {
+            "lazyLoading": false,
+            "dynamicImport": false,
+            "treeShaking": true
+          },
+          "score": 1
+        }
+      ]
+    }
+  },
+  "recommendations": [
+    "改进性能模式: src/utils/common/media-query-manager.js (当前: 0%, 建议: ≥70%)",
+    "改进性能模式: src/components/ui/TouchGesture.js (当前: 20%, 建议: ≥70%)",
+    "改进性能模式: src/components/ui/layout/PageLayout.js (当前: 0%, 建议: ≥70%)",
+    "增加组件懒加载和代码分割优化"
+  ]
+}

@@ -43,7 +43,7 @@ class ValidationCollector {
       details,
       codeProblems
     });
-    
+
     this.results.summary.total++;
     if (status === 'PASS') this.results.summary.passed++;
     else if (status === 'FAIL') this.results.summary.failed++;
@@ -68,17 +68,17 @@ class ValidationCollector {
     if (!fs.existsSync(reportDir)) {
       fs.mkdirSync(reportDir, { recursive: true });
     }
-    
+
     const reportFile = path.join(reportDir, `api-hooks-integration-${Date.now()}.json`);
     fs.writeFileSync(reportFile, JSON.stringify(this.results, null, 2));
-    
+
     console.log('\n📊 TASK-P3-016A API Hook集成验证报告');
     console.log('='.repeat(50));
     console.log(`✅ 通过: ${this.results.summary.passed}`);
     console.log(`❌ 失败: ${this.results.summary.failed}`);
     console.log(`⚠️  警告: ${this.results.summary.warnings}`);
     console.log(`📁 报告: ${reportFile}`);
-    
+
     if (this.results.codeProblems.length > 0) {
       console.log('\n🔍 发现的代码问题:');
       this.results.codeProblems.forEach((problem, i) => {
@@ -97,7 +97,7 @@ class ValidationCollector {
  */
 async function validateApiClientIntegration(collector) {
   console.log('\n🔍 验证API客户端基础集成...');
-  
+
   try {
     // 检查API客户端文件
     const apiClientPath = path.join(__dirname, '../../../src/lib/api.ts');
@@ -115,7 +115,7 @@ async function validateApiClientIntegration(collector) {
 
     // 读取并分析API客户端代码
     const apiContent = fs.readFileSync(apiClientPath, 'utf8');
-    
+
     // 检查关键功能
     const checks = [
       {
@@ -202,7 +202,7 @@ async function validateApiClientIntegration(collector) {
  */
 async function validateHookArchitecture(collector) {
   console.log('\n🔍 验证Hook架构设计...');
-  
+
   try {
     const hookPath = path.join(__dirname, '../../../src/hooks/useApi-simple.ts');
     if (!fs.existsSync(hookPath)) {
@@ -221,7 +221,7 @@ async function validateHookArchitecture(collector) {
         validator: (content) => {
           // 检查是否所有导出的函数都遵循Hook命名规范
           const exportedFunctions = content.match(/export function (\w+)/g) || [];
-          const nonHookFunctions = exportedFunctions.filter(func => 
+          const nonHookFunctions = exportedFunctions.filter(func =>
             !func.includes('use') && !func.includes('login') && !func.includes('clearCache')
           );
           return nonHookFunctions.length === 0;
@@ -246,7 +246,7 @@ async function validateHookArchitecture(collector) {
 
     hookChecks.forEach(check => {
       const isValid = check.validator ? check.validator(hookContent) : hookContent.match(check.pattern);
-      
+
       if (!isValid) {
         architectureProblems.push({
           type: 'Hook Design Issue',
@@ -286,7 +286,7 @@ async function validateHookArchitecture(collector) {
  */
 async function validateMockApiCompatibility(collector) {
   console.log('\n🔍 验证Mock API兼容性...');
-  
+
   try {
     // 检查API路由配置
     const apiRoutesPath = path.join(__dirname, '../../../src/app/api');
@@ -350,7 +350,7 @@ async function validateMockApiCompatibility(collector) {
  */
 async function validateTestPageUtility(collector) {
   console.log('\n🔍 验证测试页面实用性...');
-  
+
   try {
     const testPagePath = path.join(__dirname, '../../../src/components/test/ApiTestPage.tsx');
     if (!fs.existsSync(testPagePath)) {
@@ -410,15 +410,15 @@ async function validateTestPageUtility(collector) {
  */
 async function runValidation() {
   const collector = new ValidationCollector();
-  
+
   console.log('🚀 启动TASK-P3-016A API Hook集成深度验证');
   console.log('📋 验证重点: 发现原本项目代码问题，而非修改测试');
-  
+
   await validateApiClientIntegration(collector);
   await validateHookArchitecture(collector);
   await validateMockApiCompatibility(collector);
   await validateTestPageUtility(collector);
-  
+
   // 生成改进建议
   if (collector.results.codeProblems.length > 0) {
     collector.addRecommendation(
@@ -427,7 +427,7 @@ async function runValidation() {
       '建议按优先级逐步修复发现的问题，重点关注P0级别的阻塞性问题'
     );
   }
-  
+
   collector.addRecommendation(
     'Integration',
     'Hook与现有API的集成需要更深入测试',
@@ -435,7 +435,7 @@ async function runValidation() {
   );
 
   const results = collector.report();
-  
+
   // 返回验证结果
   process.exit(results.summary.failed > 0 ? 1 : 0);
 }
@@ -448,4 +448,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runValidation, VALIDATION_META }; 
+module.exports = { runValidation, VALIDATION_META };
