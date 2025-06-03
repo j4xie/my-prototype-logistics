@@ -1,2 +1,0 @@
-// Style mock
-module.exports = {}; 

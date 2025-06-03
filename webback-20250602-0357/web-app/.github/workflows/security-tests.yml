@@ -1,0 +1,144 @@
+name: 安全测试自动化
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  # 允许手动触发工作流
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: '要运行的测试类型 (xss, csrf, permissions, sql, all)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - xss
+          - csrf
+          - permissions
+          - sql
+      report_only:
+        description: '只生成报告，不运行测试'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  security-tests:
+    name: 安全测试
+    runs-on: ubuntu-latest
+    
+    strategy:
+      # 测试失败时不取消整个测试运行
+      fail-fast: false
+      matrix:
+        test_type:
+          - xss
+          - csrf
+          - permissions
+          - sql
+    
+    # 如果是手动触发且选择了 'all' 以外的类型，则只运行指定类型的测试
+    if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.test_type != 'all' && github.event.inputs.test_type != 'matrix.test_type') }}
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+      
+      - name: 设置Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+      
+      - name: 安装依赖
+        run: npm ci
+        working-directory: ./web-app
+      
+      - name: 安装安全测试依赖
+        run: npm ci
+        working-directory: ./web-app/tests/security
+      
+      - name: 启动测试服务器
+        run: |
+          npm run start &
+          # 等待服务器启动
+          sleep 10
+        working-directory: ./web-app
+      
+      - name: 运行安全测试
+        run: |
+          REPORT_FLAG=""
+          if [ "${{ github.event.inputs.report_only }}" == "true" ]; then
+            REPORT_FLAG="--report-only"
+          fi
+          node tests/run-security-tests.js --test ${{ matrix.test_type }} --ci $REPORT_FLAG
+        working-directory: ./web-app
+      
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-test-reports-${{ matrix.test_type }}
+          path: |
+            web-app/tests/security/reports
+          retention-days: 30
+      
+      - name: 上传失败测试截图
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-test-failures-${{ matrix.test_type }}
+          path: |
+            web-app/tests/security/screenshots
+          retention-days: 7
+
+  # 聚合测试报告并发送通知
+  security-report:
+    name: 生成安全测试报告
+    needs: security-tests
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+      
+      - name: 下载所有测试报告
+        uses: actions/download-artifact@v3
+        with:
+          path: all-reports
+      
+      - name: 设置Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      
+      - name: 安装报告聚合工具
+        run: npm install -g html-report-merger
+      
+      - name: 合并HTML报告
+        run: |
+          mkdir -p merged-reports
+          mkdir -p raw-reports
+          find all-reports -name "*.html" -exec cp {} ./raw-reports/ \;
+          html-report-merger -i "./raw-reports/*.html" -o "merged-reports/merged-security-report.html"
+      
+      - name: 上传合并后的报告
+        uses: actions/upload-artifact@v3
+        with:
+          name: merged-security-reports
+          path: merged-reports
+          retention-days: 30
+      
+      - name: 发送测试结果通知
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: security-notifications
+          SLACK_TITLE: 安全测试结果
+          SLACK_MESSAGE: "安全测试完成! 查看详细报告: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SLACK_COLOR: ${{ job.status }} 

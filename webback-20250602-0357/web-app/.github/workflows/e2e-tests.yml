@@ -1,0 +1,125 @@
+name: 端到端测试自动化
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  # 允许手动触发工作流
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    name: 端到端测试
+    runs-on: ubuntu-latest
+    
+    strategy:
+      # 测试失败时不取消整个测试运行
+      fail-fast: false
+      matrix:
+        # 指定要测试的浏览器
+        browser: [chromium, firefox, webkit]
+        # 指定测试套件
+        suite: [login, trace]
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+      
+      - name: 设置Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+      
+      - name: 安装依赖
+        run: npm ci
+        working-directory: ./web-app
+      
+      - name: 安装Playwright浏览器
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+        working-directory: ./web-app
+      
+      - name: 启动服务器
+        run: |
+          npm run start &
+          # 等待服务器启动
+          sleep 10
+        working-directory: ./web-app
+      
+      - name: 运行端到端测试
+        run: |
+          node tests/e2e/e2e-auto-test.js \
+            --ci \
+            --browsers=${{ matrix.browser }} \
+            --suite=${{ matrix.suite }} \
+            --report=html,json,junit \
+            --retry=2 \
+            --parallel=2
+        working-directory: ./web-app
+      
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports-${{ matrix.browser }}-${{ matrix.suite }}
+          path: |
+            web-app/tests/e2e/reports
+            web-app/tests/e2e/results
+          retention-days: 30
+      
+      - name: 上传失败测试截图和视频
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-failures-${{ matrix.browser }}-${{ matrix.suite }}
+          path: |
+            web-app/test-results
+          retention-days: 7
+
+  # 聚合测试报告并发送通知
+  report:
+    name: 生成测试报告
+    needs: e2e-tests
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+      
+      - name: 下载所有测试报告
+        uses: actions/download-artifact@v3
+        with:
+          path: all-reports
+      
+      - name: 设置Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      
+      - name: 安装报告聚合工具
+        run: npm install -g junit-report-merger
+      
+      - name: 合并JUnit报告
+        run: |
+          mkdir -p merged-reports
+          find all-reports -name "*.xml" -exec cp {} ./raw-reports/ \;
+          jrm merged-reports/merged-report.xml "raw-reports/*.xml"
+      
+      - name: 上传合并后的报告
+        uses: actions/upload-artifact@v3
+        with:
+          name: merged-test-reports
+          path: merged-reports
+          retention-days: 30
+      
+      - name: 发送测试结果通知
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: ci-notifications
+          SLACK_TITLE: 端到端测试结果
+          SLACK_MESSAGE: "测试完成! 查看详细报告: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SLACK_COLOR: ${{ job.status }} 

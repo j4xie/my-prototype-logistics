@@ -1,0 +1,274 @@
+{
+  "timestamp": "2025-05-27T10:34:32.897Z",
+  "config": "TASK-P2-001-可访问性验证",
+  "meta": {
+    "taskId": "TASK-P2-001",
+    "validationType": "accessibility",
+    "module": "移动端UI适配问题修复",
+    "reportPath": "refactor/phase-2/progress-reports/",
+    "version": "1.0.0"
+  },
+  "summary": {
+    "total": 7,
+    "passed": 1,
+    "failed": 6,
+    "score": 14
+  },
+  "details": {
+    "ariaAttributes": {
+      "passed": 0,
+      "failed": 2,
+      "items": [
+        {
+          "path": "src/components/ui/navigation/MobileDrawer.js",
+          "description": "移动端抽屉ARIA属性",
+          "status": "FAIL",
+          "score": 60,
+          "attributes": [
+            {
+              "attribute": "role=\"dialog\"",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "attribute": "aria-modal=\"true\"",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "attribute": "aria-labelledby",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "attribute": "aria-describedby",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "attribute": "/aria-hidden/",
+              "found": true,
+              "type": "regex"
+            }
+          ],
+          "foundAttributes": 3,
+          "totalAttributes": 5
+        },
+        {
+          "path": "src/components/ui/navigation/MobileNav.js",
+          "description": "移动端导航ARIA属性",
+          "status": "FAIL",
+          "score": 80,
+          "attributes": [
+            {
+              "attribute": "role=\"navigation\"",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "attribute": "aria-label",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "attribute": "aria-expanded",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "attribute": "aria-current",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "attribute": "/aria-hidden/",
+              "found": true,
+              "type": "regex"
+            }
+          ],
+          "foundAttributes": 4,
+          "totalAttributes": 5
+        }
+      ]
+    },
+    "semanticHtml": {
+      "passed": 1,
+      "failed": 1,
+      "items": [
+        {
+          "path": "src/components/ui/navigation/MobileDrawer.js",
+          "description": "移动端抽屉语义化HTML",
+          "status": "FAIL",
+          "score": 20,
+          "elements": [
+            {
+              "element": "<nav",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "element": "<button",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "element": "<dialog",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "element": "/<header|<main|<aside/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "element": "/role=/",
+              "found": true,
+              "type": "regex"
+            }
+          ],
+          "foundElements": 1,
+          "totalElements": 5
+        },
+        {
+          "path": "src/components/ui/navigation/MobileNav.js",
+          "description": "移动端导航语义化HTML",
+          "status": "PASS",
+          "score": 80,
+          "elements": [
+            {
+              "element": "<nav",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "element": "<button",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "element": "<ul",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "element": "<li",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "element": "/<a\\s/",
+              "found": false,
+              "type": "regex"
+            }
+          ],
+          "foundElements": 4,
+          "totalElements": 5
+        }
+      ]
+    },
+    "keyboardNavigation": {
+      "passed": 0,
+      "failed": 2,
+      "items": [
+        {
+          "path": "src/components/ui/TouchGesture.js",
+          "description": "触摸手势键盘导航",
+          "status": "FAIL",
+          "score": 0,
+          "patterns": [
+            {
+              "pattern": "onKeyDown",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "pattern": "onKeyUp",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "pattern": "tabIndex",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "pattern": "/keyCode|key.*Enter|key.*Space/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "focus()",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "pattern": "blur()",
+              "found": false,
+              "type": "string"
+            }
+          ],
+          "foundPatterns": 0,
+          "totalPatterns": 6
+        },
+        {
+          "path": "src/components/ui/navigation/MobileDrawer.js",
+          "description": "移动端抽屉键盘导航",
+          "status": "FAIL",
+          "score": 20,
+          "patterns": [
+            {
+              "pattern": "onKeyDown",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "pattern": "tabIndex",
+              "found": true,
+              "type": "string"
+            },
+            {
+              "pattern": "/Escape|escape/",
+              "found": false,
+              "type": "regex"
+            },
+            {
+              "pattern": "focus()",
+              "found": false,
+              "type": "string"
+            },
+            {
+              "pattern": "autoFocus",
+              "found": false,
+              "type": "string"
+            }
+          ],
+          "foundPatterns": 1,
+          "totalPatterns": 5
+        }
+      ]
+    },
+    "focusManagement": {
+      "passed": 0,
+      "failed": 1,
+      "items": [
+        {
+          "path": "src/components/ui/layout/PageLayout.js",
+          "description": "页面布局焦点管理",
+          "status": "FAIL",
+          "score": 0,
+          "foundPatterns": 0,
+          "totalPatterns": 6
+        }
+      ]
+    }
+  },
+  "recommendations": [
+    "添加ARIA属性: src/components/ui/navigation/MobileDrawer.js - 缺少: aria-labelledby, aria-describedby",
+    "添加ARIA属性: src/components/ui/navigation/MobileNav.js - 缺少: aria-expanded",
+    "改进语义化HTML: src/components/ui/navigation/MobileDrawer.js (当前: 20%, 建议: ≥80%)",
+    "改进键盘导航: src/components/ui/TouchGesture.js (当前: 0%, 建议: ≥75%)",
+    "改进键盘导航: src/components/ui/navigation/MobileDrawer.js (当前: 20%, 建议: ≥75%)",
+    "改进焦点管理：添加更多焦点相关的处理逻辑"
+  ]
+}

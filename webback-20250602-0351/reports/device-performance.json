@@ -1,0 +1,101 @@
+{
+  "timestamp": "2023-08-21T15:30:45.123Z",
+  "testResourceCount": 180,
+  "deviceResults": {
+    "lowEndDevice": {
+      "name": "低端安卓设备",
+      "optimalBatchSize": 10,
+      "optimalLoadTime": 3245.67,
+      "averageThroughput": 254.32,
+      "timeToFirstResource": 821.45,
+      "p95LoadTime": 3780.21,
+      "successRate": 92.8
+    },
+    "midRangeDevice": {
+      "name": "中端安卓设备",
+      "optimalBatchSize": 20,
+      "optimalLoadTime": 1872.34,
+      "averageThroughput": 567.89,
+      "timeToFirstResource": 412.67,
+      "p95LoadTime": 2103.45,
+      "successRate": 97.5
+    },
+    "highEndDevice": {
+      "name": "高端iOS设备",
+      "optimalBatchSize": 30,
+      "optimalLoadTime": 1124.78,
+      "averageThroughput": 986.32,
+      "timeToFirstResource": 198.45,
+      "p95LoadTime": 1389.67,
+      "successRate": 99.2
+    },
+    "tabletDevice": {
+      "name": "平板设备",
+      "optimalBatchSize": 25,
+      "optimalLoadTime": 1456.89,
+      "averageThroughput": 732.45,
+      "timeToFirstResource": 301.23,
+      "p95LoadTime": 1687.34,
+      "successRate": 98.6
+    }
+  },
+  "recommendations": {
+    "lowEndDevice": {
+      "recommendedBatchSize": 10,
+      "recommendedCacheSize": 51,
+      "loadingStrategy": "渐进式加载",
+      "prioritizationNeeded": true
+    },
+    "midRangeDevice": {
+      "recommendedBatchSize": 20,
+      "recommendedCacheSize": 102,
+      "loadingStrategy": "批量加载",
+      "prioritizationNeeded": true
+    },
+    "highEndDevice": {
+      "recommendedBatchSize": 30,
+      "recommendedCacheSize": 204,
+      "loadingStrategy": "批量加载",
+      "prioritizationNeeded": false
+    },
+    "tabletDevice": {
+      "recommendedBatchSize": 25,
+      "recommendedCacheSize": 153,
+      "loadingStrategy": "批量加载",
+      "prioritizationNeeded": false
+    }
+  },
+  "memoryUsage": {
+    "lowEndDevice": {
+      "peakMemory": 432.56,
+      "averageMemory": 267.89,
+      "memoryEfficiency": 0.76
+    },
+    "midRangeDevice": {
+      "peakMemory": 678.23,
+      "averageMemory": 421.45,
+      "memoryEfficiency": 0.83
+    },
+    "highEndDevice": {
+      "peakMemory": 923.45,
+      "averageMemory": 576.23,
+      "memoryEfficiency": 0.91
+    },
+    "tabletDevice": {
+      "peakMemory": 782.67,
+      "averageMemory": 498.34,
+      "memoryEfficiency": 0.87
+    }
+  },
+  "testDetails": {
+    "testDate": "2023-08-21",
+    "testDuration": "02:45:32",
+    "testEnvironment": "模拟环境",
+    "networkConditions": [
+      "2G (250kbps, RTT 300ms)",
+      "3G (750kbps, RTT 150ms)",
+      "4G (4Mbps, RTT 50ms)",
+      "Wi-Fi (15Mbps, RTT 20ms)"
+    ]
+  }
+} 

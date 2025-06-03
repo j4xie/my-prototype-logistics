@@ -75,24 +75,24 @@ const mockTokens: Record<string, {
     username: 'admin',
     role: 'admin',
     permissions: ['read', 'write', 'delete', 'admin'],
-    issuedAt: '2024-01-15T08:00:00Z',
-    expiresAt: '2024-01-16T08:00:00Z',
+    issuedAt: '2025-06-03T08:00:00Z',
+    expiresAt: '2025-06-04T08:00:00Z',
   },
   'mock-jwt-token-manager': {
     userId: 2,
     username: 'manager',
-    role: 'manager', 
+    role: 'manager',
     permissions: ['read', 'write'],
-    issuedAt: '2024-01-15T08:00:00Z',
-    expiresAt: '2024-01-16T08:00:00Z',
+    issuedAt: '2025-06-03T08:00:00Z',
+    expiresAt: '2025-06-04T08:00:00Z',
   },
   'mock-jwt-token-user': {
     userId: 3,
     username: 'user',
     role: 'user',
     permissions: ['read'],
-    issuedAt: '2024-01-15T08:00:00Z',
-    expiresAt: '2024-01-16T08:00:00Z',
+    issuedAt: '2025-06-03T08:00:00Z',
+    expiresAt: '2025-06-04T08:00:00Z',
   },
   // 过期令牌示例
   'mock-jwt-token-expired': {
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
 
     // 查找令牌信息
     const tokenInfo = mockTokens[token];
-    
+
     if (!tokenInfo) {
       const response: VerifyTokenResponse = {
         isValid: false,
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('令牌验证API错误:', error);
-    
+
     const response: VerifyTokenResponse = {
       isValid: false,
     };
@@ -232,4 +232,4 @@ export async function OPTIONS() {
       'Access-Control-Max-Age': '86400',
     },
   });
-} 
+}

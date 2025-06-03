@@ -1,0 +1,734 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>场地监控 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        :root {
+            --primary-color: #1677FF;
+            --primary-hover: #4096FF;
+            --primary-active: #0958D9;
+            --bg-layout: #F0F2F5;
+            --bg-container: #FFFFFF;
+            --border-color: #f0f0f0;
+            --border-radius-base: 8px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+            --spacing-md: 16px;
+            --nav-height: 64px;
+            --bottom-tab-height: 60px;
+            --safe-area-bottom: env(safe-area-inset-bottom, 0);
+        }
+        .page-container { max-width: 390px; margin: 0 auto; min-height: 100vh; background-color: var(--bg-layout); }
+        .top-nav { position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height); background-color: var(--primary-color); color: white; z-index: 999; box-shadow: var(--shadow-sm); }
+        .top-nav-container { max-width: 390px; margin: 0 auto; height: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--spacing-md); }
+        .icon-btn { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.1); margin-right: 8px; transition: all 0.3s ease; }
+        .icon-btn:hover { background-color: rgba(255,255,255,0.2); transform: scale(1.05); }
+        .content-container { padding-top: calc(var(--nav-height) + var(--spacing-md)); padding-bottom: calc(var(--bottom-tab-height) + var(--safe-area-bottom) + var(--spacing-md)); }
+        .content-area { max-width: 390px; margin: 0 auto; padding: 0 var(--spacing-md); }
+        .card { background-color: var(--bg-container); border-radius: var(--border-radius-base); box-shadow: var(--shadow-sm); margin-bottom: var(--spacing-md); overflow: hidden; transition: all 0.3s ease; }
+        .card:hover { box-shadow: var(--shadow-md); }
+        .card-header { padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+        .card-header h2 { font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.85); }
+        .card-body { padding: 16px; }
+        .list-item { margin-bottom: 12px; padding: 8px; background: #f9f9f9; border-radius: var(--border-radius-base); }
+        .list-item:last-child { margin-bottom: 0; }
+        
+        /* 底部导航栏样式 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #ffffff;
+            border-top: 1px solid #eeeeee;
+            z-index: 999;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .bottom-nav-container {
+            max-width: 390px;
+            height: 100%;
+            margin: 0 auto;
+        }
+        
+        .bottom-nav-items {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            justify-content: space-around;
+            align-items: stretch;
+        }
+        
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 33.33%;
+            height: 100%;
+            color: #999999;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .bottom-nav-item.active {
+            color: #1677FF;
+        }
+        
+        .bottom-nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .bottom-nav-text {
+            line-height: 1.2;
+            transition: all 0.2s ease;
+        }
+    
+/* 按钮视觉反馈样式 */
+.trace-button-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  opacity: 0.9;
+}
+
+.trace-button-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.trace-button-active:active {
+  transform: scale(0.97);
+}</style>
+<style class="button-navigation-fix">.top-nav * { pointer-events: auto; }
+.header-actions, .header-buttons { z-index: 10; }
+.action-btn, .control-btn, .monitor-action, .farming-action { position: relative; z-index: 15; }.top-nav * { pointer-events: auto; }
+.header-actions, .header-buttons { z-index: 10; }
+.action-btn, .control-btn, .monitor-action, .farming-action { position: relative; z-index: 15; }
+.monitoring-card, .control-panel, .data-container { z-index: 5 !important; }
+.monitoring-action button, .control-panel button { z-index: 20 !important; }
+button, .btn, a.button, [role="button"] { pointer-events: auto !important; }
+.hidden-action, [data-visibility="hidden"] { opacity: 0.5; pointer-events: auto !important; }</style><script src="../components/trace-error-handler.js"></script><script src="../components/trace-ui.js"></script><script src="../components/trace-a11y.js"></script><script src="../components/trace-store.js"></script></head>
+<body class="bg-gray-100">
+    <div class="page-container">
+        <!-- 顶部导航栏 -->
+        <header class="top-nav" style="pointer-events: none;">
+            <div class="top-nav-container">
+                <div class="flex items-center">
+                    <a href="../home/home-farming.html" class="icon-btn hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-farming-monitor-html-0-1743912419125" aria-label="arrow left" tabindex="0">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-lg font-medium">场地监控</h1>
+                </div>
+                <div class="flex items-center">
+                    <button class="icon-btn trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="refreshBtn" aria-label="sync alt" tabindex="0">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="content-container">
+            <div class="content-area">
+                <!-- 畜禽类型选择 -->
+                <div class="card mb-5">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-paw text-primary mr-2"></i>
+                            畜禽类型选择
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="livestock-type-card p-3 rounded-lg border border-gray-200 cursor-pointer" data-type="normal">
+                                <div class="flex flex-col items-center">
+                                    <i class="fas fa-piggy-bank text-gray-600 text-2xl mb-2"></i>
+                                    <span class="text-sm font-medium">普通畜禽</span>
+                                    <span class="text-xs text-gray-500 mt-1">基础监控</span>
+                                </div>
+                            </div>
+                            <div class="livestock-type-card p-3 rounded-lg border border-gray-200 cursor-pointer" data-type="highend">
+                                <div class="flex flex-col items-center">
+                                    <i class="fas fa-trophy text-amber-600 text-2xl mb-2"></i>
+                                    <span class="text-sm font-medium">高端畜禽</span>
+                                    <span class="text-xs text-gray-500 mt-1">精细监控</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 监控摄像头 -->
+                <div class="card mb-5">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-video text-primary mr-2"></i>
+                            实时监控
+                        </h2>
+                        <button class="text-primary text-sm trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="fullScreenBtn" aria-label="expand alt" tabindex="0">
+                            <i class="fas fa-expand-alt"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="relative">
+                            <img src="assets/images/monitor-placeholder.jpg" alt="监控画面" class="w-full h-48 object-cover">
+                            <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                直播中
+                            </div>
+                            <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
+                                猪舍A区 · 摄像头01 · 2025-03-18 14:30:22
+                            </div>
+                        </div>
+                        <div class="p-3 grid grid-cols-4 gap-2">
+                            <div class="camera-thumb">
+                                <img src="assets/images/monitor-thumb1.jpg" alt="猪舍A区" class="w-full h-12 object-cover rounded border border-primary">
+                                <div class="text-xs text-center mt-1 truncate">猪舍A区</div>
+                            </div>
+                            <div class="camera-thumb">
+                                <img src="assets/images/monitor-thumb2.jpg" alt="猪舍B区" class="w-full h-12 object-cover rounded">
+                                <div class="text-xs text-center mt-1 truncate">猪舍B区</div>
+                            </div>
+                            <div class="camera-thumb">
+                                <img src="assets/images/monitor-thumb3.jpg" alt="饲料区" class="w-full h-12 object-cover rounded">
+                                <div class="text-xs text-center mt-1 truncate">饲料区</div>
+                            </div>
+                            <div class="camera-thumb">
+                                <img src="assets/images/monitor-thumb4.jpg" alt="出入区" class="w-full h-12 object-cover rounded">
+                                <div class="text-xs text-center mt-1 truncate">出入区</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 环境监测 - 通用 -->
+                <div class="card mb-5">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-thermometer-half text-primary mr-2"></i>
+                            环境监测
+                        </h2>
+                        <span class="text-xs text-green-500">
+                            <i class="fas fa-check-circle"></i> 正常
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="text-xs text-gray-500 mb-1">温度</div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-medium">24.5°C</span>
+                                    <span class="text-xs text-green-500">正常</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: 65%"></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="text-xs text-gray-500 mb-1">湿度</div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-medium">67%</span>
+                                    <span class="text-xs text-green-500">正常</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: 67%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 高端专属 - 环境高级监测 -->
+                <div class="card mb-5 highend-feature" style="display: none;">
+                    <div class="card-header bg-[#F0F5FF]">
+                        <h2 class="card-title">
+                            <i class="fas fa-microscope text-[#722ED1] mr-2"></i>
+                            高级环境指标
+                        </h2>
+                        <span class="text-xs text-[#722ED1]">
+                            <i class="fas fa-check-circle"></i> 优质
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="text-xs text-gray-500 mb-1">氨气浓度</div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-medium">5.2ppm</span>
+                                    <span class="text-xs text-green-500">优</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: 20%"></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="text-xs text-gray-500 mb-1">二氧化碳</div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-medium">720ppm</span>
+                                    <span class="text-xs text-green-500">优</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: 35%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="text-xs text-gray-500 mb-1">光照强度</div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-medium">450lux</span>
+                                    <span class="text-xs text-green-500">优</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: 75%"></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="text-xs text-gray-500 mb-1">噪音水平</div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-medium">42dB</span>
+                                    <span class="text-xs text-green-500">优</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: 42%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 高端专属 - 饲料投喂监控 -->
+                <div class="card mb-5 highend-feature" style="display: none;">
+                    <div class="card-header bg-[#F0F5FF]">
+                        <h2 class="card-title">
+                            <i class="fas fa-utensils text-[#1890FF] mr-2"></i>
+                            饲料投喂监控
+                        </h2>
+                        <button class="text-[#1890FF] text-sm trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="adjustFeedBtn" aria-label="cog" tabindex="0">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <div class="text-xs text-gray-500">今日投喂量</div>
+                                <div class="text-lg font-medium">487.5kg</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500">平均采食量</div>
+                                <div class="text-lg font-medium">2.4kg/头</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500">饲料余量</div>
+                                <div class="text-lg font-medium">56%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <div class="text-sm font-medium mb-2">今日投喂计划</div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span>06:00 早间投喂</span>
+                                    <span class="text-green-500">已完成</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span>12:00 午间投喂</span>
+                                    <span class="text-green-500">已完成</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span>18:00 晚间投喂</span>
+                                    <span class="text-blue-500">待投喂</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 flex justify-between">
+                            <button class="btn btn-outline text-xs py-1 px-3 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-farming-monitor-html-1743899089409-3" aria-label="查看历史" tabindex="0">查看历史</button>
+                            <button class="btn btn-primary text-xs py-1 px-3 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-farming-monitor-html-1743899089409-4" aria-label="调整投喂量" tabindex="0">调整投喂量</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 告警记录 -->
+                <div class="card mb-5">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-exclamation-triangle text-primary mr-2"></i>
+                            告警记录
+                        </h2>
+                        <span class="text-xs">
+                            近7天
+                        </span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-4 text-center text-gray-500 text-sm">
+                            <i class="fas fa-check-circle text-green-500 text-lg mb-2"></i>
+                            <p>暂无告警记录</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部导航容器 -->
+        <div id="nav-container"></div>
+    </div>
+
+    <!-- 通用脚本 -->
+    <script src="../../components/trace-common.js"></script>
+    <script src="../../components/trace-nav.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面
+            initPage();
+            
+            // 添加事件监听
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                refreshData();
+            });
+            
+            document.getElementById('filterBtn').addEventListener('click', function() {
+                toggleFilterPanel();
+            });
+            
+            document.getElementById('applyFilterBtn').addEventListener('click', function() {
+                applyFilters();
+            });
+            
+            document.getElementById('resetFilterBtn').addEventListener('click', function() {
+                resetFilters();
+            });
+            
+            document.getElementById('startCamera').addEventListener('click', function() {
+                openCameraView();
+            });
+            
+            // 初始化图表
+            initCharts();
+            
+            // 模拟数据加载
+            loadMonitorData();
+        });
+        
+        function initPage() {
+            // 初始化导航
+            window.traceNav.init('nav-container', 'info');
+            
+            // 设置今日日期
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+            document.getElementById('currentDate').textContent = dateStr;
+        }
+        
+            // 绑定畜禽类型选择事件
+            document.querySelectorAll('.livestock-type-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const type = this.getAttribute('data-type');
+                    selectLivestockType(type);
+                });
+            });
+
+            // 绑定摄像头缩略图点击事件
+            document.querySelectorAll('.camera-thumb').forEach(thumb => {
+                thumb.addEventListener('click', function() {
+                    // 移除其他缩略图的选中状态
+                    document.querySelectorAll('.camera-thumb img').forEach(img => {
+                        img.classList.remove('border', 'border-primary');
+                    });
+                    
+                    // 添加当前缩略图的选中状态
+                    const img = this.querySelector('img');
+                    img.classList.add('border', 'border-primary');
+                    
+                    // 更新主监控画面（实际项目中应切换视频源）
+                    const mainMonitor = document.querySelector('.relative img');
+                    mainMonitor.src = img.src;
+                    
+                    // 更新监控标题
+                    document.querySelector('.absolute.bottom-0').innerHTML = 
+                        this.querySelector('.text-xs').textContent + ' · 摄像头01 · ' + new Date().toLocaleString();
+                });
+            });
+            
+            // 绑定全屏按钮点击事件
+            document.getElementById('fullScreenBtn').addEventListener('click', function() {
+                const mainMonitor = document.querySelector('.relative');
+                if (mainMonitor.requestFullscreen) {
+                    mainMonitor.requestFullscreen();
+                } else if (mainMonitor.webkitRequestFullscreen) {
+                    mainMonitor.webkitRequestFullscreen();
+                } else if (mainMonitor.msRequestFullscreen) {
+                    mainMonitor.msRequestFullscreen();
+                }
+            });
+            
+            // 绑定饲料调整按钮点击事件（高端畜禽专属）
+            const adjustFeedBtn = document.getElementById('adjustFeedBtn');
+            if (adjustFeedBtn) {
+                adjustFeedBtn.addEventListener('click', function() {
+                    traceUI.showToast('调整饲料投喂功能开发中', 'info');
+                });
+            }
+        
+        // 选择畜禽类型
+        function selectLivestockType(type) {
+            // 清除所有选中状态
+            document.querySelectorAll('.livestock-type-card').forEach(card => {
+                card.classList.remove('border-[#1890FF]', 'bg-[#F0F5FF]');
+            });
+            
+            // 设置选中状态
+            const selectedCard = document.querySelector(`.livestock-type-card[data-type="${type}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('border-[#1890FF]', 'bg-[#F0F5FF]');
+            }
+            
+            // 保存畜禽类型到localStorage
+            localStorage.setItem('livestock_type', type);
+            
+            // 显示或隐藏高端畜禽特性
+            toggleHighEndFeatures(type === 'highend');
+        }
+        
+        // 切换高端畜禽特性显示
+        function toggleHighEndFeatures(isHighEnd) {
+            const highEndElements = document.querySelectorAll('.highend-feature');
+            highEndElements.forEach(el => {
+                el.style.display = isHighEnd ? 'block' : 'none';
+            });
+        }
+    </script>
+
+  <!-- 自动按钮升级脚本 (自动注入) -->
+  <script src="../components/autoload-button-upgrade.js"></script>
+  
+ <script type="text/javascript" class="button-fix-script">
+document.addEventListener('DOMContentLoaded', function() {
+          // 获取所有操作容器
+          const actionContainers = document.querySelectorAll('.monitoring-card, .control-panel, .data-container');
+          
+          // 为每个容器添加点击事件委托
+          actionContainers.forEach(container => {
+            container.addEventListener('click', function(e) {
+              // 检查点击的是否是按钮或其子元素
+              let target = e.target;
+              let buttonFound = false;
+              
+              // 向上查找最近的按钮
+              while (target !== container && !buttonFound) {
+                if (
+                  target.tagName === 'BUTTON' || 
+                  target.classList.contains('btn') ||
+                  target.classList.contains('action-btn') ||
+                  target.classList.contains('control-btn') ||
+                  target.hasAttribute('role') && target.getAttribute('role') === 'button'
+                ) {
+                  buttonFound = true;
+                  
+                  // 如果按钮是隐藏的或被阻止点击
+                  const rect = target.getBoundingClientRect();
+                  const isOffscreen = (rect.bottom < 0 || rect.top > window.innerHeight);
+                  
+                  // 如果按钮有href属性，模拟导航
+                  if (target.hasAttribute('href')) {
+                    window.location.href = target.getAttribute('href');
+                    e.preventDefault();
+                  }
+                  
+                  // 如果按钮有onclick属性但被阻止了，手动执行
+                  if (target.hasAttribute('onclick') && (target.style.pointerEvents === 'none' || isOffscreen)) {
+                    const onclickCode = target.getAttribute('onclick');
+                    try {
+                      eval(onclickCode);
+                      e.preventDefault();
+                    } catch(err) {
+                      console.error('执行按钮点击失败:', err);
+                    }
+                  }
+                  
+                  // 如果按钮有data-href属性，模拟导航
+                  if (target.hasAttribute('data-href')) {
+                    window.location.href = target.getAttribute('data-href');
+                    e.preventDefault();
+                  }
+                  
+                  // 如果按钮有data-action属性，触发自定义事件
+                  if (target.hasAttribute('data-action')) {
+                    const actionEvent = new CustomEvent('trace-action', {
+                      detail: { action: target.getAttribute('data-action'), element: target }
+                    });
+                    document.dispatchEvent(actionEvent);
+                    e.preventDefault();
+                  }
+                }
+                
+                target = target.parentElement;
+                if (!target) break;
+              }
+            }, true); // 使用捕获模式，确保这个处理程序最先运行
+          });
+          
+          // 特别处理 "查看历史" 和 "调整投喂量" 按钮
+          const specialButtons = [
+            { selector: 'button:contains("查看历史")', action: function() { 
+              console.log('触发查看历史功能');
+              // 通常是打开一个历史数据视图
+              window.openHistoryView && window.openHistoryView(); 
+            }},
+            { selector: 'button:contains("调整投喂量")', action: function() { 
+              console.log('触发调整投喂量功能');
+              // 通常是打开调整饲料量的对话框
+              window.openFeedingAdjustment && window.openFeedingAdjustment(); 
+            }}
+          ];
+          
+          // 通过DOM查找或创建这些按钮
+          specialButtons.forEach(btn => {
+            let button = document.querySelector(btn.selector);
+            if (!button) {
+              console.log('未找到按钮，尝试查找类似按钮');
+              // 尝试通过部分文本匹配查找
+              const allButtons = document.querySelectorAll('button');
+              for (const b of allButtons) {
+                if (b.textContent && b.textContent.includes(btn.selector.match(/:contains\("(.+)"\)/)[1])) {
+                  button = b;
+                  break;
+                }
+              }
+            }
+            
+            if (button) {
+              // 确保按钮可见且可交互
+              button.style.zIndex = '100';
+              button.style.position = 'relative';
+              button.style.pointerEvents = 'auto';
+              
+              // 替换现有的点击处理程序
+              button.onclick = btn.action;
+              
+              console.log('已修复特殊按钮:', btn.selector);
+            } else {
+              console.log('找不到按钮，无法修复:', btn.selector);
+            }
+          });
+        });
+</script><script type="text/javascript" class="button-fix-script">
+document.addEventListener('DOMContentLoaded', function() {
+          // 获取所有操作容器
+          const actionContainers = document.querySelectorAll('.monitoring-card, .control-panel, .data-container');
+          
+          // 为每个容器添加点击事件委托
+          actionContainers.forEach(container => {
+            container.addEventListener('click', function(e) {
+              // 检查点击的是否是按钮或其子元素
+              let target = e.target;
+              let buttonFound = false;
+              
+              // 向上查找最近的按钮
+              while (target !== container && !buttonFound) {
+                if (
+                  target.tagName === 'BUTTON' || 
+                  target.classList.contains('btn') ||
+                  target.classList.contains('action-btn') ||
+                  target.classList.contains('control-btn') ||
+                  target.hasAttribute('role') && target.getAttribute('role') === 'button'
+                ) {
+                  buttonFound = true;
+                  
+                  // 如果按钮是隐藏的或被阻止点击
+                  const rect = target.getBoundingClientRect();
+                  const isOffscreen = (rect.bottom < 0 || rect.top > window.innerHeight);
+                  
+                  // 如果按钮有href属性，模拟导航
+                  if (target.hasAttribute('href')) {
+                    window.location.href = target.getAttribute('href');
+                    e.preventDefault();
+                  }
+                  
+                  // 如果按钮有onclick属性但被阻止了，手动执行
+                  if (target.hasAttribute('onclick') && (target.style.pointerEvents === 'none' || isOffscreen)) {
+                    const onclickCode = target.getAttribute('onclick');
+                    try {
+                      eval(onclickCode);
+                      e.preventDefault();
+                    } catch(err) {
+                      console.error('执行按钮点击失败:', err);
+                    }
+                  }
+                  
+                  // 如果按钮有data-href属性，模拟导航
+                  if (target.hasAttribute('data-href')) {
+                    window.location.href = target.getAttribute('data-href');
+                    e.preventDefault();
+                  }
+                  
+                  // 如果按钮有data-action属性，触发自定义事件
+                  if (target.hasAttribute('data-action')) {
+                    const actionEvent = new CustomEvent('trace-action', {
+                      detail: { action: target.getAttribute('data-action'), element: target }
+                    });
+                    document.dispatchEvent(actionEvent);
+                    e.preventDefault();
+                  }
+                }
+                
+                target = target.parentElement;
+                if (!target) break;
+              }
+            }, true); // 使用捕获模式，确保这个处理程序最先运行
+          });
+          
+          // 特别处理 "查看历史" 和 "调整投喂量" 按钮
+          const specialButtons = [
+            { selector: 'button:contains("查看历史")', action: function() { 
+              console.log('触发查看历史功能');
+              // 通常是打开一个历史数据视图
+              window.openHistoryView && window.openHistoryView(); 
+            }},
+            { selector: 'button:contains("调整投喂量")', action: function() { 
+              console.log('触发调整投喂量功能');
+              // 通常是打开调整饲料量的对话框
+              window.openFeedingAdjustment && window.openFeedingAdjustment(); 
+            }}
+          ];
+          
+          // 通过DOM查找或创建这些按钮
+          specialButtons.forEach(btn => {
+            let button = document.querySelector(btn.selector);
+            if (!button) {
+              console.log('未找到按钮，尝试查找类似按钮');
+              // 尝试通过部分文本匹配查找
+              const allButtons = document.querySelectorAll('button');
+              for (const b of allButtons) {
+                if (b.textContent && b.textContent.includes(btn.selector.match(/:contains\("(.+)"\)/)[1])) {
+                  button = b;
+                  break;
+                }
+              }
+            }
+            
+            if (button) {
+              // 确保按钮可见且可交互
+              button.style.zIndex = '100';
+              button.style.position = 'relative';
+              button.style.pointerEvents = 'auto';
+              
+              // 替换现有的点击处理程序
+              button.onclick = btn.action;
+              
+              console.log('已修复特殊按钮:', btn.selector);
+            } else {
+              console.log('找不到按钮，无法修复:', btn.selector);
+            }
+          });
+        });
+</script></body></html>

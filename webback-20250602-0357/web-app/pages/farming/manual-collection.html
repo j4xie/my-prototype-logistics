@@ -1,0 +1,1619 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>手动数据采集 - 养殖管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        /* 设计系统变量 */
+        :root {
+            /* 主色调变量 */
+            --primary-color: #1677FF;
+            --primary-hover: #4096FF;
+            --primary-active: #0958D9;
+            
+            /* 状态色变量 */
+            --success-color: #52C41A;
+            --success-hover: #73D13D;
+            --warning-color: #FA8C16;
+            --warning-hover: #FFA940;
+            --error-color: #FF4D4F;
+            --error-hover: #FF7875;
+            
+            /* 文本颜色变量 */
+            --text-primary: rgba(0, 0, 0, 0.85);
+            --text-secondary: rgba(0, 0, 0, 0.65);
+            --text-disabled: rgba(0, 0, 0, 0.45);
+            
+            /* 背景色变量 */
+            --bg-layout: #F0F2F5;
+            --bg-container: #FFFFFF;
+            
+            /* 边框变量 */
+            --border-color: #f0f0f0;
+            --border-radius-base: 8px;
+            
+            /* 阴影变量 */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            
+            /* 间距变量 */
+            --spacing-md: 16px;
+            
+            /* 组件尺寸 */
+            --nav-height: 64px;
+            --bottom-tab-height: 60px;
+            --safe-area-bottom: env(safe-area-inset-bottom, 0);
+        }
+
+        /* 页面容器 */
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            background-color: var(--bg-layout);
+        }
+        
+        /* 顶部导航 */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 999;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .top-nav-container {
+            max-width: 390px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-md);
+        }
+        
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .icon-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* 主内容区 */
+        .content-container {
+            padding-top: calc(var(--nav-height) + var(--spacing-md));
+            padding-bottom: calc(var(--bottom-tab-height) + var(--safe-area-bottom) + var(--spacing-md));
+        }
+        
+        .content-area {
+            max-width: 390px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-md);
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background-color: var(--bg-container);
+            border-radius: var(--border-radius-base);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-md);
+            overflow: hidden;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            color: var(--text-primary);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+        
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: var(--border-radius-base);
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+            outline: none;
+        }
+        
+        .form-textarea {
+            resize: none;
+            min-height: 80px;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius-base);
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .btn-primary:active {
+            background-color: var(--primary-active);
+        }
+        
+        .btn-secondary {
+            background-color: #f5f5f5;
+            color: var(--text-primary);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e8e8e8;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 390px) {
+            .page-container,
+            .top-nav-container,
+            .content-area {
+                max-width: 100%;
+            }
+        }
+        
+        /* 状态标签 */
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-tag.success {
+            background-color: #f6ffed;
+            color: var(--success-color);
+        }
+        
+        .status-tag.warning {
+            background-color: #fff7e6;
+            color: var(--warning-color);
+        }
+        
+        .status-tag.danger {
+            background-color: #fff1f0;
+            color: var(--error-color);
+        }
+        
+        /* 提示标记 */
+        .required-mark {
+            color: var(--error-color);
+            margin-left: 4px;
+        }
+        
+        /* 语音输入按钮样式 */
+        .voice-input-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .voice-input-btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        .voice-input-btn.listening {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 77, 79, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
+            }
+        }
+        
+        /* 语音录入状态指示器 */
+        .voice-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            z-index: 999;
+        }
+        
+        .voice-indicator i {
+            color: var(--error-color);
+            margin-right: 8px;
+        }
+        
+        .voice-indicator.listening i {
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+    
+/* 按钮视觉反馈样式 */
+.trace-button-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  opacity: 0.9;
+}
+
+.trace-button-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.trace-button-active:active {
+  transform: scale(0.97);
+}</style>
+<script src="../components/trace-common.js"></script><script src="../components/trace-error-handler.js"></script><script src="../components/trace-ui.js"></script><script src="../components/trace-nav.js"></script><script src="../components/trace-a11y.js"></script><script src="../components/trace-store.js"></script></head>
+<body class="bg-gray-100">
+    <div class="page-container">
+        <!-- 顶部导航 -->
+        <header class="top-nav">
+            <div class="top-nav-container">
+                <div class="flex items-center">
+                    <a href="data-collection-center.html" class="icon-btn mr-3 hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="backBtn" aria-label="返回到数据采集中心" tabindex="0">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-lg font-medium">手动数据采集</h1>
+                </div>
+                <div class="flex items-center">
+                    <div id="network-status" class="mr-2 text-sm">
+                        <span class="status-tag success" id="online-status">
+                            <i class="fas fa-wifi mr-1"></i>在线
+                        </span>
+                        <span class="status-tag danger hidden" id="offline-status">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>离线
+                        </span>
+                    </div>
+                    <button class="icon-btn trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-manual-collection-html-1743910820530-5818" aria-label="帮助信息" tabindex="0">
+                        <i class="fas fa-question"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="content-container">
+            <div class="content-area">
+                <!-- 数据采集表单 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-edit text-green-500 mr-2"></i>
+                            <span>填写数据信息</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="text-gray-500">批次：</span>
+                            <span class="font-medium">B-2023-12</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <form id="data-collection-form">
+                            <!-- 数据类型选择 -->
+                            <div class="form-group">
+                                <label for="data-type" class="form-label">数据类型<span class="required-mark">*</span></label>
+                                <select id="data-type" class="form-select" required="">
+                                    <option value="">请选择数据类型</option>
+                                    <option value="weight">体重数据</option>
+                                    <option value="feed">饲料消耗</option>
+                                    <option value="water">饮水量</option>
+                                    <option value="health">健康状况</option>
+                                    <option value="medication">用药记录</option>
+                                    <option value="environment">环境参数</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 栋舍选择 -->
+                            <div class="form-group">
+                                <label for="building" class="form-label">所属栋舍<span class="required-mark">*</span></label>
+                                <select id="building" class="form-select" required="">
+                                    <option value="">请选择栋舍</option>
+                                    <option value="all">全部栋舍</option>
+                                    <option value="A1">A1栋</option>
+                                    <option value="A2">A2栋</option>
+                                    <option value="A3">A3栋</option>
+                                    <option value="B1">B1栋</option>
+                                    <option value="B2">B2栋</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 记录时间 -->
+                            <div class="form-group">
+                                <label for="record-time" class="form-label">记录时间<span class="required-mark">*</span></label>
+                                <input type="datetime-local" id="record-time" class="form-input" required="">
+                            </div>
+                            
+                            <!-- 数据值 -->
+                            <div class="form-group data-value-container">
+                                <label for="data-value" class="form-label">数据值<span class="required-mark">*</span></label>
+                                <div class="flex">
+                                    <input type="number" id="data-value" class="form-input flex-1" placeholder="请输入数值" required="">
+                                    <span class="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-gray-500" id="data-unit">单位</span>
+                                    <button type="button" class="voice-input-btn ml-2 p-2 bg-blue-50 rounded-lg text-primary border border-blue-200 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" data-target="data-value" aria-label="语音输入" tabindex="0" id="btn-pages-farming-manual-collection-html-1743910820531-7369">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 备注信息 -->
+                            <div class="form-group">
+                                <label for="remarks" class="form-label">备注信息</label>
+                                <div class="flex items-start">
+                                    <textarea id="remarks" class="form-textarea flex-1" placeholder="可选，添加数据的详细说明"></textarea>
+                                    <button type="button" class="voice-input-btn ml-2 p-2 bg-blue-50 rounded-lg text-primary border border-blue-200 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" data-target="remarks" aria-label="语音输入" tabindex="0" id="btn-pages-farming-manual-collection-html-1743910820531-3751">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 多媒体上传 -->
+                            <div class="form-group">
+                                <label class="form-label">多媒体记录</label>
+                                <div class="flex flex-col">
+                                    <div class="flex mb-2">
+                                        <button type="button" class="flex-1 py-2 px-4 bg-blue-50 text-blue-600 rounded-lg border border-blue-200 mr-2 flex items-center justify-center trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-manual-collection-html-1743910820531-4972" aria-label="拍照" tabindex="0">
+                                            <i class="fas fa-camera mr-2"></i>拍照
+                                        </button>
+                                        <button type="button" class="flex-1 py-2 px-4 bg-blue-50 text-blue-600 rounded-lg border border-blue-200 mr-2 flex items-center justify-center trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-manual-collection-html-1743910820531-9597" aria-label="录像" tabindex="0">
+                                            <i class="fas fa-video mr-2"></i>录像
+                                        </button>
+                                        <button type="button" class="flex-1 py-2 px-4 bg-blue-50 text-blue-600 rounded-lg border border-blue-200 flex items-center justify-center trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-manual-collection-html-1743910820531-6380" aria-label="相册" tabindex="0">
+                                            <i class="fas fa-images mr-2"></i>相册
+                                        </button>
+                                    </div>
+                                    <div class="media-preview-container">
+                                        <div class="media-preview-list flex overflow-x-auto pb-2">
+                                            <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center border border-dashed border-gray-300 mr-3 flex-shrink-0" id="upload-placeholder">
+                                                <i class="fas fa-plus text-gray-400"></i>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            <span id="media-count">0</span>/5 个媒体文件
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 提交按钮 -->
+                            <div class="flex justify-between mt-6">
+                                <button type="button" class="btn btn-secondary px-6 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-manual-collection-html-1743910820531-4251" aria-label="保存草稿" tabindex="0">保存草稿</button>
+                                <button type="submit" class="btn btn-primary px-6 trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-manual-collection-html-1743910820531-2571" aria-label="提交数据" tabindex="0">提交数据</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 离线同步状态 -->
+                <div class="card mb-4" id="offline-sync-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-sync text-blue-500 mr-2"></i>
+                            <span>离线数据同步</span>
+                        </div>
+                        <button class="text-blue-500 text-sm flex items-center trace-button-hover trace-button-focus trace-button-active hover:bg-blue-700 focus:ring focus:outline-none active:bg-blue-800 transition duration-150 ease-in-out" id="btn-pages-farming-manual-collection-html-1743910820531-817" aria-label="立即同步" tabindex="0">
+                            <i class="fas fa-sync-alt mr-1"></i>
+                            <span>立即同步</span>
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="text-sm text-gray-600">待同步数据</div>
+                            <div class="font-medium text-lg" id="pending-count">0</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                            <div class="bg-blue-600 h-2.5 rounded-full" id="sync-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="text-sm text-gray-500" id="last-sync-time">上次同步: 暂无</div>
+                    </div>
+                </div>
+                
+                <!-- 采集帮助卡片 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                            <span>采集说明</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="mb-3">
+                            <h3 class="font-medium mb-2">体重数据采集要点：</h3>
+                            <ul class="text-sm text-gray-600 list-disc pl-5">
+                                <li>随机抽取20-30只动物进行称重</li>
+                                <li>记录平均体重，确保精确到0.1kg</li>
+                                <li>采集时间建议在喂食前进行</li>
+                            </ul>
+                        </div>
+                        <div class="mb-3">
+                            <h3 class="font-medium mb-2">饲料消耗采集要点：</h3>
+                            <ul class="text-sm text-gray-600 list-disc pl-5">
+                                <li>记录24小时内的饲料消耗总量</li>
+                                <li>单位为千克(kg)，精确到整数</li>
+                                <li>记录时间一般为每日固定时间点</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-medium mb-2">健康状况采集要点：</h3>
+                            <ul class="text-sm text-gray-600 list-disc pl-5">
+                                <li>记录精神、采食、排泄等情况</li>
+                                <li>如有异常，详细记录症状及数量</li>
+                                <li>尽可能添加照片以便后期分析</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 引入脚本 -->
+    <script type="module">
+        // 导入离线支持模块
+        import { 
+            initDB, 
+            saveDataLocally, 
+            getPendingData,
+            syncDataToServer, 
+            getLocalDataCount,
+            initNetworkListener 
+        } from '../../components/offline-support.js';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认时间为当前时间
+            const now = new Date();
+            const localDatetime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('record-time').value = localDatetime;
+            
+            // 数据类型与单位映射
+            const dataTypeUnits = {
+                'weight': 'kg',
+                'feed': 'kg',
+                'water': 'L',
+                'health': '分',
+                'medication': 'ml',
+                'environment': '℃'
+            };
+            
+            // 数据类型切换事件
+            document.getElementById('data-type').addEventListener('change', function() {
+                const selectedType = this.value;
+                const unitElement = document.getElementById('data-unit');
+                
+                if (selectedType && dataTypeUnits[selectedType]) {
+                    unitElement.textContent = dataTypeUnits[selectedType];
+                } else {
+                    unitElement.textContent = '单位';
+                }
+                
+                // 更新采集说明展示
+                updateCollectionGuide(selectedType);
+            });
+            
+            // 更新对应的采集指南
+            function updateCollectionGuide(dataType) {
+                // 实际项目中可以根据不同数据类型显示不同的采集指南
+                console.log(`显示 ${dataType} 的采集指南`);
+            }
+            
+            // 表单提交处理
+            document.getElementById('data-collection-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 数据验证
+                const dataType = document.getElementById('data-type').value;
+                const building = document.getElementById('building').value;
+                const recordTime = document.getElementById('record-time').value;
+                const dataValue = document.getElementById('data-value').value;
+                const remarks = document.getElementById('remarks').value;
+                
+                if (!dataType || !building || !recordTime || !dataValue) {
+                    showToast('请填写所有必填字段');
+                    return;
+                }
+                
+                // 准备数据对象
+                const formData = {
+                    dataType,
+                    building,
+                    timestamp: new Date(recordTime).toISOString(),
+                    value: parseFloat(dataValue),
+                    unit: dataTypeUnits[dataType] || '',
+                    remarks,
+                    deviceInfo: navigator.userAgent,
+                    batchId: 'B-2023-12', // 硬编码批次ID，实际应从系统获取
+                    mediaFiles: mediaFiles.map(media => ({
+                        type: media.type,
+                        name: media.file.name,
+                        size: media.file.size,
+                        timestamp: new Date().toISOString()
+                    }))
+                };
+                
+                // 模拟数据提交
+                const submitBtn = document.getElementById('submit-data-btn');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>提交中...';
+                
+                // 检查网络状态
+                if (navigator.onLine) {
+                    // 在线状态，模拟服务器提交
+                    submitFormData(formData)
+                        .then(() => {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '提交数据';
+                            
+                            showToast('数据提交成功');
+                            
+                            // 重置表单
+                            document.getElementById('data-collection-form').reset();
+                            
+                            // 清空媒体文件
+                            clearMediaFiles();
+                            
+                            // 重新设置当前时间
+                            const now = new Date();
+                            const localDatetime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                            document.getElementById('record-time').value = localDatetime;
+                            
+                            // 重置单位显示
+                            document.getElementById('data-unit').textContent = '单位';
+                        })
+                        .catch(error => {
+                            console.error('提交数据失败:', error);
+                            
+                            // 保存到本地作为备份
+                            saveDataLocally(formData)
+                                .then(() => {
+                                    showToast('在线提交失败，已保存到本地');
+                                    updatePendingCount();
+                                })
+                                .catch(localError => {
+                                    console.error('本地保存失败:', localError);
+                                    showToast('数据提交失败，请重试');
+                                })
+                                .finally(() => {
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = '提交数据';
+                                });
+                        });
+                } else {
+                    // 离线状态，保存到本地
+                    saveDataLocally(formData)
+                        .then(savedData => {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '提交数据';
+                            
+                            showToast('数据已保存到本地，网络恢复后将自动同步');
+                            
+                            // 重置表单
+                            document.getElementById('data-collection-form').reset();
+                            
+                            // 清空媒体文件
+                            clearMediaFiles();
+                            
+                            // 重新设置当前时间
+                            const now = new Date();
+                            const localDatetime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                            document.getElementById('record-time').value = localDatetime;
+                            
+                            // 重置单位显示
+                            document.getElementById('data-unit').textContent = '单位';
+                            
+                            // 更新待同步数据计数
+                            updatePendingCount();
+                        })
+                        .catch(error => {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '提交数据';
+                            
+                            console.error('保存本地数据失败:', error);
+                            showToast('保存数据失败，请重试');
+                        });
+                }
+            });
+            
+            // 保存草稿按钮
+            document.getElementById('save-draft-btn').addEventListener('click', function() {
+                // 获取表单当前值
+                const dataType = document.getElementById('data-type').value;
+                const building = document.getElementById('building').value;
+                const recordTime = document.getElementById('record-time').value;
+                const dataValue = document.getElementById('data-value').value;
+                const remarks = document.getElementById('remarks').value;
+                
+                // 保存草稿到本地存储
+                const draftData = {
+                    dataType,
+                    building,
+                    recordTime,
+                    dataValue,
+                    remarks
+                };
+                
+                localStorage.setItem('data_collection_draft', JSON.stringify(draftData));
+                showToast('已保存为草稿');
+            });
+            
+            // 加载草稿数据
+            function loadDraft() {
+                const draftJson = localStorage.getItem('data_collection_draft');
+                if (draftJson) {
+                    try {
+                        const draft = JSON.parse(draftJson);
+                        
+                        // 填充表单
+                        if (draft.dataType) document.getElementById('data-type').value = draft.dataType;
+                        if (draft.building) document.getElementById('building').value = draft.building;
+                        if (draft.recordTime) document.getElementById('record-time').value = draft.recordTime;
+                        if (draft.dataValue) document.getElementById('data-value').value = draft.dataValue;
+                        if (draft.remarks) document.getElementById('remarks').value = draft.remarks;
+                        
+                        // 更新单位显示
+                        const dataType = draft.dataType;
+                        if (dataType && dataTypeUnits[dataType]) {
+                            document.getElementById('data-unit').textContent = dataTypeUnits[dataType];
+                        }
+                        
+                        showToast('已加载上次的草稿');
+                    } catch (e) {
+                        console.error('加载草稿失败:', e);
+                    }
+                }
+            }
+            
+            // 尝试加载草稿
+            loadDraft();
+            
+            // 图片上传占位符点击事件
+            document.getElementById('upload-placeholder').addEventListener('click', function() {
+                // 打开文件选择器
+                openFilePicker('image/*,video/*');
+            });
+            
+            // 拍照按钮事件
+            document.getElementById('photo-btn').addEventListener('click', function() {
+                // 打开相机
+                openCamera();
+            });
+            
+            // 录像按钮事件
+            document.getElementById('video-btn').addEventListener('click', function() {
+                // 打开视频录制
+                openVideoRecorder();
+            });
+            
+            // 相册按钮事件
+            document.getElementById('gallery-btn').addEventListener('click', function() {
+                // 打开图片选择
+                openFilePicker('image/*');
+            });
+            
+            // 媒体文件数组
+            const mediaFiles = [];
+            
+            // 打开相机
+            function openCamera() {
+                // 检查是否支持getUserMedia
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showToast('您的设备不支持相机功能');
+                    return;
+                }
+                
+                // 创建相机UI
+                const cameraContainer = document.createElement('div');
+                cameraContainer.className = 'camera-container fixed inset-0 z-50 bg-black flex flex-col';
+                
+                const header = document.createElement('div');
+                header.className = 'p-4 flex justify-between items-center';
+                header.innerHTML = `
+                    <button id="close-camera" class="text-white text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <button id="capture-photo" class="bg-white rounded-full w-14 h-14 flex items-center justify-center">
+                        <div class="bg-white w-12 h-12 rounded-full border-2 border-gray-300"></div>
+                    </button>
+                    <div class="w-10"></div>
+                `;
+                
+                const videoElement = document.createElement('video');
+                videoElement.className = 'flex-1 object-cover';
+                videoElement.autoplay = true;
+                
+                cameraContainer.appendChild(videoElement);
+                cameraContainer.appendChild(header);
+                document.body.appendChild(cameraContainer);
+                
+                // 获取相机流
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        videoElement.srcObject = stream;
+                        
+                        // 拍照按钮事件
+                        document.getElementById('capture-photo').addEventListener('click', function() {
+                            // 创建画布并获取照片
+                            const canvas = document.createElement('canvas');
+                            canvas.width = videoElement.videoWidth;
+                            canvas.height = videoElement.videoHeight;
+                            
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                            
+                            // 获取照片数据URL
+                            const imageDataUrl = canvas.toDataURL('image/jpeg');
+                            
+                            // 添加到媒体文件并预览
+                            addMediaFile({
+                                type: 'image',
+                                dataUrl: imageDataUrl,
+                                file: dataURLtoFile(imageDataUrl, `photo_${Date.now()}.jpg`)
+                            });
+                            
+                            // 关闭相机
+                            closeCamera(stream);
+                        });
+                        
+                        // 关闭按钮事件
+                        document.getElementById('close-camera').addEventListener('click', function() {
+                            closeCamera(stream);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('获取相机失败:', error);
+                        showToast('无法访问相机，请检查权限设置');
+                        document.body.removeChild(cameraContainer);
+                    });
+            }
+            
+            // 关闭相机
+            function closeCamera(stream) {
+                // 停止所有轨道
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                
+                // 移除相机容器
+                const cameraContainer = document.querySelector('.camera-container');
+                if (cameraContainer) {
+                    document.body.removeChild(cameraContainer);
+                }
+            }
+            
+            // 打开视频录制
+            function openVideoRecorder() {
+                // 检查是否支持getUserMedia
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showToast('您的设备不支持视频录制功能');
+                    return;
+                }
+                
+                // 创建视频录制UI
+                const recorderContainer = document.createElement('div');
+                recorderContainer.className = 'recorder-container fixed inset-0 z-50 bg-black flex flex-col';
+                
+                const header = document.createElement('div');
+                header.className = 'p-4 flex justify-between items-center';
+                header.innerHTML = `
+                    <button id="close-recorder" class="text-white text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <button id="toggle-recording" class="bg-red-500 rounded-full w-14 h-14 flex items-center justify-center">
+                        <div class="bg-white w-4 h-4 rounded-sm"></div>
+                    </button>
+                    <div class="text-white" id="recording-time">00:00</div>
+                `;
+                
+                const videoElement = document.createElement('video');
+                videoElement.className = 'flex-1 object-cover';
+                videoElement.autoplay = true;
+                
+                recorderContainer.appendChild(videoElement);
+                recorderContainer.appendChild(header);
+                document.body.appendChild(recorderContainer);
+                
+                let mediaRecorder;
+                let recordedChunks = [];
+                let startTime;
+                let timerInterval;
+                let isRecording = false;
+                
+                // 获取相机流
+                navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                    .then(stream => {
+                        videoElement.srcObject = stream;
+                        
+                        // 创建媒体录制器
+                        mediaRecorder = new MediaRecorder(stream);
+                        
+                        // 录制数据可用事件
+                        mediaRecorder.ondataavailable = function(e) {
+                            if (e.data.size > 0) {
+                                recordedChunks.push(e.data);
+                            }
+                        };
+                        
+                        // 录制停止事件
+                        mediaRecorder.onstop = function() {
+                            // 创建Blob并获取URL
+                            const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                            const videoUrl = URL.createObjectURL(videoBlob);
+                            
+                            // 添加到媒体文件并预览
+                            addMediaFile({
+                                type: 'video',
+                                url: videoUrl,
+                                file: new File([videoBlob], `video_${Date.now()}.webm`, { type: 'video/webm' })
+                            });
+                            
+                            // 关闭录像机
+                            closeVideoRecorder(stream);
+                        };
+                        
+                        // 录制按钮事件
+                        document.getElementById('toggle-recording').addEventListener('click', function() {
+                            if (!isRecording) {
+                                // 开始录制
+                                recordedChunks = [];
+                                mediaRecorder.start(100);
+                                isRecording = true;
+                                this.className = 'bg-white rounded-full w-14 h-14 flex items-center justify-center';
+                                this.innerHTML = '<div class="bg-red-500 w-8 h-8 rounded-sm"></div>';
+                                
+                                // 开始计时
+                                startTime = Date.now();
+                                updateRecordingTime();
+                                timerInterval = setInterval(updateRecordingTime, 1000);
+                            } else {
+                                // 停止录制
+                                mediaRecorder.stop();
+                                isRecording = false;
+                                clearInterval(timerInterval);
+                            }
+                        });
+                        
+                        // 更新录制时间
+                        function updateRecordingTime() {
+                            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                            const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+                            const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
+                            document.getElementById('recording-time').textContent = `${minutes}:${seconds}`;
+                        }
+                        
+                        // 关闭按钮事件
+                        document.getElementById('close-recorder').addEventListener('click', function() {
+                            if (isRecording) {
+                                mediaRecorder.stop();
+                                clearInterval(timerInterval);
+                            }
+                            closeVideoRecorder(stream);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('获取摄像头失败:', error);
+                        showToast('无法访问摄像头，请检查权限设置');
+                        document.body.removeChild(recorderContainer);
+                    });
+            }
+            
+            // 关闭视频录制
+            function closeVideoRecorder(stream) {
+                // 停止所有轨道
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                
+                // 移除录制容器
+                const recorderContainer = document.querySelector('.recorder-container');
+                if (recorderContainer) {
+                    document.body.removeChild(recorderContainer);
+                }
+            }
+            
+            // 打开文件选择器
+            function openFilePicker(acceptTypes) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = acceptTypes;
+                input.multiple = true;
+                
+                input.onchange = function(e) {
+                    const files = e.target.files;
+                    if (!files || files.length === 0) return;
+                    
+                    // 处理选中的文件
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        
+                        // 检查是否已达到最大数量
+                        if (mediaFiles.length >= 5) {
+                            showToast('最多只能上传5个媒体文件');
+                            break;
+                        }
+                        
+                        // 检查文件类型
+                        if (file.type.startsWith('image/')) {
+                            // 创建文件读取器读取图片并预览
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                addMediaFile({
+                                    type: 'image',
+                                    dataUrl: e.target.result,
+                                    file: file
+                                });
+                            };
+                            reader.readAsDataURL(file);
+                        } else if (file.type.startsWith('video/')) {
+                            // 创建视频URL并预览
+                            const videoUrl = URL.createObjectURL(file);
+                            addMediaFile({
+                                type: 'video',
+                                url: videoUrl,
+                                file: file
+                            });
+                        }
+                    }
+                };
+                
+                input.click();
+            }
+            
+            // 添加媒体文件到预览
+            function addMediaFile(media) {
+                // 检查是否已达到最大数量
+                if (mediaFiles.length >= 5) {
+                    showToast('最多只能上传5个媒体文件');
+                    return;
+                }
+                
+                // 添加到媒体文件数组
+                mediaFiles.push(media);
+                
+                // 创建预览元素
+                const previewElement = document.createElement('div');
+                previewElement.className = 'media-preview relative w-20 h-20 rounded-lg overflow-hidden mr-3 flex-shrink-0';
+                previewElement.dataset.index = mediaFiles.length - 1;
+                
+                // 根据媒体类型创建不同的预览
+                if (media.type === 'image') {
+                    previewElement.innerHTML = `
+                        <img src="${media.dataUrl}" class="w-full h-full object-cover" />
+                        <button class="delete-media absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    `;
+                } else if (media.type === 'video') {
+                    previewElement.innerHTML = `
+                        <video src="${media.url}" class="w-full h-full object-cover"></video>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <i class="fas fa-play-circle text-white text-xl"></i>
+                        </div>
+                        <button class="delete-media absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    `;
+                }
+                
+                // 将预览插入到上传占位符之前
+                const previewList = document.querySelector('.media-preview-list');
+                previewList.insertBefore(previewElement, document.getElementById('upload-placeholder'));
+                
+                // 更新媒体计数
+                document.getElementById('media-count').textContent = mediaFiles.length;
+                
+                // 如果达到最大数量，隐藏上传占位符
+                if (mediaFiles.length >= 5) {
+                    document.getElementById('upload-placeholder').style.display = 'none';
+                }
+                
+                // 添加删除按钮事件
+                previewElement.querySelector('.delete-media').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const index = parseInt(previewElement.dataset.index);
+                    removeMediaFile(index, previewElement);
+                });
+                
+                // 添加预览点击事件
+                previewElement.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    showMediaPreview(index);
+                });
+            }
+            
+            // 移除媒体文件
+            function removeMediaFile(index, element) {
+                // 从数组中移除
+                mediaFiles.splice(index, 1);
+                
+                // 从DOM中移除
+                element.parentNode.removeChild(element);
+                
+                // 更新媒体计数
+                document.getElementById('media-count').textContent = mediaFiles.length;
+                
+                // 显示上传占位符
+                document.getElementById('upload-placeholder').style.display = 'flex';
+                
+                // 更新剩余预览元素的索引
+                const previewElements = document.querySelectorAll('.media-preview');
+                previewElements.forEach((el, i) => {
+                    el.dataset.index = i;
+                });
+            }
+            
+            // 显示媒体预览
+            function showMediaPreview(index) {
+                const media = mediaFiles[index];
+                
+                if (!media) return;
+                
+                // 创建全屏预览UI
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'media-fullscreen-preview fixed inset-0 z-50 bg-black flex flex-col';
+                
+                const header = document.createElement('div');
+                header.className = 'p-4 flex justify-between items-center';
+                header.innerHTML = `
+                    <button id="close-preview" class="text-white text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="text-white text-sm">${index + 1}/${mediaFiles.length}</div>
+                    <button id="annotate-media" class="text-white">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                `;
+                
+                const content = document.createElement('div');
+                content.className = 'flex-1 flex items-center justify-center';
+                
+                // 根据媒体类型创建不同的预览
+                if (media.type === 'image') {
+                    content.innerHTML = `<img src="${media.dataUrl}" class="max-w-full max-h-full object-contain" />`;
+                } else if (media.type === 'video') {
+                    content.innerHTML = `
+                        <video src="${media.url}" controls class="max-w-full max-h-full object-contain"></video>
+                    `;
+                }
+                
+                previewContainer.appendChild(header);
+                previewContainer.appendChild(content);
+                document.body.appendChild(previewContainer);
+                
+                // 关闭按钮事件
+                document.getElementById('close-preview').addEventListener('click', function() {
+                    document.body.removeChild(previewContainer);
+                });
+                
+                // 标注按钮事件
+                document.getElementById('annotate-media').addEventListener('click', function() {
+                    if (media.type === 'image') {
+                        showAnnotationEditor(media, previewContainer);
+                    } else {
+                        showToast('暂不支持视频标注');
+                    }
+                });
+            }
+            
+            // 显示标注编辑器
+            function showAnnotationEditor(media, previewContainer) {
+                // 在实际项目中，这里应该实现图片标注功能
+                showToast('图片标注功能尚未实现');
+            }
+            
+            // 将Data URL转换为File对象
+            function dataURLtoFile(dataurl, filename) {
+                const arr = dataurl.split(',');
+                const mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                
+                return new File([u8arr], filename, { type: mime });
+            }
+            
+            // 帮助按钮点击事件
+            document.getElementById('helpBtn').addEventListener('click', function() {
+                showToast('查看完整帮助文档');
+            });
+            
+            // 显示Toast消息
+            function showToast(message) {
+                // 移除现有的toast
+                const existingToast = document.querySelector('.toast-message');
+                if (existingToast) {
+                    existingToast.remove();
+                }
+                
+                // 创建新的toast
+                const toast = document.createElement('div');
+                toast.className = 'toast-message fixed top-16 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm z-50 opacity-0 transition-opacity duration-300';
+                toast.innerText = message;
+                document.body.appendChild(toast);
+                
+                // 显示toast
+                setTimeout(() => {
+                    toast.classList.replace('opacity-0', 'opacity-90');
+                }, 100);
+                
+                // 3秒后隐藏toast
+                setTimeout(() => {
+                    toast.classList.replace('opacity-90', 'opacity-0');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }, 3000);
+            }
+
+            // 语音识别功能
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (SpeechRecognition) {
+                let recognition = new SpeechRecognition();
+                recognition.lang = 'zh-CN';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                
+                // 当前正在接收语音输入的目标元素
+                let currentTarget = null;
+                let isListening = false;
+                
+                // 语音按钮点击事件绑定
+                const voiceButtons = document.querySelectorAll('.voice-input-btn');
+                voiceButtons.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        // 获取目标输入框ID
+                        const targetId = this.getAttribute('data-target');
+                        currentTarget = document.getElementById(targetId);
+                        
+                        if (isListening) {
+                            recognition.stop();
+                            updateVoiceButtonState(this, false);
+                        } else {
+                            // 启动语音识别
+                            try {
+                                recognition.start();
+                                updateVoiceButtonState(this, true);
+                                showToast('正在聆听...');
+                            } catch (e) {
+                                console.error('语音识别启动失败:', e);
+                                showToast('语音识别启动失败');
+                            }
+                        }
+                    });
+                });
+                
+                // 更新语音按钮状态
+                function updateVoiceButtonState(button, listening) {
+                    isListening = listening;
+                    
+                    // 重置所有按钮状态
+                    voiceButtons.forEach(btn => {
+                        btn.innerHTML = '<i class="fas fa-microphone"></i>';
+                        btn.classList.remove('bg-red-100', 'text-red-500', 'border-red-300');
+                        btn.classList.add('bg-blue-50', 'text-primary', 'border-blue-200');
+                    });
+                    
+                    // 设置当前按钮状态
+                    if (listening) {
+                        button.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                        button.classList.remove('bg-blue-50', 'text-primary', 'border-blue-200');
+                        button.classList.add('bg-red-100', 'text-red-500', 'border-red-300');
+                    }
+                }
+                
+                // 语音识别结果处理
+                recognition.onresult = function(event) {
+                    const result = event.results[0][0].transcript;
+                    
+                    // 首先检查是否是命令
+                    if (processCommand(result)) {
+                        showToast('已执行命令: ' + result);
+                        return;
+                    }
+                    
+                    if (currentTarget) {
+                        // 检查是否是数值字段
+                        if (currentTarget.id === 'data-value') {
+                            // 尝试从语音中提取数字
+                            const numberMatch = result.match(/\d+(\.\d+)?/);
+                            if (numberMatch) {
+                                currentTarget.value = numberMatch[0];
+                            } else {
+                                showToast('未能识别数值，请重试');
+                            }
+                        } else {
+                            // 文本字段直接填入识别结果
+                            currentTarget.value = result;
+                        }
+                    }
+                    
+                    showToast('语音识别完成');
+                };
+                
+                // 语音识别结束事件
+                recognition.onend = function() {
+                    // 重置所有按钮状态
+                    voiceButtons.forEach(btn => {
+                        updateVoiceButtonState(btn, false);
+                    });
+                };
+                
+                // 语音识别错误处理
+                recognition.onerror = function(event) {
+                    console.error('语音识别错误:', event.error);
+                    showToast(`语音识别错误: ${event.error}`);
+                    
+                    // 重置所有按钮状态
+                    voiceButtons.forEach(btn => {
+                        updateVoiceButtonState(btn, false);
+                    });
+                };
+                
+                // 语音命令支持
+                function processCommand(text) {
+                    const lowerText = text.toLowerCase();
+                    
+                    // 提交表单命令
+                    if (lowerText.includes('提交') || lowerText.includes('确认')) {
+                        document.getElementById('submit-data-btn').click();
+                        return true;
+                    }
+                    
+                    // 保存草稿命令
+                    if (lowerText.includes('保存草稿') || lowerText.includes('草稿')) {
+                        document.getElementById('save-draft-btn').click();
+                        return true;
+                    }
+                    
+                    // 拍照命令
+                    if (lowerText.includes('拍照') || lowerText.includes('照相') || lowerText.includes('照片')) {
+                        document.getElementById('photo-btn').click();
+                        return true;
+                    }
+                    
+                    // 录像命令
+                    if (lowerText.includes('录像') || lowerText.includes('视频')) {
+                        document.getElementById('video-btn').click();
+                        return true;
+                    }
+                    
+                    // 选择图片命令
+                    if (lowerText.includes('选择图片') || lowerText.includes('相册') || lowerText.includes('图库')) {
+                        document.getElementById('gallery-btn').click();
+                        return true;
+                    }
+                    
+                    // 检查数据类型选择命令
+                    const dataTypeTexts = {
+                        '体重': 'weight',
+                        '重量': 'weight',
+                        '体重数据': 'weight',
+                        '饲料': 'feed',
+                        '饲料消耗': 'feed',
+                        '饮水': 'water',
+                        '饮水量': 'water',
+                        '健康': 'health',
+                        '健康状况': 'health',
+                        '用药': 'medication',
+                        '用药记录': 'medication',
+                        '环境': 'environment',
+                        '环境参数': 'environment'
+                    };
+                    
+                    for (const [key, value] of Object.entries(dataTypeTexts)) {
+                        if (lowerText.includes(key)) {
+                            document.getElementById('data-type').value = value;
+                            // 触发change事件以更新单位
+                            const event = new Event('change');
+                            document.getElementById('data-type').dispatchEvent(event);
+                            return true;
+                        }
+                    }
+                    
+                    // 栋舍选择命令
+                    const buildingTexts = {
+                        '全部栋舍': 'all',
+                        '全部': 'all',
+                        'a1': 'A1',
+                        'a1栋': 'A1',
+                        'a2': 'A2',
+                        'a2栋': 'A2',
+                        'a3': 'A3',
+                        'a3栋': 'A3',
+                        'b1': 'B1',
+                        'b1栋': 'B1',
+                        'b2': 'B2',
+                        'b2栋': 'B2'
+                    };
+                    
+                    for (const [key, value] of Object.entries(buildingTexts)) {
+                        if (lowerText.includes(key)) {
+                            document.getElementById('building').value = value;
+                            return true;
+                        }
+                    }
+                    
+                    // 如果不是任何已知命令，返回false
+                    return false;
+                }
+                
+                // 添加全局语音控制按钮
+                const voiceControlBtn = document.createElement('button');
+                voiceControlBtn.className = 'fixed bottom-20 right-5 rounded-full bg-blue-500 text-white w-14 h-14 flex items-center justify-center shadow-lg z-30';
+                voiceControlBtn.innerHTML = '<i class="fas fa-microphone text-xl"></i>';
+                voiceControlBtn.id = 'voice-control-btn';
+                voiceControlBtn.setAttribute('aria-label', '语音控制');
+                document.body.appendChild(voiceControlBtn);
+                
+                // 全局语音控制按钮事件
+                voiceControlBtn.addEventListener('click', function() {
+                    currentTarget = null; // 不设置特定目标，用于命令控制
+                    
+                    if (isListening) {
+                        recognition.stop();
+                        this.innerHTML = '<i class="fas fa-microphone text-xl"></i>';
+                        this.classList.remove('bg-red-500');
+                        this.classList.add('bg-blue-500');
+                    } else {
+                        try {
+                            recognition.start();
+                            this.innerHTML = '<i class="fas fa-microphone-slash text-xl"></i>';
+                            this.classList.remove('bg-blue-500');
+                            this.classList.add('bg-red-500');
+                            showToast('正在聆听命令...');
+                        } catch (e) {
+                            console.error('语音识别启动失败:', e);
+                            showToast('语音识别启动失败');
+                        }
+                    }
+                    isListening = !isListening;
+                });
+            } else {
+                // 不支持语音识别
+                const voiceButtons = document.querySelectorAll('.voice-input-btn');
+                voiceButtons.forEach(btn => {
+                    btn.style.display = 'none';
+                });
+                console.warn('此浏览器不支持语音识别');
+            }
+
+            // ----- 离线支持功能 -----
+            
+            // 初始化网络状态监听
+            initNetworkListener(
+                // 在线回调
+                () => {
+                    updateNetworkStatus(true);
+                    // 尝试同步离线数据
+                    syncOfflineData();
+                },
+                // 离线回调
+                () => {
+                    updateNetworkStatus(false);
+                }
+            );
+            
+            // 更新网络状态显示
+            function updateNetworkStatus(isOnline) {
+                const onlineStatus = document.getElementById('online-status');
+                const offlineStatus = document.getElementById('offline-status');
+                
+                if (isOnline) {
+                    onlineStatus.classList.remove('hidden');
+                    offlineStatus.classList.add('hidden');
+                } else {
+                    onlineStatus.classList.add('hidden');
+                    offlineStatus.classList.remove('hidden');
+                }
+            }
+            
+            // 初始化网络状态显示
+            updateNetworkStatus(navigator.onLine);
+            
+            // 更新待同步数据计数
+            async function updatePendingCount() {
+                try {
+                    const pendingData = await getPendingData();
+                    const pendingCount = pendingData.length;
+                    
+                    document.getElementById('pending-count').textContent = pendingCount;
+                    
+                    // 如果没有待同步数据，隐藏同步卡片
+                    const syncCard = document.getElementById('offline-sync-card');
+                    if (pendingCount === 0) {
+                        syncCard.classList.add('hidden');
+                    } else {
+                        syncCard.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('获取待同步数据失败:', error);
+                }
+            }
+            
+            // 同步离线数据
+            async function syncOfflineData() {
+                if (!navigator.onLine) {
+                    showToast('当前处于离线状态，无法同步');
+                    return;
+                }
+                
+                const syncButton = document.getElementById('sync-now-btn');
+                syncButton.disabled = true;
+                syncButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i><span>同步中...</span>';
+                
+                try {
+                    // 模拟API端点，实际项目中替换为真实API
+                    const apiEndpoint = '/api/data-collection';
+                    
+                    // 更新同步进度
+                    document.getElementById('sync-progress').style.width = '30%';
+                    
+                    // 执行同步
+                    const result = await syncDataToServer(apiEndpoint);
+                    
+                    // 更新同步进度
+                    document.getElementById('sync-progress').style.width = '100%';
+                    
+                    if (result.success) {
+                        showToast(result.message);
+                        
+                        // 更新最后同步时间
+                        const now = new Date();
+                        document.getElementById('last-sync-time').textContent = `上次同步: ${now.toLocaleString()}`;
+                        
+                        // 更新待同步数据计数
+                        updatePendingCount();
+                    } else {
+                        document.getElementById('sync-progress').style.width = '0%';
+                        showToast(`同步失败: ${result.message}`);
+                    }
+                } catch (error) {
+                    console.error('同步数据失败:', error);
+                    document.getElementById('sync-progress').style.width = '0%';
+                    showToast('同步过程中出错，请稍后重试');
+                } finally {
+                    syncButton.disabled = false;
+                    syncButton.innerHTML = '<i class="fas fa-sync-alt mr-1"></i><span>立即同步</span>';
+                }
+            }
+            
+            // 立即同步按钮
+            document.getElementById('sync-now-btn').addEventListener('click', syncOfflineData);
+            
+            // 初始加载时更新待同步数据计数
+            updatePendingCount();
+
+            // 清空所有媒体文件
+            function clearMediaFiles() {
+                // 清空数组
+                mediaFiles.length = 0;
+                
+                // 移除所有预览元素
+                const previewElements = document.querySelectorAll('.media-preview');
+                previewElements.forEach(el => {
+                    el.parentNode.removeChild(el);
+                });
+                
+                // 重置计数
+                document.getElementById('media-count').textContent = '0';
+                
+                // 显示上传占位符
+                document.getElementById('upload-placeholder').style.display = 'flex';
+            }
+            
+            // 将媒体文件添加到表单数据
+            function appendMediaFilesToFormData(formData) {
+                mediaFiles.forEach((media, index) => {
+                    formData.append(`media_${index}`, media.file, media.file.name);
+                });
+                
+                formData.append('media_count', mediaFiles.length);
+                
+                return formData;
+            }
+
+            // 模拟表单提交到服务器
+            function submitFormData(data) {
+                return new Promise((resolve, reject) => {
+                    // 显示进度
+                    document.getElementById('sync-progress').style.width = '50%';
+                    
+                    // 模拟网络请求延迟
+                    setTimeout(() => {
+                        // 90%的概率成功
+                        if (Math.random() < 0.9) {
+                            document.getElementById('sync-progress').style.width = '100%';
+                            resolve({
+                                success: true,
+                                message: '数据提交成功',
+                                data: {
+                                    id: 'server_' + Date.now(),
+                                    ...data
+                                }
+                            });
+                        } else {
+                            document.getElementById('sync-progress').style.width = '0%';
+                            reject(new Error('网络错误，提交失败'));
+                        }
+                    }, 1500);
+                });
+            }
+        });
+    </script>
+
+ </body></html>

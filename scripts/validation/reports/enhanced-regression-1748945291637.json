@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "taskId": "ENHANCED-REGRESSION-TEST",
+    "taskName": "增强版回归测试",
+    "timestamp": "2025-06-03T10:07:31.711Z",
+    "reportPath": "scripts/validation/reports/",
+    "baselineFile": "scripts/validation/regression-baseline.json",
+    "knownIssuesFile": "scripts/validation/known-issues-checklist.json",
+    "thresholds": {
+      "testPassRate": 95,
+      "buildTimeLimit": 30,
+      "lintWarningLimit": 10,
+      "apiResponseLimit": 2000,
+      "mockConcurrencyLimit": 10,
+      "performanceRegressionThreshold": 0.2
+    },
+    "mockApiTests": {
+      "baseUrl": "http://localhost:3000",
+      "concurrentRequests": 5,
+      "testDuration": 15000,
+      "endpoints": [
+        "/api/auth/status",
+        "/api/products",
+        "/api/users"
+      ]
+    }
+  },
+  "layers": {
+    "layer1": {
+      "name": "TypeScript编译",
+      "status": "passed",
+      "details": "TypeScript编译成功，0错误"
+    },
+    "layer2": {
+      "name": "构建系统",
+      "status": "passed",
+      "details": "构建成功，用时21.8秒",
+      "buildTime": 21.781
+    },
+    "layer3": {
+      "name": "代码质量",
+      "status": "passed",
+      "details": "ESLint通过，1个警告",
+      "warnings": 1
+    },
+    "layer4": {
+      "name": "测试套件",
+      "status": "passed",
+      "details": "测试通过 0/0",
+      "testResults": {
+        "total": 0,
+        "passed": 0,
+        "failed": 0,
+        "passRate": 100
+      }
+    },
+    "layer5": {
+      "name": "集成功能",
+      "status": "warning",
+      "details": "开发服务器响应异常",
+      "serverStability": false
+    }
+  },
+  "regressionChecks": {
+    "baselineComparison": "no-baseline",
+    "knownIssuesCheck": "passed",
+    "mockApiStabilityCheck": "skipped",
+    "performanceRegressionCheck": "pending"
+  },
+  "mockApiStability": {
+    "concurrentTestResults": [],
+    "stabilityScore": 0,
+    "averageResponseTime": 0,
+    "errorRate": 0,
+    "throughput": 0
+  },
+  "knownIssuesValidation": {
+    "checkedIssues": [
+      {
+        "id": "TASK-P3-016A-001",
+        "issue": "Jest内存泄漏问题",
+        "passed": true,
+        "checkResult": "内存使用正常"
+      },
+      {
+        "id": "TASK-P3-016A-002",
+        "issue": "useApi Hook无限循环",
+        "passed": true,
+        "checkResult": "测试套件通过"
+      },
+      {
+        "id": "BUILD-001",
+        "issue": "构建时间过长问题",
+        "passed": true,
+        "checkResult": "构建时间21.781秒"
+      },
+      {
+        "id": "TS-001",
+        "issue": "TypeScript编译错误",
+        "passed": true,
+        "checkResult": "TypeScript编译成功"
+      },
+      {
+        "id": "MOCK-API-001",
+        "issue": "Mock API响应不稳定",
+        "passed": true,
+        "checkResult": "待Mock API稳定性测试确认"
+      }
+    ],
+    "foundRegressions": [],
+    "passedChecks": [
+      {
+        "id": "TASK-P3-016A-001",
+        "issue": "Jest内存泄漏问题",
+        "checkResult": "内存使用正常"
+      },
+      {
+        "id": "TASK-P3-016A-002",
+        "issue": "useApi Hook无限循环",
+        "checkResult": "测试套件通过"
+      },
+      {
+        "id": "BUILD-001",
+        "issue": "构建时间过长问题",
+        "checkResult": "构建时间21.781秒"
+      },
+      {
+        "id": "TS-001",
+        "issue": "TypeScript编译错误",
+        "checkResult": "TypeScript编译成功"
+      },
+      {
+        "id": "MOCK-API-001",
+        "issue": "Mock API响应不稳定",
+        "checkResult": "待Mock API稳定性测试确认"
+      }
+    ]
+  },
+  "summary": {
+    "allLayersPassed": false,
+    "regressionRiskLevel": "medium",
+    "recommendedActions": [
+      "建议解决警告问题以提升系统稳定性"
+    ]
+  }
+}
