@@ -1,0 +1,551 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>质检报告查询 - 食品溯源系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+    <style>
+        :root {
+            --primary-color: #1677FF;
+            --primary-hover: #4096FF;
+            --primary-active: #0958D9;
+            --success-color: #52C41A;
+            --warning-color: #FA8C16;
+            --error-color: #FF4D4F;
+            --bg-layout: #F0F2F5;
+            --bg-container: #FFFFFF;
+            --border-color: #f0f0f0;
+            --border-radius-base: 8px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+            --spacing-md: 16px;
+            --nav-height: 64px;
+            --safe-area-bottom: env(safe-area-inset-bottom, 0);
+        }
+        
+        /* 页面容器 */
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: var(--bg-layout);
+        }
+        
+        /* 顶部导航栏 */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 999;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .top-nav-container {
+            max-width: 390px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-md);
+        }
+        
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255,255,255,0.1);
+            margin-right: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .icon-btn:hover {
+            background-color: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+        
+        /* 内容区域 */
+        .content-container {
+            padding-top: calc(var(--nav-height) + var(--spacing-md));
+            padding-bottom: calc(var(--spacing-md) + var(--safe-area-bottom));
+        }
+        
+        .content-area {
+            max-width: 390px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-md);
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background-color: var(--bg-container);
+            border-radius: var(--border-radius-base);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--spacing-md);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        .card-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-header h2 {
+            font-size: 16px;
+            font-weight: 500;
+            color: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-body {
+            padding: 16px;
+        }
+        
+        /* 搜索框 */
+        .search-box {
+            display: flex;
+            margin-bottom: 16px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-base) 0 0 var(--border-radius-base);
+            font-size: 14px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .search-btn {
+            padding: 0 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0 var(--border-radius-base) var(--border-radius-base) 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .search-btn:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        /* 筛选器 */
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        
+        .filter-row::-webkit-scrollbar {
+            height: 4px;
+        }
+        
+        .filter-row::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        
+        .filter-item {
+            padding: 6px 12px;
+            background-color: #f9f9f9;
+            border-radius: 16px;
+            font-size: 12px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-item.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* 报告项目 */
+        .report-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .report-item:last-child {
+            border-bottom: none;
+        }
+        
+        .report-item:hover {
+            background-color: rgba(0,0,0,0.02);
+        }
+        
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .report-title {
+            font-weight: 500;
+            font-size: 14px;
+            color: rgba(0,0,0,0.85);
+        }
+        
+        .report-date {
+            font-size: 12px;
+            color: rgba(0,0,0,0.45);
+        }
+        
+        .report-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: rgba(0,0,0,0.65);
+        }
+        
+        .report-badges {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        
+        .report-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
+        
+        .report-badge.passed {
+            background-color: rgba(82, 196, 26, 0.1);
+            color: var(--success-color);
+        }
+        
+        .report-badge.pending {
+            background-color: rgba(250, 140, 22, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .report-badge.failed {
+            background-color: rgba(255, 77, 79, 0.1);
+            color: var(--error-color);
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: rgba(0,0,0,0.45);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-state p {
+            font-size: 14px;
+        }
+    </style>
+<script src="../components/trace-error-handler.js"></script><script src="../components/trace-ui.js"></script><script src="../components/trace-a11y.js"></script><script src="../components/trace-store.js"></script></head>
+<body class="bg-gray-100">
+    <div class="page-container">
+        <!-- 顶部导航栏 -->
+        <header class="top-nav">
+            <div class="top-nav-container">
+                <div class="flex items-center">
+                    <a href="home-processing.html" class="icon-btn">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-lg font-medium">质检报告查询</h1>
+                </div>
+                <div class="flex items-center">
+                    <button class="icon-btn" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="content-container">
+            <div class="content-area">
+                <!-- 搜索工具 -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="search-box">
+                            <input type="text" class="search-input" placeholder="输入批次号或产品名称搜索" id="searchInput">
+                            <button class="search-btn" id="searchBtn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="filter-row">
+                            <div class="filter-item active" data-filter="all">全部</div>
+                            <div class="filter-item" data-filter="passed">已通过</div>
+                            <div class="filter-item" data-filter="pending">待复查</div>
+                            <div class="filter-item" data-filter="failed">未通过</div>
+                            <div class="filter-item" data-filter="latest">最近7天</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 报告列表 -->
+                <div class="card" id="reportsContainer">
+                    <div class="card-header">
+                        <h2>
+                            <i class="fas fa-clipboard-check text-primary mr-2"></i>
+                            质检报告列表
+                        </h2>
+                        <span class="text-xs text-gray-500">共12条记录</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- 报告项1 -->
+                        <div class="report-item" data-status="passed">
+                            <div class="report-header">
+                                <div class="report-title">QR20230610001</div>
+                                <div class="report-date">2023-06-10</div>
+                            </div>
+                            <div class="report-info">
+                                <span>猪肉 - 后腿肉</span>
+                                <span>批次: B202306001</span>
+                            </div>
+                            <div class="report-badges">
+                                <div class="report-badge passed">已通过</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 报告项2 -->
+                        <div class="report-item" data-status="pending">
+                            <div class="report-header">
+                                <div class="report-title">QR20230609002</div>
+                                <div class="report-date">2023-06-09</div>
+                            </div>
+                            <div class="report-info">
+                                <span>牛肉 - 肋条</span>
+                                <span>批次: B202306002</span>
+                            </div>
+                            <div class="report-badges">
+                                <div class="report-badge pending">待复查</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 报告项3 -->
+                        <div class="report-item" data-status="failed">
+                            <div class="report-header">
+                                <div class="report-title">QR20230608003</div>
+                                <div class="report-date">2023-06-08</div>
+                            </div>
+                            <div class="report-info">
+                                <span>猪肉 - 五花肉</span>
+                                <span>批次: B202306003</span>
+                            </div>
+                            <div class="report-badges">
+                                <div class="report-badge failed">未通过</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 报告项4 -->
+                        <div class="report-item" data-status="passed">
+                            <div class="report-header">
+                                <div class="report-title">QR20230607001</div>
+                                <div class="report-date">2023-06-07</div>
+                            </div>
+                            <div class="report-info">
+                                <span>牛肉 - 牛排</span>
+                                <span>批次: B202306004</span>
+                            </div>
+                            <div class="report-badges">
+                                <div class="report-badge passed">已通过</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 报告项5 -->
+                        <div class="report-item" data-status="passed">
+                            <div class="report-header">
+                                <div class="report-title">QR20230606002</div>
+                                <div class="report-date">2023-06-06</div>
+                            </div>
+                            <div class="report-info">
+                                <span>猪肉 - 里脊</span>
+                                <span>批次: B202306005</span>
+                            </div>
+                            <div class="report-badges">
+                                <div class="report-badge passed">已通过</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 空状态 (默认隐藏) -->
+                        <div class="empty-state hidden" id="emptyState">
+                            <i class="fas fa-search"></i>
+                            <p>未找到匹配的质检报告</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部导航容器 -->
+        <div id="nav-container"></div>
+    </div>
+
+    <!-- 脚本 -->
+    <script src="../../components/trace-common.js"></script>
+    <script src="../../components/trace-nav.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化页面
+            initPage();
+            
+            // 初始化导航
+            window.traceNav.init('nav-container', 'info');
+            
+            // 绑定搜索事件
+            document.getElementById('searchBtn').addEventListener('click', function() {
+                const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+                searchReports(keyword);
+            });
+            
+            document.getElementById('searchInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const keyword = this.value.toLowerCase().trim();
+                    searchReports(keyword);
+                }
+            });
+            
+            // 绑定筛选事件
+            document.querySelectorAll('.filter-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    // 移除所有active
+                    document.querySelectorAll('.filter-item').forEach(el => {
+                        el.classList.remove('active');
+                    });
+                    
+                    // 设置当前为激活状态
+                    this.classList.add('active');
+                    
+                    // 应用筛选
+                    const filter = this.dataset.filter;
+                    filterReports(filter);
+                });
+            });
+            
+            // 绑定刷新按钮
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                traceUI.showToast('正在刷新数据...', 'info');
+                setTimeout(() => {
+                    traceUI.showToast('数据已更新', 'success');
+                }, 1000);
+            });
+            
+            // 绑定报告点击事件
+            document.querySelectorAll('.report-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const reportId = this.querySelector('.report-title').textContent;
+                    // 跳转到报告详情页
+                    window.location.href = `processing-quality.html?id=${reportId}`;
+                });
+            });
+        });
+        
+        // 搜索逻辑
+        function searchReports(keyword) {
+            const reportItems = document.querySelectorAll('.report-item');
+            let hasResults = false;
+            
+            reportItems.forEach(item => {
+                const title = item.querySelector('.report-title').textContent.toLowerCase();
+                const info = item.querySelector('.report-info').textContent.toLowerCase();
+                
+                if (title.includes(keyword) || info.includes(keyword)) {
+                    item.classList.remove('hidden');
+                    hasResults = true;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+            
+            // 显示或隐藏空状态
+            document.getElementById('emptyState').classList.toggle('hidden', hasResults);
+        }
+        
+        // 筛选逻辑
+        function filterReports(filter) {
+            const reportItems = document.querySelectorAll('.report-item');
+            let hasResults = false;
+            
+            reportItems.forEach(item => {
+                const status = item.dataset.status;
+                const reportDate = new Date(item.querySelector('.report-date').textContent);
+                const today = new Date();
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(today.getDate() - 7);
+                
+                let shouldShow = false;
+                
+                if (filter === 'all') {
+                    shouldShow = true;
+                } else if (filter === 'latest') {
+                    shouldShow = reportDate >= sevenDaysAgo;
+                } else {
+                    shouldShow = status === filter;
+                }
+                
+                if (shouldShow) {
+                    item.classList.remove('hidden');
+                    hasResults = true;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+            
+            // 显示或隐藏空状态
+            document.getElementById('emptyState').classList.toggle('hidden', hasResults);
+        }
+        
+        // 初始化页面
+        function initPage() {
+            // 检查权限
+            if (!traceAuth.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // 如果不是管理员且没有相应权限，提示并返回
+            if (traceAuth.user.role !== '管理员' && 
+                traceAuth.user.role !== '系统管理员' && 
+                !traceAuth.hasPermission('processing.reports')) {
+                traceUI.showToast('您没有查看质检报告的权限', 'error');
+                setTimeout(() => {
+                    window.location.href = 'home-processing.html';
+                }, 2000);
+            }
+        }
+    </script>
+
+  <!-- 自动按钮升级脚本 (自动注入) -->
+  <script src="/components/autoload-button-upgrade.js"></script>
+  
+ </body></html>

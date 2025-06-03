@@ -1,0 +1,635 @@
+{
+  "timestamp": "2025-06-03T08:27:17.183Z",
+  "summary": {
+    "total": 9,
+    "passed": 7,
+    "failed": 2,
+    "passRate": "77.8"
+  },
+  "performance": {
+    "avgResponseTime": 500,
+    "maxResponseTime": 816,
+    "minResponseTime": 424
+  },
+  "results": [
+    {
+      "endpoint": "POST /api/auth/login",
+      "description": "用户登录",
+      "expectedStatus": 200,
+      "actualStatus": 200,
+      "responseTime": 480,
+      "success": true,
+      "data": {
+        "success": true,
+        "data": {
+          "token": "mock-jwt-token-admin",
+          "refreshToken": "refresh-mock-jwt-token-admin-1748939232299",
+          "user": {
+            "id": 1,
+            "username": "admin",
+            "email": "admin@example.com",
+            "role": "admin",
+            "permissions": [
+              "read",
+              "write",
+              "delete",
+              "admin"
+            ],
+            "lastLogin": "2025-06-03T08:27:12.299Z",
+            "isActive": true
+          },
+          "expiresAt": "2025-06-04T08:27:12.299Z",
+          "sessionId": "session-1-1748939232299"
+        },
+        "message": "欢迎回来，admin！",
+        "code": 200
+      },
+      "timestamp": "2025-06-03T08:27:12.304Z"
+    },
+    {
+      "endpoint": "POST /api/auth/verify",
+      "description": "令牌验证",
+      "expectedStatus": 200,
+      "actualStatus": 401,
+      "responseTime": 438,
+      "success": false,
+      "data": {
+        "success": false,
+        "data": {
+          "isValid": false
+        },
+        "message": "令牌已过期",
+        "code": 401
+      },
+      "timestamp": "2025-06-03T08:27:12.845Z"
+    },
+    {
+      "endpoint": "GET /api/auth/status",
+      "description": "认证状态查询",
+      "expectedStatus": 200,
+      "actualStatus": 200,
+      "responseTime": 437,
+      "success": true,
+      "data": {
+        "success": true,
+        "data": {
+          "isAuthenticated": false
+        },
+        "message": "未提供认证令牌",
+        "code": 200
+      },
+      "timestamp": "2025-06-03T08:27:13.390Z"
+    },
+    {
+      "endpoint": "POST /api/auth/logout",
+      "description": "用户登出",
+      "expectedStatus": 200,
+      "actualStatus": 200,
+      "responseTime": 452,
+      "success": true,
+      "data": {
+        "success": true,
+        "data": {
+          "message": "登出成功",
+          "logoutTime": "2025-06-03T08:27:13.948Z"
+        },
+        "message": "用户已成功登出",
+        "code": 200
+      },
+      "timestamp": "2025-06-03T08:27:13.949Z"
+    },
+    {
+      "endpoint": "GET /api/products",
+      "description": "产品列表查询",
+      "expectedStatus": 200,
+      "actualStatus": 200,
+      "responseTime": 454,
+      "success": true,
+      "data": {
+        "success": true,
+        "data": {
+          "items": [
+            {
+              "id": 1,
+              "name": "有机苹果",
+              "category": "水果",
+              "brand": "绿源农场",
+              "sku": "APPLE-ORG-001",
+              "price": 12.8,
+              "description": "来自山东烟台的有机苹果，口感甜脆，营养丰富",
+              "imageUrl": "/images/products/apple-organic.jpg",
+              "isActive": true,
+              "stockQuantity": 150,
+              "unit": "斤",
+              "tags": [
+                "有机",
+                "新鲜",
+                "当季"
+              ],
+              "createdAt": "2024-01-10T08:00:00Z",
+              "updatedAt": "2024-01-15T10:30:00Z",
+              "traceability": {
+                "origin": "山东烟台",
+                "farmLocation": "烟台市福山区绿源有机农场",
+                "harvestDate": "2024-01-08",
+                "certifications": [
+                  "有机认证",
+                  "ISO9001",
+                  "绿色食品"
+                ]
+              }
+            },
+            {
+              "id": 2,
+              "name": "黑猪肉",
+              "category": "肉类",
+              "brand": "黑土地牧场",
+              "sku": "PORK-BLK-002",
+              "price": 68,
+              "description": "散养黑猪肉，肉质鲜美，无添加激素",
+              "imageUrl": "/images/products/pork-black.jpg",
+              "isActive": true,
+              "stockQuantity": 80,
+              "unit": "斤",
+              "tags": [
+                "散养",
+                "无添加",
+                "优质蛋白"
+              ],
+              "createdAt": "2024-01-12T09:15:00Z",
+              "updatedAt": "2024-01-15T11:45:00Z",
+              "traceability": {
+                "origin": "黑龙江哈尔滨",
+                "farmLocation": "哈尔滨市双城区黑土地牧场",
+                "harvestDate": "2024-01-10",
+                "certifications": [
+                  "无公害农产品",
+                  "动物福利认证"
+                ]
+              }
+            },
+            {
+              "id": 3,
+              "name": "有机大米",
+              "category": "谷物",
+              "brand": "稻香村",
+              "sku": "RICE-ORG-003",
+              "price": 24.5,
+              "description": "东北有机大米，颗粒饱满，香味浓郁",
+              "imageUrl": "/images/products/rice-organic.jpg",
+              "isActive": true,
+              "stockQuantity": 200,
+              "unit": "袋(5斤)",
+              "tags": [
+                "有机",
+                "东北大米",
+                "香甜"
+              ],
+              "createdAt": "2024-01-08T07:30:00Z",
+              "updatedAt": "2024-01-14T16:20:00Z",
+              "traceability": {
+                "origin": "黑龙江五常",
+                "farmLocation": "五常市稻香村有机农场",
+                "harvestDate": "2023-10-15",
+                "certifications": [
+                  "有机认证",
+                  "地理标志保护产品"
+                ]
+              }
+            },
+            {
+              "id": 4,
+              "name": "草莓",
+              "category": "水果",
+              "brand": "春田农庄",
+              "sku": "STRAWBERRY-004",
+              "price": 35,
+              "description": "温室种植草莓，甜度高，果香浓郁",
+              "imageUrl": "/images/products/strawberry-fresh.jpg",
+              "isActive": true,
+              "stockQuantity": 45,
+              "unit": "盒(500g)",
+              "tags": [
+                "温室种植",
+                "高甜度",
+                "新鲜"
+              ],
+              "createdAt": "2024-01-14T10:00:00Z",
+              "updatedAt": "2024-01-15T09:30:00Z",
+              "traceability": {
+                "origin": "北京大兴",
+                "farmLocation": "大兴区春田温室农庄",
+                "harvestDate": "2024-01-13",
+                "certifications": [
+                  "绿色食品",
+                  "无公害农产品"
+                ]
+              }
+            },
+            {
+              "id": 5,
+              "name": "土鸡蛋",
+              "category": "蛋类",
+              "brand": "农家乐",
+              "sku": "EGG-FREE-005",
+              "price": 18,
+              "description": "散养土鸡蛋，蛋黄金黄，营养价值高",
+              "imageUrl": "/images/products/eggs-free-range.jpg",
+              "isActive": false,
+              "stockQuantity": 0,
+              "unit": "盒(30枚)",
+              "tags": [
+                "散养",
+                "土鸡蛋",
+                "高营养"
+              ],
+              "createdAt": "2024-01-09T08:45:00Z",
+              "updatedAt": "2024-01-15T14:00:00Z",
+              "traceability": {
+                "origin": "河北承德",
+                "farmLocation": "承德市滦平县农家乐养殖场",
+                "harvestDate": "2024-01-12",
+                "certifications": [
+                  "无公害农产品"
+                ]
+              }
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "pageSize": 10,
+            "total": 5,
+            "totalPages": 1,
+            "hasNext": false,
+            "hasPrev": false
+          },
+          "filters": {}
+        },
+        "message": "成功获取 5 个产品",
+        "code": 200
+      },
+      "timestamp": "2025-06-03T08:27:14.511Z"
+    },
+    {
+      "endpoint": "GET /api/products?page=1&pageSize=10",
+      "description": "分页产品查询",
+      "expectedStatus": 200,
+      "actualStatus": 200,
+      "responseTime": 440,
+      "success": true,
+      "data": {
+        "success": true,
+        "data": {
+          "items": [
+            {
+              "id": 1,
+              "name": "有机苹果",
+              "category": "水果",
+              "brand": "绿源农场",
+              "sku": "APPLE-ORG-001",
+              "price": 12.8,
+              "description": "来自山东烟台的有机苹果，口感甜脆，营养丰富",
+              "imageUrl": "/images/products/apple-organic.jpg",
+              "isActive": true,
+              "stockQuantity": 150,
+              "unit": "斤",
+              "tags": [
+                "有机",
+                "新鲜",
+                "当季"
+              ],
+              "createdAt": "2024-01-10T08:00:00Z",
+              "updatedAt": "2024-01-15T10:30:00Z",
+              "traceability": {
+                "origin": "山东烟台",
+                "farmLocation": "烟台市福山区绿源有机农场",
+                "harvestDate": "2024-01-08",
+                "certifications": [
+                  "有机认证",
+                  "ISO9001",
+                  "绿色食品"
+                ]
+              }
+            },
+            {
+              "id": 2,
+              "name": "黑猪肉",
+              "category": "肉类",
+              "brand": "黑土地牧场",
+              "sku": "PORK-BLK-002",
+              "price": 68,
+              "description": "散养黑猪肉，肉质鲜美，无添加激素",
+              "imageUrl": "/images/products/pork-black.jpg",
+              "isActive": true,
+              "stockQuantity": 80,
+              "unit": "斤",
+              "tags": [
+                "散养",
+                "无添加",
+                "优质蛋白"
+              ],
+              "createdAt": "2024-01-12T09:15:00Z",
+              "updatedAt": "2024-01-15T11:45:00Z",
+              "traceability": {
+                "origin": "黑龙江哈尔滨",
+                "farmLocation": "哈尔滨市双城区黑土地牧场",
+                "harvestDate": "2024-01-10",
+                "certifications": [
+                  "无公害农产品",
+                  "动物福利认证"
+                ]
+              }
+            },
+            {
+              "id": 3,
+              "name": "有机大米",
+              "category": "谷物",
+              "brand": "稻香村",
+              "sku": "RICE-ORG-003",
+              "price": 24.5,
+              "description": "东北有机大米，颗粒饱满，香味浓郁",
+              "imageUrl": "/images/products/rice-organic.jpg",
+              "isActive": true,
+              "stockQuantity": 200,
+              "unit": "袋(5斤)",
+              "tags": [
+                "有机",
+                "东北大米",
+                "香甜"
+              ],
+              "createdAt": "2024-01-08T07:30:00Z",
+              "updatedAt": "2024-01-14T16:20:00Z",
+              "traceability": {
+                "origin": "黑龙江五常",
+                "farmLocation": "五常市稻香村有机农场",
+                "harvestDate": "2023-10-15",
+                "certifications": [
+                  "有机认证",
+                  "地理标志保护产品"
+                ]
+              }
+            },
+            {
+              "id": 4,
+              "name": "草莓",
+              "category": "水果",
+              "brand": "春田农庄",
+              "sku": "STRAWBERRY-004",
+              "price": 35,
+              "description": "温室种植草莓，甜度高，果香浓郁",
+              "imageUrl": "/images/products/strawberry-fresh.jpg",
+              "isActive": true,
+              "stockQuantity": 45,
+              "unit": "盒(500g)",
+              "tags": [
+                "温室种植",
+                "高甜度",
+                "新鲜"
+              ],
+              "createdAt": "2024-01-14T10:00:00Z",
+              "updatedAt": "2024-01-15T09:30:00Z",
+              "traceability": {
+                "origin": "北京大兴",
+                "farmLocation": "大兴区春田温室农庄",
+                "harvestDate": "2024-01-13",
+                "certifications": [
+                  "绿色食品",
+                  "无公害农产品"
+                ]
+              }
+            },
+            {
+              "id": 5,
+              "name": "土鸡蛋",
+              "category": "蛋类",
+              "brand": "农家乐",
+              "sku": "EGG-FREE-005",
+              "price": 18,
+              "description": "散养土鸡蛋，蛋黄金黄，营养价值高",
+              "imageUrl": "/images/products/eggs-free-range.jpg",
+              "isActive": false,
+              "stockQuantity": 0,
+              "unit": "盒(30枚)",
+              "tags": [
+                "散养",
+                "土鸡蛋",
+                "高营养"
+              ],
+              "createdAt": "2024-01-09T08:45:00Z",
+              "updatedAt": "2024-01-15T14:00:00Z",
+              "traceability": {
+                "origin": "河北承德",
+                "farmLocation": "承德市滦平县农家乐养殖场",
+                "harvestDate": "2024-01-12",
+                "certifications": [
+                  "无公害农产品"
+                ]
+              }
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "pageSize": 10,
+            "total": 5,
+            "totalPages": 1,
+            "hasNext": false,
+            "hasPrev": false
+          },
+          "filters": {}
+        },
+        "message": "成功获取 5 个产品",
+        "code": 200
+      },
+      "timestamp": "2025-06-03T08:27:15.057Z"
+    },
+    {
+      "endpoint": "GET /api/products?category=水果",
+      "description": "按类别筛选产品",
+      "expectedStatus": 200,
+      "actualStatus": 200,
+      "responseTime": 424,
+      "success": true,
+      "data": {
+        "success": true,
+        "data": {
+          "items": [
+            {
+              "id": 1,
+              "name": "有机苹果",
+              "category": "水果",
+              "brand": "绿源农场",
+              "sku": "APPLE-ORG-001",
+              "price": 12.8,
+              "description": "来自山东烟台的有机苹果，口感甜脆，营养丰富",
+              "imageUrl": "/images/products/apple-organic.jpg",
+              "isActive": true,
+              "stockQuantity": 150,
+              "unit": "斤",
+              "tags": [
+                "有机",
+                "新鲜",
+                "当季"
+              ],
+              "createdAt": "2024-01-10T08:00:00Z",
+              "updatedAt": "2024-01-15T10:30:00Z",
+              "traceability": {
+                "origin": "山东烟台",
+                "farmLocation": "烟台市福山区绿源有机农场",
+                "harvestDate": "2024-01-08",
+                "certifications": [
+                  "有机认证",
+                  "ISO9001",
+                  "绿色食品"
+                ]
+              }
+            },
+            {
+              "id": 4,
+              "name": "草莓",
+              "category": "水果",
+              "brand": "春田农庄",
+              "sku": "STRAWBERRY-004",
+              "price": 35,
+              "description": "温室种植草莓，甜度高，果香浓郁",
+              "imageUrl": "/images/products/strawberry-fresh.jpg",
+              "isActive": true,
+              "stockQuantity": 45,
+              "unit": "盒(500g)",
+              "tags": [
+                "温室种植",
+                "高甜度",
+                "新鲜"
+              ],
+              "createdAt": "2024-01-14T10:00:00Z",
+              "updatedAt": "2024-01-15T09:30:00Z",
+              "traceability": {
+                "origin": "北京大兴",
+                "farmLocation": "大兴区春田温室农庄",
+                "harvestDate": "2024-01-13",
+                "certifications": [
+                  "绿色食品",
+                  "无公害农产品"
+                ]
+              }
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "pageSize": 10,
+            "total": 2,
+            "totalPages": 1,
+            "hasNext": false,
+            "hasPrev": false
+          },
+          "filters": {
+            "category": "水果"
+          }
+        },
+        "message": "成功获取 2 个产品",
+        "code": 200
+      },
+      "timestamp": "2025-06-03T08:27:15.588Z"
+    },
+    {
+      "endpoint": "GET /api/trace/1",
+      "description": "产品溯源信息查询",
+      "expectedStatus": 200,
+      "actualStatus": 404,
+      "responseTime": 456,
+      "success": false,
+      "data": {
+        "success": false,
+        "data": null,
+        "message": "未找到对应的溯源信息",
+        "code": 404
+      },
+      "timestamp": "2025-06-03T08:27:16.151Z"
+    },
+    {
+      "endpoint": "GET /api/users",
+      "description": "用户列表查询",
+      "expectedStatus": 200,
+      "actualStatus": 200,
+      "responseTime": 816,
+      "success": true,
+      "data": {
+        "success": true,
+        "data": {
+          "items": [
+            {
+              "id": 1,
+              "username": "admin",
+              "email": "admin@example.com",
+              "role": "admin",
+              "isActive": true,
+              "lastLogin": "2024-01-15T10:30:00Z",
+              "createdAt": "2024-01-01T08:00:00Z",
+              "profile": {
+                "firstName": "管理员",
+                "lastName": "系统",
+                "phone": "18800000001",
+                "department": "系统管理部"
+              }
+            },
+            {
+              "id": 2,
+              "username": "manager",
+              "email": "manager@example.com",
+              "role": "manager",
+              "isActive": true,
+              "lastLogin": "2024-01-15T09:15:00Z",
+              "createdAt": "2024-01-02T08:00:00Z",
+              "profile": {
+                "firstName": "王",
+                "lastName": "经理",
+                "phone": "18800000002",
+                "department": "生产管理部"
+              }
+            },
+            {
+              "id": 3,
+              "username": "user",
+              "email": "user@example.com",
+              "role": "user",
+              "isActive": true,
+              "lastLogin": "2024-01-14T16:45:00Z",
+              "createdAt": "2024-01-03T08:00:00Z",
+              "profile": {
+                "firstName": "李",
+                "lastName": "用户",
+                "phone": "18800000003",
+                "department": "操作部"
+              }
+            },
+            {
+              "id": 4,
+              "username": "test",
+              "email": "test@example.com",
+              "role": "user",
+              "isActive": false,
+              "lastLogin": "2024-01-10T12:00:00Z",
+              "createdAt": "2024-01-04T08:00:00Z",
+              "profile": {
+                "firstName": "测试",
+                "lastName": "用户",
+                "department": "测试部"
+              }
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "pageSize": 10,
+            "total": 4,
+            "totalPages": 1,
+            "hasNext": false,
+            "hasPrev": false
+          },
+          "filters": {}
+        },
+        "message": "成功获取 4 个用户",
+        "code": 200
+      },
+      "timestamp": "2025-06-03T08:27:17.073Z"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "taskId": "SIMPLE-REGRESSION-TEST",
+    "taskName": "简化版回归测试",
+    "timestamp": "2025-06-03T10:10:45.606Z",
+    "thresholds": {
+      "buildTimeLimit": 30,
+      "lintWarningLimit": 10
+    }
+  },
+  "layers": {
+    "typescript": {
+      "name": "TypeScript编译",
+      "status": "passed",
+      "details": "TypeScript编译成功"
+    },
+    "build": {
+      "name": "构建系统",
+      "status": "passed",
+      "details": "构建成功，用时22.6秒",
+      "duration": 22.576
+    },
+    "lint": {
+      "name": "代码质量",
+      "status": "passed",
+      "details": "ESLint通过，1个警告",
+      "warnings": 1
+    },
+    "test": {
+      "name": "测试套件",
+      "status": "passed",
+      "details": "测试通过 0/0"
+    },
+    "integration": {
+      "name": "基本集成",
+      "status": "failed",
+      "details": "缺少关键文件: next.config.js"
+    }
+  },
+  "summary": {
+    "allPassed": false,
+    "warnings": [],
+    "recommendations": [
+      "立即修复失败项目后重新验证"
+    ]
+  }
+}

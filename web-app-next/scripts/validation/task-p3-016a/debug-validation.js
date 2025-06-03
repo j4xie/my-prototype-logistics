@@ -9,7 +9,7 @@ try {
   console.log('\n🔍 文件存在性检查:');
   const files = [
     './src/lib/api.ts',
-    './src/hooks/useApi-simple.ts', 
+    './src/hooks/useApi-simple.ts',
     './src/components/test/ApiTestPage.tsx',
     './src/app/api'
   ];
@@ -22,7 +22,7 @@ try {
   // 检查API客户端质量
   console.log('\n🔍 API客户端代码分析:');
   const apiContent = fs.readFileSync('./src/lib/api.ts', 'utf8');
-  
+
   const checks = [
     { name: '错误处理', pattern: /class ApiError|class NetworkError/g },
     { name: '认证管理', pattern: /setAuthToken|getAuthToken/g },
@@ -38,7 +38,7 @@ try {
   // 检查Hook架构
   console.log('\n🔍 Hook架构分析:');
   const hookContent = fs.readFileSync('./src/hooks/useApi-simple.ts', 'utf8');
-  
+
   const hookChecks = [
     { name: 'useState使用', pattern: /useState/g },
     { name: '缓存机制', pattern: /cache.*Map|TTL/g },
@@ -62,7 +62,7 @@ try {
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
     console.log('  📋 现有路由:', routes.join(', '));
-    
+
     const requiredRoutes = ['auth', 'trace', 'products', 'users'];
     requiredRoutes.forEach(route => {
       const exists = routes.includes(route);
@@ -73,8 +73,8 @@ try {
   }
 
   console.log('\n📊 验证完成');
-  
+
 } catch (error) {
   console.error('❌ 验证过程错误:', error.message);
   console.error('堆栈:', error.stack);
-} 
+}

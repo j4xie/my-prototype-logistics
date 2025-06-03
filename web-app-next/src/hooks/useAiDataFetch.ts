@@ -1,21 +1,21 @@
 /**
  * AI数据获取Hook
- * 
+ *
  * 专为AI智能体数据分析场景设计的数据获取hook，集成智能缓存、批量处理、错误恢复等功能。
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  getGlobalBatchController, 
-  createApiRequest, 
-  type BatchResult 
+import {
+  getGlobalBatchController,
+  createApiRequest,
+  type BatchResult
 } from '@/lib/ai-batch-controller';
-import { 
-  AI_CACHE_STRATEGIES, 
-  type CacheStrategy, 
-  getCachedData 
+import {
+  AI_CACHE_STRATEGIES,
+  type CacheStrategy,
+  getCachedData
 } from '@/lib/ai-cache-manager';
-import { 
+import {
   getGlobalErrorHandler,
   type AiRequestContext,
   type PerformanceMetric
@@ -141,7 +141,7 @@ export function useAiDataFetch<T = any>(
         }
 
         const result = await batchController.singleFetch<T>(request);
-        
+
         if (requestIdRef.current === requestId) {
           setData(result);
           setFromCache(false); // 批量控制器内部处理缓存
@@ -182,7 +182,7 @@ export function useAiDataFetch<T = any>(
         setLoading(false);
       }
     }
-  }, [url, enableBatch, priority, cacheStrategy, timeout, retryCount, onError, onSuccess, ...deps]);
+  }, [url, enableBatch, priority, cacheStrategy, timeout, retryCount, onError, onSuccess]);
 
   // 自动获取数据
   useEffect(() => {
@@ -190,6 +190,14 @@ export function useAiDataFetch<T = any>(
       fetchData();
     }
   }, [immediate, fetchData]);
+
+  // 依赖变化时重新获取
+  useEffect(() => {
+    if (deps.length > 0) {
+      fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 
   // 清理函数
   useEffect(() => {
@@ -253,7 +261,7 @@ export function useAiBatchFetch<T = any>(
 
     try {
       const batchController = getGlobalBatchController();
-      const apiRequests = requests.map(req => 
+      const apiRequests = requests.map(req =>
         createApiRequest(req.id, req.url, {
           priority,
           cacheStrategy,
@@ -263,7 +271,7 @@ export function useAiBatchFetch<T = any>(
       );
 
       const batchResults = await batchController.batchFetch<T>(apiRequests);
-      
+
       setResults(batchResults);
       onSuccess?.(batchResults);
 
@@ -284,13 +292,13 @@ export function useAiBatchFetch<T = any>(
 
   const getResultById = useCallback((id: string): T | null => {
     if (!results) return null;
-    
+
     const successResult = results.successful.find(r => r.id === id);
     if (successResult) return successResult.data;
-    
+
     const partialResult = results.partial.find(r => r.id === id);
     if (partialResult) return partialResult.data;
-    
+
     return null;
   }, [results]);
 
@@ -311,13 +319,13 @@ export function useAiBatchFetch<T = any>(
  */
 export function useAiPreFetch() {
   const batchController = getGlobalBatchController();
-  
+
   const preFetch = useCallback(async (urls: string[], priority: 'high' | 'medium' | 'low' = 'low') => {
-    const requests = urls.map((url, index) => 
+    const requests = urls.map((url, index) =>
       createApiRequest(
         `prefetch-${index}-${Date.now()}`,
         url,
-        { 
+        {
           priority,
           cacheStrategy: AI_CACHE_STRATEGIES.DYNAMIC_DATA
         }
@@ -468,7 +476,7 @@ export function useAiDataFetchEnhanced<T = any>(
   const [error, setError] = useState<Error | null>(null);
   const [errorMetrics, setErrorMetrics] = useState<Map<string, PerformanceMetric> | null>(null);
   const [circuitStatus, setCircuitStatus] = useState<any>(null);
-  
+
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef<string | null>(null);
 
@@ -489,7 +497,7 @@ export function useAiDataFetchEnhanced<T = any>(
 
     try {
       const errorHandler = getGlobalErrorHandler();
-      
+
       // 构建AI请求上下文
       const context: AiRequestContext = {
         endpoint: url,
@@ -516,7 +524,7 @@ export function useAiDataFetchEnhanced<T = any>(
           }
 
           const batchResult = await batchController.batchFetch<T>([request]);
-          
+
           if (batchResult.successful.length > 0) {
             return batchResult.successful[0].data;
                      } else if (batchResult.failed.length > 0) {
@@ -529,11 +537,11 @@ export function useAiDataFetchEnhanced<T = any>(
            const response = await fetch(url, {
              signal: abortControllerRef.current?.signal
            });
-          
+
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
-          
+
           return await response.json();
         }
       }, context);
@@ -550,7 +558,7 @@ export function useAiDataFetchEnhanced<T = any>(
     } catch (err) {
       const errorHandler = getGlobalErrorHandler();
       const errorObj = err instanceof Error ? err : new Error(String(err));
-      
+
       if (requestIdRef.current === requestId) {
         setError(errorObj);
         onError?.(errorObj);
@@ -568,7 +576,7 @@ export function useAiDataFetchEnhanced<T = any>(
 
   useEffect(() => {
     fetchDataEnhanced();
-  }, [fetchDataEnhanced, ...dependencies]);
+  }, [fetchDataEnhanced, dependencies]);
 
   // 组件卸载时取消请求
   useEffect(() => {
@@ -610,15 +618,14 @@ export function useAiErrorMonitoring(refreshInterval: number = 3000) {
 
         // 计算系统健康分数 (0-100)
         let healthScore = 100;
-        
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
         for (const [, metric] of performanceMetrics) {
           const successRate = metric.successRate * 100;
           const avgDuration = metric.avgDuration;
-          
+
           // 成功率影响 (权重: 60%)
           healthScore -= (100 - successRate) * 0.6;
-          
+
           // 平均响应时间影响 (权重: 30%)
           if (avgDuration > 10000) {
             healthScore -= 30; // 超过10秒严重扣分
@@ -656,4 +663,4 @@ export function useAiErrorMonitoring(refreshInterval: number = 3000) {
   }, [refreshInterval]);
 
   return metrics;
-} 
+}
