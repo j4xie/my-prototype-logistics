@@ -162,14 +162,14 @@ export class AiErrorHandler {
       return result;
     } catch (error) {
       console.error(`[AiErrorHandler] 最终请求失败 ${context.endpoint}:`, error);
-      
+
       // 尝试优雅降级
       const fallbackResult = await this.tryFallback<T>(context);
       if (fallbackResult !== null) {
         success = true;
         return fallbackResult;
       }
-      
+
       throw error;
     } finally {
       // 记录性能指标
@@ -187,39 +187,39 @@ export class AiErrorHandler {
     context: AiRequestContext
   ): Promise<T> {
     let lastError: Error;
-    
+
     for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
       try {
         console.log(`[AiErrorHandler] 尝试请求 ${context.endpoint} (第${attempt + 1}次)`);
-        
+
         const result = await request();
-        
+
         // AI数据质量检查
         if (context.requiresDataQuality && !this.isValidAiData(result, context)) {
           throw new Error(`数据质量检查失败: ${context.dataType}`);
         }
-        
+
         if (attempt > 0) {
           console.log(`[AiErrorHandler] 重试成功 ${context.endpoint} (第${attempt + 1}次尝试)`);
         }
-        
+
         return result;
       } catch (error) {
         lastError = error as Error;
-        
+
         // 检查是否应该重试
         if (attempt >= this.retryConfig.maxRetries || !this.shouldRetry(error as Error, attempt)) {
           break;
         }
-        
+
         // 计算退避延迟（含抖动）
         const delay = this.calculateBackoffDelay(attempt);
         console.log(`[AiErrorHandler] 请求失败，${delay}ms后重试 ${context.endpoint}:`, (error as Error).message);
-        
+
         await this.sleep(delay);
       }
     }
-    
+
     throw lastError!;
   }
 
@@ -293,7 +293,7 @@ export class AiErrorHandler {
     // 添加±25%的随机抖动
     const jitterRange = exponentialDelay * 0.25;
     const jitter = (Math.random() - 0.5) * 2 * jitterRange;
-    
+
     return Math.max(100, exponentialDelay + jitter); // 最小100ms
   }
 
@@ -307,11 +307,11 @@ export class AiErrorHandler {
     }
 
     const errorMessage = error.message.toLowerCase();
-    
+
     // 不应该重试的错误类型
     const nonRetryableErrors = [
       'unauthorized',
-      'forbidden', 
+      'forbidden',
       'not found',
       'method not allowed',
       'validation error',
@@ -371,27 +371,27 @@ export class AiErrorHandler {
 
   // 数据验证方法
   private validateFarmingData(data: any): boolean {
-    return data && typeof data === 'object' && 
+    return data && typeof data === 'object' &&
            (data.farmId || data.cropData || data.soilData);
   }
 
   private validateLogisticsData(data: any): boolean {
-    return data && typeof data === 'object' && 
+    return data && typeof data === 'object' &&
            (data.shipmentId || data.location || data.status);
   }
 
   private validateProcessingData(data: any): boolean {
-    return data && typeof data === 'object' && 
+    return data && typeof data === 'object' &&
            (data.batchId || data.processData || data.qualityMetrics);
   }
 
   private validateTraceData(data: any): boolean {
-    return data && typeof data === 'object' && 
+    return data && typeof data === 'object' &&
            (data.traceId || data.traceChain || data.verification);
   }
 
   private validateAnalyticsData(data: any): boolean {
-    return data && typeof data === 'object' && 
+    return data && typeof data === 'object' &&
            (data.metrics || data.insights || data.aggregatedData);
   }
 
@@ -407,9 +407,23 @@ export class AiErrorHandler {
   }
 
   private async getFallbackFromMock<T>(context: AiRequestContext): Promise<T | null> {
-    console.log(`[AiErrorHandler] 使用Mock数据 ${context.dataType}`);
-    // 返回模拟数据
-    return this.generateMockData<T>(context);
+    console.log(`[AiErrorHandler] 使用Mock数据 ${context.dataType}，转发到MSW中央服务`);
+
+    // Day 6迁移: 不再使用内联Mock数据，转发到MSW中央服务
+    try {
+      const mockEndpoint = this.getMockEndpointForDataType(context.dataType);
+      const response = await fetch(mockEndpoint);
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.data as T;
+      }
+    } catch (error) {
+      console.warn('[AiErrorHandler] MSW Mock服务不可用，使用基础降级数据', error);
+    }
+
+    // 如果MSW不可用，使用基础降级数据
+    return this.generateDegradedData<T>(context);
   }
 
   private async getFallbackDegraded<T>(context: AiRequestContext): Promise<T | null> {
@@ -418,16 +432,27 @@ export class AiErrorHandler {
     return this.generateDegradedData<T>(context);
   }
 
-  private generateMockData<T>(context: AiRequestContext): T {
-    const mockData = {
-      farming: { farmId: 'mock-farm', status: 'healthy', mockData: true },
-      logistics: { shipmentId: 'mock-shipment', status: 'in-transit', mockData: true },
-      processing: { batchId: 'mock-batch', status: 'completed', mockData: true },
-      trace: { traceId: 'mock-trace', verified: true, mockData: true },
-      analytics: { summary: 'mock analysis', confidence: 0.8, mockData: true }
-    };
+  /**
+   * 根据数据类型获取对应的MSW Mock端点
+   * Day 6: 替代内联Mock数据的端点映射
+   */
+  private getMockEndpointForDataType(dataType: string): string {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
 
-    return (mockData[context.dataType] || { mockData: true }) as T;
+    switch (dataType) {
+      case 'farming':
+        return `${baseUrl}/farming`;
+      case 'logistics':
+        return `${baseUrl}/logistics`;
+      case 'processing':
+        return `${baseUrl}/processing`;
+      case 'trace':
+        return `${baseUrl}/trace/default`;
+      case 'analytics':
+        return `${baseUrl}/admin`; // 管理模块包含分析数据
+      default:
+        return `${baseUrl}/users/profile`; // 默认端点
+    }
   }
 
   private generateDegradedData<T>(context: AiRequestContext): T {
@@ -459,4 +484,4 @@ export function getGlobalErrorHandler(): AiErrorHandler {
 }
 
 // 便捷导出
-export { CircuitState }; 
+export { CircuitState };

@@ -1,0 +1,1361 @@
+asyncapi: 2.6.0
+info:
+  title: 食品溯源系统异步API
+  version: 1.0.0-baseline
+  description: |-
+    食品溯源系统消息队列和事件驱动架构规范文档
+
+    **版本状态**: 1.0.0-baseline - [已冻结] 2025-06-04T02:09:10.288Z
+    **创建日期**: 2025-06-03
+    **适用场景**: 事件驱动架构、消息队列集成、实时数据同步
+
+    ## 消息队列架构
+    - **消息代理**: Redis Streams / RabbitMQ
+    - **事件存储**: PostgreSQL事件表
+    - **实时通知**: WebSocket + Server-Sent Events
+
+    ## 事件分类
+    - **农业事件**: 种植、施肥、采摘等农业生产事件
+    - **加工事件**: 清洗、包装、质检等加工处理事件
+    - **物流事件**: 运输、配送、仓储等物流事件
+    - **系统事件**: 用户操作、数据变更等系统事件
+
+    ## 消息格式
+    所有消息遵循CloudEvents规范:
+    ```json
+    {
+      "specversion": "1.0",
+      "type": "com.farm-trace.event.type",
+      "source": "farm-trace-system",
+      "id": "unique-event-id",
+      "time": "2025-06-03T10:00:00Z",
+      "datacontenttype": "application/json",
+      "data": {}
+    }
+    ```
+
+
+    🔒 **版本已冻结**: 2025-06-04T02:09:10.288Z
+    ⚠️ 此版本为Phase-3重构基线，禁止修改。后续变更请使用新版本。
+  contact:
+    name: Phase-3技术团队
+    email: tech-team@farm-trace.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  development:
+    url: redis://localhost:6379
+    protocol: redis
+    description: 开发环境Redis服务器
+    variables:
+      database:
+        default: '0'
+        description: Redis数据库编号
+  production:
+    url: redis://redis.farm-trace.com:6379
+    protocol: redis
+    description: 生产环境Redis服务器
+    variables:
+      database:
+        default: '1'
+        description: Redis数据库编号
+  websocket-dev:
+    url: ws://localhost:3000
+    protocol: ws
+    description: 开发环境WebSocket服务器
+  websocket-prod:
+    url: wss://api.farm-trace.com
+    protocol: wss
+    description: 生产环境WebSocket服务器
+defaultContentType: application/json
+channels:
+  farming/events:
+    description: 农业生产相关事件频道
+    parameters:
+      farmId:
+        description: 农场ID
+        schema:
+          type: string
+    subscribe:
+      summary: 订阅农业事件
+      description: 订阅特定农场的农业生产事件
+      operationId: subscribeFarmingEvents
+      message:
+        oneOf:
+          - $ref: '#/components/messages/PlantingEvent'
+          - $ref: '#/components/messages/FertilizingEvent'
+          - $ref: '#/components/messages/HarvestEvent'
+          - $ref: '#/components/messages/QualityCheckEvent'
+  processing/events:
+    description: 加工处理相关事件频道
+    parameters:
+      facilityId:
+        description: 加工厂ID
+        schema:
+          type: string
+    subscribe:
+      summary: 订阅加工事件
+      description: 订阅特定加工设施的处理事件
+      operationId: subscribeProcessingEvents
+      message:
+        oneOf:
+          - $ref: '#/components/messages/CleaningEvent'
+          - $ref: '#/components/messages/PackagingEvent'
+          - $ref: '#/components/messages/QualityTestEvent'
+          - $ref: '#/components/messages/StorageEvent'
+  logistics/events:
+    description: 物流运输相关事件频道
+    parameters:
+      routeId:
+        description: 运输路线ID
+        schema:
+          type: string
+    subscribe:
+      summary: 订阅物流事件
+      description: 订阅特定运输路线的物流事件
+      operationId: subscribeLogisticsEvents
+      message:
+        oneOf:
+          - $ref: '#/components/messages/ShipmentEvent'
+          - $ref: '#/components/messages/DeliveryEvent'
+          - $ref: '#/components/messages/InventoryEvent'
+          - $ref: '#/components/messages/TemperatureEvent'
+  system/events:
+    description: 系统级事件频道
+    subscribe:
+      summary: 订阅系统事件
+      description: 订阅用户操作和系统状态变更事件
+      operationId: subscribeSystemEvents
+      message:
+        oneOf:
+          - $ref: '#/components/messages/UserActionEvent'
+          - $ref: '#/components/messages/DataChangeEvent'
+          - $ref: '#/components/messages/SystemAlertEvent'
+  trace/aggregated:
+    description: 溯源事件聚合频道
+    parameters:
+      productId:
+        description: 产品ID或批次号
+        schema:
+          type: string
+    subscribe:
+      summary: 订阅产品溯源事件
+      description: 订阅特定产品的完整溯源事件链
+      operationId: subscribeTraceEvents
+      message:
+        $ref: '#/components/messages/TraceAggregatedEvent'
+  notifications/realtime:
+    description: 实时通知频道 (WebSocket)
+    parameters:
+      userId:
+        description: 用户ID
+        schema:
+          type: string
+    subscribe:
+      summary: 订阅实时通知
+      description: 用户订阅个人实时通知
+      operationId: subscribeNotifications
+      message:
+        $ref: '#/components/messages/RealtimeNotification'
+components:
+  messages:
+    PlantingEvent:
+      name: 种植事件
+      title: 农作物种植事件
+      summary: 记录农作物种植活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlantingEventPayload'
+    FertilizingEvent:
+      name: 施肥事件
+      title: 农作物施肥事件
+      summary: 记录农作物施肥活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/FertilizingEventPayload'
+    HarvestEvent:
+      name: 采摘事件
+      title: 农作物采摘事件
+      summary: 记录农作物采摘活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HarvestEventPayload'
+    QualityCheckEvent:
+      name: 质量检测事件
+      title: 产品质量检测事件
+      summary: 记录产品质量检测活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/QualityCheckEventPayload'
+    CleaningEvent:
+      name: 清洗事件
+      title: 产品清洗事件
+      summary: 记录产品清洗处理活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CleaningEventPayload'
+    PackagingEvent:
+      name: 包装事件
+      title: 产品包装事件
+      summary: 记录产品包装处理活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PackagingEventPayload'
+    QualityTestEvent:
+      name: 质量测试事件
+      title: 产品质量测试事件
+      summary: 记录产品质量测试活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/QualityTestEventPayload'
+    StorageEvent:
+      name: 存储事件
+      title: 产品存储事件
+      summary: 记录产品入库存储活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StorageEventPayload'
+    ShipmentEvent:
+      name: 发货事件
+      title: 产品发货事件
+      summary: 记录产品发货物流活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ShipmentEventPayload'
+    DeliveryEvent:
+      name: 配送事件
+      title: 产品配送事件
+      summary: 记录产品配送活动
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeliveryEventPayload'
+    InventoryEvent:
+      name: 库存事件
+      title: 库存变更事件
+      summary: 记录库存数量变更
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/InventoryEventPayload'
+    TemperatureEvent:
+      name: 温度监控事件
+      title: 运输温度监控事件
+      summary: 记录运输过程中的温度数据
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TemperatureEventPayload'
+    UserActionEvent:
+      name: 用户操作事件
+      title: 用户行为事件
+      summary: 记录用户操作行为
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/UserActionEventPayload'
+    DataChangeEvent:
+      name: 数据变更事件
+      title: 数据变更事件
+      summary: 记录关键数据变更
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DataChangeEventPayload'
+    SystemAlertEvent:
+      name: 系统告警事件
+      title: 系统告警事件
+      summary: 系统异常或告警通知
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SystemAlertEventPayload'
+    TraceAggregatedEvent:
+      name: 溯源聚合事件
+      title: 产品溯源聚合事件
+      summary: 产品完整溯源链事件聚合
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TraceAggregatedEventPayload'
+    RealtimeNotification:
+      name: 实时通知
+      title: 用户实时通知
+      summary: 推送给用户的实时通知消息
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/RealtimeNotificationPayload'
+  schemas:
+    BaseEvent:
+      type: object
+      required:
+        - specversion
+        - type
+        - source
+        - id
+        - time
+        - datacontenttype
+        - data
+      properties:
+        specversion:
+          type: string
+          const: '1.0'
+          description: CloudEvents规范版本
+        type:
+          type: string
+          description: 事件类型
+        source:
+          type: string
+          description: 事件源
+        id:
+          type: string
+          description: 事件唯一标识符
+        time:
+          type: string
+          format: date-time
+          description: 事件发生时间
+        datacontenttype:
+          type: string
+          const: application/json
+          description: 数据内容类型
+        subject:
+          type: string
+          description: 事件主题
+        data:
+          type: object
+          description: 事件数据载荷
+    PlantingEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.farming.planting
+            data:
+              type: object
+              required:
+                - farmId
+                - fieldId
+                - cropType
+                - plantingDate
+                - seedVariety
+                - area
+              properties:
+                farmId:
+                  type: string
+                  description: 农场ID
+                fieldId:
+                  type: string
+                  description: 田地ID
+                cropType:
+                  type: string
+                  description: 作物类型
+                plantingDate:
+                  type: string
+                  format: date
+                  description: 种植日期
+                seedVariety:
+                  type: string
+                  description: 种子品种
+                area:
+                  type: number
+                  description: 种植面积(公顷)
+                soilCondition:
+                  type: object
+                  description: 土壤条件
+                weather:
+                  type: object
+                  description: 天气条件
+                operator:
+                  type: string
+                  description: 操作人员
+    FertilizingEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.farming.fertilizing
+            data:
+              type: object
+              required:
+                - farmId
+                - fieldId
+                - fertilizerType
+                - quantity
+                - applicationDate
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                fertilizerType:
+                  type: string
+                  description: 肥料类型
+                quantity:
+                  type: number
+                  description: 施肥量(kg)
+                applicationDate:
+                  type: string
+                  format: date
+                applicationMethod:
+                  type: string
+                  description: 施肥方式
+                operator:
+                  type: string
+    HarvestEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.farming.harvest
+            data:
+              type: object
+              required:
+                - farmId
+                - fieldId
+                - cropType
+                - harvestDate
+                - quantity
+                - quality
+              properties:
+                farmId:
+                  type: string
+                fieldId:
+                  type: string
+                cropType:
+                  type: string
+                harvestDate:
+                  type: string
+                  format: date
+                quantity:
+                  type: number
+                  description: 收获量(kg)
+                quality:
+                  type: string
+                  enum:
+                    - 优等
+                    - 一等
+                    - 二等
+                    - 次等
+                batchCode:
+                  type: string
+                  description: 批次号
+                operator:
+                  type: string
+    QualityCheckEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.quality.check
+            data:
+              type: object
+              required:
+                - productId
+                - checkDate
+                - checkType
+                - result
+                - inspector
+              properties:
+                productId:
+                  type: string
+                batchCode:
+                  type: string
+                checkDate:
+                  type: string
+                  format: date-time
+                checkType:
+                  type: string
+                  enum:
+                    - 农残检测
+                    - 重金属检测
+                    - 微生物检测
+                    - 营养成分检测
+                result:
+                  type: string
+                  enum:
+                    - 合格
+                    - 不合格
+                    - 待复检
+                details:
+                  type: object
+                  description: 检测详情
+                inspector:
+                  type: string
+                  description: 检测员
+                certificate:
+                  type: string
+                  description: 检测证书编号
+    CleaningEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.processing.cleaning
+            data:
+              type: object
+              required:
+                - batchCode
+                - facilityId
+                - cleaningDate
+                - method
+                - operator
+              properties:
+                batchCode:
+                  type: string
+                facilityId:
+                  type: string
+                cleaningDate:
+                  type: string
+                  format: date-time
+                method:
+                  type: string
+                  description: 清洗方式
+                temperature:
+                  type: number
+                  description: 清洗温度
+                duration:
+                  type: number
+                  description: 清洗时长(分钟)
+                operator:
+                  type: string
+    PackagingEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.processing.packaging
+            data:
+              type: object
+              required:
+                - batchCode
+                - facilityId
+                - packagingDate
+                - packageType
+                - quantity
+              properties:
+                batchCode:
+                  type: string
+                facilityId:
+                  type: string
+                packagingDate:
+                  type: string
+                  format: date-time
+                packageType:
+                  type: string
+                  description: 包装类型
+                quantity:
+                  type: number
+                  description: 包装数量
+                weight:
+                  type: number
+                  description: 包装重量(kg)
+                expirationDate:
+                  type: string
+                  format: date
+                operator:
+                  type: string
+    QualityTestEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.processing.quality-test
+            data:
+              type: object
+              required:
+                - batchCode
+                - facilityId
+                - testDate
+                - testType
+                - result
+              properties:
+                batchCode:
+                  type: string
+                facilityId:
+                  type: string
+                testDate:
+                  type: string
+                  format: date-time
+                testType:
+                  type: string
+                result:
+                  type: object
+                  description: 测试结果
+                standards:
+                  type: array
+                  items:
+                    type: string
+                  description: 符合标准
+                tester:
+                  type: string
+    StorageEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.processing.storage
+            data:
+              type: object
+              required:
+                - batchCode
+                - warehouseId
+                - storageDate
+                - storageConditions
+              properties:
+                batchCode:
+                  type: string
+                warehouseId:
+                  type: string
+                storageDate:
+                  type: string
+                  format: date-time
+                storageConditions:
+                  type: object
+                  properties:
+                    temperature:
+                      type: number
+                    humidity:
+                      type: number
+                    ventilation:
+                      type: string
+                expectedShelfLife:
+                  type: number
+                  description: 预期保质期(天)
+                operator:
+                  type: string
+    ShipmentEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.logistics.shipment
+            data:
+              type: object
+              required:
+                - batchCode
+                - shipmentId
+                - origin
+                - destination
+                - shipmentDate
+              properties:
+                batchCode:
+                  type: string
+                shipmentId:
+                  type: string
+                origin:
+                  type: string
+                  description: 发货地点
+                destination:
+                  type: string
+                  description: 目的地
+                shipmentDate:
+                  type: string
+                  format: date-time
+                carrier:
+                  type: string
+                  description: 承运商
+                vehicle:
+                  type: string
+                  description: 运输车辆
+                driver:
+                  type: string
+                  description: 驾驶员
+                expectedArrival:
+                  type: string
+                  format: date-time
+    DeliveryEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.logistics.delivery
+            data:
+              type: object
+              required:
+                - shipmentId
+                - deliveryDate
+                - recipient
+                - status
+              properties:
+                shipmentId:
+                  type: string
+                deliveryDate:
+                  type: string
+                  format: date-time
+                recipient:
+                  type: string
+                  description: 收货人
+                location:
+                  type: string
+                  description: 收货地点
+                status:
+                  type: string
+                  enum:
+                    - 已送达
+                    - 部分送达
+                    - 拒收
+                    - 延迟
+                signature:
+                  type: string
+                  description: 签收人
+                notes:
+                  type: string
+                  description: 配送备注
+    InventoryEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.logistics.inventory
+            data:
+              type: object
+              required:
+                - productId
+                - warehouseId
+                - changeType
+                - quantity
+                - timestamp
+              properties:
+                productId:
+                  type: string
+                batchCode:
+                  type: string
+                warehouseId:
+                  type: string
+                changeType:
+                  type: string
+                  enum:
+                    - 入库
+                    - 出库
+                    - 盘点
+                    - 损耗
+                quantity:
+                  type: number
+                  description: 变更数量
+                remainingStock:
+                  type: number
+                  description: 剩余库存
+                timestamp:
+                  type: string
+                  format: date-time
+                operator:
+                  type: string
+                reason:
+                  type: string
+                  description: 变更原因
+    TemperatureEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.logistics.temperature
+            data:
+              type: object
+              required:
+                - shipmentId
+                - sensorId
+                - temperature
+                - humidity
+                - timestamp
+              properties:
+                shipmentId:
+                  type: string
+                sensorId:
+                  type: string
+                  description: 传感器ID
+                temperature:
+                  type: number
+                  description: 温度(°C)
+                humidity:
+                  type: number
+                  description: 湿度(%)
+                location:
+                  type: object
+                  properties:
+                    latitude:
+                      type: number
+                    longitude:
+                      type: number
+                timestamp:
+                  type: string
+                  format: date-time
+                alert:
+                  type: boolean
+                  description: 是否超出阈值
+    UserActionEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.system.user-action
+            data:
+              type: object
+              required:
+                - userId
+                - action
+                - resource
+                - timestamp
+              properties:
+                userId:
+                  type: string
+                action:
+                  type: string
+                  enum:
+                    - 创建
+                    - 更新
+                    - 删除
+                    - 查看
+                    - 导出
+                resource:
+                  type: string
+                  description: 操作资源
+                resourceId:
+                  type: string
+                  description: 资源ID
+                details:
+                  type: object
+                  description: 操作详情
+                ipAddress:
+                  type: string
+                userAgent:
+                  type: string
+                timestamp:
+                  type: string
+                  format: date-time
+    DataChangeEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.system.data-change
+            data:
+              type: object
+              required:
+                - entityType
+                - entityId
+                - changeType
+                - timestamp
+              properties:
+                entityType:
+                  type: string
+                  description: 实体类型
+                entityId:
+                  type: string
+                  description: 实体ID
+                changeType:
+                  type: string
+                  enum:
+                    - 创建
+                    - 更新
+                    - 删除
+                oldValue:
+                  type: object
+                  description: 变更前数据
+                newValue:
+                  type: object
+                  description: 变更后数据
+                userId:
+                  type: string
+                  description: 操作用户
+                timestamp:
+                  type: string
+                  format: date-time
+    SystemAlertEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.system.alert
+            data:
+              type: object
+              required:
+                - alertType
+                - severity
+                - message
+                - timestamp
+              properties:
+                alertType:
+                  type: string
+                  enum:
+                    - 系统异常
+                    - 性能告警
+                    - 安全告警
+                    - 业务告警
+                severity:
+                  type: string
+                  enum:
+                    - 低
+                    - 中
+                    - 高
+                    - 严重
+                message:
+                  type: string
+                  description: 告警消息
+                source:
+                  type: string
+                  description: 告警来源
+                details:
+                  type: object
+                  description: 告警详情
+                timestamp:
+                  type: string
+                  format: date-time
+                resolved:
+                  type: boolean
+                  default: false
+    TraceAggregatedEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.trace.aggregated
+            data:
+              type: object
+              required:
+                - productId
+                - batchCode
+                - events
+                - aggregationTime
+              properties:
+                productId:
+                  type: string
+                batchCode:
+                  type: string
+                events:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      eventId:
+                        type: string
+                      eventType:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+                      data:
+                        type: object
+                completeness:
+                  type: number
+                  description: 溯源完整度(%)
+                verificationStatus:
+                  type: string
+                  enum:
+                    - 已验证
+                    - 部分验证
+                    - 未验证
+                aggregationTime:
+                  type: string
+                  format: date-time
+    RealtimeNotificationPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            type:
+              const: com.farm-trace.notification.realtime
+            data:
+              type: object
+              required:
+                - notificationType
+                - title
+                - message
+                - timestamp
+              properties:
+                notificationType:
+                  type: string
+                  enum:
+                    - 信息
+                    - 警告
+                    - 错误
+                    - 成功
+                title:
+                  type: string
+                  description: 通知标题
+                message:
+                  type: string
+                  description: 通知内容
+                actionUrl:
+                  type: string
+                  description: 操作链接
+                priority:
+                  type: string
+                  enum:
+                    - 低
+                    - 中
+                    - 高
+                  default: 中
+                expiresAt:
+                  type: string
+                  format: date-time
+                  description: 通知过期时间
+                timestamp:
+                  type: string
+                  format: date-time
+    UserInfo:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - role
+        - isActive
+      properties:
+        id:
+          type: integer
+          description: 用户ID
+        username:
+          type: string
+          description: 用户名
+        email:
+          type: string
+          format: email
+          description: 邮箱地址
+        role:
+          type: string
+          enum:
+            - admin
+            - manager
+            - operator
+            - viewer
+          description: 用户角色
+        permissions:
+          type: array
+          items:
+            type: string
+          description: 用户权限列表
+        lastLogin:
+          type: string
+          format: date-time
+          description: 最后登录时间
+        isActive:
+          type: boolean
+          description: 账户是否激活
+        profile:
+          type: object
+          properties:
+            displayName:
+              type: string
+              description: 显示名称
+            phone:
+              type: string
+              description: 电话号码
+            department:
+              type: string
+              description: 部门
+            position:
+              type: string
+              description: 职位
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - brand
+        - sku
+        - price
+        - description
+        - isActive
+        - stockQuantity
+        - unit
+        - traceability
+      properties:
+        id:
+          type: integer
+          description: 产品ID
+        name:
+          type: string
+          description: 产品名称
+        category:
+          type: string
+          description: 产品分类
+        brand:
+          type: string
+          description: 品牌
+        sku:
+          type: string
+          description: 商品编码
+        price:
+          type: number
+          format: float
+          minimum: 0
+          description: 价格
+        description:
+          type: string
+          description: 产品描述
+        imageUrl:
+          type: string
+          format: uri
+          description: 产品图片URL
+        isActive:
+          type: boolean
+          description: 是否启用
+        stockQuantity:
+          type: integer
+          minimum: 0
+          description: 库存数量
+        unit:
+          type: string
+          description: 计量单位
+        tags:
+          type: array
+          items:
+            type: string
+          description: 产品标签
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+        traceability:
+          $ref: '#/components/schemas/TraceabilityInfo'
+    TraceabilityInfo:
+      type: object
+      required:
+        - origin
+        - farmLocation
+        - harvestDate
+        - certifications
+      properties:
+        origin:
+          type: string
+          description: 产地
+        farmLocation:
+          type: string
+          description: 农场位置
+        harvestDate:
+          type: string
+          format: date
+          description: 采摘日期
+        certifications:
+          type: array
+          items:
+            type: string
+          description: 认证列表
+        farmerId:
+          type: string
+          description: 农户ID
+        farmingMethods:
+          type: array
+          items:
+            type: string
+          description: 种植方式
+        qualityGrade:
+          type: string
+          description: 质量等级
+    TraceEvent:
+      type: object
+      required:
+        - id
+        - type
+        - title
+        - description
+        - timestamp
+        - location
+        - operator
+        - details
+      properties:
+        id:
+          type: string
+          description: 事件ID
+        type:
+          type: string
+          enum:
+            - farming
+            - processing
+            - logistics
+            - quality_check
+            - packaging
+          description: 事件类型
+        title:
+          type: string
+          description: 事件标题
+        description:
+          type: string
+          description: 事件描述
+        timestamp:
+          type: string
+          format: date-time
+          description: 事件时间
+        location:
+          type: string
+          description: 事件地点
+        operator:
+          type: string
+          description: 操作人员
+        details:
+          type: object
+          description: 事件详情
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+          description: 附件列表
+        verificationStatus:
+          type: string
+          enum:
+            - pending
+            - verified
+            - rejected
+          description: 验证状态
+    Attachment:
+      type: object
+      required:
+        - type
+        - url
+        - title
+      properties:
+        type:
+          type: string
+          enum:
+            - image
+            - document
+            - certificate
+          description: 附件类型
+        url:
+          type: string
+          format: uri
+          description: 附件URL
+        title:
+          type: string
+          description: 附件标题
+        fileSize:
+          type: integer
+          description: 文件大小(字节)
+        uploadedAt:
+          type: string
+          format: date-time
+          description: 上传时间
+    BatchInfo:
+      type: object
+      required:
+        - batchCode
+        - productId
+        - quantity
+        - productionDate
+        - expirationDate
+        - status
+      properties:
+        batchCode:
+          type: string
+          description: 批次编码
+        productId:
+          type: string
+          description: 产品ID
+        quantity:
+          type: number
+          description: 批次数量
+        productionDate:
+          type: string
+          format: date
+          description: 生产日期
+        expirationDate:
+          type: string
+          format: date
+          description: 到期日期
+        status:
+          type: string
+          enum:
+            - active
+            - recalled
+            - expired
+          description: 批次状态
+        qualityInfo:
+          type: object
+          properties:
+            grade:
+              type: string
+              description: 质量等级
+            certifications:
+              type: array
+              items:
+                type: string
+              description: 认证信息
+            inspectionDate:
+              type: string
+              format: date
+              description: 检验日期
+            inspectorId:
+              type: string
+              description: 检验员ID
+    LogisticsInfo:
+      type: object
+      required:
+        - shipmentId
+        - carrierName
+        - status
+        - estimatedDelivery
+      properties:
+        shipmentId:
+          type: string
+          description: 运输单号
+        carrierName:
+          type: string
+          description: 承运商名称
+        status:
+          type: string
+          enum:
+            - 准备中
+            - 运输中
+            - 已到达
+            - 已签收
+          description: 物流状态
+        estimatedDelivery:
+          type: string
+          format: date-time
+          description: 预计送达时间
+        actualDelivery:
+          type: string
+          format: date-time
+          description: 实际送达时间
+        route:
+          type: array
+          items:
+            type: object
+            properties:
+              location:
+                type: string
+                description: 地点
+              timestamp:
+                type: string
+                format: date-time
+                description: 时间
+              status:
+                type: string
+                description: 状态
+          description: 运输路线
+        conditions:
+          type: object
+          properties:
+            temperature:
+              type: object
+              properties:
+                min:
+                  type: number
+                max:
+                  type: number
+                current:
+                  type: number
+            humidity:
+              type: object
+              properties:
+                min:
+                  type: number
+                max:
+                  type: number
+                current:
+                  type: number
