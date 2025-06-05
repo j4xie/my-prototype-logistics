@@ -1,21 +1,29 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
 ---
 description: 统一开发管理规则 - 项目管理与文档规范时 - 更新README或任务列表时 - 管理重构阶段文档时 - 确保文档一致性和变更记录完整性 - 提供分层开发指导和智能规则引用导航
-globs: 
+globs:
 alwaysApply: true
 ---
 
 # 统一开发管理规则
 
 <!-- created: 2025-02-02 -->
-<!-- version: 1.0.0 -->
+<!-- version: 1.1.0 -->
 <!-- source: 融合自 project-management-auto + comprehensive-development-workflow-auto + development-principles-always -->
 <!-- backup-location: .cursor/rules/backup-2025-02-02/ -->
 <!-- authority: 主控规则，按需引用专业模块 -->
+<!-- updated: 2025-02-02 16:40 - 添加Mock API架构文档引用指导 -->
+
+## 🚨 **重要提醒：Mock API架构文档必读**
+
+**Phase-3重组后的强制要求**：
+- 任何涉及Mock API的开发任务都必须先阅读 `docs/architecture/mock-api-architecture.md`
+- TASK-P3-018B、P3-018C、P3-019A等任务已包含详细的文档引用章节
+- 不得基于假设或旧架构进行Mock开发，必须遵循统一架构标准
 
 ## 🎯 **快速场景决策路由** (30秒内确定适用层级)
 
@@ -27,6 +35,7 @@ alwaysApply: true
 | "一般开发任务" / "快速开发" | 第3层 | → 引用 development-modules/general-workflow-simplified.mdc |
 | "Phase-3重构" / "技术栈现代化" | 第4层 | → 引用现有 refactor-phase3-* 规则 |
 | "API任务" / "接口设计" | 第4层 | → 引用现有 api-* 规则 |
+| "Mock API" / "数据模拟" | 第4层 | → 必读 docs/architecture/mock-api-architecture.md |
 
 ## 📚 **第1层：核心开发原则速查** (适用：所有开发活动)
 
@@ -89,6 +98,7 @@ alwaysApply: true
 
 #### **Stage 1 - 任务启动确认** (2-3分钟快速启动)
 - **文档阅读检查** → 根据任务类型快速确认必读文档
+  - Mock API相关任务 → 强制阅读 docs/architecture/mock-api-architecture.md 相关章节
 - **任务创建规范** → 标准化任务文件创建和验收标准明确
 - **依赖分析确认** → API依赖、Mock策略、集成点确认
 
@@ -143,7 +153,7 @@ alwaysApply: true
 - Phase-3架构变更与实施 → 使用 refactor-management-unified.mdc (第4章)
 - 验证测试与质疑响应 → 使用 test-validation-unified.mdc
 
-**优势**: 
+**优势**:
 ✅ 统一的重构管理入口，减少规则选择困惑
 ✅ 清晰的内部导航，10秒内定位到相关章节
 ✅ 关注点分离，验证规则独立管理
@@ -154,7 +164,7 @@ alwaysApply: true
 重构任务执行流程：
 - Stage 1 - 任务启动与规划
   → 使用 refactor-management-unified.mdc 确定阶段和方法
-- Stage 2 - 具体实施与开发  
+- Stage 2 - 具体实施与开发
   → 遵循相应阶段的技术规范和质量控制
 - Stage 3 - 验证与交付
   → 使用 test-validation-unified.mdc 执行完整验证
@@ -170,6 +180,21 @@ API任务智能路由：
 - 该规则提供10秒内智能路由到具体专业规则
 - 包含完整的API开发核心原则和质量标准
 - 与本主控规则协同工作，专注API专业指导
+```
+
+### **Mock API架构管理** (Phase-3重组后新增)
+```bash
+Mock API开发任务智能路由：
+- 中央Mock服务实现 → 必读 docs/architecture/mock-api-architecture.md 第2-3节
+- UI Hook层改造 → 必读 docs/architecture/mock-api-architecture.md 第4节
+- 业务模块扩展 → 必读 docs/architecture/mock-api-architecture.md 第3.3-4.1节
+- Schema版本管理 → 必读 docs/api/schema-version-management.md
+- 架构决策理解 → 必读 docs/architecture/adr-001-mock-api-architecture.md
+
+**关键要求**：
+✅ TASK-P3-018B及后续任务必须参考架构设计文档
+✅ 所有Mock实现必须符合MSW + OpenAPI标准
+✅ 不得基于假设进行Mock开发，必须有明确的架构依据
 ```
 
 ### **UI设计系统**
@@ -191,6 +216,7 @@ Neo Minimal iOS-Style Admin UI标准：
 → 应用第1-3层 + 引用 core-principles-detailed.mdc
 → 推荐使用3阶段简化流程 → 引用 general-workflow-simplified.mdc
 → 如涉及API → 额外引用相关API规则
+→ 如涉及Mock API → 必读 docs/architecture/mock-api-architecture.md
 → 如涉及UI → 参考UI设计系统规范
 ```
 
@@ -205,7 +231,7 @@ Neo Minimal iOS-Style Admin UI标准：
 ### **技术验证场景**
 ```markdown
 用户："验证任务是否完成"
-→ 应用第3层 + 引用 workflow-procedures-detailed.mdc  
+→ 应用第3层 + 引用 workflow-procedures-detailed.mdc
 → 强制执行5层验证标准
 → 重点关注回归测试要求
 ```
@@ -229,13 +255,14 @@ Neo Minimal iOS-Style Admin UI标准：
 
 ### **深度指导获取**
 - 需要详细原则 → 引用 development-modules/core-principles-detailed.mdc
-- 需要管理规范 → 引用 development-modules/project-management-detailed.mdc  
+- 需要管理规范 → 引用 development-modules/project-management-detailed.mdc
 - 需要快速开发流程 → 引用 development-modules/general-workflow-simplified.mdc
 - 需要详细5阶段流程 → 引用 development-modules/workflow-procedures-detailed.mdc
 
 ### **特定场景处理**
 - Phase-3重构 → 使用 refactor-management-unified.mdc
 - API任务 → 使用现有api-*规则
+- Mock API任务 → 必读 docs/architecture/mock-api-architecture.md + docs/api/schema-version-management.md
 - 测试验证 → 使用 test-validation-unified.mdc
 
 ---
@@ -245,7 +272,3 @@ Neo Minimal iOS-Style Admin UI标准：
 - **融合来源**：project-management-auto + comprehensive-development-workflow-auto + development-principles-always
 - **下次更新**：根据使用反馈优化智能引用机制
 - **专业模块状态**：已创建 development-modules/ 目录和相关详细文件
-
-
-
-

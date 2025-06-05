@@ -1,0 +1,3628 @@
+{
+  "summary": {
+    "totalFiles": 77,
+    "totalMockSources": 504,
+    "byType": {
+      "api-route": 36,
+      "component": 2,
+      "test-script": 39
+    },
+    "totalSize": 611276
+  },
+  "sources": [
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\users\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\users\\route.ts",
+      "lineNumbers": [
+        61,
+        68,
+        84,
+        202
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "const response: ApiResponse<T> = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "return NextResponse.json(response, { status });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const mockUsers: User[] = ["
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: PaginatedResponse<User> = {"
+        }
+      ],
+      "description": "API路由: users",
+      "size": 5451,
+      "lastModified": "2025-06-03T11:41:56.899Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\products\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\products\\route.ts",
+      "lineNumbers": [
+        70,
+        77,
+        93,
+        284
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "const response: ApiResponse<T> = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "return NextResponse.json(response, { status });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const mockProducts: Product[] = ["
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: PaginatedResponse<Product> = {"
+        }
+      ],
+      "description": "API路由: products",
+      "size": 9070,
+      "lastModified": "2025-05-28T13:38:48.505Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\processing\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\processing\\route.ts",
+      "lineNumbers": [
+        43,
+        50
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: processing",
+      "size": 1676,
+      "lastModified": "2025-06-03T14:59:47.590Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\logistics\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\logistics\\route.ts",
+      "lineNumbers": [
+        41,
+        48
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: logistics",
+      "size": 1418,
+      "lastModified": "2025-06-03T14:37:25.689Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\farming\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\farming\\route.ts",
+      "lineNumbers": [
+        41,
+        48
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: farming",
+      "size": 1412,
+      "lastModified": "2025-06-03T14:36:54.133Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\admin\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\admin\\route.ts",
+      "lineNumbers": [
+        41,
+        48
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: admin",
+      "size": 1406,
+      "lastModified": "2025-06-03T14:37:06.622Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\users\\profile\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\users\\profile\\route.ts",
+      "lineNumbers": [
+        86,
+        93,
+        118,
+        154,
+        190,
+        223
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "const response: ApiResponse<T> = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "return NextResponse.json(response, { status });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-admin': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-manager': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-user': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-test': {"
+        }
+      ],
+      "description": "API路由: profile",
+      "size": 9863,
+      "lastModified": "2025-05-28T13:47:31.671Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\trace\\[id]\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\trace\\[id]\\route.ts",
+      "lineNumbers": [
+        72,
+        79,
+        95,
+        488
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "const response: ApiResponse<T> = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "return NextResponse.json(response, { status });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const mockTraceData: Record<string, TraceInfo> = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const responseData = {"
+        }
+      ],
+      "description": "API路由: [id]",
+      "size": 13997,
+      "lastModified": "2025-05-28T14:40:09.658Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\processing\\raw-materials\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\processing\\raw-materials\\route.ts",
+      "lineNumbers": [
+        21,
+        22,
+        65,
+        74,
+        89,
+        106,
+        116,
+        125,
+        145,
+        154,
+        171,
+        180
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = Array.from({ length: Math.min(pageSize, total) }, () =>"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: raw-materials",
+      "size": 5618,
+      "lastModified": "2025-06-03T14:53:34.001Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\processing\\quality-tests\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\processing\\quality-tests\\route.ts",
+      "lineNumbers": [
+        21,
+        22,
+        79,
+        88,
+        103,
+        120,
+        130,
+        139,
+        159,
+        168,
+        185,
+        194
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = Array.from({ length: Math.min(pageSize, total) }, () =>"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: quality-tests",
+      "size": 6017,
+      "lastModified": "2025-06-03T14:58:43.757Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\processing\\production-batches\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\processing\\production-batches\\route.ts",
+      "lineNumbers": [
+        21,
+        22,
+        65,
+        74,
+        89,
+        106,
+        116,
+        125,
+        145,
+        154,
+        171,
+        180
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = Array.from({ length: Math.min(pageSize, total) }, () =>"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: production-batches",
+      "size": 5706,
+      "lastModified": "2025-06-03T14:54:41.737Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\processing\\finished-products\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\processing\\finished-products\\route.ts",
+      "lineNumbers": [
+        21,
+        22,
+        72,
+        81,
+        96,
+        113,
+        123,
+        132,
+        152,
+        161,
+        178,
+        187
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = Array.from({ length: Math.min(pageSize, total) }, () =>"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: finished-products",
+      "size": 5968,
+      "lastModified": "2025-06-03T14:57:15.413Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\logistics\\warehouses\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\logistics\\warehouses\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: warehouses",
+      "size": 3061,
+      "lastModified": "2025-06-03T14:10:37.495Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\logistics\\vehicles\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\logistics\\vehicles\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: vehicles",
+      "size": 3047,
+      "lastModified": "2025-06-03T14:10:37.487Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\logistics\\transport-orders\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\logistics\\transport-orders\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: transport-orders",
+      "size": 3100,
+      "lastModified": "2025-06-03T14:10:37.485Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\logistics\\drivers\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\logistics\\drivers\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: drivers",
+      "size": 3040,
+      "lastModified": "2025-06-03T14:10:37.490Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\logistics\\inventory\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\logistics\\inventory\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: inventory",
+      "size": 3069,
+      "lastModified": "2025-06-03T14:10:37.497Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\farming\\planting-plans\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\farming\\planting-plans\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: planting-plans",
+      "size": 3078,
+      "lastModified": "2025-06-03T14:10:37.454Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\farming\\harvest-records\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\farming\\harvest-records\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: harvest-records",
+      "size": 3085,
+      "lastModified": "2025-06-03T14:10:37.461Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\farming\\fields\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\farming\\fields\\route.ts",
+      "lineNumbers": [
+        23,
+        24,
+        70,
+        72,
+        79,
+        102,
+        111,
+        129,
+        138
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: fields",
+      "size": 3839,
+      "lastModified": "2025-06-03T14:10:37.445Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\farming\\farm-activities\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\farming\\farm-activities\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: farm-activities",
+      "size": 3082,
+      "lastModified": "2025-06-03T14:10:37.459Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\farming\\crops\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\farming\\crops\\route.ts",
+      "lineNumbers": [
+        23,
+        24,
+        71,
+        73,
+        80,
+        103,
+        112,
+        130,
+        139
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: crops",
+      "size": 3829,
+      "lastModified": "2025-06-03T14:10:37.451Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\auth\\verify\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\auth\\verify\\route.ts",
+      "lineNumbers": [
+        42,
+        49,
+        65,
+        73,
+        81,
+        89,
+        98,
+        131,
+        145,
+        161,
+        175,
+        188,
+        209
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "const response: ApiResponse<T> = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "return NextResponse.json(response, { status });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const mockTokens: Record<string, {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-admin': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-manager': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-user': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-expired': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: VerifyTokenResponse = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: VerifyTokenResponse = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: VerifyTokenResponse = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: VerifyTokenResponse = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: VerifyTokenResponse = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: VerifyTokenResponse = {"
+        }
+      ],
+      "description": "API路由: verify",
+      "size": 4751,
+      "lastModified": "2025-06-03T14:28:56.974Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\auth\\status\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\auth\\status\\route.ts",
+      "lineNumbers": [
+        45,
+        52,
+        68,
+        69,
+        78,
+        87,
+        112,
+        127,
+        142,
+        160
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "const response: ApiResponse<T> = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "return NextResponse.json(response, { status });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const mockUsers: Record<string, UserInfo> = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-admin': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-manager': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "'mock-jwt-token-user': {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: AuthStatusResponse = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: AuthStatusResponse = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: AuthStatusResponse = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const response: AuthStatusResponse = {"
+        }
+      ],
+      "description": "API路由: status",
+      "size": 4017,
+      "lastModified": "2025-05-28T13:36:58.693Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\auth\\logout\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\auth\\logout\\route.ts",
+      "lineNumbers": [
+        22,
+        29
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "const response: ApiResponse<T> = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "return NextResponse.json(response, { status });"
+        }
+      ],
+      "description": "API路由: logout",
+      "size": 2221,
+      "lastModified": "2025-05-28T13:36:34.745Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\auth\\login\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\auth\\login\\route.ts",
+      "lineNumbers": [
+        50,
+        57,
+        73
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "const response: ApiResponse<T> = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "return NextResponse.json(response, { status });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const mockCredentials = {"
+        }
+      ],
+      "description": "API路由: login",
+      "size": 6035,
+      "lastModified": "2025-05-28T13:38:09.211Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\admin\\users\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\admin\\users\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: users",
+      "size": 3010,
+      "lastModified": "2025-06-03T14:10:37.503Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\admin\\system-config\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\admin\\system-config\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        53,
+        62,
+        77,
+        100,
+        109
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = Array.from({ length: Math.min(pageSize, total) }, () =>"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: system-config",
+      "size": 2969,
+      "lastModified": "2025-06-03T14:10:37.512Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\admin\\roles\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\admin\\roles\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: roles",
+      "size": 3010,
+      "lastModified": "2025-06-03T14:10:37.505Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\admin\\notifications\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\admin\\notifications\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59,
+        82,
+        91,
+        109,
+        118
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: notifications",
+      "size": 3066,
+      "lastModified": "2025-06-03T14:10:37.515Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\admin\\audit-logs\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\admin\\audit-logs\\route.ts",
+      "lineNumbers": [
+        20,
+        21,
+        50,
+        52,
+        59
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: audit-logs",
+      "size": 1510,
+      "lastModified": "2025-06-03T14:10:37.509Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\trace\\[id]\\verify\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\trace\\[id]\\verify\\route.ts",
+      "lineNumbers": [
+        54,
+        61,
+        77,
+        289
+      ],
+      "mockData": [
+        {
+          "pattern": "detected",
+          "preview": "const response: ApiResponse<T> = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "return NextResponse.json(response, { status });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const mockVerificationData: Record<string, VerificationResult> = {"
+        },
+        {
+          "pattern": "detected",
+          "preview": "const responseData = {"
+        }
+      ],
+      "description": "API路由: verify",
+      "size": 10266,
+      "lastModified": "2025-05-28T14:33:30.571Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\processing\\raw-materials\\[id]\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\processing\\raw-materials\\[id]\\route.ts",
+      "lineNumbers": [
+        21,
+        22,
+        61,
+        63,
+        70,
+        90,
+        99,
+        116,
+        125
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: [id]",
+      "size": 4180,
+      "lastModified": "2025-06-03T14:54:12.899Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\processing\\quality-tests\\[id]\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\processing\\quality-tests\\[id]\\route.ts",
+      "lineNumbers": [
+        21,
+        22,
+        75,
+        77,
+        84,
+        104,
+        113,
+        130,
+        139
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: [id]",
+      "size": 4593,
+      "lastModified": "2025-06-03T14:59:16.842Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\processing\\production-batches\\[id]\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\processing\\production-batches\\[id]\\route.ts",
+      "lineNumbers": [
+        21,
+        22,
+        61,
+        63,
+        70,
+        90,
+        99,
+        116,
+        125
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: [id]",
+      "size": 4259,
+      "lastModified": "2025-06-03T14:56:48.516Z"
+    },
+    {
+      "type": "api-route",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\app\\api\\processing\\finished-products\\[id]\\route.ts",
+      "relativePath": "web-app-next\\src\\app\\api\\processing\\finished-products\\[id]\\route.ts",
+      "lineNumbers": [
+        21,
+        22,
+        66,
+        68,
+        75,
+        95,
+        104,
+        121,
+        130
+      ],
+      "mockData": [
+        {},
+        {
+          "pattern": "detected",
+          "preview": "const mockData = {"
+        },
+        {
+          "pattern": "complex_object",
+          "preview": "const data = generateMockData({ id });"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        },
+        {
+          "pattern": "detected",
+          "preview": "return NextResponse.json({"
+        }
+      ],
+      "description": "API路由: [id]",
+      "size": 4459,
+      "lastModified": "2025-06-03T14:58:12.818Z"
+    },
+    {
+      "type": "component",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\lib\\ai-error-handler.ts",
+      "relativePath": "web-app-next\\src\\lib\\ai-error-handler.ts",
+      "lineNumbers": [
+        422
+      ],
+      "mockData": [
+        {
+          "type": "component_mock",
+          "preview": "const mockData = {",
+          "context": "component_data"
+        }
+      ],
+      "description": "组件Mock数据: ai-error-handler.ts",
+      "size": 13557,
+      "lastModified": "2025-05-30T18:09:10.224Z"
+    },
+    {
+      "type": "component",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app-next\\src\\components\\test\\StateManagementDemo.tsx",
+      "relativePath": "web-app-next\\src\\components\\test\\StateManagementDemo.tsx",
+      "lineNumbers": [
+        90
+      ],
+      "mockData": [
+        {
+          "type": "component_mock",
+          "preview": "payload: { data: 'test-data-' + Date.now() },",
+          "context": "component_data"
+        }
+      ],
+      "description": "组件Mock数据: StateManagementDemo.tsx",
+      "size": 12908,
+      "lastModified": "2025-06-01T20:28:10.144Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\tests\\unit\\config-loader.test.js",
+      "relativePath": "web-app\\tests\\unit\\config-loader.test.js",
+      "lineNumbers": [
+        34
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "configLoader.getEnvironment = jest.fn().mockReturnValue('development');",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: config-loader.test.js",
+      "size": 2429,
+      "lastModified": "2025-05-27T05:31:48.017Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\storage\\storage-adapter.test.js",
+      "relativePath": "web-app\\src\\storage\\storage-adapter.test.js",
+      "lineNumbers": [
+        162,
+        189,
+        249,
+        264,
+        346,
+        360
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.spyOn(Date, 'now').mockImplementation(() => 1000);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "mockLocalStorage.setItem.mockImplementationOnce(() => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now.mockImplementationOnce(() => 2000);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now.mockImplementationOnce(() => 1000000);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "mockLocalStorage.getItem.mockImplementationOnce(() => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: storage-adapter.test.js",
+      "size": 10772,
+      "lastModified": "2025-04-16T16:50:29.348Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\storage\\resource-cache.test.js",
+      "relativePath": "web-app\\src\\storage\\resource-cache.test.js",
+      "lineNumbers": [
+        10,
+        29,
+        46,
+        288
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./storage-abstraction');",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockImplementation((key) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "StorageAbstraction.mockImplementation(() => mockStorage);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "mockStorage.get.mockImplementation(key => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: resource-cache.test.js",
+      "size": 12296,
+      "lastModified": "2025-06-01T18:38:25.287Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\resource-loader-optimization.test.js",
+      "relativePath": "web-app\\src\\network\\resource-loader-optimization.test.js",
+      "lineNumbers": [
+        14,
+        27,
+        135,
+        155,
+        231,
+        260,
+        302
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./network-monitor');",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "networkMonitor.getNetworkStatus.mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "networkMonitor.getNetworkStatus.mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "networkMonitor.getNetworkStatus.mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "resourceLoader.loadResource = jest.fn().mockImplementation(async (resource) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "resourceLoader.loadResource = jest.fn().mockImplementation(async (resource) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "resourceLoader.loadResource = jest.fn().mockImplementation(async (resource) => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: resource-loader-optimization.test.js",
+      "size": 10548,
+      "lastModified": "2025-04-19T15:31:16.375Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\network-monitor.test.js",
+      "relativePath": "web-app\\src\\network\\network-monitor.test.js",
+      "lineNumbers": [
+        17,
+        40,
+        64,
+        70,
+        139,
+        142,
+        158,
+        171,
+        187,
+        215,
+        230,
+        256,
+        291,
+        299,
+        305
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "global.fetch = jest.fn().mockImplementation(() => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "performance.now.mockReturnValueOnce(100).mockReturnValueOnce(150);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "fetch.mockImplementationOnce(() => Promise.resolve({ ok: true }));",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "fetch.mockImplementationOnce(() => Promise.reject(new Error('网络错误')));",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(now);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(now + 1001);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(currentTime);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(currentTime);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(currentTime);",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: network-monitor.test.js",
+      "size": 9411,
+      "lastModified": "2025-06-01T18:38:25.499Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\network-fast-switch.test.js",
+      "relativePath": "web-app\\src\\network\\network-fast-switch.test.js",
+      "lineNumbers": [
+        10,
+        13,
+        14,
+        22,
+        23,
+        42,
+        43,
+        46
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "init: jest.fn().mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "loadBatch: jest.fn().mockImplementation(resources => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./network-monitor', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "NetworkMonitor: jest.fn().mockImplementation((options) => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../utils/performance-test-tool', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "return jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "getSummary: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: network-fast-switch.test.js",
+      "size": 10029,
+      "lastModified": "2025-06-01T18:38:25.592Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\memory-usage-analysis.test.js",
+      "relativePath": "web-app\\src\\network\\memory-usage-analysis.test.js",
+      "lineNumbers": [
+        10,
+        13,
+        19,
+        20,
+        23,
+        28,
+        29,
+        40,
+        42,
+        43,
+        66
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "init: jest.fn().mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../utils/performance-test-tool', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "return jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "getSummary: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../../../tests/integration/mock-server/mockFetch', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "default: jest.fn().mockImplementation((url) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "withMock: jest.fn().mockImplementation((mockFetch, options) => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "loadBatch: jest.fn().mockImplementation((urls, options = {}) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "now: jest.fn().mockReturnValue(Date.now()),",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: memory-usage-analysis.test.js",
+      "size": 15517,
+      "lastModified": "2025-05-14T00:51:25.366Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\load-balancing.test.js",
+      "relativePath": "web-app\\src\\network\\load-balancing.test.js",
+      "lineNumbers": [
+        24,
+        293,
+        302
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: load-balancing.test.js",
+      "size": 15574,
+      "lastModified": "2025-04-19T15:31:16.368Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\concurrency-control.test.js",
+      "relativePath": "web-app\\src\\network\\concurrency-control.test.js",
+      "lineNumbers": [
+        47,
+        48,
+        51,
+        108,
+        116,
+        120,
+        121,
+        192,
+        201,
+        204,
+        404
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1000)   // 开始时间",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1500);  // 结束时间",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.navigator.getBattery = jest.fn().mockReturnValue(",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.fetch = jest.fn().mockImplementation(() =>",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "timeout: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1000)   // 第一次调用的返回值",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1200);  // 第二次调用的返回值",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.navigator.getBattery = jest.fn().mockReturnValue(",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "timeout: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.fetch = jest.fn().mockImplementation(() =>",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "localStorage.getItem.mockReturnValue(null);",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: concurrency-control.test.js",
+      "size": 16995,
+      "lastModified": "2025-04-19T15:31:16.365Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\batch-size-optimization.test.js",
+      "relativePath": "web-app\\src\\network\\batch-size-optimization.test.js",
+      "lineNumbers": [
+        10,
+        15,
+        21,
+        22,
+        29,
+        30,
+        33,
+        50
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "init: jest.fn().mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./network-monitor', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "NetworkMonitor: jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../utils/performance-test-tool', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "return jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "getSummary: jest.fn().mockReturnValue({}),",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "now: jest.fn().mockReturnValue(Date.now()),",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: batch-size-optimization.test.js",
+      "size": 11108,
+      "lastModified": "2025-06-01T18:38:24.903Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\src\\network\\batch-size-adaptive-controller.test.js",
+      "relativePath": "web-app\\src\\network\\batch-size-adaptive-controller.test.js",
+      "lineNumbers": [
+        10
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./concurrency-optimizer', () => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: batch-size-adaptive-controller.test.js",
+      "size": 11470,
+      "lastModified": "2025-04-23T10:15:34.469Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\tests\\unit\\hooks\\useApi-v2.test.tsx",
+      "relativePath": "tests\\unit\\hooks\\useApi-v2.test.tsx",
+      "lineNumbers": [
+        21
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('@/services/http-service', () => ({",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: useApi-v2.test.tsx",
+      "size": 6323,
+      "lastModified": "2025-05-29T02:34:05.988Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\tests\\unit\\config-loader.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\tests\\unit\\config-loader.test.js",
+      "lineNumbers": [
+        34
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "configLoader.getEnvironment = jest.fn().mockReturnValue('development');",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: config-loader.test.js",
+      "size": 2429,
+      "lastModified": "2025-05-27T05:31:48.017Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\storage\\storage-adapter.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\storage\\storage-adapter.test.js",
+      "lineNumbers": [
+        162,
+        189,
+        249,
+        264,
+        346,
+        360
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.spyOn(Date, 'now').mockImplementation(() => 1000);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "mockLocalStorage.setItem.mockImplementationOnce(() => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now.mockImplementationOnce(() => 2000);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now.mockImplementationOnce(() => 1000000);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "mockLocalStorage.getItem.mockImplementationOnce(() => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: storage-adapter.test.js",
+      "size": 10772,
+      "lastModified": "2025-04-16T16:50:29.348Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\storage\\resource-cache.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\storage\\resource-cache.test.js",
+      "lineNumbers": [
+        10,
+        29,
+        46,
+        288
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./storage-abstraction');",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockImplementation((key) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "StorageAbstraction.mockImplementation(() => mockStorage);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "mockStorage.get.mockImplementation(key => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: resource-cache.test.js",
+      "size": 12296,
+      "lastModified": "2025-06-01T18:38:25.287Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\network\\resource-loader-optimization.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\network\\resource-loader-optimization.test.js",
+      "lineNumbers": [
+        14,
+        27,
+        135,
+        155,
+        231,
+        260,
+        302
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./network-monitor');",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "networkMonitor.getNetworkStatus.mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "networkMonitor.getNetworkStatus.mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "networkMonitor.getNetworkStatus.mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "resourceLoader.loadResource = jest.fn().mockImplementation(async (resource) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "resourceLoader.loadResource = jest.fn().mockImplementation(async (resource) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "resourceLoader.loadResource = jest.fn().mockImplementation(async (resource) => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: resource-loader-optimization.test.js",
+      "size": 10548,
+      "lastModified": "2025-04-19T15:31:16.375Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\network\\network-monitor.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\network\\network-monitor.test.js",
+      "lineNumbers": [
+        17,
+        40,
+        64,
+        70,
+        139,
+        142,
+        158,
+        171,
+        187,
+        215,
+        230,
+        256,
+        291,
+        299,
+        305
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "global.fetch = jest.fn().mockImplementation(() => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "performance.now.mockReturnValueOnce(100).mockReturnValueOnce(150);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "fetch.mockImplementationOnce(() => Promise.resolve({ ok: true }));",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "fetch.mockImplementationOnce(() => Promise.reject(new Error('网络错误')));",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(now);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(now + 1001);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(currentTime);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(currentTime);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(currentTime);",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: network-monitor.test.js",
+      "size": 9411,
+      "lastModified": "2025-06-01T18:38:25.499Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\network\\network-fast-switch.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\network\\network-fast-switch.test.js",
+      "lineNumbers": [
+        10,
+        13,
+        14,
+        22,
+        23,
+        42,
+        43,
+        46
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "init: jest.fn().mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "loadBatch: jest.fn().mockImplementation(resources => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./network-monitor', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "NetworkMonitor: jest.fn().mockImplementation((options) => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../utils/performance-test-tool', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "return jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "getSummary: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: network-fast-switch.test.js",
+      "size": 10029,
+      "lastModified": "2025-06-01T18:38:25.592Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\network\\memory-usage-analysis.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\network\\memory-usage-analysis.test.js",
+      "lineNumbers": [
+        10,
+        13,
+        19,
+        20,
+        23,
+        28,
+        29,
+        40,
+        42,
+        43,
+        66
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "init: jest.fn().mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../utils/performance-test-tool', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "return jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "getSummary: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../../../tests/integration/mock-server/mockFetch', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "default: jest.fn().mockImplementation((url) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "withMock: jest.fn().mockImplementation((mockFetch, options) => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "loadBatch: jest.fn().mockImplementation((urls, options = {}) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "now: jest.fn().mockReturnValue(Date.now()),",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: memory-usage-analysis.test.js",
+      "size": 15517,
+      "lastModified": "2025-05-14T00:51:25.366Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\network\\load-balancing.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\network\\load-balancing.test.js",
+      "lineNumbers": [
+        24,
+        293,
+        302
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: load-balancing.test.js",
+      "size": 15574,
+      "lastModified": "2025-04-19T15:31:16.368Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\network\\concurrency-control.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\network\\concurrency-control.test.js",
+      "lineNumbers": [
+        47,
+        48,
+        51,
+        108,
+        116,
+        120,
+        121,
+        192,
+        201,
+        204,
+        404
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1000)   // 开始时间",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1500);  // 结束时间",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.navigator.getBattery = jest.fn().mockReturnValue(",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.fetch = jest.fn().mockImplementation(() =>",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "timeout: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1000)   // 第一次调用的返回值",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1200);  // 第二次调用的返回值",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.navigator.getBattery = jest.fn().mockReturnValue(",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "timeout: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.fetch = jest.fn().mockImplementation(() =>",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "localStorage.getItem.mockReturnValue(null);",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: concurrency-control.test.js",
+      "size": 16995,
+      "lastModified": "2025-04-19T15:31:16.365Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\network\\batch-size-optimization.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\network\\batch-size-optimization.test.js",
+      "lineNumbers": [
+        10,
+        15,
+        21,
+        22,
+        29,
+        30,
+        33,
+        50
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "init: jest.fn().mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./network-monitor', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "NetworkMonitor: jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../utils/performance-test-tool', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "return jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "getSummary: jest.fn().mockReturnValue({}),",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "now: jest.fn().mockReturnValue(Date.now()),",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: batch-size-optimization.test.js",
+      "size": 11108,
+      "lastModified": "2025-06-01T18:38:24.903Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\src\\network\\batch-size-adaptive-controller.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\src\\network\\batch-size-adaptive-controller.test.js",
+      "lineNumbers": [
+        10
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./concurrency-optimizer', () => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: batch-size-adaptive-controller.test.js",
+      "size": 11470,
+      "lastModified": "2025-04-23T10:15:34.469Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\tests\\unit\\hooks\\useApi-v2.test.tsx",
+      "relativePath": "webback-20250602-0357\\tests\\unit\\hooks\\useApi-v2.test.tsx",
+      "lineNumbers": [
+        21
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('@/services/http-service', () => ({",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: useApi-v2.test.tsx",
+      "size": 6323,
+      "lastModified": "2025-05-29T02:34:05.988Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\tests\\unit\\config-loader.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\tests\\unit\\config-loader.test.js",
+      "lineNumbers": [
+        34
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "configLoader.getEnvironment = jest.fn().mockReturnValue('development');",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: config-loader.test.js",
+      "size": 2429,
+      "lastModified": "2025-05-27T05:31:48.017Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\storage\\storage-adapter.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\storage\\storage-adapter.test.js",
+      "lineNumbers": [
+        162,
+        189,
+        249,
+        264,
+        346,
+        360
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.spyOn(Date, 'now').mockImplementation(() => 1000);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "mockLocalStorage.setItem.mockImplementationOnce(() => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now.mockImplementationOnce(() => 2000);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now.mockImplementationOnce(() => 1000000);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "mockLocalStorage.getItem.mockImplementationOnce(() => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: storage-adapter.test.js",
+      "size": 10772,
+      "lastModified": "2025-04-16T16:50:29.348Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\storage\\resource-cache.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\storage\\resource-cache.test.js",
+      "lineNumbers": [
+        10,
+        29,
+        46,
+        288
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./storage-abstraction');",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockImplementation((key) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "StorageAbstraction.mockImplementation(() => mockStorage);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "mockStorage.get.mockImplementation(key => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: resource-cache.test.js",
+      "size": 12296,
+      "lastModified": "2025-06-01T18:38:25.287Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\network\\resource-loader-optimization.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\network\\resource-loader-optimization.test.js",
+      "lineNumbers": [
+        14,
+        27,
+        135,
+        155,
+        231,
+        260,
+        302
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./network-monitor');",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "networkMonitor.getNetworkStatus.mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "networkMonitor.getNetworkStatus.mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "networkMonitor.getNetworkStatus.mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "resourceLoader.loadResource = jest.fn().mockImplementation(async (resource) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "resourceLoader.loadResource = jest.fn().mockImplementation(async (resource) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "resourceLoader.loadResource = jest.fn().mockImplementation(async (resource) => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: resource-loader-optimization.test.js",
+      "size": 10548,
+      "lastModified": "2025-04-19T15:31:16.375Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\network\\network-monitor.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\network\\network-monitor.test.js",
+      "lineNumbers": [
+        17,
+        40,
+        64,
+        70,
+        139,
+        142,
+        158,
+        171,
+        187,
+        215,
+        230,
+        256,
+        291,
+        299,
+        305
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "global.fetch = jest.fn().mockImplementation(() => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "performance.now.mockReturnValueOnce(100).mockReturnValueOnce(150);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "fetch.mockImplementationOnce(() => Promise.resolve({ ok: true }));",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "fetch.mockImplementationOnce(() => Promise.reject(new Error('网络错误')));",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(now);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(now + 1001);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(currentTime);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(currentTime);",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "Date.now = jest.fn().mockReturnValue(currentTime);",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: network-monitor.test.js",
+      "size": 9411,
+      "lastModified": "2025-06-01T18:38:25.499Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\network\\network-fast-switch.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\network\\network-fast-switch.test.js",
+      "lineNumbers": [
+        10,
+        13,
+        14,
+        22,
+        23,
+        42,
+        43,
+        46
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "init: jest.fn().mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "loadBatch: jest.fn().mockImplementation(resources => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./network-monitor', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "NetworkMonitor: jest.fn().mockImplementation((options) => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../utils/performance-test-tool', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "return jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "getSummary: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: network-fast-switch.test.js",
+      "size": 10029,
+      "lastModified": "2025-06-01T18:38:25.592Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\network\\memory-usage-analysis.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\network\\memory-usage-analysis.test.js",
+      "lineNumbers": [
+        10,
+        13,
+        19,
+        20,
+        23,
+        28,
+        29,
+        40,
+        42,
+        43,
+        66
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "init: jest.fn().mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../utils/performance-test-tool', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "return jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "getSummary: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../../../tests/integration/mock-server/mockFetch', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "default: jest.fn().mockImplementation((url) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "withMock: jest.fn().mockImplementation((mockFetch, options) => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "loadBatch: jest.fn().mockImplementation((urls, options = {}) => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "now: jest.fn().mockReturnValue(Date.now()),",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: memory-usage-analysis.test.js",
+      "size": 15517,
+      "lastModified": "2025-05-14T00:51:25.366Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\network\\load-balancing.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\network\\load-balancing.test.js",
+      "lineNumbers": [
+        24,
+        293,
+        302
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(false)",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "get: jest.fn().mockReturnValue(true)",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: load-balancing.test.js",
+      "size": 15574,
+      "lastModified": "2025-04-19T15:31:16.368Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\network\\concurrency-control.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\network\\concurrency-control.test.js",
+      "lineNumbers": [
+        47,
+        48,
+        51,
+        108,
+        116,
+        120,
+        121,
+        192,
+        201,
+        204,
+        404
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1000)   // 开始时间",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1500);  // 结束时间",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.navigator.getBattery = jest.fn().mockReturnValue(",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.fetch = jest.fn().mockImplementation(() =>",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "timeout: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1000)   // 第一次调用的返回值",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": ".mockReturnValueOnce(1200);  // 第二次调用的返回值",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.navigator.getBattery = jest.fn().mockReturnValue(",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "timeout: jest.fn().mockReturnValue({})",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "global.fetch = jest.fn().mockImplementation(() =>",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "localStorage.getItem.mockReturnValue(null);",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: concurrency-control.test.js",
+      "size": 16995,
+      "lastModified": "2025-04-19T15:31:16.365Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\network\\batch-size-optimization.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\network\\batch-size-optimization.test.js",
+      "lineNumbers": [
+        10,
+        15,
+        21,
+        22,
+        29,
+        30,
+        33,
+        50
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./resource-loader', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "init: jest.fn().mockReturnValue({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./network-monitor', () => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "NetworkMonitor: jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('../utils/performance-test-tool', () => {",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "return jest.fn().mockImplementation(() => ({",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "getSummary: jest.fn().mockReturnValue({}),",
+          "context": "test_data"
+        },
+        {
+          "type": "test_mock",
+          "preview": "now: jest.fn().mockReturnValue(Date.now()),",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: batch-size-optimization.test.js",
+      "size": 11108,
+      "lastModified": "2025-06-01T18:38:24.903Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\src\\network\\batch-size-adaptive-controller.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\src\\network\\batch-size-adaptive-controller.test.js",
+      "lineNumbers": [
+        10
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('./concurrency-optimizer', () => {",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: batch-size-adaptive-controller.test.js",
+      "size": 11470,
+      "lastModified": "2025-04-23T10:15:34.469Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\tests\\unit\\hooks\\useApi-v2.test.tsx",
+      "relativePath": "webback-20250602-0351\\tests\\unit\\hooks\\useApi-v2.test.tsx",
+      "lineNumbers": [
+        21
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "jest.mock('@/services/http-service', () => ({",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: useApi-v2.test.tsx",
+      "size": 6323,
+      "lastModified": "2025-05-29T02:34:05.988Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\web-app\\tests\\unit\\utils\\resource-monitor.test.js",
+      "relativePath": "web-app\\tests\\unit\\utils\\resource-monitor.test.js",
+      "lineNumbers": [
+        14
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "now: jest.fn().mockImplementation(() => Date.now())",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: resource-monitor.test.js",
+      "size": 9739,
+      "lastModified": "2025-06-01T18:38:25.545Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0357\\web-app\\tests\\unit\\utils\\resource-monitor.test.js",
+      "relativePath": "webback-20250602-0357\\web-app\\tests\\unit\\utils\\resource-monitor.test.js",
+      "lineNumbers": [
+        14
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "now: jest.fn().mockImplementation(() => Date.now())",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: resource-monitor.test.js",
+      "size": 9739,
+      "lastModified": "2025-06-01T18:38:25.545Z"
+    },
+    {
+      "type": "test-script",
+      "filePath": "C:\\Users\\Steve\\heiniu\\webback-20250602-0351\\web-app\\tests\\unit\\utils\\resource-monitor.test.js",
+      "relativePath": "webback-20250602-0351\\web-app\\tests\\unit\\utils\\resource-monitor.test.js",
+      "lineNumbers": [
+        14
+      ],
+      "mockData": [
+        {
+          "type": "test_mock",
+          "preview": "now: jest.fn().mockImplementation(() => Date.now())",
+          "context": "test_data"
+        }
+      ],
+      "description": "测试Mock数据: resource-monitor.test.js",
+      "size": 9739,
+      "lastModified": "2025-06-01T18:38:25.545Z"
+    }
+  ],
+  "timestamp": "2025-06-03T17:48:11.993Z",
+  "recommendations": [
+    "检测到大量Mock数据源，建议统一迁移到中央Mock服务",
+    "发现 36 个API路由包含Mock数据，建议迁移到MSW处理器",
+    "发现 2 个组件包含Mock数据，建议使用统一的Mock API服务"
+  ]
+}

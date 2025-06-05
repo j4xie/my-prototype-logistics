@@ -1,3 +1,69 @@
+// MIGRATED TO MSW: This route has been migrated to MSW handlers
+// Original file backed up and disabled on: 2025-06-04T04:13:25.825Z
+// New location: src/mocks/handlers/
+
+import { NextRequest, NextResponse } from 'next/server'
+
+// This API route has been migrated to MSW for better development experience
+// and centralized mock data management.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_request: NextRequest) {
+  return NextResponse.json({
+    success: false,
+    message: 'This API has been migrated to MSW. Please ensure MSW is enabled.',
+    migrated: true,
+    newLocation: 'MSW Handler',
+    timestamp: new Date().toISOString()
+  }, { status: 410 }) // Gone
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function POST(_request: NextRequest) {
+  return NextResponse.json({
+    success: false,
+    message: 'This API has been migrated to MSW. Please ensure MSW is enabled.',
+    migrated: true,
+    newLocation: 'MSW Handler',
+    timestamp: new Date().toISOString()
+  }, { status: 410 })
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function PUT(_request: NextRequest) {
+  return NextResponse.json({
+    success: false,
+    message: 'This API has been migrated to MSW. Please ensure MSW is enabled.',
+    migrated: true,
+    newLocation: 'MSW Handler',
+    timestamp: new Date().toISOString()
+  }, { status: 410 })
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function DELETE(_request: NextRequest) {
+  return NextResponse.json({
+    success: false,
+    message: 'This API has been migrated to MSW. Please ensure MSW is enabled.',
+    migrated: true,
+    newLocation: 'MSW Handler',
+    timestamp: new Date().toISOString()
+  }, { status: 410 })
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function PATCH(_request: NextRequest) {
+  return NextResponse.json({
+    success: false,
+    message: 'This API has been migrated to MSW. Please ensure MSW is enabled.',
+    migrated: true,
+    newLocation: 'MSW Handler',
+    timestamp: new Date().toISOString()
+  }, { status: 410 })
+}
+
+/*
+ORIGINAL CONTENT BACKED UP:
+===============================================
 import { NextRequest, NextResponse } from 'next/server';
 
 // dashboard API路由
@@ -27,7 +93,8 @@ function generateMockData() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function GET(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_request: NextRequest) {
   try {
 
     // 模拟网络延迟
@@ -52,3 +119,6 @@ export async function GET(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+===============================================
+*/

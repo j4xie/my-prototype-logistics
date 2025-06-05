@@ -1,6 +1,6 @@
 /**
  * 简化版 API Hook系统
- * 
+ *
  * @description 专注于Mock API到真实API的无缝切换，支持MVP生产加工AI分析
  * @created Phase-3技术栈现代化 - TASK-P3-016A扩展版
  * @updated 支持farming, processing, AI analytics业务模块
@@ -10,6 +10,9 @@ import { useState, useEffect, useCallback } from 'react';
 
 // 导入现有的API客户端
 import { apiClient, ApiError } from '../lib/api';
+
+// TASK-P3-018C Day 1: Mock感知功能导入
+import { getApiConfig, checkMockHealth, type ApiConfig } from '../lib/api-config';
 
 /**
  * API状态类型
@@ -28,12 +31,35 @@ export interface UseApiResult<T> {
 }
 
 /**
+ * Mock状态Hook返回类型 (TASK-P3-018C)
+ */
+export interface MockStatusResult {
+  mockEnabled: boolean;
+  mockHealthy: boolean;
+  mockHandlers: number;
+  apiMode: 'mock' | 'real' | 'fallback';
+  lastCheck: number;
+}
+
+/**
  * 基础API Hook配置
  */
 export interface UseApiConfig {
   immediate?: boolean;  // 是否立即执行
   cacheKey?: string;   // 缓存key
   cacheTTL?: number;   // 缓存时间（毫秒）
+  mockAware?: boolean; // 是否启用Mock感知
+}
+
+/**
+ * Mock状态Hook返回类型
+ */
+export interface MockStatusResult {
+  mockEnabled: boolean;
+  mockHealthy: boolean;
+  mockHandlers: number;
+  apiMode: 'mock' | 'real' | 'fallback';
+  lastCheck: number;
 }
 
 /**
@@ -87,7 +113,7 @@ export function useApi<T>(
 
     try {
       const result = await apiCall();
-      
+
       // 智能缓存保存
       if (config.cacheKey) {
         const ttl = config.cacheTTL || DEFAULT_CACHE_TTL;
@@ -165,7 +191,7 @@ export function useTrace() {
         const queryParams = params ? `?${new URLSearchParams(params).toString()}` : '';
         return apiClient.get(`/trace${queryParams}`);
       },
-      { 
+      {
         cacheKey: params ? `traces-${JSON.stringify(params)}` : 'traces',
         cacheTTL: DEFAULT_CACHE_TTL
       }
@@ -212,7 +238,7 @@ export function useFarming() {
     // 获取批次数据
     useBatchData: (batchId?: string) => useApi(
       () => batchId ? apiClient.get(`/farming/batch/${batchId}`) : apiClient.get('/farming/batches'),
-      { 
+      {
         cacheKey: batchId ? `farming-batch-${batchId}` : 'farming-batches',
         cacheTTL: DEFAULT_CACHE_TTL
       }
@@ -224,7 +250,7 @@ export function useFarming() {
         const params = timeRange ? `?timeRange=${timeRange}` : '';
         return apiClient.get(`/farming/environment${params}`);
       },
-      { 
+      {
         cacheKey: `farming-environment-${timeRange || 'current'}`,
         cacheTTL: REALTIME_CACHE_TTL // 实时数据短缓存
       }
@@ -236,7 +262,7 @@ export function useFarming() {
         const params = batchId ? `?batchId=${batchId}` : '';
         return apiClient.get(`/farming/health-metrics${params}`);
       },
-      { 
+      {
         cacheKey: `farming-health-${batchId || 'all'}`,
         cacheTTL: DEFAULT_CACHE_TTL
       }
@@ -248,7 +274,7 @@ export function useFarming() {
         const params = batchId ? `?batchId=${batchId}` : '';
         return apiClient.get(`/farming/vaccine${params}`);
       },
-      { 
+      {
         cacheKey: `farming-vaccine-${batchId || 'all'}`,
         cacheTTL: STATIC_CACHE_TTL
       }
@@ -260,7 +286,7 @@ export function useFarming() {
         const params = batchId ? `?batchId=${batchId}` : '';
         return apiClient.get(`/farming/breeding${params}`);
       },
-      { 
+      {
         cacheKey: `farming-breeding-${batchId || 'all'}`,
         cacheTTL: STATIC_CACHE_TTL
       }
@@ -279,7 +305,7 @@ export function useProcessing() {
         const queryParams = params ? `?${new URLSearchParams(params).toString()}` : '';
         return apiClient.get(`/processing/quality-reports${queryParams}`);
       },
-      { 
+      {
         cacheKey: `processing-quality-${JSON.stringify(params || {})}`,
         cacheTTL: DEFAULT_CACHE_TTL
       }
@@ -291,7 +317,7 @@ export function useProcessing() {
         const params = dateRange ? `?dateRange=${dateRange}` : '';
         return apiClient.get(`/processing/schedule${params}`);
       },
-      { 
+      {
         cacheKey: `processing-schedule-${dateRange || 'current'}`,
         cacheTTL: DEFAULT_CACHE_TTL
       }
@@ -300,7 +326,7 @@ export function useProcessing() {
     // 获取设备状态（实时）
     useEquipmentStatus: () => useApi(
       () => apiClient.get('/processing/equipment'),
-      { 
+      {
         cacheKey: 'processing-equipment',
         cacheTTL: REALTIME_CACHE_TTL // 设备状态需要实时
       }
@@ -312,7 +338,7 @@ export function useProcessing() {
         const params = batchId ? `?batchId=${batchId}` : '';
         return apiClient.get(`/processing/records${params}`);
       },
-      { 
+      {
         cacheKey: `processing-records-${batchId || 'all'}`,
         cacheTTL: DEFAULT_CACHE_TTL
       }
@@ -321,7 +347,7 @@ export function useProcessing() {
     // 获取包装信息
     usePackagingInfo: (batchId: string) => useApi(
       () => apiClient.get(`/processing/packaging/${batchId}`),
-      { 
+      {
         cacheKey: `processing-packaging-${batchId}`,
         cacheTTL: DEFAULT_CACHE_TTL
       }
@@ -333,7 +359,7 @@ export function useProcessing() {
         const params = timeRange ? `?timeRange=${timeRange}` : '';
         return apiClient.get(`/processing/temperature${params}`);
       },
-      { 
+      {
         cacheKey: `processing-temperature-${timeRange || 'current'}`,
         cacheTTL: REALTIME_CACHE_TTL
       }
@@ -353,7 +379,7 @@ export function useAIAnalytics() {
       analysisType?: 'efficiency' | 'quality' | 'cost' | 'all';
     }) => useApi(
       () => apiClient.post('/ai/production-insights', params),
-      { 
+      {
         cacheKey: `ai-insights-${JSON.stringify(params)}`,
         cacheTTL: ANALYTICS_CACHE_TTL // AI分析结果中期缓存
       }
@@ -366,7 +392,7 @@ export function useAIAnalytics() {
       targetMetrics?: string[];
     }) => useApi(
       () => apiClient.post('/ai/optimize', data),
-      { 
+      {
         cacheKey: `ai-optimize-${data.processType}-${JSON.stringify(data.targetMetrics || [])}`,
         cacheTTL: ANALYTICS_CACHE_TTL
       }
@@ -379,7 +405,7 @@ export function useAIAnalytics() {
       predictionPeriod?: string;
     }) => useApi(
       () => apiClient.post('/ai/predict', dataset),
-      { 
+      {
         cacheKey: `ai-predict-${dataset.type}-${dataset.predictionPeriod || 'default'}`,
         cacheTTL: ANALYTICS_CACHE_TTL
       }
@@ -392,7 +418,7 @@ export function useAIAnalytics() {
       aggregationType: 'summary' | 'detailed' | 'comparison';
     }) => useApi(
       () => apiClient.post('/ai/aggregate', config),
-      { 
+      {
         cacheKey: `ai-aggregate-${config.aggregationType}-${config.timeRange}`,
         cacheTTL: ANALYTICS_CACHE_TTL
       }
@@ -404,7 +430,7 @@ export function useAIAnalytics() {
       alertThresholds?: Record<string, number>;
     }) => useApi(
       () => apiClient.post('/ai/realtime-analysis', monitoringConfig),
-      { 
+      {
         cacheKey: `ai-realtime-${JSON.stringify(monitoringConfig.modules)}`,
         cacheTTL: REALTIME_CACHE_TTL // 实时分析短缓存
       }
@@ -425,7 +451,7 @@ export function useBatchDataProcessing() {
       batchSize?: number;
     }) => useApi(
       () => apiClient.post('/data/batch-historical', request),
-      { 
+      {
         cacheKey: `batch-data-${request.startDate}-${request.endDate}-${JSON.stringify(request.modules)}`,
         cacheTTL: STATIC_CACHE_TTL // 历史数据长缓存
       }
@@ -438,7 +464,7 @@ export function useBatchDataProcessing() {
       outputFormat?: 'json' | 'csv' | 'chart';
     }) => useApi(
       () => apiClient.post('/data/preprocess', config),
-      { 
+      {
         cacheKey: `preprocess-${config.dataSource}-${JSON.stringify(config.processingRules)}`,
         cacheTTL: ANALYTICS_CACHE_TTL
       }
@@ -508,4 +534,67 @@ export function getCacheStats() {
     oldestEntry: Math.min(...[...cache.values()].map(v => v.timestamp)),
     newestEntry: Math.max(...[...cache.values()].map(v => v.timestamp))
   };
-} 
+}
+
+/**
+ * TASK-P3-018C Day 1: Mock状态检查Hook
+ *
+ * @description 检查Mock服务状态，支持开发时API模式可视化
+ * @returns Mock服务的健康状态和配置信息
+ */
+export function useMockStatus(): MockStatusResult & {
+  config: ApiConfig;
+  checkHealth: () => Promise<void>;
+} {
+  const [status, setStatus] = useState<MockStatusResult>({
+    mockEnabled: false,
+    mockHealthy: false,
+    mockHandlers: 0,
+    apiMode: 'real',
+    lastCheck: 0
+  });
+
+  const [config] = useState<ApiConfig>(() => getApiConfig());
+
+  const checkHealth = useCallback(async () => {
+    if (!config.mockEnabled) {
+      setStatus(prev => ({ ...prev, apiMode: 'real', lastCheck: Date.now() }));
+      return;
+    }
+
+    try {
+      const healthStatus = await checkMockHealth();
+      setStatus({
+        mockEnabled: config.mockEnabled,
+        mockHealthy: healthStatus.available,
+        mockHandlers: healthStatus.handlers,
+        apiMode: healthStatus.available ? 'mock' : 'fallback',
+        lastCheck: healthStatus.lastCheck
+      });
+    } catch {
+      setStatus(prev => ({
+        ...prev,
+        mockHealthy: false,
+        apiMode: 'fallback',
+        lastCheck: Date.now()
+      }));
+    }
+  }, [config.mockEnabled]);
+
+  // 初始化和定期检查
+  useEffect(() => {
+    checkHealth();
+
+    // 开发环境定期检查
+    if (process.env.NODE_ENV === 'development') {
+      const interval = setInterval(checkHealth, 30000); // 30秒检查一次
+      return () => clearInterval(interval);
+    }
+  }, [checkHealth]);
+
+  return {
+    ...status,
+    config,
+    checkHealth
+  };
+}
