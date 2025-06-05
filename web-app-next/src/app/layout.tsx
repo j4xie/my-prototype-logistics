@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from './providers';
 import AiGlobalMonitor from '@/components/ai-global-monitor';
+import { Inter } from 'next/font/google';
 
 // 使用本地系统字体替代Google Fonts
 // const geistSans = Geist({
@@ -16,24 +17,36 @@ import AiGlobalMonitor from '@/components/ai-global-monitor';
 //   subsets: ['latin'],
 // });
 
+const inter = Inter({ subsets: ['latin'] });
+
 export const metadata: Metadata = {
-  title: '食品溯源系统 - 智能农业管理平台',
-  description:
-    '基于区块链和AI的食品安全溯源系统，支持实时协作、智能预测和全链路追踪',
-  keywords: '食品溯源,智能农业,区块链,AI预测,实时协作',
+  title: '黑牛食品溯源系统',
+  description: '食品溯源管理系统 - 农业生产、加工、物流全链路追踪',
 };
+
+// MSW浏览器端初始化组件
+function MSWProvider({ children }: { children: React.ReactNode }) {
+  // 仅在客户端且开发环境下初始化MSW
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    import('@/mocks/setup').then(({ autoInitializeForDevelopment }) => {
+      autoInitializeForDevelopment().catch(console.error);
+    });
+  }
+
+  return <>{children}</>;
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="zh-CN">
-      <body
-        className="font-sans antialiased"
-      >
+    <html lang="zh">
+      <body className={inter.className}>
+        <MSWProvider>
         <Providers>{children}</Providers>
+        </MSWProvider>
         <AiGlobalMonitor />
       </body>
     </html>

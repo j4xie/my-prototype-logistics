@@ -1,0 +1,20 @@
+{
+  "currentVersion": "1.0.0-baseline",
+  "schemaVersion": "1.0",
+  "lastUpdated": "2025-02-02T00:00:00.000Z",
+  "migrations": [],
+  "baseline": {
+    "version": "1.0.0-baseline",
+    "description": "Initial baseline version for Mock API architecture",
+    "createdAt": "2025-02-02T00:00:00.000Z",
+    "modules": {
+      "auth": "1.0.0",
+      "users": "1.0.0",
+      "farming": "1.0.0",
+      "processing": "1.0.0",
+      "logistics": "1.0.0",
+      "admin": "1.0.0",
+      "trace": "1.0.0"
+    }
+  }
+}

@@ -111,7 +111,7 @@ export const FEATURE_FLAGS = {
   ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
   ERROR_REPORTING: process.env.NEXT_PUBLIC_ENABLE_ERROR_REPORTING === 'true',
   DEBUG: process.env.NEXT_PUBLIC_DEBUG === 'true',
-  MOCK_API: process.env.NEXT_PUBLIC_MOCK_API === 'true',
+  MOCK_API: process.env.NEXT_PUBLIC_MOCK_ENABLED === 'true',
 } as const;
 
 // Business Constants

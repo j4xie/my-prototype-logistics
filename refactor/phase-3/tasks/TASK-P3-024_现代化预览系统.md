@@ -1,13 +1,66 @@
 # TASK-P3-024: 现代化预览系统
 
-**任务ID**: TASK-P3-024  
-**任务类型**: 🖼️ 预览系统  
-**优先级**: P1 (高)  
-**预估工期**: 3天  
-**状态**: 📝 等待开始  
-**创建日期**: 2025-01-15  
-**最后更新**: 2025-01-15  
+**任务ID**: TASK-P3-024
+**任务类型**: 🖼️ 预览系统
+**优先级**: P1 (高)
+**预估工期**: 3天
+**状态**: 📝 等待开始
+**创建日期**: 2025-01-15
+**最后更新**: 2025-01-15
 **依赖任务**: TASK-P3-023 (P2管理页面) 📝 等待开始
+
+## 📖 **必读参考文档** (Day 1开始前强制阅读)
+
+### **核心架构设计文档** (来自TASK-P3-020)
+- **`refactor/phase-3/tasks/TASK-P3-020_静态页面现代化迁移架构设计.md`**
+  - **第1节：84个页面完整清单** → 预览系统的页面数据源
+  - **第2节：页面跳转关系映射** → 用户流程演示的跳转逻辑配置
+  - **第3节：设备适配方案** → 移动端、PC端、平板端的预览框架设计
+  - **第4节：组件化策略** → 预览系统UI组件的复用方案
+
+### **页面迁移实施经验** (来自P3-021、P3-022、P3-023)
+- **P0核心页面实施报告** → 认证、导航、溯源页面的预览展示方式
+- **P1业务模块实施报告** → 养殖、加工、物流页面的复杂交互预览
+- **P2管理页面实施报告** → PC端管理界面的预览适配经验
+
+### **API集成指南** (来自TASK-P3-019B)
+- **`web-app-next/docs/api-integration-guide.md`** (P3-019B创建)
+  - **Mock API预览模式** → 预览系统中的API数据展示策略
+  - **环境切换配置** → 预览系统的API环境选择功能
+- **`web-app-next/docs/backend-integration-checklist.md`** (P3-019B创建)
+  - **数据状态展示** → 预览系统中的API连接状态指示
+
+### **预览系统特殊架构要求**
+```typescript
+// 预览系统架构整合 (基于所有前期任务成果)
+const PREVIEW_SYSTEM_ARCHITECTURE = {
+  // 页面数据源 → P3-020架构设计成果
+  pageDataSource: {
+    架构来源: 'P3-020第1节：84个页面清单',
+    跳转关系: 'P3-020第2节：页面跳转关系映射',
+    分类策略: 'P0/P1/P2三层分类体系'
+  },
+
+  // 预览框架 → P3-021至P3-023实施经验
+  previewFramework: {
+    移动端预览: 'P3-021 P0页面的移动端优化经验',
+    PC端预览: 'P3-022、P3-023 管理页面的PC端布局',
+    交互演示: '基于实际页面跳转逻辑的用户流程模拟'
+  },
+
+  // API集成 → P3-019B集成指南
+  apiIntegration: {
+    Mock数据展示: 'P3-019B API集成指南的预览模式',
+    环境切换: 'P3-019B 环境切换脚本的预览系统集成',
+    连接状态: '基于集成检查清单的API状态展示'
+  }
+};
+```
+
+### **关键实施依赖**
+⚠️ **页面数据完整性**: 预览系统必须基于P3-020的84个页面清单构建
+⚠️ **跳转逻辑准确性**: 用户流程演示必须使用P3-020第2节的真实跳转配置
+⚠️ **API数据真实性**: 预览展示必须集成P3-019B的API集成指南和Mock数据
 
 <!-- updated for: 现代化预览系统开发，交互式页面预览平台建设 -->
 
@@ -34,7 +87,7 @@
     <h3>认证系统</h3>
     <iframe src="pages/auth/login.html"></iframe>
   </div>
-  
+
   <!-- 设备切换功能 -->
   <div class="device-switcher">
     <button onclick="switchDevice('mobile')">移动端</button>
@@ -85,15 +138,15 @@ interface UserFlow {
 export default function GridPreviewMode() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'P0' | 'P1' | 'P2'>('all');
   const [deviceMode, setDeviceMode] = useState<'mobile' | 'desktop' | 'tablet'>('mobile');
-  
+
   return (
     <div className="grid-preview-mode">
       {/* 设备切换器 */}
       <DeviceSwitcher mode={deviceMode} onChange={setDeviceMode} />
-      
+
       {/* 分类过滤器 */}
       <CategoryFilter selected={selectedCategory} onChange={setSelectedCategory} />
-      
+
       {/* 页面网格 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
         {filteredPages.map(page => (
@@ -116,13 +169,13 @@ function PagePreviewCard({ page, deviceMode }: { page: PageItem, deviceMode: str
     <Card className="page-preview-card group hover:shadow-lg transition-all">
       {/* 页面预览iframe */}
       <div className={`preview-frame ${deviceMode}-frame`}>
-        <iframe 
+        <iframe
           src={page.route}
           className="w-full h-full border-0 rounded-t-lg"
           title={page.title}
         />
       </div>
-      
+
       {/* 页面信息 */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
@@ -131,9 +184,9 @@ function PagePreviewCard({ page, deviceMode }: { page: PageItem, deviceMode: str
             {page.category}
           </Badge>
         </div>
-        
+
         <p className="text-xs text-gray-600 mb-3">{page.module}</p>
-        
+
         {/* 跳转关系 */}
         <div className="flex flex-wrap gap-1 mb-3">
           {page.jumpTargets.slice(0, 3).map(target => (
@@ -146,7 +199,7 @@ function PagePreviewCard({ page, deviceMode }: { page: PageItem, deviceMode: str
             <Badge variant="outline" className="text-xs">+{page.jumpTargets.length - 3}</Badge>
           )}
         </div>
-        
+
         {/* 操作按钮 */}
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => handlePageNavigate(page.route)}>
@@ -168,36 +221,36 @@ function PagePreviewCard({ page, deviceMode }: { page: PageItem, deviceMode: str
 export default function NavigationPreviewMode() {
   const [currentPage, setCurrentPage] = useState('login');
   const [navigationHistory, setNavigationHistory] = useState<string[]>(['login']);
-  
+
   return (
     <div className="navigation-preview-mode flex h-screen">
       {/* 导航侧边栏 */}
       <aside className="w-80 bg-white border-r overflow-y-auto">
-        <NavigationSidebar 
+        <NavigationSidebar
           currentPage={currentPage}
           onNavigate={handleNavigate}
           history={navigationHistory}
         />
       </aside>
-      
+
       {/* 主预览区域 */}
       <main className="flex-1 flex flex-col">
         {/* 面包屑导航 */}
         <div className="p-4 border-b bg-gray-50">
           <Breadcrumb history={navigationHistory} onNavigate={handleNavigate} />
         </div>
-        
+
         {/* 页面预览框架 */}
         <div className="flex-1 p-4">
           <div className="device-frame mobile-frame mx-auto">
-            <iframe 
+            <iframe
               src={pages.find(p => p.id === currentPage)?.route}
               className="w-full h-full border-0 rounded-lg"
               onLoad={handlePageLoad}
             />
           </div>
         </div>
-        
+
         {/* 页面信息栏 */}
         <div className="p-4 border-t bg-gray-50">
           <PageInfoBar currentPage={currentPage} />
@@ -215,7 +268,7 @@ export default function FlowPreviewMode() {
   const [selectedFlow, setSelectedFlow] = useState<UserFlow | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  
+
   const userFlows: UserFlow[] = [
     {
       id: 'core-trace-flow',
@@ -242,7 +295,7 @@ export default function FlowPreviewMode() {
       ]
     }
   ];
-  
+
   return (
     <div className="flow-preview-mode">
       {/* 流程选择器 */}
@@ -250,7 +303,7 @@ export default function FlowPreviewMode() {
         <h2 className="text-xl font-medium mb-4">用户流程演示</h2>
         <div className="flex gap-4">
           {userFlows.map(flow => (
-            <Card 
+            <Card
               key={flow.id}
               className={`p-4 cursor-pointer transition-all ${
                 selectedFlow?.id === flow.id ? 'ring-2 ring-blue-500' : ''
@@ -263,12 +316,12 @@ export default function FlowPreviewMode() {
           ))}
         </div>
       </div>
-      
+
       {selectedFlow && (
         <div className="flex-1 flex">
           {/* 流程控制面板 */}
           <aside className="w-80 bg-white border-r p-6">
-            <FlowControlPanel 
+            <FlowControlPanel
               flow={selectedFlow}
               isPlaying={isPlaying}
               currentStep={currentStep}
@@ -277,10 +330,10 @@ export default function FlowPreviewMode() {
               onStep={setCurrentStep}
             />
           </aside>
-          
+
           {/* 流程预览区域 */}
           <main className="flex-1 p-6">
-            <FlowPreviewArea 
+            <FlowPreviewArea
               flow={selectedFlow}
               currentStep={currentStep}
               isPlaying={isPlaying}
@@ -299,7 +352,7 @@ export default function FlowPreviewMode() {
 export default function HierarchyPreviewMode() {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']));
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  
+
   const pageHierarchy = {
     root: {
       title: '食品溯源系统',
@@ -319,14 +372,14 @@ export default function HierarchyPreviewMode() {
     }
     // ... 其他模块
   };
-  
+
   return (
     <div className="hierarchy-preview-mode flex h-screen">
       {/* 层级树 */}
       <aside className="w-96 bg-white border-r overflow-y-auto">
         <div className="p-4">
           <h2 className="text-lg font-medium mb-4">页面层级结构</h2>
-          <HierarchyTree 
+          <HierarchyTree
             hierarchy={pageHierarchy}
             expanded={expandedNodes}
             selected={selectedNode}
@@ -335,7 +388,7 @@ export default function HierarchyPreviewMode() {
           />
         </div>
       </aside>
-      
+
       {/* 预览区域 */}
       <main className="flex-1 flex flex-col">
         {selectedNode && (
@@ -343,16 +396,16 @@ export default function HierarchyPreviewMode() {
             <div className="p-4 border-b">
               <PageHierarchyInfo nodeId={selectedNode} />
             </div>
-            
+
             <div className="flex-1 p-4">
               <div className="device-frame mobile-frame mx-auto">
-                <iframe 
+                <iframe
                   src={getPageRoute(selectedNode)}
                   className="w-full h-full border-0 rounded-lg"
                 />
               </div>
             </div>
-            
+
             <div className="p-4 border-t">
               <RelatedPagesPanel nodeId={selectedNode} />
             </div>
@@ -370,47 +423,47 @@ export default function HierarchyPreviewMode() {
 export default function SitemapPreviewMode() {
   const [viewMode, setViewMode] = useState<'graph' | 'tree' | 'matrix'>('graph');
   const [selectedConnection, setSelectedConnection] = useState<string | null>(null);
-  
+
   return (
     <div className="sitemap-preview-mode">
       {/* 工具栏 */}
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="text-xl font-medium">站点地图</h2>
-        
+
         <div className="flex items-center gap-4">
           <ViewModeSelector mode={viewMode} onChange={setViewMode} />
           <ExportButton />
         </div>
       </div>
-      
+
       {/* 地图视图 */}
       <div className="flex-1 relative">
         {viewMode === 'graph' && (
-          <SitemapGraphView 
+          <SitemapGraphView
             pages={allPages}
             onNodeClick={handleNodeClick}
             onConnectionClick={setSelectedConnection}
           />
         )}
-        
+
         {viewMode === 'tree' && (
-          <SitemapTreeView 
+          <SitemapTreeView
             pages={allPages}
             onNodeClick={handleNodeClick}
           />
         )}
-        
+
         {viewMode === 'matrix' && (
-          <SitemapMatrixView 
+          <SitemapMatrixView
             pages={allPages}
             onCellClick={handleMatrixCellClick}
           />
         )}
-        
+
         {/* 详情面板 */}
         {selectedConnection && (
           <div className="absolute right-4 top-4 w-80">
-            <ConnectionDetailsPanel 
+            <ConnectionDetailsPanel
               connectionId={selectedConnection}
               onClose={() => setSelectedConnection(null)}
             />
@@ -534,7 +587,7 @@ export default function PreviewSystemPage() {
   const mode = searchParams.get('mode') || 'grid';
   const category = searchParams.get('category') || 'all';
   const device = searchParams.get('device') || 'mobile';
-  
+
   const previewModes: PreviewMode[] = [
     { id: 'grid', name: '网格预览', description: '以网格形式预览所有页面', component: GridPreviewMode },
     { id: 'navigation', name: '导航预览', description: '模拟用户导航体验', component: NavigationPreviewMode },
@@ -542,10 +595,10 @@ export default function PreviewSystemPage() {
     { id: 'hierarchy', name: '层级预览', description: '页面层级关系展示', component: HierarchyPreviewMode },
     { id: 'sitemap', name: '站点地图', description: '站点结构可视化', component: SitemapPreviewMode }
   ];
-  
+
   const currentMode = previewModes.find(m => m.id === mode) || previewModes[0];
   const CurrentModeComponent = currentMode.component;
-  
+
   return (
     <PageLayout title="页面预览系统">
       {/* 预览模式导航栏 */}
@@ -553,7 +606,7 @@ export default function PreviewSystemPage() {
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-6">
             <h1 className="text-xl font-medium">页面预览系统</h1>
-            
+
             <nav className="flex space-x-1">
               {previewModes.map(mode => (
                 <button
@@ -570,17 +623,17 @@ export default function PreviewSystemPage() {
               ))}
             </nav>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <PreviewSettings />
             <Button variant="outline" onClick={handleExport}>导出</Button>
           </div>
         </div>
       </div>
-      
+
       {/* 预览模式内容 */}
       <div className="flex-1">
-        <CurrentModeComponent 
+        <CurrentModeComponent
           category={category}
           device={device}
           onSettingsChange={handleSettingsChange}
@@ -594,11 +647,11 @@ export default function PreviewSystemPage() {
 ### 设备预览框架
 ```typescript
 // components/DeviceFrame.tsx
-export function DeviceFrame({ 
-  device, 
-  src, 
-  className 
-}: { 
+export function DeviceFrame({
+  device,
+  src,
+  className
+}: {
   device: 'mobile' | 'desktop' | 'tablet';
   src: string;
   className?: string;
@@ -611,7 +664,7 @@ export function DeviceFrame({
       borderRadius: '20px'
     },
     tablet: {
-      width: '768px', 
+      width: '768px',
       height: '1024px',
       border: '12px solid #374151',
       borderRadius: '16px'
@@ -623,13 +676,13 @@ export function DeviceFrame({
       borderRadius: '8px'
     }
   };
-  
+
   return (
-    <div 
+    <div
       className={`device-frame ${device}-frame ${className || ''}`}
       style={frameStyles[device]}
     >
-      <iframe 
+      <iframe
         src={src}
         className="w-full h-full border-0"
         style={{ borderRadius: 'inherit' }}
@@ -677,6 +730,6 @@ export function DeviceFrame({
 
 ---
 
-**任务状态**: 📝 等待开始  
-**预计完成**: 3个工作日  
-**技术栈**: Next.js 14 + TypeScript 5 + React + 现代化UI框架 
+**任务状态**: 📝 等待开始
+**预计完成**: 3个工作日
+**技术栈**: Next.js 14 + TypeScript 5 + React + 现代化UI框架

@@ -183,7 +183,7 @@ Mock API验证: PASS (从3个扩展到7个验证标准)
 │   │   │   └── task-archives/               # 任务归档目录
 │   │   ├── progress-reports/  # 进度报告
 │   │   ├── review-notes/      # 评审记录
-│   │   └── tasks/             # 任务文档 (22个任务文件)
+│   │   └── tasks/             # 任务文档 (26个任务文件) [新增Mock API重组任务]
 │   │       ├── TASK_TEMPLATE.md                           # 任务模板
 │   │       ├── TASK-P3-001_前端框架迁移评估与选型.md       # 技术选型任务(已完成)
 │   │       ├── TASK-P3-002_构建工具现代化配置.md           # 构建工具现代化(已完成)
@@ -199,7 +199,10 @@ Mock API验证: PASS (从3个扩展到7个验证标准)
 │   │       ├── TASK-P3-016A-COMPLETION-REPORT.md         # TASK-P3-016A完成报告
 │   │       ├── TASK-P3-016B_API客户端离线队列集成.md      # API客户端离线队列集成
 │   │       ├── TASK-P3-017_状态管理集成扩展.md            # 状态管理集成扩展
-│   │       ├── TASK-P3-018_兼容性验证与优化.md            # 兼容性验证与优化
+│   │       ├── TASK-P3-017B_Mock_API统一架构设计.md       # Mock API统一架构设计 [新增]
+│   │       ├── TASK-P3-018_兼容性验证与优化.md            # 兼容性验证与优化 [范围重新定义]
+│   │       ├── TASK-P3-018B_中央Mock服务实现.md           # 中央Mock服务实现 [新增]
+│   │       ├── TASK-P3-018C_UI_Hook层统一改造.md          # UI Hook层统一改造 [新增]
 │   │       ├── TASK-P3-019_UI设计系统规范执行优化.md      # UI设计系统规范执行优化
 │   │       ├── TASK-P3-020_静态页面现代化迁移.md          # 静态页面现代化迁移
 │   │       ├── TASK-P3-020_静态页面现代化迁移架构设计.md  # 静态页面现代化迁移架构设计
@@ -446,6 +449,30 @@ web-app/
 ├── vercel.json                # Vercel部署配置
 ├── README.md                  # Web应用说明文档
 ├── src/                       # 源代码目录
+│   ├── mocks/                 # Mock API服务系统 (Phase-3重组完成，Day 4实施完成)
+│   │   ├── config/            # Mock环境配置
+│   │   │   ├── environments.ts # 环境控制(dev/test/prod)
+│   │   │   └── msw-config.ts  # MSW配置管理
+│   │   ├── data/              # Mock数据层 (47个API端点完整覆盖)
+│   │   │   ├── auth-data.ts   # 认证数据(JWT/权限/会话管理)
+│   │   │   ├── users-data.ts  # 用户数据(20个预设用户/CRUD)
+│   │   │   ├── farming-data.ts # 农业数据(15农田/12作物/25计划)
+│   │   │   ├── processing-data.ts # 加工数据(15批次/20检测/12成品)
+│   │   │   ├── logistics-data.ts # 物流数据(仓库/车辆/司机/订单)
+│   │   │   ├── admin-data.ts  # 管理数据(配置/角色/权限/监控)
+│   │   │   └── version-manager.ts # 版本管理器(Schema验证/数据迁移)
+│   │   ├── handlers/          # MSW请求处理器 (50个handlers)
+│   │   │   ├── auth.ts        # 认证处理器(5个endpoints)
+│   │   │   ├── users.ts       # 用户处理器(8个endpoints)
+│   │   │   ├── farming.ts     # 农业处理器(8个endpoints)
+│   │   │   ├── processing.ts  # 加工处理器(8个endpoints)
+│   │   │   ├── logistics.ts   # 物流处理器(9个endpoints)
+│   │   │   ├── admin.ts       # 管理处理器(8个endpoints)
+│   │   │   ├── trace.ts       # 溯源处理器(1个endpoint)
+│   │   │   └── index.ts       # 处理器导出索引
+│   │   ├── browser.ts         # 浏览器端MSW Worker
+│   │   ├── node-server.ts     # Node端MSW服务器
+│   │   └── mock-dev-tools.ts  # Mock开发工具(Handler统计/状态检查)
 │   ├── components/            # 组件目录
 │   │   ├── common/            # 通用组件
 │   │   │   ├── Button/        # 按钮组件

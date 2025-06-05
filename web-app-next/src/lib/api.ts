@@ -1,3 +1,6 @@
+// Mock配置导入 (TASK-P3-018C Day 1)
+import { getApiConfig, checkMockHealth, getMockEnabledFromURL, type ApiConfig, type MockHealthStatus } from './api-config';
+
 /**
  * HTTP响应类型
  */
@@ -55,24 +58,96 @@ interface RequestOptions {
 }
 
 /**
- * 简化API客户端
- * 支持基础认证管理和错误重试
+ * 增强API客户端 - 支持Mock/Real API透明切换
+ *
+ * @description TASK-P3-018C改造：基于P3-018B中央Mock服务的API客户端
+ * @features Mock感知、环境自适应、Schema版本检查
  */
 class ApiClient {
   private config: ApiClientConfig;
   private authToken: string | null = null;
+  private mockConfig: ApiConfig;
+  private mockHealthStatus: MockHealthStatus | null = null;
+  private lastHealthCheck: number = 0;
+  private readonly healthCheckInterval = 30000; // 30秒健康检查间隔
 
   constructor(config: Partial<ApiClientConfig> = {}) {
+    // 获取Mock配置
+    this.mockConfig = getApiConfig();
+
+    // URL参数可以覆盖环境变量
+    const urlMockEnabled = getMockEnabledFromURL();
+    if (urlMockEnabled !== null) {
+      this.mockConfig.mockEnabled = urlMockEnabled;
+    }
+
     this.config = {
-      baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api',
-      timeout: 10000,
+      baseURL: this.mockConfig.baseURL,
+      timeout: this.mockConfig.timeout,
       headers: {
         'Content-Type': 'application/json',
       },
-      retryAttempts: 3,
+      retryAttempts: this.mockConfig.retryAttempts,
       retryDelay: 1000,
       ...config,
     };
+
+    // 初始化Mock健康检查
+    if (this.mockConfig.mockEnabled && this.mockConfig.mockHealthCheck) {
+      this.checkMockHealthStatus();
+    }
+  }
+
+  /**
+   * 检查Mock服务健康状态
+   */
+  private async checkMockHealthStatus(): Promise<void> {
+    const now = Date.now();
+
+    // 避免频繁检查
+    if (now - this.lastHealthCheck < this.healthCheckInterval) {
+      return;
+    }
+
+    try {
+      this.mockHealthStatus = await checkMockHealth();
+      this.lastHealthCheck = now;
+
+      // 开发环境输出Mock状态
+      if (process.env.NODE_ENV === 'development') {
+        console.info(`[API Client] Mock Status: ${this.mockHealthStatus.available ? '✅' : '❌'} (${this.mockHealthStatus.handlers} handlers)`);
+      }
+    } catch (error) {
+      console.warn('[API Client] Mock health check failed:', error);
+      this.mockHealthStatus = {
+        available: false,
+        lastCheck: now,
+        handlers: 0,
+        environment: 'error'
+      };
+    }
+  }
+
+  /**
+   * 获取当前API模式
+   */
+  public getApiMode(): { mode: 'mock' | 'real' | 'fallback'; healthy: boolean } {
+    if (!this.mockConfig.mockEnabled) {
+      return { mode: 'real', healthy: true };
+    }
+
+    if (this.mockHealthStatus?.available) {
+      return { mode: 'mock', healthy: true };
+    }
+
+    return { mode: 'fallback', healthy: false };
+  }
+
+  /**
+   * 获取Mock健康状态
+   */
+  public getMockHealth(): MockHealthStatus | null {
+    return this.mockHealthStatus;
   }
 
   /**
