@@ -64,9 +64,10 @@ Mock API验证: PASS (从3个扩展到7个验证标准)
 │   │   └── technologies.md    # 技术栈说明
 │   ├── api/                   # API文档
 │   │   ├── README.md          # API文档索引和概览
-│   │   ├── api-specification.md # 完整API接口规范(权威来源) [新增AI接口]
+│   │   ├── api-specification.md # 完整API接口规范v2.0.0(69个API) [TASK-P3-019B更新]
+│   │   ├── mock-api-status.md # Mock API状态文档(69个接口100%) [TASK-P3-019B新增]
+│   │   ├── mock-api-guide.md  # Mock API完整使用指南 [TASK-P3-019B更新]
 │   │   ├── ai-analytics.md    # AI数据分析API接口规范 [MVP核心] [新增]
-│   │   ├── mock-api-guide.md  # Mock API完整使用指南 [更新AI接口]
 │   │   ├── overview.md        # API概览
 │   │   ├── trace.md           # 溯源API文档
 │   │   ├── authentication.md  # 认证API文档
@@ -89,6 +90,9 @@ Mock API验证: PASS (从3个扩展到7个验证标准)
 │   └── project-management/    # 项目管理文档
 ├── scripts/                   # 工具脚本目录
 │   ├── build/                 # 构建相关脚本
+│   ├── deployment/            # 部署相关脚本 [新增API切换工具]
+│   │   ├── api-switch.sh      # API环境切换自动化脚本(594行) [TASK-P3-019B交付物]
+│   │   └── README.md          # API切换工具使用指南 [TASK-P3-019B交付物]
 │   ├── deploy/                # 部署相关脚本
 │   ├── dev/                   # 开发环境相关脚本
 │   │   ├── git/               # Git相关开发脚本
@@ -265,7 +269,11 @@ Mock API验证: PASS (从3个扩展到7个验证标准)
 │   │   └── media/            # 媒体文件
 │   └── fonts/                # 字体文件
 ├── docs/                     # 项目文档
-│   └── migration-guide-useApi-v2.md # useApi-v2迁移指南与API对照表
+│   ├── api-integration-guide.md     # API集成指南(Mock到真实API迁移) [TASK-P3-019B交付物]
+│   ├── backend-integration-checklist.md # 后端集成检查清单(8个验证领域) [TASK-P3-019B交付物]
+│   ├── migration/            # 迁移相关文档
+│   │   └── migration-guide-useApi-v2.md # useApi-v2迁移指南与API对照表
+│   └── fixes/                # 修复记录文档
 ├── package.json              # 项目配置(完整脚本、lint-staged配置)(完成)
 ├── package-lock.json         # 依赖锁定
 ├── tsconfig.json             # TypeScript配置

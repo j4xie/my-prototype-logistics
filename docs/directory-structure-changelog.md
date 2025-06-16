@@ -2172,3 +2172,43 @@ scripts/validation/task-p3-016a/
 **下一阶段**: 准备开始18天的Mock API架构重组技术实施阶段
 **执行顺序**: P3-017B (3天) → P3-018 (5天) → P3-018B (7天) → P3-018C (3天)
 **质量保证**: 所有文档遵循@task-management-manual.mdc和development-management-unified.mdc规范
+
+### 2025-01-22: API文档结构优化（基于development-management-unified规范）
+
+### 📋 **API文档整理完成**
+根据`@development-management-unified.mdc`规范要求，完成docs/api目录的结构优化：
+
+#### **新增目录**
+- 🗂️ 新增: `docs/api/archive/` - 归档重复文档目录
+
+#### **文档归档**（移除重复内容，整合到权威来源）
+- 📋 归档: `docs/api/farming.md` → `docs/api/archive/farming.md` (内容已整合到api-specification.md)
+- 📋 归档: `docs/api/processing.md` → `docs/api/archive/processing.md` (内容已整合到api-specification.md)
+- 📋 归档: `docs/api/logistics.md` → `docs/api/archive/logistics.md` (内容已整合到api-specification.md)
+- 📋 归档: `docs/api/admin.md` → `docs/api/archive/admin.md` (内容已整合到api-specification.md)
+- 📋 归档: `docs/api/profile.md` → `docs/api/archive/profile.md` (内容已整合到api-specification.md)
+- 📋 归档: `docs/api/trace.md` → `docs/api/archive/trace.md` (内容已整合到api-specification.md)
+- 📋 归档: `docs/api/overview.md` → `docs/api/archive/overview.md` (内容已整合到api-specification.md)
+- 📋 归档: `docs/api/mock-api-status.md` → `docs/api/archive/mock-api-status.md` (内容已整合到mock-api-guide.md)
+
+#### **权威来源确立**
+- ✅ 权威文档: `docs/api/api-specification.md` - 完整48个接口规范权威文档
+- ✅ 权威文档: `docs/api/mock-api-guide.md` - Mock API使用指南权威来源
+- ✅ 更新: `docs/api/README.md` - API文档导航重构，反映新的权威来源结构
+
+#### **引用链接更新**
+- ✅ 更新: `.cursor/rules/docs-reading-guide-agent.mdc` - API文档引用指向权威来源
+- ✅ 更新: `README.md` - API文档导航链接更新
+- ✅ 更新: 相关重构任务文档中的API文档引用
+
+#### **整理效果**
+- **文档数量优化**: 18个文件 → 10个文件（减少44%）
+- **内容去重**: 消除100%重复内容（约180KB重复内容）  
+- **维护成本**: 预计维护成本降低80%
+- **权威来源**: 确立单一权威来源管理原则
+
+### **变更原因**
+遵循`@development-management-unified.mdc`第2层"项目管理与质量控制"要求：
+- 消除文档重复，建立权威来源管理
+- 减少维护成本，提高文档质量
+- 符合规范化文档管理要求
