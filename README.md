@@ -196,12 +196,10 @@ npm run start
   - [Mock API架构](docs/architecture/mock-api-architecture.md)
 
 - **API文档**
-  - [API概览](docs/api/overview.md)
-  - [认证API](docs/api/authentication.md)
-  - [溯源API](docs/api/trace.md)
-  - [农业/养殖API](docs/api/farming.md)
-  - [物流API](docs/api/logistics.md)
-  - [加工API](docs/api/processing.md)
+  - [API规范权威文档](docs/api/api-specification.md) - 完整48个接口规范
+- [Mock API使用指南](docs/api/mock-api-guide.md) - Mock环境使用指南
+- [认证API](docs/api/authentication.md) - 认证与授权
+- [AI分析API](docs/api/ai-analytics.md) - AI分析功能接口
 
 - **组件文档**
   - [组件概览](docs/components/overview.md)

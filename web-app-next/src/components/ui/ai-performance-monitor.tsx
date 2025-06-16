@@ -88,7 +88,7 @@ export const AiPerformanceMonitor: React.FC<{
     return (
       <button
         onClick={() => setIsVisible(true)}
-        className={`fixed bottom-4 right-4 z-50 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 ${className}`}
+        className={`fixed bottom-4 right-4 z-50 bg-[#1890FF] text-white px-3 py-1 rounded text-sm hover:bg-[#4096FF] ${className}`}
       >
         性能监控
       </button>
@@ -125,7 +125,7 @@ export const AiPerformanceMonitor: React.FC<{
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">L1缓存:</span>
-                  <span className="font-medium text-blue-600">{metrics.cache.l1Size}</span>
+                  <span className="font-medium text-[#1890FF]">{metrics.cache.l1Size}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">L1命中:</span>
@@ -133,7 +133,7 @@ export const AiPerformanceMonitor: React.FC<{
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">L2命中:</span>
-                  <span className="font-medium text-blue-600">{metrics.cache.l2Hits}</span>
+                  <span className="font-medium text-[#1890FF]">{metrics.cache.l2Hits}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">未命中:</span>
@@ -165,7 +165,7 @@ export const AiPerformanceMonitor: React.FC<{
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">平均耗时:</span>
-                  <span className="font-medium text-blue-600">
+                  <span className="font-medium text-[#1890FF]">
                     {metrics.batch.averageResponseTime.toFixed(0)}ms
                   </span>
                 </div>
@@ -184,7 +184,7 @@ export const AiPerformanceMonitor: React.FC<{
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">活跃请求:</span>
-                  <span className="font-medium text-blue-600">{metrics.batch.activeRequests}</span>
+                  <span className="font-medium text-[#1890FF]">{metrics.batch.activeRequests}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">批量缓存:</span>
@@ -215,7 +215,7 @@ export const AiPerformanceMonitor: React.FC<{
 
         {!metrics && (
           <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1890FF] mx-auto"></div>
             <p className="text-sm text-gray-600 mt-2">加载性能数据...</p>
           </div>
         )}

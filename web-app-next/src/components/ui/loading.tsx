@@ -24,7 +24,7 @@ export const Loading: React.FC<LoadingProps> = ({
   };
 
   const colorClasses = {
-    primary: 'text-blue-600',
+    primary: 'text-[#1890FF]',
     secondary: 'text-gray-600',
     gray: 'text-gray-400',
   };
