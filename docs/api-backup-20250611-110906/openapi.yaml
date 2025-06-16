@@ -1,0 +1,1498 @@
+openapi: 3.0.3
+info:
+  title: 食品溯源系统API
+  version: 1.0.0-baseline
+  description: |-
+    食品溯源系统统一API规范文档
+
+    **版本状态**: 1.0.0-baseline - [已冻结] 2025-06-04T02:09:10.288Z
+    **创建日期**: 2025-06-03
+    **适用场景**: Mock API开发、真实API实现、客户端集成
+
+    ## 认证方式
+    - Bearer Token认证 (JWT)
+    - 令牌过期时间: 24小时
+    - 刷新令牌有效期: 30天
+
+    ## 响应格式
+    所有API响应遵循统一格式:
+    ```json
+    {
+      "success": boolean,
+      "data": any,
+      "message": string,
+      "code": number
+    }
+    ```
+
+    ## 错误码规范
+    - 400: 请求参数错误
+    - 401: 未授权访问
+    - 403: 权限不足
+    - 404: 资源不存在
+    - 500: 服务器内部错误
+
+
+    🔒 **版本已冻结**: 2025-06-04T02:09:10.288Z
+    ⚠️ 此版本为Phase-3重构基线，禁止修改。后续变更请使用新版本。
+  contact:
+    name: Phase-3技术团队
+    email: tech-team@farm-trace.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:3000/api
+    description: 开发环境
+  - url: https://api.farm-trace.com
+    description: 生产环境
+security:
+  - BearerAuth: []
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer token认证
+  schemas:
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          description: 请求是否成功
+        data:
+          description: 响应数据
+        message:
+          type: string
+          description: 响应消息
+        code:
+          type: integer
+          description: 响应状态码
+    PaginatedResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: {}
+                pagination:
+                  $ref: '#/components/schemas/Pagination'
+                filters:
+                  type: object
+                  description: 应用的过滤器
+    Pagination:
+      type: object
+      required:
+        - page
+        - pageSize
+        - total
+        - totalPages
+        - hasNext
+        - hasPrev
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          description: 当前页码
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: 每页数量
+        total:
+          type: integer
+          minimum: 0
+          description: 总记录数
+        totalPages:
+          type: integer
+          minimum: 0
+          description: 总页数
+        hasNext:
+          type: boolean
+          description: 是否有下一页
+        hasPrev:
+          type: boolean
+          description: 是否有上一页
+    UserInfo:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - role
+        - permissions
+        - isActive
+      properties:
+        id:
+          type: integer
+          description: 用户ID
+        username:
+          type: string
+          description: 用户名
+        email:
+          type: string
+          format: email
+          description: 邮箱地址
+        role:
+          type: string
+          enum:
+            - admin
+            - manager
+            - user
+          description: 用户角色
+        permissions:
+          type: array
+          items:
+            type: string
+          description: 用户权限列表
+        lastLogin:
+          type: string
+          format: date-time
+          description: 最后登录时间
+        isActive:
+          type: boolean
+          description: 账户是否激活
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: 用户名或邮箱
+        password:
+          type: string
+          description: 密码
+        rememberMe:
+          type: boolean
+          default: false
+          description: 记住登录状态
+    LoginResponse:
+      type: object
+      required:
+        - token
+        - refreshToken
+        - user
+        - expiresAt
+        - sessionId
+      properties:
+        token:
+          type: string
+          description: JWT访问令牌
+        refreshToken:
+          type: string
+          description: 刷新令牌
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        expiresAt:
+          type: string
+          format: date-time
+          description: 令牌过期时间
+        sessionId:
+          type: string
+          description: 会话ID
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - brand
+        - sku
+        - price
+        - description
+        - isActive
+        - stockQuantity
+        - unit
+        - traceability
+      properties:
+        id:
+          type: integer
+          description: 产品ID
+        name:
+          type: string
+          description: 产品名称
+        category:
+          type: string
+          description: 产品分类
+        brand:
+          type: string
+          description: 品牌
+        sku:
+          type: string
+          description: 商品编码
+        price:
+          type: number
+          format: float
+          minimum: 0
+          description: 价格
+        description:
+          type: string
+          description: 产品描述
+        imageUrl:
+          type: string
+          format: uri
+          description: 产品图片URL
+        isActive:
+          type: boolean
+          description: 是否启用
+        stockQuantity:
+          type: integer
+          minimum: 0
+          description: 库存数量
+        unit:
+          type: string
+          description: 计量单位
+        tags:
+          type: array
+          items:
+            type: string
+          description: 产品标签
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+        traceability:
+          $ref: '#/components/schemas/TraceabilityInfo'
+    TraceabilityInfo:
+      type: object
+      required:
+        - origin
+        - farmLocation
+        - harvestDate
+        - certifications
+      properties:
+        origin:
+          type: string
+          description: 产地
+        farmLocation:
+          type: string
+          description: 农场位置
+        harvestDate:
+          type: string
+          format: date
+          description: 采摘日期
+        certifications:
+          type: array
+          items:
+            type: string
+          description: 认证列表
+    TraceEvent:
+      type: object
+      required:
+        - id
+        - type
+        - title
+        - description
+        - timestamp
+        - location
+        - operator
+        - details
+      properties:
+        id:
+          type: string
+          description: 事件ID
+        type:
+          type: string
+          enum:
+            - farming
+            - processing
+            - logistics
+            - quality_check
+            - packaging
+          description: 事件类型
+        title:
+          type: string
+          description: 事件标题
+        description:
+          type: string
+          description: 事件描述
+        timestamp:
+          type: string
+          format: date-time
+          description: 事件时间
+        location:
+          type: string
+          description: 事件地点
+        operator:
+          type: string
+          description: 操作人员
+        details:
+          type: object
+          description: 事件详情
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+          description: 附件列表
+    Attachment:
+      type: object
+      required:
+        - type
+        - url
+        - title
+      properties:
+        type:
+          type: string
+          enum:
+            - image
+            - document
+            - certificate
+          description: 附件类型
+        url:
+          type: string
+          format: uri
+          description: 附件URL
+        title:
+          type: string
+          description: 附件标题
+    TraceInfo:
+      type: object
+      required:
+        - productInfo
+        - traceInfo
+        - timeline
+        - verification
+      properties:
+        productInfo:
+          type: object
+          required:
+            - id
+            - name
+            - category
+            - origin
+            - productionDate
+            - expirationDate
+            - batchCode
+            - certifications
+          properties:
+            id:
+              type: string
+              description: 产品ID
+            name:
+              type: string
+              description: 产品名称
+            category:
+              type: string
+              description: 产品分类
+            origin:
+              type: string
+              description: 产地
+            productionDate:
+              type: string
+              format: date-time
+              description: 生产日期
+            expirationDate:
+              type: string
+              format: date-time
+              description: 过期日期
+            batchCode:
+              type: string
+              description: 批次号
+            certifications:
+              type: array
+              items:
+                type: string
+              description: 认证列表
+        traceInfo:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraceEvent'
+          description: 溯源事件列表
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              events:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TraceEvent'
+          description: 时间线
+        verification:
+          type: object
+          required:
+            - isVerified
+            - verificationCode
+            - verificationDate
+          properties:
+            isVerified:
+              type: boolean
+              description: 是否已验证
+            verificationCode:
+              type: string
+              description: 验证码
+            verificationDate:
+              type: string
+              format: date-time
+              description: 验证日期
+            blockchain:
+              type: object
+              properties:
+                transactionHash:
+                  type: string
+                blockNumber:
+                  type: integer
+                network:
+                  type: string
+              description: 区块链信息
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              enum:
+                - false
+            data:
+              type: 'null'
+            message:
+              type: string
+              description: 错误消息
+            code:
+              type: integer
+              description: 错误状态码
+paths:
+  /auth/login:
+    post:
+      tags:
+        - 认证
+      summary: 用户登录
+      description: 用户通过用户名/邮箱和密码登录系统
+      operationId: authLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: admin
+              password: admin123
+              rememberMe: false
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 用户名或密码错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/logout:
+    post:
+      tags:
+        - 认证
+      summary: 用户登出
+      description: 用户登出系统，使令牌失效
+      operationId: authLogout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: 'null'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/verify:
+    get:
+      tags:
+        - 认证
+      summary: 验证令牌
+      description: 验证JWT令牌是否有效
+      operationId: authVerify
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 令牌验证结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          valid:
+                            type: boolean
+                          user:
+                            $ref: '#/components/schemas/UserInfo'
+                          expiresAt:
+                            type: string
+                            format: date-time
+  /auth/status:
+    get:
+      tags:
+        - 认证
+      summary: 获取用户状态
+      description: 获取当前登录用户的状态信息
+      operationId: authStatus
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 用户状态信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          isAuthenticated:
+                            type: boolean
+                          user:
+                            $ref: '#/components/schemas/UserInfo'
+                          permissions:
+                            type: array
+                            items:
+                              type: string
+  /users:
+    get:
+      tags:
+        - 用户管理
+      summary: 获取用户列表
+      description: 获取系统用户列表，支持分页和过滤
+      operationId: getUsers
+      parameters:
+        - name: page
+          in: query
+          description: 页码
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: 每页数量
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          description: 搜索关键词
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 用户列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/UserInfo'
+  /users/profile:
+    get:
+      tags:
+        - 用户管理
+      summary: 获取用户资料
+      description: 获取当前登录用户的详细资料
+      operationId: getUserProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 用户资料
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserInfo'
+    put:
+      tags:
+        - 用户管理
+      summary: 更新用户资料
+      description: 更新当前登录用户的资料信息
+      operationId: updateUserProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserInfo'
+  /products:
+    get:
+      tags:
+        - 产品管理
+      summary: 获取产品列表
+      description: 获取产品列表，支持分页和过滤
+      operationId: getProducts
+      parameters:
+        - name: page
+          in: query
+          description: 页码
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: 每页数量
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: category
+          in: query
+          description: 产品分类过滤
+          schema:
+            type: string
+        - name: brand
+          in: query
+          description: 品牌过滤
+          schema:
+            type: string
+        - name: inStock
+          in: query
+          description: 是否有库存过滤
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: 搜索关键词
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 产品列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Product'
+  /products/{id}:
+    get:
+      tags:
+        - 产品管理
+      summary: 获取产品详情
+      description: 根据ID获取特定产品的详细信息
+      operationId: getProductById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 产品ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 产品详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Product'
+        '404':
+          description: 产品不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /trace/{id}:
+    get:
+      tags:
+        - 溯源
+      summary: 获取产品溯源信息
+      description: 根据产品ID或批次号获取完整的溯源信息
+      operationId: getTraceById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 产品ID或批次号
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 溯源信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TraceInfo'
+        '404':
+          description: 溯源信息不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /trace/{id}/verify:
+    post:
+      tags:
+        - 溯源
+      summary: 验证溯源信息
+      description: 验证产品溯源信息的真实性
+      operationId: verifyTrace
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 产品ID或批次号
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                verificationCode:
+                  type: string
+                  description: 验证码(可选)
+      responses:
+        '200':
+          description: 验证结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          isVerified:
+                            type: boolean
+                          verificationDate:
+                            type: string
+                            format: date-time
+                          blockchain:
+                            type: object
+                            properties:
+                              transactionHash:
+                                type: string
+                              verified:
+                                type: boolean
+  /admin:
+    get:
+      tags:
+        - 管理员
+      summary: 获取管理员仪表板
+      description: 获取管理员仪表板数据
+      operationId: getAdminDashboard
+      responses:
+        '200':
+          description: 仪表板数据
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+  /admin/users:
+    get:
+      tags:
+        - 管理员
+      summary: 获取用户列表
+      description: 获取系统用户列表
+      operationId: getAdminUsers
+      responses:
+        '200':
+          description: 用户列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserInfo'
+  /admin/roles:
+    get:
+      tags:
+        - 管理员
+      summary: 获取角色列表
+      description: 获取系统角色列表
+      operationId: getAdminRoles
+      responses:
+        '200':
+          description: 角色列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /admin/audit-logs:
+    get:
+      tags:
+        - 管理员
+      summary: 获取审计日志
+      description: 获取系统审计日志
+      operationId: getAdminAuditLogs
+      responses:
+        '200':
+          description: 审计日志
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /admin/notifications:
+    get:
+      tags:
+        - 管理员
+      summary: 获取系统通知
+      description: 获取系统通知列表
+      operationId: getAdminNotifications
+      responses:
+        '200':
+          description: 通知列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /admin/system-config:
+    get:
+      tags:
+        - 管理员
+      summary: 获取系统配置
+      description: 获取系统配置信息
+      operationId: getAdminSystemConfig
+      responses:
+        '200':
+          description: 系统配置
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+  /farming:
+    get:
+      tags:
+        - 农业
+      summary: 获取农业仪表板
+      description: 获取农业模块仪表板数据
+      operationId: getFarmingDashboard
+      responses:
+        '200':
+          description: 农业仪表板数据
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+  /farming/crops:
+    get:
+      tags:
+        - 农业
+      summary: 获取作物列表
+      description: 获取作物信息列表
+      operationId: getFarmingCrops
+      responses:
+        '200':
+          description: 作物列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /farming/fields:
+    get:
+      tags:
+        - 农业
+      summary: 获取田地列表
+      description: 获取田地信息列表
+      operationId: getFarmingFields
+      responses:
+        '200':
+          description: 田地列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /farming/planting-plans:
+    get:
+      tags:
+        - 农业
+      summary: 获取种植计划
+      description: 获取种植计划列表
+      operationId: getFarmingPlantingPlans
+      responses:
+        '200':
+          description: 种植计划列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /farming/farm-activities:
+    get:
+      tags:
+        - 农业
+      summary: 获取农场活动
+      description: 获取农场活动记录
+      operationId: getFarmingActivities
+      responses:
+        '200':
+          description: 农场活动列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /farming/harvest-records:
+    get:
+      tags:
+        - 农业
+      summary: 获取收获记录
+      description: 获取作物收获记录
+      operationId: getFarmingHarvestRecords
+      responses:
+        '200':
+          description: 收获记录列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /logistics:
+    get:
+      tags:
+        - 物流
+      summary: 获取物流仪表板
+      description: 获取物流模块仪表板数据
+      operationId: getLogisticsDashboard
+      responses:
+        '200':
+          description: 物流仪表板数据
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+  /logistics/vehicles:
+    get:
+      tags:
+        - 物流
+      summary: 获取车辆列表
+      description: 获取运输车辆列表
+      operationId: getLogisticsVehicles
+      responses:
+        '200':
+          description: 车辆列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /logistics/drivers:
+    get:
+      tags:
+        - 物流
+      summary: 获取司机列表
+      description: 获取司机信息列表
+      operationId: getLogisticsDrivers
+      responses:
+        '200':
+          description: 司机列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /logistics/warehouses:
+    get:
+      tags:
+        - 物流
+      summary: 获取仓库列表
+      description: 获取仓库信息列表
+      operationId: getLogisticsWarehouses
+      responses:
+        '200':
+          description: 仓库列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /logistics/transport-orders:
+    get:
+      tags:
+        - 物流
+      summary: 获取运输订单
+      description: 获取运输订单列表
+      operationId: getLogisticsTransportOrders
+      responses:
+        '200':
+          description: 运输订单列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /logistics/inventory:
+    get:
+      tags:
+        - 物流
+      summary: 获取库存信息
+      description: 获取库存管理信息
+      operationId: getLogisticsInventory
+      responses:
+        '200':
+          description: 库存信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /processing:
+    get:
+      tags:
+        - 加工
+      summary: 获取加工仪表板
+      description: 获取加工模块仪表板数据
+      operationId: getProcessingDashboard
+      responses:
+        '200':
+          description: 加工仪表板数据
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+  /processing/production-batches:
+    get:
+      tags:
+        - 加工
+      summary: 获取生产批次列表
+      description: 获取生产批次信息列表
+      operationId: getProcessingProductionBatches
+      responses:
+        '200':
+          description: 生产批次列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              type: object
+  /processing/production-batches/{id}:
+    get:
+      tags:
+        - 加工
+      summary: 获取生产批次详情
+      description: 根据ID获取生产批次详细信息
+      operationId: getProcessingProductionBatchById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 生产批次ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 生产批次详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+  /processing/quality-tests:
+    get:
+      tags:
+        - 加工
+      summary: 获取质量检测列表
+      description: 获取质量检测记录列表
+      operationId: getProcessingQualityTests
+      responses:
+        '200':
+          description: 质量检测列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              type: object
+    post:
+      tags:
+        - 加工
+      summary: 创建质量检测记录
+      description: 创建新的质量检测记录
+      operationId: createProcessingQualityTest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: 质量检测记录创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+  /processing/quality-tests/{id}:
+    get:
+      tags:
+        - 加工
+      summary: 获取质量检测详情
+      description: 根据ID获取质量检测详细信息
+      operationId: getProcessingQualityTestById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 质量检测ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 质量检测详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+  /processing/raw-materials:
+    get:
+      tags:
+        - 加工
+      summary: 获取原材料列表
+      description: 获取原材料信息列表
+      operationId: getProcessingRawMaterials
+      responses:
+        '200':
+          description: 原材料列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /processing/raw-materials/{id}:
+    get:
+      tags:
+        - 加工
+      summary: 获取原材料详情
+      description: 根据ID获取原材料详细信息
+      operationId: getProcessingRawMaterialById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 原材料ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 原材料详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+  /processing/finished-products:
+    get:
+      tags:
+        - 加工
+      summary: 获取成品列表
+      description: 获取成品信息列表
+      operationId: getProcessingFinishedProducts
+      responses:
+        '200':
+          description: 成品列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+  /processing/finished-products/{id}:
+    get:
+      tags:
+        - 加工
+      summary: 获取成品详情
+      description: 根据ID获取成品详细信息
+      operationId: getProcessingFinishedProductById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 成品ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成品详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+tags:
+  - name: 认证
+    description: 用户认证相关接口
+  - name: 用户管理
+    description: 用户信息管理接口
+  - name: 产品管理
+    description: 产品信息管理接口
+  - name: 溯源
+    description: 产品溯源相关接口
+  - name: 管理员
+    description: 系统管理员相关接口
+  - name: 农业
+    description: 农业生产管理接口
+  - name: 物流
+    description: 物流运输管理接口
+  - name: 加工
+    description: 加工处理管理接口
+externalDocs:
+  description: API接口详细规范文档
+  url: https://docs.farm-trace.com/api

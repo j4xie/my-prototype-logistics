@@ -84,7 +84,7 @@ export const AdvancedTable: React.FC<AdvancedTableProps> = ({
         return (
           <div className="flex items-center justify-between">
             <span>{value}</span>
-            <span className="text-xs text-blue-600">
+            <span className="text-xs text-[#1890FF]">
               {sortConfig.direction === 'asc' ? '↑' : '↓'}
             </span>
           </div>
