@@ -224,21 +224,27 @@ const UserIcon = () => (
 
 export default function ComponentsPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold">组件库演示</h1>
+    <div className="flex flex-col min-h-screen max-w-[390px] mx-auto">
+      <main className="flex-1 p-4 space-y-8">
+        <div className="mb-8">
+          <h1 className="text-lg font-medium text-gray-900 mb-2">
+            组件库演示
+          </h1>
+          <p className="text-sm text-gray-600">
+            展示食品溯源系统中使用的现代化UI组件
+          </p>
+        </div>
 
-      <p className="mb-8 text-gray-600">
-        食品溯源系统核心组件库，基于TypeScript + React + Tailwind CSS构建
-      </p>
+        <LayoutComponentsDemo />
+        <NavigationComponentsDemo />
 
-      <LayoutComponentsDemo />
-      <NavigationComponentsDemo />
-
-      <div className="mt-8">
-        <Link href="/" className="text-blue-600 hover:underline">
-          返回首页
-        </Link>
-      </div>
+        {/* 返回首页链接 */}
+        <div className="mt-8 text-center">
+          <Link href="/" className="text-sm text-blue-600 hover:underline">
+            ← 返回首页
+          </Link>
+        </div>
+      </main>
     </div>
   );
 }

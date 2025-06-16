@@ -182,7 +182,7 @@ export function Table<T = any>({
                           'h-3 w-3 transition-colors',
                           sortConfig.key === column.key &&
                             sortConfig.direction === 'asc'
-                            ? 'text-blue-600'
+                            ? 'text-[#1890FF]'
                             : 'text-gray-400'
                         )}
                         fill="currentColor"
@@ -195,7 +195,7 @@ export function Table<T = any>({
                           '-mt-1 h-3 w-3 transition-colors',
                           sortConfig.key === column.key &&
                             sortConfig.direction === 'desc'
-                            ? 'text-blue-600'
+                            ? 'text-[#1890FF]'
                             : 'text-gray-400'
                         )}
                         fill="currentColor"
