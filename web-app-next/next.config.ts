@@ -6,59 +6,82 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 const nextConfig: NextConfig = {
-  // 完全禁用Turbopack相关功能避免冲突
-  // experimental: {
-  //   optimizePackageImports: ['@/components/ui'],
-  //   ppr: false,
-  // },
-
-  // 使用标准配置
-  experimental: {},
+  // 简化配置，移除有问题的experimental选项
+    experimental: {
+    // 仅保留必要的优化
+      optimizePackageImports: ['@/components/ui'],
+    // 移除导致警告的esmExternals配置
+  },
 
   // 服务器外部包配置
   serverExternalPackages: [],
 
-  // 添加webpack配置修复vendor chunks问题
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // 确保vendor chunks正确生成
-    if (!dev && isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          ...config.optimization.splitChunks,
-          cacheGroups: {
-            ...config.optimization.splitChunks?.cacheGroups,
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-              enforce: true,
-            },
-          },
+  // 修复webpack配置，解决模块加载问题
+  webpack: (config, { buildId, dev, isServer }) => {
+    // 开发模式下的稳定性配置
+    if (dev) {
+      // 添加模块解析配置
+      config.resolve = {
+        ...config.resolve,
+        fallback: {
+          ...config.resolve?.fallback,
+          fs: false,
+          path: false,
+          crypto: false,
         },
       };
+
+      // 简化缓存配置，避免文件冲突
+      config.cache = {
+        type: 'memory', // 使用内存缓存避免文件权限问题
+      };
     }
+
+    // 添加模块解析别名
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname, 'src'),
+      };
 
     return config;
   },
 
-  // 构建优化 (简化)
-  compiler: {
-    // SWC编译器优化
-    removeConsole: process.env.NODE_ENV === 'production',
+  // 开发服务器配置
+  ...(process.env.NODE_ENV === 'development' && {
+    onDemandEntries: {
+      // 页面保持时间
+      maxInactiveAge: 25 * 1000,
+      // 同时保持的页面数
+      pagesBufferLength: 2,
+    },
+  }),
+
+  // TypeScript配置
+  typescript: {
+    // 忽略构建错误（仅在开发阶段）
+    ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
 
-  // 图片优化 (简化)
+  // ESLint配置
+  eslint: {
+    // 忽略构建错误（仅在开发阶段）
+    ignoreDuringBuilds: process.env.NODE_ENV === 'development',
+  },
+
+  // 图片优化配置
   images: {
-    formats: ['image/webp', 'image/avif'],
+    domains: ['localhost'],
+    unoptimized: process.env.NODE_ENV === 'development',
   },
 
-  // 输出配置 (改为默认)
-  // output: 'standalone',
+  // 输出配置
+  output: 'standalone',
 
-  // 性能优化
+  // 生产环境优化
+  ...(process.env.NODE_ENV === 'production' && {
+    compress: true,
   poweredByHeader: false,
-  compress: true,
+  }),
 };
 
 export default withBundleAnalyzer(nextConfig);

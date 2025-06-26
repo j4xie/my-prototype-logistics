@@ -118,7 +118,7 @@ alwaysApply: true
 
 #### **阶段1：任务启动与规划**
 - **强制文档阅读检查** (遵循docs-reading-guide-agent)
-- **任务规范化创建** (遵循task-management-manual)
+- **任务规范化创建** (基于统一开发管理规则第3层)
 - **API任务专门处理** (遵循api-rules-usage-guide-manual)
 
 #### **阶段2：开发与实施**

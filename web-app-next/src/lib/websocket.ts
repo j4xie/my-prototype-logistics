@@ -118,6 +118,7 @@ class WebSocketManager {
   private handleReconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
+      // 指数退避算法，最大延迟30秒
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
 
       console.log(
@@ -125,15 +126,37 @@ class WebSocketManager {
       );
 
       setTimeout(() => {
-        this.connect().catch(() => {
+        // 添加更稳定的重连逻辑
+        this.connect().catch((error) => {
           console.error(
-            `重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+            `❌ 重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+            error?.message || error
           );
+
+          // 如果是最后一次重连尝试，清理资源
+          if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            console.error('🚫 WebSocket 重连次数超限，停止重连');
+            this.cleanup();
+          }
         });
       }, delay);
     } else {
-      console.error('❌ WebSocket 重连次数超限，停止重连');
+      console.error('🚫 WebSocket 重连次数超限，停止重连');
+      this.cleanup();
     }
+  }
+
+  /**
+   * 清理资源
+   */
+  private cleanup(): void {
+    if (this.socket) {
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+      this.socket = null;
+    }
+    this.messageHandlers = {};
+    this.reconnectAttempts = 0;
   }
 
   /**

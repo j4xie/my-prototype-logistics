@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .register-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .register-form {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 390px;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .form-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 10px 0;
+        }
+
+        .form-subtitle {
+            color: #666;
+            font-size: 14px;
+            margin: 0 0 30px 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .verification-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .verification-group .form-input {
+            flex: 1;
+        }
+
+        .verification-btn {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            min-width: 80px;
+        }
+
+        .verification-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .verification-btn:disabled {
+            background: #f8f9fa;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .agreement-section {
+            margin: 20px 0;
+        }
+
+        .agreement-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .agreement-checkbox input[type="checkbox"] {
+            margin-top: 2px;
+            transform: scale(1.2);
+        }
+
+        .agreement-text {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .agreement-text a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .agreement-text a:hover {
+            text-decoration: underline;
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .register-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .register-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .strength-indicator {
+            margin-top: 8px;
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .strength-weak { background: #ff4757; width: 33%; }
+        .strength-medium { background: #ffa502; width: 66%; }
+        .strength-strong { background: #2ed573; width: 100%; }
+
+        .strength-text {
+            font-size: 12px;
+            margin-top: 4px;
+            color: #666;
+        }
+
+        .error-message {
+            color: #ff4757;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .success-message {
+            color: #2ed573;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .form-input.error {
+            border-color: #ff4757;
+            background-color: #fff5f5;
+        }
+
+        .form-input.success {
+            border-color: #2ed573;
+            background-color: #f0fff4;
+        }
+
+        @media (max-width: 480px) {
+            .register-container {
+                padding: 10px;
+            }
+
+            .register-form {
+                padding: 20px;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .verification-group {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-form">
+            <div class="logo-section">
+                <div class="logo">🌱</div>
+                <h1 class="form-title">创建账户</h1>
+                <p class="form-subtitle">加入食品溯源系统，确保食品安全</p>
+            </div>
+
+            <form id="registerForm" novalidate>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="firstName">姓</label>
+                        <input type="text" id="firstName" name="firstName" class="form-input" required>
+                        <div class="error-message">请输入姓氏</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="lastName">名</label>
+                        <input type="text" id="lastName" name="lastName" class="form-input" required>
+                        <div class="error-message">请输入名字</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">邮箱地址</label>
+                    <input type="email" id="email" name="email" class="form-input" required>
+                    <div class="error-message">请输入有效的邮箱地址</div>
+                    <div class="success-message">邮箱格式正确</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="phone">手机号码</label>
+                    <div class="verification-group">
+                        <input type="tel" id="phone" name="phone" class="form-input" placeholder="请输入11位手机号" required>
+                        <button type="button" class="verification-btn" id="sendSMS" disabled>获取验证码</button>
+                    </div>
+                    <div class="error-message">请输入有效的手机号码</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="smsCode">短信验证码</label>
+                    <input type="text" id="smsCode" name="smsCode" class="form-input" placeholder="请输入6位验证码" maxlength="6" required>
+                    <div class="error-message">请输入6位验证码</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">密码</label>
+                    <input type="password" id="password" name="password" class="form-input" required>
+                    <div class="strength-indicator">
+                        <div class="strength-bar" id="strengthBar"></div>
+                    </div>
+                    <div class="strength-text" id="strengthText">密码强度：请输入密码</div>
+                    <div class="error-message">密码必须包含大小写字母、数字和特殊字符，至少8位</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">确认密码</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" required>
+                    <div class="error-message">两次输入的密码不一致</div>
+                    <div class="success-message">密码确认正确</div>
+                </div>
+
+                <div class="agreement-section">
+                    <div class="agreement-checkbox">
+                        <input type="checkbox" id="agreement" name="agreement" required>
+                        <div class="agreement-text">
+                            我已阅读并同意
+                            <a href="#" onclick="showTerms()">《用户服务协议》</a>
+                            和
+                            <a href="#" onclick="showPrivacy()">《隐私保护政策》</a>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="register-btn" id="registerBtn" disabled>
+                    创建账户
+                </button>
+            </form>
+
+            <div class="login-link">
+                已有账户？<a href="./login.html">立即登录</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registerForm');
+            const inputs = form.querySelectorAll('.form-input');
+            const registerBtn = document.getElementById('registerBtn');
+            const agreementCheckbox = document.getElementById('agreement');
+            const sendSMSBtn = document.getElementById('sendSMS');
+            const phoneInput = document.getElementById('phone');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+
+            let smsCountdown = 0;
+            let smsTimer = null;
+
+            // 验证规则
+            const validators = {
+                firstName: (value) => value.trim().length >= 1,
+                lastName: (value) => value.trim().length >= 1,
+                email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+                phone: (value) => /^1[3-9]\d{9}$/.test(value),
+                smsCode: (value) => /^\d{6}$/.test(value),
+                password: (value) => value.length >= 8 && /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(value),
+                confirmPassword: (value) => value === passwordInput.value
+            };
+
+            // 实时验证
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    validateField(this);
+                    updateButtonState();
+                });
+
+                input.addEventListener('blur', function() {
+                    validateField(this);
+                });
+            });
+
+            function validateField(input) {
+                const name = input.name;
+                const value = input.value.trim();
+                const validator = validators[name];
+                const errorMsg = input.parentNode.querySelector('.error-message');
+                const successMsg = input.parentNode.querySelector('.success-message');
+
+                if (validator && validator(value)) {
+                    input.classList.remove('error');
+                    input.classList.add('success');
+                    if (errorMsg) errorMsg.style.display = 'none';
+                    if (successMsg) successMsg.style.display = 'block';
+                    return true;
+                } else if (value.length > 0) {
+                    input.classList.remove('success');
+                    input.classList.add('error');
+                    if (errorMsg) errorMsg.style.display = 'block';
+                    if (successMsg) successMsg.style.display = 'none';
+                    return false;
+                } else {
+                    input.classList.remove('error', 'success');
+                    if (errorMsg) errorMsg.style.display = 'none';
+                    if (successMsg) successMsg.style.display = 'none';
+                    return false;
+                }
+            }
+
+            // 密码强度检测
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                const strength = calculatePasswordStrength(password);
+                updatePasswordStrength(strength);
+            });
+
+            function calculatePasswordStrength(password) {
+                let score = 0;
+                if (password.length >= 8) score++;
+                if (/[a-z]/.test(password)) score++;
+                if (/[A-Z]/.test(password)) score++;
+                if (/\d/.test(password)) score++;
+                if (/[@$!%*?&]/.test(password)) score++;
+                return Math.min(score, 3);
+            }
+
+            function updatePasswordStrength(strength) {
+                strengthBar.className = 'strength-bar';
+                switch(strength) {
+                    case 0:
+                    case 1:
+                        strengthBar.classList.add('strength-weak');
+                        strengthText.textContent = '密码强度：弱';
+                        break;
+                    case 2:
+                        strengthBar.classList.add('strength-medium');
+                        strengthText.textContent = '密码强度：中等';
+                        break;
+                    case 3:
+                        strengthBar.classList.add('strength-strong');
+                        strengthText.textContent = '密码强度：强';
+                        break;
+                }
+            }
+
+            // 手机号验证，启用验证码按钮
+            phoneInput.addEventListener('input', function() {
+                if (validators.phone(this.value)) {
+                    sendSMSBtn.disabled = false;
+                } else {
+                    sendSMSBtn.disabled = true;
+                }
+            });
+
+            // 发送验证码
+            sendSMSBtn.addEventListener('click', function() {
+                if (smsCountdown > 0) return;
+
+                smsCountdown = 60;
+                this.disabled = true;
+                this.textContent = `${smsCountdown}秒后重发`;
+
+                smsTimer = setInterval(() => {
+                    smsCountdown--;
+                    if (smsCountdown > 0) {
+                        this.textContent = `${smsCountdown}秒后重发`;
+                    } else {
+                        this.textContent = '获取验证码';
+                        this.disabled = false;
+                        clearInterval(smsTimer);
+                    }
+                }, 1000);
+
+                // 模拟发送验证码
+                console.log('验证码已发送到:', phoneInput.value);
+                alert('验证码已发送到您的手机，请注意查收');
+            });
+
+            // 同意协议复选框
+            agreementCheckbox.addEventListener('change', updateButtonState);
+
+            function updateButtonState() {
+                const allValid = Array.from(inputs).every(input => {
+                    return validators[input.name] ? validators[input.name](input.value.trim()) : true;
+                });
+
+                registerBtn.disabled = !(allValid && agreementCheckbox.checked);
+            }
+
+            // 表单提交
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(form);
+                const userData = Object.fromEntries(formData);
+
+                console.log('注册数据:', userData);
+                alert('注册成功！即将跳转到登录页面...');
+
+                setTimeout(() => {
+                    window.location.href = './login.html';
+                }, 1500);
+            });
+        });
+
+        function showTerms() {
+            alert('用户服务协议\n\n1. 本系统致力于为用户提供安全可靠的食品溯源服务\n2. 用户应确保提供信息的真实性和准确性\n3. 禁止恶意使用系统功能\n4. 本协议的最终解释权归本系统所有');
+        }
+
+        function showPrivacy() {
+            alert('隐私保护政策\n\n1. 我们严格保护用户个人信息安全\n2. 不会向第三方泄露用户隐私数据\n3. 仅在提供服务需要时使用用户信息\n4. 用户有权要求查看、修改或删除个人信息');
+        }
+    </script>
+</body>
+</html>
