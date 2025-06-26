@@ -1,5 +1,30 @@
 {
   "version": 2,
   "outputDirectory": "web-app-next/.next",
-  "buildCommand": "cd web-app-next && npm install && npm run build"
-} 
+  "buildCommand": "cd web-app-next && npm install && npm run build",
+  "installCommand": "cd web-app-next && npm install",
+  "env": {
+    "NEXT_PUBLIC_MOCK_ENABLED": "true"
+  },
+  "rewrites": [
+    {
+      "source": "/preview",
+      "destination": "/preview"
+    },
+    {
+      "source": "/",
+      "destination": "/"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    }
+  ]
+}
