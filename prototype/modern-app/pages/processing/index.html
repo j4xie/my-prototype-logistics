@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加工管理 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-top: 16px;
+        }
+
+        .back-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .page-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            flex: 1;
+        }
+
+        .stats-overview {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .function-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .function-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .function-card:hover {
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .function-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .production-icon {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .quality-icon {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .storage-icon {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .batch-icon {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            color: #666;
+        }
+
+        .inspection-icon {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            color: #666;
+        }
+
+        .record-icon {
+            background: linear-gradient(135deg, #e0c3fc, #9bb5ff);
+            color: white;
+        }
+
+        .function-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .function-desc {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .active-production {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 100px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 2px;
+            margin-right: 12px;
+        }
+
+        .production-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .production-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .production-item:hover {
+            background: #e9ecef;
+            transform: scale(1.02);
+        }
+
+        .production-info {
+            flex: 1;
+        }
+
+        .production-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .production-details {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .production-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #cce7ff;
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <button class="back-button" onclick="history.back()">
+                ←
+            </button>
+            <h1 class="page-title">加工管理</h1>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="stats-overview">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">生产线</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">运行中</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">2.3万</div>
+                    <div class="stat-label">今日产量</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">98.5%</div>
+                    <div class="stat-label">合格率</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="function-grid">
+            <a href="./production.html" class="function-card">
+                <div class="function-icon production-icon">🏭</div>
+                <div class="function-title">生产管理</div>
+                <div class="function-desc">生产计划、产线监控、工艺管理</div>
+            </a>
+
+            <a href="./quality.html" class="function-card">
+                <div class="function-icon quality-icon">🔍</div>
+                <div class="function-title">质量管理</div>
+                <div class="function-desc">质量检测、标准管理、问题追踪</div>
+            </a>
+
+            <a href="./storage.html" class="function-card">
+                <div class="function-icon storage-icon">📦</div>
+                <div class="function-title">存储管理</div>
+                <div class="function-desc">库存管理、温度监控、货位管理</div>
+            </a>
+
+            <a href="./batch-management.html" class="function-card">
+                <div class="function-icon batch-icon">📋</div>
+                <div class="function-title">批次管理</div>
+                <div class="function-desc">批次追踪、档案管理、过期预警</div>
+            </a>
+
+            <a href="./quality-inspection.html" class="function-card">
+                <div class="function-icon inspection-icon">✅</div>
+                <div class="function-title">质量检验</div>
+                <div class="function-desc">检验计划、报告管理、标准维护</div>
+            </a>
+
+            <a href="#" class="function-card">
+                <div class="function-icon record-icon">📝</div>
+                <div class="function-title">生产记录</div>
+                <div class="function-desc">作业记录、数据统计、历史查询</div>
+            </a>
+        </div>
+
+        <div class="active-production">
+            <div class="section-title">当前生产线状态</div>
+            <div class="production-list">
+                <div class="production-item">
+                    <div class="production-info">
+                        <div class="production-name">A线-有机蔬菜加工</div>
+                        <div class="production-details">批次: ORG-20250203-001 | 进度: 75%</div>
+                    </div>
+                    <div class="production-status status-active">运行中</div>
+                </div>
+
+                <div class="production-item">
+                    <div class="production-info">
+                        <div class="production-name">B线-果汁生产</div>
+                        <div class="production-details">批次: JUI-20250203-002 | 进度: 45%</div>
+                    </div>
+                    <div class="production-status status-active">运行中</div>
+                </div>
+
+                <div class="production-item">
+                    <div class="production-info">
+                        <div class="production-name">C线-肉制品加工</div>
+                        <div class="production-details">批次: MEA-20250203-003 | 进度: 30%</div>
+                    </div>
+                    <div class="production-status status-pending">准备中</div>
+                </div>
+
+                <div class="production-item">
+                    <div class="production-info">
+                        <div class="production-name">D线-干货包装</div>
+                        <div class="production-details">批次: DRY-20250202-004 | 产量: 5000包</div>
+                    </div>
+                    <div class="production-status status-completed">已完成</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟实时数据更新
+        setInterval(() => {
+            const progressItems = document.querySelectorAll('.production-details');
+            progressItems.forEach(item => {
+                if (item.textContent.includes('进度:')) {
+                    const currentProgress = parseInt(item.textContent.match(/(\d+)%/)[1]);
+                    if (currentProgress < 100) {
+                        const newProgress = Math.min(currentProgress + Math.floor(Math.random() * 3), 100);
+                        item.textContent = item.textContent.replace(/\d+%/, newProgress + '%');
+                    }
+                }
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>种植记录 - 农业模块</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .planting-record {
+            padding: 16px;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .record-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .record-date {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 12px;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .record-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            padding-right: 80px;
+        }
+
+        .record-field {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+
+        .record-content {
+            font-size: 14px;
+            color: #1f2937;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .record-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tag-seed {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .tag-water {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .tag-fertilizer {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .tag-harvest {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .tag-maintenance {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .add-record-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 390px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #6b7280;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="planting-record">
+            <div class="header">
+                <h1 class="title">种植记录</h1>
+                <p class="subtitle">农场作业和管理记录</p>
+            </div>
+
+            <div class="record-item">
+                <div class="record-date">今天</div>
+                <h3 class="record-title">B区胡萝卜收获完成</h3>
+                <p class="record-field">📍 B区03号田</p>
+                <p class="record-content">今日完成B区03号田胡萝卜收获作业，总收获量约2800公斤，品质良好。收获后立即进行清洗包装，准备发往配送中心。</p>
+                <div class="record-tags">
+                    <span class="tag tag-harvest">收获</span>
+                    <span class="tag tag-maintenance">清洗</span>
+                </div>
+            </div>
+
+            <div class="record-item">
+                <div class="record-date">昨天</div>
+                <h3 class="record-title">A区白菜病虫害防治</h3>
+                <p class="record-field">📍 A区01号田</p>
+                <p class="record-content">发现白菜叶片有轻微虫害，使用生物农药进行喷洒防治。喷洒时间：下午4点，天气晴朗，风力微弱，条件适宜。</p>
+                <div class="record-tags">
+                    <span class="tag tag-maintenance">防治</span>
+                    <span class="tag tag-fertilizer">农药</span>
+                </div>
+            </div>
+
+            <div class="record-item">
+                <div class="record-date">3天前</div>
+                <h3 class="record-title">C区番茄幼苗移栽</h3>
+                <p class="record-field">📍 C区02号田</p>
+                <p class="record-content">将温室培育的番茄幼苗移栽到大田，共移栽500株。移栽后立即浇水，并搭建临时遮阴棚，预计一周后可适应环境。</p>
+                <div class="record-tags">
+                    <span class="tag tag-seed">移栽</span>
+                    <span class="tag tag-water">浇水</span>
+                </div>
+            </div>
+
+            <div class="record-item">
+                <div class="record-date">5天前</div>
+                <h3 class="record-title">全农场灌溉系统检修</h3>
+                <p class="record-field">📍 全农场</p>
+                <p class="record-content">完成全农场灌溉系统的定期检修，更换了3个老化的喷头，清理了主管道沉积物，测试各区域水压正常。</p>
+                <div class="record-tags">
+                    <span class="tag tag-maintenance">检修</span>
+                    <span class="tag tag-water">灌溉</span>
+                </div>
+            </div>
+
+            <div class="record-item">
+                <div class="record-date">1周前</div>
+                <h3 class="record-title">D区土地翻耕与施肥</h3>
+                <p class="record-field">📍 D区05号田</p>
+                <p class="record-content">对D区05号田进行深度翻耕，深度达25cm。施用有机肥料3吨，复合肥500公斤。土地现已平整，等待种植安排。</p>
+                <div class="record-tags">
+                    <span class="tag tag-maintenance">翻耕</span>
+                    <span class="tag tag-fertilizer">施肥</span>
+                </div>
+            </div>
+
+            <div class="record-item">
+                <div class="record-date">2周前</div>
+                <h3 class="record-title">新品种试种开始</h3>
+                <p class="record-field">📍 试验田E区</p>
+                <p class="record-content">在试验田播种新引进的抗病白菜品种，播种面积0.5亩。将与传统品种进行对比种植，观察生长情况和抗病性。</p>
+                <div class="record-tags">
+                    <span class="tag tag-seed">播种</span>
+                    <span class="tag tag-maintenance">试验</span>
+                </div>
+            </div>
+
+            <div style="height: 80px;"></div>
+        </div>
+
+        <button class="add-record-btn">✏️</button>
+
+        <div class="bottom-nav">
+            <a href="dashboard.html" class="nav-item">
+                <div class="nav-icon">🏠</div>
+                <div>首页</div>
+            </a>
+            <a href="data-collection.html" class="nav-item">
+                <div class="nav-icon">📊</div>
+                <div>数据</div>
+            </a>
+            <a href="field-management.html" class="nav-item">
+                <div class="nav-icon">🗺️</div>
+                <div>田地</div>
+            </a>
+            <a href="../profile/index.html" class="nav-item">
+                <div class="nav-icon">👤</div>
+                <div>我的</div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

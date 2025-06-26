@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统日志 - 食品溯源管理系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <link rel="stylesheet" href="../../styles/admin-layout.css">
+    <style>
+        .logs-container {
+            display: flex;
+            min-height: 100vh;
+            background: #f8f9fa;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 20px;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .logs-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .filter-select, .filter-input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .log-table th,
+        .log-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .log-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .log-table td {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .log-level {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .level-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .level-warning {
+            background: #fff8e1;
+            color: #f57c00;
+        }
+
+        .level-error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .level-debug {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .log-message {
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            background: white;
+            color: #667eea;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            color: #666;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .log-detail-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .filter-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .log-table {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logs-container">
+        <!-- 侧边栏 -->
+        <div class="admin-sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🌱</span>
+                    <span class="logo-text">溯源管理</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-title">主要功能</div>
+                    <a href="./dashboard.html" class="nav-item">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">控制台</span>
+                    </a>
+                    <a href="./users.html" class="nav-item">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">用户管理</span>
+                    </a>
+                    <a href="./system.html" class="nav-item">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">系统管理</span>
+                    </a>
+                    <a href="./reports.html" class="nav-item">
+                        <span class="nav-icon">📈</span>
+                        <span class="nav-text">数据报表</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">扩展功能</div>
+                    <a href="./notifications.html" class="nav-item">
+                        <span class="nav-icon">🔔</span>
+                        <span class="nav-text">通知管理</span>
+                    </a>
+                    <a href="./settings.html" class="nav-item">
+                        <span class="nav-icon">🔧</span>
+                        <span class="nav-text">系统设置</span>
+                    </a>
+                    <a href="./analytics.html" class="nav-item">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">数据分析</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">P3-023新增</div>
+                    <a href="./import.html" class="nav-item">
+                        <span class="nav-icon">📥</span>
+                        <span class="nav-text">数据导入</span>
+                    </a>
+                    <a href="./logs.html" class="nav-item active">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">系统日志</span>
+                    </a>
+                    <a href="./template.html" class="nav-item">
+                        <span class="nav-icon">📄</span>
+                        <span class="nav-text">模板配置</span>
+                    </a>
+                    <a href="./admin-users.html" class="nav-item">
+                        <span class="nav-icon">👨‍💼</span>
+                        <span class="nav-text">管理员管理</span>
+                    </a>
+                    <a href="./permissions.html" class="nav-item">
+                        <span class="nav-icon">🔐</span>
+                        <span class="nav-text">权限管理</span>
+                    </a>
+                    <a href="./backup.html" class="nav-item">
+                        <span class="nav-icon">💾</span>
+                        <span class="nav-text">备份恢复</span>
+                    </a>
+                    <a href="./audit.html" class="nav-item">
+                        <span class="nav-icon">🔍</span>
+                        <span class="nav-text">审计日志</span>
+                    </a>
+                    <a href="./performance.html" class="nav-item">
+                        <span class="nav-icon">⚡</span>
+                        <span class="nav-text">性能监控</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">👨‍💼</div>
+                    <div class="user-details">
+                        <div class="user-name">管理员</div>
+                        <div class="user-role">系统管理员</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 页面头部 -->
+            <div class="page-header">
+                <h1 style="font-size: 28px; font-weight: 700; color: #333; margin-bottom: 8px;">系统日志</h1>
+                <p style="color: #666; font-size: 16px;">查看和管理系统运行日志、操作记录和错误信息</p>
+            </div>
+
+            <!-- 日志统计 -->
+            <div class="logs-section">
+                <h3 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 16px;">📊 日志统计</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">1,247</div>
+                        <div class="stat-label">今日日志</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">23</div>
+                        <div class="stat-label">错误记录</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">警告信息</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">98.2%</div>
+                        <div class="stat-label">系统正常率</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日志查询 -->
+            <div class="logs-section">
+                <h3 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 16px;">🔍 日志查询</h3>
+
+                <div class="filter-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">日志级别</label>
+                        <select class="filter-select" onchange="filterLogs()">
+                            <option value="">全部级别</option>
+                            <option value="info">信息</option>
+                            <option value="warning">警告</option>
+                            <option value="error">错误</option>
+                            <option value="debug">调试</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">模块</label>
+                        <select class="filter-select" onchange="filterLogs()">
+                            <option value="">全部模块</option>
+                            <option value="auth">用户认证</option>
+                            <option value="api">API接口</option>
+                            <option value="database">数据库</option>
+                            <option value="trace">溯源系统</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">开始时间</label>
+                        <input type="datetime-local" class="filter-input" onchange="filterLogs()">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">结束时间</label>
+                        <input type="datetime-local" class="filter-input" onchange="filterLogs()">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">搜索关键词</label>
+                        <input type="text" class="filter-input" placeholder="搜索日志内容..." onchange="filterLogs()">
+                    </div>
+                    <div class="filter-group" style="display: flex; align-items: end;">
+                        <button class="btn primary" onclick="searchLogs()">🔍 搜索</button>
+                    </div>
+                </div>
+
+                <!-- 日志表格 -->
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>级别</th>
+                            <th>模块</th>
+                            <th>消息</th>
+                            <th>用户</th>
+                            <th>IP地址</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr onclick="showLogDetail(1)">
+                            <td>2025-01-15 14:32:15</td>
+                            <td><span class="log-level level-error">ERROR</span></td>
+                            <td>API</td>
+                            <td class="log-message">数据库连接超时，查询失败</td>
+                            <td>system</td>
+                            <td>192.168.1.100</td>
+                            <td><button class="btn" onclick="showLogDetail(1)">详情</button></td>
+                        </tr>
+                        <tr onclick="showLogDetail(2)">
+                            <td>2025-01-15 14:31:42</td>
+                            <td><span class="log-level level-warning">WARNING</span></td>
+                            <td>AUTH</td>
+                            <td class="log-message">用户登录失败次数过多，账户已锁定</td>
+                            <td>user123</td>
+                            <td>203.45.67.89</td>
+                            <td><button class="btn" onclick="showLogDetail(2)">详情</button></td>
+                        </tr>
+                        <tr onclick="showLogDetail(3)">
+                            <td>2025-01-15 14:30:18</td>
+                            <td><span class="log-level level-info">INFO</span></td>
+                            <td>TRACE</td>
+                            <td class="log-message">产品溯源查询成功，产品ID: TR202501001</td>
+                            <td>consumer456</td>
+                            <td>110.23.45.67</td>
+                            <td><button class="btn" onclick="showLogDetail(3)">详情</button></td>
+                        </tr>
+                        <tr onclick="showLogDetail(4)">
+                            <td>2025-01-15 14:29:33</td>
+                            <td><span class="log-level level-debug">DEBUG</span></td>
+                            <td>DATABASE</td>
+                            <td class="log-message">执行SQL查询: SELECT * FROM products WHERE...</td>
+                            <td>system</td>
+                            <td>127.0.0.1</td>
+                            <td><button class="btn" onclick="showLogDetail(4)">详情</button></td>
+                        </tr>
+                        <tr onclick="showLogDetail(5)">
+                            <td>2025-01-15 14:28:55</td>
+                            <td><span class="log-level level-info">INFO</span></td>
+                            <td>API</td>
+                            <td class="log-message">新用户注册成功，用户ID: USR202501789</td>
+                            <td>newuser789</td>
+                            <td>58.135.24.100</td>
+                            <td><button class="btn" onclick="showLogDetail(5)">详情</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- 分页 -->
+                <div class="pagination">
+                    <button class="page-btn" onclick="changePage(-1)">⏮ 上一页</button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn" onclick="changePage(2)">2</button>
+                    <button class="page-btn" onclick="changePage(3)">3</button>
+                    <button class="page-btn" onclick="changePage(1)">下一页 ⏭</button>
+                </div>
+            </div>
+
+            <!-- 日志管理 -->
+            <div class="logs-section">
+                <h3 style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 16px;">⚙️ 日志管理</h3>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button class="btn" onclick="exportLogs()">📥 导出日志</button>
+                    <button class="btn" onclick="clearLogs()">🗑️ 清理日志</button>
+                    <button class="btn" onclick="downloadLogs()">💾 下载归档</button>
+                    <button class="btn primary" onclick="refreshLogs()">🔄 刷新</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日志详情模态框 -->
+    <div class="log-detail-modal" id="logDetailModal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 16px;">📋 日志详情</h3>
+            <div id="logDetailContent">
+                <!-- 动态加载详情内容 -->
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button class="btn" onclick="closeLogDetail()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 显示日志详情
+        function showLogDetail(logId) {
+            const modal = document.getElementById('logDetailModal');
+            const content = document.getElementById('logDetailContent');
+
+            // 模拟日志详情数据
+            const logDetails = {
+                1: {
+                    id: 'LOG_20250115_001',
+                    timestamp: '2025-01-15 14:32:15.423',
+                    level: 'ERROR',
+                    module: 'API',
+                    message: '数据库连接超时，查询失败',
+                    user: 'system',
+                    ip: '192.168.1.100',
+                    stackTrace: 'java.sql.SQLTimeoutException: Connection timeout\n    at com.database.ConnectionPool.getConnection()\n    at com.api.ProductService.getProduct()',
+                    context: {
+                        requestId: 'REQ_20250115_14321543',
+                        endpoint: '/api/products/search',
+                        method: 'GET',
+                        userAgent: 'Chrome/120.0.0.0'
+                    }
+                }
+            };
+
+            const log = logDetails[logId] || {
+                message: '日志详情加载中...',
+                timestamp: new Date().toISOString()
+            };
+
+            content.innerHTML = `
+                <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                    <div><strong>日志ID:</strong> ${log.id || 'N/A'}</div>
+                    <div><strong>时间:</strong> ${log.timestamp}</div>
+                    <div><strong>级别:</strong> <span class="log-level level-${log.level?.toLowerCase()}">${log.level}</span></div>
+                    <div><strong>模块:</strong> ${log.module}</div>
+                    <div><strong>用户:</strong> ${log.user}</div>
+                    <div><strong>IP地址:</strong> ${log.ip}</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <strong>消息内容:</strong>
+                    <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e0e0e0; margin-top: 8px;">
+                        ${log.message}
+                    </div>
+                </div>
+                ${log.stackTrace ? `
+                <div style="margin-bottom: 16px;">
+                    <strong>堆栈跟踪:</strong>
+                    <pre style="background: #2d2d2d; color: #f8f8f2; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 12px;">${log.stackTrace}</pre>
+                </div>
+                ` : ''}
+                ${log.context ? `
+                <div>
+                    <strong>上下文信息:</strong>
+                    <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e0e0e0; margin-top: 8px;">
+                        ${Object.entries(log.context).map(([key, value]) => `<div><strong>${key}:</strong> ${value}</div>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            `;
+
+            modal.style.display = 'block';
+        }
+
+        // 关闭日志详情
+        function closeLogDetail() {
+            document.getElementById('logDetailModal').style.display = 'none';
+        }
+
+        // 过滤日志
+        function filterLogs() {
+            console.log('过滤日志条件已更新');
+        }
+
+        // 搜索日志
+        function searchLogs() {
+            console.log('执行日志搜索');
+            showNotification('日志搜索完成，找到 127 条匹配记录', 'success');
+        }
+
+        // 切换页面
+        function changePage(page) {
+            document.querySelectorAll('.page-btn').forEach(btn => btn.classList.remove('active'));
+            if (typeof page === 'number' && page > 0) {
+                document.querySelector(`.page-btn:nth-child(${page + 1})`).classList.add('active');
+            }
+            console.log(`切换到第 ${page} 页`);
+        }
+
+        // 导出日志
+        function exportLogs() {
+            showNotification('正在导出日志文件...', 'info');
+            setTimeout(() => {
+                showNotification('日志导出完成', 'success');
+            }, 2000);
+        }
+
+        // 清理日志
+        function clearLogs() {
+            if (confirm('确定要清理30天前的日志吗？此操作不可撤销！')) {
+                showNotification('正在清理历史日志...', 'info');
+                setTimeout(() => {
+                    showNotification('日志清理完成，释放存储空间 1.2GB', 'success');
+                }, 3000);
+            }
+        }
+
+        // 下载归档
+        function downloadLogs() {
+            showNotification('正在生成日志归档...', 'info');
+            setTimeout(() => {
+                showNotification('日志归档下载完成', 'success');
+            }, 2500);
+        }
+
+        // 刷新日志
+        function refreshLogs() {
+            showNotification('正在刷新日志数据...', 'info');
+            setTimeout(() => {
+                showNotification('日志数据已更新', 'success');
+            }, 1000);
+        }
+
+        // 通知系统
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#2ed573' : type === 'error' ? '#ff4757' : type === 'warning' ? '#ffa726' : '#667eea'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('logDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeLogDetail();
+            }
+        });
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                window.location.href = '../auth/login.html';
+            }
+        }
+    </script>
+</body>
+</html>

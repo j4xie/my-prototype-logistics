@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境监控 - 农业模块</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .environment {
+            padding: 16px;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .zone-tabs {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .zone-tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #6b7280;
+        }
+
+        .zone-tab.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .monitor-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .monitor-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .monitor-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .monitor-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .monitor-status {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .status-normal {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-danger {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 390px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #6b7280;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="environment">
+            <div class="header">
+                <h1 class="title">环境监控</h1>
+                <p class="subtitle">实时监控各区域环境数据</p>
+            </div>
+
+            <div class="zone-tabs">
+                <div class="zone-tab active">A区</div>
+                <div class="zone-tab">B区</div>
+                <div class="zone-tab">C区</div>
+                <div class="zone-tab">D区</div>
+            </div>
+
+            <div class="monitor-grid">
+                <div class="monitor-card">
+                    <div class="monitor-icon">🌡️</div>
+                    <div class="monitor-label">土壤温度</div>
+                    <div class="monitor-value">22.5°C</div>
+                    <div class="monitor-status status-normal">正常</div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-icon">💧</div>
+                    <div class="monitor-label">土壤湿度</div>
+                    <div class="monitor-value">68%</div>
+                    <div class="monitor-status status-normal">正常</div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-icon">⚗️</div>
+                    <div class="monitor-label">pH值</div>
+                    <div class="monitor-value">8.2</div>
+                    <div class="monitor-status status-warning">偏高</div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-icon">☀️</div>
+                    <div class="monitor-label">光照强度</div>
+                    <div class="monitor-value">5200lux</div>
+                    <div class="monitor-status status-normal">正常</div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-icon">🌬️</div>
+                    <div class="monitor-label">空气湿度</div>
+                    <div class="monitor-value">72%</div>
+                    <div class="monitor-status status-normal">正常</div>
+                </div>
+                <div class="monitor-card">
+                    <div class="monitor-icon">🌡️</div>
+                    <div class="monitor-label">空气温度</div>
+                    <div class="monitor-value">25.2°C</div>
+                    <div class="monitor-status status-normal">正常</div>
+                </div>
+            </div>
+
+            <div style="height: 80px;"></div>
+        </div>
+
+        <div class="bottom-nav">
+            <a href="dashboard.html" class="nav-item">
+                <div class="nav-icon">🏠</div>
+                <div>首页</div>
+            </a>
+            <a href="data-collection.html" class="nav-item">
+                <div class="nav-icon">📊</div>
+                <div>数据</div>
+            </a>
+            <a href="field-management.html" class="nav-item">
+                <div class="nav-icon">🗺️</div>
+                <div>田地</div>
+            </a>
+            <a href="../profile/index.html" class="nav-item">
+                <div class="nav-icon">👤</div>
+                <div>我的</div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
