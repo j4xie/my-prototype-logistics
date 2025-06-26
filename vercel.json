@@ -1,28 +1,9 @@
 {
   "version": 2,
-  "framework": "nextjs",
-  "outputDirectory": "web-app-next/.next",
   "buildCommand": "cd web-app-next && npm ci && npm run build",
+  "outputDirectory": "web-app-next/.next",
   "installCommand": "cd web-app-next && npm ci",
-  "devCommand": "cd web-app-next && npm run dev",
   "env": {
-    "NEXT_PUBLIC_MOCK_ENABLED": "true",
-    "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "NODE_OPTIONS": "--max-old-space-size=4096"
-    }
-  },
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600"
-        }
-      ]
-    }
-  ]
+    "NEXT_PUBLIC_MOCK_ENABLED": "true"
+  }
 }
