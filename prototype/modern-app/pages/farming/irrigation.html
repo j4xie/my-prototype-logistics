@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>灌溉控制 - 农业模块</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .irrigation {
+            padding: 16px;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .control-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 16px;
+        }
+
+        .zone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .zone-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .zone-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-inactive {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .control-label {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .control-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .control-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .schedule-card {
+            background: #f8fafc;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .schedule-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .schedule-time {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+
+        .schedule-button {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 390px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #6b7280;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="irrigation">
+            <div class="header">
+                <h1 class="title">灌溉控制</h1>
+                <p class="subtitle">智能灌溉系统管理</p>
+            </div>
+
+            <div class="control-card">
+                <div class="zone-header">
+                    <h3 class="zone-name">A区灌溉系统</h3>
+                    <span class="zone-status status-active">运行中</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">当前状态</span>
+                    <span class="control-value">自动模式</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">剩余时间</span>
+                    <span class="control-value">15分钟</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">水流量</span>
+                    <span class="control-value">25L/min</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">操作</span>
+                    <button class="control-button">停止灌溉</button>
+                </div>
+            </div>
+
+            <div class="control-card">
+                <div class="zone-header">
+                    <h3 class="zone-name">B区灌溉系统</h3>
+                    <span class="zone-status status-inactive">待机</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">当前状态</span>
+                    <span class="control-value">手动模式</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">土壤湿度</span>
+                    <span class="control-value">45%</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">建议</span>
+                    <span class="control-value" style="color: #d97706;">需要灌溉</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">操作</span>
+                    <button class="control-button">开始灌溉</button>
+                </div>
+            </div>
+
+            <div class="control-card">
+                <div class="zone-header">
+                    <h3 class="zone-name">C区灌溉系统</h3>
+                    <span class="zone-status status-inactive">待机</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">当前状态</span>
+                    <span class="control-value">自动模式</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">土壤湿度</span>
+                    <span class="control-value">72%</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">下次灌溉</span>
+                    <span class="control-value">明天 06:00</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">操作</span>
+                    <button class="control-button">设置计划</button>
+                </div>
+            </div>
+
+            <div class="schedule-card">
+                <h3 class="schedule-title">智能灌溉计划</h3>
+                <p class="schedule-time">下次自动灌溉：今天 18:00</p>
+                <button class="schedule-button">管理计划</button>
+            </div>
+
+            <div style="height: 80px;"></div>
+        </div>
+
+        <div class="bottom-nav">
+            <a href="dashboard.html" class="nav-item">
+                <div class="nav-icon">🏠</div>
+                <div>首页</div>
+            </a>
+            <a href="data-collection.html" class="nav-item">
+                <div class="nav-icon">📊</div>
+                <div>数据</div>
+            </a>
+            <a href="field-management.html" class="nav-item">
+                <div class="nav-icon">🗺️</div>
+                <div>田地</div>
+            </a>
+            <a href="../profile/index.html" class="nav-item">
+                <div class="nav-icon">👤</div>
+                <div>我的</div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
