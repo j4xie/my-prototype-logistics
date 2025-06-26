@@ -7,436 +7,365 @@
     <link rel="stylesheet" href="../../styles/main.css">
     <style>
         .profile-container {
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .profile-wrapper {
             max-width: 390px;
             margin: 0 auto;
-            min-height: 100vh;
-            background: #f7fafc;
         }
 
         .profile-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 20px 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px;
+            padding: 30px;
             text-align: center;
-            position: relative;
-        }
-
-        .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
             color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .avatar-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .avatar {
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            border: 4px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.2);
-            display: flex;
+            background: rgba(255, 255, 255, 0.2);
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
-            margin: 0 auto;
+            font-size: 32px;
+            margin-bottom: 15px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
         }
 
-        .avatar-edit {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 24px;
-            height: 24px;
-            background: #4299e1;
-            border-radius: 50%;
-            border: 2px solid white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-        }
-
-        .profile-name {
-            font-size: 1.5rem;
+        .user-name {
+            font-size: 24px;
             font-weight: 600;
             margin-bottom: 5px;
         }
 
-        .profile-role {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        .profile-content {
-            padding: 20px;
-            transform: translateY(-30px);
-        }
-
-        .profile-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #2d3748;
+        .user-email {
+            font-size: 14px;
+            opacity: 0.9;
             margin-bottom: 15px;
-            display: flex;
-            align-items: center;
         }
 
-        .card-icon {
-            margin-right: 10px;
-            color: #4299e1;
+        .user-level {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+            display: inline-block;
         }
 
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .info-item:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            color: #718096;
-            font-size: 0.9rem;
-        }
-
-        .info-value {
-            color: #2d3748;
-            font-weight: 500;
-        }
-
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .action-btn {
+        .profile-section {
             background: white;
-            border: none;
-            border-radius: 12px;
-            padding: 20px 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        .section-header {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            font-weight: 600;
+            color: #333;
         }
 
-        .action-icon {
-            font-size: 1.5rem;
-            color: #4299e1;
-            margin-bottom: 8px;
+        .section-content {
+            padding: 0;
         }
 
-        .action-text {
-            font-size: 0.8rem;
-            color: #2d3748;
-            font-weight: 500;
-        }
-
-        .menu-item {
+        .profile-item {
             display: flex;
             align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 15px 20px;
+            border-bottom: 1px solid #f8f9fa;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: background-color 0.3s ease;
         }
 
-        .menu-item:hover {
-            background: #f7fafc;
-            margin: 0 -20px;
-            padding-left: 20px;
-            padding-right: 20px;
-        }
-
-        .menu-item:last-child {
+        .profile-item:last-child {
             border-bottom: none;
         }
 
-        .menu-icon {
-            width: 20px;
+        .profile-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-right: 15px;
-            color: #4299e1;
+            font-size: 18px;
         }
 
-        .menu-text {
+        .item-content {
             flex: 1;
-            color: #2d3748;
-            font-weight: 500;
         }
 
-        .menu-arrow {
-            color: #a0aec0;
+        .item-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .item-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .item-arrow {
+            color: #ccc;
+            font-size: 16px;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
-            margin-bottom: 20px;
+            padding: 20px;
         }
 
         .stat-item {
             text-align: center;
-            padding: 15px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
         .stat-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #4299e1;
+            font-size: 24px;
+            font-weight: 600;
+            color: #667eea;
             margin-bottom: 5px;
         }
 
         .stat-label {
-            font-size: 0.8rem;
-            color: #718096;
+            font-size: 12px;
+            color: #666;
         }
 
-        .logout-btn {
-            width: 100%;
-            background: #f56565;
-            color: white;
-            border: none;
-            padding: 14px;
+        .action-buttons {
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
             border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
+            background: white;
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .logout-btn:hover {
-            background: #e53e3e;
-            transform: translateY(-1px);
+        .action-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .notification-badge {
+            background: #ff4757;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        @media (max-width: 480px) {
+            .profile-container {
+                padding: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 <body>
     <div class="profile-container">
-        <!-- 个人资料头部 -->
-        <div class="profile-header">
-            <button class="back-btn" onclick="history.back()">
-                ←
-            </button>
+        <button class="back-button" onclick="history.back()">
+            ←
+        </button>
 
-            <div class="avatar-container">
-                <div class="avatar">
-                    👤
-                </div>
-                <div class="avatar-edit" onclick="editAvatar()">
-                    ✎
-                </div>
+        <div class="profile-wrapper">
+            <!-- 用户信息头部 -->
+            <div class="profile-header">
+                <div class="avatar">👤</div>
+                <div class="user-name">张三</div>
+                <div class="user-email">zhangsan@example.com</div>
+                <div class="user-level">🌟 认证用户</div>
             </div>
 
-            <div class="profile-name">张三</div>
-            <div class="profile-role">认证农场主</div>
-        </div>
-
-        <div class="profile-content">
             <!-- 统计数据 -->
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-number">12</div>
-                    <div class="stat-label">溯源记录</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">5</div>
-                    <div class="stat-label">质检通过</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">98%</div>
-                    <div class="stat-label">信用评分</div>
-                </div>
-            </div>
-
-            <!-- 快捷操作 -->
-            <div class="profile-card">
-                <div class="card-title">
-                    <span class="card-icon">⚡</span>
-                    快捷操作
-                </div>
-                <div class="quick-actions">
-                    <button class="action-btn" onclick="createTrace()">
-                        <div class="action-icon">📋</div>
-                        <div class="action-text">创建溯源</div>
-                    </button>
-                    <button class="action-btn" onclick="scanQR()">
-                        <div class="action-icon">📷</div>
-                        <div class="action-text">扫码采集</div>
-                    </button>
-                    <button class="action-btn" onclick="viewReports()">
-                        <div class="action-icon">📊</div>
-                        <div class="action-text">查看报告</div>
-                    </button>
+            <div class="profile-section">
+                <div class="section-header">我的数据</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">28</div>
+                        <div class="stat-label">溯源查询</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">15</div>
+                        <div class="stat-label">产品收藏</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">7</div>
+                        <div class="stat-label">反馈提交</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 基本信息 -->
-            <div class="profile-card">
-                <div class="card-title">
-                    <span class="card-icon">👤</span>
-                    基本信息
-                </div>
-                <div class="info-item">
-                    <span class="info-label">用户名</span>
-                    <span class="info-value">zhangsan</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">邮箱</span>
-                    <span class="info-value">zhang***@email.com</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">手机</span>
-                    <span class="info-value">138****8888</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">注册时间</span>
-                    <span class="info-value">2024-01-15</span>
-                </div>
-            </div>
-
-            <!-- 功能菜单 -->
-            <div class="profile-card">
-                <div class="card-title">
-                    <span class="card-icon">⚙️</span>
-                    设置与管理
-                </div>
-                <div class="menu-item" onclick="editProfile()">
-                    <span class="menu-icon">✏️</span>
-                    <span class="menu-text">编辑资料</span>
-                    <span class="menu-arrow">›</span>
-                </div>
-                <div class="menu-item" onclick="securitySettings()">
-                    <span class="menu-icon">🔒</span>
-                    <span class="menu-text">安全设置</span>
-                    <span class="menu-arrow">›</span>
-                </div>
-                <div class="menu-item" onclick="privacySettings()">
-                    <span class="menu-icon">🛡️</span>
-                    <span class="menu-text">隐私设置</span>
-                    <span class="menu-arrow">›</span>
-                </div>
-                <div class="menu-item" onclick="notifications()">
-                    <span class="menu-icon">🔔</span>
-                    <span class="menu-text">通知设置</span>
-                    <span class="menu-arrow">›</span>
-                </div>
-                <div class="menu-item" onclick="help()">
-                    <span class="menu-icon">❓</span>
-                    <span class="menu-text">帮助中心</span>
-                    <span class="menu-arrow">›</span>
-                </div>
-                <div class="menu-item" onclick="feedback()">
-                    <span class="menu-icon">💬</span>
-                    <span class="menu-text">意见反馈</span>
-                    <span class="menu-arrow">›</span>
+            <!-- 账户设置 -->
+            <div class="profile-section">
+                <div class="section-header">账户设置</div>
+                <div class="section-content">
+                    <div class="profile-item" onclick="location.href='../profile/edit.html'">
+                        <div class="item-icon">✏️</div>
+                        <div class="item-content">
+                            <div class="item-title">编辑资料</div>
+                            <div class="item-subtitle">修改姓名、头像等基本信息</div>
+                        </div>
+                        <div class="item-arrow">›</div>
+                    </div>
+                    <div class="profile-item" onclick="location.href='../profile/security.html'">
+                        <div class="item-icon">🔒</div>
+                        <div class="item-content">
+                            <div class="item-title">安全设置</div>
+                            <div class="item-subtitle">密码、双重验证等安全选项</div>
+                        </div>
+                        <div class="item-arrow">›</div>
+                    </div>
+                    <div class="profile-item" onclick="location.href='../profile/privacy.html'">
+                        <div class="item-icon">🛡️</div>
+                        <div class="item-content">
+                            <div class="item-title">隐私设置</div>
+                            <div class="item-subtitle">数据共享和隐私保护</div>
+                        </div>
+                        <div class="item-arrow">›</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 退出登录 -->
-            <div class="profile-card">
-                <button class="logout-btn" onclick="logout()">
-                    退出登录
-                </button>
+            <!-- 应用设置 -->
+            <div class="profile-section">
+                <div class="section-header">应用设置</div>
+                <div class="section-content">
+                    <div class="profile-item">
+                        <div class="item-icon">🔔</div>
+                        <div class="item-content">
+                            <div class="item-title">消息通知</div>
+                            <div class="item-subtitle">推送通知和提醒设置</div>
+                        </div>
+                        <div class="notification-badge">3</div>
+                        <div class="item-arrow">›</div>
+                    </div>
+                    <div class="profile-item" onclick="location.href='../profile/data-export.html'">
+                        <div class="item-icon">📊</div>
+                        <div class="item-content">
+                            <div class="item-title">数据导出</div>
+                            <div class="item-subtitle">导出个人数据和历史记录</div>
+                        </div>
+                        <div class="item-arrow">›</div>
+                    </div>
+                    <div class="profile-item">
+                        <div class="item-icon">🌙</div>
+                        <div class="item-content">
+                            <div class="item-title">深色模式</div>
+                            <div class="item-subtitle">切换应用主题外观</div>
+                        </div>
+                        <div class="item-arrow">›</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 帮助支持 -->
+            <div class="profile-section">
+                <div class="section-header">帮助支持</div>
+                <div class="section-content">
+                    <div class="profile-item" onclick="location.href='../profile/feedback.html'">
+                        <div class="item-icon">💬</div>
+                        <div class="item-content">
+                            <div class="item-title">意见反馈</div>
+                            <div class="item-subtitle">提交问题和建议</div>
+                        </div>
+                        <div class="item-arrow">›</div>
+                    </div>
+                    <div class="profile-item" onclick="location.href='../profile/about.html'">
+                        <div class="item-icon">ℹ️</div>
+                        <div class="item-content">
+                            <div class="item-title">关于我们</div>
+                            <div class="item-subtitle">应用版本和开发团队</div>
+                        </div>
+                        <div class="item-arrow">›</div>
+                    </div>
+                    <div class="profile-item">
+                        <div class="item-icon">📞</div>
+                        <div class="item-content">
+                            <div class="item-title">联系客服</div>
+                            <div class="item-subtitle">在线客服和技术支持</div>
+                        </div>
+                        <div class="item-arrow">›</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+                <button class="action-btn" onclick="logout()">退出登录</button>
+                <button class="action-btn primary" onclick="location.href='../../index.html'">返回首页</button>
             </div>
         </div>
     </div>
 
     <script>
-        function editAvatar() {
-            alert('头像编辑功能（演示版本）');
-        }
-
-        function createTrace() {
-            alert('即将跳转到创建溯源页面');
-            // window.location.href = '../farming/create-trace.html';
-        }
-
-        function scanQR() {
-            alert('即将打开扫码采集功能');
-            // window.location.href = '../farming/qrcode-collection.html';
-        }
-
-        function viewReports() {
-            alert('即将查看数据报告');
-            // window.location.href = '../reports/index.html';
-        }
-
-        function editProfile() {
-            alert('即将跳转到编辑资料页面');
-            // window.location.href = '../profile/edit.html';
-        }
-
-        function securitySettings() {
-            alert('即将跳转到安全设置页面');
-            // window.location.href = '../profile/security.html';
-        }
-
-        function privacySettings() {
-            alert('即将跳转到隐私设置页面');
-            // window.location.href = '../profile/privacy.html';
-        }
-
-        function notifications() {
-            alert('通知设置功能（演示版本）');
-        }
-
-        function help() {
-            alert('帮助中心功能（演示版本）');
-        }
-
-        function feedback() {
-            alert('即将跳转到意见反馈页面');
-            // window.location.href = '../profile/feedback.html';
-        }
-
         function logout() {
             if (confirm('确定要退出登录吗？')) {
-                alert('退出成功，即将跳转到登录页面');
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 1000);
+                alert('已退出登录');
+                window.location.href = './login.html';
             }
         }
+
+        // 模拟通知数据更新
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('个人资料页面已加载');
+        });
     </script>
 </body>
 </html>

@@ -1,1 +1,695 @@
- 
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品溯源详情 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .detail-container {
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .detail-wrapper {
+            max-width: 390px;
+            margin: 0 auto;
+        }
+
+        .product-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 20px;
+            color: white;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .share-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .product-info {
+            text-align: center;
+            padding: 40px 20px 20px;
+        }
+
+        .product-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin-bottom: 15px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .product-name {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .product-code {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+
+        .status-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        .tabs-container {
+            background: white;
+            margin: 20px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .tabs-header {
+            display: flex;
+            background: #f8f9fa;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px 10px;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            background: white;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            padding: 20px;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e0e0e0;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -23px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #667eea;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #667eea;
+        }
+
+        .timeline-date {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .timeline-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .timeline-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .timeline-location {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .quality-section {
+            margin-bottom: 20px;
+        }
+
+        .quality-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .quality-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .quality-status {
+            background: #d4edda;
+            color: #155724;
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .test-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .test-item.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .test-name {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .test-value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .record-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .record-date {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .record-type {
+            background: #667eea;
+            color: white;
+            border-radius: 15px;
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+
+        .record-content {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .action-buttons {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            background: white;
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .trust-score {
+            background: linear-gradient(135deg, #2ed573, #1dd1a1);
+            color: white;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .trust-score-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .trust-score-text {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 480px) {
+            .detail-container {
+                padding-bottom: 70px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="detail-container">
+        <div class="detail-wrapper">
+            <!-- 产品头部信息 -->
+            <div class="product-header">
+                <button class="back-button" onclick="history.back()">
+                    ←
+                </button>
+                <button class="share-button" onclick="shareProduct()">
+                    📤
+                </button>
+
+                <div class="product-info">
+                    <div class="product-image">🥬</div>
+                    <div class="product-name">有机白菜</div>
+                    <div class="product-code">溯源码: ORG001</div>
+                    <div class="status-badge">✅ 质检合格</div>
+                </div>
+            </div>
+
+            <!-- 信誉评分 -->
+            <div style="margin: 20px;">
+                <div class="trust-score">
+                    <div class="trust-score-value">95</div>
+                    <div class="trust-score-text">信誉评分 - 优秀产品</div>
+                </div>
+            </div>
+
+            <!-- 标签页内容 -->
+            <div class="tabs-container">
+                <div class="tabs-header">
+                    <button class="tab-button active" onclick="switchTab(0)">基本信息</button>
+                    <button class="tab-button" onclick="switchTab(1)">溯源链路</button>
+                    <button class="tab-button" onclick="switchTab(2)">质检报告</button>
+                    <button class="tab-button" onclick="switchTab(3)">种植记录</button>
+                </div>
+
+                <!-- 基本信息标签 -->
+                <div class="tab-content active">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">产品类型</div>
+                            <div class="info-value">有机蔬菜</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">生产日期</div>
+                            <div class="info-value">2024-01-15</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">保质期</div>
+                            <div class="info-value">7天</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">产地</div>
+                            <div class="info-value">山东寿光</div>
+                        </div>
+                    </div>
+
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">生产企业</div>
+                        </div>
+                        <div class="record-content">
+                            <strong>绿源有机农场</strong><br>
+                            地址: 山东省寿光市田柳镇<br>
+                            许可证: 鲁食证字第370783000124号<br>
+                            联系电话: 0536-1234567
+                        </div>
+                    </div>
+
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">认证信息</div>
+                        </div>
+                        <div class="record-content">
+                            • 有机产品认证证书: OGP-2023-001<br>
+                            • 绿色食品认证: LV-2023-002<br>
+                            • ISO22000食品安全管理体系认证<br>
+                            • 无公害农产品认证
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 溯源链路标签 -->
+                <div class="tab-content">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-date">2024-01-15 14:30</div>
+                            <div class="timeline-title">🏪 零售销售</div>
+                            <div class="timeline-desc">产品到达零售终端，准备销售给消费者</div>
+                            <div class="timeline-location">📍 大润发超市(寿光店)</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-date">2024-01-15 08:00</div>
+                            <div class="timeline-title">🚚 冷链配送</div>
+                            <div class="timeline-desc">冷链车辆配送，全程温度控制在2-8°C</div>
+                            <div class="timeline-location">📍 配送路线: 农场→配送中心→超市</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-date">2024-01-15 06:00</div>
+                            <div class="timeline-title">📦 包装完成</div>
+                            <div class="timeline-desc">清洗、包装完成，贴上溯源码标签</div>
+                            <div class="timeline-location">📍 绿源农场包装车间</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-date">2024-01-15 05:30</div>
+                            <div class="timeline-title">✂️ 新鲜采摘</div>
+                            <div class="timeline-desc">清晨采摘，确保最佳新鲜度</div>
+                            <div class="timeline-location">📍 绿源农场3号大棚</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-date">2023-12-01</div>
+                            <div class="timeline-title">🌱 开始种植</div>
+                            <div class="timeline-desc">使用有机种子，开始种植周期</div>
+                            <div class="timeline-location">📍 绿源农场3号大棚</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 质检报告标签 -->
+                <div class="tab-content">
+                    <div class="quality-section">
+                        <div class="quality-header">
+                            <div class="quality-title">农药残留检测</div>
+                            <div class="quality-status">✅ 合格</div>
+                        </div>
+                        <div class="test-grid">
+                            <div class="test-item pass">
+                                <div class="test-name">敌敌畏</div>
+                                <div class="test-value">未检出</div>
+                            </div>
+                            <div class="test-item pass">
+                                <div class="test-name">乐果</div>
+                                <div class="test-value">未检出</div>
+                            </div>
+                            <div class="test-item pass">
+                                <div class="test-name">毒死蜱</div>
+                                <div class="test-value">未检出</div>
+                            </div>
+                            <div class="test-item pass">
+                                <div class="test-name">氯氰菊酯</div>
+                                <div class="test-value">未检出</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quality-section">
+                        <div class="quality-header">
+                            <div class="quality-title">重金属检测</div>
+                            <div class="quality-status">✅ 合格</div>
+                        </div>
+                        <div class="test-grid">
+                            <div class="test-item pass">
+                                <div class="test-name">铅(Pb)</div>
+                                <div class="test-value">&lt;0.1mg/kg</div>
+                            </div>
+                            <div class="test-item pass">
+                                <div class="test-name">镉(Cd)</div>
+                                <div class="test-value">&lt;0.05mg/kg</div>
+                            </div>
+                            <div class="test-item pass">
+                                <div class="test-name">汞(Hg)</div>
+                                <div class="test-value">&lt;0.01mg/kg</div>
+                            </div>
+                            <div class="test-item pass">
+                                <div class="test-name">砷(As)</div>
+                                <div class="test-value">&lt;0.1mg/kg</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">检测机构</div>
+                        </div>
+                        <div class="record-content">
+                            <strong>山东省食品检验检测中心</strong><br>
+                            检测报告编号: SDSP-2024-001<br>
+                            检测日期: 2024-01-14<br>
+                            检测标准: GB 2763-2021
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 种植记录标签 -->
+                <div class="tab-content">
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">2024-01-10</div>
+                            <div class="record-type">施肥</div>
+                        </div>
+                        <div class="record-content">
+                            施用有机肥料500kg/亩，增加土壤有机质含量。使用充分腐熟的牛粪和鸡粪混合肥。
+                        </div>
+                    </div>
+
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">2024-01-05</div>
+                            <div class="record-type">灌溉</div>
+                        </div>
+                        <div class="record-content">
+                            滴灌浇水，用水量30m³/亩。使用深井水，水质检测合格，TDS值280ppm。
+                        </div>
+                    </div>
+
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">2023-12-28</div>
+                            <div class="record-type">防病</div>
+                        </div>
+                        <div class="record-content">
+                            使用生物防治方法，释放赤眼蜂200万头/亩防治害虫。完全无化学农药使用。
+                        </div>
+                    </div>
+
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">2023-12-15</div>
+                            <div class="record-type">整地</div>
+                        </div>
+                        <div class="record-content">
+                            深耕土地25cm，施用石灰调节土壤pH值至6.5-7.0之间，为种植做准备。
+                        </div>
+                    </div>
+
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">2023-12-01</div>
+                            <div class="record-type">播种</div>
+                        </div>
+                        <div class="record-content">
+                            使用有机认证种子，品种为"寿光一号"白菜。播种密度8000株/亩，采用温室大棚种植。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部操作按钮 -->
+        <div class="action-buttons">
+            <button class="action-btn" onclick="downloadCertificate()">📜 证书下载</button>
+            <button class="action-btn" onclick="reportProblem()">⚠️ 问题举报</button>
+            <button class="action-btn primary" onclick="addToFavorites()">⭐ 收藏产品</button>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(index) {
+            // 移除所有active类
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // 添加active类到选中的标签
+            document.querySelectorAll('.tab-button')[index].classList.add('active');
+            document.querySelectorAll('.tab-content')[index].classList.add('active');
+        }
+
+        function shareProduct() {
+            if (navigator.share) {
+                navigator.share({
+                    title: '有机白菜 - 溯源详情',
+                    text: '查看这个优质产品的完整溯源信息',
+                    url: window.location.href
+                });
+            } else {
+                // 复制链接到剪贴板
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    alert('产品链接已复制到剪贴板');
+                });
+            }
+        }
+
+        function downloadCertificate() {
+            alert('正在生成溯源证书PDF...\n\n演示模式：将下载包含完整溯源信息的证书文件');
+        }
+
+        function reportProblem() {
+            if (confirm('是否要举报此产品存在问题？')) {
+                alert('举报已提交，我们将在24小时内核实处理');
+            }
+        }
+
+        function addToFavorites() {
+            // 模拟添加到收藏
+            const btn = event.target;
+            if (btn.textContent.includes('收藏')) {
+                btn.textContent = '❤️ 已收藏';
+                btn.style.background = '#ff4757';
+                btn.style.borderColor = '#ff4757';
+                btn.style.color = 'white';
+                alert('已添加到我的收藏');
+            } else {
+                btn.textContent = '⭐ 收藏产品';
+                btn.style.background = '#667eea';
+                btn.style.borderColor = '#667eea';
+                btn.style.color = 'white';
+                alert('已取消收藏');
+            }
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从URL参数获取产品代码
+            const urlParams = new URLSearchParams(window.location.search);
+            const productCode = urlParams.get('code');
+
+            if (productCode) {
+                console.log('加载产品详情:', productCode);
+                // 这里可以根据产品代码加载不同的产品信息
+            }
+        });
+    </script>
+</body>
+</html>
