@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>告警中心 - 农业模块</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .alerts {
+            padding: 16px;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .alert-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .stat-urgent { color: #dc2626; }
+        .stat-warning { color: #d97706; }
+        .stat-info { color: #2563eb; }
+
+        .alert-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid;
+        }
+
+        .alert-urgent {
+            border-left-color: #dc2626;
+        }
+
+        .alert-warning {
+            border-left-color: #d97706;
+        }
+
+        .alert-info {
+            border-left-color: #2563eb;
+        }
+
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .alert-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .alert-time {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .alert-description {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+
+        .alert-location {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+
+        .alert-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-resolve {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-view {
+            background: #f3f4f6;
+            color: #1f2937;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 390px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #6b7280;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="alerts">
+            <div class="header">
+                <h1 class="title">告警中心</h1>
+                <p class="subtitle">实时监控系统告警信息</p>
+            </div>
+
+            <div class="alert-stats">
+                <div class="stat-card">
+                    <div class="stat-number stat-urgent">3</div>
+                    <div class="stat-label">紧急告警</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-warning">5</div>
+                    <div class="stat-label">警告信息</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-info">12</div>
+                    <div class="stat-label">提醒事项</div>
+                </div>
+            </div>
+
+            <div class="alert-item alert-urgent">
+                <div class="alert-header">
+                    <h3 class="alert-title">土壤湿度过低</h3>
+                    <span class="alert-time">5分钟前</span>
+                </div>
+                <p class="alert-description">B区03号田土壤湿度降至30%，远低于作物需求阈值，需要立即灌溉。</p>
+                <p class="alert-location">📍 B区03号田 - 胡萝卜种植区</p>
+                <div class="alert-actions">
+                    <button class="btn-resolve">立即处理</button>
+                    <button class="btn-view">查看详情</button>
+                </div>
+            </div>
+
+            <div class="alert-item alert-urgent">
+                <div class="alert-header">
+                    <h3 class="alert-title">传感器离线</h3>
+                    <span class="alert-time">1小时前</span>
+                </div>
+                <p class="alert-description">C区光照传感器失去连接，无法获取实时光照数据。</p>
+                <p class="alert-location">📍 C区02号田 - 光照监测点</p>
+                <div class="alert-actions">
+                    <button class="btn-resolve">派遣维修</button>
+                    <button class="btn-view">查看详情</button>
+                </div>
+            </div>
+
+            <div class="alert-item alert-warning">
+                <div class="alert-header">
+                    <h3 class="alert-title">pH值异常</h3>
+                    <span class="alert-time">3小时前</span>
+                </div>
+                <p class="alert-description">A区01号田土壤pH值为8.2，略高于最适宜范围，建议调节。</p>
+                <p class="alert-location">📍 A区01号田 - 有机白菜种植区</p>
+                <div class="alert-actions">
+                    <button class="btn-resolve">安排调节</button>
+                    <button class="btn-view">查看详情</button>
+                </div>
+            </div>
+
+            <div class="alert-item alert-warning">
+                <div class="alert-header">
+                    <h3 class="alert-title">天气预警</h3>
+                    <span class="alert-time">6小时前</span>
+                </div>
+                <p class="alert-description">未来48小时内可能有强降雨，建议提前做好田间排水准备。</p>
+                <p class="alert-location">📍 全农场区域</p>
+                <div class="alert-actions">
+                    <button class="btn-resolve">制定预案</button>
+                    <button class="btn-view">天气详情</button>
+                </div>
+            </div>
+
+            <div class="alert-item alert-info">
+                <div class="alert-header">
+                    <h3 class="alert-title">收获提醒</h3>
+                    <span class="alert-time">昨天</span>
+                </div>
+                <p class="alert-description">B区03号田胡萝卜已达到最佳收获期，建议安排收获作业。</p>
+                <p class="alert-location">📍 B区03号田 - 胡萝卜种植区</p>
+                <div class="alert-actions">
+                    <button class="btn-resolve">安排收获</button>
+                    <button class="btn-view">查看详情</button>
+                </div>
+            </div>
+
+            <div class="alert-item alert-info">
+                <div class="alert-header">
+                    <h3 class="alert-title">系统维护</h3>
+                    <span class="alert-time">2天前</span>
+                </div>
+                <p class="alert-description">定期系统维护已完成，所有传感器和设备运行正常。</p>
+                <p class="alert-location">📍 全系统</p>
+                <div class="alert-actions">
+                    <button class="btn-resolve">标记已读</button>
+                    <button class="btn-view">维护报告</button>
+                </div>
+            </div>
+
+            <div style="height: 80px;"></div>
+        </div>
+
+        <div class="bottom-nav">
+            <a href="dashboard.html" class="nav-item">
+                <div class="nav-icon">🏠</div>
+                <div>首页</div>
+            </a>
+            <a href="data-collection.html" class="nav-item">
+                <div class="nav-icon">📊</div>
+                <div>数据</div>
+            </a>
+            <a href="field-management.html" class="nav-item">
+                <div class="nav-icon">🗺️</div>
+                <div>田地</div>
+            </a>
+            <a href="../profile/index.html" class="nav-item">
+                <div class="nav-icon">👤</div>
+                <div>我的</div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
