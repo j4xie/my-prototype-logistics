@@ -1,0 +1,323 @@
+{
+  "templateInfo": {
+    "templateName": "水产加工模板",
+    "industryType": "seafood_processing",
+    "version": 1,
+    "description": "适用于海鱼、淡水鱼、贝类、虾蟹等水产品加工流程",
+    "applicableProducts": ["三文鱼柳", "金枪鱼", "虾仁", "蟹肉", "鱿鱼丝", "鱼丸", "海参"],
+    "createdBy": "产品团队",
+    "createdAt": "2024-12-02T10:30:00Z",
+    "lastUpdated": "2024-12-02T10:30:00Z"
+  },
+
+  "rawMaterialFields": {
+    "species": {
+      "title": "品种",
+      "type": "enum",
+      "enum": ["挪威三文鱼", "北极鳕鱼", "金枪鱼", "带鱼", "黄花鱼", "南美白对虾", "阿拉斯加帝王蟹"],
+      "required": true,
+      "category": "basic",
+      "description": "水产品种类，影响加工工艺和品质标准"
+    },
+    "catchDate": {
+      "title": "捕捞日期",
+      "type": "date",
+      "required": true,
+      "category": "safety",
+      "description": "捕捞或收获日期，关键的新鲜度指标"
+    },
+    "catchMethod": {
+      "title": "捕捞方式",
+      "type": "enum",
+      "enum": ["野生捕捞", "人工养殖", "深海捕捞", "近海捕捞"],
+      "required": true,
+      "category": "quality",
+      "description": "捕捞方式影响肉质和价格定位"
+    },
+    "freshness": {
+      "title": "新鲜度等级",
+      "type": "enum",
+      "enum": ["刺身级", "烹饪级", "加工级"],
+      "required": true,
+      "category": "quality",
+      "description": "按新鲜度分级，决定适用用途"
+    },
+    "storageTemp": {
+      "title": "储存温度",
+      "type": "number",
+      "min": -25,
+      "max": 4,
+      "unit": "°C",
+      "required": true,
+      "category": "safety",
+      "description": "冷藏或冷冻储存温度"
+    },
+    "origin": {
+      "title": "产地",
+      "type": "string",
+      "required": true,
+      "category": "basic",
+      "description": "捕捞或养殖地区"
+    }
+  },
+
+  "processStepFields": {
+    "smokingWood": {
+      "title": "烟熏木材",
+      "type": "enum",
+      "enum": ["苹果木", "樱桃木", "山毛榉", "橡木"],
+      "required": false,
+      "category": "quality",
+      "description": "烟熏用木材类型，影响风味"
+    },
+    "saltConcentration": {
+      "title": "盐浓度",
+      "type": "number",
+      "min": 5,
+      "max": 25,
+      "unit": "%",
+      "required": false,
+      "category": "quality",
+      "description": "腌制或调味用盐的浓度"
+    },
+    "smokingDuration": {
+      "title": "烟熏时长",
+      "type": "integer",
+      "min": 2,
+      "max": 24,
+      "unit": "小时",
+      "required": false,
+      "category": "quality",
+      "description": "烟熏处理的持续时间"
+    },
+    "processTemp": {
+      "title": "加工温度",
+      "type": "number",
+      "min": -5,
+      "max": 80,
+      "unit": "°C",
+      "required": true,
+      "category": "safety",
+      "description": "加工过程的温度控制"
+    },
+    "operator": {
+      "title": "操作员",
+      "type": "string",
+      "required": true,
+      "category": "basic",
+      "description": "负责操作的员工姓名"
+    },
+    "processMethod": {
+      "title": "加工方式",
+      "type": "enum",
+      "enum": ["冷烟熏", "热烟熏", "冷冻加工", "新鲜加工", "腌制"],
+      "required": true,
+      "category": "basic",
+      "description": "采用的加工工艺"
+    }
+  },
+
+  "qualityTestFields": {
+    "histamineLevel": {
+      "title": "组胺含量",
+      "type": "enum",
+      "enum": ["合格", "不合格"],
+      "required": true,
+      "category": "safety",
+      "description": "组胺是水产品重要的食品安全指标"
+    },
+    "kValue": {
+      "title": "K值",
+      "type": "string",
+      "pattern": "^\\d{1,2}%$",
+      "required": true,
+      "category": "quality",
+      "description": "新鲜度指标，正常应<20%"
+    },
+    "moisture": {
+      "title": "水分含量",
+      "type": "number",
+      "min": 60,
+      "max": 85,
+      "unit": "%",
+      "required": true,
+      "category": "quality",
+      "description": "水分含量影响口感和保质期"
+    },
+    "protein": {
+      "title": "蛋白质含量",
+      "type": "number",
+      "min": 15,
+      "max": 30,
+      "unit": "%",
+      "required": true,
+      "category": "quality",
+      "description": "蛋白质含量，营养指标"
+    },
+    "fat": {
+      "title": "脂肪含量",
+      "type": "number",
+      "min": 1,
+      "max": 20,
+      "unit": "%",
+      "required": true,
+      "category": "quality",
+      "description": "脂肪含量，影响口感和营养"
+    },
+    "bacteriaCount": {
+      "title": "细菌总数",
+      "type": "integer",
+      "max": 5000,
+      "unit": "CFU/g",
+      "required": true,
+      "category": "safety",
+      "description": "微生物指标，比肉类要求更严格"
+    },
+    "salmonella": {
+      "title": "沙门氏菌",
+      "type": "enum",
+      "enum": ["未检出", "检出"],
+      "required": true,
+      "category": "safety",
+      "description": "致病菌检测，必须为未检出"
+    },
+    "vibrio": {
+      "title": "副溶血性弧菌",
+      "type": "enum",
+      "enum": ["未检出", "检出"],
+      "required": true,
+      "category": "safety",
+      "description": "水产特有的致病菌检测"
+    }
+  },
+
+  "packagingSpecFields": {
+    "material": {
+      "title": "包装材料",
+      "type": "enum",
+      "enum": ["PET/PE", "PA/PE复合膜", "铝箔复合膜", "真空袋"],
+      "required": true,
+      "category": "basic",
+      "description": "适合水产品的包装材料"
+    },
+    "gas_mixture": {
+      "title": "充气成分",
+      "type": "enum",
+      "enum": ["CO2/N2", "CO2/O2/N2", "纯N2", "真空"],
+      "required": false,
+      "category": "quality",
+      "description": "气调包装的气体配比"
+    },
+    "package_size": {
+      "title": "包装规格",
+      "type": "enum",
+      "enum": ["150g", "250g", "500g", "1kg", "托盘装"],
+      "required": true,
+      "category": "basic",
+      "description": "单个包装的重量规格"
+    },
+    "ice_ratio": {
+      "title": "冰水比例",
+      "type": "number",
+      "min": 0,
+      "max": 50,
+      "unit": "%",
+      "required": false,
+      "category": "quality",
+      "description": "保鲜包装中冰的比例"
+    },
+    "label_info": {
+      "title": "标签信息",
+      "type": "object",
+      "properties": {
+        "product_name": {"type": "string"},
+        "species": {"type": "string"},
+        "catch_area": {"type": "string"},
+        "nutrition_facts": {"type": "object"},
+        "storage_temp": {"type": "string"}
+      },
+      "required": true,
+      "category": "basic",
+      "description": "水产品标签的特殊要求"
+    }
+  },
+
+  "examples": {
+    "rawMaterialData": {
+      "species": "挪威三文鱼",
+      "catchDate": "2024-12-01",
+      "catchMethod": "人工养殖",
+      "freshness": "刺身级",
+      "storageTemp": 0,
+      "origin": "挪威峡湾"
+    },
+    "processStepData": {
+      "smokingWood": "苹果木",
+      "saltConcentration": 15,
+      "smokingDuration": 8,
+      "processTemp": 25,
+      "operator": "李师傅",
+      "processMethod": "冷烟熏"
+    },
+    "qualityTestData": {
+      "histamineLevel": "合格",
+      "kValue": "18%",
+      "moisture": 72.5,
+      "protein": 22.1,
+      "fat": 12.8,
+      "bacteriaCount": 800,
+      "salmonella": "未检出",
+      "vibrio": "未检出"
+    },
+    "packagingSpecData": {
+      "material": "PET/PE",
+      "gas_mixture": "CO2/N2",
+      "package_size": "250g",
+      "label_info": {
+        "product_name": "烟熏三文鱼柳",
+        "species": "大西洋鲑鱼",
+        "catch_area": "挪威峡湾",
+        "nutrition_facts": {
+          "protein": "22.1g/100g",
+          "fat": "12.8g/100g",
+          "omega3": "2.3g/100g"
+        },
+        "storage_temp": "0-4°C冷藏"
+      }
+    }
+  },
+
+  "validationRules": {
+    "cross_field_validation": [
+      {
+        "rule": "if processMethod == '热烟熏' then processTemp >= 60",
+        "message": "热烟熏温度不能低于60°C"
+      },
+      {
+        "rule": "if vibrio == '检出' then overallResult must be 'fail'",
+        "message": "检出副溶血性弧菌的产品必须判定为不合格"
+      },
+      {
+        "rule": "if freshness == '刺身级' then kValue <= '20%'",
+        "message": "刺身级产品K值必须≤20%"
+      }
+    ]
+  },
+
+  "reporting": {
+    "daily_summary_fields": [
+      "totalBatches",
+      "averageYieldRate",
+      "qualityPassRate",
+      "avgMoisture",
+      "avgProtein",
+      "histaminePassRate"
+    ],
+    "quality_kpis": [
+      "kValue_avg",
+      "moisture_avg",
+      "vibrio_detection_rate",
+      "freshness_grade_distribution"
+    ]
+  }
+}

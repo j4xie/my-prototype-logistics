@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMockAuth } from '@/hooks/useMockAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -25,15 +26,19 @@ interface ProcessingMetrics {
 
 export default function ProcessingReportsPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useMockAuth();
   const [reports, setReports] = useState<ProcessingReport[]>([]);
   const [metrics, setMetrics] = useState<ProcessingMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      router.push('/auth/login');
+    // 等待认证状态确定
+    if (authLoading) return;
+
+    // 只在生产环境下检查认证，开发环境已通过useMockAuth自动处理
+    if (!isAuthenticated && process.env.NODE_ENV === 'production') {
+      router.push('/login');
       return;
     }
 
@@ -86,7 +91,7 @@ export default function ProcessingReportsPage() {
     };
 
     loadData();
-  }, [router]);
+  }, [router, authLoading, isAuthenticated]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -114,13 +119,15 @@ export default function ProcessingReportsPage() {
     ? reports 
     : reports.filter(report => report.status === selectedStatus);
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
         <div className="max-w-[390px] mx-auto w-full min-h-screen flex items-center justify-center">
           <div className="text-center">
             <i className="fas fa-spinner fa-spin text-[#FA8C16] text-3xl mb-4"></i>
-            <p className="text-[#8c8c8c]">加载加工数据...</p>
+            <p className="text-[#8c8c8c]">
+              {authLoading ? '验证用户身份...' : '加载加工数据...'}
+            </p>
           </div>
         </div>
       </div>

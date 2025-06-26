@@ -61,6 +61,65 @@ const authenticateRequest = (request: Request): { success: boolean; user?: any; 
  */
 export const logisticsHandlers = [
   /**
+   * 物流模块基础信息接口
+   * GET /api/logistics
+   */
+  http.get('/api/logistics', async ({ request }) => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 150))
+
+      const authResult = authenticateRequest(request)
+      if (!authResult.success || !authResult.user) {
+        return HttpResponse.json(
+          wrapError('请先登录系统', 401, { type: 'UNAUTHORIZED' }),
+          { status: 401 }
+        )
+      }
+
+      if (!authResult.user.permissions.includes('logistics:read')) {
+        return HttpResponse.json(
+          wrapError('无权限访问物流数据', 403, { type: 'FORBIDDEN' }),
+          { status: 403 }
+        )
+      }
+
+      console.log(`[Mock] 物流基础信息请求 - 用户: ${authResult.user.name}`)
+
+      const basicInfo = {
+        module: 'logistics',
+        name: '物流管理系统',
+        version: '1.0.0',
+        status: 'active',
+        endpoints: [
+          'GET /api/logistics/overview - 概览统计',
+          'GET /api/logistics/warehouses - 仓库列表',
+          'GET /api/logistics/transport-orders - 运输订单',
+          'GET /api/logistics/vehicles - 车辆管理',
+          'GET /api/logistics/drivers - 司机管理'
+        ],
+        lastUpdated: new Date().toISOString()
+      }
+
+      return HttpResponse.json(
+        wrapResponse(basicInfo, '物流模块信息获取成功', 200),
+        {
+          headers: {
+            'X-Mock-Source': 'logistics-base',
+            'X-Mock-Timestamp': new Date().toISOString()
+          }
+        }
+      )
+
+    } catch (error) {
+      console.error('[Mock] 物流基础信息错误:', error)
+      return HttpResponse.json(
+        wrapError('获取物流模块信息失败', 500, { type: 'INTERNAL_ERROR' }),
+        { status: 500 }
+      )
+    }
+  }),
+
+  /**
    * 获取物流管理概览统计
    * GET /api/logistics/overview
    */

@@ -98,7 +98,7 @@ const createSuccessResponse = (data: any, message?: string) => {
 
 export const usersHandlers = [
   // GET /api/users/profile - 获取当前用户资料 (必须在 :id 路由之前定义)
-  http.get('/api/users/profile', async ({ request }) => {
+  http.get('*/api/users/profile', async ({ request }) => {
     try {
       // 认证检查
       const auth = authenticateRequest(request)
@@ -146,7 +146,7 @@ export const usersHandlers = [
   }),
 
   // PUT /api/users/profile - 更新当前用户资料 (必须在 :id 路由之前定义)
-  http.put('/api/users/profile', async ({ request }) => {
+  http.put('*/api/users/profile', async ({ request }) => {
     try {
       // 认证检查
       const auth = authenticateRequest(request)
@@ -194,7 +194,7 @@ export const usersHandlers = [
   }),
 
   // GET /api/users/stats - 获取用户统计信息 (必须在 :id 路由之前定义)
-  http.get('/api/users/stats', async ({ request }) => {
+  http.get('*/api/users/stats', async ({ request }) => {
     try {
       // 认证检查
       const auth = authenticateRequest(request)
@@ -223,7 +223,7 @@ export const usersHandlers = [
   }),
 
   // GET /api/users - 获取用户列表 (支持分页、搜索、过滤)
-  http.get('/api/users', async ({ request }) => {
+  http.get(/.*\/api\/users$/, async ({ request }) => {
     try {
       // 认证检查
       const auth = authenticateRequest(request)
@@ -264,7 +264,7 @@ export const usersHandlers = [
   }),
 
   // GET /api/users/:id - 获取用户详情
-  http.get('/api/users/:id', async ({ request, params }) => {
+  http.get(/.*\/api\/users\/([^\/]+)$/, async ({ request, params }) => {
     try {
       // 认证检查
       const auth = authenticateRequest(request)
@@ -272,11 +272,13 @@ export const usersHandlers = [
         return createErrorResponse(auth.error!, 401)
       }
 
+      // 权限检查 - 只有管理员或用户本人可以查看详情
       const userId = params.id as string
+      const isAdmin = checkPermission(auth.user, 'users:read')
+      const isSelf = auth.user.id === userId
 
-      // 权限检查 - 可以查看自己的信息，或者有用户读取权限
-      if (auth.user.id !== userId && !checkPermission(auth.user, 'users:read')) {
-        return createErrorResponse('没有权限访问该用户信息', 403)
+      if (!isAdmin && !isSelf) {
+        return createErrorResponse('权限不足：只能查看自己的信息', 403)
       }
 
       // 模拟网络延迟
@@ -287,18 +289,34 @@ export const usersHandlers = [
         return createErrorResponse('用户不存在', 404)
       }
 
-      console.log(`👤 User profile accessed: ${user.username} by ${auth.user.username}`)
+      console.log(`👁️ User detail accessed: ${user.username} by ${auth.user.username}`)
 
+      // 根据权限返回不同级别的信息
+      if (isAdmin) {
+        // 管理员可以看到所有信息
       return createSuccessResponse(user)
+      } else {
+        // 用户只能看到基本信息
+        const basicInfo = {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          department: user.department,
+          createdAt: user.createdAt
+        }
+        return createSuccessResponse(basicInfo)
+      }
 
     } catch (error) {
-      console.error('User profile error:', error)
+      console.error('Get user detail error:', error)
       return createErrorResponse('获取用户详情失败', 500)
     }
   }),
 
   // POST /api/users - 创建用户
-  http.post('/api/users', async ({ request }) => {
+  http.post('*/api/users', async ({ request }) => {
     try {
       // 认证检查
       const auth = authenticateRequest(request)
@@ -306,39 +324,29 @@ export const usersHandlers = [
         return createErrorResponse(auth.error!, 401)
       }
 
-      // 权限检查 - 需要用户写入权限
+      // 权限检查
       if (!checkPermission(auth.user, 'users:write')) {
-        return createErrorResponse('没有权限创建用户', 403)
+        return createErrorResponse('权限不足：无法创建用户', 403)
       }
 
-      const body = await request.json() as any
-      const { username, email, name, role, department, permissions, avatar } = body
+      const userData = await request.json() as any
+      console.log(`📝 Creating user: ${userData.username} by ${auth.user.username}`)
 
       // 验证必填字段
-      if (!username || !email || !name || !role || !department) {
-        return createErrorResponse('用户名、邮箱、姓名、角色和部门为必填字段', 400)
+      if (!userData.username || !userData.email || !userData.password) {
+        return createErrorResponse('用户名、邮箱和密码为必填项', 400)
       }
 
-      // 检查用户是否已存在
-      if (userExists(username, email)) {
-        return createErrorResponse('用户名或邮箱已存在', 400)
+      // 检查用户名是否已存在
+      if (userExists(userData.username, userData.email)) {
+        return createErrorResponse('用户名或邮箱已存在', 409)
       }
 
       // 模拟网络延迟
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 200))
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 300))
 
-      const newUser = createUser({
-        username,
-        email,
-        name,
-        role,
-        department,
-        permissions: permissions || [],
-        avatar: avatar || `/avatars/${role}_default.png`,
-        status: 'active'
-      })
-
-      console.log(`➕ User created: ${newUser.username} by ${auth.user.username}`)
+      const newUser = createUser(userData)
+      console.log(`✅ User created: ${newUser.username}`)
 
       return createSuccessResponse(newUser, '用户创建成功')
 
@@ -349,7 +357,7 @@ export const usersHandlers = [
   }),
 
   // PUT /api/users/:id - 更新用户
-  http.put('/api/users/:id', async ({ request, params }) => {
+  http.put('*/api/users/:id', async ({ request, params }) => {
     try {
       // 认证检查
       const auth = authenticateRequest(request)
@@ -358,38 +366,27 @@ export const usersHandlers = [
       }
 
       const userId = params.id as string
+      const updates = await request.json() as UserUpdateData
 
-      // 权限检查 - 可以更新自己的基本信息，或者有用户写入权限
-      const isSelfUpdate = auth.user.id === userId
-      if (!isSelfUpdate && !checkPermission(auth.user, 'users:write')) {
-        return createErrorResponse('没有权限更新该用户', 403)
+      // 权限检查 - 管理员可以更新任何用户，用户只能更新自己
+      const isAdmin = checkPermission(auth.user, 'users:write')
+      const isSelf = auth.user.id === userId
+
+      if (!isAdmin && !isSelf) {
+        return createErrorResponse('权限不足：只能更新自己的信息', 403)
       }
 
-            let body = await request.json() as UserUpdateData
-
-      // 如果是自我更新，限制可修改的字段
-      if (isSelfUpdate) {
-        const allowedFields = ['name', 'email', 'avatar']
-        const updateData: UserUpdateData = {}
-
-        allowedFields.forEach(field => {
-          if (field in body) {
-            updateData[field as keyof UserUpdateData] = body[field as keyof UserUpdateData]
-          }
-        })
-
-        body = updateData
-      }
+      console.log(`📝 Updating user: ${userId} by ${auth.user.username}`)
 
       // 模拟网络延迟
       await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 200))
 
-      const updatedUser = updateUserProfile(userId, body)
+      const updatedUser = updateUserProfile(userId, updates)
       if (!updatedUser) {
         return createErrorResponse('用户不存在', 404)
       }
 
-      console.log(`✏️ User updated: ${updatedUser.username} by ${auth.user.username}`)
+      console.log(`✅ User updated: ${updatedUser.username}`)
 
       return createSuccessResponse(updatedUser, '用户更新成功')
 
@@ -400,7 +397,7 @@ export const usersHandlers = [
   }),
 
   // DELETE /api/users/:id - 删除用户
-  http.delete('/api/users/:id', async ({ request, params }) => {
+  http.delete('*/api/users/:id', async ({ request, params }) => {
     try {
       // 认证检查
       const auth = authenticateRequest(request)
@@ -435,131 +432,6 @@ export const usersHandlers = [
     } catch (error) {
       console.error('Delete user error:', error)
       return createErrorResponse('删除用户失败', 500)
-    }
-  }),
-
-  // GET /api/users/profile - 获取当前用户资料
-  http.get('/api/users/profile', async ({ request }) => {
-    try {
-      // 认证检查
-      const auth = authenticateRequest(request)
-      if (!auth.isValid) {
-        return createErrorResponse(auth.error!, 401)
-      }
-
-      // 模拟网络延迟
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 100))
-
-      console.log(`🔍 Profile Debug: Looking for user ID: ${auth.user.id}`)
-      const userProfile = getUserProfile(auth.user.id)
-      console.log(`🔍 Profile Debug: Found user:`, userProfile ? `${userProfile.name} (${userProfile.username})` : 'null')
-
-      if (!userProfile) {
-        return createErrorResponse('用户资料不存在', 404)
-      }
-
-      // 添加扩展信息
-      const extendedProfile = {
-        ...userProfile,
-        preferences: {
-          language: 'zh-CN',
-          timezone: 'Asia/Shanghai',
-          theme: 'light',
-          notifications: {
-            email: true,
-            sms: false,
-            push: true
-          }
-        },
-        statistics: {
-          loginCount: Math.floor(Math.random() * 200) + 50,
-          lastLoginIP: '192.168.1.' + Math.floor(Math.random() * 255),
-          accountAge: Math.floor((Date.now() - new Date(userProfile.createdAt).getTime()) / (1000 * 60 * 60 * 24))
-        }
-      }
-
-      return createSuccessResponse(extendedProfile)
-
-    } catch (error) {
-      console.error('User profile error:', error)
-      return createErrorResponse('获取用户资料失败', 500)
-    }
-  }),
-
-  // PUT /api/users/profile - 更新当前用户资料
-  http.put('/api/users/profile', async ({ request }) => {
-    try {
-      // 认证检查
-      const auth = authenticateRequest(request)
-      if (!auth.isValid) {
-        return createErrorResponse(auth.error!, 401)
-      }
-
-      const body = await request.json() as UserUpdateData
-
-      // 验证必填字段
-      if (body.name && !body.name.trim()) {
-        return createErrorResponse('姓名不能为空', 400)
-      }
-
-      if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
-        return createErrorResponse('邮箱格式不正确', 400)
-      }
-
-      // 模拟网络延迟
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 200))
-
-      // 只允许更新基本信息
-      const allowedFields: UserUpdateData = {}
-      const permitted = ['name', 'email', 'avatar'] as const
-
-      permitted.forEach(field => {
-        if (field in body) {
-          allowedFields[field] = body[field]
-        }
-      })
-
-      const updatedProfile = updateUserProfile(auth.user.id, allowedFields)
-      if (!updatedProfile) {
-        return createErrorResponse('用户不存在', 404)
-      }
-
-      console.log(`📝 Profile updated: ${updatedProfile.username}`)
-
-      return createSuccessResponse(updatedProfile, '个人资料更新成功')
-
-    } catch (error) {
-      console.error('Update profile error:', error)
-      return createErrorResponse('更新个人资料失败', 500)
-    }
-  }),
-
-  // GET /api/users/stats - 获取用户统计信息 (新增)
-  http.get('/api/users/stats', async ({ request }) => {
-    try {
-      // 认证检查
-      const auth = authenticateRequest(request)
-      if (!auth.isValid) {
-        return createErrorResponse(auth.error!, 401)
-      }
-
-      // 权限检查 - 需要用户读取权限
-      if (!checkPermission(auth.user, 'users:read')) {
-        return createErrorResponse('没有权限访问用户统计', 403)
-      }
-
-      // 模拟网络延迟
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 100))
-
-      const stats = getUserStats()
-
-      console.log(`📊 User stats accessed by ${auth.user.username}`)
-
-      return createSuccessResponse(stats)
-
-    } catch (error) {
-      console.error('User stats error:', error)
-      return createErrorResponse('获取用户统计失败', 500)
     }
   })
 ]

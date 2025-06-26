@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>溯源列表 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .list-container {
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: #f7fafc;
+        }
+
+        .list-header {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            color: white;
+            padding: 20px;
+            position: relative;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .scan-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .scan-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .search-section {
+            padding: 20px;
+            transform: translateY(-15px);
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f7fafc;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #38a169;
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(56, 161, 105, 0.15);
+        }
+
+        .filter-tabs {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            padding: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .filter-tab {
+            flex: 1;
+            padding: 10px 8px;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            color: #718096;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .filter-tab.active {
+            background: #38a169;
+            color: white;
+        }
+
+        .products-grid {
+            display: grid;
+            gap: 15px;
+            padding: 0 20px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .product-image {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #e6fffa, #b2f5ea);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .product-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .product-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .product-details {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .product-code {
+            color: #718096;
+            font-size: 0.8rem;
+            margin-right: 10px;
+        }
+
+        .product-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .status-verified {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-pending {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .product-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .product-date {
+            color: #a0aec0;
+            font-size: 0.8rem;
+        }
+
+        .product-arrow {
+            color: #a0aec0;
+            font-size: 1.2rem;
+        }
+
+        .category-section {
+            margin-bottom: 30px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            padding: 0 20px 10px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 1rem;
+        }
+
+        .category-icon {
+            margin-right: 8px;
+            color: #38a169;
+        }
+
+        .category-count {
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #718096;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .empty-text {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .empty-subtitle {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            background: #38a169;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(56, 161, 105, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .floating-action:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(56, 161, 105, 0.4);
+        }
+
+        .stats-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 0 20px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #38a169;
+            margin-bottom: 3px;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="list-container">
+        <!-- 列表页头部 -->
+        <div class="list-header">
+            <button class="back-btn" onclick="history.back()">
+                ←
+            </button>
+            <div class="header-content">
+                <div class="header-title">溯源产品</div>
+                <button class="scan-btn" onclick="scanProduct()">
+                    📷
+                </button>
+            </div>
+        </div>
+
+        <!-- 搜索区域 -->
+        <div class="search-section">
+            <div class="search-container">
+                <input
+                    type="text"
+                    class="search-input"
+                    placeholder="搜索产品名称或溯源码..."
+                    id="searchInput"
+                    oninput="filterProducts()"
+                >
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="stats-bar">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">156</div>
+                        <div class="stat-label">总产品数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">142</div>
+                        <div class="stat-label">已认证</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">14</div>
+                        <div class="stat-label">待审核</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分类筛选 -->
+            <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterByCategory('all')">全部</button>
+                <button class="filter-tab" onclick="filterByCategory('vegetables')">蔬菜</button>
+                <button class="filter-tab" onclick="filterByCategory('fruits')">水果</button>
+                <button class="filter-tab" onclick="filterByCategory('grains')">谷物</button>
+            </div>
+        </div>
+
+        <!-- 产品列表 -->
+        <div id="productsList">
+            <!-- 蔬菜类别 -->
+            <div class="category-section" data-category="vegetables">
+                <div class="category-header">
+                    <span class="category-icon">🥬</span>
+                    蔬菜类
+                    <span class="category-count">8</span>
+                </div>
+                <div class="products-grid">
+                    <div class="product-card" onclick="viewProduct('TC202401150001')">
+                        <div class="product-image">🥬</div>
+                        <div class="product-info">
+                            <div class="product-name">有机白菜</div>
+                            <div class="product-details">
+                                <span class="product-code">TC202401150001</span>
+                                <span class="product-status status-verified">✓ 已认证</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-date">2024-01-15</span>
+                                <span class="product-arrow">›</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card" onclick="viewProduct('TC202401140002')">
+                        <div class="product-image">🍅</div>
+                        <div class="product-info">
+                            <div class="product-name">有机番茄</div>
+                            <div class="product-details">
+                                <span class="product-code">TC202401140002</span>
+                                <span class="product-status status-verified">✓ 已认证</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-date">2024-01-14</span>
+                                <span class="product-arrow">›</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card" onclick="viewProduct('TC202401130003')">
+                        <div class="product-image">🥕</div>
+                        <div class="product-info">
+                            <div class="product-name">有机胡萝卜</div>
+                            <div class="product-details">
+                                <span class="product-code">TC202401130003</span>
+                                <span class="product-status status-verified">✓ 已认证</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-date">2024-01-13</span>
+                                <span class="product-arrow">›</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card" onclick="viewProduct('TC202401120004')">
+                        <div class="product-image">🥒</div>
+                        <div class="product-info">
+                            <div class="product-name">有机黄瓜</div>
+                            <div class="product-details">
+                                <span class="product-code">TC202401120004</span>
+                                <span class="product-status status-pending">⏳ 待审核</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-date">2024-01-12</span>
+                                <span class="product-arrow">›</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 水果类别 -->
+            <div class="category-section" data-category="fruits">
+                <div class="category-header">
+                    <span class="category-icon">🍎</span>
+                    水果类
+                    <span class="category-count">5</span>
+                </div>
+                <div class="products-grid">
+                    <div class="product-card" onclick="viewProduct('TC202401110005')">
+                        <div class="product-image">🍎</div>
+                        <div class="product-info">
+                            <div class="product-name">有机苹果</div>
+                            <div class="product-details">
+                                <span class="product-code">TC202401110005</span>
+                                <span class="product-status status-verified">✓ 已认证</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-date">2024-01-11</span>
+                                <span class="product-arrow">›</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card" onclick="viewProduct('TC202401100006')">
+                        <div class="product-image">🍊</div>
+                        <div class="product-info">
+                            <div class="product-name">有机橙子</div>
+                            <div class="product-details">
+                                <span class="product-code">TC202401100006</span>
+                                <span class="product-status status-verified">✓ 已认证</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-date">2024-01-10</span>
+                                <span class="product-arrow">›</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card" onclick="viewProduct('TC202401090007')">
+                        <div class="product-image">🍌</div>
+                        <div class="product-info">
+                            <div class="product-name">有机香蕉</div>
+                            <div class="product-details">
+                                <span class="product-code">TC202401090007</span>
+                                <span class="product-status status-pending">⏳ 待审核</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-date">2024-01-09</span>
+                                <span class="product-arrow">›</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 谷物类别 -->
+            <div class="category-section" data-category="grains">
+                <div class="category-header">
+                    <span class="category-icon">🌾</span>
+                    谷物类
+                    <span class="category-count">3</span>
+                </div>
+                <div class="products-grid">
+                    <div class="product-card" onclick="viewProduct('TC202401080008')">
+                        <div class="product-image">🌾</div>
+                        <div class="product-info">
+                            <div class="product-name">有机小麦</div>
+                            <div class="product-details">
+                                <span class="product-code">TC202401080008</span>
+                                <span class="product-status status-verified">✓ 已认证</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-date">2024-01-08</span>
+                                <span class="product-arrow">›</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card" onclick="viewProduct('TC202401070009')">
+                        <div class="product-image">🌾</div>
+                        <div class="product-info">
+                            <div class="product-name">有机玉米</div>
+                            <div class="product-details">
+                                <span class="product-code">TC202401070009</span>
+                                <span class="product-status status-verified">✓ 已认证</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-date">2024-01-07</span>
+                                <span class="product-arrow">›</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">🔍</div>
+            <div class="empty-text">没有找到相关产品</div>
+            <div class="empty-subtitle">尝试调整搜索关键词或筛选条件</div>
+        </div>
+
+        <!-- 加载状态 -->
+        <div class="loading" id="loadingState" style="display: none;">
+            <div>正在加载更多产品...</div>
+        </div>
+
+        <!-- 浮动操作按钮 -->
+        <button class="floating-action" onclick="scanProduct()">
+            📷
+        </button>
+    </div>
+
+    <script>
+        let currentFilter = 'all';
+        let allProducts = [];
+
+        // 初始化产品数据
+        function initializeProducts() {
+            allProducts = document.querySelectorAll('.product-card');
+        }
+
+        // 按分类筛选
+        function filterByCategory(category) {
+            currentFilter = category;
+
+            // 更新标签状态
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 显示/隐藏分类
+            const categories = document.querySelectorAll('.category-section');
+            categories.forEach(section => {
+                if (category === 'all' || section.dataset.category === category) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+
+            // 检查搜索条件
+            filterProducts();
+        }
+
+        // 搜索过滤
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categories = document.querySelectorAll('.category-section');
+            let hasVisibleProducts = false;
+
+            categories.forEach(section => {
+                if (currentFilter !== 'all' && section.dataset.category !== currentFilter) {
+                    return;
+                }
+
+                const products = section.querySelectorAll('.product-card');
+                let visibleInCategory = false;
+
+                products.forEach(product => {
+                    const name = product.querySelector('.product-name').textContent.toLowerCase();
+                    const code = product.querySelector('.product-code').textContent.toLowerCase();
+
+                    if (name.includes(searchTerm) || code.includes(searchTerm)) {
+                        product.style.display = 'flex';
+                        visibleInCategory = true;
+                        hasVisibleProducts = true;
+                    } else {
+                        product.style.display = 'none';
+                    }
+                });
+
+                // 隐藏没有可见产品的分类
+                if (currentFilter === 'all') {
+                    section.style.display = visibleInCategory ? 'block' : 'none';
+                }
+            });
+
+            // 显示/隐藏空状态
+            document.getElementById('emptyState').style.display = hasVisibleProducts ? 'none' : 'block';
+        }
+
+        // 查看产品详情
+        function viewProduct(code) {
+            console.log('查看产品:', code);
+            window.location.href = `detail.html?code=${code}`;
+        }
+
+        // 扫描产品
+        function scanProduct() {
+            alert('正在启动相机扫描...\n（演示版本）');
+            setTimeout(() => {
+                const mockCode = 'TC202401150001';
+                alert(`扫描成功，识别到产品: ${mockCode}`);
+                viewProduct(mockCode);
+            }, 2000);
+        }
+
+        // 模拟加载更多数据
+        function loadMoreProducts() {
+            document.getElementById('loadingState').style.display = 'block';
+
+            setTimeout(() => {
+                document.getElementById('loadingState').style.display = 'none';
+                alert('已加载所有产品');
+            }, 2000);
+        }
+
+        // 滚动加载
+        window.addEventListener('scroll', function() {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000) {
+                // 接近底部时触发加载
+                // loadMoreProducts();
+            }
+        });
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeProducts();
+
+            // 模拟数据加载
+            setTimeout(() => {
+                console.log('产品列表加载完成');
+            }, 500);
+        });
+    </script>
+</body>
+</html>

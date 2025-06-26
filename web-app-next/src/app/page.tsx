@@ -110,7 +110,7 @@ export default function HomePage() {
                   >
                     {loading ? '加载中...' : `异步操作 (${count})`}
                   </Button>
-                  <Button 
+                  <Button
                     variant="secondary"
                     onClick={() => window.open('/ai-demo', '_blank')}
                   >

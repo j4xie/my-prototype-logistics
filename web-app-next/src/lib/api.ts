@@ -99,9 +99,9 @@ class ApiClient {
   }
 
   /**
-   * 检查Mock服务健康状态
+   * 检查Mock服务健康状态 - 简化版，避免循环依赖
    */
-  private async checkMockHealthStatus(): Promise<void> {
+  private checkMockHealthStatus(): void {
     const now = Date.now();
 
     // 避免频繁检查
@@ -109,22 +109,13 @@ class ApiClient {
       return;
     }
 
-    try {
-      this.mockHealthStatus = await checkMockHealth();
-      this.lastHealthCheck = now;
+    // 使用简化的健康检查，不再async
+    this.mockHealthStatus = checkMockHealth();
+    this.lastHealthCheck = now;
 
-      // 开发环境输出Mock状态
-      if (process.env.NODE_ENV === 'development') {
-        console.info(`[API Client] Mock Status: ${this.mockHealthStatus.available ? '✅' : '❌'} (${this.mockHealthStatus.handlers} handlers)`);
-      }
-    } catch (error) {
-      console.warn('[API Client] Mock health check failed:', error);
-      this.mockHealthStatus = {
-        available: false,
-        lastCheck: now,
-        handlers: 0,
-        environment: 'error'
-      };
+    // 开发环境输出Mock状态
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`[API Client] Mock Status: ${this.mockHealthStatus.available ? '✅' : '❌'} (${this.mockHealthStatus.handlers} handlers)`);
     }
   }
 
