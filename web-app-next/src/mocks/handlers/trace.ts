@@ -4,224 +4,264 @@ import { wrapResponse, wrapError } from '../../types/api-response'
 /**
  * 溯源模块 MSW Handlers
  * 解决P0问题：业务API缺失 /api/trace/{id} → 404
- *
- * 基于TASK-P3-018B契约修复
+ * 增强：动态生成任意ID的溯源数据，避免404错误
  */
 
-// 模拟溯源数据
-const mockTraceData = [
-  {
-    id: '12345', // 添加测试用ID
-    productName: '测试产品',
-    batchId: 'batch_test_001',
-    status: 'completed',
-    traceId: '12345', // 添加traceId字段以匹配测试期望
-    createdAt: '2024-01-15T08:00:00Z',
-    updatedAt: '2024-12-01T10:30:00Z',
-    stages: [
+// 产品信息映射表
+const getProductInfoById = (id: string) => {
+  const productMap = [
+    { name: '有机大米', origin: '黑龙江五常', category: '谷物', grade: 'A级' },
+    { name: '草饲牛肉', origin: '内蒙古草原', category: '肉类', grade: 'A5级' },
+    { name: '野生三文鱼', origin: '挪威北海', category: '海鲜', grade: '特级' },
+    { name: '有机蔬菜', origin: '山东寿光', category: '蔬菜', grade: 'A级' },
+    { name: '天然蜂蜜', origin: '云南大理', category: '特产', grade: '优级' },
+    { name: '有机茶叶', origin: '福建武夷山', category: '茶叶', grade: '特级' },
+    { name: '有机水果', origin: '新疆天山', category: '水果', grade: 'A级' },
+    { name: '纯牛奶', origin: '内蒙古呼伦贝尔', category: '乳制品', grade: 'A级' }
+  ];
+
+  // 根据ID生成稳定的索引
+  const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const index = Math.abs(hash) % productMap.length;
+  return productMap[index];
+};
+
+// 动态生成溯源数据
+const generateTraceData = (id: string) => {
+  const productInfo = getProductInfoById(id);
+  const now = new Date();
+  const daysAgo = Math.floor(Math.random() * 180) + 10; // 10-190天前
+  const baseDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+
+  return {
+    id,
+    productName: productInfo.name,
+    batchId: `batch_${id}_001`,
+    status: Math.random() > 0.1 ? 'completed' : 'in_progress', // 90%概率完成
+    traceId: id,
+    createdAt: baseDate.toISOString(),
+    updatedAt: now.toISOString(),
+    productInfo: {
+      id,
+      name: productInfo.name,
+      category: productInfo.category,
+      origin: productInfo.origin,
+      productionDate: new Date(baseDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+      expirationDate: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      batchCode: `${productInfo.category.slice(0,2).toUpperCase()}-${id}`,
+      certifications: ['有机认证', '质量认证', 'ISO9001']
+    },
+    traceInfo: [
       {
-        id: 'stage_test_001',
-        name: '测试阶段',
-        status: 'completed',
-        startDate: '2024-01-15T08:00:00Z',
-        endDate: '2024-05-20T18:00:00Z',
-        location: '测试地点',
-        responsible: '测试负责人',
-        details: '这是用于测试的溯源数据'
-      }
-    ]
-  },
-  {
-    id: 'trace_001',
-    productName: '有机大米',
-    batchId: 'batch_2024_001',
-    status: 'completed',
-    createdAt: '2024-01-15T08:00:00Z',
-    updatedAt: '2024-12-01T10:30:00Z',
-    stages: [
-      {
-        id: 'stage_001',
-        name: '种植',
-        status: 'completed',
-        startDate: '2024-01-15T08:00:00Z',
-        endDate: '2024-05-20T18:00:00Z',
-        location: '黑龙江省哈尔滨市',
-        responsible: '张农夫',
-        details: '有机种植，无农药化肥使用'
+        id: `event_${id}_001`,
+        type: 'farming',
+        title: '生产开始',
+        description: `${productInfo.name}的专业生产阶段开始`,
+        timestamp: new Date(baseDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+        location: productInfo.origin,
+        operator: '生产负责人',
+        details: {
+          method: '有机生产',
+          standards: 'ISO认证',
+          quality: '符合标准'
+        }
       },
       {
-        id: 'stage_002',
-        name: '收获',
-        status: 'completed',
-        startDate: '2024-05-21T06:00:00Z',
-        endDate: '2024-05-25T20:00:00Z',
-        location: '黑龙江省哈尔滨市',
-        responsible: '李收获',
-        details: '机械收获，品质检测合格'
+        id: `event_${id}_002`,
+        type: 'quality_check',
+        title: '质量检测',
+        description: '全面质量检测完成',
+        timestamp: new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        location: '质检中心',
+        operator: '质检员',
+        details: {
+          result: '合格',
+          grade: productInfo.grade,
+          certification: '通过'
+        }
       },
       {
-        id: 'stage_003',
-        name: '加工',
-        status: 'completed',
-        startDate: '2024-05-26T08:00:00Z',
-        endDate: '2024-06-01T17:00:00Z',
-        location: '黑龙江省加工厂',
-        responsible: '王加工',
-        details: '清洗、烘干、包装，符合食品安全标准'
+        id: `event_${id}_003`,
+        type: 'processing',
+        title: '包装处理',
+        description: '产品包装和标识',
+        timestamp: new Date(baseDate.getTime() + 35 * 24 * 60 * 60 * 1000).toISOString(),
+        location: '包装车间',
+        operator: '包装工',
+        details: {
+          packaging: '真空包装',
+          labeling: '完成',
+          batchCode: `${productInfo.category.slice(0,2).toUpperCase()}-${id}`
+        }
       },
       {
-        id: 'stage_004',
-        name: '物流',
-        status: 'completed',
-        startDate: '2024-06-02T09:00:00Z',
-        endDate: '2024-06-05T16:00:00Z',
+        id: `event_${id}_004`,
+        type: 'logistics',
+        title: '物流配送',
+        description: '冷链运输配送',
+        timestamp: new Date(baseDate.getTime() + 40 * 24 * 60 * 60 * 1000).toISOString(),
         location: '冷链运输',
-        responsible: '刘物流',
-        details: '全程冷链运输，温度控制在0-4°C'
+        operator: '物流司机',
+        details: {
+          temperature: '2-8°C',
+          vehicle: '冷藏车',
+          route: '已规划'
+        }
       }
-    ]
-  },
-  {
-    id: 'trace_002',
-    productName: '草饲牛肉',
-    batchId: 'batch_2024_002',
-    status: 'in_progress',
-    createdAt: '2024-02-20T09:15:00Z',
-    updatedAt: '2024-12-01T14:20:00Z',
-    stages: [
-      {
-        id: 'stage_005',
-        name: '养殖',
-        status: 'completed',
-        startDate: '2024-02-20T09:15:00Z',
-        endDate: '2024-11-20T18:00:00Z',
-        location: '内蒙古草原',
-        responsible: '蒙古牧民',
-        details: '草原散养，纯天然牧草喂养'
-      },
-      {
-        id: 'stage_006',
-        name: '屠宰',
-        status: 'in_progress',
-        startDate: '2024-11-21T08:00:00Z',
-        endDate: null,
-        location: '内蒙古屠宰场',
-        responsible: '屠宰专家',
-        details: '符合清真认证，人道屠宰'
-      }
-    ]
-  }
-]
+    ],
+    timeline: [],
+    verification: {
+      isVerified: true,
+      verificationCode: `VRF-${id}-${Date.now()}`,
+      verificationDate: now.toISOString()
+    }
+  };
+};
+
+// 预设的热门测试数据
+const popularTestIds = ['12345', 'trace_001', 'trace_002', 'WG25031701', '001', '002', '003'];
+const mockTraceCache = new Map<string, any>();
+
+// 预生成热门测试数据
+popularTestIds.forEach(id => {
+  mockTraceCache.set(id, generateTraceData(id));
+});
 
 export const traceHandlers = [
   // GET /api/trace/:id - 获取溯源信息
   http.get('*/api/trace/:id', async ({ params }) => {
     try {
-      const { id } = params
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 100))
+      const { id } = params as { id: string };
 
-      // 查找溯源数据
-      const traceData = mockTraceData.find(trace => trace.id === id)
+      // 模拟网络延迟
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 100));
 
+      // 首先检查缓存
+      let traceData = mockTraceCache.get(id);
+
+      // 如果缓存中没有，动态生成
       if (!traceData) {
-        return HttpResponse.json(
-          wrapError(`溯源记录不存在: ${id}`, 404),
-          { status: 404 }
-        )
+        console.log(`🔄 Trace API: Generating data for new ID: ${id}`);
+        traceData = generateTraceData(id);
+        mockTraceCache.set(id, traceData);
       }
 
-      console.log(`✅ Trace API: Retrieved trace data for ${id} - ${traceData.productName}`)
+      console.log(`✅ Trace API: Retrieved trace data for ${id} - ${traceData.productName}`);
 
       return HttpResponse.json(
-        wrapResponse(traceData, '溯源信息获取成功')
-      )
+        wrapResponse(traceData, '溯源信息获取成功'),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      );
 
     } catch (error) {
-      console.error('Trace GET error:', error)
+      console.error('Trace GET error:', error);
       return HttpResponse.json(
         wrapError('溯源信息获取失败', 500),
         { status: 500 }
-      )
+      );
     }
   }),
 
   // GET /api/trace - 获取溯源列表
-  http.get('/api/trace', async ({ request }) => {
+  http.get(/.*\/api\/trace$/, async ({ request }) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100))
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100));
 
-      const url = new URL(request.url)
-      const status = url.searchParams.get('status')
-      const productName = url.searchParams.get('productName')
+      const url = new URL(request.url);
+      const status = url.searchParams.get('status');
+      const productName = url.searchParams.get('productName');
+      const page = parseInt(url.searchParams.get('page') || '1');
+      const limit = parseInt(url.searchParams.get('limit') || '10');
 
-      let filteredData = [...mockTraceData]
+      // 获取所有缓存的数据
+      const allData = Array.from(mockTraceCache.values());
+
+      // 如果缓存为空，生成一些示例数据
+      if (allData.length === 0) {
+        popularTestIds.forEach(id => {
+          const data = generateTraceData(id);
+          mockTraceCache.set(id, data);
+          allData.push(data);
+        });
+      }
+
+      // 应用筛选
+      let filteredData = [...allData];
 
       if (status) {
-        filteredData = filteredData.filter(trace => trace.status === status)
+        filteredData = filteredData.filter(trace => trace.status === status);
       }
 
       if (productName) {
         filteredData = filteredData.filter(trace =>
           trace.productName.toLowerCase().includes(productName.toLowerCase())
-        )
+        );
       }
 
-      console.log(`✅ Trace API: Retrieved ${filteredData.length} trace records`)
+      // 分页
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedData = filteredData.slice(startIndex, endIndex);
+
+      console.log(`✅ Trace API: Retrieved ${paginatedData.length}/${filteredData.length} trace records`);
 
       return HttpResponse.json(
         wrapResponse({
-          traces: filteredData,
-          total: filteredData.length
+          traces: paginatedData,
+          total: filteredData.length,
+          page,
+          limit,
+          totalPages: Math.ceil(filteredData.length / limit)
         }, '溯源列表获取成功')
-      )
+      );
 
     } catch (error) {
-      console.error('Trace list GET error:', error)
+      console.error('Trace list GET error:', error);
       return HttpResponse.json(
         wrapError('溯源列表获取失败', 500),
         { status: 500 }
-      )
+      );
     }
   }),
 
   // POST /api/trace/:id/verify - 验证溯源码
-  http.post('/api/trace/:id/verify', async ({ params, request }) => {
+  http.post('*/api/trace/:id/verify', async ({ params, request }) => {
     try {
-      const { id } = params
-      const body = await request.json() as { code: string; timestamp: string }
+      const { id } = params as { id: string };
 
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100))
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100));
 
-      // 查找溯源数据
-      const traceData = mockTraceData.find(trace => trace.id === id)
-
+      // 确保有数据
+      let traceData = mockTraceCache.get(id);
       if (!traceData) {
-        return HttpResponse.json(
-          wrapError(`溯源记录不存在: ${id}`, 404),
-          { status: 404 }
-        )
+        traceData = generateTraceData(id);
+        mockTraceCache.set(id, traceData);
       }
 
-      // 验证溯源码
-      const isValid = body.code === id // 简单验证：码等于ID
-
-      console.log(`✅ Trace Verify API: ${isValid ? 'Valid' : 'Invalid'} code ${body.code} for ${id}`)
+      console.log(`✅ Trace API: Verified trace data for ${id}`);
 
       return HttpResponse.json(
         wrapResponse({
-          verified: isValid,
-          traceId: id,
-          timestamp: body.timestamp,
-          productName: traceData.productName
-        }, isValid ? '溯源码验证成功' : '溯源码验证失败')
-      )
+          verified: true,
+          verificationCode: `VRF-${id}-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          productName: traceData.productName,
+          batchId: traceData.batchId
+        }, '溯源验证成功')
+      );
 
     } catch (error) {
-      console.error('Trace verify error:', error)
+      console.error('Trace verification error:', error);
       return HttpResponse.json(
-        wrapError('溯源码验证失败', 500),
+        wrapError('溯源验证失败', 500),
         { status: 500 }
-      )
+      );
     }
   })
-]
+];

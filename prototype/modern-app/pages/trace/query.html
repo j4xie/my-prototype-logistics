@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>溯源查询 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .query-container {
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: #f7fafc;
+        }
+
+        .query-header {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            color: white;
+            padding: 40px 20px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .query-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .query-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .query-content {
+            padding: 20px;
+            transform: translateY(-15px);
+        }
+
+        .query-methods {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .method-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .scan-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scan-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.4);
+        }
+
+        .scan-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+            color: #a0aec0;
+            font-size: 0.9rem;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+        }
+
+        .manual-form {
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            color: #4a5568;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f7fafc;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #38a169;
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(56, 161, 105, 0.15);
+        }
+
+        .query-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #38a169, #2f855a);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .query-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(56, 161, 105, 0.4);
+        }
+
+        .recent-queries {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .recent-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .recent-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .recent-item:hover {
+            background: #f7fafc;
+            margin: 0 -20px;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .recent-item:last-child {
+            border-bottom: none;
+        }
+
+        .recent-icon {
+            width: 40px;
+            height: 40px;
+            background: #e6fffa;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: #38a169;
+        }
+
+        .recent-info {
+            flex: 1;
+        }
+
+        .recent-code {
+            font-weight: 500;
+            color: #2d3748;
+            margin-bottom: 2px;
+        }
+
+        .recent-time {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .recent-arrow {
+            color: #a0aec0;
+        }
+
+        .tips-card {
+            background: linear-gradient(45deg, #e6fffa, #b2f5ea);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .tips-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #234e52;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .tips-icon {
+            margin-right: 8px;
+        }
+
+        .tips-list {
+            color: #285e61;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .tips-list li {
+            margin-bottom: 5px;
+        }
+
+        .help-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: #38a169;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(56, 161, 105, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .help-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(56, 161, 105, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="query-container">
+        <!-- 查询页面头部 -->
+        <div class="query-header">
+            <button class="back-btn" onclick="history.back()">
+                ←
+            </button>
+            <div class="query-title">溯源查询</div>
+            <div class="query-subtitle">扫码或输入代码查询产品溯源信息</div>
+        </div>
+
+        <div class="query-content">
+            <!-- 使用提示 -->
+            <div class="tips-card">
+                <div class="tips-title">
+                    <span class="tips-icon">💡</span>
+                    查询方式
+                </div>
+                <ul class="tips-list">
+                    <li>扫描产品包装上的二维码（推荐）</li>
+                    <li>手动输入溯源代码查询</li>
+                    <li>可查看最近查询的历史记录</li>
+                </ul>
+            </div>
+
+            <!-- 查询方法 -->
+            <div class="query-methods">
+                <div class="method-title">选择查询方式</div>
+
+                <!-- 扫码查询 -->
+                <button class="scan-btn" onclick="scanQRCode()">
+                    <span class="scan-icon">📷</span>
+                    扫码查询
+                </button>
+
+                <div class="divider">
+                    <span>或者</span>
+                </div>
+
+                <!-- 手动输入 -->
+                <form class="manual-form" id="queryForm">
+                    <div class="form-group">
+                        <label class="form-label" for="traceCode">溯源代码</label>
+                        <input
+                            type="text"
+                            id="traceCode"
+                            class="form-input"
+                            placeholder="请输入溯源代码 (如: TC202401150001)"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="query-btn">查询溯源信息</button>
+                </form>
+            </div>
+
+            <!-- 最近查询 -->
+            <div class="recent-queries">
+                <div class="recent-title">最近查询</div>
+
+                <div class="recent-item" onclick="queryByCode('TC202401150001')">
+                    <div class="recent-icon">🥬</div>
+                    <div class="recent-info">
+                        <div class="recent-code">TC202401150001</div>
+                        <div class="recent-time">有机白菜 • 2小时前</div>
+                    </div>
+                    <div class="recent-arrow">›</div>
+                </div>
+
+                <div class="recent-item" onclick="queryByCode('TC202401140002')">
+                    <div class="recent-icon">🍅</div>
+                    <div class="recent-info">
+                        <div class="recent-code">TC202401140002</div>
+                        <div class="recent-time">有机番茄 • 1天前</div>
+                    </div>
+                    <div class="recent-arrow">›</div>
+                </div>
+
+                <div class="recent-item" onclick="queryByCode('TC202401130003')">
+                    <div class="recent-icon">🥕</div>
+                    <div class="recent-info">
+                        <div class="recent-code">TC202401130003</div>
+                        <div class="recent-time">有机胡萝卜 • 3天前</div>
+                    </div>
+                    <div class="recent-arrow">›</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 帮助按钮 -->
+        <button class="help-btn" onclick="showHelp()">
+            ❓
+        </button>
+    </div>
+
+    <script>
+        // 表单提交处理
+        document.getElementById('queryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const code = document.getElementById('traceCode').value.trim();
+
+            if (!code) {
+                alert('请输入溯源代码');
+                return;
+            }
+
+            queryByCode(code);
+        });
+
+        // 扫码查询
+        function scanQRCode() {
+            // 模拟扫码成功
+            setTimeout(() => {
+                const mockCode = 'TC202401150001';
+                alert(`扫码成功，识别到溯源代码: ${mockCode}`);
+                queryByCode(mockCode);
+            }, 1000);
+        }
+
+        // 根据代码查询
+        function queryByCode(code) {
+            // 保存到最近查询（模拟）
+            console.log(`查询溯源代码: ${code}`);
+
+            // 模拟查询过程
+            alert(`正在查询 ${code} 的溯源信息...`);
+
+            setTimeout(() => {
+                // 跳转到详情页面
+                window.location.href = `detail.html?code=${code}`;
+            }, 1500);
+        }
+
+        // 显示帮助信息
+        function showHelp() {
+            const helpText = `
+📱 扫码查询：
+• 点击"扫码查询"按钮
+• 将摄像头对准产品二维码
+• 系统自动识别并查询
+
+⌨️ 手动查询：
+• 输入产品包装上的溯源代码
+• 代码通常以 TC 开头，如 TC202401150001
+• 点击查询按钮获取信息
+
+📋 最近查询：
+• 显示您最近查询过的产品
+• 点击可快速重新查询
+• 支持查看查询历史
+
+如需更多帮助，请联系客服。
+            `;
+            alert(helpText);
+        }
+
+        // 页面加载时的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 模拟检查相机权限
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                console.log('相机权限检查通过');
+            } else {
+                console.log('当前设备不支持相机功能');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -7,7 +7,6 @@
  * - 浏览器环境 -> 使用setupWorker (开发环境)
  */
 
-import { initializeMockServer } from './node-server'
 import { initializeMockWorker } from './browser'
 import { mockMiddleware, getCurrentMockConfig, type MockEnvironment } from './config/environments'
 import { initializeVersionManagement, getVersionManagementStatus } from './setup-version-management'
@@ -45,6 +44,9 @@ export const initializeMockService = async (
     // Step 2: 初始化MSW服务
     if (typeof window === 'undefined') {
       // Node环境（服务器端、测试环境）
+      // 动态导入避免在客户端打包时引入node模块
+      const { initializeMockServer } = await import('./node-server')
+
       initializeMockServer({
         quiet: environment === 'test',
         onUnhandledRequest: config.onUnhandledRequest
@@ -101,7 +103,14 @@ export const autoInitializeForTesting = async () => {
 // 导出配置供外部使用
 export { getCurrentMockConfig, mockMiddleware }
 
-// 导出子模块
-export { mockServer, mockServerControls } from './node-server'
+// 导出子模块 - 使用动态导入避免打包问题
+export const getMockServerControls = async () => {
+  if (typeof window === 'undefined') {
+    const { mockServer, mockServerControls } = await import('./node-server')
+    return { mockServer, mockServerControls }
+  }
+  return null
+}
+
 export { mockWorker, mockWorkerControls } from './browser'
 export { handlers, handlerStats } from './handlers'

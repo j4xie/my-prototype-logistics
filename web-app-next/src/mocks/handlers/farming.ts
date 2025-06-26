@@ -95,6 +95,41 @@ const createSuccessResponse = (data: any, message?: string) => {
 }
 
 export const farmingHandlers = [
+  // GET /api/farming - 农业模块基础信息
+  http.get('/api/farming', async ({ request }) => {
+    try {
+      const auth = authenticateRequest(request)
+      if (!auth.isValid) {
+        return createErrorResponse(auth.error!, 401)
+      }
+
+      // 模拟网络延迟
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100))
+
+      const moduleInfo = {
+        module: 'farming',
+        name: '农业管理系统',
+        version: '1.0.0',
+        status: 'active',
+        endpoints: [
+          'GET /api/farming/overview - 农业概览统计',
+          'GET /api/farming/fields - 田地列表',
+          'GET /api/farming/crops - 作物列表',
+          'GET /api/farming/plans - 种植计划',
+          'GET /api/farming/activities - 农事活动',
+          'GET /api/farming/harvests - 收获记录'
+        ],
+        lastUpdated: new Date().toISOString()
+      }
+
+      return createSuccessResponse(moduleInfo, '农业模块信息获取成功')
+
+    } catch (error) {
+      console.error('Farming module info error:', error)
+      return createErrorResponse('获取农业模块信息失败', 500)
+    }
+  }),
+
   // GET /api/farming/overview - 农业概览统计
   http.get('/api/farming/overview', async ({ request }) => {
     try {

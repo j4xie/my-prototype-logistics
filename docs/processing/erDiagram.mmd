@@ -1,0 +1,59 @@
+erDiagram
+    subgraph "配置层 (模板定义)"
+        industry_templates {
+            INT id PK "模板ID"
+            VARCHAR template_name "模板名称"
+            JSON schema_definition "表单蓝图 (JSON)"
+            INT version "版本号"
+        }
+    end
+
+    subgraph "业务数据层 (实际数据记录)"
+        raw_material_inbound {
+            VARCHAR id PK "入库ID"
+            INT template_id FK "模板ID"
+            JSON extended_data "扩展数据"
+        }
+
+        production_batches {
+            VARCHAR id PK "批次ID"
+            INT template_id FK "模板ID"
+            VARCHAR raw_material_id FK "原料ID"
+            JSON process_step_data "加工步骤数据"
+        }
+
+        quality_inspections {
+            VARCHAR id PK "检测ID"
+            INT template_id FK "模板ID"
+            VARCHAR batch_id FK "批次ID"
+            JSON test_result_data "检测结果"
+        }
+
+        packaging_records {
+            VARCHAR id PK "包装ID"
+            INT template_id FK "模板ID"
+            VARCHAR batch_id FK "批次ID"
+        }
+
+        finished_product_outbound {
+            VARCHAR id PK "出库ID"
+            VARCHAR package_id FK "包装ID"
+        }
+
+        production_summary {
+            VARCHAR id PK "统计ID"
+            INT template_id FK "模板ID"
+        }
+    end
+
+    industry_templates ||--|{ raw_material_inbound : "定义扩展字段"
+    industry_templates ||--|{ production_batches : "定义加工步骤"
+    industry_templates ||--|{ quality_inspections : "定义检测项"
+    industry_templates ||--|{ packaging_records : "提供上下文"
+    industry_templates ||--|{ production_summary : "用于分类统计"
+
+    raw_material_inbound ||..o{ production_batches : "输入"
+    production_batches ||..o{ quality_inspections : "检测"
+    production_batches ||..o{ packaging_records : "包装"
+    packaging_records ||..o{ finished_product_outbound : "出库"
+    production_batches ||..o{ production_summary : "汇总"

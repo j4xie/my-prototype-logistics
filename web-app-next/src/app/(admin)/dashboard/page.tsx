@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMockAuth } from '@/hooks/useMockAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -33,21 +34,26 @@ interface SystemModule {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useMockAuth();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [activities, setActivities] = useState<RecentActivity[]>([]);
   const [modules, setModules] = useState<SystemModule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const userInfo = localStorage.getItem('user_info');
-    
-    if (!token || !userInfo) {
-      router.push('/auth/login');
+    // 等待认证状态确定
+    if (authLoading) return;
+
+    // 只在生产环境下检查认证
+    if (!isAuthenticated && process.env.NODE_ENV === 'production') {
+      router.push('/login');
       return;
     }
 
-    // 检查管理员权限
+    // 在开发环境下，可以跳过管理员权限检查，或者使用Mock用户的角色
+    if (process.env.NODE_ENV !== 'development') {
+      const userInfo = localStorage.getItem('user_info');
+      if (userInfo) {
     try {
       const user = JSON.parse(userInfo);
       if (user.role !== 'admin') {
@@ -55,13 +61,15 @@ export default function AdminDashboardPage() {
         return;
       }
     } catch {
-      router.push('/auth/login');
+          router.push('/login');
       return;
+        }
+      }
     }
 
     const loadData = async () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const mockMetrics: DashboardMetrics = {
         totalUsers: 1248,
         activeUsers: 892,
@@ -144,7 +152,7 @@ export default function AdminDashboardPage() {
     };
 
     loadData();
-  }, [router]);
+  }, [router, authLoading, isAuthenticated]);
 
   const getHealthColor = (health: string) => {
     switch (health) {
@@ -187,13 +195,15 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
         <div className="max-w-[390px] mx-auto w-full min-h-screen flex items-center justify-center">
           <div className="text-center">
             <i className="fas fa-spinner fa-spin text-[#722ED1] text-3xl mb-4"></i>
-            <p className="text-[#8c8c8c]">加载管理数据...</p>
+            <p className="text-[#8c8c8c]">
+              {authLoading ? '验证用户身份...' : '加载管理数据...'}
+            </p>
           </div>
         </div>
       </div>
@@ -224,7 +234,7 @@ export default function AdminDashboardPage() {
       {/* 主内容区域 */}
       <main className="flex-1 pt-20 pb-4">
         <div className="max-w-[390px] mx-auto px-4">
-          
+
           {/* 系统概览 */}
           {metrics && (
             <Card className="bg-white rounded-lg shadow-sm p-4 mb-4">
@@ -258,7 +268,7 @@ export default function AdminDashboardPage() {
                   <div className="text-sm text-[#8c8c8c]">订单总数</div>
                 </div>
               </div>
-              
+
               {/* 系统健康状态 */}
               <div className="mt-4 pt-4 border-t border-[#f0f0f0]">
                 <div className="flex items-center justify-between">
@@ -266,9 +276,9 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center space-x-2">
                     <div
                       className="px-2 py-1 rounded text-xs font-medium"
-                      style={{ 
-                        backgroundColor: getHealthColor(metrics.systemHealth).bg, 
-                        color: getHealthColor(metrics.systemHealth).text 
+                      style={{
+                        backgroundColor: getHealthColor(metrics.systemHealth).bg,
+                        color: getHealthColor(metrics.systemHealth).text
                       }}
                     >
                       {getHealthColor(metrics.systemHealth).label}
@@ -307,7 +317,7 @@ export default function AdminDashboardPage() {
             <div className="space-y-3">
               {modules.map((module) => {
                 const statusInfo = getStatusColor(module.status);
-                
+
                 return (
                   <div
                     key={module.id}
@@ -315,7 +325,7 @@ export default function AdminDashboardPage() {
                     onClick={() => router.push(`/admin/modules/${module.id}`)}
                   >
                     <div className="flex items-center space-x-3">
-                      <div 
+                      <div
                         className="w-10 h-10 rounded-full flex items-center justify-center"
                         style={{ backgroundColor: `${module.color}15` }}
                       >
@@ -347,7 +357,7 @@ export default function AdminDashboardPage() {
             <div className="space-y-3">
               {activities.map((activity) => (
                 <div key={activity.id} className="flex items-start space-x-3">
-                  <div 
+                  <div
                     className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
                     style={{ backgroundColor: getSeverityColor(activity.severity) }}
                   ></div>
@@ -358,7 +368,7 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
             </div>
-            
+
             <div className="mt-4 pt-3 border-t border-[#f0f0f0]">
               <Button
                 onClick={() => router.push('/admin/logs')}
@@ -373,4 +383,4 @@ export default function AdminDashboardPage() {
       </main>
     </div>
   );
-} 
+}

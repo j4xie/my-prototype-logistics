@@ -38,6 +38,30 @@ export const getCurrentSchemaVersion = (): string => {
 }
 
 /**
+ * Mock健康检查端点
+ * 提供Mock服务状态和handlers信息
+ */
+export const mockStatusHandler = http.get('/api/mock-status', () => {
+  return HttpResponse.json({
+    success: true,
+    data: {
+      available: true,
+      handlers: 58, // 基于P3-018B实现的handlers数量
+      environment: 'mock-api',
+      version: getCurrentSchemaVersion(),
+      timestamp: Date.now()
+    },
+    message: 'Mock API is healthy'
+  }, {
+    status: 200,
+    headers: {
+      'x-mock-enabled': 'true',
+      'x-api-version': getCurrentSchemaVersion()
+    }
+  })
+})
+
+/**
  * 版本Header中间件
  * 处理API版本兼容性检查和响应头注入
  */
@@ -133,6 +157,7 @@ export const responseHeadersMiddleware = {
  * 导出所有中间件
  */
 export const middlewares = [
+  mockStatusHandler,        // 健康检查端点优先处理
   mockControlMiddleware,
   versionMiddleware,
   loggingMiddleware

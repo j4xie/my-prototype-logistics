@@ -69,7 +69,7 @@ const createSuccessResponse = (data: any, message?: string) => {
 
 export const authHandlers = [
   // POST /api/auth/login - 用户登录
-  http.post('*/api/auth/login', async ({ request }) => {
+  http.post(/.*\/api\/auth\/login$/, async ({ request }) => {
     try {
       const body = await request.json() as {
         username?: string;
@@ -142,7 +142,7 @@ export const authHandlers = [
   }),
 
   // POST /api/auth/logout - 用户登出
-  http.post('/api/auth/logout', async ({ request }) => {
+  http.post(/.*\/api\/auth\/logout$/, async ({ request }) => {
     try {
       // 模拟网络延迟
       await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 100))
@@ -176,7 +176,7 @@ export const authHandlers = [
   }),
 
   // GET /api/auth/status - 认证状态检查
-  http.get('/api/auth/status', async ({ request }) => {
+  http.get(/.*\/api\/auth\/status$/, async ({ request }) => {
     try {
       // TEST环境早退：直接返回已认证状态
       if (process.env.NODE_ENV === 'test') {
@@ -253,7 +253,7 @@ export const authHandlers = [
   }),
 
   // POST /api/auth/verify - Token验证
-  http.post('/api/auth/verify', async ({ request }) => {
+  http.post('*/api/auth/verify', async ({ request }) => {
     try {
       const body = await request.json() as { token: string; permission?: string }
       const { token, permission } = body
@@ -366,6 +366,16 @@ export const authHandlers = [
     } catch (error) {
       console.error('Token refresh error:', error)
       return createErrorResponse('Token刷新失败', 500)
+    }
+  }),
+
+  // 处理不支持的HTTP方法 - 针对认证端点
+  http.all(/.*\/api\/auth\/login$/, async ({ request }) => {
+    if (request.method !== 'POST') {
+      return HttpResponse.json(
+        wrapError(`方法 ${request.method} 不被支持`, 405),
+        { status: 405 }
+      )
     }
   })
 ]

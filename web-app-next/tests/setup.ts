@@ -3,6 +3,27 @@ import '@testing-library/jest-dom'
 // 引入Mock类型声明
 import type { MockImageProps, MockRouter } from './types/mock-types'
 
+// Fix undici compatibility issues - comprehensive approach
+if (typeof global !== 'undefined') {
+  ;(global as any).markResourceTiming = (global as any).markResourceTiming || (() => {})
+  ;(global as any).clearResourceTimings = (global as any).clearResourceTimings || (() => {})
+  ;(global as any).getEntriesByType = (global as any).getEntriesByType || (() => [])
+  ;(global as any).getEntriesByName = (global as any).getEntriesByName || (() => [])
+  ;(global as any).measure = (global as any).measure || (() => {})
+  ;(global as any).mark = (global as any).mark || (() => {})
+}
+
+// Also patch performance object if it exists
+if (typeof performance !== 'undefined') {
+  const perf = performance as any
+  if (!perf.markResourceTiming) {
+    perf.markResourceTiming = () => {}
+  }
+  if (!perf.clearResourceTimings) {
+    perf.clearResourceTimings = () => {}
+  }
+}
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter() {
@@ -180,9 +201,22 @@ console.log('📋 Test setup: Using MSW Jest Environment for Web API polyfills')
 const originalFetchGlobal = global.fetch as any
 global.fetch = (input: any, init: any = {}) => {
   // 修剪绝对URL为相对路径，让MSW能正确匹配handler
-  if (typeof input === 'string' && input.startsWith('https://api.test.example')) {
-    input = input.replace('https://api.test.example', '')
-    console.log(`🔧 URL trimmed: ${input}`)
+  if (typeof input === 'string') {
+    if (input.startsWith('https://api.test.example')) {
+      input = input.replace('https://api.test.example', '')
+      console.log(`🔧 URL trimmed (example): ${input}`)
+    } else if (input.startsWith('http://localhost:3001')) {
+      input = input.replace('http://localhost:3001', '')
+      console.log(`🔧 URL trimmed (localhost): ${input}`)
+    }
   }
   return originalFetchGlobal(input, init)
 }
+
+// 在MSW环境中正确启动MSW服务器
+afterEach(() => {
+  // 每个测试后重置Mock状态
+  jest.clearAllMocks()
+  localStorage.clear()
+  sessionStorage.clear()
+})

@@ -112,7 +112,7 @@ function extractUserFromToken(authHeader: string | null): UserProfile | null {
   }
 
   const token = authHeader.substring(7);
-  
+
   // Mock token 到用户映射
   const tokenUserMap: Record<string, UserProfile> = {
     'mock-jwt-token-admin': {
@@ -404,4 +404,4 @@ export async function OPTIONS() {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
-} 
+}

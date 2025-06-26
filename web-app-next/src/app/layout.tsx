@@ -3,10 +3,11 @@ import type { Metadata } from 'next';
 // import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
-import AiGlobalMonitor from '@/components/ai-global-monitor';
-import { Inter } from 'next/font/google';
+import { MSWProvider } from './msw-provider';
+// import AiGlobalMonitor from '@/components/ai-global-monitor';
+// // import { Inter } from 'next/font/google';
 
-// 使用本地系统字体替代Google Fonts
+// 使用本地系统字体替代Google Fonts，遵循UI设计系统规范
 // const geistSans = Geist({
 //   variable: '--font-geist-sans',
 //   subsets: ['latin'],
@@ -17,24 +18,13 @@ import { Inter } from 'next/font/google';
 //   subsets: ['latin'],
 // });
 
-const inter = Inter({ subsets: ['latin'] });
+// 移除Inter字体导入，使用Tailwind配置的系统字体
+// // const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: '黑牛食品溯源系统',
   description: '食品溯源管理系统 - 农业生产、加工、物流全链路追踪',
 };
-
-// MSW浏览器端初始化组件
-function MSWProvider({ children }: { children: React.ReactNode }) {
-  // 仅在客户端且开发环境下初始化MSW
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    import('@/mocks/setup').then(({ autoInitializeForDevelopment }) => {
-      autoInitializeForDevelopment().catch(console.error);
-    });
-  }
-
-  return <>{children}</>;
-}
 
 export default function RootLayout({
   children,
@@ -43,11 +33,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh">
-      <body className={inter.className}>
+      <body className="font-sans antialiased">
         <MSWProvider>
         <Providers>{children}</Providers>
         </MSWProvider>
-        <AiGlobalMonitor />
+        {/* 临时注释掉AI监控组件避免Hydration错误 */}
+        {/* <AiGlobalMonitor /> */}
       </body>
     </html>
   );

@@ -1,0 +1,295 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# 业务页面开发完整工作流程
+
+## 使用场景
+
+- 修改或优化现有业务页面时
+- 发现页面问题需要修复时
+- 新增业务功能页面时
+- 进行UI一致性优化时
+- 需要完整质量保证的开发流程时
+
+## 🚀 **完整工作流程：6个阶段**
+
+### **阶段1: 问题发现与分析** [使用预览系统]
+
+#### 1.1 快速问题定位
+```bash
+操作步骤：
+1. 访问预览系统 → /preview
+2. 选择Grid模式 → 网格视图查看所有页面
+3. 使用分类筛选 → P0/P1/P2 + 模块筛选
+4. 识别问题页面 → 记录页面路径和问题描述
+```
+
+#### 1.2 影响范围分析
+```bash
+分析工具：
+1. Navigation模式 → 查看页面跳转关系
+2. Hierarchy模式 → 分析信息架构影响
+3. Flow模式 → 检查用户流程完整性
+4. 记录影响清单 → 需要修改的所有相关页面
+```
+
+#### 1.3 问题分类与优先级
+```typescript
+// 问题分类标准
+interface ProblemAnalysis {
+  type: 'UI' | '功能' | '性能' | '兼容性' | '安全';
+  severity: 'P0' | 'P1' | 'P2';
+  scope: 'single' | 'module' | 'global';
+  affectedPages: string[];
+  estimatedEffort: 'low' | 'medium' | 'high';
+}
+```
+
+### **阶段2: 修改计划制定** [结合预览系统和项目架构]
+
+#### 2.1 技术方案设计
+```bash
+必读文档检查：
+1. 项目架构 → DIRECTORY_STRUCTURE.md
+2. 设计系统 → docs/architecture/design-principles.md
+3. 组件规范 → docs/components/overview.md
+4. API架构 → docs/architecture/mock-api-architecture.md
+```
+
+#### 2.2 修改清单制定
+```typescript
+// 修改计划模板
+interface ModificationPlan {
+  targetFiles: Array<{
+    path: string;
+    type: 'page' | 'component' | 'style' | 'logic';
+    changes: string[];
+    testStrategy: string;
+  }>;
+  dependencies: string[];
+  riskAssessment: string;
+  rollbackPlan: string;
+}
+```
+
+### **阶段3: 具体修改实施** [直接修改业务页面]
+
+#### 3.1 单文件修改原则
+```bash
+修改执行原则：
+✅ 逐文件进行修改，给用户发现错误的机会
+✅ 遵循项目现有编码风格和架构规范
+✅ 保持向后兼容性，不破坏现有功能
+✅ 实时记录修改内容和原因
+```
+
+#### 3.2 代码质量标准
+```typescript
+// 必须遵循的代码标准
+interface CodeQualityStandards {
+  naming: '使用描述性、明确的变量名和函数名';
+  consistency: '遵循项目现有编码风格保持一致性';
+  modularity: '模块化设计提高可维护性和可重用性';
+  performance: '优先考虑代码性能和安全影响';
+  testing: '为新代码或修改代码提供测试覆盖';
+  errorHandling: '实现健壮的错误处理和日志记录';
+}
+```
+
+#### 3.3 UI设计系统遵循
+```bash
+Neo Minimal iOS-Style Admin UI标准：
+- 布局: max-w-[390px] mx-auto (移动端优先)
+- 卡片: bg-white rounded-lg shadow-sm p-4
+- 交互: hover:shadow-md hover:scale-[1.03] transition-all
+- 按钮: Button组件统一使用，遵循variant和size规范
+- 表单: 统一验证样式和错误处理
+- 加载: Loading组件统一使用
+```
+
+### **阶段4: 实时验证与调试** [预览系统 + 业务页面双重验证]
+
+#### 4.1 即时修改验证
+```bash
+验证步骤：
+1. 保存修改文件
+2. 切换到预览系统 → /preview
+3. 刷新网格视图 → 查看修改是否在预览中生效
+4. 设备模式切换 → 验证响应式效果
+5. 直接访问业务页面 → 测试实际用户体验
+```
+
+#### 4.2 功能完整性测试
+```typescript
+// 功能测试检查清单
+interface FunctionalTesting {
+  basicFunctionality: '核心功能是否正常工作';
+  userInteraction: '用户交互是否符合预期';
+  dataFlow: '数据流转是否正确';
+  errorHandling: '错误处理是否健壮';
+  accessibility: '可访问性是否符合标准';
+}
+```
+
+### **阶段5: 批量验证与回归测试** [预览系统核心价值]
+
+#### 5.1 系统级验证
+```bash
+批量验证流程：
+1. Grid模式 → 检查同类页面的UI一致性
+2. Navigation模式 → 验证页面间跳转逻辑无异常
+3. Flow模式 → 测试完整用户流程不中断
+4. Hierarchy模式 → 验证信息架构合理性
+5. Sitemap模式 → 检查整体站点结构完整性
+```
+
+#### 5.2 5层技术验证
+```bash
+强制执行技术验证：
+1. TypeScript编译 → npm run type-check
+2. Next.js构建 → npm run build
+3. ESLint检查 → npm run lint
+4. 单元测试 → npm run test
+5. 集成测试 → 功能验证 + 跨页面测试
+```
+
+#### 5.3 回归测试检查
+```typescript
+// 回归测试重点
+interface RegressionTesting {
+  existingFeatures: '确保现有功能未被破坏';
+  crossPageNavigation: '页面间导航和跳转正常';
+  dataConsistency: '数据显示和处理一致性';
+  performanceImpact: '性能无明显下降';
+  mobileResponsive: '移动端响应式效果正常';
+}
+```
+
+### **阶段6: 文档更新与状态同步** [项目管理层面]
+
+#### 6.1 强制文档同步
+```bash
+必须更新的文档：
+1. DIRECTORY_STRUCTURE.md → 如有目录结构变更
+2. docs/directory-structure-changelog.md → 记录变更历史
+3. 相关任务文档 → 更新任务状态和完成情况
+4. README文件 → 如有新功能或重要变更
+```
+
+#### 6.2 状态标记与记录
+```typescript
+// 完成状态确认清单
+interface CompletionChecklist {
+  technicalValidation: '5层技术验证全部通过';
+  functionalTesting: '功能测试完整通过';
+  previewSystemSync: '预览系统正确反映修改';
+  documentationUpdate: '相关文档已同步更新';
+  regressionTesting: '回归测试无异常';
+  userExperienceValidation: '用户体验符合预期';
+}
+```
+
+## 🎯 **关键原则**
+
+### 数据流向原则
+```bash
+正确的数据流向：
+业务页面 (源代码) → 预览系统 (观察工具)
+❌ 错误：预览系统 → 业务页面 (不应该修改源代码)
+✅ 正确：预览系统用于观察、分析、验证业务页面
+```
+
+### 职责分离原则
+```typescript
+interface ResponsibilitySegmentation {
+  预览系统职责: {
+    问题发现: '快速定位需要修改的页面';
+    影响分析: '分析修改的影响范围';
+    批量验证: '验证修改效果和系统一致性';
+    质量保证: '确保整体系统质量';
+  };
+  业务页面职责: {
+    功能实现: '实际的业务逻辑和用户界面';
+    用户体验: '真实的用户交互和操作流程';
+    数据处理: '业务数据的处理和展示';
+    核心价值: '系统的真正价值所在';
+  };
+}
+```
+
+### 验证优先原则
+```bash
+验证标准：
+✅ 任何完成度声明必须基于实际功能验证
+✅ 声称"完成"前必须通过5层技术验证
+✅ 发现问题立即如实记录，不隐瞒技术债务
+✅ 用户质疑时立即启动深度重新验证
+```
+
+## 关键规则
+
+- 使用预览系统进行问题发现和批量验证，但所有修改必须在业务页面源代码中进行
+- 严格遵循6阶段工作流程，不可跳过任何验证步骤
+- 预览系统仅用于观察和分析，不用于修改业务逻辑
+- 必须执行5层技术验证才能声称任务完成
+- 所有修改必须保持向后兼容性和系统一致性
+
+## 示例
+
+<example>
+场景：发现农业模块的按钮样式不一致
+
+**阶段1 - 问题发现**：
+1. 访问 /preview，Grid模式查看农业模块
+2. 发现5个页面按钮样式异常：fields、crops、harvest-records、farm-activities、planting-plans
+3. Navigation模式确认影响范围：仅限农业模块内部
+
+**阶段2 - 修改计划**：
+1. 检查 docs/components/overview.md 确认Button组件规范
+2. 制定修改清单：5个页面的Button组件variant统一
+
+**阶段3 - 具体修改**：
+```typescript
+// 修改 src/app/farming/fields/page.tsx
+<Button variant="primary" size="medium">查看详情</Button>
+// 统一为项目标准的variant和size
+```
+
+**阶段4 - 实时验证**：
+1. 保存文件后访问 /preview Grid模式
+2. 确认5个页面按钮样式已统一
+3. 直接访问 /farming/fields 测试用户体验
+
+**阶段5 - 批量验证**：
+1. Grid模式检查农业模块所有18个页面一致性
+2. Navigation模式测试页面跳转无异常
+3. 执行 npm run build 确认构建成功
+
+**阶段6 - 文档同步**：
+更新相关任务文档，标记修改完成
+</example>
+
+<example type="invalid">
+错误做法：直接在预览系统中修改业务逻辑
+
+```typescript
+// ❌ 错误：在预览系统组件中混入业务修改
+function PreviewSystem() {
+  return (
+    <div>
+      <PagePreviewGrid />
+      {/* ❌ 错误：在预览系统中直接修改业务页面逻辑 */}
+      <BusinessPageEditor />
+    </div>
+  );
+}
+```
+
+这违反了职责分离原则，会导致：
+- 代码耦合混乱
+- 难以维护
+- 安全风险
+- 性能问题
+</example>

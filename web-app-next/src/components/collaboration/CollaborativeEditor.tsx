@@ -30,54 +30,68 @@ export default function CollaborativeEditor({
   const lastChangeRef = useRef<number>(0);
 
   useEffect(() => {
-    const ws = getWebSocket();
+    // 检查是否启用Mock模式
+    const isMockEnabled = process.env.NEXT_PUBLIC_MOCK_ENABLED === 'true';
 
-    // 加入文档协作
-    ws.emit('join_document', { documentId });
+    if (isMockEnabled) {
+      console.log('🔧 Mock模式已启用，跳过协作编辑器WebSocket连接');
+      setIsConnected(false);
+      return;
+    }
 
-    // 监听用户加入/离开
-    ws.on('user_joined', (user: User) => {
-      setConnectedUsers(prev => [...prev.filter(u => u.id !== user.id), user]);
-    });
+    try {
+      const ws = getWebSocket();
 
-    ws.on('user_left', (userId: string) => {
-      setConnectedUsers(prev => prev.filter(u => u.id !== userId));
-    });
+      // 加入文档协作
+      ws.emit('join_document', { documentId });
 
-    // 监听文档变化
-    ws.on(
-      'document_changed',
-      (data: { content: string; userId: string; timestamp: number }) => {
-        // 避免处理自己发出的变化
-        if (data.timestamp > lastChangeRef.current) {
-          setContent(data.content);
-          onContentChange?.(data.content);
+      // 监听用户加入/离开
+      ws.on('user_joined', (user: User) => {
+        setConnectedUsers(prev => [...prev.filter(u => u.id !== user.id), user]);
+      });
+
+      ws.on('user_left', (userId: string) => {
+        setConnectedUsers(prev => prev.filter(u => u.id !== userId));
+      });
+
+      // 监听文档变化
+      ws.on(
+        'document_changed',
+        (data: { content: string; userId: string; timestamp: number }) => {
+          // 避免处理自己发出的变化
+          if (data.timestamp > lastChangeRef.current) {
+            setContent(data.content);
+            onContentChange?.(data.content);
+          }
         }
-      }
-    );
-
-    // 监听光标位置变化
-    ws.on('cursor_moved', (data: { userId: string; position: number }) => {
-      setConnectedUsers(prev =>
-        prev.map(user =>
-          user.id === data.userId ? { ...user, cursor: data.position } : user
-        )
       );
-    });
 
-    // 连接状态监听
-    ws.on('connect', () => setIsConnected(true));
-    ws.on('disconnect', () => setIsConnected(false));
+      // 监听光标位置变化
+      ws.on('cursor_moved', (data: { userId: string; position: number }) => {
+        setConnectedUsers(prev =>
+          prev.map(user =>
+            user.id === data.userId ? { ...user, cursor: data.position } : user
+          )
+        );
+      });
 
-    return () => {
-      ws.emit('leave_document', { documentId });
-      ws.off('user_joined');
-      ws.off('user_left');
-      ws.off('document_changed');
-      ws.off('cursor_moved');
-      ws.off('connect');
-      ws.off('disconnect');
-    };
+      // 连接状态监听
+      ws.on('connect', () => setIsConnected(true));
+      ws.on('disconnect', () => setIsConnected(false));
+
+      return () => {
+        ws.emit('leave_document', { documentId });
+        ws.off('user_joined');
+        ws.off('user_left');
+        ws.off('document_changed');
+        ws.off('cursor_moved');
+        ws.off('connect');
+        ws.off('disconnect');
+      };
+    } catch (error) {
+      console.warn('协作编辑器WebSocket初始化失败:', error);
+      setIsConnected(false);
+    }
   }, [documentId, onContentChange]);
 
   const handleContentChange = (newContent: string) => {
@@ -87,23 +101,36 @@ export default function CollaborativeEditor({
     setContent(newContent);
     onContentChange?.(newContent);
 
-    // 发送变化到其他用户
-    const ws = getWebSocket();
-    ws.emit('document_change', {
-      documentId,
-      content: newContent,
-      timestamp,
-    });
+    // 只在非Mock模式下发送变化到其他用户
+    const isMockEnabled = process.env.NEXT_PUBLIC_MOCK_ENABLED === 'true';
+    if (!isMockEnabled && isConnected) {
+      try {
+        const ws = getWebSocket();
+        ws.emit('document_change', {
+          documentId,
+          content: newContent,
+          timestamp,
+        });
+      } catch (error) {
+        console.warn('发送文档变化失败:', error);
+      }
+    }
   };
 
   const handleCursorMove = () => {
     const editor = editorRef.current;
-    if (editor) {
-      const ws = getWebSocket();
-      ws.emit('cursor_move', {
-        documentId,
-        position: editor.selectionStart,
-      });
+    const isMockEnabled = process.env.NEXT_PUBLIC_MOCK_ENABLED === 'true';
+
+    if (editor && !isMockEnabled && isConnected) {
+      try {
+        const ws = getWebSocket();
+        ws.emit('cursor_move', {
+          documentId,
+          position: editor.selectionStart,
+        });
+      } catch (error) {
+        console.warn('发送光标位置失败:', error);
+      }
     }
   };
 

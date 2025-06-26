@@ -1,0 +1,273 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "生产加工模块 - 行业模板Schema定义",
+  "description": "定义不同行业的动态表单结构、字段类型、校验规则",
+  "version": "1.0.0",
+  "lastUpdated": "2024-12-02",
+
+  "definitions": {
+    "fieldType": {
+      "type": "string",
+      "enum": ["string", "number", "integer", "boolean", "date", "datetime", "enum", "array", "object"]
+    },
+
+    "fieldDefinition": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "字段显示名称"
+        },
+        "type": {
+          "$ref": "#/definitions/fieldType"
+        },
+        "description": {
+          "type": "string",
+          "description": "字段说明"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "default": {
+          "description": "默认值"
+        },
+        "enum": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "枚举选项（当type为enum时）"
+        },
+        "min": {
+          "type": "number",
+          "description": "最小值（数值类型）"
+        },
+        "max": {
+          "type": "number",
+          "description": "最大值（数值类型）"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "正则表达式校验（字符串类型）"
+        },
+        "unit": {
+          "type": "string",
+          "description": "单位（如°C、kg、%）"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["basic", "quality", "safety", "cost", "environmental"],
+          "description": "字段分类"
+        }
+      },
+      "required": ["title", "type"],
+      "additionalProperties": false
+    }
+  },
+
+  "properties": {
+    "templateInfo": {
+      "type": "object",
+      "properties": {
+        "templateName": {"type": "string"},
+        "industryType": {"type": "string"},
+        "version": {"type": "integer", "minimum": 1},
+        "description": {"type": "string"},
+        "applicableProducts": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["templateName", "industryType", "version"]
+    },
+
+    "rawMaterialFields": {
+      "type": "object",
+      "description": "原料入库阶段的扩展字段定义",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/fieldDefinition"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "processStepFields": {
+      "type": "object",
+      "description": "生产加工阶段的扩展字段定义",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/fieldDefinition"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "qualityTestFields": {
+      "type": "object",
+      "description": "质量检测阶段的扩展字段定义",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/fieldDefinition"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "packagingSpecFields": {
+      "type": "object",
+      "description": "包装规格阶段的扩展字段定义",
+      "patternProperties": {
+        "^[a-zA-Z][a-zA-Z0-9_]*$": {
+          "$ref": "#/definitions/fieldDefinition"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "examples": {
+      "type": "object",
+      "description": "各阶段数据示例",
+      "properties": {
+        "rawMaterialData": {"type": "object"},
+        "processStepData": {"type": "object"},
+        "qualityTestData": {"type": "object"},
+        "packagingSpecData": {"type": "object"}
+      }
+    }
+  },
+
+  "required": ["templateInfo", "rawMaterialFields", "processStepFields", "qualityTestFields", "packagingSpecFields"],
+  "additionalProperties": false,
+
+  "examples": [
+    {
+      "templateInfo": {
+        "templateName": "肉类加工模板",
+        "industryType": "meat_processing",
+        "version": 1,
+        "description": "适用于牛肉、猪肉、羊肉等畜类产品加工",
+        "applicableProducts": ["牛排", "猪排", "羊排", "肉丸", "香肠"]
+      },
+
+      "rawMaterialFields": {
+        "breed": {
+          "title": "品种",
+          "type": "enum",
+          "enum": ["西门塔尔", "安格斯", "和牛", "本地黄牛"],
+          "required": true,
+          "category": "basic"
+        },
+        "temperature": {
+          "title": "温度",
+          "type": "number",
+          "min": -20,
+          "max": 10,
+          "unit": "°C",
+          "required": true,
+          "category": "safety"
+        },
+        "feedingMethod": {
+          "title": "饲养方式",
+          "type": "enum",
+          "enum": ["放牧", "圈养", "半放牧"],
+          "category": "quality"
+        }
+      },
+
+      "processStepFields": {
+        "rollingTemp": {
+          "title": "滚揉温度",
+          "type": "number",
+          "min": 0,
+          "max": 10,
+          "unit": "°C",
+          "required": true,
+          "category": "quality"
+        },
+        "rollingTime": {
+          "title": "滚揉时间",
+          "type": "integer",
+          "min": 30,
+          "max": 300,
+          "unit": "分钟",
+          "required": true,
+          "category": "quality"
+        },
+        "operator": {
+          "title": "操作员",
+          "type": "string",
+          "required": true,
+          "category": "basic"
+        }
+      },
+
+      "qualityTestFields": {
+        "phValue": {
+          "title": "PH值",
+          "type": "number",
+          "min": 5.0,
+          "max": 7.0,
+          "required": true,
+          "category": "quality"
+        },
+        "proteinContent": {
+          "title": "蛋白质含量",
+          "type": "number",
+          "min": 15.0,
+          "max": 25.0,
+          "unit": "%",
+          "required": true,
+          "category": "quality"
+        },
+        "bacteriaCount": {
+          "title": "细菌总数",
+          "type": "integer",
+          "max": 10000,
+          "unit": "CFU/g",
+          "required": true,
+          "category": "safety"
+        }
+      },
+
+      "packagingSpecFields": {
+        "material": {
+          "title": "包装材料",
+          "type": "enum",
+          "enum": ["PA/PE复合膜", "PET/PE", "EVOH阻氧膜"],
+          "required": true,
+          "category": "basic"
+        },
+        "vacuum_level": {
+          "title": "真空度",
+          "type": "number",
+          "min": 90.0,
+          "max": 99.9,
+          "unit": "%",
+          "category": "quality"
+        }
+      },
+
+      "examples": {
+        "rawMaterialData": {
+          "breed": "西门塔尔",
+          "temperature": -2,
+          "feedingMethod": "放牧"
+        },
+        "processStepData": {
+          "rollingTemp": 4,
+          "rollingTime": 120,
+          "operator": "王师傅"
+        },
+        "qualityTestData": {
+          "phValue": 6.2,
+          "proteinContent": 20.5,
+          "bacteriaCount": 500
+        },
+        "packagingSpecData": {
+          "material": "PA/PE复合膜",
+          "vacuum_level": 99.5
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,244 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+---
+description: 浏览器工具MCP调用指南 - 调试、审计、性能优化和测试场景 - 提供统一的浏览器工具使用规范、故障排除流程和最佳实践
+globs:
+alwaysApply: false
+---
+
+# 浏览器工具MCP调用指南
+
+<!-- created: 2025-02-02 -->
+<!-- version: 1.0.0 -->
+<!-- source: 基于可用的browser-tools MCP工具集 -->
+<!-- scope: 调试、审计、性能优化、测试场景 -->
+
+## 🎯 **适用场景快速决策**
+
+| 用户询问场景 | 推荐工具组合 | 执行优先级 |
+|----|----|----|
+| "页面出错/不工作" | takeScreenshot → getConsoleErrors → getNetworkErrors | 高 |
+| "性能问题/加载慢" | takeScreenshot → runPerformanceAudit → getNetworkLogs | 高 |
+| "SEO优化需求" | runSEOAudit → runAccessibilityAudit → runBestPracticesAudit | 中 |
+| "Next.js应用调试" | runNextJSAudit → getConsoleLogs → runDebuggerMode | 高 |
+| "全面应用审计" | runAuditMode → takeScreenshot → wipeLogs | 中 |
+| "元素交互问题" | getSelectedElement → takeScreenshot → getConsoleLogs | 中 |
+
+## 🔧 **工具分类与用途**
+
+### **🚨 故障诊断工具** (高频使用)
+```bash
+takeScreenshot           # 页面当前状态截图，问题现象记录
+getConsoleErrors        # JavaScript错误信息获取
+getNetworkErrors        # 网络请求失败信息
+getConsoleLogs          # 完整控制台日志输出
+getNetworkLogs          # 所有网络请求详情
+```
+
+### **🔍 调试与开发工具**
+```bash
+getSelectedElement      # 获取当前选中的DOM元素信息
+runDebuggerMode        # 启动调试模式进行深度分析
+wipeLogs               # 清空浏览器日志便于重新测试
+```
+
+### **📊 审计与优化工具**
+```bash
+runPerformanceAudit    # 性能指标分析和优化建议
+runAccessibilityAudit  # 无障碍访问性检查
+runSEOAudit           # SEO优化建议和检查
+runBestPracticesAudit # Web开发最佳实践检查
+runNextJSAudit        # Next.js特定优化建议
+runAuditMode          # 综合审计模式(包含多项检查)
+```
+
+## 🚀 **标准工作流程**
+
+### **故障排除3步法** (推荐用于问题诊断)
+
+#### **Step 1 - 现状确认** (必需步骤)
+```bash
+# 优先执行 - 获取页面当前状态
+takeScreenshot           # 记录问题现象
+getConsoleErrors        # 获取错误信息
+```
+
+#### **Step 2 - 深度分析** (根据Step 1结果选择)
+```bash
+# 如果有JavaScript错误 → 执行
+getConsoleLogs          # 获取完整日志上下文
+
+# 如果有网络问题 → 执行
+getNetworkErrors        # 获取网络错误详情
+getNetworkLogs          # 分析所有网络请求
+
+# 如果是交互问题 → 执行
+getSelectedElement      # 检查元素状态
+```
+
+#### **Step 3 - 专项调试** (可选，针对复杂问题)
+```bash
+runDebuggerMode        # 深度调试模式
+runNextJSAudit         # Next.js应用特定检查
+```
+
+### **性能优化3步法** (推荐用于性能改进)
+
+#### **Step 1 - 基准测试**
+```bash
+takeScreenshot         # 记录当前页面状态
+runPerformanceAudit    # 获取性能基准数据
+```
+
+#### **Step 2 - 全面审计**
+```bash
+runAuditMode          # 综合审计分析
+getNetworkLogs        # 网络性能分析
+```
+
+#### **Step 3 - 专项优化**
+```bash
+runSEOAudit           # SEO相关优化
+runAccessibilityAudit # 可访问性优化
+runBestPracticesAudit # 最佳实践检查
+```
+
+## 📋 **调用最佳实践**
+
+### **工具组合策略**
+```bash
+# [基础诊断组合] - 适用于一般问题
+takeScreenshot + getConsoleErrors + getNetworkErrors
+
+# [深度调试组合] - 适用于复杂问题
+takeScreenshot + getConsoleLogs + getNetworkLogs + runDebuggerMode
+
+# [性能优化组合] - 适用于性能改进
+runPerformanceAudit + runAuditMode + getNetworkLogs
+
+# [Next.js专用组合] - 适用于Next.js应用
+runNextJSAudit + getConsoleErrors + runPerformanceAudit
+
+# [SEO/可访问性组合] - 适用于合规性检查
+runSEOAudit + runAccessibilityAudit + runBestPracticesAudit
+```
+
+### **执行顺序建议**
+1. **优先截图**: `takeScreenshot` 总是第一步执行，记录当前状态
+2. **错误检查**: `getConsoleErrors` 和 `getNetworkErrors` 紧随其后
+3. **日志分析**: 根据错误情况决定是否需要 `getConsoleLogs` 和 `getNetworkLogs`
+4. **专项审计**: 最后执行各种audit工具进行深度分析
+5. **清理工作**: 完成后可选择 `wipeLogs` 清理日志
+
+### **并行执行建议**
+```bash
+# 可以并行执行的工具组合（互不干扰）
+并行组1: takeScreenshot + getConsoleErrors + getNetworkErrors
+并行组2: runPerformanceAudit + runSEOAudit + runAccessibilityAudit
+并行组3: getConsoleLogs + getNetworkLogs
+
+# 必须串行执行（有依赖关系）
+串行: wipeLogs → 用户操作 → getConsoleLogs
+串行: runDebuggerMode → 具体调试操作 → 其他工具
+```
+
+## ⚠️ **注意事项与限制**
+
+### **工具使用限制**
+- **wipeLogs**: 会清空所有浏览器日志，使用前确认不需要之前的日志信息
+- **runDebuggerMode**: 可能影响页面正常运行，建议在测试环境使用
+- **screenshot时机**: 确保页面已完全加载后再截图
+
+### **性能考虑**
+- **audit工具**: 执行时间较长，避免在生产环境频繁调用
+- **日志工具**: 大量日志可能影响性能，适时使用wipeLogs清理
+- **网络工具**: 获取所有网络日志可能包含敏感信息，注意安全
+
+### **错误处理**
+- **工具超时**: 如果工具超时，可能需要用户连接GitHub账户
+- **权限问题**: 某些audit功能可能需要特定浏览器权限
+- **数据安全**: 截图和日志可能包含敏感信息，注意处理
+
+## 🔄 **典型工作流程示例**
+
+### **示例1: 页面加载失败诊断**
+```bash
+1. takeScreenshot()           # 记录页面状态
+2. getConsoleErrors()         # 检查JavaScript错误
+3. getNetworkErrors()         # 检查网络请求失败
+4. getNetworkLogs()           # 分析所有网络请求
+5. 根据结果提供解决方案
+```
+
+### **示例2: Next.js应用性能优化**
+```bash
+1. takeScreenshot()           # 记录当前状态
+2. runNextJSAudit()          # Next.js特定检查
+3. runPerformanceAudit()     # 性能基准测试
+4. runAuditMode()            # 综合审计
+5. 基于结果制定优化计划
+```
+
+### **示例3: 全面应用健康检查**
+```bash
+1. takeScreenshot()              # 状态记录
+2. runAuditMode()               # 综合审计
+3. runAccessibilityAudit()      # 可访问性检查
+4. runSEOAudit()               # SEO检查
+5. runBestPracticesAudit()     # 最佳实践检查
+6. 生成综合优化报告
+```
+
+## 📊 **工具输出解读指南**
+
+### **审计结果解读**
+- **Performance Score**: 0-100分制，90+为优秀，50-89为需改进，<50为差
+- **Accessibility Score**: 关注WCAG合规性，重点关注keyboard navigation和screen reader
+- **SEO Score**: 关注meta标签、结构化数据、页面性能等
+- **Best Practices**: 关注HTTPS、图片优化、JavaScript最佳实践等
+
+### **日志信息分析**
+- **Console Errors**: 优先解决ERROR级别，WARNING可延后处理
+- **Network Errors**: 关注4xx/5xx状态码，分析失败原因
+- **Performance Metrics**: 关注LCP、FID、CLS等Core Web Vitals指标
+
+## 🤖 **AI助手调用指南**
+
+### **工具参数格式**
+所有browser-tools MCP工具都使用相同的参数格式：
+```typescript
+{
+  "random_string": "任意字符串值"  // 所有工具的必需参数
+}
+```
+
+### **常用调用示例**
+```javascript
+// 截图示例
+mcp_browser-tools_takeScreenshot({ "random_string": "screenshot" })
+
+// 获取控制台错误
+mcp_browser-tools_getConsoleErrors({ "random_string": "errors" })
+
+// 性能审计
+mcp_browser-tools_runPerformanceAudit({ "random_string": "performance" })
+
+// 综合审计模式
+mcp_browser-tools_runAuditMode({ "random_string": "audit" })
+```
+
+### **错误响应处理**
+- **超时错误**: 可能需要用户连接GitHub账户
+- **权限拒绝**: 检查浏览器扩展或安全设置
+- **无响应**: 确认页面已完全加载
+
+---
+
+**使用说明**：
+- **快速诊断**: 参考"适用场景快速决策"表格
+- **系统性检查**: 按照"标准工作流程"执行
+- **工具选择**: 根据具体问题选择"工具分类与用途"中的相应工具
+- **结果分析**: 参考"工具输出解读指南"理解检查结果

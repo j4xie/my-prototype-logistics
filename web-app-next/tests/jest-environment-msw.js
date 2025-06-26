@@ -255,12 +255,37 @@ class MSWEnvironment extends NodeEnvironment {
       return originalFetch(input, init);
     };
 
-    console.log('🔧 MSW Jest Environment initialized with complete Web API polyfills');
-    console.log('📋 Available APIs: fetch, Response, TextEncoder, ReadableStream, MessageChannel, BroadcastChannel, crypto');
+    // Fix undici compatibility issues
+    this.global.markResourceTiming = this.global.markResourceTiming || (() => {});
+    this.global.clearResourceTimings = this.global.clearResourceTimings || (() => {});
+
+    // Initialize MSW server in Jest Environment
+    try {
+      // 临时禁用MSW自动初始化，改为手动模式
+      console.log('🔧 MSW Jest Environment: Manual initialization mode enabled');
+      console.log('📋 Available APIs: fetch, Response, TextEncoder, ReadableStream, MessageChannel, BroadcastChannel, crypto');
+
+      // 预留MSW服务器引用位置
+      this.global._mswServer = null;
+    } catch (error) {
+      console.error('❌ Failed to initialize MSW in Jest environment:', error);
+      // Don't throw error, allow tests to continue but log issue
+    }
   }
 
   async teardown() {
-    // 清理BroadcastChannel
+    // 🛑 关键修复：停止MSW服务器
+    if (this.global._mswServer) {
+      try {
+        this.global._mswServer.stop();
+        delete this.global._mswServer;
+        console.log('🛑 MSW server stopped in Jest environment teardown');
+      } catch (error) {
+        console.error('❌ Error stopping MSW server in teardown:', error);
+      }
+    }
+
+    // Clean up BroadcastChannel
     if (this.global._broadcastChannels) {
       Object.keys(this.global._broadcastChannels).forEach(name => {
         this.global._broadcastChannels[name].forEach(channel => channel.close());

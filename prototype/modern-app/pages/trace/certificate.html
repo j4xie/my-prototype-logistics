@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>溯源证书 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .certificate-container {
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: #f7fafc;
+        }
+
+        .certificate-header {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .header-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .certificate-content {
+            padding: 20px;
+        }
+
+        .certificate-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .certificate-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #38a169, #2f855a, #38a169);
+        }
+
+        .cert-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+
+        .cert-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .cert-subtitle {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .cert-logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #38a169, #2f855a);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .product-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-icon {
+            margin-right: 8px;
+            color: #38a169;
+        }
+
+        .product-showcase {
+            display: flex;
+            align-items: center;
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .product-image {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #e6fffa, #b2f5ea);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-right: 15px;
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .product-code {
+            color: #718096;
+            font-size: 0.85rem;
+            margin-bottom: 3px;
+        }
+
+        .product-date {
+            color: #38a169;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .cert-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .info-item {
+            text-align: center;
+            background: #f7fafc;
+            padding: 15px 10px;
+            border-radius: 10px;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .info-label {
+            color: #718096;
+            font-size: 0.8rem;
+        }
+
+        .quality-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 25px;
+        }
+
+        .quality-badge {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .verification-section {
+            border-top: 2px dashed #e2e8f0;
+            padding-top: 20px;
+            text-align: center;
+        }
+
+        .qr-code {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #f7fafc, #e2e8f0);
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 2rem;
+            color: #4a5568;
+        }
+
+        .verification-text {
+            color: #718096;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+
+        .cert-id {
+            color: #38a169;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .issue-date {
+            color: #a0aec0;
+            font-size: 0.8rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-outline {
+            background: white;
+            color: #38a169;
+            border: 2px solid #38a169;
+        }
+
+        .btn-outline:hover {
+            background: #38a169;
+            color: white;
+        }
+
+        .btn-solid {
+            background: #38a169;
+            color: white;
+        }
+
+        .btn-solid:hover {
+            background: #2f855a;
+        }
+
+        .share-options {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            display: none;
+        }
+
+        .share-options.active {
+            display: block;
+        }
+
+        .share-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .share-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .share-btn {
+            padding: 12px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .share-btn:hover {
+            border-color: #38a169;
+            color: #38a169;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            color: rgba(56, 161, 105, 0.1);
+            font-size: 3rem;
+            font-weight: 700;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @media print {
+            .certificate-header,
+            .action-buttons,
+            .share-options,
+            .back-btn {
+                display: none !important;
+            }
+
+            .certificate-container {
+                max-width: none;
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+
+            .certificate-content {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <!-- 证书页头部 -->
+        <div class="certificate-header">
+            <button class="back-btn" onclick="history.back()">
+                ←
+            </button>
+            <div class="header-title">溯源证书</div>
+            <div class="header-subtitle">产品质量追溯认证文件</div>
+        </div>
+
+        <div class="certificate-content">
+            <!-- 证书主体 -->
+            <div class="certificate-card">
+                <div class="watermark">VERIFIED</div>
+
+                <!-- 证书头部 -->
+                <div class="cert-header">
+                    <div class="cert-logo">🏆</div>
+                    <div class="cert-title">食品溯源认证证书</div>
+                    <div class="cert-subtitle">Food Traceability Certificate</div>
+                </div>
+
+                <!-- 产品信息展示 -->
+                <div class="product-section">
+                    <div class="section-title">
+                        <span class="section-icon">🥬</span>
+                        认证产品
+                    </div>
+                    <div class="product-showcase">
+                        <div class="product-image">🥬</div>
+                        <div class="product-info">
+                            <div class="product-name">有机白菜</div>
+                            <div class="product-code">溯源码：TC202401150001</div>
+                            <div class="product-date">生产日期：2024-01-15</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 认证信息 -->
+                <div class="cert-info">
+                    <div class="info-item">
+                        <div class="info-value">100%</div>
+                        <div class="info-label">质量合格率</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">有机</div>
+                        <div class="info-label">种植方式</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">7天</div>
+                        <div class="info-label">新鲜保质期</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">A+</div>
+                        <div class="info-label">品质等级</div>
+                    </div>
+                </div>
+
+                <!-- 质量认证标识 -->
+                <div class="product-section">
+                    <div class="section-title">
+                        <span class="section-icon">✅</span>
+                        质量认证
+                    </div>
+                    <div class="quality-badges">
+                        <div class="quality-badge">✓ 有机认证</div>
+                        <div class="quality-badge">✓ 绿色食品</div>
+                        <div class="quality-badge">✓ 无公害</div>
+                        <div class="quality-badge">✓ 农药零残留</div>
+                        <div class="quality-badge">✓ 重金属检测合格</div>
+                        <div class="quality-badge">✓ 微生物安全</div>
+                    </div>
+                </div>
+
+                <!-- 生产商信息 -->
+                <div class="product-section">
+                    <div class="section-title">
+                        <span class="section-icon">🏭</span>
+                        生产商信息
+                    </div>
+                    <div class="cert-info">
+                        <div class="info-item">
+                            <div class="info-value">绿野生态农场</div>
+                            <div class="info-label">生产商</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value">张三</div>
+                            <div class="info-label">负责人</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value">山东潍坊</div>
+                            <div class="info-label">产地</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value">138****8888</div>
+                            <div class="info-label">联系电话</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 验证信息 -->
+                <div class="verification-section">
+                    <div class="qr-code">📱</div>
+                    <div class="verification-text">
+                        扫描二维码验证证书真伪<br>
+                        或访问官网输入证书编号查询
+                    </div>
+                    <div class="cert-id">证书编号：CERT-2024-0115-001</div>
+                    <div class="issue-date">签发日期：2024年01月15日</div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+                <button class="action-btn btn-outline" onclick="printCertificate()">
+                    🖨️ 打印证书
+                </button>
+                <button class="action-btn btn-solid" onclick="toggleShare()">
+                    📤 分享证书
+                </button>
+            </div>
+
+            <!-- 分享选项 -->
+            <div class="share-options" id="shareOptions">
+                <div class="share-title">选择分享方式</div>
+                <div class="share-buttons">
+                    <button class="share-btn" onclick="shareToWeChat()">
+                        💬<br>微信
+                    </button>
+                    <button class="share-btn" onclick="shareToEmail()">
+                        📧<br>邮箱
+                    </button>
+                    <button class="share-btn" onclick="copyLink()">
+                        🔗<br>复制链接
+                    </button>
+                    <button class="share-btn" onclick="downloadPDF()">
+                        📄<br>下载PDF
+                    </button>
+                    <button class="share-btn" onclick="saveToAlbum()">
+                        📷<br>保存图片
+                    </button>
+                    <button class="share-btn" onclick="shareToSocial()">
+                        🌐<br>社交媒体
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 打印证书
+        function printCertificate() {
+            window.print();
+        }
+
+        // 切换分享选项显示
+        function toggleShare() {
+            const shareOptions = document.getElementById('shareOptions');
+            shareOptions.classList.toggle('active');
+        }
+
+        // 微信分享
+        function shareToWeChat() {
+            alert('正在调用微信分享...\n（演示版本）');
+        }
+
+        // 邮箱分享
+        function shareToEmail() {
+            const subject = encodeURIComponent('食品溯源证书 - 有机白菜');
+            const body = encodeURIComponent(`
+您好，
+
+我想与您分享一份食品溯源证书：
+
+产品名称：有机白菜
+溯源码：TC202401150001
+生产日期：2024-01-15
+证书编号：CERT-2024-0115-001
+
+请访问链接查看完整信息：${window.location.href}
+
+此证书已通过食品溯源系统验证。
+            `);
+
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        // 复制链接
+        function copyLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert('证书链接已复制到剪贴板');
+                toggleShare();
+            }).catch(() => {
+                alert('复制失败，请手动复制链接');
+            });
+        }
+
+        // 下载PDF
+        function downloadPDF() {
+            alert('正在生成PDF文件...\n（演示版本）');
+            setTimeout(() => {
+                alert('PDF下载完成');
+                toggleShare();
+            }, 2000);
+        }
+
+        // 保存为图片
+        function saveToAlbum() {
+            alert('正在生成证书图片...\n（演示版本）');
+            setTimeout(() => {
+                alert('图片已保存到相册');
+                toggleShare();
+            }, 2000);
+        }
+
+        // 社交媒体分享
+        function shareToSocial() {
+            if (navigator.share) {
+                navigator.share({
+                    title: '食品溯源证书 - 有机白菜',
+                    text: '查看这份经过认证的食品溯源证书',
+                    url: window.location.href
+                });
+            } else {
+                alert('您的浏览器不支持原生分享功能\n请选择其他分享方式');
+            }
+            toggleShare();
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+
+            if (code) {
+                console.log('证书溯源码:', code);
+                // 根据溯源码加载对应的证书数据
+            }
+
+            // 点击证书外部关闭分享选项
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.action-buttons') && !e.target.closest('.share-options')) {
+                    document.getElementById('shareOptions').classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
