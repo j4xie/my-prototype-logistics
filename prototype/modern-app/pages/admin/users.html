@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 食品溯源管理系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <link rel="stylesheet" href="../../styles/admin-layout.css">
+    <style>
+        .users-container {
+            display: flex;
+            min-height: 100vh;
+            background: #f8f9fa;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 20px;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .search-filters {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        .filter-select {
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .users-table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .table-toolbar {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .bulk-actions.visible {
+            opacity: 1;
+        }
+
+        .table-info {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-header {
+            background: #f8f9fa;
+        }
+
+        .table-header th {
+            padding: 16px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        .table-header th:first-child {
+            width: 50px;
+        }
+
+        .table-row {
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s ease;
+        }
+
+        .table-row:hover {
+            background: #f8f9fa;
+        }
+
+        .table-row.selected {
+            background: #e8f4fd;
+        }
+
+        .table-cell {
+            padding: 16px 20px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .user-email {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #e8f4fd;
+            color: #1976d2;
+        }
+
+        .action-menu {
+            position: relative;
+            display: inline-block;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .action-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            min-width: 150px;
+            display: none;
+        }
+
+        .action-dropdown.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.3s ease;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+
+        .dropdown-item.danger {
+            color: #dc3545;
+        }
+
+        .pagination {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .pagination-info {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        @media (max-width: 1200px) {
+            .stats-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .search-filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+
+            .users-table {
+                font-size: 12px;
+            }
+
+            .table-cell {
+                padding: 12px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="users-container">
+        <!-- 侧边栏 -->
+        <div class="admin-sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🌱</span>
+                    <span class="logo-text">溯源管理</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-title">主要功能</div>
+                    <a href="./dashboard.html" class="nav-item">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">控制台</span>
+                    </a>
+                    <a href="./users.html" class="nav-item active">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">用户管理</span>
+                    </a>
+                    <a href="./system.html" class="nav-item">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">系统管理</span>
+                    </a>
+                    <a href="./reports.html" class="nav-item">
+                        <span class="nav-icon">📈</span>
+                        <span class="nav-text">数据报表</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">扩展功能</div>
+                    <a href="./notifications.html" class="nav-item">
+                        <span class="nav-icon">🔔</span>
+                        <span class="nav-text">通知管理</span>
+                    </a>
+                    <a href="./settings.html" class="nav-item">
+                        <span class="nav-icon">🔧</span>
+                        <span class="nav-text">系统设置</span>
+                    </a>
+                    <a href="./analytics.html" class="nav-item">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">数据分析</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">P3-023新增</div>
+                    <a href="./import.html" class="nav-item">
+                        <span class="nav-icon">📥</span>
+                        <span class="nav-text">数据导入</span>
+                    </a>
+                    <a href="./logs.html" class="nav-item">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">系统日志</span>
+                    </a>
+                    <a href="./template.html" class="nav-item">
+                        <span class="nav-icon">📄</span>
+                        <span class="nav-text">模板配置</span>
+                    </a>
+                    <a href="./admin-users.html" class="nav-item">
+                        <span class="nav-icon">👨‍💼</span>
+                        <span class="nav-text">管理员管理</span>
+                    </a>
+                    <a href="./permissions.html" class="nav-item">
+                        <span class="nav-icon">🔐</span>
+                        <span class="nav-text">权限管理</span>
+                    </a>
+                    <a href="./backup.html" class="nav-item">
+                        <span class="nav-icon">💾</span>
+                        <span class="nav-text">备份恢复</span>
+                    </a>
+                    <a href="./audit.html" class="nav-item">
+                        <span class="nav-icon">🔍</span>
+                        <span class="nav-text">审计日志</span>
+                    </a>
+                    <a href="./performance.html" class="nav-item">
+                        <span class="nav-icon">⚡</span>
+                        <span class="nav-text">性能监控</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">👨‍💼</div>
+                    <div class="user-details">
+                        <div class="user-name">管理员</div>
+                        <div class="user-role">系统管理员</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 页面头部 -->
+            <div class="page-header">
+                <div class="header-top">
+                    <h1 class="page-title">用户管理</h1>
+                    <div class="header-actions">
+                        <button class="btn" onclick="exportUsers()">📤 导出用户</button>
+                        <button class="btn primary" onclick="showAddUserModal()">➕ 新增用户</button>
+                    </div>
+                </div>
+
+                <div class="search-filters">
+                    <div class="search-box">
+                        <input type="text" class="search-input" id="searchInput" placeholder="搜索用户姓名、邮箱或手机号...">
+                        <span class="search-icon">🔍</span>
+                    </div>
+                    <select class="filter-select" id="statusFilter">
+                        <option value="">全部状态</option>
+                        <option value="active">活跃</option>
+                        <option value="inactive">未激活</option>
+                        <option value="pending">待审核</option>
+                    </select>
+                    <select class="filter-select" id="roleFilter">
+                        <option value="">全部角色</option>
+                        <option value="user">普通用户</option>
+                        <option value="farmer">农场主</option>
+                        <option value="processor">加工商</option>
+                        <option value="admin">管理员</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-number">12,456</div>
+                    <div class="stat-label">总用户数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">9,823</div>
+                    <div class="stat-label">活跃用户</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">156</div>
+                    <div class="stat-label">今日新增</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">23</div>
+                    <div class="stat-label">待审核用户</div>
+                </div>
+            </div>
+
+            <!-- 用户表格 -->
+            <div class="users-table-container">
+                <div class="table-toolbar">
+                    <div class="bulk-actions" id="bulkActions">
+                        <button class="btn" onclick="bulkAction('activate')">✅ 批量激活</button>
+                        <button class="btn" onclick="bulkAction('deactivate')">⛔ 批量禁用</button>
+                        <button class="btn" onclick="bulkAction('delete')">🗑️ 批量删除</button>
+                    </div>
+                    <div class="table-info">
+                        显示 <span id="currentCount">0</span> 条，共 <span id="totalCount">0</span> 条记录
+                    </div>
+                </div>
+
+                <table class="users-table">
+                    <thead class="table-header">
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>用户信息</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>注册时间</th>
+                            <th>最后登录</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- 用户数据将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+
+                <div class="pagination">
+                    <div class="pagination-info">
+                        第 <span id="currentPage">1</span> 页，共 <span id="totalPages">1</span> 页
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="page-btn" onclick="previousPage()" id="prevBtn">上一页</button>
+                        <div id="pageNumbers"></div>
+                        <button class="page-btn" onclick="nextPage()" id="nextBtn">下一页</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增用户模态框 -->
+    <div class="modal" id="addUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">新增用户</h3>
+                <button class="close-btn" onclick="closeModal('addUserModal')">&times;</button>
+            </div>
+            <form id="addUserForm">
+                <div style="display: grid; gap: 16px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 500;">用户姓名</label>
+                        <input type="text" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; box-sizing: border-box;" placeholder="请输入用户姓名" required>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 500;">邮箱地址</label>
+                        <input type="email" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; box-sizing: border-box;" placeholder="请输入邮箱地址" required>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 500;">手机号码</label>
+                        <input type="tel" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; box-sizing: border-box;" placeholder="请输入手机号码" required>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 500;">用户角色</label>
+                        <select style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; box-sizing: border-box;" required>
+                            <option value="">请选择用户角色</option>
+                            <option value="user">普通用户</option>
+                            <option value="farmer">农场主</option>
+                            <option value="processor">加工商</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                        <button type="button" class="btn" onclick="closeModal('addUserModal')" style="flex: 1;">取消</button>
+                        <button type="submit" class="btn primary" style="flex: 1;">确认新增</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 模拟用户数据
+        const userData = [
+            {
+                id: 1,
+                name: '张三',
+                email: 'zhangsan@example.com',
+                phone: '138****8888',
+                role: 'farmer',
+                roleName: '农场主',
+                status: 'active',
+                statusName: '活跃',
+                registerTime: '2024-01-15',
+                lastLogin: '2024-01-20 14:30'
+            },
+            {
+                id: 2,
+                name: '李四',
+                email: 'lisi@example.com',
+                phone: '139****9999',
+                role: 'user',
+                roleName: '普通用户',
+                status: 'active',
+                statusName: '活跃',
+                registerTime: '2024-01-16',
+                lastLogin: '2024-01-19 09:15'
+            },
+            {
+                id: 3,
+                name: '王五',
+                email: 'wangwu@example.com',
+                phone: '137****7777',
+                role: 'processor',
+                roleName: '加工商',
+                status: 'pending',
+                statusName: '待审核',
+                registerTime: '2024-01-18',
+                lastLogin: '从未登录'
+            },
+            {
+                id: 4,
+                name: '赵六',
+                email: 'zhaoliu@example.com',
+                phone: '136****6666',
+                role: 'user',
+                roleName: '普通用户',
+                status: 'inactive',
+                statusName: '未激活',
+                registerTime: '2024-01-12',
+                lastLogin: '2024-01-18 16:45'
+            },
+            {
+                id: 5,
+                name: '孙七',
+                email: 'sunqi@example.com',
+                phone: '135****5555',
+                role: 'farmer',
+                roleName: '农场主',
+                status: 'active',
+                statusName: '活跃',
+                registerTime: '2024-01-10',
+                lastLogin: '2024-01-20 11:20'
+            }
+        ];
+
+        let filteredUsers = [...userData];
+        let selectedUsers = [];
+        let currentPage = 1;
+        const usersPerPage = 10;
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsers();
+            setupFilters();
+        });
+
+        // 加载用户列表
+        function loadUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            const startIndex = (currentPage - 1) * usersPerPage;
+            const endIndex = startIndex + usersPerPage;
+            const currentUsers = filteredUsers.slice(startIndex, endIndex);
+
+            tbody.innerHTML = currentUsers.map(user => `
+                <tr class="table-row" onclick="selectUser(${user.id})">
+                    <td class="table-cell">
+                        <input type="checkbox" onchange="toggleUserSelection(${user.id})" ${selectedUsers.includes(user.id) ? 'checked' : ''}>
+                    </td>
+                    <td class="table-cell">
+                        <div class="user-info">
+                            <div class="user-avatar">${user.name.charAt(0)}</div>
+                            <div class="user-details">
+                                <div class="user-name">${user.name}</div>
+                                <div class="user-email">${user.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="table-cell">
+                        <div class="role-badge">${user.roleName}</div>
+                    </td>
+                    <td class="table-cell">
+                        <div class="status-badge status-${user.status}">${user.statusName}</div>
+                    </td>
+                    <td class="table-cell">${user.registerTime}</td>
+                    <td class="table-cell">${user.lastLogin}</td>
+                    <td class="table-cell">
+                        <div class="action-menu">
+                            <button class="action-btn" onclick="toggleActionMenu(event, ${user.id})">⋮</button>
+                            <div class="action-dropdown" id="actionMenu${user.id}">
+                                <div class="dropdown-item" onclick="viewUser(${user.id})">👁️ 查看详情</div>
+                                <div class="dropdown-item" onclick="editUser(${user.id})">✏️ 编辑用户</div>
+                                <div class="dropdown-item" onclick="resetPassword(${user.id})">🔑 重置密码</div>
+                                <div class="dropdown-item danger" onclick="deleteUser(${user.id})">🗑️ 删除用户</div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            updatePagination();
+            updateTableInfo();
+        }
+
+        // 设置过滤器
+        function setupFilters() {
+            const searchInput = document.getElementById('searchInput');
+            const statusFilter = document.getElementById('statusFilter');
+            const roleFilter = document.getElementById('roleFilter');
+
+            let searchTimeout;
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(applyFilters, 300);
+            });
+
+            statusFilter.addEventListener('change', applyFilters);
+            roleFilter.addEventListener('change', applyFilters);
+        }
+
+        // 应用过滤器
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const roleFilter = document.getElementById('roleFilter').value;
+
+            filteredUsers = userData.filter(user => {
+                const matchesSearch = !searchTerm ||
+                    user.name.toLowerCase().includes(searchTerm) ||
+                    user.email.toLowerCase().includes(searchTerm) ||
+                    user.phone.includes(searchTerm);
+
+                const matchesStatus = !statusFilter || user.status === statusFilter;
+                const matchesRole = !roleFilter || user.role === roleFilter;
+
+                return matchesSearch && matchesStatus && matchesRole;
+            });
+
+            currentPage = 1;
+            selectedUsers = [];
+            loadUsers();
+        }
+
+        // 切换用户选择
+        function toggleUserSelection(userId) {
+            if (selectedUsers.includes(userId)) {
+                selectedUsers = selectedUsers.filter(id => id !== userId);
+            } else {
+                selectedUsers.push(userId);
+            }
+
+            updateBulkActions();
+            updateSelectAllCheckbox();
+        }
+
+        // 全选/取消全选
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const currentPageUsers = getCurrentPageUsers();
+
+            if (selectAllCheckbox.checked) {
+                currentPageUsers.forEach(user => {
+                    if (!selectedUsers.includes(user.id)) {
+                        selectedUsers.push(user.id);
+                    }
+                });
+            } else {
+                currentPageUsers.forEach(user => {
+                    selectedUsers = selectedUsers.filter(id => id !== user.id);
+                });
+            }
+
+            loadUsers();
+            updateBulkActions();
+        }
+
+        // 获取当前页用户
+        function getCurrentPageUsers() {
+            const startIndex = (currentPage - 1) * usersPerPage;
+            const endIndex = startIndex + usersPerPage;
+            return filteredUsers.slice(startIndex, endIndex);
+        }
+
+        // 更新全选复选框状态
+        function updateSelectAllCheckbox() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const currentPageUsers = getCurrentPageUsers();
+            const selectedCurrentPageUsers = currentPageUsers.filter(user => selectedUsers.includes(user.id));
+
+            if (selectedCurrentPageUsers.length === 0) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = false;
+            } else if (selectedCurrentPageUsers.length === currentPageUsers.length) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = true;
+            } else {
+                selectAllCheckbox.indeterminate = true;
+                selectAllCheckbox.checked = false;
+            }
+        }
+
+        // 更新批量操作显示
+        function updateBulkActions() {
+            const bulkActions = document.getElementById('bulkActions');
+            if (selectedUsers.length > 0) {
+                bulkActions.classList.add('visible');
+            } else {
+                bulkActions.classList.remove('visible');
+            }
+        }
+
+        // 更新分页
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+
+            // 生成页码按钮
+            const pageNumbers = document.getElementById('pageNumbers');
+            pageNumbers.innerHTML = '';
+
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                pageNumbers.appendChild(pageBtn);
+            }
+        }
+
+        // 更新表格信息
+        function updateTableInfo() {
+            const startIndex = (currentPage - 1) * usersPerPage;
+            const endIndex = Math.min(startIndex + usersPerPage, filteredUsers.length);
+
+            document.getElementById('currentCount').textContent = endIndex - startIndex;
+            document.getElementById('totalCount').textContent = filteredUsers.length;
+        }
+
+        // 分页控制
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadUsers();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadUsers();
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadUsers();
+        }
+
+        // 显示操作菜单
+        function toggleActionMenu(event, userId) {
+            event.stopPropagation();
+
+            // 关闭所有其他菜单
+            document.querySelectorAll('.action-dropdown').forEach(menu => {
+                menu.classList.remove('show');
+            });
+
+            // 显示当前菜单
+            const menu = document.getElementById(`actionMenu${userId}`);
+            menu.classList.toggle('show');
+        }
+
+        // 点击其他地方关闭菜单
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.action-dropdown').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        });
+
+        // 用户操作
+        function viewUser(userId) {
+            const user = userData.find(u => u.id === userId);
+            alert(`查看用户详情：${user.name}\n邮箱：${user.email}\n角色：${user.roleName}`);
+        }
+
+        function editUser(userId) {
+            const user = userData.find(u => u.id === userId);
+            alert(`编辑用户：${user.name}\n演示模式：打开编辑表单`);
+        }
+
+        function resetPassword(userId) {
+            const user = userData.find(u => u.id === userId);
+            if (confirm(`确定要重置用户 ${user.name} 的密码吗？`)) {
+                alert('密码重置成功，新密码已发送到用户邮箱');
+            }
+        }
+
+        function deleteUser(userId) {
+            const user = userData.find(u => u.id === userId);
+            if (confirm(`确定要删除用户 ${user.name} 吗？此操作不可恢复！`)) {
+                // 从数据中移除用户
+                const index = userData.findIndex(u => u.id === userId);
+                if (index > -1) {
+                    userData.splice(index, 1);
+                    applyFilters();
+                    alert('用户删除成功');
+                }
+            }
+        }
+
+        // 批量操作
+        function bulkAction(action) {
+            if (selectedUsers.length === 0) {
+                alert('请先选择要操作的用户');
+                return;
+            }
+
+            const actionNames = {
+                activate: '激活',
+                deactivate: '禁用',
+                delete: '删除'
+            };
+
+            if (confirm(`确定要${actionNames[action]} ${selectedUsers.length} 个用户吗？`)) {
+                alert(`${actionNames[action]}操作完成`);
+                selectedUsers = [];
+                updateBulkActions();
+                loadUsers();
+            }
+        }
+
+        // 导出用户
+        function exportUsers() {
+            alert('正在导出用户数据...\n演示模式：将生成Excel文件');
+        }
+
+        // 显示新增用户模态框
+        function showAddUserModal() {
+            document.getElementById('addUserModal').classList.add('show');
+        }
+
+        // 关闭模态框
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // 新增用户表单提交
+        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('用户新增成功！\n演示模式：表单数据已提交');
+            closeModal('addUserModal');
+        });
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                window.location.href = './login.html';
+            }
+        }
+    </script>
+</body>
+</html>
