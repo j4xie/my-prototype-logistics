@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食品溯源系统 - 响应式界面原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 1200px;
+            width: 100%;
+            min-height: 600px;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .version-info {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .access-modes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .access-card {
+            border: 2px solid #e0e6ed;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .access-card:hover {
+            border-color: #4299e1;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(66, 153, 225, 0.15);
+        }
+
+        .access-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(66, 153, 225, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .access-card:hover::before {
+            left: 100%;
+        }
+
+        .access-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #4299e1;
+        }
+
+        .access-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .access-description {
+            color: #718096;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .access-btn {
+            background: linear-gradient(45deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .access-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(66, 153, 225, 0.4);
+        }
+
+        .progress-section {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .progress-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2d3748;
+            text-align: center;
+        }
+
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-number.completed { color: #48bb78; }
+        .stat-number.development { color: #ed8936; }
+        .stat-number.total { color: #4299e1; }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(45deg, #48bb78, #38a169);
+            height: 100%;
+            border-radius: 10px;
+            width: 56%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .module-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .module-card:hover {
+            border-color: #4299e1;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-3px);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .module-icon {
+            font-size: 1.5rem;
+            margin-right: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .module-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .module-description {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .module-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .stat-completed { color: #48bb78; }
+        .stat-pending { color: #ed8936; }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: #f7fafc;
+            color: #718096;
+        }
+
+        .footer a {
+            color: #4299e1;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .access-modes {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>食品溯源系统</h1>
+            <p>响应式界面原型 - 展示8大核心业务模块</p>
+            <div class="version-info">v1.0.0 | 基于 web-app-next Phase-3</div>
+        </div>
+
+        <div class="main-content">
+            <!-- 双重入口设计 -->
+            <div class="access-modes">
+                <div class="access-card" onclick="window.location.href='pages/auth/login.html'">
+                    <div class="access-icon">📱</div>
+                    <div class="access-title">普通用户</div>
+                    <div class="access-description">
+                        移动端优化体验<br>
+                        390px视图，iOS风格设计<br>
+                        覆盖溯源、农业、加工等核心功能
+                    </div>
+                    <button class="access-btn">立即体验</button>
+                </div>
+
+                <div class="access-card" onclick="window.location.href='pages/admin/login.html'">
+                    <div class="access-icon">💻</div>
+                    <div class="access-title">管理员后台</div>
+                    <div class="access-description">
+                        PC端宽屏布局<br>
+                        240px侧边栏，管理控制台<br>
+                        用户管理、系统配置、数据分析
+                    </div>
+                    <button class="access-btn">进入后台</button>
+                </div>
+            </div>
+
+            <!-- 进度展示 -->
+            <div class="progress-section">
+                <div class="progress-title">📊 开发进度总览</div>
+                <div class="progress-stats">
+                    <div class="stat-card">
+                        <div class="stat-number completed">50</div>
+                        <div class="stat-label">已完成页面</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number development">39</div>
+                        <div class="stat-label">开发中页面</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number total">89</div>
+                        <div class="stat-label">总计页面</div>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="progress-text">项目完成度: 56% (50/89)</div>
+            </div>
+
+            <!-- 8大模块导航 -->
+            <div class="modules-grid">
+                <div class="module-card" onclick="window.location.href='pages/auth/login.html'">
+                    <div class="module-header">
+                        <div class="module-icon" style="background: #4299e1;">🔐</div>
+                        <div class="module-title">认证模块</div>
+                    </div>
+                    <div class="module-description">用户登录、注册、密码管理、个人资料</div>
+                    <div class="module-stats">
+                        <span class="stat-completed">✅ 4页面已完成</span>
+                        <span class="stat-pending">🔧 移动端优化</span>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="window.location.href='pages/trace/query.html'">
+                    <div class="module-header">
+                        <div class="module-icon" style="background: #48bb78;">🔍</div>
+                        <div class="module-title">溯源模块</div>
+                    </div>
+                    <div class="module-description">溯源查询、详情展示、证书查看、历史记录</div>
+                    <div class="module-stats">
+                        <span class="stat-completed">✅ 4页面已完成</span>
+                        <span class="stat-pending">📱 移动端体验</span>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="window.location.href='pages/farming/dashboard.html'">
+                    <div class="module-header">
+                        <div class="module-icon" style="background: #38a169;">🌱</div>
+                        <div class="module-title">农业模块</div>
+                    </div>
+                    <div class="module-description">监控面板、数据采集、田地管理、指标详情</div>
+                    <div class="module-stats">
+                        <span class="stat-completed">✅ 8页面已完成</span>
+                        <span class="stat-pending">🔧 含修复页面</span>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="window.location.href='pages/processing/index.html'">
+                    <div class="module-header">
+                        <div class="module-icon" style="background: #ed8936;">🏭</div>
+                        <div class="module-title">加工模块</div>
+                    </div>
+                    <div class="module-description">生产管理、质量管理、存储管理、批次管理</div>
+                    <div class="module-stats">
+                        <span class="stat-completed">✅ 6页面已完成</span>
+                        <span class="stat-pending">🔧 3页面已修复</span>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="window.location.href='pages/profile/about.html'">
+                    <div class="module-header">
+                        <div class="module-icon" style="background: #9f7aea;">👤</div>
+                        <div class="module-title">用户中心</div>
+                    </div>
+                    <div class="module-description">个人设置、安全配置、数据管理、反馈系统</div>
+                    <div class="module-stats">
+                        <span class="stat-completed">✅ 6页面已完成</span>
+                        <span class="stat-pending">🔧 7页面已修复</span>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="window.location.href='pages/admin/dashboard.html'">
+                    <div class="module-header">
+                        <div class="module-icon" style="background: #e53e3e;">⚙️</div>
+                        <div class="module-title">管理后台</div>
+                    </div>
+                    <div class="module-description">用户管理、系统配置、数据报表、权限控制</div>
+                    <div class="module-stats">
+                        <span class="stat-completed">✅ 16页面已完成</span>
+                        <span class="stat-pending">💻 PC端布局</span>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="window.location.href='pages/logistics/dashboard.html'">
+                    <div class="module-header">
+                        <div class="module-icon" style="background: #00b3e6;">🚚</div>
+                        <div class="module-title">物流模块</div>
+                    </div>
+                    <div class="module-description">物流控制台、跟踪系统、车辆管理、路线规划</div>
+                    <div class="module-stats">
+                        <span class="stat-completed">✅ 4页面已完成</span>
+                        <span class="stat-pending">💻 PC端优化</span>
+                    </div>
+                </div>
+
+                <div class="module-card" onclick="window.location.href='pages/sales/dashboard.html'">
+                    <div class="module-header">
+                        <div class="module-icon" style="background: #ff6b6b;">💰</div>
+                        <div class="module-title">销售/CRM</div>
+                    </div>
+                    <div class="module-description">销售管理、客户关系、订单处理、业绩分析</div>
+                    <div class="module-stats">
+                        <span class="stat-completed">✅ 10页面已完成</span>
+                        <span class="stat-pending">📊 数据分析</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                <a href="README.md" target="_blank">📖 使用说明</a>
+                <a href="#" onclick="alert('这是基于web-app-next项目的静态原型演示')">ℹ️ 关于原型</a>
+                <a href="#" onclick="alert('TASK-P3-026: 响应式界面原型生成系统\\n创建日期: 2025-06-19\\n项目基础: web-app-next Phase-3')">📋 任务信息</a>
+            </p>
+            <p style="margin-top: 10px; font-size: 0.8rem;">
+                基于 <strong>web-app-next</strong> 项目 | Phase-3 技术栈现代化 | 静态HTML原型系统
+            </p>
+        </div>
+    </div>
+</body>
+</html>

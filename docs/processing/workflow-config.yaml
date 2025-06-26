@@ -1,0 +1,311 @@
+# 生产加工模块 - 工作流配置
+# 定义业务流程、状态转换、权限控制
+# Version: 1.0.0
+# LastUpdated: 2024-12-02
+
+metadata:
+  title: "生产加工工作流配置"
+  description: "定义从原料入库到成品出库的完整业务流程"
+  version: "1.0.0"
+  author: "系统架构团队"
+
+# ================================
+# 核心业务流程定义
+# ================================
+workflows:
+  # 主工作流：完整生产流程
+  main_production_flow:
+    name: "完整生产流程"
+    description: "从原料入库到成品出库的标准流程"
+
+    stages:
+      - stage_id: "raw_material_inbound"
+        name: "原料入库"
+        table: "raw_material_inbound"
+        required_roles: ["warehouse_manager", "quality_inspector"]
+        parallel_allowed: true
+
+        substeps:
+          - step: "supplier_delivery"
+            name: "供应商送货"
+            duration_hours: 1
+
+          - step: "initial_inspection"
+            name: "入库检验"
+            duration_hours: 2
+            required_fields: ["materialName", "initialWeight", "qualityGrade"]
+
+          - step: "storage_allocation"
+            name: "库位分配"
+            duration_hours: 0.5
+            required_fields: ["storageLocation"]
+
+      - stage_id: "production_batches"
+        name: "生产加工"
+        table: "production_batches"
+        depends_on: ["raw_material_inbound"]
+        required_roles: ["production_manager", "operator"]
+        parallel_allowed: false
+
+        substeps:
+          - step: "batch_planning"
+            name: "批次规划"
+            duration_hours: 1
+            required_fields: ["batchNumber", "productName"]
+
+          - step: "processing_execution"
+            name: "加工执行"
+            duration_hours: 8
+            required_fields: ["preProcessWeight", "process_step_data"]
+
+          - step: "post_process_check"
+            name: "加工后检查"
+            duration_hours: 1
+            required_fields: ["postProcessWeight", "yieldRate"]
+
+      - stage_id: "quality_inspections"
+        name: "质量检测"
+        table: "quality_inspections"
+        depends_on: ["production_batches"]
+        required_roles: ["quality_inspector"]
+        parallel_allowed: true
+
+        substeps:
+          - step: "sampling"
+            name: "取样"
+            duration_hours: 0.5
+
+          - step: "laboratory_testing"
+            name: "实验室检测"
+            duration_hours: 4
+            required_fields: ["test_result_data"]
+
+          - step: "result_validation"
+            name: "结果确认"
+            duration_hours: 0.5
+            required_fields: ["overallResult"]
+
+      - stage_id: "packaging_records"
+        name: "包装"
+        table: "packaging_records"
+        depends_on: ["quality_inspections"]
+        condition: "quality_inspections.overallResult = 'pass'"
+        required_roles: ["packaging_operator"]
+        parallel_allowed: false
+
+        substeps:
+          - step: "packaging_setup"
+            name: "包装准备"
+            duration_hours: 0.5
+
+          - step: "packaging_execution"
+            name: "包装执行"
+            duration_hours: 2
+            required_fields: ["packageType", "packageCount"]
+
+          - step: "labeling"
+            name: "贴标"
+            duration_hours: 0.5
+            required_fields: ["expiryDate"]
+
+      - stage_id: "finished_product_outbound"
+        name: "成品出库"
+        table: "finished_product_outbound"
+        depends_on: ["packaging_records"]
+        required_roles: ["warehouse_manager", "shipping_operator"]
+        parallel_allowed: true
+
+        substeps:
+          - step: "order_matching"
+            name: "订单匹配"
+            duration_hours: 0.5
+            required_fields: ["customerName", "orderNumber"]
+
+          - step: "shipping_preparation"
+            name: "发货准备"
+            duration_hours: 1
+            required_fields: ["transportMethod"]
+
+          - step: "dispatch"
+            name: "发货"
+            duration_hours: 0.5
+            required_fields: ["shippedAt"]
+
+# ================================
+# 状态转换规则
+# ================================
+state_transitions:
+  raw_material_inbound:
+    initial_state: "pending"
+    states:
+      pending:
+        name: "待检验"
+        allowed_transitions: ["approved", "rejected"]
+        auto_transition: false
+
+      approved:
+        name: "已入库"
+        allowed_transitions: []
+        auto_transition: false
+
+      rejected:
+        name: "已拒收"
+        allowed_transitions: []
+        auto_transition: false
+
+  production_batches:
+    initial_state: "planned"
+    states:
+      planned:
+        name: "已计划"
+        allowed_transitions: ["in_progress"]
+        auto_transition: false
+
+      in_progress:
+        name: "生产中"
+        allowed_transitions: ["completed", "failed"]
+        auto_transition: false
+
+      completed:
+        name: "已完成"
+        allowed_transitions: []
+        auto_transition: true
+        condition: "endTime IS NOT NULL AND postProcessWeight > 0"
+
+      failed:
+        name: "失败"
+        allowed_transitions: ["planned"]
+        auto_transition: false
+
+  quality_inspections:
+    initial_state: "pending"
+    states:
+      pending:
+        name: "待检测"
+        allowed_transitions: ["pass", "fail"]
+        auto_transition: false
+
+      pass:
+        name: "合格"
+        allowed_transitions: []
+        auto_transition: true
+        condition: "overallResult = 'pass'"
+
+      fail:
+        name: "不合格"
+        allowed_transitions: []
+        auto_transition: true
+        condition: "overallResult = 'fail'"
+
+# ================================
+# 权限控制
+# ================================
+role_permissions:
+  warehouse_manager:
+    name: "仓库管理员"
+    permissions:
+      - "raw_material_inbound:create"
+      - "raw_material_inbound:update"
+      - "raw_material_inbound:approve"
+      - "finished_product_outbound:create"
+      - "finished_product_outbound:update"
+
+  quality_inspector:
+    name: "质检员"
+    permissions:
+      - "raw_material_inbound:inspect"
+      - "quality_inspections:create"
+      - "quality_inspections:update"
+      - "quality_inspections:approve"
+
+  production_manager:
+    name: "生产经理"
+    permissions:
+      - "production_batches:create"
+      - "production_batches:update"
+      - "production_batches:approve"
+      - "production_summary:view"
+
+  operator:
+    name: "操作员"
+    permissions:
+      - "production_batches:update"
+      - "packaging_records:create"
+      - "packaging_records:update"
+
+# ================================
+# 业务规则配置
+# ================================
+business_rules:
+  # 重量校验规则
+  weight_validation:
+    - rule: "postProcessWeight <= preProcessWeight"
+      message: "加工后重量不能超过加工前重量"
+      severity: "error"
+
+    - rule: "preProcessWeight <= raw_material_inbound.initialWeight"
+      message: "加工前重量不能超过原料初始重量"
+      severity: "error"
+
+  # 时间校验规则
+  time_validation:
+    - rule: "production_batches.startTime >= raw_material_inbound.receivedAt"
+      message: "生产开始时间不能早于原料入库时间"
+      severity: "error"
+
+    - rule: "quality_inspections.inspectionTime >= production_batches.endTime"
+      message: "质检时间不能早于生产结束时间"
+      severity: "error"
+
+  # 状态依赖规则
+  state_dependencies:
+    - rule: "production_batches can only start when raw_material_inbound.status = 'approved'"
+      message: "只有已入库的原料才能开始生产"
+      severity: "error"
+
+    - rule: "packaging_records can only start when quality_inspections.overallResult = 'pass'"
+      message: "只有质检合格的产品才能包装"
+      severity: "error"
+
+# ================================
+# 模板映射配置
+# ================================
+template_mappings:
+  meat_processing:
+    name: "肉类加工"
+    workflow: "main_production_flow"
+    typical_duration_hours: 16
+    required_equipment: ["屠宰设备", "冷藏设备", "包装设备"]
+
+  seafood_processing:
+    name: "水产加工"
+    workflow: "main_production_flow"
+    typical_duration_hours: 12
+    required_equipment: ["清洗设备", "烟熏设备", "冷藏设备"]
+
+  grain_processing:
+    name: "粮食加工"
+    workflow: "main_production_flow"
+    typical_duration_hours: 8
+    required_equipment: ["清洗设备", "烘干设备", "包装设备"]
+
+# ================================
+# 告警配置
+# ================================
+alerts:
+  # 超时告警
+  timeout_alerts:
+    - stage: "quality_inspections"
+      threshold_hours: 6
+      message: "质检超时，请及时处理"
+      recipients: ["quality_manager"]
+
+  # 异常数据告警
+  data_alerts:
+    - condition: "yieldRate < 85"
+      message: "成品率过低，请检查生产工艺"
+      recipients: ["production_manager"]
+
+    - condition: "overallResult = 'fail'"
+      message: "质检不合格，请暂停相关批次"
+      recipients: ["quality_manager", "production_manager"]

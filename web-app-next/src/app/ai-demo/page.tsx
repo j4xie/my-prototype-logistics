@@ -1,6 +1,6 @@
 /**
  * AI数据分析演示页面 (简化版)
- * 
+ *
  * 展示TASK-P3-016B实现的AI数据分析API优化与智能缓存功能
  */
 
@@ -51,10 +51,10 @@ export default function AiDemoPage() {
   // 执行单个AI分析
   const handleSingleAnalysis = async () => {
     setLoading(true);
-    
+
     // 模拟API调用延迟
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     const result = generateMockAiResult(selectedScenario);
     setAnalysisResult(result);
     setLoading(false);
@@ -63,17 +63,17 @@ export default function AiDemoPage() {
   // 执行批量AI分析
   const handleBatchAnalysis = async () => {
     setLoading(true);
-    
+
     // 模拟批量API调用
     await new Promise(resolve => setTimeout(resolve, 2500));
-    
+
     const results = AI_SCENARIOS.map(scenario => ({
       id: scenario.id,
       name: scenario.name,
       result: generateMockAiResult(scenario.id),
       success: Math.random() > 0.1 // 90%成功率
     }));
-    
+
     setBatchResults(results);
     setLoading(false);
   };
@@ -82,7 +82,7 @@ export default function AiDemoPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
+      <div className="container mx-auto px-4 max-w-[390px]">
         {/* 页面标题 */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -101,14 +101,15 @@ export default function AiDemoPage() {
         {/* 控制面板 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">AI分析控制面板</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <div className="space-y-6">
             {/* 场景选择 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                选择AI分析场景
-              </label>
-              <div className="space-y-2">
+              <fieldset>
+                <legend className="block text-sm font-medium text-gray-700 mb-3">
+                  选择AI分析场景
+                </legend>
+                <div className="space-y-2" role="radiogroup" aria-label="AI分析场景选择">
                 {AI_SCENARIOS.map((scenario) => (
                   <label key={scenario.id} className="flex items-start space-x-3 cursor-pointer">
                     <input
@@ -123,8 +124,9 @@ export default function AiDemoPage() {
                       <div className="text-xs text-gray-500">{scenario.desc}</div>
                     </div>
                   </label>
-                ))}
-              </div>
+                                  ))}
+                </div>
+              </fieldset>
             </div>
 
             {/* 操作按钮 */}
@@ -137,15 +139,17 @@ export default function AiDemoPage() {
                     variant="primary"
                     className="w-full"
                     disabled={loading}
+                    aria-label={`执行${selectedScenarioInfo?.name}AI分析`}
                   >
                     {loading ? '分析中...' : `执行 ${selectedScenarioInfo?.name}`}
                   </Button>
-                  
+
                   <Button
                     onClick={handleBatchAnalysis}
                     variant="secondary"
                     className="w-full"
                     disabled={loading}
+                    aria-label="执行全部AI分析场景的批量分析"
                   >
                     {loading ? '批量分析中...' : '执行全场景批量分析'}
                   </Button>
@@ -179,14 +183,14 @@ export default function AiDemoPage() {
         </div>
 
         {/* 结果展示区域 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
+        <div className="space-y-8">
+
           {/* 单个分析结果 */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               AI分析结果
             </h3>
-            
+
             {loading && (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -243,8 +247,8 @@ export default function AiDemoPage() {
                 {/* 缓存信息 */}
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                   <div className="text-xs text-blue-800">
-                    💾 缓存状态: {analysisResult.cacheInfo.cached ? '命中' : '未命中'} | 
-                    来源: {analysisResult.cacheInfo.source} | 
+                    💾 缓存状态: {analysisResult.cacheInfo.cached ? '命中' : '未命中'} |
+                    来源: {analysisResult.cacheInfo.source} |
                     响应时间: {analysisResult.cacheInfo.responseTime}ms
                   </div>
                 </div>
@@ -262,7 +266,7 @@ export default function AiDemoPage() {
           {/* 批量分析结果 */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">批量分析结果</h3>
-            
+
             {batchResults.length > 0 && !loading && (
               <div className="space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-md p-4">
@@ -270,7 +274,7 @@ export default function AiDemoPage() {
                     ✅ 批量分析完成 ({batchResults.filter(r => r.success).length}/{batchResults.length} 成功)
                   </div>
                 </div>
-                
+
                 <div className="space-y-3">
                   {batchResults.map((result) => (
                     <div key={result.id} className="border border-gray-200 rounded-md p-3">
@@ -279,14 +283,14 @@ export default function AiDemoPage() {
                           {result.name}
                         </span>
                         <span className={`text-xs px-2 py-1 rounded-full ${
-                          result.success 
-                            ? 'bg-green-100 text-green-800' 
+                          result.success
+                            ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
                           {result.success ? '成功' : '失败'}
                         </span>
                       </div>
-                      
+
                       {result.success && (
                         <div className="grid grid-cols-3 gap-2 text-xs">
                           <div className="text-center">
@@ -321,7 +325,7 @@ export default function AiDemoPage() {
         {/* 技术架构说明 */}
         <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">TASK-P3-016B技术架构</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
               <div className="text-2xl mb-2">🧠</div>
@@ -331,7 +335,7 @@ export default function AiDemoPage() {
                 四种AI缓存策略
               </div>
             </div>
-            
+
             <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
               <div className="text-2xl mb-2">⚡</div>
               <div className="text-sm font-medium text-green-800">批量处理优化</div>
@@ -340,7 +344,7 @@ export default function AiDemoPage() {
                 优先队列 + 去重
               </div>
             </div>
-            
+
             <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
               <div className="text-2xl mb-2">🛡️</div>
               <div className="text-sm font-medium text-purple-800">错误处理增强</div>
@@ -349,7 +353,7 @@ export default function AiDemoPage() {
                 优雅降级策略
               </div>
             </div>
-            
+
             <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg">
               <div className="text-2xl mb-2">📈</div>
               <div className="text-sm font-medium text-yellow-800">性能监控</div>
@@ -363,4 +367,4 @@ export default function AiDemoPage() {
       </div>
     </div>
   );
-} 
+}

@@ -1,0 +1,291 @@
+{
+  "templateInfo": {
+    "templateName": "肉类加工模板",
+    "industryType": "meat_processing",
+    "version": 1,
+    "description": "适用于牛肉、猪肉、羊肉等畜类产品加工流程",
+    "applicableProducts": ["牛排", "猪排", "羊排", "肉丸", "香肠", "培根", "火腿"],
+    "createdBy": "产品团队",
+    "createdAt": "2024-12-02T10:00:00Z",
+    "lastUpdated": "2024-12-02T10:00:00Z"
+  },
+
+  "rawMaterialFields": {
+    "breed": {
+      "title": "品种",
+      "type": "enum",
+      "enum": ["西门塔尔", "安格斯", "和牛", "本地黄牛", "杜洛克猪", "长白猪", "大白猪"],
+      "required": true,
+      "category": "basic",
+      "description": "动物品种，影响肉质和定价"
+    },
+    "temperature": {
+      "title": "储存温度",
+      "type": "number",
+      "min": -20,
+      "max": 10,
+      "unit": "°C",
+      "required": true,
+      "category": "safety",
+      "description": "原料储存温度，必须符合食品安全标准"
+    },
+    "feedingMethod": {
+      "title": "饲养方式",
+      "type": "enum",
+      "enum": ["放牧", "圈养", "半放牧"],
+      "required": false,
+      "category": "quality",
+      "description": "饲养方式影响肉质口感"
+    },
+    "slaughterDate": {
+      "title": "屠宰日期",
+      "type": "date",
+      "required": true,
+      "category": "safety",
+      "description": "屠宰日期，用于计算保质期"
+    },
+    "certificateNumber": {
+      "title": "检疫证号",
+      "type": "string",
+      "pattern": "^[A-Z]{2}\\d{8}$",
+      "required": true,
+      "category": "safety",
+      "description": "动物检疫证书编号"
+    }
+  },
+
+  "processStepFields": {
+    "rollingTemp": {
+      "title": "滚揉温度",
+      "type": "number",
+      "min": 0,
+      "max": 10,
+      "unit": "°C",
+      "required": true,
+      "category": "quality",
+      "description": "滚揉过程的温度控制，影响肉质嫩度"
+    },
+    "rollingTime": {
+      "title": "滚揉时间",
+      "type": "integer",
+      "min": 30,
+      "max": 300,
+      "unit": "分钟",
+      "required": true,
+      "category": "quality",
+      "description": "滚揉时间长短影响肉质和保水性"
+    },
+    "operator": {
+      "title": "操作员",
+      "type": "string",
+      "required": true,
+      "category": "basic",
+      "description": "负责操作的员工姓名"
+    },
+    "additives": {
+      "title": "添加剂",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "amount": {"type": "number"},
+          "unit": {"type": "string"}
+        }
+      },
+      "required": false,
+      "category": "quality",
+      "description": "使用的食品添加剂清单"
+    },
+    "processMethod": {
+      "title": "加工方式",
+      "type": "enum",
+      "enum": ["传统工艺", "现代工艺", "混合工艺"],
+      "required": true,
+      "category": "basic",
+      "description": "采用的加工工艺类型"
+    }
+  },
+
+  "qualityTestFields": {
+    "phValue": {
+      "title": "PH值",
+      "type": "number",
+      "min": 5.0,
+      "max": 7.0,
+      "required": true,
+      "category": "quality",
+      "description": "肉品酸碱度，正常范围5.8-6.4"
+    },
+    "proteinContent": {
+      "title": "蛋白质含量",
+      "type": "number",
+      "min": 15.0,
+      "max": 25.0,
+      "unit": "%",
+      "required": true,
+      "category": "quality",
+      "description": "蛋白质含量百分比"
+    },
+    "fatContent": {
+      "title": "脂肪含量",
+      "type": "number",
+      "min": 5.0,
+      "max": 30.0,
+      "unit": "%",
+      "required": true,
+      "category": "quality",
+      "description": "脂肪含量百分比"
+    },
+    "bacteriaCount": {
+      "title": "细菌总数",
+      "type": "integer",
+      "max": 10000,
+      "unit": "CFU/g",
+      "required": true,
+      "category": "safety",
+      "description": "每克样品中的细菌菌落总数"
+    },
+    "salmonella": {
+      "title": "沙门氏菌",
+      "type": "enum",
+      "enum": ["未检出", "检出"],
+      "required": true,
+      "category": "safety",
+      "description": "沙门氏菌检测结果，必须为未检出"
+    },
+    "ecoli": {
+      "title": "大肠杆菌",
+      "type": "integer",
+      "max": 100,
+      "unit": "CFU/g",
+      "required": true,
+      "category": "safety",
+      "description": "大肠杆菌数量，食品安全指标"
+    }
+  },
+
+  "packagingSpecFields": {
+    "material": {
+      "title": "包装材料",
+      "type": "enum",
+      "enum": ["PA/PE复合膜", "PET/PE", "EVOH阻氧膜", "铝箔复合膜"],
+      "required": true,
+      "category": "basic",
+      "description": "包装材料类型，影响保质期"
+    },
+    "vacuum_level": {
+      "title": "真空度",
+      "type": "number",
+      "min": 90.0,
+      "max": 99.9,
+      "unit": "%",
+      "required": false,
+      "category": "quality",
+      "description": "真空包装的真空度百分比"
+    },
+    "gas_composition": {
+      "title": "充气成分",
+      "type": "object",
+      "properties": {
+        "nitrogen": {"type": "number", "min": 0, "max": 100},
+        "carbon_dioxide": {"type": "number", "min": 0, "max": 100},
+        "oxygen": {"type": "number", "min": 0, "max": 100}
+      },
+      "required": false,
+      "category": "quality",
+      "description": "气调包装的气体成分比例"
+    },
+    "package_size": {
+      "title": "包装规格",
+      "type": "enum",
+      "enum": ["100g", "200g", "300g", "500g", "1kg", "2kg"],
+      "required": true,
+      "category": "basic",
+      "description": "单个包装的重量规格"
+    },
+    "label_info": {
+      "title": "标签信息",
+      "type": "object",
+      "properties": {
+        "product_name": {"type": "string"},
+        "ingredients": {"type": "string"},
+        "nutrition_facts": {"type": "object"},
+        "storage_instructions": {"type": "string"}
+      },
+      "required": true,
+      "category": "basic",
+      "description": "包装标签上的必要信息"
+    }
+  },
+
+  "examples": {
+    "rawMaterialData": {
+      "breed": "西门塔尔",
+      "temperature": -2,
+      "feedingMethod": "放牧",
+      "slaughterDate": "2024-11-30",
+      "certificateNumber": "BJ12345678"
+    },
+    "processStepData": {
+      "rollingTemp": 4,
+      "rollingTime": 120,
+      "operator": "王师傅",
+      "additives": [
+        {"name": "食盐", "amount": 2.5, "unit": "kg"},
+        {"name": "亚硝酸钠", "amount": 150, "unit": "g"}
+      ],
+      "processMethod": "现代工艺"
+    },
+    "qualityTestData": {
+      "phValue": 6.2,
+      "proteinContent": 20.5,
+      "fatContent": 15.2,
+      "bacteriaCount": 500,
+      "salmonella": "未检出",
+      "ecoli": 50
+    },
+    "packagingSpecData": {
+      "material": "PA/PE复合膜",
+      "vacuum_level": 99.5,
+      "package_size": "500g",
+      "label_info": {
+        "product_name": "精装牛排",
+        "ingredients": "牛肉、食盐、香料",
+        "nutrition_facts": {
+          "protein": "20.5g/100g",
+          "fat": "15.2g/100g"
+        },
+        "storage_instructions": "-18°C冷冻保存"
+      }
+    }
+  },
+
+  "validationRules": {
+    "cross_field_validation": [
+      {
+        "rule": "if processMethod == '传统工艺' then rollingTime >= 180",
+        "message": "传统工艺滚揉时间不能少于3小时"
+      },
+      {
+        "rule": "if salmonella == '检出' then overallResult must be 'fail'",
+        "message": "检出沙门氏菌的产品必须判定为不合格"
+      }
+    ]
+  },
+
+  "reporting": {
+    "daily_summary_fields": [
+      "totalBatches",
+      "averageYieldRate",
+      "qualityPassRate",
+      "avgProteinContent",
+      "avgFatContent"
+    ],
+    "quality_kpis": [
+      "bacteriaCount_avg",
+      "phValue_avg",
+      "salmonella_detection_rate"
+    ]
+  }
+}

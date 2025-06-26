@@ -105,7 +105,7 @@ export const productsHandlers = [
   }),
 
   // POST /api/products - 创建新产品
-  http.post('/api/products', async ({ request }) => {
+  http.post('*/api/products', async ({ request }) => {
     try {
       // 模拟网络延迟
       await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 200))

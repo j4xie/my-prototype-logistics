@@ -14,6 +14,14 @@ const eslintConfig = [
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "off", // 允许any类型用于工具函数和类型定义
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        "argsIgnorePattern": "^_",  // 允许以下划线开头的未使用参数
+        "varsIgnorePattern": "^_"   // 允许以下划线开头的未使用变量
+      }],
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        "argsIgnorePattern": "^_",  // 允许以下划线开头的未使用参数
+        "varsIgnorePattern": "^_"   // 允许以下划线开头的未使用变量
+      }],
     },
   },
 ];

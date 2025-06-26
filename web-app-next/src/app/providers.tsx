@@ -20,19 +20,28 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    // 初始化WebSocket连接
-    const wsConfig = {
-      url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
-      autoConnect: true,
-      reconnection: true,
-      timeout: 5000,
-    };
+    // 检查是否启用Mock模式
+    const isMockEnabled = process.env.NEXT_PUBLIC_MOCK_ENABLED === 'true';
 
-    try {
-      const ws = initWebSocket(wsConfig);
-      ws.connect().catch(console.error);
-    } catch (error) {
-      console.warn('WebSocket初始化失败:', error);
+    // 只在非Mock模式下初始化WebSocket连接
+    if (!isMockEnabled) {
+      const wsConfig = {
+        url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
+        autoConnect: true,
+        reconnection: true,
+        timeout: 5000,
+      };
+
+      try {
+        const ws = initWebSocket(wsConfig);
+        ws.connect().catch((error) => {
+          console.warn('WebSocket连接失败 (这在Mock模式下是正常的):', error?.message || error);
+        });
+      } catch (error) {
+        console.warn('WebSocket初始化失败:', error);
+      }
+    } else {
+      console.log('🔧 Mock模式已启用，跳过WebSocket连接');
     }
 
     // 初始化AI服务
@@ -45,12 +54,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
       timeout: 30000,
     };
 
-    if (aiConfig.apiKey) {
+    if (aiConfig.apiKey && !isMockEnabled) {
       try {
         initAIService(aiConfig);
       } catch (error) {
         console.warn('AI服务初始化失败:', error);
       }
+    } else if (isMockEnabled) {
+      console.log('🔧 Mock模式已启用，跳过AI服务初始化');
     }
   }, []);
 

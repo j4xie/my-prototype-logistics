@@ -13,8 +13,9 @@ alwaysApply: false
 
 <!-- created: 2025-01-15 -->
 <!-- enhanced: 2025-02-02 -->
-<!-- version: 2.0.0 -->
+<!-- version: 2.1.0 -->
 <!-- authority: API领域子主控规则，统一管理所有API相关开发活动 -->
+<!-- updated: 2025-02-02 16:45 - 添加Mock API架构文档引用指导 -->
 
 ## 🎯 **API任务智能路由** (10秒内确定适用规则)
 
@@ -22,6 +23,7 @@ alwaysApply: false
 |----|----|----|
 | **接口设计、文档编写、架构规划** | `api-interface-design-agent` | 设计、文档、架构、规范 |
 | **调用实现、集成开发、问题修复** | `api-integration-agent` | 实现、调用、集成、修复 |
+| **Mock API开发、数据模拟** | `docs/architecture/mock-api-architecture.md` | Mock、模拟、MSW、测试数据 |
 | **规则选择、任务规划、指导咨询** | `本文件` | 规则选择、指导、咨询 |
 
 ## 📚 **API开发核心原则** (适用：所有API相关开发)
@@ -118,6 +120,15 @@ alwaysApply: false
 → 使用 api-interface-design-agent 完成设计阶段
 → 使用 api-integration-agent 完成实现阶段
 → 遵循标准工作流程的四个阶段
+```
+
+### **Mock API开发** (Phase-3重组后新增)
+```markdown
+场景：Mock API、数据模拟、测试环境搭建
+→ 必读 docs/architecture/mock-api-architecture.md 了解统一架构
+→ 参考 docs/api/schema-version-management.md 进行版本管理
+→ 查看具体任务文档中的"必读参考文档"章节获取精确指导
+→ 严格遵循MSW + OpenAPI + TypeScript技术栈标准
 ```
 
 ## 📋 **API开发检查清单**

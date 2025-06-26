@@ -1,6 +1,6 @@
 /**
  * AI全局监控组件
- * 
+ *
  * 提供全局AI系统性能监控，仅在开发环境显示
  * 包含AI缓存、批量处理、错误处理的实时性能指标
  */
@@ -20,19 +20,31 @@ interface SystemHealth {
 }
 
 export const AiGlobalMonitor: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const [systemHealth, setSystemHealth] = useState<SystemHealth>({
     overall: 'healthy',
     cacheHealth: 'good',
     batchHealth: 'good',
     errorHealth: 'good',
-    lastUpdate: new Date().toLocaleTimeString()
+    lastUpdate: ''
   });
 
   // 使用AI错误监控Hook
   const errorMonitoringData = useAiErrorMonitoring(5000);
 
+  // 确保组件在客户端挂载后才显示时间相关内容
+  useEffect(() => {
+    setMounted(true);
+    setSystemHealth(prev => ({
+      ...prev,
+      lastUpdate: new Date().toLocaleTimeString()
+    }));
+  }, []);
+
   // 系统健康度计算
   useEffect(() => {
+    if (!mounted) return; // 只在客户端挂载后才执行
+
     const calculateSystemHealth = () => {
       try {
         const cacheHealth: 'good' | 'degraded' | 'poor' = 'good';
@@ -89,10 +101,10 @@ export const AiGlobalMonitor: React.FC = () => {
     const interval = setInterval(calculateSystemHealth, 10000); // 每10秒更新
 
     return () => clearInterval(interval);
-  }, [errorMonitoringData?.healthScore, errorMonitoringData?.circuitBreakerStatus]);
+  }, [mounted, errorMonitoringData?.healthScore, errorMonitoringData?.circuitBreakerStatus]);
 
-  // 开发环境才渲染
-  if (process.env.NODE_ENV !== 'development') {
+  // 开发环境才渲染，且确保客户端挂载后才渲染
+  if (process.env.NODE_ENV !== 'development' || !mounted) {
     return null;
   }
 
@@ -100,13 +112,13 @@ export const AiGlobalMonitor: React.FC = () => {
     <>
       {/* AI性能监控面板 */}
       <AiPerformanceMonitor className="max-w-lg" refreshInterval={5000} />
-      
+
       {/* 系统健康状态指示器 */}
       <div className="fixed top-4 right-4 z-40">
         <div className={`
           inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium shadow-sm
-          ${systemHealth.overall === 'healthy' 
-            ? 'bg-green-50 text-green-700 border border-green-200' 
+          ${systemHealth.overall === 'healthy'
+            ? 'bg-green-50 text-green-700 border border-green-200'
             : systemHealth.overall === 'warning'
             ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
             : 'bg-red-50 text-red-700 border border-red-200'
@@ -121,7 +133,7 @@ export const AiGlobalMonitor: React.FC = () => {
             systemHealth.overall === 'warning' ? '警告' : '异常'
           }</span>
         </div>
-        
+
         {/* 详细健康状态 (悬停显示) */}
         <div className="hidden group-hover:block absolute top-full right-0 mt-2 p-3 bg-white rounded-lg shadow-lg border text-xs min-w-48">
           <div className="space-y-2">
@@ -173,4 +185,4 @@ export const AiGlobalMonitor: React.FC = () => {
   );
 };
 
-export default AiGlobalMonitor; 
+export default AiGlobalMonitor;
