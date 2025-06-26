@@ -3,456 +3,558 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>溯源查询 - 食品溯源系统</title>
+    <title>产品溯源查询 - 食品溯源系统</title>
     <link rel="stylesheet" href="../../styles/main.css">
     <style>
         .query-container {
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .query-wrapper {
             max-width: 390px;
             margin: 0 auto;
-            min-height: 100vh;
-            background: #f7fafc;
         }
 
-        .query-header {
-            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+        .search-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px;
+            padding: 30px 20px;
             color: white;
-            padding: 40px 20px 30px;
+            margin-bottom: 20px;
             text-align: center;
-            position: relative;
         }
 
-        .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .query-title {
-            font-size: 1.5rem;
+        .search-title {
+            font-size: 24px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
-        .query-subtitle {
-            font-size: 0.9rem;
+        .search-subtitle {
+            font-size: 14px;
             opacity: 0.9;
-        }
-
-        .query-content {
-            padding: 20px;
-            transform: translateY(-15px);
-        }
-
-        .query-methods {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
-        .method-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .scan-btn {
-            width: 100%;
-            background: linear-gradient(45deg, #4299e1, #3182ce);
-            color: white;
-            border: none;
-            padding: 20px;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .scan-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.4);
-        }
-
-        .scan-icon {
-            font-size: 1.5rem;
-            margin-right: 10px;
-        }
-
-        .divider {
-            text-align: center;
-            margin: 25px 0;
+        .search-box {
             position: relative;
-            color: #a0aec0;
-            font-size: 0.9rem;
-        }
-
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #e2e8f0;
-        }
-
-        .divider span {
-            background: white;
-            padding: 0 15px;
-        }
-
-        .manual-form {
-            margin-top: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            color: #4a5568;
-            font-weight: 500;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: #f7fafc;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #38a169;
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(56, 161, 105, 0.15);
-        }
-
-        .query-btn {
-            width: 100%;
-            background: linear-gradient(45deg, #38a169, #2f855a);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .query-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(56, 161, 105, 0.4);
-        }
-
-        .recent-queries {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .recent-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #2d3748;
             margin-bottom: 15px;
         }
 
-        .recent-item {
+        .search-input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            box-sizing: border-box;
+        }
+
+        .search-input::placeholder {
+            color: #666;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .search-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .scan-btn, .search-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .search-btn {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .scan-btn:hover, .search-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .quick-access {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .section-icon {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .quick-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .quick-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .quick-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .quick-text {
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .popular-products {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .product-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .product-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .recent-item:hover {
-            background: #f7fafc;
-            margin: 0 -20px;
-            padding-left: 20px;
-            padding-right: 20px;
+        .product-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
-        .recent-item:last-child {
-            border-bottom: none;
-        }
-
-        .recent-icon {
-            width: 40px;
-            height: 40px;
-            background: #e6fffa;
-            border-radius: 50%;
+        .product-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            background: #ddd;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 12px;
-            color: #38a169;
+            margin-right: 15px;
+            font-size: 20px;
         }
 
-        .recent-info {
+        .product-info {
             flex: 1;
         }
 
-        .recent-code {
+        .product-name {
+            font-size: 16px;
             font-weight: 500;
-            color: #2d3748;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
-        .recent-time {
-            font-size: 0.8rem;
-            color: #718096;
+        .product-code {
+            font-size: 12px;
+            opacity: 0.7;
         }
 
-        .recent-arrow {
-            color: #a0aec0;
+        .product-arrow {
+            color: #ccc;
+            font-size: 16px;
         }
 
-        .tips-card {
-            background: linear-gradient(45deg, #e6fffa, #b2f5ea);
-            border-radius: 12px;
+        .product-item:hover .product-arrow {
+            color: white;
+        }
+
+        .history-section {
+            background: white;
+            border-radius: 16px;
             padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .history-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .history-action {
+            color: #667eea;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .tips-section {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 12px;
+            padding: 15px;
             margin-bottom: 20px;
         }
 
         .tips-title {
-            font-size: 1rem;
+            font-size: 14px;
             font-weight: 600;
-            color: #234e52;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
+            color: #0c5460;
+            margin-bottom: 8px;
         }
 
-        .tips-icon {
-            margin-right: 8px;
-        }
-
-        .tips-list {
-            color: #285e61;
-            font-size: 0.9rem;
+        .tips-content {
+            font-size: 12px;
+            color: #0c5460;
             line-height: 1.5;
         }
 
-        .tips-list li {
-            margin-bottom: 5px;
-        }
+        @media (max-width: 480px) {
+            .query-container {
+                padding: 10px;
+            }
 
-        .help-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 50px;
-            height: 50px;
-            background: #38a169;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(56, 161, 105, 0.3);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        .help-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(56, 161, 105, 0.4);
+            .quick-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 <body>
     <div class="query-container">
-        <!-- 查询页面头部 -->
-        <div class="query-header">
-            <button class="back-btn" onclick="history.back()">
-                ←
-            </button>
-            <div class="query-title">溯源查询</div>
-            <div class="query-subtitle">扫码或输入代码查询产品溯源信息</div>
-        </div>
-
-        <div class="query-content">
-            <!-- 使用提示 -->
-            <div class="tips-card">
-                <div class="tips-title">
-                    <span class="tips-icon">💡</span>
-                    查询方式
-                </div>
-                <ul class="tips-list">
-                    <li>扫描产品包装上的二维码（推荐）</li>
-                    <li>手动输入溯源代码查询</li>
-                    <li>可查看最近查询的历史记录</li>
-                </ul>
-            </div>
-
-            <!-- 查询方法 -->
-            <div class="query-methods">
-                <div class="method-title">选择查询方式</div>
-
-                <!-- 扫码查询 -->
-                <button class="scan-btn" onclick="scanQRCode()">
-                    <span class="scan-icon">📷</span>
-                    扫码查询
-                </button>
-
-                <div class="divider">
-                    <span>或者</span>
-                </div>
-
-                <!-- 手动输入 -->
-                <form class="manual-form" id="queryForm">
-                    <div class="form-group">
-                        <label class="form-label" for="traceCode">溯源代码</label>
-                        <input
-                            type="text"
-                            id="traceCode"
-                            class="form-input"
-                            placeholder="请输入溯源代码 (如: TC202401150001)"
-                            required
-                        >
-                    </div>
-                    <button type="submit" class="query-btn">查询溯源信息</button>
-                </form>
-            </div>
-
-            <!-- 最近查询 -->
-            <div class="recent-queries">
-                <div class="recent-title">最近查询</div>
-
-                <div class="recent-item" onclick="queryByCode('TC202401150001')">
-                    <div class="recent-icon">🥬</div>
-                    <div class="recent-info">
-                        <div class="recent-code">TC202401150001</div>
-                        <div class="recent-time">有机白菜 • 2小时前</div>
-                    </div>
-                    <div class="recent-arrow">›</div>
-                </div>
-
-                <div class="recent-item" onclick="queryByCode('TC202401140002')">
-                    <div class="recent-icon">🍅</div>
-                    <div class="recent-info">
-                        <div class="recent-code">TC202401140002</div>
-                        <div class="recent-time">有机番茄 • 1天前</div>
-                    </div>
-                    <div class="recent-arrow">›</div>
-                </div>
-
-                <div class="recent-item" onclick="queryByCode('TC202401130003')">
-                    <div class="recent-icon">🥕</div>
-                    <div class="recent-info">
-                        <div class="recent-code">TC202401130003</div>
-                        <div class="recent-time">有机胡萝卜 • 3天前</div>
-                    </div>
-                    <div class="recent-arrow">›</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 帮助按钮 -->
-        <button class="help-btn" onclick="showHelp()">
-            ❓
+        <button class="back-button" onclick="history.back()">
+            ←
         </button>
+
+        <div class="query-wrapper">
+            <!-- 搜索头部 -->
+            <div class="search-header">
+                <div class="search-title">产品溯源查询</div>
+                <div class="search-subtitle">输入产品代码或扫描二维码查询</div>
+
+                <div class="search-box">
+                    <input type="text" class="search-input" id="searchInput" placeholder="请输入产品溯源码或产品名称">
+                    <div class="search-icon">🔍</div>
+                </div>
+
+                <div class="search-actions">
+                    <button class="scan-btn" onclick="scanQRCode()">📷 扫码查询</button>
+                    <button class="search-btn" onclick="searchProduct()">🔍 立即查询</button>
+                </div>
+            </div>
+
+            <!-- 使用提示 -->
+            <div class="tips-section">
+                <div class="tips-title">💡 查询提示</div>
+                <div class="tips-content">
+                    • 可输入产品包装上的溯源码进行查询<br>
+                    • 支持扫描产品二维码快速溯源<br>
+                    • 查询历史会自动保存便于再次查看
+                </div>
+            </div>
+
+            <!-- 快捷功能 -->
+            <div class="quick-access">
+                <div class="section-title">
+                    <span class="section-icon">⚡</span>
+                    快捷功能
+                </div>
+                <div class="quick-grid">
+                    <div class="quick-item" onclick="location.href='./certificate.html'">
+                        <div class="quick-icon">📜</div>
+                        <div class="quick-text">溯源证书</div>
+                    </div>
+                    <div class="quick-item" onclick="location.href='./list.html'">
+                        <div class="quick-icon">📋</div>
+                        <div class="quick-text">产品列表</div>
+                    </div>
+                    <div class="quick-item" onclick="showNearbyProducts()">
+                        <div class="quick-icon">📍</div>
+                        <div class="quick-text">附近产品</div>
+                    </div>
+                    <div class="quick-item" onclick="showFavorites()">
+                        <div class="quick-icon">⭐</div>
+                        <div class="quick-text">我的收藏</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 热门产品 -->
+            <div class="popular-products">
+                <div class="section-title">
+                    <span class="section-icon">🔥</span>
+                    热门查询
+                </div>
+                <div class="product-list">
+                    <div class="product-item" onclick="queryProduct('ORG001')">
+                        <div class="product-image">🥬</div>
+                        <div class="product-info">
+                            <div class="product-name">有机白菜</div>
+                            <div class="product-code">溯源码: ORG001</div>
+                        </div>
+                        <div class="product-arrow">›</div>
+                    </div>
+                    <div class="product-item" onclick="queryProduct('MEAT002')">
+                        <div class="product-image">🥩</div>
+                        <div class="product-info">
+                            <div class="product-name">优质牛肉</div>
+                            <div class="product-code">溯源码: MEAT002</div>
+                        </div>
+                        <div class="product-arrow">›</div>
+                    </div>
+                    <div class="product-item" onclick="queryProduct('FISH003')">
+                        <div class="product-image">🐟</div>
+                        <div class="product-info">
+                            <div class="product-name">深海三文鱼</div>
+                            <div class="product-code">溯源码: FISH003</div>
+                        </div>
+                        <div class="product-arrow">›</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 查询历史 -->
+            <div class="history-section">
+                <div class="section-title">
+                    <span class="section-icon">🕒</span>
+                    查询历史
+                </div>
+                <div id="historyList">
+                    <div class="history-item">
+                        <div class="history-info">
+                            <div class="history-name">有机苹果 - APL001</div>
+                            <div class="history-time">2小时前</div>
+                        </div>
+                        <div class="history-action" onclick="queryProduct('APL001')">再次查询</div>
+                    </div>
+                    <div class="history-item">
+                        <div class="history-info">
+                            <div class="history-name">新鲜鸡蛋 - EGG002</div>
+                            <div class="history-time">1天前</div>
+                        </div>
+                        <div class="history-action" onclick="queryProduct('EGG002')">再次查询</div>
+                    </div>
+                    <div class="history-item">
+                        <div class="history-info">
+                            <div class="history-name">有机大米 - RICE003</div>
+                            <div class="history-time">3天前</div>
+                        </div>
+                        <div class="history-action" onclick="queryProduct('RICE003')">再次查询</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // 表单提交处理
-        document.getElementById('queryForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const code = document.getElementById('traceCode').value.trim();
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
 
-            if (!code) {
-                alert('请输入溯源代码');
+            // 搜索框回车事件
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchProduct();
+                }
+            });
+
+            // 加载查询历史
+            loadSearchHistory();
+        });
+
+        function searchProduct() {
+            const searchValue = document.getElementById('searchInput').value.trim();
+
+            if (!searchValue) {
+                alert('请输入产品溯源码或产品名称');
                 return;
             }
 
-            queryByCode(code);
-        });
+            // 保存到查询历史
+            saveToHistory(searchValue);
 
-        // 扫码查询
-        function scanQRCode() {
-            // 模拟扫码成功
-            setTimeout(() => {
-                const mockCode = 'TC202401150001';
-                alert(`扫码成功，识别到溯源代码: ${mockCode}`);
-                queryByCode(mockCode);
-            }, 1000);
+            // 跳转到详情页面
+            queryProduct(searchValue);
         }
 
-        // 根据代码查询
-        function queryByCode(code) {
-            // 保存到最近查询（模拟）
-            console.log(`查询溯源代码: ${code}`);
+        function queryProduct(code) {
+            console.log('查询产品:', code);
 
-            // 模拟查询过程
-            alert(`正在查询 ${code} 的溯源信息...`);
+            // 模拟查询延迟
+            const searchBtn = document.querySelector('.search-btn');
+            const originalText = searchBtn.textContent;
+            searchBtn.textContent = '🔍 查询中...';
+            searchBtn.disabled = true;
 
             setTimeout(() => {
+                searchBtn.textContent = originalText;
+                searchBtn.disabled = false;
+
                 // 跳转到详情页面
-                window.location.href = `detail.html?code=${code}`;
+                window.location.href = `./detail.html?code=${encodeURIComponent(code)}`;
             }, 1500);
         }
 
-        // 显示帮助信息
-        function showHelp() {
-            const helpText = `
-📱 扫码查询：
-• 点击"扫码查询"按钮
-• 将摄像头对准产品二维码
-• 系统自动识别并查询
+        function scanQRCode() {
+            // 模拟扫码功能
+            alert('正在启动相机扫描二维码...\n\n演示模式：自动识别示例产品');
 
-⌨️ 手动查询：
-• 输入产品包装上的溯源代码
-• 代码通常以 TC 开头，如 TC202401150001
-• 点击查询按钮获取信息
-
-📋 最近查询：
-• 显示您最近查询过的产品
-• 点击可快速重新查询
-• 支持查看查询历史
-
-如需更多帮助，请联系客服。
-            `;
-            alert(helpText);
+            setTimeout(() => {
+                queryProduct('SCAN001');
+            }, 2000);
         }
 
-        // 页面加载时的初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 模拟检查相机权限
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                console.log('相机权限检查通过');
-            } else {
-                console.log('当前设备不支持相机功能');
+        function saveToHistory(searchTerm) {
+            let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+
+            // 移除重复项
+            history = history.filter(item => item.term !== searchTerm);
+
+            // 添加到顶部
+            history.unshift({
+                term: searchTerm,
+                time: new Date().toLocaleString(),
+                timestamp: Date.now()
+            });
+
+            // 只保留最近10条
+            history = history.slice(0, 10);
+
+            localStorage.setItem('searchHistory', JSON.stringify(history));
+
+            // 更新历史列表显示
+            loadSearchHistory();
+        }
+
+        function loadSearchHistory() {
+            const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            const historyList = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">暂无查询历史</div>';
+                return;
             }
-        });
+
+            historyList.innerHTML = history.map(item => `
+                <div class="history-item">
+                    <div class="history-info">
+                        <div class="history-name">${item.term}</div>
+                        <div class="history-time">${getRelativeTime(item.timestamp)}</div>
+                    </div>
+                    <div class="history-action" onclick="queryProduct('${item.term}')">再次查询</div>
+                </div>
+            `).join('');
+        }
+
+        function getRelativeTime(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 1) return '刚刚';
+            if (minutes < 60) return `${minutes}分钟前`;
+            if (hours < 24) return `${hours}小时前`;
+            if (days < 7) return `${days}天前`;
+            return new Date(timestamp).toLocaleDateString();
+        }
+
+        function showNearbyProducts() {
+            alert('正在获取您的位置信息...\n\n演示模式：显示附近农场产品');
+        }
+
+        function showFavorites() {
+            alert('我的收藏功能\n\n演示模式：显示收藏的产品列表');
+        }
     </script>
 </body>
 </html>
