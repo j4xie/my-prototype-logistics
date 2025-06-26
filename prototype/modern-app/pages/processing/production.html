@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生产管理 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-top: 16px;
+        }
+
+        .back-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .page-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            flex: 1;
+        }
+
+        .production-overview {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .overview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .overview-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-indicator {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 12px 8px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .production-lines {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: #667eea;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+
+        .production-line {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .production-line:hover {
+            background: #e9ecef;
+            transform: scale(1.02);
+        }
+
+        .production-line:last-child {
+            margin-bottom: 0;
+        }
+
+        .line-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .line-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+
+        .line-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-running {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-idle {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-maintenance {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .line-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .detail-item {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 100px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .control-button {
+            background: #f8f9fa;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .control-button:hover {
+            background: #e9ecef;
+            transform: scale(1.05);
+        }
+
+        .control-button.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .control-button.primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .control-icon {
+            font-size: 20px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .control-text {
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <button class="back-button" onclick="history.back()">
+                ←
+            </button>
+            <h1 class="page-title">生产管理</h1>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="production-overview">
+            <div class="overview-header">
+                <div class="overview-title">生产总览</div>
+                <div class="status-indicator">系统正常</div>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-value">8/12</div>
+                    <div class="metric-label">运行线</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">23.5万</div>
+                    <div class="metric-label">今日产量</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">98.2%</div>
+                    <div class="metric-label">设备效率</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="production-lines">
+            <div class="section-title">生产线状态</div>
+
+            <div class="production-line">
+                <div class="line-header">
+                    <div class="line-name">A线 - 有机蔬菜加工</div>
+                    <div class="line-status status-running">运行中</div>
+                </div>
+                <div class="line-details">
+                    <div class="detail-item">
+                        <span class="detail-label">产品:</span> 有机白菜包装
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">批次:</span> ORG-001
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">目标:</span> 5000包
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">已完成:</span> 3750包
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 75%"></div>
+                </div>
+            </div>
+
+            <div class="production-line">
+                <div class="line-header">
+                    <div class="line-name">B线 - 果汁生产</div>
+                    <div class="line-status status-running">运行中</div>
+                </div>
+                <div class="line-details">
+                    <div class="detail-item">
+                        <span class="detail-label">产品:</span> 鲜橙果汁
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">批次:</span> JUI-002
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">目标:</span> 2000瓶
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">已完成:</span> 900瓶
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 45%"></div>
+                </div>
+            </div>
+
+            <div class="production-line">
+                <div class="line-header">
+                    <div class="line-name">C线 - 肉制品加工</div>
+                    <div class="line-status status-idle">待机</div>
+                </div>
+                <div class="line-details">
+                    <div class="detail-item">
+                        <span class="detail-label">产品:</span> -
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">状态:</span> 清洁完成
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">下次生产:</span> 14:30
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">预计产品:</span> 有机牛肉丝
+                    </div>
+                </div>
+            </div>
+
+            <div class="production-line">
+                <div class="line-header">
+                    <div class="line-name">D线 - 包装线</div>
+                    <div class="line-status status-maintenance">维护中</div>
+                </div>
+                <div class="line-details">
+                    <div class="detail-item">
+                        <span class="detail-label">维护类型:</span> 定期保养
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">维护人员:</span> 李师傅
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">开始时间:</span> 13:00
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">预计完成:</span> 15:00
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="section-title">快捷操作</div>
+            <div class="control-grid">
+                <button class="control-button primary">
+                    <span class="control-icon">▶️</span>
+                    <span class="control-text">启动生产</span>
+                </button>
+                <button class="control-button">
+                    <span class="control-icon">⏸️</span>
+                    <span class="control-text">暂停生产</span>
+                </button>
+                <button class="control-button">
+                    <span class="control-icon">🔧</span>
+                    <span class="control-text">设备维护</span>
+                </button>
+                <button class="control-button">
+                    <span class="control-icon">📊</span>
+                    <span class="control-text">生产报表</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟实时数据更新
+        function updateProgress() {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            const runningLines = document.querySelectorAll('.status-running');
+
+            runningLines.forEach((status, index) => {
+                const progressBar = status.closest('.production-line').querySelector('.progress-fill');
+                const currentWidth = parseInt(progressBar.style.width);
+
+                if (currentWidth < 100) {
+                    const newWidth = Math.min(currentWidth + Math.floor(Math.random() * 2), 100);
+                    progressBar.style.width = newWidth + '%';
+
+                    // 更新已完成数量
+                    const detailItems = status.closest('.production-line').querySelectorAll('.detail-item');
+                    detailItems.forEach(item => {
+                        if (item.textContent.includes('已完成:')) {
+                            const targetText = detailItems[1].textContent;
+                            const targetMatch = targetText.match(/(\d+)/);
+                            if (targetMatch) {
+                                const target = parseInt(targetMatch[1]);
+                                const completed = Math.floor(target * newWidth / 100);
+                                item.innerHTML = '<span class="detail-label">已完成:</span> ' + completed + (targetText.includes('包') ? '包' : '瓶');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // 每5秒更新一次进度
+        setInterval(updateProgress, 5000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批次管理 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-top: 16px;
+        }
+        .back-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .page-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            flex: 1;
+        }
+        .batch-overview {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .overview-item {
+            text-align: center;
+            padding: 16px 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        .overview-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        .overview-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .batch-list {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 100px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: #a8edea;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        .batch-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .batch-item:hover {
+            background: #e9ecef;
+            transform: scale(1.02);
+        }
+        .batch-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .batch-id {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        .batch-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-expired {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .batch-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+        .detail-label {
+            font-weight: 500;
+            color: #333;
+            margin-right: 4px;
+        }
+        .expiry-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .expiry-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .expiry-good { background: #28a745; }
+        .expiry-warning { background: #ffc107; }
+        .expiry-danger { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <button class="back-button" onclick="history.back()">←</button>
+            <h1 class="page-title">批次管理</h1>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="batch-overview">
+            <div class="overview-grid">
+                <div class="overview-item">
+                    <div class="overview-value">45</div>
+                    <div class="overview-label">活跃批次</div>
+                </div>
+                <div class="overview-item">
+                    <div class="overview-value">8</div>
+                    <div class="overview-label">即将过期</div>
+                </div>
+                <div class="overview-item">
+                    <div class="overview-value">152</div>
+                    <div class="overview-label">本月完成</div>
+                </div>
+                <div class="overview-item">
+                    <div class="overview-value">98.2%</div>
+                    <div class="overview-label">合格率</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="batch-list">
+            <div class="section-title">批次追踪</div>
+
+            <div class="batch-item">
+                <div class="batch-header">
+                    <div class="batch-id">ORG-20250203-001</div>
+                    <div class="batch-status status-active">生产中</div>
+                </div>
+                <div class="batch-details">
+                    <div><span class="detail-label">产品:</span> 有机白菜</div>
+                    <div><span class="detail-label">数量:</span> 5000包</div>
+                    <div><span class="detail-label">生产日期:</span> 2025-02-03</div>
+                    <div><span class="detail-label">保质期:</span> 7天</div>
+                </div>
+                <div class="expiry-bar">
+                    <div class="expiry-fill expiry-good" style="width: 85%"></div>
+                </div>
+            </div>
+
+            <div class="batch-item">
+                <div class="batch-header">
+                    <div class="batch-id">JUI-20250202-002</div>
+                    <div class="batch-status status-active">已完成</div>
+                </div>
+                <div class="batch-details">
+                    <div><span class="detail-label">产品:</span> 鲜橙果汁</div>
+                    <div><span class="detail-label">数量:</span> 2000瓶</div>
+                    <div><span class="detail-label">生产日期:</span> 2025-02-02</div>
+                    <div><span class="detail-label">保质期:</span> 30天</div>
+                </div>
+                <div class="expiry-bar">
+                    <div class="expiry-fill expiry-good" style="width: 90%"></div>
+                </div>
+            </div>
+
+            <div class="batch-item">
+                <div class="batch-header">
+                    <div class="batch-id">MEA-20250201-003</div>
+                    <div class="batch-status status-warning">即将过期</div>
+                </div>
+                <div class="batch-details">
+                    <div><span class="detail-label">产品:</span> 有机牛肉丝</div>
+                    <div><span class="detail-label">数量:</span> 1000盒</div>
+                    <div><span class="detail-label">生产日期:</span> 2025-02-01</div>
+                    <div><span class="detail-label">剩余:</span> 3天</div>
+                </div>
+                <div class="expiry-bar">
+                    <div class="expiry-fill expiry-warning" style="width: 25%"></div>
+                </div>
+            </div>
+
+            <div class="batch-item">
+                <div class="batch-header">
+                    <div class="batch-id">DRY-20250128-004</div>
+                    <div class="batch-status status-expired">已过期</div>
+                </div>
+                <div class="batch-details">
+                    <div><span class="detail-label">产品:</span> 有机杂粮</div>
+                    <div><span class="detail-label">数量:</span> 500袋</div>
+                    <div><span class="detail-label">生产日期:</span> 2025-01-28</div>
+                    <div><span class="detail-label">状态:</span> 待处理</div>
+                </div>
+                <div class="expiry-bar">
+                    <div class="expiry-fill expiry-danger" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="batch-item">
+                <div class="batch-header">
+                    <div class="batch-id">PKG-20250203-005</div>
+                    <div class="batch-status status-active">包装中</div>
+                </div>
+                <div class="batch-details">
+                    <div><span class="detail-label">产品:</span> 混合坚果</div>
+                    <div><span class="detail-label">数量:</span> 3000盒</div>
+                    <div><span class="detail-label">生产日期:</span> 2025-02-03</div>
+                    <div><span class="detail-label">保质期:</span> 180天</div>
+                </div>
+                <div class="expiry-bar">
+                    <div class="expiry-fill expiry-good" style="width: 95%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟批次状态更新
+        setInterval(() => {
+            const expiryBars = document.querySelectorAll('.expiry-fill');
+            expiryBars.forEach(bar => {
+                const currentWidth = parseInt(bar.style.width);
+                if (currentWidth > 0) {
+                    const newWidth = Math.max(0, currentWidth - Math.random() * 2);
+                    bar.style.width = newWidth + '%';
+
+                    // 更新颜色状态
+                    if (newWidth > 50) {
+                        bar.className = 'expiry-fill expiry-good';
+                    } else if (newWidth > 20) {
+                        bar.className = 'expiry-fill expiry-warning';
+                    } else {
+                        bar.className = 'expiry-fill expiry-danger';
+                    }
+                }
+            });
+        }, 10000);
+    </script>
+</body>
+</html>

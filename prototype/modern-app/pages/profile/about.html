@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人信息 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-top: 16px;
+        }
+        .back-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .page-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            flex: 1;
+        }
+        .profile-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: 600;
+        }
+        .user-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .user-role {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .user-status {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: #667eea;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .info-value {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        .action-buttons {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 100px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .action-button {
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: #f8f9fa;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+        }
+        .action-button:hover {
+            background: #e9ecef;
+            transform: scale(1.02);
+        }
+        .action-button.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <button class="back-button" onclick="history.back()">←</button>
+            <h1 class="page-title">个人信息</h1>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="profile-card">
+            <div class="avatar">张</div>
+            <div class="user-name">张小明</div>
+            <div class="user-role">食品溯源系统用户</div>
+            <div class="user-status">已认证</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">156</div>
+                <div class="stat-label">溯源查询</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">89</div>
+                <div class="stat-label">购买记录</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">12</div>
+                <div class="stat-label">收藏产品</div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="section-title">基本信息</div>
+            <div class="info-item">
+                <div class="info-label">手机号码</div>
+                <div class="info-value">138****8888</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">电子邮箱</div>
+                <div class="info-value">zhang***@email.com</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">注册时间</div>
+                <div class="info-value">2024-01-15</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">最近登录</div>
+                <div class="info-value">今天 09:30</div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="section-title">账户状态</div>
+            <div class="info-item">
+                <div class="info-label">实名认证</div>
+                <div class="info-value" style="color: #28a745;">✓ 已认证</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">积分余额</div>
+                <div class="info-value">2,580 分</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">会员等级</div>
+                <div class="info-value">白银会员</div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <div class="section-title">账户管理</div>
+            <div class="button-grid">
+                <a href="./edit.html" class="action-button primary">编辑资料</a>
+                <a href="./security.html" class="action-button">安全设置</a>
+                <a href="./privacy.html" class="action-button">隐私设置</a>
+                <a href="./data-export.html" class="action-button">数据导出</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

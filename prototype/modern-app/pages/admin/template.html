@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模板配置 - 食品溯源管理系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <link rel="stylesheet" href="../../styles/admin-layout.css">
+    <style>
+        .template-container {
+            display: flex;
+            min-height: 100vh;
+            background: #f8f9fa;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 20px;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .template-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .template-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .template-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .template-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .template-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .template-info {
+            flex: 1;
+        }
+
+        .template-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .template-desc {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .template-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .template-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            background: white;
+            color: #667eea;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn.danger {
+            border-color: #ff4757;
+            color: #ff4757;
+        }
+
+        .btn.danger:hover {
+            background: #ff4757;
+            color: white;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #f0fff4;
+            color: #4caf50;
+        }
+
+        .status-draft {
+            background: #fff8e1;
+            color: #ffa726;
+        }
+
+        .template-editor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+        }
+
+        .editor-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .editor-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .variable-list {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+
+        .variable-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .variable-item:last-child {
+            border-bottom: none;
+        }
+
+        .variable-tag {
+            background: #667eea;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .preview-area {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 12px;
+            min-height: 200px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .template-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .editor-content {
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="template-container">
+        <!-- 侧边栏 -->
+        <div class="admin-sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🌱</span>
+                    <span class="logo-text">溯源管理</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-title">主要功能</div>
+                    <a href="./dashboard.html" class="nav-item">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">控制台</span>
+                    </a>
+                    <a href="./users.html" class="nav-item">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">用户管理</span>
+                    </a>
+                    <a href="./system.html" class="nav-item">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">系统管理</span>
+                    </a>
+                    <a href="./reports.html" class="nav-item">
+                        <span class="nav-icon">📈</span>
+                        <span class="nav-text">数据报表</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">扩展功能</div>
+                    <a href="./notifications.html" class="nav-item">
+                        <span class="nav-icon">🔔</span>
+                        <span class="nav-text">通知管理</span>
+                    </a>
+                    <a href="./settings.html" class="nav-item">
+                        <span class="nav-icon">🔧</span>
+                        <span class="nav-text">系统设置</span>
+                    </a>
+                    <a href="./analytics.html" class="nav-item">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">数据分析</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">P3-023新增</div>
+                    <a href="./import.html" class="nav-item">
+                        <span class="nav-icon">📥</span>
+                        <span class="nav-text">数据导入</span>
+                    </a>
+                    <a href="./logs.html" class="nav-item">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">系统日志</span>
+                    </a>
+                    <a href="./template.html" class="nav-item active">
+                        <span class="nav-icon">📄</span>
+                        <span class="nav-text">模板配置</span>
+                    </a>
+                    <a href="./admin-users.html" class="nav-item">
+                        <span class="nav-icon">👨‍💼</span>
+                        <span class="nav-text">管理员管理</span>
+                    </a>
+                    <a href="./permissions.html" class="nav-item">
+                        <span class="nav-icon">🔐</span>
+                        <span class="nav-text">权限管理</span>
+                    </a>
+                    <a href="./backup.html" class="nav-item">
+                        <span class="nav-icon">💾</span>
+                        <span class="nav-text">备份恢复</span>
+                    </a>
+                    <a href="./audit.html" class="nav-item">
+                        <span class="nav-icon">🔍</span>
+                        <span class="nav-text">审计日志</span>
+                    </a>
+                    <a href="./performance.html" class="nav-item">
+                        <span class="nav-icon">⚡</span>
+                        <span class="nav-text">性能监控</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">👨‍💼</div>
+                    <div class="user-details">
+                        <div class="user-name">管理员</div>
+                        <div class="user-role">系统管理员</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 页面头部 -->
+            <div class="page-header">
+                <h1 style="font-size: 28px; font-weight: 700; color: #333; margin-bottom: 8px;">模板配置</h1>
+                <p style="color: #666; font-size: 16px;">管理系统模板，包括报告模板、通知模板和证书模板</p>
+            </div>
+
+            <!-- 模板管理 -->
+            <div class="template-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 20px; font-weight: 600; color: #333;">📄 模板列表</h3>
+                    <button class="btn primary" onclick="createTemplate()">➕ 新建模板</button>
+                </div>
+
+                <div class="template-grid">
+                    <!-- 溯源证书模板 -->
+                    <div class="template-card" onclick="editTemplate('cert')">
+                        <div class="template-header">
+                            <div class="template-icon">📜</div>
+                            <div class="template-info">
+                                <div class="template-name">溯源证书模板</div>
+                                <div class="template-desc">产品溯源证书生成模板</div>
+                            </div>
+                            <span class="status-badge status-active">启用</span>
+                        </div>
+                        <div class="template-meta">
+                            <span>最后修改：2025-01-15</span>
+                            <span>使用次数：1,247</span>
+                        </div>
+                        <div class="template-actions" onclick="event.stopPropagation()">
+                            <button class="btn" onclick="previewTemplate('cert')">👁️ 预览</button>
+                            <button class="btn" onclick="editTemplate('cert')">✏️ 编辑</button>
+                            <button class="btn danger" onclick="deleteTemplate('cert')">🗑️ 删除</button>
+                        </div>
+                    </div>
+
+                    <!-- 质检报告模板 -->
+                    <div class="template-card" onclick="editTemplate('report')">
+                        <div class="template-header">
+                            <div class="template-icon">📊</div>
+                            <div class="template-info">
+                                <div class="template-name">质检报告模板</div>
+                                <div class="template-desc">产品质量检测报告模板</div>
+                            </div>
+                            <span class="status-badge status-active">启用</span>
+                        </div>
+                        <div class="template-meta">
+                            <span>最后修改：2025-01-14</span>
+                            <span>使用次数：856</span>
+                        </div>
+                        <div class="template-actions" onclick="event.stopPropagation()">
+                            <button class="btn" onclick="previewTemplate('report')">👁️ 预览</button>
+                            <button class="btn" onclick="editTemplate('report')">✏️ 编辑</button>
+                            <button class="btn danger" onclick="deleteTemplate('report')">🗑️ 删除</button>
+                        </div>
+                    </div>
+
+                    <!-- 通知邮件模板 -->
+                    <div class="template-card" onclick="editTemplate('email')">
+                        <div class="template-header">
+                            <div class="template-icon">📧</div>
+                            <div class="template-info">
+                                <div class="template-name">通知邮件模板</div>
+                                <div class="template-desc">系统通知邮件模板</div>
+                            </div>
+                            <span class="status-badge status-active">启用</span>
+                        </div>
+                        <div class="template-meta">
+                            <span>最后修改：2025-01-13</span>
+                            <span>使用次数：2,341</span>
+                        </div>
+                        <div class="template-actions" onclick="event.stopPropagation()">
+                            <button class="btn" onclick="previewTemplate('email')">👁️ 预览</button>
+                            <button class="btn" onclick="editTemplate('email')">✏️ 编辑</button>
+                            <button class="btn danger" onclick="deleteTemplate('email')">🗑️ 删除</button>
+                        </div>
+                    </div>
+
+                    <!-- 产品标签模板 -->
+                    <div class="template-card" onclick="editTemplate('label')">
+                        <div class="template-header">
+                            <div class="template-icon">🏷️</div>
+                            <div class="template-info">
+                                <div class="template-name">产品标签模板</div>
+                                <div class="template-desc">产品包装标签打印模板</div>
+                            </div>
+                            <span class="status-badge status-draft">草稿</span>
+                        </div>
+                        <div class="template-meta">
+                            <span>最后修改：2025-01-12</span>
+                            <span>使用次数：0</span>
+                        </div>
+                        <div class="template-actions" onclick="event.stopPropagation()">
+                            <button class="btn" onclick="previewTemplate('label')">👁️ 预览</button>
+                            <button class="btn" onclick="editTemplate('label')">✏️ 编辑</button>
+                            <button class="btn danger" onclick="deleteTemplate('label')">🗑️ 删除</button>
+                        </div>
+                    </div>
+
+                    <!-- 库存提醒模板 -->
+                    <div class="template-card" onclick="editTemplate('inventory')">
+                        <div class="template-header">
+                            <div class="template-icon">📦</div>
+                            <div class="template-info">
+                                <div class="template-name">库存提醒模板</div>
+                                <div class="template-desc">库存不足警告通知模板</div>
+                            </div>
+                            <span class="status-badge status-active">启用</span>
+                        </div>
+                        <div class="template-meta">
+                            <span>最后修改：2025-01-11</span>
+                            <span>使用次数：145</span>
+                        </div>
+                        <div class="template-actions" onclick="event.stopPropagation()">
+                            <button class="btn" onclick="previewTemplate('inventory')">👁️ 预览</button>
+                            <button class="btn" onclick="editTemplate('inventory')">✏️ 编辑</button>
+                            <button class="btn danger" onclick="deleteTemplate('inventory')">🗑️ 删除</button>
+                        </div>
+                    </div>
+
+                    <!-- 用户注册欢迎模板 -->
+                    <div class="template-card" onclick="editTemplate('welcome')">
+                        <div class="template-header">
+                            <div class="template-icon">🎉</div>
+                            <div class="template-info">
+                                <div class="template-name">注册欢迎模板</div>
+                                <div class="template-desc">新用户注册成功欢迎模板</div>
+                            </div>
+                            <span class="status-badge status-active">启用</span>
+                        </div>
+                        <div class="template-meta">
+                            <span>最后修改：2025-01-10</span>
+                            <span>使用次数：1,892</span>
+                        </div>
+                        <div class="template-actions" onclick="event.stopPropagation()">
+                            <button class="btn" onclick="previewTemplate('welcome')">👁️ 预览</button>
+                            <button class="btn" onclick="editTemplate('welcome')">✏️ 编辑</button>
+                            <button class="btn danger" onclick="deleteTemplate('welcome')">🗑️ 删除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模板编辑器 -->
+    <div class="template-editor" id="templateEditor">
+        <div class="editor-content">
+            <div class="editor-header">
+                <h3>📝 编辑模板</h3>
+                <button class="btn" onclick="closeEditor()">✕ 关闭</button>
+            </div>
+            <div class="editor-body">
+                <div class="form-group">
+                    <label class="form-label">模板名称</label>
+                    <input type="text" class="form-input" id="templateName" placeholder="输入模板名称">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">模板类型</label>
+                    <select class="form-select" id="templateType">
+                        <option value="certificate">溯源证书</option>
+                        <option value="report">质检报告</option>
+                        <option value="email">邮件通知</option>
+                        <option value="label">产品标签</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">模板描述</label>
+                    <input type="text" class="form-input" id="templateDesc" placeholder="简要描述模板用途">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">模板内容</label>
+                    <textarea class="form-textarea" id="templateContent" placeholder="输入模板内容，可使用变量如 {{产品名称}}、{{检测日期}} 等"></textarea>
+
+                    <div class="variable-list">
+                        <div style="font-size: 14px; font-weight: 500; margin-bottom: 8px;">可用变量：</div>
+                        <div class="variable-item">
+                            <span class="variable-tag">{{产品名称}}</span>
+                            <span>产品的完整名称</span>
+                        </div>
+                        <div class="variable-item">
+                            <span class="variable-tag">{{产品编码}}</span>
+                            <span>产品的唯一识别码</span>
+                        </div>
+                        <div class="variable-item">
+                            <span class="variable-tag">{{检测日期}}</span>
+                            <span>质量检测的执行日期</span>
+                        </div>
+                        <div class="variable-item">
+                            <span class="variable-tag">{{生产商}}</span>
+                            <span>产品生产厂商名称</span>
+                        </div>
+                        <div class="variable-item">
+                            <span class="variable-tag">{{当前日期}}</span>
+                            <span>文档生成的当前日期</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">模板预览</label>
+                    <div class="preview-area" id="templatePreview">
+                        模板预览将在这里显示...
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: right;">
+                    <button class="btn" onclick="previewCurrentTemplate()">👁️ 预览</button>
+                    <button class="btn primary" onclick="saveTemplate()">💾 保存模板</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 创建新模板
+        function createTemplate() {
+            document.getElementById('templateName').value = '';
+            document.getElementById('templateDesc').value = '';
+            document.getElementById('templateContent').value = '';
+            document.getElementById('templatePreview').innerHTML = '模板预览将在这里显示...';
+            document.getElementById('templateEditor').style.display = 'block';
+        }
+
+        // 编辑模板
+        function editTemplate(templateId) {
+            // 模拟加载模板数据
+            const templates = {
+                cert: {
+                    name: '溯源证书模板',
+                    type: 'certificate',
+                    desc: '产品溯源证书生成模板',
+                    content: '产品溯源证书\n\n产品名称：{{产品名称}}\n产品编码：{{产品编码}}\n生产商：{{生产商}}\n检测日期：{{检测日期}}\n\n本证书证明上述产品已通过完整的溯源检查。'
+                },
+                email: {
+                    name: '通知邮件模板',
+                    type: 'email',
+                    desc: '系统通知邮件模板',
+                    content: '尊敬的用户，\n\n您好！这是来自食品溯源系统的通知。\n\n通知内容：{{通知内容}}\n\n如有疑问，请联系客服。\n\n此致\n食品溯源系统'
+                }
+            };
+
+            const template = templates[templateId] || {
+                name: '模板名称',
+                type: 'other',
+                desc: '模板描述',
+                content: '模板内容...'
+            };
+
+            document.getElementById('templateName').value = template.name;
+            document.getElementById('templateType').value = template.type;
+            document.getElementById('templateDesc').value = template.desc;
+            document.getElementById('templateContent').value = template.content;
+
+            previewCurrentTemplate();
+            document.getElementById('templateEditor').style.display = 'block';
+        }
+
+        // 预览当前模板
+        function previewCurrentTemplate() {
+            const content = document.getElementById('templateContent').value;
+            const preview = content
+                .replace(/{{产品名称}}/g, '有机蔬菜沙拉')
+                .replace(/{{产品编码}}/g, 'ORG202501001')
+                .replace(/{{检测日期}}/g, '2025-01-15')
+                .replace(/{{生产商}}/g, '绿色农场有限公司')
+                .replace(/{{当前日期}}/g, new Date().toLocaleDateString('zh-CN'))
+                .replace(/{{通知内容}}/g, '您的产品溯源查询已完成');
+
+            document.getElementById('templatePreview').innerHTML = preview.replace(/\n/g, '<br>');
+        }
+
+        // 预览模板
+        function previewTemplate(templateId) {
+            editTemplate(templateId);
+        }
+
+        // 删除模板
+        function deleteTemplate(templateId) {
+            if (confirm('确定要删除这个模板吗？此操作不可撤销！')) {
+                showNotification('模板删除成功', 'success');
+            }
+        }
+
+        // 保存模板
+        function saveTemplate() {
+            const name = document.getElementById('templateName').value;
+            const desc = document.getElementById('templateDesc').value;
+            const content = document.getElementById('templateContent').value;
+
+            if (!name || !content) {
+                showNotification('请填写完整的模板信息', 'error');
+                return;
+            }
+
+            showNotification('正在保存模板...', 'info');
+
+            setTimeout(() => {
+                showNotification('模板保存成功', 'success');
+                closeEditor();
+            }, 1500);
+        }
+
+        // 关闭编辑器
+        function closeEditor() {
+            document.getElementById('templateEditor').style.display = 'none';
+        }
+
+        // 监听模板内容变化，实时预览
+        document.getElementById('templateContent').addEventListener('input', function() {
+            previewCurrentTemplate();
+        });
+
+        // 点击编辑器外部关闭
+        document.getElementById('templateEditor').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditor();
+            }
+        });
+
+        // 通知系统
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#2ed573' : type === 'error' ? '#ff4757' : type === 'warning' ? '#ffa726' : '#667eea'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                window.location.href = '../auth/login.html';
+            }
+        }
+    </script>
+</body>
+</html>

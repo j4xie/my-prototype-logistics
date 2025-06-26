@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>质量管理 - 食品溯源系统</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <style>
+        .page-container {
+            max-width: 390px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-top: 16px;
+        }
+
+        .back-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .page-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            flex: 1;
+        }
+
+        .quality-overview {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .overview-item {
+            text-align: center;
+            padding: 16px 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .overview-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .overview-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pass-rate {
+            color: #28a745;
+        }
+
+        .pending-tests {
+            color: #ffc107;
+        }
+
+        .failed-tests {
+            color: #dc3545;
+        }
+
+        .total-tests {
+            color: #6c757d;
+        }
+
+        .quality-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            background: #d4edda;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+
+        .status-icon {
+            font-size: 18px;
+            margin-right: 8px;
+        }
+
+        .status-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #155724;
+        }
+
+        .recent-tests {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: #f093fb;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+
+        .test-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .test-item:hover {
+            background: #e9ecef;
+            transform: scale(1.02);
+        }
+
+        .test-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .test-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .test-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .test-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .test-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #333;
+            margin-right: 4px;
+        }
+
+        .function-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 100px;
+        }
+
+        .function-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .function-card:hover {
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .function-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .function-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .function-desc {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <button class="back-button" onclick="history.back()">
+                ←
+            </button>
+            <h1 class="page-title">质量管理</h1>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="quality-overview">
+            <div class="overview-grid">
+                <div class="overview-item">
+                    <div class="overview-value pass-rate">98.5%</div>
+                    <div class="overview-label">合格率</div>
+                </div>
+                <div class="overview-item">
+                    <div class="overview-value pending-tests">5</div>
+                    <div class="overview-label">待检测</div>
+                </div>
+                <div class="overview-item">
+                    <div class="overview-value failed-tests">2</div>
+                    <div class="overview-label">不合格</div>
+                </div>
+                <div class="overview-item">
+                    <div class="overview-value total-tests">152</div>
+                    <div class="overview-label">今日检测</div>
+                </div>
+            </div>
+            <div class="quality-status">
+                <div class="status-icon">✅</div>
+                <div class="status-text">质量控制系统运行正常</div>
+            </div>
+        </div>
+
+        <div class="function-grid">
+            <a href="./quality-inspection.html" class="function-card">
+                <div class="function-icon">🔍</div>
+                <div class="function-title">质量检验</div>
+                <div class="function-desc">检验计划、报告管理</div>
+            </a>
+
+            <a href="#" class="function-card">
+                <div class="function-icon">📋</div>
+                <div class="function-title">标准管理</div>
+                <div class="function-desc">质量标准、规范维护</div>
+            </a>
+
+            <a href="#" class="function-card">
+                <div class="function-icon">⚠️</div>
+                <div class="function-title">问题追踪</div>
+                <div class="function-desc">质量问题、整改跟踪</div>
+            </a>
+
+            <a href="#" class="function-card">
+                <div class="function-icon">📊</div>
+                <div class="function-title">质量报表</div>
+                <div class="function-desc">统计分析、趋势报告</div>
+            </a>
+        </div>
+
+        <div class="recent-tests">
+            <div class="section-title">最近检测</div>
+
+            <div class="test-item">
+                <div class="test-header">
+                    <div class="test-name">有机白菜 - 农药残留检测</div>
+                    <div class="test-status status-pass">合格</div>
+                </div>
+                <div class="test-details">
+                    <div class="detail-item">
+                        <span class="detail-label">批次:</span> ORG-001
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">检测员:</span> 王技师
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">检测时间:</span> 10:30
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">结果:</span> 未检出
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-item">
+                <div class="test-header">
+                    <div class="test-name">鲜橙果汁 - 营养成分检测</div>
+                    <div class="test-status status-pass">合格</div>
+                </div>
+                <div class="test-details">
+                    <div class="detail-item">
+                        <span class="detail-label">批次:</span> JUI-002
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">检测员:</span> 李技师
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">检测时间:</span> 11:15
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">维C:</span> 45mg/100ml
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-item">
+                <div class="test-header">
+                    <div class="test-name">有机牛肉丝 - 微生物检测</div>
+                    <div class="test-status status-pending">检测中</div>
+                </div>
+                <div class="test-details">
+                    <div class="detail-item">
+                        <span class="detail-label">批次:</span> MEA-003
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">检测员:</span> 张技师
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">开始时间:</span> 12:00
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">预计完成:</span> 16:00
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-item">
+                <div class="test-header">
+                    <div class="test-name">包装材料 - 安全性检测</div>
+                    <div class="test-status status-fail">不合格</div>
+                </div>
+                <div class="test-details">
+                    <div class="detail-item">
+                        <span class="detail-label">批次:</span> PKG-004
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">检测员:</span> 赵技师
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">检测时间:</span> 09:45
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">问题:</span> 重金属超标
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟实时数据更新
+        function updateQualityData() {
+            // 更新合格率
+            const passRateElement = document.querySelector('.pass-rate');
+            const currentRate = parseFloat(passRateElement.textContent);
+            const newRate = Math.max(97, Math.min(99.5, currentRate + (Math.random() - 0.5) * 0.2));
+            passRateElement.textContent = newRate.toFixed(1) + '%';
+
+            // 更新待检测数量
+            const pendingElement = document.querySelector('.pending-tests');
+            const currentPending = parseInt(pendingElement.textContent);
+            const newPending = Math.max(0, currentPending + Math.floor((Math.random() - 0.7) * 3));
+            pendingElement.textContent = newPending;
+
+            // 更新总检测数量
+            const totalElement = document.querySelector('.total-tests');
+            const currentTotal = parseInt(totalElement.textContent);
+            totalElement.textContent = currentTotal + Math.floor(Math.random() * 2);
+        }
+
+        // 每10秒更新一次数据
+        setInterval(updateQualityData, 10000);
+    </script>
+</body>
+</html>
