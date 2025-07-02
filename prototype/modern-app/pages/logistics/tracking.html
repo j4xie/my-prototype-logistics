@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物流跟踪 - 物流溯源管理系统</title>
+    <link rel="stylesheet" href="../../styles/admin-layout.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <nav class="admin-sidebar">
+            <div class="sidebar-header">
+                <a href="../admin/dashboard.html" class="sidebar-logo">物流管理</a>
+                <div class="sidebar-subtitle">智慧物流系统</div>
+            </div>
+            <div class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">物流管理</div>
+                    <a href="dashboard.html" class="nav-item">
+                        <span class="nav-item-icon">📊</span>
+                        <span class="nav-item-text">物流控制台</span>
+                    </a>
+                    <a href="tracking.html" class="nav-item active">
+                        <span class="nav-item-icon">📍</span>
+                        <span class="nav-item-text">物流跟踪</span>
+                    </a>
+                    <a href="vehicles.html" class="nav-item">
+                        <span class="nav-item-icon">🚛</span>
+                        <span class="nav-item-text">车辆管理</span>
+                    </a>
+                    <a href="routes.html" class="nav-item">
+                        <span class="nav-item-icon">🗺️</span>
+                        <span class="nav-item-text">路线规划</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <main class="admin-main">
+            <header class="admin-header">
+                <div class="header-left">
+                    <button class="sidebar-toggle">☰</button>
+                    <h1 class="page-title">物流跟踪</h1>
+                    <p class="page-subtitle">实时跟踪货物运输状态</p>
+                </div>
+                <div class="header-right">
+                    <div class="header-search">
+                        <input type="text" class="search-input" placeholder="输入运单号...">
+                        <span class="search-icon">🔍</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="admin-content">
+                <!-- 快速跟踪 -->
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h3 class="card-title">快速跟踪</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: flex; gap: 16px; align-items: center;">
+                            <input type="text" class="admin-form-input" placeholder="请输入运单号" style="flex: 1;">
+                            <button class="admin-btn admin-btn-primary">跟踪</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 跟踪详情 -->
+                <div class="admin-card">
+                    <div class="card-header">
+                        <h3 class="card-title">运单详情 - LG20240627001</h3>
+                        <span class="admin-badge admin-badge-warning">运输中</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- 运输时间线 -->
+                        <div class="timeline">
+                            <div class="timeline-item completed">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <h4>货物已发出</h4>
+                                    <p>北京仓库 - 货物已装车发出</p>
+                                    <span class="timeline-time">2024-06-27 08:00</span>
+                                </div>
+                            </div>
+                            <div class="timeline-item completed">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <h4>运输途中</h4>
+                                    <p>途径天津服务区 - 正常运输</p>
+                                    <span class="timeline-time">2024-06-27 12:30</span>
+                                </div>
+                            </div>
+                            <div class="timeline-item active">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <h4>当前位置</h4>
+                                    <p>江苏徐州 - 正在运输中</p>
+                                    <span class="timeline-time">2024-06-27 16:45</span>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <h4>预计到达</h4>
+                                    <p>上海配送中心</p>
+                                    <span class="timeline-time">2024-06-28 10:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--admin-border);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: -23px;
+            top: 5px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--admin-border);
+            border: 3px solid white;
+        }
+        
+        .timeline-item.completed .timeline-marker {
+            background: var(--admin-success);
+        }
+        
+        .timeline-item.active .timeline-marker {
+            background: var(--admin-warning);
+            animation: pulse 2s infinite;
+        }
+        
+        .timeline-content h4 {
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .timeline-content p {
+            color: var(--admin-text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .timeline-time {
+            font-size: 12px;
+            color: var(--admin-text-muted);
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(217, 158, 46, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(217, 158, 46, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(217, 158, 46, 0); }
+        }
+    </style>
+
+    <script>
+        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
+            document.querySelector('.admin-sidebar').classList.toggle('collapsed');
+            document.querySelector('.admin-layout').classList.toggle('sidebar-collapsed');
+        });
+        console.log('物流跟踪页面已加载');
+    </script>
+</body>
+</html> 
