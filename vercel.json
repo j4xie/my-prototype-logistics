@@ -1,9 +1,0 @@
-{
-  "version": 2,
-  "buildCommand": "cd web-app-next && npm ci && npm run build",
-  "outputDirectory": "web-app-next/.next",
-  "installCommand": "cd web-app-next && npm ci",
-  "env": {
-    "NEXT_PUBLIC_MOCK_ENABLED": "true"
-  }
-}
