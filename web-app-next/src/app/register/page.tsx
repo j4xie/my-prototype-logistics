@@ -157,7 +157,7 @@ export default function RegisterPage() {
         is_active: true,                       // 第7个字段
         phone: formData.phone,                 // 第8个字段
         department: formData.department,       // 第9个字段
-        position: formData.role,               // 第10个字段（备用）
+        position: formData.realName,          // 第10个字段（使用真实姓名）
         confirmPassword: formData.confirmPassword // 前端验证用，不发送到后端
       };
 
