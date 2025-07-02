@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
+import { authService, AuthApiError } from '@/services/auth.service';
+import type { LoginRequest } from '@/types/auth';
 
 interface LoginForm {
   username: string;
@@ -70,36 +72,47 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 调用Mock API进行登录验证
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(form),
-      });
+      // 使用新的认证服务（支持真实API）
+      const credentials: LoginRequest = {
+        username: form.username,
+        password: form.password
+      };
 
-      const data: LoginResponse = await response.json();
+      const response = await authService.login(credentials);
+      
+      console.log('登录响应:', response);
 
-      if (data.success && data.token && data.user) {
+      // 处理不同的响应格式
+      const data = response.data || response;
+      const token = data.token || response.token;
+      const user = data.user || response.user || data;
+
+      if (token && user) {
         // 存储用户信息和token
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('user_info', JSON.stringify(data.user));
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('user_info', JSON.stringify(user));
 
-        alert(`登录成功！欢迎回来，${data.user.name}！`);
+        const userName = user.name || user.username;
+        alert(`登录成功！欢迎回来，${userName}！`);
 
-        // 根据用户角色跳转到相应页面
-        if (data.user.role === 'admin') {
+        // 根据用户角色跳转到相应页面（管理员优先）
+        const userRole = user.role || user.position;
+        if (userRole === 'admin' || userRole === '系统管理员' || user.isAdmin) {
           router.push('/admin/dashboard');
         } else {
           router.push('/home/selector');
         }
       } else {
-        alert(data.message || "用户名或密码错误");
+        alert(response.message || data.message || "登录失败，请检查用户名和密码");
       }
     } catch (error) {
       console.error('登录错误:', error);
-      alert("网络连接错误，请稍后重试");
+      
+      if (error instanceof AuthApiError) {
+        alert(error.message);
+      } else {
+        alert("网络连接错误，请稍后重试");
+      }
     } finally {
       setLoading(false);
     }
