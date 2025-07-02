@@ -141,6 +141,77 @@ export const authHandlers = [
     }
   }),
 
+  // POST /api/auth/register - 用户注册
+  http.post(/.*\/api\/auth\/register$/, async ({ request }) => {
+    try {
+      const body = await request.json() as {
+        username: string;
+        password: string;
+        email: string;
+        phone?: string;
+        department?: string;
+        position?: string;
+      }
+
+      const { username, password, email, phone, department, position } = body
+
+      if (!username || !password || !email) {
+        return createErrorResponse('用户名、密码和邮箱不能为空', 400)
+      }
+
+      // 模拟网络延迟
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 400))
+
+      // 模拟用户名检查
+      if (username === 'admin' || username === 'test') {
+        return createErrorResponse('用户名已存在', 409)
+      }
+
+      // 模拟邮箱检查
+      if (email === 'admin@example.com') {
+        return createErrorResponse('邮箱已被注册', 409)
+      }
+
+      // 模拟创建新用户
+      const newUser = {
+        id: 'user_' + Date.now(),
+        username,
+        email,
+        phone: phone || '',
+        department: department || '未指定',
+        position: position || '员工',
+        name: username, // 默认使用用户名作为显示名
+        role: 'user',
+        permissions: ['basic:read', 'profile:edit'],
+        avatar: '/images/avatar-placeholder.svg',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        lastLogin: null
+      }
+
+      console.log(`✅ User registered: ${newUser.username} (${newUser.email})`)
+
+      return createSuccessResponse({
+        user: {
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          phone: newUser.phone,
+          department: newUser.department,
+          position: newUser.position,
+          name: newUser.name,
+          role: newUser.role,
+          status: newUser.status,
+          createdAt: newUser.createdAt
+        }
+      }, '注册成功')
+
+    } catch (error) {
+      console.error('Register error:', error)
+      return createErrorResponse('注册请求处理失败', 500)
+    }
+  }),
+
   // POST /api/auth/logout - 用户登出
   http.post(/.*\/api\/auth\/logout$/, async ({ request }) => {
     try {
