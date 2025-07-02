@@ -144,40 +144,33 @@ export default function RegisterPage() {
     setSubmitError('');
 
     try {
-      // 真实API调用
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          realName: formData.realName,
-          phone: formData.phone,
-          department: formData.department,
-          role: formData.role
-        }),
-      });
+      // 使用认证服务（支持真实API）
+      const { authService } = await import('@/services/auth.service');
+      
+      const registerData = {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        department: formData.department,
+        position: formData.role, // 将role映射为position
+        confirmPassword: formData.confirmPassword
+      };
 
-      const result: RegisterResponse = await response.json();
+      const response = await authService.register(registerData);
+      
+      console.log('注册响应:', response);
 
-      if (result.success) {
-        // 注册成功，跳转到登录页面
-        alert('注册成功！请使用新账户登录。');
-        router.push('/login?message=注册成功，请登录');
-      } else {
-        setSubmitError(result.message || '注册失败，请重试');
-      }
+      // 注册成功，跳转到登录页面
+      alert('注册成功！请使用新账户登录。');
+      router.push('/login?message=注册成功，请登录');
+
     } catch (error) {
-      console.error('注册请求失败:', error);
-      // Mock数据回退 - 模拟注册成功
-      if (formData.username && formData.email) {
-        setTimeout(() => {
-          alert('注册成功！(Mock模式) 请使用新账户登录。');
-          router.push('/login?message=注册成功，请登录');
-        }, 1000);
+      console.error('注册失败:', error);
+      
+      // 检查是否为认证API错误
+      if (error && typeof error === 'object' && 'message' in error) {
+        setSubmitError(error.message as string);
       } else {
         setSubmitError('网络错误，请检查网络连接后重试');
       }

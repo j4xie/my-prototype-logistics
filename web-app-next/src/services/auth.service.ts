@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '@/lib/api';
-import { getApiEnvironment } from '@/config/api-endpoints';
+import { getApiEnvironment, API_ENDPOINTS } from '@/config/api-endpoints';
 import type {
   LoginRequest,
   RegisterRequest,
@@ -33,7 +33,8 @@ export class AuthService {
   private environment: 'mock' | 'real';
 
   constructor() {
-    this.environment = getApiEnvironment() as 'mock' | 'real';
+    // 认证服务总是检查认证API的环境
+    this.environment = getApiEnvironment(API_ENDPOINTS.AUTH.LOGIN) as 'mock' | 'real';
   }
 
   /**
