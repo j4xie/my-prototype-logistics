@@ -646,3 +646,135 @@ function emergency_rollback() {
 - **下次审核**: 2025-02-09 (迁移开始前)
 - **负责人**: Phase-3 技术团队
 - **审核状态**: ✅ 已完成初始版本 
+
+# 真实API集成指南
+
+## 📋 **集成概述**
+
+已成功集成您的真实登录API，支持Vercel部署时自动使用真实API进行认证。
+
+### **🎯 集成范围**
+- ✅ **登录功能**: 完全使用真实API (`http://47.251.121.76:10010/users/login`)
+- ✅ **注册功能**: 完全使用真实API (`http://47.251.121.76:10010/users/register`)
+- ✅ **管理员权限**: 登录后自动识别管理员身份并跳转到管理后台
+- ⚠️ **其他功能**: 继续使用Mock API（农业、物流、加工等模块）
+
+### **🔧 技术实现**
+
+#### **环境检测逻辑**
+```typescript
+// 生产环境（Vercel部署）：默认使用真实API进行认证
+// 开发环境（localhost）：默认使用Mock API，可通过参数切换
+
+export const getApiEnvironment = (endpoint?: string): 'real' | 'mock' => {
+  if (endpoint && isAuthAPI(endpoint)) {
+    // 认证API：生产环境用真实API
+    const isProduction = window.location.hostname !== 'localhost';
+    return isProduction ? 'real' : 'mock';
+  }
+  // 其他API：继续使用Mock
+  return 'mock';
+};
+```
+
+#### **API端点映射**
+```typescript
+// 认证相关 - 使用真实API
+AUTH: {
+  REGISTER: '/users/register',
+  LOGIN: '/users/login',
+  LOGOUT: '/users/logout',
+  PROFILE: '/users/profile',
+}
+
+// 其他功能 - 继续使用Mock API
+FARMING: { /* Mock API路由 */ },
+PROCESSING: { /* Mock API路由 */ },
+LOGISTICS: { /* Mock API路由 */ },
+```
+
+### **📝 后端字段对接**
+
+#### **用户表结构支持**
+根据您提供的后端表字段，已完成类型定义：
+
+```typescript
+export interface UserInfo {
+  id: string | number;
+  username: string;     // 用户名
+  email: string;        // 邮箱  
+  phone?: string;       // 手机号
+  department?: string;  // 部门
+  position?: string;    // 职位
+  role?: string;        // 系统角色
+  isAdmin?: boolean;    // 管理员标识
+}
+```
+
+#### **管理员识别逻辑**
+```typescript
+// 支持多种管理员识别方式
+const userRole = user.role || user.position;
+if (userRole === 'admin' || userRole === '系统管理员' || user.isAdmin) {
+  router.push('/admin/dashboard'); // 跳转到管理后台
+} else {
+  router.push('/home/selector');   // 普通用户首页
+}
+```
+
+### **🚀 部署配置**
+
+#### **Vercel部署**
+- 生产环境会自动使用真实API (`http://47.251.121.76:10010`)
+- 无需额外配置，直接部署即可
+- 认证功能完全对接您的后端数据库
+
+#### **开发环境测试**
+```bash
+# 启动开发服务器
+npm run dev
+
+# 访问登录页面
+http://localhost:3000/login
+
+# 切换到真实API测试（可选）
+http://localhost:3000/login?mock=false
+```
+
+### **📊 当前状态总结**
+
+| 功能模块 | API类型 | 状态 | 说明 |
+|---------|---------|------|------|
+| 用户登录 | 真实API | ✅ 完成 | 生产环境默认启用 |
+| 用户注册 | 真实API | ✅ 完成 | 同样支持真实API集成 |
+| 管理员识别 | 真实API | ✅ 完成 | 支持多种角色判断 |
+| 农业模块 | Mock API | ✅ 保持 | 继续使用Mock数据 |
+| 物流模块 | Mock API | ✅ 保持 | 继续使用Mock数据 |
+| 加工模块 | Mock API | ✅ 保持 | 继续使用Mock数据 |
+| 管理后台 | Mock API | ✅ 保持 | 除认证外的其他功能 |
+
+### **🔄 未来扩展**
+
+如需扩展其他模块使用真实API：
+
+1. **在`API_ENDPOINTS`中标记需要真实API的端点**
+2. **修改`isAuthAPI`函数，添加新的端点判断**
+3. **确保后端提供对应的API接口**
+
+### **🐛 故障排查**
+
+#### **登录失败**
+1. 检查后端API是否运行在 `http://47.251.121.76:10010`
+2. 检查数据库中是否有对应的用户记录
+3. 查看浏览器控制台的详细错误信息
+
+#### **权限问题**
+1. 确认用户的`role`或`position`字段是否设置正确
+2. 检查`isAdmin`字段是否为`true`（针对管理员用户）
+3. 验证管理员跳转逻辑是否正常执行
+
+---
+
+**维护人员**: AI Assistant  
+**更新时间**: 2025-02-02  
+**版本**: 1.0.0 
