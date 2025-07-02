@@ -344,6 +344,53 @@ class ApiClient {
   }
 
   /**
+   * 表单请求方法 (application/x-www-form-urlencoded)
+   */
+  private async requestForm<T>(
+    method: string,
+    endpoint: string,
+    data?: any,
+    options: RequestOptions = {}
+  ): Promise<T> {
+    const url = this.buildUrl(endpoint);
+    
+    // 构建表单专用头部
+    const headers: Record<string, string> = {
+      ...this.config.headers,
+      ...options.headers,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+
+    // 添加认证头
+    if (!options.skipAuth) {
+      const token = this.getAuthToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    const requestOptions: RequestInit = {
+      method: method.toUpperCase(),
+      headers,
+    };
+
+    // 将数据转换为表单格式
+    if (data && !['GET', 'HEAD'].includes(method.toUpperCase())) {
+      const formData = new URLSearchParams();
+      Object.keys(data).forEach(key => {
+        formData.append(key, data[key]);
+      });
+      requestOptions.body = formData.toString();
+    }
+
+    try {
+      return await this.requestWithRetry<T>(url, requestOptions, options);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * GET请求
    */
   async get<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
@@ -355,6 +402,13 @@ class ApiClient {
    */
   async post<T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> {
     return this.request<T>('POST', endpoint, data, options);
+  }
+
+  /**
+   * POST表单请求 (application/x-www-form-urlencoded)
+   */
+  async postForm<T = any>(endpoint: string, data?: any, options: RequestOptions = {}): Promise<T> {
+    return this.requestForm<T>('POST', endpoint, data, options);
   }
 
   /**
