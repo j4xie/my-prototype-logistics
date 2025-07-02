@@ -148,13 +148,17 @@ export default function RegisterPage() {
       const { authService } = await import('@/services/auth.service');
       
       const registerData = {
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          phone: formData.phone,
-          department: formData.department,
-        position: formData.role, // 将role映射为position
-        confirmPassword: formData.confirmPassword
+        username: formData.username,           // 第1个字段
+        password: formData.password,           // 第2个字段  
+        email: formData.email,                 // 第3个字段
+        role: formData.role,                   // 第4个字段
+        permissions: 'basic',                  // 第5个字段
+        last_login: null,                      // 第6个字段
+        is_active: true,                       // 第7个字段
+        phone: formData.phone,                 // 第8个字段
+        department: formData.department,       // 第9个字段
+        position: formData.role,               // 第10个字段（备用）
+        confirmPassword: formData.confirmPassword // 前端验证用，不发送到后端
       };
 
       const response = await authService.register(registerData);

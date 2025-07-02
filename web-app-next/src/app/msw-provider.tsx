@@ -21,6 +21,7 @@ export function MSWProvider({ children }: MSWProviderProps) {
           const { autoInitializeForDevelopment } = await import('@/mocks/setup');
           await autoInitializeForDevelopment();
           console.log('✅ MSW Mock API initialized successfully');
+          console.log('🔍 Service Worker状态:', navigator.serviceWorker?.controller ? '已激活' : '未激活');
           initialized.current = true;
         } catch (error) {
           console.error('❌ Failed to initialize MSW Mock API:', error);
