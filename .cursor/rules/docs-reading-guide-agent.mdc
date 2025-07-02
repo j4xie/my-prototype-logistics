@@ -40,7 +40,7 @@ alwaysApply: false
 - 了解数据接口规范时
 
 **核心文件**：
-- [docs/api/overview.md](mdc:docs/api/overview.md) - API概览和规范
+- [docs/api/api-specification.md](mdc:docs/api/api-specification.md) - API接口规范权威来源（整合了原overview内容）
 - [docs/api/trace.md](mdc:docs/api/trace.md) - 溯源API文档
 - [docs/api/authentication.md](mdc:docs/api/authentication.md) - 认证API文档
 
@@ -100,7 +100,7 @@ alwaysApply: false
 3. [docs/project-management/evolution-roadmap.md](mdc:docs/project-management/evolution-roadmap.md)
 
 **API开发**：
-1. [docs/api/overview.md](mdc:docs/api/overview.md)
+1. [docs/api/api-specification.md](mdc:docs/api/api-specification.md) - API接口规范权威来源
 2. 相关业务API文档（trace.md、authentication.md等）
 
 ### 🟡 中优先级（按需阅读）
@@ -129,7 +129,7 @@ alwaysApply: false
 - [ ] 了解：[docs/project-management/evolution-roadmap.md](mdc:docs/project-management/evolution-roadmap.md)
 
 ### API开发工作
-- [ ] 必读：[docs/api/overview.md](mdc:docs/api/overview.md)
+- [ ] 必读：[docs/api/api-specification.md](mdc:docs/api/api-specification.md) - API接口规范权威来源
 - [ ] 查看：相关业务API文档
 - [ ] 确认：认证和权限要求
 
@@ -156,7 +156,7 @@ alwaysApply: false
   **正确的docs阅读流程**：
   
   **场景：开发新的溯源API**
-  1. 阅读 [docs/api/overview.md](mdc:docs/api/overview.md) 了解API规范
+  1. 阅读 [docs/api/api-specification.md](mdc:docs/api/api-specification.md) 了解完整API规范（权威来源）
   2. 查看 [docs/api/trace.md](mdc:docs/api/trace.md) 了解现有溯源API
   3. 参考 [docs/architecture/design-principles.md](mdc:docs/architecture/design-principles.md) 确保符合架构原则
   4. 开发完成后更新相关API文档
