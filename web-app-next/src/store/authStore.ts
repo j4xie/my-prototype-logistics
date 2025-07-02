@@ -7,34 +7,89 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { devtools } from 'zustand/middleware';
-import { authApi } from '@/lib/api';
+import { authService } from '@/services/auth.service';
 import type { 
   AuthState, 
   User, 
   LoginCredentials, 
   AuthResponse
 } from '@/types/state';
+import type { LoginRequest, RegisterRequest } from '@/types/auth';
 
-// 模拟API调用 - 实际项目中应该替换为真实的API
+// 使用新的认证服务 - 支持Mock/Real API切换
 const authAPI = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      // 使用新的API客户端
-      const response = await authApi.login(credentials);
-      return response as AuthResponse;
+      // 转换为新服务需要的格式
+      const loginRequest: LoginRequest = {
+        username: credentials.username,
+        password: credentials.password
+      };
+      
+      const response = await authService.login(loginRequest);
+      
+      // 转换为现有格式
+      if (response?.data?.token || response?.token) {
+        const token = response.data?.token || response.token;
+        const userData = response.data?.user || response.user || response;
+        
+        return {
+          user: {
+            id: String(userData.id || '1'),
+            username: userData.username,
+            email: userData.email || '',
+            displayName: userData.username,
+            avatar: '',
+            role: {
+              id: userData.role || 'user',
+              name: userData.role === 'admin' ? '系统管理员' : '普通用户',
+              description: userData.role === 'admin' ? '具有系统所有权限' : '基础查看权限',
+              level: userData.role === 'admin' ? 1 : 3,
+            },
+            permissions: userData.role === 'admin' 
+              ? [
+                  { id: '1', name: '农业管理', resource: 'farming', action: 'manage' },
+                  { id: '2', name: '加工管理', resource: 'processing', action: 'manage' },
+                  { id: '3', name: '物流管理', resource: 'logistics', action: 'manage' },
+                  { id: '4', name: '系统管理', resource: 'admin', action: 'manage' },
+                  { id: '5', name: '溯源查询', resource: 'trace', action: 'read' },
+                ]
+              : [
+                  { id: '5', name: '溯源查询', resource: 'trace', action: 'read' },
+                ],
+            createdAt: userData.createdAt || new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
+          },
+          token,
+          refreshToken: response.data?.refreshToken || 'mock-refresh-token',
+          expiresIn: response.data?.expiresIn || 3600,
+        };
+      }
+      
+      throw new Error('登录响应格式无效');
     } catch (error) {
-      // 如果API失败，使用模拟数据（开发阶段）
-      console.warn('API失败，使用模拟登录数据（开发模式）:', error);
+      // 如果新API失败，使用模拟数据（开发阶段）
+      console.warn(`[AuthStore] ${authService.getEnvironment()} API失败，使用模拟登录数据:`, error);
       return mockLogin(credentials);
     }
   },
   
   refreshToken: async (refreshToken: string): Promise<AuthResponse> => {
     try {
-      // 使用传入的refreshToken参数
       console.log('尝试刷新token:', refreshToken);
-      const response = await authApi.refreshToken();
-      return response as AuthResponse;
+      const response = await authService.refreshToken();
+      
+      if (response?.data?.token || response?.token) {
+        // 简化的刷新响应
+        return {
+          user: {} as User, // 刷新时不更新用户信息
+          token: response.data?.token || response.token,
+          refreshToken: response.data?.refreshToken || refreshToken,
+          expiresIn: response.data?.expiresIn || 3600,
+        };
+      }
+      
+      throw new Error('Token刷新失败');
     } catch (error) {
       console.error('Token刷新失败:', error);
       throw error;
@@ -43,23 +98,39 @@ const authAPI = {
   
   updateProfile: async (profile: Partial<User>): Promise<User> => {
     try {
-      // 使用传入的profile参数进行更新
       console.log('更新用户资料:', profile);
-      const response = await authApi.getUser();
-      return response as User;
+      const response = await authService.getUserProfile();
+      
+      return {
+        id: String(response.id || '1'),
+        username: response.username,
+        email: response.email || '',
+        displayName: response.username,
+        avatar: '',
+        role: {
+          id: response.role || 'user',
+          name: response.role === 'admin' ? '系统管理员' : '普通用户',
+          description: '',
+          level: response.role === 'admin' ? 1 : 3,
+        },
+        permissions: [],
+        createdAt: response.createdAt || new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
     } catch (error) {
       console.error('用户资料更新失败:', error);
       throw error;
     }
   },
 
-  // 获取用户权限
+  // 获取用户权限（暂时返回空数组）
   getPermissions: async () => {
     try {
-      return await authApi.getPermissions();
+      // 真实API开发完成后，可以添加权限获取逻辑
+      return [];
     } catch (_error) {
       console.error('权限获取失败:', _error);
-      throw _error;
+      return [];
     }
   },
 };
@@ -311,7 +382,7 @@ export const useAuthStore = create<AuthState>()(
           set({ error: null }, false, 'auth/clearError');
         },
 
-        // 自动登录尝试 (使用已有的API结构)
+        // 自动登录尝试 (使用新的API结构)
         tryAutoLogin: async () => {
           const { isAuthenticated } = get();
           if (isAuthenticated) {
@@ -319,7 +390,7 @@ export const useAuthStore = create<AuthState>()(
           }
           
           try {
-            const user = await authApi.getUser();
+            const user = await authAPI.updateProfile({});
             set({ 
               isAuthenticated: true,
               user: user as User,

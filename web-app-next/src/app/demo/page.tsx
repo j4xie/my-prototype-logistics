@@ -1,262 +1,255 @@
+/**
+ * @module TechDemoPage
+ * @description 食品溯源系统 - 技术栈演示页面 (Phase-3)
+ * @version 2.0.0
+ * @author 食品溯源系统开发团队
+ */
+
 'use client';
 
-import dynamic from 'next/dynamic';
-import { Suspense, useState } from 'react';
-import { Loading } from '@/components/ui/loading';
-import { DynamicLoaders, DynamicLoadingIndicator, useDynamicComponentMetrics } from '@/components/ui/dynamic-loader';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 
-// 使用Next.js内置的dynamic函数实现代码分割
-const DynamicTable = dynamic(() => 
-  import('@/components/ui/table').then(mod => ({ default: mod.Table })),
-  {
-    loading: () => <Loading />,
-    ssr: false, // 关闭服务端渲染，提高初始页面加载速度
-  }
-);
+export default function TechDemoPage() {
+  const [loading, setLoading] = useState(false);
+  const [count, setCount] = useState(0);
 
-// 动态加载的高级表格组件
-const DynamicAdvancedTable = DynamicLoaders.AdvancedTable;
-
-export default function DemoPage() {
-  const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'metrics'>('basic');
-  const [showDynamicComponents, setShowDynamicComponents] = useState(false);
-  
-  // 性能监控
-  const { metrics, startLoading, endLoading } = useDynamicComponentMetrics('DemoPage');
-
-  const handleLoadDynamicComponents = async () => {
-    startLoading();
-    try {
-      setShowDynamicComponents(true);
-      // 模拟网络延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      endLoading(true);
-    } catch {
-      endLoading(false);
-    }
+  const handleAsyncAction = async () => {
+    setLoading(true);
+    // 模拟异步操作
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setLoading(false);
+    setCount(prev => prev + 1);
   };
-
-  // 示例数据
-  const basicTableData = [
-    { name: '性能优化', value: '代码分割', status: '已完成' },
-    { name: '用户体验', value: '懒加载', status: '进行中' },
-    { name: '构建工具', value: 'Turbopack', status: '已完成' },
-  ];
-
-  const advancedTableData = [
-    { id: 1, name: '组件库现代化', type: '前端', priority: '高', progress: 85, assignee: '张三' },
-    { id: 2, name: '状态管理重构', type: '前端', priority: '中', progress: 60, assignee: '李四' },
-    { id: 3, name: '构建工具优化', type: '工程化', priority: '高', progress: 100, assignee: '王五' },
-    { id: 4, name: 'TypeScript迁移', type: '前端', priority: '高', progress: 45, assignee: '赵六' },
-    { id: 5, name: '测试覆盖率提升', type: '质量保证', priority: '中', progress: 30, assignee: '孙七' },
-  ];
-
-  const basicColumns = [
-    { key: 'name', title: '名称' },
-    { key: 'value', title: '值' },
-    { key: 'status', title: '状态' },
-  ];
-
-  const advancedColumns = [
-    { key: 'name', title: '任务名称', sortable: true },
-    { key: 'type', title: '类型', sortable: true, filterable: true },
-    { key: 'priority', title: '优先级', sortable: true },
-    { 
-      key: 'progress', 
-      title: '进度', 
-      sortable: true,
-      render: (value: number) => (
-        <div className="flex items-center space-x-2">
-          <div className="flex-1 bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${value}%` }}
-            />
-          </div>
-          <span className="text-sm text-gray-600">{value}%</span>
-        </div>
-      )
-    },
-    { key: 'assignee', title: '负责人' },
-  ];
 
   return (
     <div className="flex flex-col min-h-screen max-w-[390px] mx-auto">
-      <main className="flex-1 p-4 space-y-6">
-        {/* 标题区域 */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h1 className="text-lg font-medium text-gray-900 mb-2">
-            代码分割和懒加载演示
-          </h1>
-          <p className="text-sm text-gray-600">
-            展示Next.js动态导入、代码分割和性能优化功能
-          </p>
-        </div>
-
-        {/* 性能指标 */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h2 className="text-sm font-medium text-gray-700 mb-3">构建性能指标</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <div className="text-lg font-medium text-green-600">13.0s</div>
-              <div className="text-xs text-gray-500">构建时间</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-medium text-blue-600">101kB</div>
-              <div className="text-xs text-gray-500">First Load JS</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-medium text-purple-600">4个</div>
-              <div className="text-xs text-gray-500">静态页面</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-medium text-orange-600">
-                {metrics.loadDuration > 0 ? `${metrics.loadDuration.toFixed(0)}ms` : '-'}
-              </div>
-              <div className="text-xs text-gray-500">动态加载时间</div>
+      <main className="flex-1 min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="container mx-auto px-4 py-16">
+          {/* 头部标题 */}
+          <div className="mb-16 text-center">
+            <h1 className="mb-6 text-4xl font-bold text-gray-900 md:text-6xl">
+              食品溯源系统
+              <span className="mt-2 block text-2xl text-[#1890FF] md:text-3xl">
+                Phase-3 技术栈现代化
+              </span>
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg text-gray-600">
+              基于 Next.js 14 + TypeScript + Tailwind CSS 的现代化重构
+            </p>
+            
+            {/* 返回首页按钮 */}
+            <div className="mt-6">
+              <Button 
+                variant="primary" 
+                onClick={() => window.location.href = '/'}
+                className="mr-4"
+              >
+                返回首页
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={() => window.location.href = '/login'}
+              >
+                前往登录
+              </Button>
             </div>
           </div>
-        </div>
 
-        {/* 选项卡导航 */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="flex border-b border-gray-200">
+          {/* 技术栈展示 */}
+          <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
-              { key: 'basic', label: '基础表格' },
-              { key: 'advanced', label: '高级表格' },
-              { key: 'metrics', label: '性能监控' },
-            ].map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
-                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.key
-                    ? 'text-blue-600 border-blue-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
+              {
+                name: 'Next.js 14',
+                desc: 'App Router + SSR/SSG',
+                color: 'bg-black text-white',
+              },
+              {
+                name: 'TypeScript',
+                desc: '类型安全开发',
+                color: 'bg-blue-600 text-white',
+              },
+              {
+                name: 'Tailwind CSS',
+                desc: '原子化CSS框架',
+                color: 'bg-cyan-500 text-white',
+              },
+              {
+                name: 'Zustand',
+                desc: '轻量状态管理',
+                color: 'bg-orange-500 text-white',
+              },
+            ].map((tech, index) => (
+              <div
+                key={index}
+                className="rounded-lg bg-white p-6 text-center shadow-sm"
               >
-                {tab.label}
-              </button>
+                <div
+                  className={`mb-3 inline-block rounded-full px-3 py-1 text-sm font-medium ${tech.color}`}
+                >
+                  {tech.name}
+                </div>
+                <p className="text-sm text-gray-600">{tech.desc}</p>
+              </div>
             ))}
           </div>
 
-          <div className="p-4">
-            {/* 基础表格展示 */}
-            {activeTab === 'basic' && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-700">
-                  动态加载的基础数据表格
-                </h3>
-                <Suspense fallback={<Loading />}>
-                  <DynamicTable
-                    columns={basicColumns}
-                    data={basicTableData}
-                    size="sm"
-                    responsive={true}
-                  />
-                </Suspense>
-              </div>
-            )}
+          {/* 组件演示区域 */}
+          <div className="mb-16 rounded-lg bg-white p-8 shadow-sm">
+            <h2 className="mb-8 text-center text-2xl font-bold text-gray-900">
+              现代化组件演示
+            </h2>
 
-            {/* 高级表格展示 */}
-            {activeTab === 'advanced' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-700">
-                    动态加载的高级表格组件
-                  </h3>
-                  <button
-                    onClick={handleLoadDynamicComponents}
-                    disabled={metrics.isLoading}
-                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            <div className="space-y-8">
+              {/* 按钮组件演示 */}
+              <div>
+                <h3 className="mb-4 text-lg font-semibold text-gray-800">
+                  Button 组件
+                </h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Button variant="primary" size="small">
+                    Primary Small
+                  </Button>
+                  <Button variant="secondary" size="medium">
+                    Secondary Medium
+                  </Button>
+                  <Button variant="success" size="large">
+                    Success Large
+                  </Button>
+                  <Button variant="danger" disabled>
+                    Disabled
+                  </Button>
+                  <Button variant="ghost">Ghost</Button>
+                  <Button
+                    variant="primary"
+                    loading={loading}
+                    onClick={handleAsyncAction}
                   >
-                    {metrics.isLoading ? '加载中...' : showDynamicComponents ? '重新加载' : '加载组件'}
-                  </button>
+                    {loading ? '加载中...' : `异步操作 (${count})`}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => window.open('/ai-demo', '_blank')}
+                  >
+                    🤖 AI演示页面
+                  </Button>
                 </div>
-                
-                {showDynamicComponents ? (
-                  <Suspense fallback={<DynamicLoadingIndicator message="高级表格加载中..." />}>
-                    <DynamicAdvancedTable
-                      columns={advancedColumns}
-                      data={advancedTableData}
-                      searchable={true}
-                      pagination={true}
-                      pageSize={3}
-                    />
-                  </Suspense>
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-8 text-center">
-                    <div className="text-gray-500 text-sm">
-                      点击&ldquo;加载组件&rdquo;按钮体验动态加载
+              </div>
+
+              {/* 功能特性展示 */}
+              <div>
+                <h3 className="mb-4 text-lg font-semibold text-gray-800">
+                  现代化特性
+                </h3>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <span className="text-sm">TypeScript 类型安全</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <span className="text-sm">React 18 并发特性</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <span className="text-sm">Tailwind CSS 原子化样式</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <span className="text-sm">WCAG 2.1 AA 可访问性</span>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* 性能监控展示 */}
-            {activeTab === 'metrics' && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-700">
-                  动态组件性能监控
-                </h3>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span className="text-sm text-gray-600">组件加载状态</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      metrics.isLoading 
-                        ? 'bg-yellow-100 text-yellow-800' 
-                        : metrics.hasError 
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-green-100 text-green-800'
-                    }`}>
-                      {metrics.isLoading ? '加载中' : metrics.hasError ? '加载失败' : '加载完成'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span className="text-sm text-gray-600">加载时长</span>
-                    <span className="text-sm font-mono">
-                      {metrics.loadDuration > 0 ? `${metrics.loadDuration.toFixed(2)}ms` : '-'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span className="text-sm text-gray-600">Bundle 分析</span>
-                    <span className="text-sm text-blue-600">4个chunks已生成</span>
-                  </div>
-                </div>
-
-                {/* 其他动态组件演示 */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-medium text-gray-600">其他动态组件</h4>
-                  <div className="space-y-2">
-                    <Suspense fallback={<DynamicLoadingIndicator size="sm" />}>
-                      <DynamicLoaders.ChartComponent />
-                    </Suspense>
-                    <Suspense fallback={<DynamicLoadingIndicator size="sm" />}>
-                      <DynamicLoaders.Modal />
-                    </Suspense>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                      <span className="text-sm">Zustand 状态管理</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                      <span className="text-sm">React Query 数据获取</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                      <span className="text-sm">App Router 路由系统</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                      <span className="text-sm">SSR/SSG 性能优化</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
 
-        {/* 技术说明 */}
-        <div className="bg-blue-50 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">
-            💡 技术实现说明
-          </h3>
-          <ul className="text-xs text-blue-800 space-y-1">
-            <li>• 使用Next.js dynamic()实现组件级代码分割</li>
-            <li>• Turbopack构建工具优化，提升10倍构建速度</li>
-            <li>• 错误边界处理动态加载失败情况</li>
-            <li>• 性能监控追踪组件加载时间</li>
-            <li>• Suspense支持加载状态展示</li>
-          </ul>
+          {/* 性能指标 */}
+          <div className="rounded-lg bg-white p-8 shadow-sm">
+            <h2 className="mb-8 text-center text-2xl font-bold text-gray-900">
+              性能提升目标
+            </h2>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+              {[
+                {
+                  metric: '首屏加载',
+                  current: '~5秒',
+                  target: '<2秒',
+                  improvement: '60%',
+                },
+                {
+                  metric: '构建速度',
+                  current: '~45秒',
+                  target: '<5秒',
+                  improvement: '90%',
+                },
+                {
+                  metric: '热重载',
+                  current: '~3秒',
+                  target: '<200ms',
+                  improvement: '95%',
+                },
+                {
+                  metric: 'Lighthouse',
+                  current: '~70',
+                  target: '>90',
+                  improvement: '29%',
+                },
+              ].map((item, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border border-gray-200 p-4 text-center"
+                >
+                  <h3 className="mb-2 text-sm font-medium text-gray-600">
+                    {item.metric}
+                  </h3>
+                  <div className="mb-1 text-xs text-gray-500">
+                    当前: {item.current}
+                  </div>
+                  <div className="mb-2 text-sm font-semibold text-green-600">
+                    目标: {item.target}
+                  </div>
+                  <div className="text-lg font-bold text-blue-600">
+                    提升 {item.improvement}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 底部信息 */}
+          <div className="mt-16 text-center">
+            <p className="text-gray-600">
+              🚀 Phase-3 技术栈现代化 - 提升开发效率和用户体验
+            </p>
+            <div className="mt-4 space-x-4">
+              <Button variant="ghost" onClick={() => window.location.href = '/preview'}>
+                查看预览系统
+              </Button>
+              <Button variant="ghost" onClick={() => window.location.href = '/ai-demo'}>
+                AI功能演示
+              </Button>
+            </div>
+          </div>
         </div>
       </main>
     </div>
