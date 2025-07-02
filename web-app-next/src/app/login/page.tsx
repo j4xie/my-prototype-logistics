@@ -35,10 +35,28 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<LoginForm>>({});
   const [mounted, setMounted] = useState(false);
+  const [apiEnvironment, setApiEnvironment] = useState<'mock' | 'real'>('mock');
 
   useEffect(() => {
     setMounted(true);
+    // 检测当前API环境
+    setApiEnvironment(authService.getEnvironment());
   }, []);
+
+  // 切换API环境
+  const toggleApiEnvironment = () => {
+    const newEnv = apiEnvironment === 'mock' ? 'real' : 'mock';
+    const url = new URL(window.location.href);
+    
+    if (newEnv === 'real') {
+      url.searchParams.set('mock', 'false');
+    } else {
+      url.searchParams.delete('mock');
+    }
+    
+    // 刷新页面以应用新的环境设置
+    window.location.href = url.toString();
+  };
 
   // 表单验证
   const validateForm = (): boolean => {
@@ -78,6 +96,9 @@ export default function LoginPage() {
         password: form.password
       };
 
+      console.log('发送登录请求:', credentials);
+      console.log('当前认证服务环境:', authService.getEnvironment());
+
       const response = await authService.login(credentials);
       
       console.log('登录响应:', response);
@@ -109,9 +130,13 @@ export default function LoginPage() {
       console.error('登录错误:', error);
       
       if (error instanceof AuthApiError) {
-        alert(error.message);
+        // 显示更详细的错误信息
+        const errorMsg = error.code === 'USER_NOT_FOUND' 
+          ? `用户不存在：请检查用户名是否正确，或确认当前使用的是真实API (环境: ${authService.getEnvironment()})`
+          : error.message;
+        alert(errorMsg);
       } else {
-      alert("网络连接错误，请稍后重试");
+        alert("网络连接错误，请稍后重试");
       }
     } finally {
       setLoading(false);
@@ -129,12 +154,17 @@ export default function LoginPage() {
 
   // 快速登录（演示用）
   const handleQuickLogin = (role: 'admin' | 'user') => {
-    const credentials = {
-      admin: { username: 'admin', password: '123456' },
-      user: { username: 'user', password: '123456' }
-    };
-
-    setForm(credentials[role]);
+    if (apiEnvironment === 'real') {
+      // 真实API环境使用实际的测试用户
+      setForm({ username: 'zyh', password: '123456' });
+    } else {
+      // Mock API环境使用演示用户
+      const credentials = {
+        admin: { username: 'admin', password: '123456' },
+        user: { username: 'user', password: '123456' }
+      };
+      setForm(credentials[role]);
+    }
   };
 
   if (!mounted) {
@@ -210,28 +240,89 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* 快速登录按钮（演示用） */}
+          {/* API环境切换 */}
           <div className="mt-6 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center mb-3">演示账号快速登录</p>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-gray-500">API环境</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs px-2 py-1 rounded ${
+                  apiEnvironment === 'real' 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {apiEnvironment === 'real' ? '真实API' : 'Mock API'}
+                </span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={toggleApiEnvironment}
+                  disabled={loading}
+                  className="text-xs h-8 px-2"
+                >
+                  切换
+                </Button>
+              </div>
+            </div>
+            {apiEnvironment === 'real' && (
+              <div className="bg-green-50 p-3 rounded-lg">
+                <p className="text-xs text-green-700 mb-2">
+                  <strong>真实API模式</strong> - 连接到后端服务器
+                </p>
+                <p className="text-xs text-green-600">
+                  测试用户：zyh / 123456
+                </p>
+              </div>
+            )}
+            {apiEnvironment === 'mock' && (
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-xs text-blue-700 mb-2">
+                  <strong>Mock API模式</strong> - 使用模拟数据
+                </p>
+                <p className="text-xs text-blue-600">
+                  演示用户：admin/123456 或 user/123456
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* 快速登录按钮（演示用） */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center mb-3">
+              {apiEnvironment === 'real' ? '快速填入测试用户' : '演示账号快速登录'}
+            </p>
             <div className="flex gap-2">
-                             <Button
-                 type="button"
-                 variant="secondary"
-                 className="flex-1 h-10 text-sm"
-                 onClick={() => handleQuickLogin('user')}
-                 disabled={loading}
-               >
-                 普通用户
-               </Button>
-               <Button
-                 type="button"
-                 variant="secondary"
-                 className="flex-1 h-10 text-sm"
-                 onClick={() => handleQuickLogin('admin')}
-                 disabled={loading}
-               >
-                 管理员
-               </Button>
+              {apiEnvironment === 'real' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full h-10 text-sm"
+                  onClick={() => handleQuickLogin('user')}
+                  disabled={loading}
+                >
+                  填入 zyh / 123456
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="flex-1 h-10 text-sm"
+                    onClick={() => handleQuickLogin('user')}
+                    disabled={loading}
+                  >
+                    普通用户
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="flex-1 h-10 text-sm"
+                    onClick={() => handleQuickLogin('admin')}
+                    disabled={loading}
+                  >
+                    管理员
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 

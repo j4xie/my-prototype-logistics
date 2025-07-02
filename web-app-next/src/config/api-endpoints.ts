@@ -75,19 +75,30 @@ export const isAuthAPI = (endpoint: string): boolean => {
 
 /**
  * 获取API环境类型
- * 认证API：生产环境默认使用真实API，开发环境可通过参数切换
+ * 认证API：生产环境强制使用真实API，开发环境可通过参数切换
  * 其他API：继续使用Mock API
  */
 export const getApiEnvironment = (endpoint?: string): 'real' | 'mock' => {
   // 如果是认证相关API
   if (endpoint && isAuthAPI(endpoint)) {
+    // 检查环境变量强制设置
+    const forceReal = process.env.NEXT_PUBLIC_USE_REAL_AUTH_API;
+    if (forceReal === 'true') {
+      return 'real';
+    }
+    
     // 生产环境检测
     if (typeof window !== 'undefined') {
       const isProduction = window.location.hostname !== 'localhost' && 
-                          window.location.hostname !== '127.0.0.1';
+                          window.location.hostname !== '127.0.0.1' &&
+                          !window.location.hostname.includes('vercel.app');
       
-      if (isProduction) {
-        // 生产环境默认使用真实API，除非明确指定mock=true
+      // Vercel预览环境或生产环境
+      const isVercel = window.location.hostname.includes('vercel.app') || 
+                      window.location.hostname.includes('your-domain.com'); // 替换为您的实际域名
+      
+      if (isProduction || isVercel) {
+        // 生产环境强制使用真实API，除非明确指定mock=true
         const params = new URLSearchParams(window.location.search);
         return params.get('mock') === 'true' ? 'mock' : 'real';
       } else {
@@ -99,9 +110,8 @@ export const getApiEnvironment = (endpoint?: string): 'real' | 'mock' => {
     
     // 服务端渲染时，检查环境变量
     const nodeEnv = process.env.NODE_ENV;
-    const forceReal = process.env.NEXT_PUBLIC_USE_REAL_AUTH_API;
     
-    if (nodeEnv === 'production' || forceReal === 'true') {
+    if (nodeEnv === 'production') {
       return 'real';
     }
   }
