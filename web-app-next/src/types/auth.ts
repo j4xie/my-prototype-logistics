@@ -8,9 +8,13 @@ export interface RegisterRequest {
   username: string;     // 用户名（必填）
   password: string;     // 密码（必填）
   email: string;        // 邮箱（必填）
+  role?: string;        // 角色（对应后端role字段）
+  permissions?: string; // 权限（对应后端permissions字段）
+  last_login?: null;    // 最后登录时间（对应后端last_login字段）
+  is_active?: boolean;  // 激活状态（对应后端is_active字段）
   phone?: string;       // 手机号（可选）
   department?: string;  // 部门（可选）
-  position?: string;    // 职位（可选）
+  position?: string;    // 职位（可选，备用字段）
   confirmPassword?: string; // 前端验证用，不发送到后端
 }
 

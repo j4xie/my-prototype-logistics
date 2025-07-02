@@ -33,7 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh">
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased" suppressHydrationWarning={true}>
         <MSWProvider>
         <Providers>{children}</Providers>
         </MSWProvider>
