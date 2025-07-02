@@ -1,0 +1,3 @@
+# 禁用Jekyll构建
+# 此文件告诉GitHub Pages不要使用Jekyll处理这个仓库
+# 因为这是一个Node.js/Next.js应用，不是Jekyll站点 
