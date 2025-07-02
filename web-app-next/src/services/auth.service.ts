@@ -53,25 +53,47 @@ export class AuthService {
       
       // 根据环境使用不同的端点
       const endpoint = this.environment === 'real' 
-        ? '/users/login'  // 真实API端点
-        : '/auth/login';  // Mock API端点
+        ? '/users/login'    // 真实API端点
+        : '/api/auth/login'; // Mock API端点
 
       const response = await apiClient.post(endpoint, credentials);
       
       console.log(`[AuthService] 登录响应 (${this.environment}):`, response);
 
-      // 简单的成功检查
-      if (response && (response.success !== false)) {
-        const userData = response.data || response;
-        console.log(`[AuthService] 登录成功 (${this.environment}):`, userData.user?.username || userData.username);
-        return response;
-      }
+      // 处理不同API的响应格式
+      if (this.environment === 'real') {
+        // 真实API格式: {state: number, message: string, data: any}
+        if (response && response.state === 2000) {
+          // state 2000 表示成功
+          const userData = response.data;
+          console.log(`[AuthService] 登录成功 (真实API):`, userData?.username);
+          return {
+            success: true,
+            data: userData,
+            message: response.message || '登录成功'
+          };
+        } else {
+          // 失败情况
+          throw new AuthApiError(
+            response?.message || '登录失败',
+            400,
+            'LOGIN_FAILED'
+          );
+        }
+      } else {
+        // Mock API格式: {success: boolean, data: any}
+        if (response && (response.success !== false)) {
+          const userData = response.data || response;
+          console.log(`[AuthService] 登录成功 (Mock API):`, userData.user?.username || userData.username);
+          return response;
+        }
 
-      throw new AuthApiError(
-        response?.message || '登录失败',
-        400,
-        'LOGIN_FAILED'
-      );
+        throw new AuthApiError(
+          response?.message || '登录失败',
+          400,
+          'LOGIN_FAILED'
+        );
+      }
 
     } catch (error) {
       console.error(`[AuthService] 登录失败 (${this.environment}):`, error);
@@ -105,25 +127,47 @@ export class AuthService {
 
       // 根据环境使用不同的端点
       const endpoint = this.environment === 'real'
-        ? '/users/register'  // 真实API端点
-        : '/auth/register';  // Mock API端点
+        ? '/users/register'    // 真实API端点
+        : '/api/auth/register'; // Mock API端点
 
       const response = await apiClient.post(endpoint, apiData);
       
       console.log(`[AuthService] 注册响应 (${this.environment}):`, response);
 
-      // 简单的成功检查
-      if (response && (response.success !== false)) {
-        const userData = response.data || response;
-        console.log(`[AuthService] 注册成功 (${this.environment}):`, userData.user?.username || userData.username);
-        return response;
-      }
+      // 处理不同API的响应格式
+      if (this.environment === 'real') {
+        // 真实API格式: {state: number, message: string, data: any}
+        if (response && response.state === 2000) {
+          // state 2000 表示成功
+          const userData = response.data;
+          console.log(`[AuthService] 注册成功 (真实API):`, userData?.username);
+          return {
+            success: true,
+            data: userData,
+            message: response.message || '注册成功'
+          };
+        } else {
+          // 失败情况，包括服务器500错误
+          throw new AuthApiError(
+            response?.message || '注册失败',
+            response?.status || 400,
+            'REGISTER_FAILED'
+          );
+        }
+      } else {
+        // Mock API格式: {success: boolean, data: any}
+        if (response && (response.success !== false)) {
+          const userData = response.data || response;
+          console.log(`[AuthService] 注册成功 (Mock API):`, userData.user?.username || userData.username);
+          return response;
+        }
 
-      throw new AuthApiError(
-        response?.message || '注册失败',
-        400,
-        'REGISTER_FAILED'
-      );
+        throw new AuthApiError(
+          response?.message || '注册失败',
+          400,
+          'REGISTER_FAILED'
+        );
+      }
 
     } catch (error) {
       console.error(`[AuthService] 注册失败 (${this.environment}):`, error);
@@ -149,7 +193,7 @@ export class AuthService {
       
       const endpoint = this.environment === 'real'
         ? '/users/logout'
-        : '/auth/logout';
+        : '/api/auth/logout';
 
       await apiClient.post(endpoint);
       console.log(`[AuthService] 登出成功 (${this.environment})`);
@@ -167,7 +211,7 @@ export class AuthService {
     try {
       const endpoint = this.environment === 'real'
         ? '/users/status'
-        : '/auth/status';
+        : '/api/auth/status';
 
       const response = await apiClient.get(endpoint);
       

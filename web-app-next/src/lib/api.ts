@@ -192,12 +192,20 @@ class ApiClient {
       return endpoint;
     }
     
-    // 动态导入新的端点配置系统
+    // 首先检查是否应该使用Mock API
+    if (this.mockConfig.mockEnabled && this.mockHealthStatus?.available) {
+      console.log(`[API Client] Using Mock API for: ${endpoint}`);
+      // Mock环境下，直接使用相对路径让MSW拦截
+      return `${this.config.baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+    }
+    
+    // 动态路由选择逻辑（仅在非Mock环境下）
     try {
       // 检查是否为认证相关端点
       const isAuth = endpoint.includes('/users/') || endpoint.includes('/auth/');
       
       if (isAuth) {
+        console.log(`[API Client] Using Real API for auth: ${endpoint}`);
         // 对于认证端点，使用智能路由选择
         const isProduction = typeof window !== 'undefined' && 
                             window.location.hostname !== 'localhost' && 
