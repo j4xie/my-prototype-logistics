@@ -111,7 +111,7 @@ export default function LoginPage() {
       if (error instanceof AuthApiError) {
         alert(error.message);
       } else {
-        alert("网络连接错误，请稍后重试");
+      alert("网络连接错误，请稍后重试");
       }
     } finally {
       setLoading(false);

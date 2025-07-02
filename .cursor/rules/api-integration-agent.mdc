@@ -475,6 +475,236 @@ process.env.NEXT_PUBLIC_API_ENV = 'production';
 process.env.NEXT_PUBLIC_API_KEY = 'your-api-key';
 ```
 
+## 🚀 真实API功能扩展标准化流程
+
+基于项目认证API集成的成功实现，为新功能添加真实API支持的6步标准化流程：
+
+### 第一步：API端点配置
+在 `web-app-next/src/config/api-endpoints.ts` 中添加新功能的API判断逻辑：
+
+```typescript
+// 添加新功能的判断函数
+export const isYourFeatureAPI = (endpoint: string): boolean => {
+  return endpoint.includes('/your-feature/') || 
+         endpoint.includes('/another-feature/');
+};
+
+// 在getApiBaseUrl函数中添加新的判断逻辑
+export const getApiBaseUrl = (endpoint: string): string => {
+  if (isAuthAPI(endpoint) || isYourFeatureAPI(endpoint)) {
+    return isProduction ? REAL_API_BASE_URL : 
+           (shouldUseMockAPI() ? MOCK_API_BASE_URL : REAL_API_BASE_URL);
+  }
+  return MOCK_API_BASE_URL; // 其他功能继续使用Mock
+};
+```
+
+### 第二步：类型定义
+在 `web-app-next/src/types/` 目录创建对应的TypeScript接口定义：
+
+```typescript
+// 例如：types/logistics.ts
+export interface ShipmentInfo {
+  id: string;
+  origin: string;
+  destination: string;
+  status: 'pending' | 'in_transit' | 'delivered';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateShipmentRequest {
+  origin: string;
+  destination: string;
+  estimatedDelivery: string;
+}
+
+export interface ShipmentResponse extends ApiResponse<ShipmentInfo> {}
+export interface ShipmentsResponse extends ApiResponse<ShipmentInfo[]> {}
+```
+
+### 第三步：服务层实现
+在 `web-app-next/src/services/` 目录创建对应的API服务类：
+
+```typescript
+// 例如：services/logistics.service.ts
+import { BaseApiService } from './base.service';
+import { ShipmentInfo, CreateShipmentRequest } from '@/types/logistics';
+
+export class LogisticsService extends BaseApiService {
+  async getShipments(): Promise<ShipmentInfo[]> {
+    return this.request<ShipmentInfo[]>('/logistics/shipments');
+  }
+
+  async createShipment(data: CreateShipmentRequest): Promise<ShipmentInfo> {
+    return this.request<ShipmentInfo>('/logistics/shipments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getShipment(id: string): Promise<ShipmentInfo> {
+    return this.request<ShipmentInfo>(`/logistics/shipments/${id}`);
+  }
+}
+
+export const logisticsService = new LogisticsService();
+```
+
+### 第四步：状态管理集成
+更新或创建相关的Zustand Store：
+
+```typescript
+// 例如：store/logisticsStore.ts
+import { create } from 'zustand';
+import { logisticsService } from '@/services/logistics.service';
+import { ShipmentInfo } from '@/types/logistics';
+
+interface LogisticsState {
+  shipments: ShipmentInfo[];
+  loading: boolean;
+  error: string | null;
+  
+  fetchShipments: () => Promise<void>;
+  createShipment: (data: CreateShipmentRequest) => Promise<void>;
+  clearError: () => void;
+}
+
+export const useLogisticsStore = create<LogisticsState>((set, get) => ({
+  shipments: [],
+  loading: false,
+  error: null,
+  
+  fetchShipments: async () => {
+    set({ loading: true, error: null });
+    try {
+      const shipments = await logisticsService.getShipments();
+      set({ shipments, loading: false });
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : '获取物流信息失败',
+        loading: false 
+      });
+    }
+  },
+  
+  createShipment: async (data) => {
+    set({ loading: true, error: null });
+    try {
+      const newShipment = await logisticsService.createShipment(data);
+      set(state => ({ 
+        shipments: [...state.shipments, newShipment],
+        loading: false 
+      }));
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : '创建物流单失败',
+        loading: false 
+      });
+    }
+  },
+  
+  clearError: () => set({ error: null }),
+}));
+```
+
+### 第五步：页面组件更新
+修改现有页面组件使用新的API服务：
+
+```typescript
+// 在相关页面组件中
+import { useLogisticsStore } from '@/store/logisticsStore';
+import { useEffect } from 'react';
+
+export default function LogisticsPage() {
+  const { 
+    shipments, 
+    loading, 
+    error, 
+    fetchShipments, 
+    clearError 
+  } = useLogisticsStore();
+  
+  useEffect(() => {
+    fetchShipments();
+  }, [fetchShipments]);
+
+  if (loading) return <div>加载中...</div>;
+  
+  if (error) {
+    return (
+      <div className="error-container">
+        <p>错误：{error}</p>
+        <button onClick={clearError}>清除错误</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="logistics-page">
+      {shipments.map(shipment => (
+        <div key={shipment.id} className="shipment-card">
+          <h3>{shipment.origin} → {shipment.destination}</h3>
+          <p>状态：{shipment.status}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### 第六步：环境配置验证
+测试不同环境下的API切换功能：
+
+```bash
+# 开发环境使用Mock API（默认）
+npm run dev
+# 访问 http://localhost:3000/logistics
+
+# 开发环境使用真实API
+npm run dev
+# 访问 http://localhost:3000/logistics?mock=false
+
+# 生产环境自动使用真实API
+npm run build && npm start
+```
+
+### 快速参考模板
+
+**参考现有实现**：
+- 配置模式：`config/api-endpoints.ts` (认证API配置)
+- 类型定义：`types/auth.ts` (认证相关类型)
+- 服务实现：`services/auth.service.ts` (BaseApiService继承)
+- 状态管理：`store/authStore.ts` (Zustand模式)
+
+**常见字段映射**：
+```typescript
+// 后端蛇形命名 → 前端驼峰命名
+{
+  "user_name": "admin",        // → username: string;
+  "phone_number": "123456",    // → phoneNumber: string;
+  "department_id": 1,          // → departmentId: number;
+  "created_at": "2025-01-01",  // → createdAt: string;
+}
+```
+
+**错误处理统一模式**：
+```typescript
+export class YourFeatureApiError extends BaseApiError {
+  constructor(message: string, endpoint: string, status?: number) {
+    super(message, endpoint, status);
+    this.name = 'YourFeatureApiError';
+  }
+}
+```
+
+这套标准化流程确保了：
+- ✅ 架构一致性：遵循项目现有模式
+- ✅ 类型安全：完整TypeScript支持  
+- ✅ 环境切换：Mock/Real API无缝切换
+- ✅ 错误处理：统一的错误处理机制
+- ✅ 可维护性：标准化的代码结构
+
 ## 关键规则
 - 始终使用TypeScript类型定义确保类型安全
 - 通过环境变量控制API环境切换
@@ -482,6 +712,7 @@ process.env.NEXT_PUBLIC_API_KEY = 'your-api-key';
 - 遵循RESTful API设计规范
 - 使用服务层模式封装API调用
 - 支持Mock API和真实API的无缝切换
+- **新增功能严格按照6步标准化流程实施**
 
 ## 示例
 

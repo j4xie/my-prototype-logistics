@@ -148,11 +148,11 @@ export default function RegisterPage() {
       const { authService } = await import('@/services/auth.service');
       
       const registerData = {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-        department: formData.department,
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone,
+          department: formData.department,
         position: formData.role, // 将role映射为position
         confirmPassword: formData.confirmPassword
       };
@@ -161,9 +161,9 @@ export default function RegisterPage() {
       
       console.log('注册响应:', response);
 
-      // 注册成功，跳转到登录页面
-      alert('注册成功！请使用新账户登录。');
-      router.push('/login?message=注册成功，请登录');
+        // 注册成功，跳转到登录页面
+        alert('注册成功！请使用新账户登录。');
+        router.push('/login?message=注册成功，请登录');
 
     } catch (error) {
       console.error('注册失败:', error);
