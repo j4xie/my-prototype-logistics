@@ -191,6 +191,31 @@ class ApiClient {
     if (endpoint.startsWith('http')) {
       return endpoint;
     }
+    
+    // 动态导入新的端点配置系统
+    try {
+      // 检查是否为认证相关端点
+      const isAuth = endpoint.includes('/users/') || endpoint.includes('/auth/');
+      
+      if (isAuth) {
+        // 对于认证端点，使用智能路由选择
+        const isProduction = typeof window !== 'undefined' && 
+                            window.location.hostname !== 'localhost' && 
+                            window.location.hostname !== '127.0.0.1';
+        
+        if (isProduction) {
+          // 生产环境使用代理
+          return `/api/proxy/auth${endpoint}`;
+        } else {
+          // 开发环境直接访问真实API
+          return `http://47.251.121.76:10010${endpoint}`;
+        }
+      }
+    } catch (error) {
+      console.warn('[API Client] Smart routing failed, using fallback:', error);
+    }
+    
+    // 默认使用原有逻辑
     return `${this.config.baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   }
 
