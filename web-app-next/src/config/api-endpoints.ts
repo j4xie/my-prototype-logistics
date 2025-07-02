@@ -6,7 +6,10 @@
 
 // 真实API配置
 export const REAL_API_CONFIG = {
-  baseURL: 'http://47.251.121.76:10010',
+  // 生产环境使用代理路由解决CORS问题
+  baseURL: typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
+    ? '/api/proxy/auth'  // 生产环境通过Vercel代理
+    : 'http://47.251.121.76:10010',  // 开发环境直接访问
   timeout: 15000,
   retryAttempts: 3,
 } as const;

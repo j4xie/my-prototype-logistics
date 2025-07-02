@@ -1,13 +1,16 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
+  "buildCommand": "cd web-app-next && npm run build",
+  "outputDirectory": "web-app-next/.next",
+  "installCommand": "cd web-app-next && npm install",
   "devCommand": "npm run dev",
   "env": {
     "NEXT_PUBLIC_MOCK_ENABLED": "true",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_USE_REAL_AUTH_API": "true",
+    "NEXT_PUBLIC_REAL_API_BASE": "http://47.251.121.76:10010",
+    "NEXT_PUBLIC_APP_ENV": "production"
   },
   "build": {
     "env": {
@@ -31,6 +34,23 @@
           "value": "1; mode=block"
         }
       ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -38,5 +58,10 @@
       "source": "/preview",
       "destination": "/preview"
     }
-  ]
+  ],
+  "functions": {
+    "web-app-next/src/app/api/*/route.ts": {
+      "maxDuration": 30
+    }
+  }
 }
