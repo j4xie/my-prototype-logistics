@@ -1,9 +1,6 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "cd web-app-next && npm run build",
-  "outputDirectory": "web-app-next/.next",
-  "installCommand": "cd web-app-next && npm install",
   "devCommand": "npm run dev",
   "env": {
     "NEXT_PUBLIC_MOCK_ENABLED": "true",
@@ -58,10 +55,5 @@
       "source": "/preview",
       "destination": "/preview"
     }
-  ],
-  "functions": {
-    "web-app-next/src/app/api/*/route.ts": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
