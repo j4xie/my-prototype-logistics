@@ -60,22 +60,31 @@ export class AuthService {
     try {
       console.log(`[AuthService] 尝试登录 (${this.environment} API):`, credentials.username);
       
-      // 根据环境使用不同的端点
+      // 根据环境使用不同的端点和格式
       const endpoint = this.environment === 'real' 
         ? '/users/login'    // 真实API端点
         : '/api/auth/login'; // Mock API端点
 
-      const response = await apiClient.post(endpoint, credentials);
+      let response;
+      if (this.environment === 'real') {
+        // 真实API使用表单格式发送数据
+        console.log(`[AuthService] 使用表单格式发送登录请求`);
+        response = await apiClient.postForm(endpoint, credentials);
+      } else {
+        // Mock API使用JSON格式
+        response = await apiClient.post(endpoint, credentials);
+      }
       
       console.log(`[AuthService] 登录响应 (${this.environment}):`, response);
 
       // 处理不同API的响应格式
       if (this.environment === 'real') {
         // 真实API格式: {state: number, message: string, data: any}
-        if (response && response.state === 2000) {
-          // state 2000 表示成功
+        // 注意：后端实际返回 state:200 表示成功，不是 state:2000
+        if (response && (response.state === 2000 || response.state === 200)) {
+          // state 2000 或 200 表示成功
           const userData = response.data;
-          console.log(`[AuthService] 登录成功 (真实API):`, userData?.username);
+          console.log(`[AuthService] 登录成功 (真实API):`, userData?.username || userData?.uid);
           return {
             success: true,
             data: userData,
@@ -91,6 +100,7 @@ export class AuthService {
               errorMessage = response.message || '用户不存在，请检查用户名';
               errorCode = 'USER_NOT_FOUND';
               break;
+            case 4003:
             case 4005:
               errorMessage = response.message || '密码错误，请重新输入';
               errorCode = 'INVALID_PASSWORD';
@@ -157,20 +167,29 @@ export class AuthService {
       // 移除确认密码字段
       const { confirmPassword, ...apiData } = userData;
 
-      // 根据环境使用不同的端点
+      // 根据环境使用不同的端点和格式
       const endpoint = this.environment === 'real'
         ? '/users/register'    // 真实API端点
         : '/api/auth/register'; // Mock API端点
 
-      const response = await apiClient.post(endpoint, apiData);
+      let response;
+      if (this.environment === 'real') {
+        // 真实API使用表单格式发送数据
+        console.log(`[AuthService] 使用表单格式发送注册请求`);
+        response = await apiClient.postForm(endpoint, apiData);
+      } else {
+        // Mock API使用JSON格式
+        response = await apiClient.post(endpoint, apiData);
+      }
       
       console.log(`[AuthService] 注册响应 (${this.environment}):`, response);
 
       // 处理不同API的响应格式
       if (this.environment === 'real') {
         // 真实API格式: {state: number, message: string, data: any}
-        if (response && response.state === 2000) {
-          // state 2000 表示成功
+        // 注意：后端实际可能返回 state:200 表示成功，不是 state:2000
+        if (response && (response.state === 2000 || response.state === 200)) {
+          // state 2000 或 200 表示成功
           const userData = response.data;
           console.log(`[AuthService] 注册成功 (真实API):`, userData?.username);
           return {
