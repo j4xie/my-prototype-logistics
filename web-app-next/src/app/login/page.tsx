@@ -104,27 +104,46 @@ export default function LoginPage() {
       console.log('登录响应:', response);
 
       // 处理不同的响应格式
-      const data = response.data || response;
-      const token = data.token || response.token;
-      const user = data.user || response.user || data;
-
-      if (token && user) {
-        // 存储用户信息和token
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_info', JSON.stringify(user));
-
-        const userName = user.name || user.username;
-        alert(`登录成功！欢迎回来，${userName}！`);
-
-        // 根据用户角色跳转到相应页面（管理员优先）
-        const userRole = user.role || user.position;
-        if (userRole === 'admin' || userRole === '系统管理员' || user.isAdmin) {
-          router.push('/admin/dashboard');
-        } else {
-          router.push('/home/selector');
+      let userData;
+      let authToken;
+      
+      if (apiEnvironment === 'real') {
+        // 真实API响应格式: { state: 200, data: { uid, username, ... } }
+        if (response.state === 200 && response.data) {
+          userData = response.data;
+          // 生成本地token（真实API没有返回token）
+          authToken = `real_api_${userData.uid}_${Date.now()}`;
         }
       } else {
-        alert(response.message || data.message || "登录失败，请检查用户名和密码");
+        // Mock API响应格式可能不同
+        const data = response.data || response;
+        authToken = data.token || response.token;
+        userData = data.user || response.user || data;
+      }
+
+      if (userData && userData.username) {
+        // 存储用户信息和token
+        localStorage.setItem('auth_token', authToken);
+        localStorage.setItem('user_info', JSON.stringify(userData));
+        localStorage.setItem('login_time', new Date().toISOString());
+
+        const userName = userData.name || userData.username;
+        console.log('登录成功，用户数据:', userData);
+        alert(`登录成功！欢迎回来，${userName}！`);
+
+        // 根据用户角色跳转到相应页面
+        const userRole = userData.role || userData.position;
+        if (userRole === 'admin' || userRole === '系统管理员' || userData.isAdmin) {
+          console.log('跳转到管理员页面...');
+          router.push('/admin/dashboard');
+        } else {
+          console.log('跳转到用户首页...');
+          router.push('/farming');
+        }
+      } else {
+        const errorMsg = response.message || response.data?.message || "登录失败，请检查用户名和密码";
+        console.error('登录失败，响应数据:', response);
+        alert(errorMsg);
       }
     } catch (error) {
       console.error('登录错误:', error);
