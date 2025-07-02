@@ -10,6 +10,7 @@ import type {
   RegisterRequest,
   UserInfo
 } from '@/types/auth';
+import { getApiConfig } from '@/lib/api-config';
 
 /**
  * API错误类
@@ -33,8 +34,16 @@ export class AuthService {
   private environment: 'mock' | 'real';
 
   constructor() {
-    // 认证服务总是检查认证API的环境
+    // 使用统一的环境检测逻辑
     this.environment = getApiEnvironment(API_ENDPOINTS.AUTH.LOGIN) as 'mock' | 'real';
+    
+    console.log(`[AuthService] 初始化环境: ${this.environment}`);
+    console.log(`[AuthService] 环境检查信息:`, {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PUBLIC_USE_REAL_AUTH_API: process.env.NEXT_PUBLIC_USE_REAL_AUTH_API,
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'server-side',
+      searchParams: typeof window !== 'undefined' ? window.location.search : 'server-side'
+    });
   }
 
   /**
@@ -73,11 +82,34 @@ export class AuthService {
             message: response.message || '登录成功'
           };
         } else {
-          // 失败情况
+          // 处理具体的错误状态码
+          let errorMessage = response?.message || '登录失败';
+          let errorCode = 'LOGIN_FAILED';
+          
+          switch (response?.state) {
+            case 4004:
+              errorMessage = response.message || '用户不存在，请检查用户名';
+              errorCode = 'USER_NOT_FOUND';
+              break;
+            case 4005:
+              errorMessage = response.message || '密码错误，请重新输入';
+              errorCode = 'INVALID_PASSWORD';
+              break;
+            case 4001:
+              errorMessage = response.message || '参数错误，请检查输入信息';
+              errorCode = 'INVALID_PARAMS';
+              break;
+            default:
+              errorMessage = response?.message || `登录失败 (状态码: ${response?.state})`;
+              errorCode = 'LOGIN_FAILED';
+          }
+          
+          console.log(`[AuthService] 登录失败 (真实API) - 状态码: ${response?.state}, 信息: ${errorMessage}`);
+          
           throw new AuthApiError(
-            response?.message || '登录失败',
+            errorMessage,
             400,
-            'LOGIN_FAILED'
+            errorCode
           );
         }
       } else {
@@ -147,11 +179,38 @@ export class AuthService {
             message: response.message || '注册成功'
           };
         } else {
-          // 失败情况，包括服务器500错误
+          // 处理具体的注册错误状态码
+          let errorMessage = response?.message || '注册失败';
+          let errorCode = 'REGISTER_FAILED';
+          
+          switch (response?.state) {
+            case 4001:
+              errorMessage = response.message || '参数错误，请检查输入信息';
+              errorCode = 'INVALID_PARAMS';
+              break;
+            case 4003:
+              errorMessage = response.message || '用户名已存在，请选择其他用户名';
+              errorCode = 'USERNAME_EXISTS';
+              break;
+            case 4006:
+              errorMessage = response.message || '邮箱已被注册，请使用其他邮箱';
+              errorCode = 'EMAIL_EXISTS';
+              break;
+            case 5000:
+              errorMessage = response.message || '服务器内部错误，请稍后重试';
+              errorCode = 'SERVER_ERROR';
+              break;
+            default:
+              errorMessage = response?.message || `注册失败 (状态码: ${response?.state})`;
+              errorCode = 'REGISTER_FAILED';
+          }
+          
+          console.log(`[AuthService] 注册失败 (真实API) - 状态码: ${response?.state}, 信息: ${errorMessage}`);
+          
           throw new AuthApiError(
-            response?.message || '注册失败',
+            errorMessage,
             response?.status || 400,
-            'REGISTER_FAILED'
+            errorCode
           );
         }
       } else {
