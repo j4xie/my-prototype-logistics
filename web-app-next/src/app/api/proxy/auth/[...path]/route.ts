@@ -44,14 +44,25 @@ async function handleRequest(
   params: { path: string[] },
   method: string
 ) {
+  const requestId = Math.random().toString(36).substr(2, 9);
+  
   try {
     const path = params.path.join('/');
     const targetUrl = `${REAL_API_BASE}/${path}`;
     
-    // 构建请求头
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    console.log(`[API Proxy ${requestId}] Starting ${method} ${targetUrl}`);
+    console.log(`[API Proxy ${requestId}] Original URL: ${request.url}`);
+    
+    // 构建请求头 - 移除不必要的头
+    const headers: Record<string, string> = {};
+    
+    // 只复制必要的头
+    const contentType = request.headers.get('content-type');
+    if (contentType) {
+      headers['Content-Type'] = contentType;
+    } else if (method === 'POST' || method === 'PUT') {
+      headers['Content-Type'] = 'application/json';
+    }
     
     // 复制认证头
     const authHeader = request.headers.get('authorization');
@@ -59,28 +70,43 @@ async function handleRequest(
       headers['Authorization'] = authHeader;
     }
     
-         // 构建请求体
-     let body = undefined;
-     if (method !== 'GET' && method !== 'DELETE') {
-       try {
-         body = await request.text();
-       } catch (_e) {
-         // 忽略空body错误
-       }
-     }
+    console.log(`[API Proxy ${requestId}] Headers:`, headers);
     
-    console.log(`[API Proxy] ${method} ${targetUrl}`);
+    // 构建请求体
+    let body: string | undefined = undefined;
+    if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+      try {
+        const textBody = await request.text();
+        if (textBody) {
+          body = textBody;
+          console.log(`[API Proxy ${requestId}] Body:`, body);
+        }
+      } catch (error) {
+        console.log(`[API Proxy ${requestId}] No body or body read error:`, error);
+      }
+    }
     
-    // 发送请求到真实API
+    // 发送请求到真实API，增加超时
+    console.log(`[API Proxy ${requestId}] Sending request...`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+    
     const response = await fetch(targetUrl, {
       method,
       headers,
-      body: body || undefined,
+      body,
+      signal: controller.signal,
     });
     
-    const responseData = await response.text();
+    clearTimeout(timeoutId);
     
-    console.log(`[API Proxy] Response Status: ${response.status}`);
+    console.log(`[API Proxy ${requestId}] Response received - Status: ${response.status}`);
+    console.log(`[API Proxy ${requestId}] Response headers:`, Object.fromEntries(response.headers.entries()));
+    
+    // 读取响应数据
+    const responseData = await response.text();
+    console.log(`[API Proxy ${requestId}] Response data:`, responseData.substring(0, 200) + (responseData.length > 200 ? '...' : ''));
     
     // 返回响应，添加CORS头
     return new NextResponse(responseData, {
@@ -94,17 +120,30 @@ async function handleRequest(
     });
     
   } catch (error) {
-    console.error('[API Proxy] Error:', error);
+    console.error(`[API Proxy ${requestId}] Error:`, error);
+    
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      console.error(`[API Proxy ${requestId}] Error details:`, {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
     
     return NextResponse.json(
       { 
         success: false, 
         message: '代理请求失败',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage,
+        requestId,
+        timestamp: new Date().toISOString(),
       },
       { 
         status: 500,
         headers: {
+          'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
