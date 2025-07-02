@@ -35,28 +35,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<LoginForm>>({});
   const [mounted, setMounted] = useState(false);
-  const [apiEnvironment, setApiEnvironment] = useState<'mock' | 'real'>('mock');
-
   useEffect(() => {
     setMounted(true);
-    // 检测当前API环境
-    setApiEnvironment(authService.getEnvironment());
   }, []);
-
-  // 切换API环境
-  const toggleApiEnvironment = () => {
-    const newEnv = apiEnvironment === 'mock' ? 'real' : 'mock';
-    const url = new URL(window.location.href);
-    
-    if (newEnv === 'real') {
-      url.searchParams.set('mock', 'false');
-    } else {
-      url.searchParams.delete('mock');
-    }
-    
-    // 刷新页面以应用新的环境设置
-    window.location.href = url.toString();
-  };
 
   // 表单验证
   const validateForm = (): boolean => {
@@ -103,19 +84,18 @@ export default function LoginPage() {
       
       console.log('登录响应:', response);
 
-      // 处理不同的响应格式
+      // 处理响应格式
       let userData;
       let authToken;
       
-      if (apiEnvironment === 'real') {
+      // 检测API响应格式并适配
+      if (response.state === 200 && response.data) {
         // 真实API响应格式: { state: 200, data: { uid, username, ... } }
-        if (response.state === 200 && response.data) {
-          userData = response.data;
-          // 生成本地token（真实API没有返回token）
-          authToken = `real_api_${userData.uid}_${Date.now()}`;
-        }
+        userData = response.data;
+        // 生成本地token（真实API没有返回token）
+        authToken = `real_api_${userData.uid}_${Date.now()}`;
       } else {
-        // Mock API响应格式可能不同
+        // Mock API响应格式
         const data = response.data || response;
         authToken = data.token || response.token;
         userData = data.user || response.user || data;
@@ -171,20 +151,7 @@ export default function LoginPage() {
     }
   };
 
-  // 快速登录（演示用）
-  const handleQuickLogin = (role: 'admin' | 'user') => {
-    if (apiEnvironment === 'real') {
-      // 真实API环境使用实际的测试用户
-      setForm({ username: 'zyh', password: '123456' });
-    } else {
-      // Mock API环境使用演示用户
-      const credentials = {
-        admin: { username: 'admin', password: '123456' },
-        user: { username: 'user', password: '123456' }
-      };
-      setForm(credentials[role]);
-    }
-  };
+
 
   if (!mounted) {
     return <Loading />;
@@ -259,91 +226,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* API环境切换 */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs text-gray-500">API环境</span>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs px-2 py-1 rounded ${
-                  apiEnvironment === 'real' 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-blue-100 text-blue-700'
-                }`}>
-                  {apiEnvironment === 'real' ? '真实API' : 'Mock API'}
-                </span>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={toggleApiEnvironment}
-                  disabled={loading}
-                  className="text-xs h-8 px-2"
-                >
-                  切换
-                </Button>
-              </div>
-            </div>
-            {apiEnvironment === 'real' && (
-              <div className="bg-green-50 p-3 rounded-lg">
-                <p className="text-xs text-green-700 mb-2">
-                  <strong>真实API模式</strong> - 连接到后端服务器
-                </p>
-                <p className="text-xs text-green-600">
-                  测试用户：zyh / 123456
-                </p>
-              </div>
-            )}
-            {apiEnvironment === 'mock' && (
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-xs text-blue-700 mb-2">
-                  <strong>Mock API模式</strong> - 使用模拟数据
-                </p>
-                <p className="text-xs text-blue-600">
-                  演示用户：admin/123456 或 user/123456
-                </p>
-              </div>
-            )}
-          </div>
 
-          {/* 快速登录按钮（演示用） */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center mb-3">
-              {apiEnvironment === 'real' ? '快速填入测试用户' : '演示账号快速登录'}
-            </p>
-            <div className="flex gap-2">
-              {apiEnvironment === 'real' ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full h-10 text-sm"
-                  onClick={() => handleQuickLogin('user')}
-                  disabled={loading}
-                >
-                  填入 zyh / 123456
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="flex-1 h-10 text-sm"
-                    onClick={() => handleQuickLogin('user')}
-                    disabled={loading}
-                  >
-                    普通用户
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="flex-1 h-10 text-sm"
-                    onClick={() => handleQuickLogin('admin')}
-                    disabled={loading}
-                  >
-                    管理员
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
 
           {/* 其他操作链接 */}
           <div className="mt-4 text-center space-y-2">
