@@ -12,6 +12,7 @@ export { Loading } from './loading';
 export { Input } from './input';
 export { Select } from './select';
 export { Textarea } from './textarea';
+export { Label } from './label';
 export { Table } from './table';
 export { default as Badge, StatusBadge, NumberBadge, DotBadge } from './badge';
 export { default as StatCard } from './stat-card';
