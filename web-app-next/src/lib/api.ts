@@ -201,8 +201,12 @@ class ApiClient {
     
     // 动态路由选择逻辑（仅在非Mock环境下）
     try {
-      // 检查是否为认证相关端点
-      const isAuth = endpoint.includes('/users/') || endpoint.includes('/auth/');
+      // 检查是否为认证相关端点 - 修复识别逻辑
+      const isAuth = endpoint.includes('/users/') || 
+                    endpoint.includes('/auth/') ||
+                    endpoint.includes('/api/auth/') ||  // 添加这个检查
+                    endpoint.includes('/users') ||      // 处理无斜杠结尾的情况
+                    endpoint.includes('/auth');         // 处理无斜杠结尾的情况
       
       if (isAuth) {
         console.log(`[API Client] Using Real API for auth: ${endpoint}`);
