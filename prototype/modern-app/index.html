@@ -69,6 +69,44 @@
             margin-bottom: 50px;
         }
 
+        .access-card[style*="grid-column"] {
+            background: linear-gradient(135deg, #667eea 10%, #764ba2 90%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .access-card[style*="grid-column"] .access-icon {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .access-card[style*="grid-column"] .access-title {
+            color: white;
+            font-size: 1.6rem;
+        }
+
+        .access-card[style*="grid-column"] .access-description {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .access-card[style*="grid-column"] .access-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .access-card[style*="grid-column"] .access-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
         .access-card {
             border: 2px solid #e0e6ed;
             border-radius: 15px;
@@ -282,6 +320,328 @@
             text-decoration: underline;
         }
 
+        /* 预览模式样式 */
+        .preview-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 10000;
+        }
+
+        .preview-container {
+            display: flex;
+            height: 100vh;
+            background: white;
+        }
+
+        .preview-sidebar {
+            width: 320px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .preview-sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+        }
+
+        .preview-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .preview-logo-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .preview-system-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .preview-system-subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .preview-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .preview-page-list-header {
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .preview-page-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .preview-module-group {
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .preview-module-header {
+            padding: 12px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #4b5563;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .preview-module-header:hover {
+            background: #f1f5f9;
+        }
+
+        .preview-module-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+        }
+
+        .preview-module-toggle {
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+
+        .preview-module-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .preview-page-item {
+            padding: 10px 20px 10px 48px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .preview-page-item:hover {
+            background: #f8fafc;
+            color: #374151;
+        }
+
+        .preview-page-item.active {
+            background: #eff6ff;
+            color: #2563eb;
+            border-left-color: #2563eb;
+            font-weight: 500;
+        }
+
+        .preview-page-item.empty {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .preview-module-pages {
+            transition: max-height 0.3s ease;
+            overflow: hidden;
+        }
+
+        .preview-module-pages.collapsed {
+            max-height: 0;
+        }
+
+        .preview-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f9fafb;
+        }
+
+        .preview-header {
+            padding: 16px 24px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .preview-breadcrumb {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preview-control-btn {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .preview-control-btn:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .preview-control-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .preview-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #9ca3af;
+            text-align: center;
+        }
+
+        .preview-placeholder-icon {
+            width: 64px;
+            height: 64px;
+            background: #f3f4f6;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .preview-placeholder-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .preview-placeholder-subtext {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .preview-loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(1px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .preview-loading-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .preview-loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .preview-page-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .preview-page-list::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .preview-page-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .preview-page-list::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
         @media (max-width: 768px) {
             .access-modes {
                 grid-template-columns: 1fr;
@@ -293,6 +653,19 @@
 
             .main-content {
                 padding: 20px;
+            }
+
+            .preview-container {
+                flex-direction: column;
+            }
+            
+            .preview-sidebar {
+                width: 100%;
+                height: 40vh;
+            }
+            
+            .preview-area {
+                height: 60vh;
             }
         }
     </style>
@@ -306,8 +679,19 @@
         </div>
 
         <div class="main-content">
-            <!-- 双重入口设计 -->
+            <!-- 三重入口设计 -->
             <div class="access-modes">
+                <div class="access-card" onclick="togglePreviewMode()" style="grid-column: 1 / -1; margin-bottom: 20px;">
+                    <div class="access-icon">🔍</div>
+                    <div class="access-title">页面总览预览</div>
+                    <div class="access-description">
+                        全局列表视图和全屏页面预览<br>
+                        类似T-Order POS系统的预览界面<br>
+                        左侧页面列表，右侧实时预览
+                    </div>
+                    <button class="access-btn">查看所有页面</button>
+                </div>
+
                 <div class="access-card" onclick="window.location.href='pages/auth/login.html'">
                     <div class="access-icon">📱</div>
                     <div class="access-title">普通用户</div>
@@ -465,5 +849,347 @@
             </p>
         </div>
     </div>
+
+    <!-- 预览模式界面 -->
+    <div class="preview-mode" id="previewMode" style="display: none;">
+        <div class="preview-container">
+            <!-- 左侧栏 -->
+            <div class="preview-sidebar">
+                <div class="preview-sidebar-header">
+                    <div class="preview-logo">
+                        <div class="preview-logo-icon">🍃</div>
+                        <div>
+                            <h1 class="preview-system-title">食品溯源系统</h1>
+                            <p class="preview-system-subtitle">UI 原型展示，提供所有页面的预览和导航</p>
+                        </div>
+                    </div>
+                    <button class="preview-close-btn" onclick="togglePreviewMode()">✕</button>
+                </div>
+                
+                <div class="preview-page-list-header">页面列表</div>
+                
+                <div class="preview-page-list" id="previewPageList">
+                    <!-- 页面列表将由 JavaScript 动态生成 -->
+                </div>
+            </div>
+
+            <!-- 右侧预览区 -->
+            <div class="preview-area">
+                <div class="preview-header">
+                    <div class="preview-breadcrumb" id="previewBreadcrumb">请从左侧选择一个页面进行预览</div>
+                    <div class="preview-controls">
+                        <button class="preview-control-btn active" onclick="setPreviewMode('fit')">适应</button>
+                        <button class="preview-control-btn" onclick="setPreviewMode('actual')">实际</button>
+                        <button class="preview-control-btn" onclick="togglePreviewFullscreen()">全屏</button>
+                    </div>
+                </div>
+                
+                <div class="preview-content">
+                    <div class="preview-placeholder" id="previewPlaceholder">
+                        <div class="preview-placeholder-icon">💻</div>
+                        <div class="preview-placeholder-text">请从左侧选择一个页面进行预览</div>
+                        <div class="preview-placeholder-subtext">支持实时预览和全屏查看</div>
+                    </div>
+                    
+                    <iframe class="preview-iframe" id="previewIframe" style="display: none;"></iframe>
+                    
+                    <div class="preview-loading-overlay" id="previewLoadingOverlay">
+                        <div class="preview-loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面数据结构
+        const pageData = {
+            auth: {
+                name: '认证模块',
+                icon: '🔐',
+                color: '#4299e1',
+                pages: [
+                    { name: '登录', file: 'login.html' },
+                    { name: '注册', file: 'register.html' },
+                    { name: '个人资料', file: 'profile.html' },
+                    { name: '重置密码', file: 'reset-password.html' }
+                ]
+            },
+            trace: {
+                name: '溯源模块',
+                icon: '🔍',
+                color: '#48bb78',
+                pages: [
+                    { name: '溯源查询', file: 'query.html' },
+                    { name: '详情展示', file: 'detail.html' },
+                    { name: '记录列表', file: 'list.html' },
+                    { name: '证书查看', file: 'certificate.html' }
+                ]
+            },
+            farming: {
+                name: '农业模块',
+                icon: '🌱',
+                color: '#38a169',
+                pages: [
+                    { name: '监控面板', file: 'dashboard.html' },
+                    { name: '数据采集', file: 'data-collection.html' },
+                    { name: '田地管理', file: 'field-management.html' },
+                    { name: '设备管理', file: 'equipment.html' },
+                    { name: '环境监控', file: 'environment.html' },
+                    { name: '灌溉系统', file: 'irrigation.html' },
+                    { name: '种植记录', file: 'planting-record.html' },
+                    { name: '告警信息', file: 'alerts.html' },
+                    { name: '指标详情', file: 'indicator-detail.html' }
+                ]
+            },
+            processing: {
+                name: '加工模块',
+                icon: '🏭',
+                color: '#ed8936',
+                pages: [
+                    { name: '加工首页', file: 'index.html' },
+                    { name: '生产管理', file: 'production.html' },
+                    { name: '质量管理', file: 'quality.html' },
+                    { name: '质检记录', file: 'quality-inspection.html' },
+                    { name: '存储管理', file: 'storage.html' },
+                    { name: '批次管理', file: 'batch-management.html' }
+                ]
+            },
+            profile: {
+                name: '用户中心',
+                icon: '👤',
+                color: '#9f7aea',
+                pages: [
+                    { name: '关于我们', file: 'about.html' },
+                    { name: '编辑资料', file: 'edit.html', empty: true },
+                    { name: '主页', file: 'index.html', empty: true },
+                    { name: '隐私设置', file: 'privacy.html', empty: true },
+                    { name: '安全设置', file: 'security.html', empty: true },
+                    { name: '数据导出', file: 'data-export.html', empty: true }
+                ]
+            },
+            admin: {
+                name: '管理后台',
+                icon: '⚙️',
+                color: '#e53e3e',
+                pages: [
+                    { name: '管理员登录', file: 'login.html' },
+                    { name: '控制面板', file: 'dashboard.html' },
+                    { name: '用户管理', file: 'users.html' },
+                    { name: '管理员用户', file: 'admin-users.html' },
+                    { name: '权限管理', file: 'permissions.html' },
+                    { name: '系统设置', file: 'settings.html' },
+                    { name: '系统管理', file: 'system.html' },
+                    { name: '数据报表', file: 'reports.html' },
+                    { name: '数据分析', file: 'analytics.html' },
+                    { name: '数据导入', file: 'import.html' },
+                    { name: '通知管理', file: 'notifications.html' },
+                    { name: '日志管理', file: 'logs.html' },
+                    { name: '页面模板', file: 'template.html' }
+                ]
+            },
+            logistics: {
+                name: '物流模块',
+                icon: '🚚',
+                color: '#00b3e6',
+                pages: [
+                    { name: '物流控制台', file: 'dashboard.html' },
+                    { name: '跟踪系统', file: 'tracking.html' },
+                    { name: '车辆管理', file: 'vehicles.html' },
+                    { name: '路线规划', file: 'routes.html' }
+                ]
+            },
+            sales: {
+                name: '销售模块',
+                icon: '💰',
+                color: '#ff6b6b',
+                pages: [
+                    { name: '销售面板', file: 'dashboard.html' },
+                    { name: '订单管理', file: 'orders.html' },
+                    { name: '客户管理', file: 'customers.html' }
+                ]
+            },
+            crm: {
+                name: 'CRM模块',
+                icon: '👥',
+                color: '#8b5cf6',
+                pages: [
+                    { name: '客户关系', file: 'customers.html', empty: true }
+                ]
+            }
+        };
+
+        let currentPreviewMode = 'fit';
+        let currentPage = null;
+        let isPreviewMode = false;
+
+        // 切换预览模式
+        function togglePreviewMode() {
+            const previewMode = document.getElementById('previewMode');
+            isPreviewMode = !isPreviewMode;
+            
+            if (isPreviewMode) {
+                previewMode.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+                initPreviewPageList();
+            } else {
+                previewMode.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // 初始化预览页面列表
+        function initPreviewPageList() {
+            const pageList = document.getElementById('previewPageList');
+            pageList.innerHTML = '';
+            
+            Object.keys(pageData).forEach(moduleKey => {
+                const module = pageData[moduleKey];
+                
+                // 创建模块组
+                const moduleGroup = document.createElement('div');
+                moduleGroup.className = 'preview-module-group';
+                
+                // 模块头部
+                const moduleHeader = document.createElement('div');
+                moduleHeader.className = 'preview-module-header';
+                moduleHeader.onclick = () => togglePreviewModule(moduleKey);
+                
+                moduleHeader.innerHTML = `
+                    <div class="preview-module-icon" style="background: ${module.color};">${module.icon}</div>
+                    <span>${module.name}</span>
+                    <span class="preview-module-toggle" id="preview-toggle-${moduleKey}">▼</span>
+                `;
+                
+                // 页面列表容器
+                const modulePages = document.createElement('div');
+                modulePages.className = 'preview-module-pages';
+                modulePages.id = `preview-pages-${moduleKey}`;
+                
+                // 添加页面项
+                module.pages.forEach(page => {
+                    const pageItem = document.createElement('div');
+                    pageItem.className = `preview-page-item ${page.empty ? 'empty' : ''}`;
+                    pageItem.textContent = page.name;
+                    
+                    if (!page.empty) {
+                        pageItem.onclick = () => selectPreviewPage(moduleKey, page);
+                    }
+                    
+                    modulePages.appendChild(pageItem);
+                });
+                
+                moduleGroup.appendChild(moduleHeader);
+                moduleGroup.appendChild(modulePages);
+                pageList.appendChild(moduleGroup);
+            });
+        }
+
+        // 切换预览模块展开/收起
+        function togglePreviewModule(moduleKey) {
+            const pagesContainer = document.getElementById(`preview-pages-${moduleKey}`);
+            const toggle = document.getElementById(`preview-toggle-${moduleKey}`);
+            
+            pagesContainer.classList.toggle('collapsed');
+            toggle.classList.toggle('collapsed');
+        }
+
+        // 选择预览页面
+        function selectPreviewPage(moduleKey, page) {
+            // 更新活动状态
+            document.querySelectorAll('.preview-page-item.active').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+            
+            // 更新面包屑
+            const breadcrumb = document.getElementById('previewBreadcrumb');
+            breadcrumb.textContent = `${pageData[moduleKey].name} > ${page.name}`;
+            
+            // 显示加载状态
+            showPreviewLoading();
+            
+            // 加载页面
+            const iframe = document.getElementById('previewIframe');
+            const placeholder = document.getElementById('previewPlaceholder');
+            
+            iframe.src = `pages/${moduleKey}/${page.file}`;
+            
+            iframe.onload = () => {
+                hidePreviewLoading();
+                placeholder.style.display = 'none';
+                iframe.style.display = 'block';
+                currentPage = { module: moduleKey, page: page };
+            };
+            
+            iframe.onerror = () => {
+                hidePreviewLoading();
+                showPreviewError(`无法加载页面: ${page.name}`);
+            };
+        }
+
+        // 设置预览模式
+        function setPreviewMode(mode) {
+            document.querySelectorAll('.preview-control-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentPreviewMode = mode;
+            const iframe = document.getElementById('previewIframe');
+            
+            if (mode === 'fit') {
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.transform = 'none';
+            } else if (mode === 'actual') {
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.transform = 'none';
+            }
+        }
+
+        // 预览全屏切换
+        function togglePreviewFullscreen() {
+            const previewMode = document.getElementById('previewMode');
+            if (!document.fullscreenElement) {
+                previewMode.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // 显示预览加载状态
+        function showPreviewLoading() {
+            document.getElementById('previewLoadingOverlay').classList.add('show');
+        }
+
+        // 隐藏预览加载状态
+        function hidePreviewLoading() {
+            document.getElementById('previewLoadingOverlay').classList.remove('show');
+        }
+
+        // 显示预览错误信息
+        function showPreviewError(message) {
+            const placeholder = document.getElementById('previewPlaceholder');
+            placeholder.innerHTML = `
+                <div class="preview-placeholder-icon">❌</div>
+                <div class="preview-placeholder-text">加载失败</div>
+                <div class="preview-placeholder-subtext">${message}</div>
+            `;
+            placeholder.style.display = 'flex';
+            document.getElementById('previewIframe').style.display = 'none';
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isPreviewMode) {
+                togglePreviewMode();
+            }
+            if (e.key === 'F11' && isPreviewMode) {
+                e.preventDefault();
+                togglePreviewFullscreen();
+            }
+        });
+    </script>
 </body>
 </html>
