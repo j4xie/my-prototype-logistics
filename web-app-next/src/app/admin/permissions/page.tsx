@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMockAuth } from '@/hooks/useMockAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { AdminLayoutWrapper } from '@/components/admin';
 
 interface Permission {
   id: string;
@@ -188,8 +189,8 @@ export default function PermissionsPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
-        <div className="max-w-[390px] mx-auto w-full min-h-screen flex items-center justify-center">
+      <AdminLayoutWrapper requireDesktop={true} requiredLevel={5}>
+        <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <i className="fas fa-shield-alt fa-spin text-[#1677FF] text-3xl mb-4"></i>
             <p className="text-[#8c8c8c]">
@@ -197,120 +198,165 @@ export default function PermissionsPage() {
             </p>
           </div>
         </div>
-      </div>
+      </AdminLayoutWrapper>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
-      {/* 顶部导航栏 */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-[#1677FF] text-white z-50 shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
-        <div className="max-w-[390px] mx-auto h-full flex items-center justify-between px-4">
-          <button
-            onClick={() => router.back()}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
-          >
-            <i className="fas fa-arrow-left"></i>
-          </button>
-          <h1 className="text-lg font-semibold">权限管理</h1>
-          <button
-            onClick={() => router.push('/admin')}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
-          >
-            <i className="fas fa-home"></i>
-          </button>
-        </div>
-      </header>
-
-      {/* 主内容区域 */}
-      <main className="flex-1 pt-20 pb-4">
-        <div className="max-w-[390px] mx-auto px-4">
-
-          {/* 权限概览 */}
-          {metrics && (
-            <Card className="bg-white rounded-lg shadow-sm p-4 mb-4">
-              <h3 className="font-medium text-[#262626] mb-3 flex items-center">
-                <i className="fas fa-key text-[#1677FF] mr-2"></i>
-                权限概览
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-[#1677FF] mb-1">
-                    {metrics.totalRoles}
-                  </div>
-                  <div className="text-sm text-[#8c8c8c]">总角色</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-[#52C41A] mb-1">
-                    {metrics.activeRoles}
-                  </div>
-                  <div className="text-sm text-[#8c8c8c]">启用角色</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-[#FA8C16] mb-1">
-                    {metrics.totalPermissions}
-                  </div>
-                  <div className="text-sm text-[#8c8c8c]">总权限</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-[#722ED1] mb-1">
-                    {metrics.assignedUsers}
-                  </div>
-                  <div className="text-sm text-[#8c8c8c]">用户数</div>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* 标签页切换 */}
-          <Card className="bg-white rounded-lg shadow-sm p-4 mb-4">
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setSelectedTab('roles')}
-                className={`
-                  flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all
-                  ${selectedTab === 'roles'
-                    ? 'bg-[#1677FF] text-white shadow-sm'
-                    : 'bg-[#f5f5f5] text-[#8c8c8c] hover:bg-[#e6f7ff] hover:text-[#1677FF]'
-                  }
-                `}
-              >
-                <i className="fas fa-users mr-2"></i>
-                角色管理
-              </button>
-              <button
-                onClick={() => setSelectedTab('permissions')}
-                className={`
-                  flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all
-                  ${selectedTab === 'permissions'
-                    ? 'bg-[#1677FF] text-white shadow-sm'
-                    : 'bg-[#f5f5f5] text-[#8c8c8c] hover:bg-[#e6f7ff] hover:text-[#1677FF]'
-                  }
-                `}
-              >
-                <i className="fas fa-key mr-2"></i>
-                权限列表
-              </button>
+    <AdminLayoutWrapper requireDesktop={true} requiredLevel={5}>
+    <div className="min-h-screen bg-gray-50">
+      {/* PC端顶部导航栏 */}
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex items-center">
+            <button
+              onClick={() => router.back()}
+              className="mr-4 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <i className="fas fa-arrow-left text-lg"></i>
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">权限管理</h1>
+              <nav className="flex mt-1" aria-label="Breadcrumb">
+                <ol className="inline-flex items-center space-x-1 md:space-x-3">
+                  <li>
+                    <button onClick={() => router.push('/admin/dashboard')} className="text-sm text-gray-500 hover:text-gray-700">
+                      管理后台
+                    </button>
+                  </li>
+                  <li>
+                    <div className="flex items-center">
+                      <i className="fas fa-chevron-right text-gray-400 text-xs mx-2"></i>
+                      <span className="text-sm font-medium text-gray-700">权限管理</span>
+                    </div>
+                  </li>
+                </ol>
+              </nav>
             </div>
-          </Card>
-
-          {/* 快捷操作 */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          </div>
+          <div className="flex items-center space-x-4">
             <Button
               onClick={() => router.push('/admin/permissions/new-role')}
-              className="h-12 bg-[#52C41A] hover:bg-[#73D13D] text-white"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2"
             >
               <i className="fas fa-plus mr-2"></i>
               新建角色
             </Button>
             <Button
               onClick={() => router.push('/admin/permissions/audit')}
-              className="h-12 bg-[#FA8C16] hover:bg-[#FFA940] text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2"
             >
               <i className="fas fa-eye mr-2"></i>
               权限审计
             </Button>
           </div>
+        </div>
+      </header>
+
+      {/* PC端主内容区域 */}
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+          {/* 左侧：权限概览卡片 */}
+          <div className="lg:col-span-1">
+            {metrics && (
+              <Card className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                  <i className="fas fa-chart-pie text-indigo-600 mr-3"></i>
+                  权限概览
+                </h3>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                    <div className="text-3xl font-bold text-indigo-600 mb-2">
+                      {metrics.totalRoles}
+                    </div>
+                    <div className="text-sm text-gray-600">总角色数</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-3xl font-bold text-green-600 mb-2">
+                      {metrics.activeRoles}
+                    </div>
+                    <div className="text-sm text-gray-600">启用角色</div>
+                  </div>
+                  <div className="text-center p-4 bg-amber-50 rounded-lg">
+                    <div className="text-3xl font-bold text-amber-600 mb-2">
+                      {metrics.totalPermissions}
+                    </div>
+                    <div className="text-sm text-gray-600">总权限数</div>
+                  </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-3xl font-bold text-purple-600 mb-2">
+                      {metrics.assignedUsers}
+                    </div>
+                    <div className="text-sm text-gray-600">分配用户</div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* 快捷操作 */}
+            <Card className="bg-white rounded-xl shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i className="fas fa-bolt text-amber-600 mr-3"></i>
+                快捷操作
+              </h3>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => router.push('/admin/permissions/new-role')}
+                  className="w-full justify-start bg-green-600 hover:bg-green-700 text-white py-3"
+                >
+                  <i className="fas fa-plus mr-3"></i>
+                  新建角色
+                </Button>
+                <Button
+                  onClick={() => router.push('/admin/permissions/audit')}
+                  className="w-full justify-start bg-amber-600 hover:bg-amber-700 text-white py-3"
+                >
+                  <i className="fas fa-eye mr-3"></i>
+                  权限审计
+                </Button>
+                <Button
+                  onClick={() => router.push('/admin/permissions/matrix')}
+                  className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white py-3"
+                >
+                  <i className="fas fa-table mr-3"></i>
+                  权限矩阵
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+          {/* 右侧：主要内容区域 */}
+          <div className="lg:col-span-2">
+            {/* 标签页切换 */}
+            <div className="mb-6">
+              <div className="border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  <button
+                    onClick={() => setSelectedTab('roles')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      selectedTab === 'roles'
+                        ? 'border-indigo-500 text-indigo-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <i className="fas fa-users mr-2"></i>
+                    角色管理
+                  </button>
+                  <button
+                    onClick={() => setSelectedTab('permissions')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      selectedTab === 'permissions'
+                        ? 'border-indigo-500 text-indigo-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <i className="fas fa-key mr-2"></i>
+                    权限列表
+                  </button>
+                </nav>
+              </div>
+            </div>
 
           {/* 角色管理标签页 */}
           {selectedTab === 'roles' && (
@@ -433,8 +479,10 @@ export default function PermissionsPage() {
               })}
             </div>
           )}
-        </div>
+          </div> {/* 结束 lg:col-span-2 div */}
+        </div> {/* 结束 grid div */}
       </main>
     </div>
+    </AdminLayoutWrapper>
   );
 }

@@ -111,9 +111,26 @@ export default function LoginPage() {
         console.log('登录成功，用户数据:', userData);
         alert(`登录成功！欢迎回来，${userName}！`);
 
-        // 根据用户角色跳转到相应页面
+        // 根据用户级别和角色跳转到相应页面
+        const userLevel = userData.level || userData.admin_level || 0;
         const userRole = userData.role || userData.position;
-        if (userRole === 'admin' || userRole === '系统管理员' || userData.isAdmin) {
+        
+        // 检查管理员级别 (Level 5-6)
+        if (userLevel >= 5) {
+          console.log(`管理员登录 (Level ${userLevel})，跳转到管理员后台...`);
+          // 管理员级别用户，提示使用专用登录入口
+          const adminType = userLevel === 6 ? '超级管理员' : '权限管理员';
+          const shouldUseAdminLogin = confirm(
+            `检测到您是${adminType} (Level ${userLevel})，建议使用管理员专用登录入口以获得最佳管理体验。\n\n是否跳转到管理员专用登录？`
+          );
+          
+          if (shouldUseAdminLogin) {
+            router.push('/admin/login');
+          } else {
+            router.push('/admin/dashboard');
+          }
+        } else if (userRole === 'admin' || userRole === '系统管理员' || userData.isAdmin) {
+          // 传统角色检查 (向后兼容)
           console.log('跳转到管理员页面...');
           router.push('/admin/dashboard');
         } else {
@@ -245,6 +262,23 @@ export default function LoginPage() {
             >
               忘记密码？
             </button>
+          </div>
+
+          {/* 管理员专用登录入口 */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <button
+                type="button"
+                className="inline-flex items-center text-purple-600 text-sm hover:underline transition-colors"
+                onClick={() => router.push('/admin/login')}
+              >
+                <i className="fas fa-shield-alt mr-2"></i>
+                管理员专用登录
+              </button>
+              <p className="text-xs text-gray-500 mt-1">
+                仅限Level 5-6权限用户
+              </p>
+            </div>
           </div>
         </Card>
 
