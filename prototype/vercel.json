@@ -1,0 +1,53 @@
+{
+  "version": 2,
+  "name": "food-traceability-prototype",
+  "public": true,
+  "framework": null,
+  "builds": [
+    {
+      "src": "modern-app/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/modern-app/index.html"
+    },
+    {
+      "src": "/pages/(.*)",
+      "dest": "/modern-app/pages/$1"
+    },
+    {
+      "src": "/styles/(.*)",
+      "dest": "/modern-app/styles/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/modern-app/$1"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/modern-app/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
+} 
