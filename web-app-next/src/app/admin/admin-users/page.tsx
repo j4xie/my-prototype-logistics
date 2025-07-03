@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMockAuth } from '@/hooks/useMockAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { AdminLayoutWrapper } from '@/components/admin';
 
 interface AdminUser {
   id: string;
@@ -277,7 +278,8 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
+    <AdminLayoutWrapper requireDesktop={true} requiredLevel={5}>
+      <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
       {/* 顶部导航栏 */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-[#1677FF] text-white z-50 shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
         <div className="max-w-[390px] mx-auto h-full flex items-center justify-between px-4">
@@ -730,5 +732,6 @@ export default function AdminUsersPage() {
         </div>
       </main>
     </div>
+    </AdminLayoutWrapper>
   );
 }
