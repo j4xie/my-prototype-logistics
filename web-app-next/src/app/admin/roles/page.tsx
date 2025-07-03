@@ -11,6 +11,7 @@ import {
   StatCard,
   Modal
 } from '@/components/ui';
+import { AdminLayoutWrapper } from '@/components/admin';
 
 interface Permission {
   id: number;
@@ -224,12 +225,13 @@ export default function AdminRolesPage() {
   );
 
   return (
-    <PageLayout
-      title="角色管理"
-      showBack={true}
-      onBack={() => router.back()}
-      className="flex flex-col min-h-screen max-w-[390px] mx-auto bg-gray-50"
-    >
+    <AdminLayoutWrapper requireDesktop={true} requiredLevel={5}>
+      <PageLayout
+        title="角色管理"
+        showBack={true}
+        onBack={() => router.back()}
+        className="flex flex-col min-h-screen max-w-[390px] mx-auto bg-gray-50"
+      >
       <main className="flex-1 pt-[80px] pb-[20px] px-4">
         {/* 统计概览 */}
         <div className="grid grid-cols-2 gap-3 mb-6">
@@ -458,5 +460,6 @@ export default function AdminRolesPage() {
         </Modal>
       )}
     </PageLayout>
+    </AdminLayoutWrapper>
   );
 }
