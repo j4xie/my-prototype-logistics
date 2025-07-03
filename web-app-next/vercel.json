@@ -1,7 +1,11 @@
 {
   "version": 2,
+  "name": "food-traceability-next",
+  "public": true,
   "framework": "nextjs",
+  "buildCommand": "npm run build",
   "devCommand": "npm run dev",
+  "installCommand": "npm install",
   "env": {
     "NEXT_PUBLIC_MOCK_ENABLED": "true",
     "NODE_ENV": "production",
@@ -24,7 +28,7 @@
         },
         {
           "key": "X-Frame-Options",
-          "value": "DENY"
+          "value": "SAMEORIGIN"
         },
         {
           "key": "X-XSS-Protection",
@@ -54,6 +58,13 @@
     {
       "source": "/preview",
       "destination": "/preview"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/admin/dashboard",
+      "permanent": false
     }
   ]
 }
