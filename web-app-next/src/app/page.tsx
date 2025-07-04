@@ -41,11 +41,14 @@ export default function HomePage() {
       if (token && userInfo) {
         try {
           const userData = JSON.parse(userInfo);
-          
+
           // 根据用户角色重定向到相应页面
           if (userData.role === 'admin') {
             console.log(`✅ 管理员登录 - 重定向到仪表板:`, userData.name);
             router.push('/admin/dashboard');
+          } else if (userData.role?.level === 0) {
+            console.log(`✅ 平台超级管理员登录 - 重定向到平台管理:`, userData.name);
+            router.push('/platform');
           } else {
             console.log(`✅ 用户登录 - 重定向到农业页面:`, userData.name);
             router.push('/farming');
@@ -82,7 +85,7 @@ export default function HomePage() {
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
               <i className="fas fa-leaf text-white text-3xl"></i>
             </div>
-            
+
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 食品溯源系统
@@ -114,7 +117,7 @@ export default function HomePage() {
                 </div>
                 <ArrowRight className="w-5 h-5 text-blue-500 group-hover:translate-x-1 transition-transform" />
               </div>
-              
+
               {/* 预览功能说明 */}
               <div className="mt-4 pt-4 border-t border-blue-200">
                 <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
@@ -135,6 +138,23 @@ export default function HomePage() {
                     <span>实时演示</span>
                   </div>
                 </div>
+              </div>
+            </Card>
+
+            {/* 平台管理快速入口 - 仅供超级管理员 */}
+            <Card className="p-4 border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 cursor-pointer"
+                  onClick={() => router.push('/platform')}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-lg">🏢</span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">平台管理</h3>
+                    <p className="text-sm text-gray-500">多租户SaaS管理控制台</p>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-purple-400" />
               </div>
             </Card>
 
@@ -174,7 +194,7 @@ export default function HomePage() {
         <div className="w-16 h-16 bg-[#1677FF] rounded-full flex items-center justify-center mx-auto">
           <i className="fas fa-leaf text-white text-2xl"></i>
         </div>
-        
+
         {/* 应用标题 */}
         <h1 className="text-2xl font-bold text-[#00467F]">
           食品溯源系统

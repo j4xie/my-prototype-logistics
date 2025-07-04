@@ -1,0 +1,59 @@
+{
+  "agcgw": {
+    "backurl": "https://connect-api-dre.hispace.hicloud.com",
+    "url": "https://connect-api-dre.hispace.hicloud.com"
+  },
+  "agcgw_all": {
+    "CN": "https://connect-api-dre.hispace.hicloud.com",
+    "CN_back": "https://connect-api-dre.hispace.hicloud.com",
+    "DE": "https://connect-api-dre.hispace.hicloud.com",
+    "DE_back": "https://connect-api-dre.hispace.hicloud.com",
+    "RU": "https://connect-api-drru.hispace.dbankcloud.ru",
+    "RU_back": "https://connect-api-drru.hispace.dbankcloud.ru",
+    "SG": "https://connect-api-dra.hispace.hicloud.com",
+    "SG_back": "https://connect-api-dra.hispace.hicloud.com"
+  },
+  "client": {
+    "cp_id": "260086000000000000",
+    "product_id": "737717283781095424",
+    "client_id": "102345678",
+    "client_secret": "your_client_secret_here",
+    "project_id": "737717283781095424",
+    "app_id": "102345678",
+    "api_key": "your_api_key_here",
+    "package_name": "com.foodtrace.huawei"
+  },
+  "oauth_login_info": {
+    "support_authorization_code": true,
+    "support_id_token": true
+  },
+  "app_info": {
+    "app_id": "102345678",
+    "package_name": "com.foodtrace.huawei"
+  },
+  "service": {
+    "analytics": {
+      "collector_url": "https://datacollector-dre.dt.hicloud.com,https://datacollector-dre.dt.hicloud.com",
+      "collector_url_ru": "https://datacollector-drru.dt.dbankcloud.ru,https://datacollector-drru.dt.dbankcloud.ru",
+      "collector_url_sg": "https://datacollector-dra.dt.hicloud.com,https://datacollector-dra.dt.hicloud.com",
+      "resource_id": "p1",
+      "channel_id": ""
+    },
+    "search": {
+      "url": "https://search-dre.cloud.huawei.com"
+    },
+    "cloudstorage": {
+      "storage_url_sg_back": "https://ops-dra.agcstorage.link",
+      "storage_url_ru_back": "https://ops-drru.agcstorage.link", 
+      "storage_url_ru": "https://agc-storage-drru.platform.dbankcloud.ru",
+      "storage_url_sg": "https://agc-storage-dra.ap-singapore-1.huaweicloudapis.com",
+      "storage_url": "https://agc-storage-dre.eu-west-101.huaweicloudapis.com",
+      "storage_url_back": "https://ops-dre.agcstorage.link"
+    },
+    "ml": {
+      "mlservice_url": "https://ml-api-dre.ai.dbankcloud.com"
+    }
+  },
+  "region": "DE",
+  "configuration_version": "3.0"
+}

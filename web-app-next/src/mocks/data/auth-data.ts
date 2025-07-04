@@ -8,7 +8,11 @@ export interface MockUser {
   username: string
   email: string
   name: string
-  role: 'admin' | 'manager' | 'operator' | 'viewer'
+  role: {
+    name: 'super_admin' | 'admin' | 'manager' | 'operator' | 'viewer'
+    level: number // 0=超级管理员, 1=系统管理员, 2=经理, 3=操作员, 4=查看员
+    displayName: string
+  }
   department: string
   permissions: string[]
   avatar?: string
@@ -21,7 +25,11 @@ export interface MockUser {
 export interface MockJWTPayload {
   sub: string // user id
   username: string
-  role: string
+  role: {
+    name: 'super_admin' | 'admin' | 'manager' | 'operator' | 'viewer'
+    level: number
+    displayName: string
+  }
   permissions: string[]
   iat: number
   exp: number
@@ -32,12 +40,45 @@ export interface MockJWTPayload {
  * Mock用户数据库
  */
 export const mockUsers: Record<string, MockUser> = {
+  'super_admin': {
+    id: 'user_000',
+    username: 'super_admin',
+    email: 'super@heiniu.com',
+    name: '平台超级管理员',
+    role: {
+      name: 'super_admin',
+      level: 0,
+      displayName: '平台超级管理员'
+    },
+    department: '平台运营部',
+    permissions: [
+      'platform:read', 'platform:write', 'platform:delete',
+      'factory:create', 'factory:read', 'factory:write', 'factory:delete',
+      'subscription:read', 'subscription:write', 'subscription:delete',
+      'users:read', 'users:write', 'users:delete',
+      'farming:read', 'farming:write', 'farming:delete',
+      'processing:read', 'processing:write', 'processing:delete',
+      'logistics:read', 'logistics:write', 'logistics:delete',
+      'admin:read', 'admin:write', 'admin:delete',
+      'trace:read', 'trace:write',
+      'system:config', 'system:backup', 'system:audit'
+    ],
+    avatar: '/avatars/super_admin.png',
+    status: 'active',
+    lastLogin: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1小时前
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: new Date().toISOString()
+  },
   'admin': {
     id: 'user_001',
     username: 'admin',
     email: 'admin@heiniu.com',
     name: '系统管理员',
-    role: 'admin',
+    role: {
+      name: 'admin',
+      level: 1,
+      displayName: '系统管理员'
+    },
     department: '信息技术部',
     permissions: [
       'users:read', 'users:write', 'users:delete',
@@ -59,7 +100,11 @@ export const mockUsers: Record<string, MockUser> = {
     username: 'manager',
     email: 'manager@heiniu.com',
     name: '生产经理',
-    role: 'manager',
+    role: {
+      name: 'manager',
+      level: 2,
+      displayName: '生产经理'
+    },
     department: '生产部',
     permissions: [
       'users:read',
@@ -79,7 +124,11 @@ export const mockUsers: Record<string, MockUser> = {
     username: 'operator',
     email: 'operator@heiniu.com',
     name: '操作员',
-    role: 'operator',
+    role: {
+      name: 'operator',
+      level: 3,
+      displayName: '操作员'
+    },
     department: '生产车间',
     permissions: [
       'farming:read', 'farming:write',
@@ -97,7 +146,11 @@ export const mockUsers: Record<string, MockUser> = {
     username: 'viewer',
     email: 'viewer@heiniu.com',
     name: '查看员',
-    role: 'viewer',
+    role: {
+      name: 'viewer',
+      level: 4,
+      displayName: '查看员'
+    },
     department: '质检部',
     permissions: [
       'farming:read',
@@ -122,6 +175,7 @@ export const validateCredentials = (username: string, password: string): MockUse
 
   // 简单密码验证 (开发环境)
   const validPasswords: Record<string, string> = {
+    'super_admin': 'super123',
     'admin': 'admin123',
     'manager': 'manager123',
     'operator': 'operator123',
