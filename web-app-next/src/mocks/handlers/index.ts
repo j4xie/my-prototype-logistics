@@ -22,6 +22,7 @@ import { salesHandlers } from './sales'
 import { adminHandlers } from './admin'
 import { traceHandlers } from './trace'
 import { productsHandlers } from './products'
+import { platformHandlers } from './platform'
 import { middlewares } from '../config/middleware'
 import { http, HttpResponse, RequestHandler } from 'msw'
 import { wrapError } from '../../types/api-response'
@@ -42,6 +43,7 @@ const mockStatusHandler: RequestHandler = http.get('/api/mock-status', () => {
     ...adminHandlers,
     ...traceHandlers,
     ...productsHandlers,
+    ...platformHandlers,
   ];
 
   const totalHandlers: number = allHandlers.length + 2; // +2 for mockStatusHandler and notFoundHandler
@@ -62,6 +64,7 @@ const mockStatusHandler: RequestHandler = http.get('/api/mock-status', () => {
       users: usersHandlers.length,
       trace: traceHandlers.length,
       products: productsHandlers.length,
+      platform: platformHandlers.length,
       middlewares: middlewares.length,
     }
   }, {
@@ -114,6 +117,7 @@ export const handlers: RequestHandler[] = [
   ...adminHandlers,
   ...traceHandlers,
   ...productsHandlers,
+  ...platformHandlers,     // 平台管理模块
 
   // 404处理器（最低优先级，捕获所有未匹配的请求）
   notFoundHandler,
@@ -129,7 +133,8 @@ export {
   salesHandlers,           // TASK-P3-025新增销售模块导出
   adminHandlers,
   traceHandlers,
-  productsHandlers
+  productsHandlers,
+  platformHandlers         // 平台管理模块导出
 }
 
 // 导出Handler数量统计
@@ -144,7 +149,8 @@ export const handlerStats = {
     sales: salesHandlers.length,        // TASK-P3-025新增销售模块统计
     admin: adminHandlers.length,
     trace: traceHandlers.length,
-    products: productsHandlers.length
+    products: productsHandlers.length,
+    platform: platformHandlers.length  // 平台管理模块统计
   }
 }
 

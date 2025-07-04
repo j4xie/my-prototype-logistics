@@ -52,8 +52,8 @@ interface PageItem {
   tags?: string[]; // 可选的标签属性
 }
 
-// 基于102个真实页面的完整数据 - 动态统计版本
-// P0核心(11) + P1-1养殖(20) + P1-2加工(29) + P1-3物流(9) + P1-4销售(11) + P2-1用户(9) + P2-2系统(13) = 102页面
+// 基于103个真实页面的完整数据 - 动态统计版本
+// P0核心(12) + P1-1养殖(20) + P1-2加工(29) + P1-3物流(9) + P1-4销售(11) + P2-1用户(9) + P2-2系统(13) = 103页面
 const actualPages: PageItem[] = [
   // P0 - 核心系统 (11个页面)
   { id: '1', title: '系统首页', route: '/', category: 'P0', module: '核心系统', description: '系统主入口', status: 'active', complexity: 'simple', deviceOptimized: 'both' },
@@ -67,6 +67,9 @@ const actualPages: PageItem[] = [
   { id: '9', title: '系统导航', route: '/navigation', category: 'P0', module: '核心系统', description: '全局导航系统', status: 'active', complexity: 'simple', deviceOptimized: 'both' },
   { id: '103', title: '错误页面', route: '/error', category: 'P0', module: '核心系统', description: '系统错误页面', status: 'active', complexity: 'simple', deviceOptimized: 'both' },
   { id: '104', title: '404页面', route: '/404', category: 'P0', module: '核心系统', description: '页面未找到', status: 'active', complexity: 'simple', deviceOptimized: 'both' },
+
+  // P0 - 平台管理 (1个页面) - 超级管理员专用
+  { id: '105', title: '平台管理控制台', route: '/platform', category: 'P0', module: '平台管理', description: '多租户SaaS平台管理 - 工厂管理、订阅套餐、操作日志', status: 'active', complexity: 'advanced', deviceOptimized: 'desktop', tags: ['超级管理员', '多租户', 'SaaS'] },
 
   // P1-1 🐄 养殖模块 (19个页面)
   { id: '10', title: '养殖主页', route: '/farming', category: 'P1-1', module: '养殖模块', description: '养殖业务主入口', status: 'active', complexity: 'simple', deviceOptimized: 'mobile' },
@@ -297,7 +300,7 @@ export default function PreviewSystemPage() {
   // 简化统计信息
   const stats = {
     totalPages: actualPages.length,
-    totalRoutes: 136, // 102页面 + 34API
+    totalRoutes: 137, // 103页面 + 34API
     apiEndpoints: 34,
     lastUpdated: '2025-02-02'
   };
@@ -396,6 +399,7 @@ export default function PreviewSystemPage() {
     const moduleIcons: { [key: string]: string } = {
       // 实际模块名称映射
       '核心系统': '🏠',
+      '平台管理': '🏢',
       '养殖模块': '🌾',
       '加工模块': '🏭',
       '物流模块': '🚛',

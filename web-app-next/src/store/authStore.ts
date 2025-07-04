@@ -8,10 +8,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { devtools } from 'zustand/middleware';
 import { authService } from '@/services/auth.service';
-import type { 
-  AuthState, 
-  User, 
-  LoginCredentials, 
+import type {
+  AuthState,
+  User,
+  LoginCredentials,
   AuthResponse
 } from '@/types/state';
 import type { LoginRequest, RegisterRequest } from '@/types/auth';
@@ -25,28 +25,44 @@ const authAPI = {
         username: credentials.username,
         password: credentials.password
       };
-      
+
       const response = await authService.login(loginRequest);
-      
+
       // 转换为现有格式
       if (response?.data?.token || response?.token) {
         const token = response.data?.token || response.token;
         const userData = response.data?.user || response.user || response;
-        
+
+                // 处理新的role对象结构或旧的字符串结构
+        const userRole = userData.role;
+        const roleInfo = typeof userRole === 'object' && userRole !== null
+          ? userRole
+          : { name: userRole || 'user', level: userRole === 'admin' ? 1 : 3, displayName: userRole === 'admin' ? '系统管理员' : '普通用户' };
+
         return {
           user: {
             id: String(userData.id || '1'),
             username: userData.username,
             email: userData.email || '',
-            displayName: userData.username,
-            avatar: '',
+            displayName: userData.name || userData.username,
+            avatar: userData.avatar || '',
             role: {
-              id: userData.role || 'user',
-              name: userData.role === 'admin' ? '系统管理员' : '普通用户',
-              description: userData.role === 'admin' ? '具有系统所有权限' : '基础查看权限',
-              level: userData.role === 'admin' ? 1 : 3,
+              id: roleInfo.name,
+              name: roleInfo.displayName || roleInfo.name,
+              description: roleInfo.level === 0 ? '平台最高权限，管理所有工厂租户' :
+                          roleInfo.level === 1 ? '具有系统所有权限' : '基础查看权限',
+              level: roleInfo.level,
             },
-            permissions: userData.role === 'admin' 
+            permissions: roleInfo.level === 0
+              ? [
+                  { id: '0', name: '平台管理', resource: 'platform', action: 'manage' },
+                  { id: '1', name: '农业管理', resource: 'farming', action: 'manage' },
+                  { id: '2', name: '加工管理', resource: 'processing', action: 'manage' },
+                  { id: '3', name: '物流管理', resource: 'logistics', action: 'manage' },
+                  { id: '4', name: '系统管理', resource: 'admin', action: 'manage' },
+                  { id: '5', name: '溯源查询', resource: 'trace', action: 'read' },
+                ]
+              : roleInfo.level === 1
               ? [
                   { id: '1', name: '农业管理', resource: 'farming', action: 'manage' },
                   { id: '2', name: '加工管理', resource: 'processing', action: 'manage' },
@@ -65,7 +81,7 @@ const authAPI = {
           expiresIn: response.data?.expiresIn || 3600,
         };
       }
-      
+
       throw new Error('登录响应格式无效');
     } catch (error) {
       // 如果新API失败，使用模拟数据（开发阶段）
@@ -73,12 +89,12 @@ const authAPI = {
       return mockLogin(credentials);
     }
   },
-  
+
   refreshToken: async (refreshToken: string): Promise<AuthResponse> => {
     try {
       console.log('尝试刷新token:', refreshToken);
       const response = await authService.refreshToken();
-      
+
       if (response?.data?.token || response?.token) {
         // 简化的刷新响应
         return {
@@ -88,19 +104,19 @@ const authAPI = {
           expiresIn: response.data?.expiresIn || 3600,
         };
       }
-      
+
       throw new Error('Token刷新失败');
     } catch (error) {
       console.error('Token刷新失败:', error);
       throw error;
     }
   },
-  
+
   updateProfile: async (profile: Partial<User>): Promise<User> => {
     try {
       console.log('更新用户资料:', profile);
       const response = await authService.getUserProfile();
-      
+
       return {
         id: String(response.id || '1'),
         username: response.username,
@@ -139,8 +155,42 @@ const authAPI = {
 const mockLogin = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   // 模拟网络延迟
   await new Promise(resolve => setTimeout(resolve, 800));
-  
-  // 模拟登录验证
+
+  // 模拟超级管理员登录
+  if (credentials.username === 'super_admin' && credentials.password === 'super123') {
+    const user: User = {
+      id: '0',
+      username: 'super_admin',
+      email: 'super@heiniu.com',
+      displayName: '平台超级管理员',
+      avatar: '',
+      role: {
+        id: 'super_admin',
+        name: '平台超级管理员',
+        description: '平台最高权限，管理所有工厂租户',
+        level: 0,
+      },
+      permissions: [
+        { id: '0', name: '平台管理', resource: 'platform', action: 'manage' },
+        { id: '1', name: '农业管理', resource: 'farming', action: 'manage' },
+        { id: '2', name: '加工管理', resource: 'processing', action: 'manage' },
+        { id: '3', name: '物流管理', resource: 'logistics', action: 'manage' },
+        { id: '4', name: '系统管理', resource: 'admin', action: 'manage' },
+        { id: '5', name: '溯源查询', resource: 'trace', action: 'read' },
+      ],
+      createdAt: '2025-01-01T00:00:00Z',
+      lastLoginAt: new Date().toISOString(),
+    };
+
+    return {
+      user,
+      token: 'mock-jwt-token-super-' + Date.now(),
+      refreshToken: 'mock-refresh-token-super-' + Date.now(),
+      expiresIn: 3600, // 1小时
+    };
+  }
+
+  // 模拟系统管理员登录
   if (credentials.username === 'admin' && credentials.password === 'admin123') {
     const user: User = {
       id: '1',
@@ -164,7 +214,7 @@ const mockLogin = async (credentials: LoginCredentials): Promise<AuthResponse> =
       createdAt: '2025-01-01T00:00:00Z',
       lastLoginAt: new Date().toISOString(),
     };
-    
+
     return {
       user,
       token: 'mock-jwt-token-' + Date.now(),
@@ -172,7 +222,7 @@ const mockLogin = async (credentials: LoginCredentials): Promise<AuthResponse> =
       expiresIn: 3600, // 1小时
     };
   }
-  
+
   // 模拟普通用户
   if (credentials.username === 'user' && credentials.password === 'user123') {
     const user: User = {
@@ -193,7 +243,7 @@ const mockLogin = async (credentials: LoginCredentials): Promise<AuthResponse> =
       createdAt: '2025-01-01T00:00:00Z',
       lastLoginAt: new Date().toISOString(),
     };
-    
+
     return {
       user,
       token: 'mock-jwt-token-user-' + Date.now(),
@@ -201,7 +251,7 @@ const mockLogin = async (credentials: LoginCredentials): Promise<AuthResponse> =
       expiresIn: 3600,
     };
   }
-  
+
   throw new Error('用户名或密码错误');
 };
 
@@ -226,11 +276,11 @@ export const useAuthStore = create<AuthState>()(
         // 用户登录
         login: async (credentials: LoginCredentials) => {
           set({ loading: true, error: null }, false, 'auth/login/start');
-          
+
           try {
             const response = await authAPI.login(credentials);
             const expiresAt = Date.now() + response.expiresIn * 1000;
-            
+
             set({
               isAuthenticated: true,
               user: response.user,
@@ -241,10 +291,10 @@ export const useAuthStore = create<AuthState>()(
               loading: false,
               error: null,
             }, false, 'auth/login/success');
-            
+
             // 登录成功后的额外操作
             console.log('✅ 用户登录成功:', response.user.displayName);
-            
+
             // 设置自动刷新令牌
             if (response.expiresIn > 0) {
               const refreshTime = Math.max(response.expiresIn * 1000 - 300000, 60000); // 提前5分钟刷新，最少1分钟后
@@ -255,14 +305,14 @@ export const useAuthStore = create<AuthState>()(
                 }
               }, refreshTime);
             }
-            
+
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '登录失败';
             set({
               loading: false,
               error: errorMessage,
             }, false, 'auth/login/error');
-            
+
             console.error('❌ 用户登录失败:', errorMessage);
             throw error;
           }
@@ -271,30 +321,30 @@ export const useAuthStore = create<AuthState>()(
         // 用户登出
         logout: () => {
           set(defaultAuthState, false, 'auth/logout');
-          
+
           // 清除本地存储的认证信息
           if (typeof window !== 'undefined') {
             localStorage.removeItem('auth-state');
           }
-          
+
           console.log('🚪 用户已登出');
         },
 
         // 刷新访问令牌
         refreshAccessToken: async () => {
           const { refreshToken, isAuthenticated } = get();
-          
+
           if (!isAuthenticated || !refreshToken) {
             console.warn('⚠️ 无法刷新令牌：用户未登录或刷新令牌不存在');
             return;
           }
-          
+
           set({ loading: true }, false, 'auth/refresh/start');
-          
+
           try {
             const response = await authAPI.refreshToken(refreshToken);
             const expiresAt = Date.now() + response.expiresIn * 1000;
-            
+
             set({
               token: response.token,
               refreshToken: response.refreshToken,
@@ -304,13 +354,13 @@ export const useAuthStore = create<AuthState>()(
               loading: false,
               error: null,
             }, false, 'auth/refresh/success');
-            
+
             console.log('🔄 令牌刷新成功');
-            
+
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '令牌刷新失败';
             console.error('❌ 令牌刷新失败:', errorMessage);
-            
+
             // 刷新失败，强制登出
             get().logout();
           }
@@ -319,31 +369,31 @@ export const useAuthStore = create<AuthState>()(
         // 更新用户资料
         updateProfile: async (profile: Partial<User>) => {
           const { user, isAuthenticated } = get();
-          
+
           if (!isAuthenticated || !user) {
             throw new Error('用户未登录');
           }
-          
+
           set({ loading: true, error: null }, false, 'auth/updateProfile/start');
-          
+
           try {
             const updatedUser = await authAPI.updateProfile(profile);
-            
+
             set({
               user: updatedUser,
               loading: false,
               error: null,
             }, false, 'auth/updateProfile/success');
-            
+
             console.log('✅ 用户资料更新成功');
-            
+
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : '更新失败';
             set({
               loading: false,
               error: errorMessage,
             }, false, 'auth/updateProfile/error');
-            
+
             console.error('❌ 用户资料更新失败:', errorMessage);
             throw error;
           }
@@ -352,27 +402,27 @@ export const useAuthStore = create<AuthState>()(
         // 检查用户权限
         checkPermission: (resource: string, action: string): boolean => {
           const { permissions, isAuthenticated } = get();
-          
+
           if (!isAuthenticated) {
             return false;
           }
-          
+
           return permissions.some(permission => {
             // 完全匹配
             if (permission.resource === resource && permission.action === action) {
               return true;
             }
-            
+
             // 管理权限包含所有操作
             if (permission.resource === resource && permission.action === 'manage') {
               return true;
             }
-            
+
             // 系统管理员权限
             if (permission.resource === 'admin' && permission.action === 'manage') {
               return true;
             }
-            
+
             return false;
           });
         },
@@ -388,13 +438,13 @@ export const useAuthStore = create<AuthState>()(
           if (isAuthenticated) {
             return; // 已经登录，无需重复操作
           }
-          
+
           try {
             const user = await authAPI.updateProfile({});
-            set({ 
+            set({
               isAuthenticated: true,
               user: user as User,
-              error: null 
+              error: null
             }, false, 'auth/tryAutoLogin/success');
           } catch (_autoLoginError) {
             console.warn('Auto login failed:', _autoLoginError);
@@ -404,7 +454,7 @@ export const useAuthStore = create<AuthState>()(
       }),
       {
         name: 'auth-state',
-        
+
         // 选择性持久化：保存认证信息，但不保存loading和error状态
         partialize: (state) => ({
           isAuthenticated: state.isAuthenticated,
@@ -414,10 +464,10 @@ export const useAuthStore = create<AuthState>()(
           tokenExpiresAt: state.tokenExpiresAt,
           permissions: state.permissions,
         }),
-        
+
         // 版本控制
         version: 1,
-        
+
         // 状态迁移
         migrate: (persistedState: any, version: number) => {
           if (version === 0) {
@@ -442,16 +492,16 @@ if (typeof window !== 'undefined') {
   // 检查令牌是否过期
   const checkTokenExpiry = () => {
     const { tokenExpiresAt, isAuthenticated, logout } = useAuthStore.getState();
-    
+
     if (isAuthenticated && tokenExpiresAt && Date.now() >= tokenExpiresAt) {
       console.warn('⚠️ 令牌已过期，自动登出');
       logout();
     }
   };
-  
+
   // 定期检查令牌状态
   setInterval(checkTokenExpiry, 60000); // 每分钟检查一次
-  
+
   // 页面加载时立即检查一次
   checkTokenExpiry();
 }
@@ -463,16 +513,16 @@ export const authSelectors = {
   user: (state: AuthState) => state.user,
   loading: (state: AuthState) => state.loading,
   error: (state: AuthState) => state.error,
-  
+
   // 用户信息
   userDisplayName: (state: AuthState) => state.user?.displayName,
   userRole: (state: AuthState) => state.user?.role,
   userAvatar: (state: AuthState) => state.user?.avatar,
-  
+
   // 权限相关
   permissions: (state: AuthState) => state.permissions,
-  isAdmin: (state: AuthState) => 
-    state.user?.role.level === 1 || 
+  isAdmin: (state: AuthState) =>
+    state.user?.role.level === 1 ||
     state.permissions.some(p => p.resource === 'admin' && p.action === 'manage'),
 };
 
@@ -496,4 +546,4 @@ export const authActions = {
   updateProfile: () => useAuthStore.getState().updateProfile,
   checkPermission: () => useAuthStore.getState().checkPermission,
   clearError: () => useAuthStore.getState().clearError,
-}; 
+};

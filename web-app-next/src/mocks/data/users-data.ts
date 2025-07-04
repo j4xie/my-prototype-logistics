@@ -60,14 +60,21 @@ export const generateMockUsers = (count: number = 20): MockUser[] => {
   const users: MockUser[] = []
 
   for (let i = 0; i < count; i++) {
-    const role = roles[Math.floor(Math.random() * roles.length)]
+    const roleName = roles[Math.floor(Math.random() * roles.length)]
     const status = Math.random() > 0.1 ? 'active' : statuses[Math.floor(Math.random() * statuses.length)]
     const name = names[i % names.length]
     const department = departments[Math.floor(Math.random() * departments.length)]
 
+    // 根据角色生成role对象
+    const role = {
+      name: roleName,
+      level: roleName === 'admin' ? 1 : roleName === 'manager' ? 2 : roleName === 'operator' ? 3 : 4,
+      displayName: roleName === 'admin' ? '系统管理员' : roleName === 'manager' ? '生产经理' : roleName === 'operator' ? '操作员' : '查看员'
+    }
+
     // 根据角色分配权限
     let permissions: string[] = []
-    switch (role) {
+    switch (roleName) {
       case 'admin':
         permissions = [
           'users:read', 'users:write', 'users:delete',
@@ -110,7 +117,7 @@ export const generateMockUsers = (count: number = 20): MockUser[] => {
       role,
       department,
       permissions,
-      avatar: `/avatars/${role}_${i + 1}.png`,
+      avatar: `/avatars/${roleName}_${i + 1}.png`,
       status,
       lastLogin: status === 'active'
         ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -164,7 +171,7 @@ export const getUserList = (query: UserListQuery): UserListResponse => {
 
   // 角色过滤
   if (role) {
-    filteredUsers = filteredUsers.filter(user => user.role === role)
+    filteredUsers = filteredUsers.filter(user => user.role.name === role)
   }
 
   // 部门过滤
@@ -206,7 +213,7 @@ export const getUserList = (query: UserListQuery): UserListResponse => {
   const paginatedUsers = filteredUsers.slice(offset, offset + pageSize)
 
   // 生成过滤器选项
-  const roles = Array.from(new Set(allMockUsers.map(u => u.role)))
+  const roles = Array.from(new Set(allMockUsers.map(u => u.role.name)))
   const departments = Array.from(new Set(allMockUsers.map(u => u.department)))
   const statuses = Array.from(new Set(allMockUsers.map(u => u.status)))
 
@@ -313,7 +320,7 @@ export const getUserStats = () => {
   const suspended = allMockUsers.filter(u => u.status === 'suspended').length
 
   const roleStats = allMockUsers.reduce((acc, user) => {
-    acc[user.role] = (acc[user.role] || 0) + 1
+    acc[user.role.name] = (acc[user.role.name] || 0) + 1
     return acc
   }, {} as Record<string, number>)
 
