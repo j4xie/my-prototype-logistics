@@ -463,12 +463,13 @@ web-app-next/
 │   │   │   ├── detail/         # 详情页面
 │   │   │   ├── list/           # 列表页面
 │   │   │   └── query/          # 查询页面
-│   │   ├── admin/              # 管理模块 (15个子页面)
+│   │   ├── admin/              # 管理模块 (16个子页面)
 │   │   │   ├── admin-users/    # 管理员用户
 │   │   │   ├── audit/          # 审计
 │   │   │   ├── backup/         # 备份
 │   │   │   ├── dashboard/      # 仪表板
 │   │   │   ├── import/         # 导入
+│   │   │   ├── login/          # 管理员登录
 │   │   │   ├── logs/           # 日志
 │   │   │   ├── notifications/  # 通知
 │   │   │   ├── performance/    # 性能
@@ -479,73 +480,125 @@ web-app-next/
 │   │   │   ├── system/         # 系统
 │   │   │   ├── template/       # 模板
 │   │   │   └── users/          # 用户
-│   │   ├── api/                # API路由 (9大模块，34个接口)
-│   │   │   ├── admin/          # 管理API (5个接口)
+│   │   ├── ai-demo/            # AI演示
+│   │   │   └── page.tsx        # AI演示页面
+│   │   ├── api/                # API路由 (6大模块)
+│   │   │   ├── admin/          # 管理API
+│   │   │   │   ├── audit-logs/ # 审计日志接口
+│   │   │   │   ├── notifications/  # 通知接口
+│   │   │   │   ├── roles/      # 角色接口
+│   │   │   │   ├── users/      # 用户管理接口
+│   │   │   │   └── route.ts    # 管理主接口
 │   │   │   ├── auth/           # 认证API (9个接口)
-│   │   │   ├── farming/        # 农业API (6个接口)
-│   │   │   ├── logistics/      # 物流API (6个接口)
-│   │   │   ├── processing/     # 加工API (8个接口)
+│   │   │   │   ├── login/      # 登录接口
+│   │   │   │   ├── logout/     # 登出接口
+│   │   │   │   ├── profile/    # 用户资料接口
+│   │   │   │   ├── register/   # 注册接口
+│   │   │   │   ├── reset-password/  # 重置密码接口
+│   │   │   │   ├── send-reset-code/ # 发送重置验证码接口
+│   │   │   │   ├── status/     # 状态检查接口
+│   │   │   │   ├── verify/     # 验证接口
+│   │   │   │   └── verify-reset-code/  # 验证重置验证码接口
 │   │   │   ├── products/       # 产品API
-│   │   │   ├── trace/          # 溯源API (3个接口)
-│   │   │   └── users/          # 用户API (2个接口)
+│   │   │   ├── proxy/          # 代理API
+│   │   │   │   └── auth/       # 代理认证
+│   │   │   ├── trace/          # 溯源API
+│   │   │   │   └── [id]/       # 动态溯源ID接口
+│   │   │   └── users/          # 用户API
+│   │   │       ├── profile/    # 用户资料接口
+│   │   │       └── route.ts    # 用户主接口
+│   │   ├── api-debug/          # API调试
+│   │   │   └── page.tsx        # API调试页面
+│   │   ├── auth/               # 认证模块
+│   │   │   └── login/          # 登录页面
+│   │   │       └── page.tsx    # 登录页面组件
+│   │   ├── components/         # 组件演示
+│   │   │   └── page.tsx        # 组件演示页面
+│   │   ├── crm/                # 客户关系管理模块
+│   │   │   └── customers/      # 客户管理
+│   │   │       └── page.tsx    # 客户页面
+│   │   ├── demo/               # 演示模块
+│   │   │   └── page.tsx        # 演示页面
 │   │   ├── farming/            # 农业模块 (17个页面)
-│   │   │   ├── breeding/       # 繁殖
+│   │   │   ├── breeding/       # 繁殖管理
 │   │   │   ├── create-trace/   # 创建溯源
-│   │   │   ├── crops/          # 作物
+│   │   │   ├── crops/          # 作物管理
 │   │   │   ├── data-collection-center/  # 数据收集中心
 │   │   │   ├── farm-activities/         # 农场活动
 │   │   │   ├── farm-management/         # 农场管理
-│   │   │   ├── fields/         # 田地
+│   │   │   ├── fields/         # 田地管理
 │   │   │   ├── harvest-records/         # 收获记录
 │   │   │   ├── indicator-detail/        # 指标详情
-│   │   │   ├── manual-collection/       # 手动收集
+│   │   │   ├── manual-collection/       # 手动数据收集
 │   │   │   ├── model-management/        # 模型管理
 │   │   │   ├── planting-plans/          # 种植计划
 │   │   │   ├── prediction-analytics/    # 预测分析
 │   │   │   ├── prediction-config/       # 预测配置
 │   │   │   ├── qrcode-collection/       # 二维码收集
-│   │   │   ├── vaccine/        # 疫苗
-│   │   │   └── video-monitoring/        # 视频监控
-│   │   ├── processing/         # 加工模块 (28个页面)
-│   │   │   ├── finished-products/       # 成品
-│   │   │   ├── photos/         # 照片
-│   │   │   ├── production/     # 生产子模块 (6个页面)
+│   │   │   ├── vaccine/        # 疫苗管理
+│   │   │   ├── video-monitoring/        # 视频监控
+│   │   │   └── page.tsx        # 农业模块主页
+│   │   ├── finance/            # 财务模块
+│   │   │   └── reports/        # 财务报告
+│   │   │       └── page.tsx    # 财务报告页面
+│   │   ├── help-center/        # 帮助中心
+│   │   │   └── page.tsx        # 帮助中心页面
+│   │   ├── inventory/          # 库存管理模块
+│   │   │   └── stocks/         # 库存管理
+│   │   │       └── page.tsx    # 库存页面
+│   │   ├── login/              # 登录页面
+│   │   │   └── page.tsx        # 登录页面组件
+│   │   ├── logistics/          # 物流模块 (4个页面)
+│   │   │   ├── delivery-management/     # 配送管理
+│   │   │   ├── transport-orders/        # 运输订单
+│   │   │   ├── vehicles/       # 车辆管理
+│   │   │   ├── warehouses/     # 仓库管理
+│   │   │   └── page.tsx        # 物流模块主页
+│   │   ├── preview/            # 预览系统
+│   │   │   └── page.tsx        # 预览页面
+│   │   ├── processing/         # 加工模块 (11个页面)
+│   │   │   ├── finished-products/       # 成品管理
+│   │   │   ├── photos/         # 照片管理
+│   │   │   ├── production/     # 生产管理
 │   │   │   ├── production-batches/      # 生产批次
 │   │   │   ├── production-planning/     # 生产计划
-│   │   │   ├── quality/        # 质量子模块 (8个页面)
+│   │   │   ├── quality/        # 质量管理
 │   │   │   ├── quality-tests/  # 质量测试
-│   │   │   ├── raw-materials/  # 原材料
-│   │   │   ├── recipes/        # 配方
-│   │   │   ├── reports/        # 报告
-│   │   │   └── storage/        # 存储子模块 (6个页面)
-│   │   ├── profile/            # 用户模块 (8个页面)
-│   │   │   ├── about/          # 关于
+│   │   │   ├── raw-materials/  # 原材料管理
+│   │   │   ├── recipes/        # 配方管理
+│   │   │   ├── reports/        # 加工报告
+│   │   │   ├── storage/        # 存储管理
+│   │   │   └── page.tsx        # 加工模块主页
+│   │   ├── procurement/        # 采购模块
+│   │   │   └── suppliers/      # 供应商管理
+│   │   │       └── page.tsx    # 供应商页面
+│   │   ├── profile/            # 用户资料模块 (8个页面)
+│   │   │   ├── about/          # 关于我
 │   │   │   ├── data-export/    # 数据导出
-│   │   │   ├── edit/           # 编辑
+│   │   │   ├── edit/           # 编辑资料
 │   │   │   ├── feedback/       # 反馈
-│   │   │   ├── notifications/  # 通知
-│   │   │   ├── password/       # 密码
-│   │   │   ├── privacy/        # 隐私
-│   │   │   └── security/       # 安全
-│   │   ├── 其他业务模块/
-│   │   │   ├── ai-demo/        # AI演示
-│   │   │   ├── components/     # 组件演示
-│   │   │   ├── crm/            # 客户关系管理
-│   │   │   ├── demo/           # 演示
-│   │   │   ├── finance/        # 财务
-│   │   │   ├── help-center/    # 帮助中心
-│   │   │   ├── inventory/      # 库存
-│   │   │   ├── login/          # 登录
-│   │   │   ├── logistics/      # 物流主页
-│   │   │   ├── procurement/    # 采购
-│   │   │   ├── quality/        # 质量
-│   │   │   ├── register/       # 注册
-│   │   │   ├── reset-password/ # 重置密码
-│   │   │   ├── sales/          # 销售
-│   │   │   └── settings/       # 设置
+│   │   │   ├── notifications/  # 通知设置
+│   │   │   ├── password/       # 密码管理
+│   │   │   ├── privacy/        # 隐私设置
+│   │   │   ├── security/       # 安全设置
+│   │   │   └── page.tsx        # 用户资料主页
+│   │   ├── quality/            # 质量模块
+│   │   │   └── inspections/    # 质量检验
+│   │   │       └── page.tsx    # 质量检验页面
+│   │   ├── register/           # 注册页面
+│   │   │   └── page.tsx        # 注册页面组件
+│   │   ├── reset-password/     # 重置密码页面
+│   │   │   └── page.tsx        # 重置密码页面组件
+│   │   ├── sales/              # 销售模块 (3个页面)
+│   │   │   ├── orders/         # 订单管理
+│   │   │   ├── pricing/        # 定价管理
+│   │   │   └── reports/        # 销售报告
+│   │   ├── settings/           # 系统设置
+│   │   │   └── page.tsx        # 设置页面
 │   │   ├── favicon.ico         # 网站图标
 │   │   ├── globals.css         # 全局样式
 │   │   ├── layout.tsx          # 根布局
+│   │   ├── msw-provider.tsx    # MSW提供者组件
 │   │   ├── page.tsx            # 根页面
 │   │   └── providers.tsx       # 提供者组件
 │   ├── components/             # React组件
