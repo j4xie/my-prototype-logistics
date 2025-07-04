@@ -1,1 +1,0 @@
-'use client'; export default function RecipesPage() { return <div>配方管理</div>; }
