@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
+import { useAuthStore } from '@/store/authStore';
+import { ArrowLeft } from 'lucide-react';
 
 interface TraceRecord {
   id: string;
@@ -53,6 +55,7 @@ interface SearchHistory {
 
 export default function TraceQueryPage() {
   const router = useRouter();
+  const { isAuthenticated, user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'batch' | 'qr' | 'product'>('batch');
   const [isSearching, setIsSearching] = useState(false);
@@ -61,14 +64,19 @@ export default function TraceQueryPage() {
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<TraceRecord | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // 检查登录状态
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
+    setMounted(true);
+
+    // 检查登录状态 - 使用正确的认证状态管理
+    if (!isAuthenticated) {
+      console.log('🔒 用户未认证，重定向到登录页');
       router.push('/login');
       return;
     }
+
+    console.log('✅ 用户已认证，加载溯源查询页面:', user?.displayName);
 
     // 加载搜索历史
     const history = localStorage.getItem('trace_search_history');
@@ -79,7 +87,7 @@ export default function TraceQueryPage() {
         console.error('Failed to load search history:', error);
       }
     }
-  }, [router]);
+  }, [isAuthenticated, user, router]);
 
   const saveSearchHistory = (query: string, type: string) => {
     const newHistory: SearchHistory = {
@@ -231,6 +239,17 @@ export default function TraceQueryPage() {
       default: return '#8C8C8C';
     }
   };
+
+  // 加载状态检查
+  if (!mounted || !isAuthenticated) {
+    return (
+      <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
+        <div className="max-w-[390px] mx-auto w-full min-h-screen flex items-center justify-center">
+          <Loading />
+        </div>
+      </div>
+    );
+  }
 
   if (showDetails && selectedRecord) {
     return (
@@ -501,8 +520,9 @@ export default function TraceQueryPage() {
           </button>
           <h1 className="text-lg font-semibold">溯源查询</h1>
           <button
-            onClick={() => router.push('/(dashboard)/home/selector')}
+            onClick={() => router.push('/home/selector')}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+            title="返回主页"
           >
             <i className="fas fa-home"></i>
           </button>

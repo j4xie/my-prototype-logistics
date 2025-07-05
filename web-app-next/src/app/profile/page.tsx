@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
 import { Loading } from '@/components/ui/loading';
+import { ArrowLeft, LogOut } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -203,9 +204,31 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen max-w-[390px] mx-auto bg-gray-50">
-      {/* 用户信息卡片 */}
-      <div className="bg-[#1890FF] text-white p-6 pb-16 rounded-b-[30px] relative overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
+      {/* 顶部导航栏 */}
+      <header className="fixed top-0 left-0 right-0 h-16 bg-[#1677FF] text-white z-50 shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
+        <div className="max-w-[390px] mx-auto h-full flex items-center justify-between px-4">
+          <button
+            onClick={() => router.back()}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+            title="返回"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <h1 className="text-lg font-semibold">个人中心</h1>
+          <button
+            onClick={() => router.push('/home/selector')}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+            title="返回主页"
+          >
+            <i className="fas fa-home"></i>
+          </button>
+        </div>
+      </header>
+
+      <div className="max-w-[390px] mx-auto w-full">
+        {/* 用户信息卡片 */}
+        <div className="bg-[#1890FF] text-white p-6 pb-16 rounded-b-[30px] relative overflow-hidden mt-16">
         {/* 装饰性背景圆圈 */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10"></div>
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-10 -mb-10"></div>
@@ -318,6 +341,7 @@ export default function ProfilePage() {
           </Button>
         </div>
       </main>
+      </div>
     </div>
   );
 }

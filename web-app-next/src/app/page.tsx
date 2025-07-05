@@ -43,15 +43,12 @@ export default function HomePage() {
           const userData = JSON.parse(userInfo);
 
           // 根据用户角色重定向到相应页面
-          if (userData.role === 'admin') {
-            console.log(`✅ 管理员登录 - 重定向到仪表板:`, userData.name);
-            router.push('/admin/dashboard');
-          } else if (userData.role?.level === 0) {
+          if (userData.role?.level === 0) {
             console.log(`✅ 平台超级管理员登录 - 重定向到平台管理:`, userData.name);
             router.push('/platform');
           } else {
-            console.log(`✅ 用户登录 - 重定向到农业页面:`, userData.name);
-            router.push('/farming');
+            console.log(`✅ 工厂用户登录 - 重定向到模块选择器:`, userData.name);
+            router.push('/home/selector');
           }
         } catch (error) {
           console.error('用户信息解析失败:', error);
@@ -141,37 +138,20 @@ export default function HomePage() {
               </div>
             </Card>
 
-            {/* 平台管理快速入口 - 仅供超级管理员 */}
-            <Card className="p-4 border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 cursor-pointer"
-                  onClick={() => router.push('/platform')}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-lg">🏢</span>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">平台管理</h3>
-                    <p className="text-sm text-gray-500">多租户SaaS管理控制台</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-purple-400" />
-              </div>
-            </Card>
-
-            {/* 登录入口 */}
-            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+            {/* 工厂管理登录入口 */}
+            <Card className="p-4 border-2 border-green-200 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all duration-300 cursor-pointer"
                   onClick={() => router.push('/login')}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <i className="fas fa-sign-in-alt text-gray-600"></i>
+                  <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                    <i className="fas fa-sign-in-alt text-white"></i>
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-900">用户登录</h3>
+                    <h3 className="font-medium text-gray-900">工厂管理登录</h3>
                     <p className="text-sm text-gray-500">访问完整系统功能</p>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-gray-400" />
+                <ArrowRight className="w-4 h-4 text-green-400" />
               </div>
             </Card>
           </div>

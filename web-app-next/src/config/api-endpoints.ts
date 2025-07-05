@@ -7,7 +7,7 @@
 // 真实API配置
 export const REAL_API_CONFIG = {
   // 生产环境使用代理路由解决CORS问题
-  baseURL: typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
+  baseURL: typeof window !== 'undefined' && window.location.hostname !== 'localhost'
     ? '/api/proxy/auth'  // 生产环境通过Vercel代理
     : 'http://47.251.121.76:10010',  // 开发环境直接访问
   timeout: 15000,
@@ -32,7 +32,7 @@ export const API_ENDPOINTS = {
     STATUS: '/auth/status',
     PROFILE: '/users/profile',
   },
-  
+
   // 其他功能 - 继续使用Mock API
   FARMING: {
     CROPS: '/api/farming/crops',
@@ -41,14 +41,14 @@ export const API_ENDPOINTS = {
     HARVEST: '/api/farming/harvest-records',
     PLANNING: '/api/farming/planting-plans',
   },
-  
+
   PROCESSING: {
     PRODUCTION: '/api/processing/production-batches',
     QUALITY: '/api/processing/quality-tests',
     MATERIALS: '/api/processing/raw-materials',
     PRODUCTS: '/api/processing/finished-products',
   },
-  
+
   LOGISTICS: {
     ORDERS: '/api/logistics/transport-orders',
     VEHICLES: '/api/logistics/vehicles',
@@ -56,7 +56,7 @@ export const API_ENDPOINTS = {
     WAREHOUSES: '/api/logistics/warehouses',
     INVENTORY: '/api/logistics/inventory',
   },
-  
+
   ADMIN: {
     USERS: '/api/admin/users',
     ROLES: '/api/admin/roles',
@@ -75,7 +75,7 @@ export const isAuthAPI = (endpoint: string): boolean => {
 
 /**
  * 获取API环境类型
- * 认证API：生产环境强制使用真实API，开发环境可通过参数切换
+ * 开发环境统一使用Mock API，生产环境可配置使用真实API
  * 其他API：继续使用Mock API
  */
 export const getApiEnvironment = (endpoint?: string): 'real' | 'mock' => {
@@ -86,36 +86,35 @@ export const getApiEnvironment = (endpoint?: string): 'real' | 'mock' => {
     if (forceReal === 'true') {
       return 'real';
     }
-    
-    // 生产环境检测
+
+    // 检查URL参数强制设置
     if (typeof window !== 'undefined') {
-      const isProduction = window.location.hostname !== 'localhost' && 
-                          window.location.hostname !== '127.0.0.1' &&
-                          !window.location.hostname.includes('vercel.app');
-      
-      // Vercel预览环境或生产环境
-      const isVercel = window.location.hostname.includes('vercel.app') || 
-                      window.location.hostname.includes('your-domain.com'); // 替换为您的实际域名
-      
-      if (isProduction || isVercel) {
-        // 生产环境强制使用真实API，除非明确指定mock=true
-        const params = new URLSearchParams(window.location.search);
-        return params.get('mock') === 'true' ? 'mock' : 'real';
-      } else {
-        // 开发环境默认使用Mock，除非明确指定mock=false
-        const params = new URLSearchParams(window.location.search);
-        return params.get('mock') === 'false' ? 'real' : 'mock';
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('api') === 'real') {
+        return 'real';
       }
     }
-    
+
+    // 开发环境统一使用Mock API
+    if (typeof window !== 'undefined') {
+      const isDevelopment = window.location.hostname === 'localhost' ||
+                          window.location.hostname === '127.0.0.1';
+
+      if (isDevelopment) {
+        return 'mock';
+      }
+    }
+
     // 服务端渲染时，检查环境变量
     const nodeEnv = process.env.NODE_ENV;
-    
-    if (nodeEnv === 'production') {
+
+    if (nodeEnv === 'development') {
+      return 'mock';
+    } else if (nodeEnv === 'production') {
       return 'real';
     }
   }
-  
+
   // 非认证API默认使用Mock
   return 'mock';
 };
@@ -125,12 +124,12 @@ export const getApiEnvironment = (endpoint?: string): 'real' | 'mock' => {
  */
 export const getApiBaseURL = (endpoint?: string): string => {
   const environment = getApiEnvironment(endpoint);
-  
+
   if (endpoint && isAuthAPI(endpoint)) {
     // 认证API根据环境返回对应URL
     return environment === 'real' ? REAL_API_CONFIG.baseURL : MOCK_API_CONFIG.baseURL;
   }
-  
+
   // 其他API使用Mock
   return MOCK_API_CONFIG.baseURL;
 };
@@ -148,10 +147,10 @@ export const getFullApiUrl = (endpoint: string): string => {
  */
 export const getApiConfig = (endpoint?: string) => {
   const environment = getApiEnvironment(endpoint);
-  
+
   if (endpoint && isAuthAPI(endpoint)) {
     return environment === 'real' ? REAL_API_CONFIG : MOCK_API_CONFIG;
   }
-  
+
   return MOCK_API_CONFIG;
-}; 
+};
