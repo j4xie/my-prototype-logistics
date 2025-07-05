@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
 import { Loading } from '@/components/ui/loading';
-import { AdminLayoutWrapper } from '@/components/admin';
+
 
 interface DashboardStats {
   userStats: {
@@ -72,27 +72,22 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <AdminLayoutWrapper requireDesktop={true} requiredLevel={5}>
-        <div className="flex justify-center items-center min-h-screen">
-          <Loading />
-        </div>
-      </AdminLayoutWrapper>
+      <div className="flex justify-center items-center min-h-screen">
+        <Loading />
+      </div>
     );
   }
 
   if (!stats) {
     return (
-      <AdminLayoutWrapper requireDesktop={true} requiredLevel={5}>
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="text-lg text-red-600">加载数据失败</div>
-        </div>
-      </AdminLayoutWrapper>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-lg text-red-600">加载数据失败</div>
+      </div>
     );
   }
 
   return (
-    <AdminLayoutWrapper requireDesktop={true} requiredLevel={5}>
-      <div className="flex flex-col min-h-screen max-w-[390px] mx-auto bg-gray-50">
+    <div className="flex flex-col min-h-screen max-w-[390px] mx-auto bg-gray-50">
       {/* 顶部导航 */}
       <header className="fixed top-0 left-0 right-0 z-[999] bg-[#1890FF] text-white shadow-sm">
         <div className="max-w-[390px] mx-auto flex items-center justify-between h-16 px-4">
@@ -215,6 +210,5 @@ export default function AdminDashboardPage() {
         </Card>
       </main>
     </div>
-    </AdminLayoutWrapper>
   );
 }
