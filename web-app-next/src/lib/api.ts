@@ -55,6 +55,7 @@ interface RequestOptions {
   timeout?: number;
   headers?: Record<string, string>;
   skipAuth?: boolean;
+  forceRealApi?: boolean; // 强制使用真实API
 }
 
 /**

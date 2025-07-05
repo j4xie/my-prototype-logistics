@@ -9,6 +9,7 @@ import {
   MobileNav,
   Loading
 } from '@/components/ui';
+import PageHeader from '@/components/ui/page-header';
 
 interface LogisticsStats {
   totalWarehouses: number;
@@ -113,13 +114,10 @@ export default function LogisticsPage() {
   }
 
   return (
-    <PageLayout
-      title="物流管理"
-      className="flex flex-col min-h-screen max-w-[390px] mx-auto bg-gray-50"
-    >
-      <MobileNav
-        title="物流管理"
-      />
+    <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
+      <PageHeader title="物流管理" />
+
+      <div className="max-w-[390px] mx-auto w-full">
 
       <main className="flex-1 pt-[80px] pb-[20px] px-4">
         {/* 统计概览 */}
@@ -264,6 +262,7 @@ export default function LogisticsPage() {
           </div>
         </Card>
       </main>
-    </PageLayout>
+      </div>
+    </div>
   );
 }

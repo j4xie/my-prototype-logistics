@@ -202,6 +202,7 @@ const mockLogin = async (credentials: LoginCredentials): Promise<AuthResponse> =
         id: 'user',
         name: '工厂用户',
         description: '工厂管理和操作权限',
+        level: 3, // 工厂用户权限级别
       },
       permissions: [
         { id: '1', name: '农业管理', resource: 'farming', action: 'manage' },

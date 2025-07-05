@@ -9,8 +9,9 @@ export interface MockUser {
   email: string
   name: string
   role: {
-    name: 'super_admin' | 'user'
+    name: 'super_admin' | 'user' | 'admin' | 'manager' | 'operator' | 'viewer'
     displayName: string
+    level?: number
   }
   department: string
   permissions: string[]
@@ -25,8 +26,9 @@ export interface MockJWTPayload {
   sub: string // user id
   username: string
   role: {
-    name: 'super_admin' | 'user'
+    name: 'super_admin' | 'user' | 'admin' | 'manager' | 'operator' | 'viewer'
     displayName: string
+    level?: number
   }
   permissions: string[]
   iat: number
