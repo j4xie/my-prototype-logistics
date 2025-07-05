@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/ui/loading';
+import { useAuthStore } from '@/store/authStore';
 
 interface UserInfo {
   id: string;
@@ -109,8 +110,7 @@ const managementModules: ModuleCard[] = [
 
 export default function HomeSelectorPage() {
   const router = useRouter();
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, user: authUser, logout } = useAuthStore();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
 
@@ -118,26 +118,13 @@ export default function HomeSelectorPage() {
     setMounted(true);
 
     // 检查登录状态
-    const token = localStorage.getItem('auth_token');
-    const userInfo = localStorage.getItem('user_info');
-
-    if (!token) {
+    if (!isAuthenticated) {
+      console.log('🔒 用户未认证，重定向到登录页');
       router.push('/login');
       return;
     }
 
-    if (userInfo) {
-      try {
-        const parsedUser = JSON.parse(userInfo);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Failed to parse user info:', error);
-        router.push('/login');
-        return;
-      }
-    }
-
-    setIsLoading(false);
+    console.log('✅ 用户已认证，显示模块选择器:', authUser?.displayName);
 
     // 更新时间
     const timer = setInterval(() => {
@@ -145,7 +132,7 @@ export default function HomeSelectorPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, [isAuthenticated, authUser, router]);
 
   const handleModuleClick = (module: ModuleCard) => {
     if (!module.enabled) {
@@ -168,8 +155,7 @@ export default function HomeSelectorPage() {
 
   const handleLogout = () => {
     if (confirm('确定要退出登录吗？')) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_info');
+      logout();
       router.push('/login');
     }
   };
@@ -186,7 +172,7 @@ export default function HomeSelectorPage() {
     });
   };
 
-  if (isLoading || !mounted) {
+  if (!mounted || !isAuthenticated) {
     return (
       <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
         <div className="max-w-[390px] mx-auto w-full min-h-screen flex items-center justify-center">
@@ -222,21 +208,19 @@ export default function HomeSelectorPage() {
         <div className="max-w-[390px] mx-auto px-4 space-y-4">
 
           {/* 用户信息卡片 */}
-          {user && (
+          {authUser && (
             <Card className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-all duration-300">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-[#1677FF] to-[#4096FF] rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-md">
-                  {user.name ? user.name.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
+                  {authUser.displayName ? authUser.displayName.charAt(0).toUpperCase() : authUser.username.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-[#262626] text-base">
-                    欢迎回来，{user.name || user.username}
+                    欢迎回来，{authUser.displayName || authUser.username}
                   </h3>
                   <p className="text-sm text-[#8c8c8c] flex items-center space-x-2">
                     <span>
-                      {user.role === 'admin' ? '系统管理员' :
-                       user.role === 'manager' ? '管理员' :
-                       user.role === 'operator' ? '操作员' : '普通用户'}
+                      {authUser.role?.name || '普通用户'}
                     </span>
                     <span className="text-xs">•</span>
                     <span className="text-xs">{formatTime(currentTime)}</span>

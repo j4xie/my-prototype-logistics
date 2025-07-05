@@ -190,54 +190,24 @@ const mockLogin = async (credentials: LoginCredentials): Promise<AuthResponse> =
     };
   }
 
-  // 模拟系统管理员登录
-  if (credentials.username === 'admin' && credentials.password === 'admin123') {
+  // 模拟工厂用户
+  if (credentials.username === 'user' && credentials.password === 'user123') {
     const user: User = {
       id: '1',
-      username: 'admin',
-      email: 'admin@example.com',
-      displayName: '系统管理员',
+      username: 'user',
+      email: 'user@heiniu.com',
+      displayName: '工厂用户',
       avatar: '',
       role: {
-        id: 'admin',
-        name: '系统管理员',
-        description: '具有系统所有权限',
-        level: 1,
+        id: 'user',
+        name: '工厂用户',
+        description: '工厂管理和操作权限',
       },
       permissions: [
         { id: '1', name: '农业管理', resource: 'farming', action: 'manage' },
         { id: '2', name: '加工管理', resource: 'processing', action: 'manage' },
         { id: '3', name: '物流管理', resource: 'logistics', action: 'manage' },
         { id: '4', name: '系统管理', resource: 'admin', action: 'manage' },
-        { id: '5', name: '溯源查询', resource: 'trace', action: 'read' },
-      ],
-      createdAt: '2025-01-01T00:00:00Z',
-      lastLoginAt: new Date().toISOString(),
-    };
-
-    return {
-      user,
-      token: 'mock-jwt-token-' + Date.now(),
-      refreshToken: 'mock-refresh-token-' + Date.now(),
-      expiresIn: 3600, // 1小时
-    };
-  }
-
-  // 模拟普通用户
-  if (credentials.username === 'user' && credentials.password === 'user123') {
-    const user: User = {
-      id: '2',
-      username: 'user',
-      email: 'user@example.com',
-      displayName: '普通用户',
-      avatar: '',
-      role: {
-        id: 'user',
-        name: '普通用户',
-        description: '基础查看权限',
-        level: 3,
-      },
-      permissions: [
         { id: '5', name: '溯源查询', resource: 'trace', action: 'read' },
       ],
       createdAt: '2025-01-01T00:00:00Z',

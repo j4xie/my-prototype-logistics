@@ -166,8 +166,9 @@ export default function FarmingIndicatorDetailPage() {
           </button>
           <h1 className="text-lg font-semibold">农业指标详情</h1>
           <button
-            onClick={() => router.push('/farming')}
+            onClick={() => router.push('/home/selector')}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+            title="返回主页"
           >
             <i className="fas fa-home"></i>
           </button>

@@ -9,6 +9,7 @@ import {
   MobileNav,
   Loading
 } from '@/components/ui';
+import PageHeader from '@/components/ui/page-header';
 
 interface FarmingStats {
   totalFields: number;
@@ -102,6 +103,52 @@ export default function FarmingPage() {
       href: '/farming/create-trace',
       icon: '🏷️',
       primary: true
+    }
+  ];
+
+  // 管理功能导航（仅管理员可见）
+  const adminNavigationItems = [
+    {
+      title: '管理仪表板',
+      description: '系统管理主控台',
+      href: '/admin/dashboard',
+      icon: '📊',
+      adminOnly: true
+    },
+    {
+      title: '用户管理',
+      description: '管理工厂用户账户',
+      href: '/admin/users',
+      icon: '👥',
+      adminOnly: true
+    },
+    {
+      title: '白名单管理',
+      description: '管理员工注册白名单',
+      href: '/admin/whitelist',
+      icon: '📱',
+      adminOnly: true
+    },
+    {
+      title: '角色权限',
+      description: '配置用户角色和权限',
+      href: '/admin/roles',
+      icon: '🔐',
+      adminOnly: true
+    },
+    {
+      title: '审计日志',
+      description: '查看系统操作记录',
+      href: '/admin/audit',
+      icon: '📋',
+      adminOnly: true
+    },
+    {
+      title: '系统设置',
+      description: '系统配置和参数管理',
+      href: '/admin/system',
+      icon: '⚙️',
+      adminOnly: true
     }
   ];
 
@@ -204,6 +251,54 @@ export default function FarmingPage() {
               </div>
             </Card>
           ))}
+        </div>
+
+        {/* 管理功能（工厂管理员） */}
+        <div className="space-y-3 mt-8">
+          <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center">
+            <span className="text-lg mr-2">🔧</span>
+            管理功能
+            <span className="text-xs text-gray-500 ml-2 bg-amber-100 px-2 py-1 rounded">仅管理员</span>
+          </h3>
+          <div className="grid grid-cols-1 gap-3">
+            {adminNavigationItems.map((item, index) => (
+              <Card
+                key={index}
+                className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 rounded-lg shadow-sm p-4 hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
+                onClick={() => window.location.href = item.href}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">{item.icon}</span>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{item.title}</h4>
+                      <p className="text-sm text-gray-600">{item.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-400">›</span>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* 更多管理功能入口 */}
+          <Card className="bg-gradient-to-r from-gray-50 to-blue-50 border-gray-200 rounded-lg shadow-sm p-4 hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]">
+            <div className="text-center">
+              <span className="text-2xl mb-2 block">⚡</span>
+              <h4 className="font-medium text-gray-900 mb-1">更多管理功能</h4>
+              <p className="text-sm text-gray-600 mb-3">访问完整的系统管理控制台</p>
+              <Button
+                variant="primary"
+                size="small"
+                onClick={() => window.location.href = '/admin/dashboard'}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                进入管理中心
+              </Button>
+            </div>
+          </Card>
         </div>
 
         {/* 待办事项提醒 */}
