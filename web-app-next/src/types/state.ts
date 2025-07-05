@@ -20,7 +20,6 @@ export interface UserRole {
   id: string;
   name: string;
   description: string;
-  level: number; // 权限级别: 1-管理员, 2-操作员, 3-查看者
 }
 
 export interface Permission {

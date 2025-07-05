@@ -191,30 +191,30 @@ class ApiClient {
     if (endpoint.startsWith('http')) {
       return endpoint;
     }
-    
+
     // 首先检查是否应该使用Mock API
     if (this.mockConfig.mockEnabled && this.mockHealthStatus?.available) {
       console.log(`[API Client] Using Mock API for: ${endpoint}`);
       // Mock环境下，直接使用相对路径让MSW拦截
       return `${this.config.baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
     }
-    
+
     // 动态路由选择逻辑（仅在非Mock环境下）
     try {
       // 检查是否为认证相关端点 - 修复识别逻辑
-      const isAuth = endpoint.includes('/users/') || 
+      const isAuth = endpoint.includes('/users/') ||
                     endpoint.includes('/auth/') ||
                     endpoint.includes('/api/auth/') ||  // 添加这个检查
                     endpoint.includes('/users') ||      // 处理无斜杠结尾的情况
                     endpoint.includes('/auth');         // 处理无斜杠结尾的情况
-      
+
       if (isAuth) {
         console.log(`[API Client] Using Real API for auth: ${endpoint}`);
         // 对于认证端点，使用智能路由选择
-        const isProduction = typeof window !== 'undefined' && 
-                            window.location.hostname !== 'localhost' && 
+        const isProduction = typeof window !== 'undefined' &&
+                            window.location.hostname !== 'localhost' &&
                             window.location.hostname !== '127.0.0.1';
-        
+
         if (isProduction) {
           // 生产环境使用代理
           return `/api/proxy/auth${endpoint}`;
@@ -226,7 +226,7 @@ class ApiClient {
     } catch (error) {
       console.warn('[API Client] Smart routing failed, using fallback:', error);
     }
-    
+
     // 默认使用原有逻辑
     return `${this.config.baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   }
@@ -353,7 +353,7 @@ class ApiClient {
     options: RequestOptions = {}
   ): Promise<T> {
     const url = this.buildUrl(endpoint);
-    
+
     // 构建表单专用头部
     const headers: Record<string, string> = {
       ...this.config.headers,

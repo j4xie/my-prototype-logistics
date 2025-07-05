@@ -9,8 +9,7 @@ export interface MockUser {
   email: string
   name: string
   role: {
-    name: 'super_admin' | 'admin' | 'manager' | 'operator' | 'viewer'
-    level: number // 0=超级管理员, 1=系统管理员, 2=经理, 3=操作员, 4=查看员
+    name: 'super_admin' | 'user'
     displayName: string
   }
   department: string
@@ -26,8 +25,7 @@ export interface MockJWTPayload {
   sub: string // user id
   username: string
   role: {
-    name: 'super_admin' | 'admin' | 'manager' | 'operator' | 'viewer'
-    level: number
+    name: 'super_admin' | 'user'
     displayName: string
   }
   permissions: string[]
@@ -37,7 +35,7 @@ export interface MockJWTPayload {
 }
 
 /**
- * Mock用户数据库
+ * Mock用户数据库 - 简化版本
  */
 export const mockUsers: Record<string, MockUser> = {
   'super_admin': {
@@ -47,7 +45,6 @@ export const mockUsers: Record<string, MockUser> = {
     name: '平台超级管理员',
     role: {
       name: 'super_admin',
-      level: 0,
       displayName: '平台超级管理员'
     },
     department: '平台运营部',
@@ -69,99 +66,28 @@ export const mockUsers: Record<string, MockUser> = {
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: new Date().toISOString()
   },
-  'admin': {
+  'user': {
     id: 'user_001',
-    username: 'admin',
-    email: 'admin@heiniu.com',
-    name: '系统管理员',
+    username: 'user',
+    email: 'user@heiniu.com',
+    name: '工厂用户',
     role: {
-      name: 'admin',
-      level: 1,
-      displayName: '系统管理员'
-    },
-    department: '信息技术部',
-    permissions: [
-      'users:read', 'users:write', 'users:delete',
-      'farming:read', 'farming:write', 'farming:delete',
-      'processing:read', 'processing:write', 'processing:delete',
-      'logistics:read', 'logistics:write', 'logistics:delete',
-      'admin:read', 'admin:write', 'admin:delete',
-      'trace:read', 'trace:write',
-      'system:config', 'system:backup', 'system:audit'
-    ],
-    avatar: '/avatars/admin.png',
-    status: 'active',
-    lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2小时前
-    createdAt: '2024-01-01T00:00:00.000Z',
-    updatedAt: new Date().toISOString()
-  },
-  'manager': {
-    id: 'user_002',
-    username: 'manager',
-    email: 'manager@heiniu.com',
-    name: '生产经理',
-    role: {
-      name: 'manager',
-      level: 2,
-      displayName: '生产经理'
+      name: 'user',
+      displayName: '工厂用户'
     },
     department: '生产部',
     permissions: [
-      'users:read',
       'farming:read', 'farming:write',
       'processing:read', 'processing:write',
       'logistics:read', 'logistics:write',
-      'trace:read', 'trace:write'
+      'trace:read', 'trace:write',
+      'admin:read', 'admin:write',
+      'profile:read', 'profile:write'
     ],
-    avatar: '/avatars/manager.png',
+    avatar: '/avatars/user.png',
     status: 'active',
     lastLogin: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30分钟前
     createdAt: '2024-01-15T00:00:00.000Z',
-    updatedAt: new Date().toISOString()
-  },
-  'operator': {
-    id: 'user_003',
-    username: 'operator',
-    email: 'operator@heiniu.com',
-    name: '操作员',
-    role: {
-      name: 'operator',
-      level: 3,
-      displayName: '操作员'
-    },
-    department: '生产车间',
-    permissions: [
-      'farming:read', 'farming:write',
-      'processing:read', 'processing:write',
-      'trace:read'
-    ],
-    avatar: '/avatars/operator.png',
-    status: 'active',
-    lastLogin: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10分钟前
-    createdAt: '2024-02-01T00:00:00.000Z',
-    updatedAt: new Date().toISOString()
-  },
-  'viewer': {
-    id: 'user_004',
-    username: 'viewer',
-    email: 'viewer@heiniu.com',
-    name: '查看员',
-    role: {
-      name: 'viewer',
-      level: 4,
-      displayName: '查看员'
-    },
-    department: '质检部',
-    permissions: [
-      'farming:read',
-      'processing:read',
-      'logistics:read',
-      'trace:read'
-    ],
-    avatar: '/avatars/viewer.png',
-    status: 'active',
-    lastLogin: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5分钟前
-    createdAt: '2024-02-15T00:00:00.000Z',
     updatedAt: new Date().toISOString()
   }
 }
@@ -176,10 +102,7 @@ export const validateCredentials = (username: string, password: string): MockUse
   // 简单密码验证 (开发环境)
   const validPasswords: Record<string, string> = {
     'super_admin': 'super123',
-    'admin': 'admin123',
-    'manager': 'manager123',
-    'operator': 'operator123',
-    'viewer': 'viewer123'
+    'user': 'user123'
   }
 
   if (validPasswords[username] === password && user.status === 'active') {
