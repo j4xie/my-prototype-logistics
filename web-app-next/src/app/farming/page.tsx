@@ -161,13 +161,11 @@ export default function FarmingPage() {
   }
 
   return (
-    <PageLayout
-      title="农业管理"
-      className="flex flex-col min-h-screen max-w-[390px] mx-auto bg-gray-50"
+    <div className="flex flex-col min-h-screen bg-[#f0f2f5]">
+      <PageHeader title="农业管理" />
+
+      <div className="max-w-[390px] mx-auto w-full"
     >
-            <MobileNav
-        title="农业管理"
-      />
 
       <main className="flex-1 pt-[80px] pb-[20px] px-4">
         {/* 统计概览 */}
@@ -324,6 +322,7 @@ export default function FarmingPage() {
           </Card>
         )}
       </main>
-    </PageLayout>
+      </div>
+    </div>
   );
 }
