@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 工厂表 - 多租户架构的核心
+model Factory {
+  id               String   @id @map("id") // 工厂ID (新格式: '144-GD-2025-001' 或老格式: 'FCT_2024_001')
+  name             String   @map("name") // 工厂名称
+  industry         String?  @map("industry") // 所属行业描述
+  address          String?  @map("address") @db.Text // 工厂地址
+  employeeCount    Int?     @map("employee_count") // 员工数量
+  subscriptionPlan String?  @map("subscription_plan") @db.VarChar(50) // 订阅套餐
+  contactName      String?  @map("contact_name") @db.VarChar(100) // 负责人姓名
+  contactPhone     String?  @map("contact_phone") @db.VarChar(50) // 联系电话
+  contactEmail     String?  @map("contact_email") // 联系邮箱
+  isActive         Boolean  @default(true) @map("is_active") // 工厂账户是否激活
+  
+  // 新增字段 - 科学化编码支持
+  industryCode     String?  @map("industry_code") @db.VarChar(3) // 行业代码 (如: 144)
+  regionCode       String?  @map("region_code") @db.VarChar(2) // 地区代码 (如: GD)
+  factoryYear      Int?     @map("factory_year") // 建厂年份 (如: 2025)
+  sequenceNumber   Int?     @map("sequence_number") // 同类型序号 (如: 1)
+  legacyId         String?  @map("legacy_id") @db.VarChar(50) // 老格式ID (如: FCT_2024_001)
+  
+  // 推断元数据
+  inferenceData    Json?    @map("inference_data") // 推断过程数据
+  confidence       Float?   @map("confidence") // 推断置信度
+  manuallyVerified Boolean  @default(false) @map("manually_verified") // 是否人工验证
+  
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  users        User[]
+  whitelist    UserWhitelist[]
+  sessions     Session[]
+
+  // 索引优化
+  @@index([industryCode, regionCode, factoryYear], name: "idx_factory_code")
+  @@index([legacyId], name: "idx_legacy_id")
+  @@index([industryCode], name: "idx_industry")
+  @@index([regionCode], name: "idx_region")
+  @@index([factoryYear], name: "idx_year")
+  @@map("factories")
+}
+
+// 平台管理员表 - 独立于工厂的平台级管理
+model PlatformAdmin {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(100)
+  passwordHash String   @map("password_hash")
+  email        String   @unique
+  phone        String?  @db.VarChar(50)
+  fullName     String?  @map("full_name") @db.VarChar(100)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_admins")
+}
+
+// 用户白名单表 - 支持白名单前置注册
+model UserWhitelist {
+  id          Int      @id @default(autoincrement())
+  factoryId   String   @map("factory_id") @db.VarChar(20)
+  phoneNumber String   @map("phone_number") @db.VarChar(50)
+  status      WhitelistStatus @default(PENDING) @map("status") // 状态: PENDING, REGISTERED, EXPIRED
+  addedByUserId Int?   @map("added_by_user_id") // 添加该白名单的管理员ID
+  expiresAt   DateTime? @map("expires_at") // 白名单过期时间
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  factory     Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  addedByUser User?   @relation(fields: [addedByUserId], references: [id])
+
+  @@unique([factoryId, phoneNumber]) // 确保同一工厂内手机号唯一
+  @@map("user_whitelist")
+}
+
+// 统一用户表 - 支持多租户的用户管理
+model User {
+  id           Int      @id @default(autoincrement())
+  factoryId    String   @map("factory_id") @db.VarChar(20) // 所属工厂
+  username     String   @db.VarChar(100)
+  passwordHash String   @map("password_hash")
+  email        String
+  phone        String?  @db.VarChar(50)
+  fullName     String?  @map("full_name") @db.VarChar(100)
+  isActive     Boolean  @default(false) @map("is_active") // 新用户默认未激活
+  roleLevel    Int      @default(99) @map("role_level") // 角色等级，99为未激活
+  roleCode     String   @default("unactivated") @map("role_code") @db.VarChar(50) // 角色代码
+  department   String?  @map("department") @db.VarChar(100) // 所属部门
+  position     String?  @map("position") @db.VarChar(100) // 职位
+  permissions  Json?    @map("permissions") // 权限列表，JSON数组
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  factory           Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  sessions          Session[]
+  addedWhitelist    UserWhitelist[] // 该用户添加的白名单记录
+
+  @@unique([factoryId, username]) // 同一工厂内用户名唯一
+  @@unique([factoryId, email])    // 同一工厂内邮箱唯一
+  @@map("users")
+}
+
+// 会话表 - 支持JWT令牌管理
+model Session {
+  id           String   @id @default(uuid())
+  userId       Int      @map("user_id")
+  factoryId    String   @map("factory_id") @db.VarChar(20) // 工厂ID，用于数据隔离
+  token        String   @db.Text
+  refreshToken String   @map("refresh_token") @db.Text
+  expiresAt    DateTime @map("expires_at")
+  isRevoked    Boolean  @default(false) @map("is_revoked") // 是否已撤销
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
+  // 唯一约束（使用前255个字符）
+  @@unique([token(length: 255)], name: "unique_token")
+  @@unique([refreshToken(length: 255)], name: "unique_refresh_token")
+  @@map("sessions")
+}
+
+// 临时验证令牌表 - 用于手机验证等临时操作
+model TempToken {
+  id          Int      @id @default(autoincrement())
+  token       String   @unique @db.VarChar(255)
+  type        TempTokenType @map("type") // 令牌类型
+  factoryId   String   @map("factory_id") @db.VarChar(20)
+  phoneNumber String?  @map("phone_number") @db.VarChar(50)
+  data        Json?    @map("data") // 附加数据
+  expiresAt   DateTime @map("expires_at")
+  isUsed      Boolean  @default(false) @map("is_used")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("temp_tokens")
+}
+
+// 枚举定义
+enum WhitelistStatus {
+  PENDING    // 待注册
+  REGISTERED // 已注册
+  EXPIRED    // 已过期
+
+  @@map("whitelist_status")
+}
+
+enum TempTokenType {
+  PHONE_VERIFICATION // 手机验证
+  PASSWORD_RESET     // 密码重置
+
+  @@map("temp_token_type")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
