@@ -1,102 +1,158 @@
+/**
+ * 用户管理路由
+ * 支持多层级权限控制
+ */
+
 import express from 'express';
 import { 
-  activateUser, 
-  getUsers, 
-  getPendingUsers, 
-  updateUser, 
-  toggleUserStatus, 
-  resetUserPassword, 
-  getUserStats 
-} from '../controllers/userController.js';
-import { 
   authenticateUser, 
-  requireAdmin, 
-  requireSuperAdmin 
+  authenticatePlatformAdmin 
 } from '../middleware/auth.js';
+import {
+  requireFactoryPermission,
+  requirePlatformPermission,
+  requireDataAccess,
+  requireDepartmentAccess,
+  auditPermission,
+  createPermissionChain
+} from '../middleware/permissions.js';
 import { validate } from '../middleware/validation.js';
-import { userSchemas } from '../middleware/validation.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
-// 所有用户管理接口都需要用户认证
-router.use(authenticateUser);
-
 /**
  * 获取用户列表
  * GET /api/users
- * 分页获取工厂的用户列表
+ * 根据角色返回不同范围的用户
  */
 router.get('/', 
-  requireAdmin,
-  validate(userSchemas.getUsers),
-  asyncHandler(getUsers)
+  ...createPermissionChain({
+    permission: 'view_user_reports',
+    userType: 'factory',
+    dataAccess: true,
+    dataType: 'users',
+    audit: true,
+    action: 'view_users'
+  }),
+  asyncHandler(async (req, res) => {
+    // 实现获取用户列表的逻辑
+    // req.dataFilter 包含了根据权限生成的数据过滤条件
+    res.json({ message: 'Get users with permission filtering' });
+  })
 );
 
 /**
- * 获取待激活用户列表
+ * 获取待审核用户
  * GET /api/users/pending
- * 获取所有未激活的用户
+ * 只有权限管理员和工厂超管可以访问
  */
-router.get('/pending', 
-  requireAdmin,
-  asyncHandler(getPendingUsers)
-);
-
-/**
- * 获取用户统计信息
- * GET /api/users/stats
- * 获取工厂用户的统计数据
- */
-router.get('/stats', 
-  requireAdmin,
-  asyncHandler(getUserStats)
+router.get('/pending',
+  authenticateUser,
+  requireFactoryPermission('activate_users'),
+  requireDataAccess('users'),
+  auditPermission('view_pending_users'),
+  asyncHandler(async (req, res) => {
+    res.json({ message: 'Get pending users' });
+  })
 );
 
 /**
  * 激活用户
- * POST /api/users/:userId/activate
- * 管理员激活用户并分配角色权限
+ * PUT /api/users/:id/activate
+ * 权限管理员和工厂超管功能
  */
-router.post('/:userId/activate', 
-  requireAdmin,
-  validate(userSchemas.activateUser),
-  asyncHandler(activateUser)
+router.put('/:id/activate',
+  authenticateUser,
+  requireFactoryPermission('activate_users'),
+  auditPermission('activate_user', 'user_management'),
+  asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    // 实现用户激活逻辑
+    res.json({ message: `Activate user ${userId}` });
+  })
 );
 
 /**
- * 更新用户信息
- * PUT /api/users/:userId
- * 管理员更新用户信息
+ * 分配角色
+ * PUT /api/users/:id/role
+ * 根据当前用户角色限制可分配的角色
  */
-router.put('/:userId', 
-  requireAdmin,
-  validate(userSchemas.updateUser),
-  asyncHandler(updateUser)
+router.put('/:id/role',
+  authenticateUser,
+  requireFactoryPermission('assign_roles'),
+  auditPermission('assign_role', 'user_management'),
+  asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const { roleCode, department } = req.body;
+    
+    // 这里需要实现角色分配的业务逻辑
+    // 包括检查是否有权限分配特定角色
+    
+    res.json({ 
+      message: `Assign role ${roleCode} to user ${userId}`,
+      department 
+    });
+  })
 );
 
 /**
- * 停用/启用用户
- * PUT /api/users/:userId/status
- * 管理员停用或启用用户
+ * 删除用户
+ * DELETE /api/users/:id
+ * 只有工厂超管可以删除用户
  */
-router.put('/:userId/status', 
-  requireAdmin,
-  validate(userSchemas.toggleUserStatus),
-  asyncHandler(toggleUserStatus)
+router.delete('/:id',
+  authenticateUser,
+  requireFactoryPermission('delete_users'),
+  auditPermission('delete_user', 'user_management'),
+  asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    res.json({ message: `Delete user ${userId}` });
+  })
 );
 
 /**
- * 重置用户密码
- * POST /api/users/:userId/reset-password
- * 管理员重置用户密码
+ * 获取部门用户
+ * GET /api/users/department/:department
+ * 部门管理员只能查看本部门用户
  */
-router.post('/:userId/reset-password', 
-  requireAdmin,
-  validate({
-    params: userSchemas.updateUser.params,
-  }),
-  asyncHandler(resetUserPassword)
+router.get('/department/:department',
+  authenticateUser,
+  requireFactoryPermission('view_department_data'),
+  requireDepartmentAccess(),
+  requireDataAccess('users'),
+  auditPermission('view_department_users'),
+  asyncHandler(async (req, res) => {
+    const department = req.params.department;
+    // req.dataFilter 会自动包含部门过滤条件
+    res.json({ 
+      message: `Get users from department ${department}`,
+      filter: req.dataFilter 
+    });
+  })
+);
+
+/**
+ * 用户统计信息
+ * GET /api/users/stats
+ * 根据权限返回不同级别的统计
+ */
+router.get('/stats',
+  authenticateUser,
+  requireFactoryPermission('view_user_reports'),
+  requireDataAccess('users'),
+  asyncHandler(async (req, res) => {
+    const { userPermissions, dataFilter } = req;
+    
+    // 根据权限返回不同级别的统计信息
+    const stats = {
+      scope: userPermissions.dataAccess,
+      filter: dataFilter,
+      // 实际统计数据...
+    };
+    
+    res.json(stats);
+  })
 );
 
 export default router;
