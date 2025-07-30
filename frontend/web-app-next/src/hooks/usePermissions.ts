@@ -1,249 +1,290 @@
 /**
  * 权限管理 Hook
- * 提供模块级权限验证和用户界面控制
+ * 统一的权限检查和管理逻辑
  */
 
 import { useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import {
-  UserPermissions,
-  ModuleAccessState,
-  ModulePermission,
-  PermissionChecker,
-  MODULE_PERMISSIONS,
-  FEATURE_PERMISSIONS,
-  USER_ROLES
-} from '@/types/permissions';
 
-/**
- * 模块访问权限 Hook
- */
-export function useModuleAccess() {
-  const { user, isAuthenticated } = useAuthStore();
+// 权限配置（与后端保持一致）
+const PLATFORM_PERMISSIONS = {
+  'platform_super_admin': [
+    'create_factory',
+    'delete_factory', 
+    'manage_all_factories',
+    'view_factory_details',
+    'factory_activation_control',
+    'platform_settings',
+    'system_monitoring',
+    'platform_backup',
+    'manage_platform_admins',
+    'view_platform_analytics',
+    'export_platform_data',
+    'cross_factory_reports',
+    'system_maintenance',
+    'global_notifications',
+    'audit_all_logs'
+  ],
+  'platform_operator': [
+    'view_factories',
+    'view_factory_status',
+    'view_platform_analytics',
+    'basic_support',
+    'view_support_tickets',
+    'factory_health_check'
+  ]
+};
 
-  const moduleAccess = useMemo<ModuleAccessState>(() => {
-    if (!isAuthenticated || !user?.permissions) {
-      return {
-        farming: false,
-        processing: false,
-        logistics: false,
-        admin: false,
-        platform: false
-      };
-    }
+const FACTORY_PERMISSIONS = {
+  'factory_super_admin': [
+    'manage_factory_users',
+    'create_users',
+    'delete_users',
+    'activate_users',
+    'assign_roles',
+    'factory_settings',
+    'manage_all_departments',
+    'factory_backup',
+    'factory_configuration',
+    'view_all_factory_data',
+    'export_factory_data',
+    'delete_factory_data',
+    'view_factory_reports',
+    'create_custom_reports',
+    'schedule_reports',
+    'manage_whitelist',
+    'audit_factory_logs',
+    'factory_notifications'
+  ],
+  'permission_admin': [
+    'activate_users',
+    'assign_roles',
+    'manage_permissions',
+    'audit_permissions',
+    'manage_whitelist',
+    'add_whitelist_users',
+    'remove_whitelist_users',
+    'whitelist_bulk_operations',
+    'review_user_applications',
+    'approve_user_registrations',
+    'reject_user_applications',
+    'view_user_reports',
+    'view_permission_reports',
+    'export_user_data',
+    'view_user_logs',
+    'permission_change_logs'
+  ],
+  'department_admin': [
+    'manage_department_users',
+    'activate_department_users',
+    'assign_department_roles',
+    'department_data_management',
+    'view_department_data',
+    'edit_department_data',
+    'export_department_data',
+    'view_department_reports',
+    'create_department_reports',
+    'department_settings',
+    'department_notifications'
+  ],
+  'operator': [
+    'data_entry',
+    'edit_own_records',
+    'basic_query',
+    'view_department_data',
+    'view_own_records',
+    'create_records',
+    'update_records',
+    'upload_files'
+  ],
+  'viewer': [
+    'read_authorized_data',
+    'view_assigned_records',
+    'basic_search',
+    'export_authorized_data'
+  ]
+};
 
-    return PermissionChecker.getModuleAccessState(user.permissions);
-  }, [isAuthenticated, user?.permissions]);
-
-  const hasModuleAccess = (module: ModulePermission): boolean => {
-    if (!isAuthenticated || !user?.permissions) return false;
-    return PermissionChecker.hasModuleAccess(user.permissions, module);
+interface User {
+  id: number;
+  username: string;
+  role?: {
+    name: string;
   };
-
-  return {
-    moduleAccess,
-    hasModuleAccess,
-    canAccessFarming: moduleAccess.farming,
-    canAccessProcessing: moduleAccess.processing,
-    canAccessLogistics: moduleAccess.logistics,
-    canAccessAdmin: moduleAccess.admin,
-    canAccessPlatform: moduleAccess.platform
-  };
+  roleCode?: string;
+  department?: string;
+  factoryId?: string;
+  type?: 'platform_admin' | 'factory_user';
 }
 
-/**
- * 功能权限 Hook
- */
-export function useFeatureAccess() {
-  const { user, isAuthenticated } = useAuthStore();
+interface PermissionResult {
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
+  canAccessDepartment: (department: string) => boolean;
+  canManageUser: (targetUser: User) => boolean;
+  getUserPermissions: () => string[];
+  getUserRole: () => string;
+  getUserType: () => 'platform_admin' | 'factory_user' | null;
+  isLoading: boolean;
+}
 
-  const hasFeaturePermission = (feature: string): boolean => {
-    if (!isAuthenticated || !user?.permissions) return false;
-    return PermissionChecker.hasFeaturePermission(user.permissions, feature);
-  };
+export function usePermissions(): PermissionResult {
+  const { user, loading } = useAuthStore();
 
   const permissions = useMemo(() => {
-    if (!isAuthenticated || !user?.permissions) {
-      return {
-        canManageAllUsers: false,
-        canManageOwnDeptUsers: false,
-        canManageAllWhitelist: false,
-        canManageOwnDeptWhitelist: false,
-        canViewAllStats: false,
-        canViewOwnDeptStats: false
-      };
+    if (!user) return [];
+
+    const userType = getUserType(user);
+    const userRole = getUserRole(user);
+
+    if (userType === 'platform_admin') {
+      return PLATFORM_PERMISSIONS[userRole as keyof typeof PLATFORM_PERMISSIONS] || [];
+    } else if (userType === 'factory_user') {
+      return FACTORY_PERMISSIONS[userRole as keyof typeof FACTORY_PERMISSIONS] || [];
     }
 
-    return {
-      canManageAllUsers: hasFeaturePermission(FEATURE_PERMISSIONS.USER_MANAGE_ALL),
-      canManageOwnDeptUsers: hasFeaturePermission(FEATURE_PERMISSIONS.USER_MANAGE_OWN_DEPT),
-      canManageAllWhitelist: hasFeaturePermission(FEATURE_PERMISSIONS.WHITELIST_MANAGE_ALL),
-      canManageOwnDeptWhitelist: hasFeaturePermission(FEATURE_PERMISSIONS.WHITELIST_MANAGE_OWN_DEPT),
-      canViewAllStats: hasFeaturePermission(FEATURE_PERMISSIONS.STATS_VIEW_ALL),
-      canViewOwnDeptStats: hasFeaturePermission(FEATURE_PERMISSIONS.STATS_VIEW_OWN_DEPT)
-    };
-  }, [isAuthenticated, user?.permissions]);
+    return [];
+  }, [user]);
 
-  return {
-    ...permissions,
-    hasFeaturePermission
-  };
-}
-
-/**
- * 用户角色 Hook
- */
-export function useUserRole() {
-  const { user, isAuthenticated } = useAuthStore();
-
-  const role = useMemo(() => {
-    if (!isAuthenticated || !user?.permissions) return null;
-    return user.permissions.role;
-  }, [isAuthenticated, user?.permissions]);
-
-  const roleLevel = useMemo(() => {
-    if (!isAuthenticated || !user?.permissions) return 999;
-    return user.permissions.roleLevel;
-  }, [isAuthenticated, user?.permissions]);
-
-  const department = useMemo(() => {
-    if (!isAuthenticated || !user?.permissions) return null;
-    return user.permissions.department;
-  }, [isAuthenticated, user?.permissions]);
-
-  const roleInfo = useMemo(() => {
-    if (!role) return null;
-
-    const roleDisplayNames = {
-      'PLATFORM_ADMIN': '平台管理员',
-      'SUPER_ADMIN': '工厂超级管理员',
-      'PERMISSION_ADMIN': '权限管理员',
-      'DEPARTMENT_ADMIN': '部门管理员',
-      'USER': '普通员工'
-    };
-
-    const departmentDisplayNames = {
-      'FARMING': '养殖部门',
-      'PROCESSING': '生产部门',
-      'LOGISTICS': '物流部门',
-      'QUALITY': '质检部门',
-      'MANAGEMENT': '管理部门',
-      'ADMIN': '系统管理'
-    };
-
-    return {
-      role,
-      roleLevel,
-      department,
-      roleDisplayName: roleDisplayNames[role] || '未知角色',
-      departmentDisplayName: department ? departmentDisplayNames[department] : null,
-      isPlatformAdmin: role === 'PLATFORM_ADMIN',
-      isSuperAdmin: role === 'SUPER_ADMIN',
-      isPermissionAdmin: role === 'PERMISSION_ADMIN',
-      isDepartmentAdmin: role === 'DEPARTMENT_ADMIN',
-      isRegularUser: role === 'USER'
-    };
-  }, [role, roleLevel, department]);
-
-  const hasRoleLevel = (requiredLevel: number): boolean => {
-    return roleLevel <= requiredLevel;
-  };
-
-  return {
-    role,
-    roleLevel,
-    department,
-    roleInfo,
-    hasRoleLevel,
-    isAuthenticated: isAuthenticated && !!user
-  };
-}
-
-/**
- * 综合权限 Hook
- */
-export function usePermissions() {
-  const moduleAccess = useModuleAccess();
-  const featureAccess = useFeatureAccess();
-  const userRole = useUserRole();
-
-  return {
-    ...moduleAccess,
-    ...featureAccess,
-    ...userRole
-  };
-}
-
-/**
- * 页面权限守卫 Hook
- */
-export function usePageGuard(requiredModule?: ModulePermission, requiredFeature?: string) {
-  const { hasModuleAccess, hasFeaturePermission, isAuthenticated } = usePermissions();
-
-  const canAccess = useMemo(() => {
-    if (!isAuthenticated) return false;
+  const getUserType = (user: User): 'platform_admin' | 'factory_user' | null => {
+    if (!user) return null;
     
-    // 检查模块权限
-    if (requiredModule && !hasModuleAccess(requiredModule)) {
-      return false;
+    // 检查是否为平台管理员
+    if (user.username === 'platform_admin' || 
+        user.role?.name === 'PLATFORM_ADMIN' ||
+        user.username === 'super_admin') {
+      return 'platform_admin';
     }
     
-    // 检查功能权限
-    if (requiredFeature && !hasFeaturePermission(requiredFeature)) {
-      return false;
-    }
-    
-    return true;
-  }, [isAuthenticated, requiredModule, requiredFeature, hasModuleAccess, hasFeaturePermission]);
-
-  return {
-    canAccess,
-    isAuthenticated,
-    needsLogin: !isAuthenticated,
-    needsPermission: isAuthenticated && !canAccess
+    // 其他都是工厂用户
+    return 'factory_user';
   };
-}
 
-/**
- * 模块状态计算 Hook
- */
-export function useModuleStates() {
-  const { moduleAccess } = useModuleAccess();
-
-  const moduleStates = useMemo(() => {
-    return {
-      farming: {
-        accessible: moduleAccess.farming,
-        className: moduleAccess.farming ? 'text-blue-600' : 'text-gray-400',
-        disabled: !moduleAccess.farming,
-        tooltip: moduleAccess.farming ? '' : '请联系管理员获取养殖模块权限'
-      },
-      processing: {
-        accessible: moduleAccess.processing,
-        className: moduleAccess.processing ? 'text-green-600' : 'text-gray-400',
-        disabled: !moduleAccess.processing,
-        tooltip: moduleAccess.processing ? '' : '请联系管理员获取生产模块权限'
-      },
-      logistics: {
-        accessible: moduleAccess.logistics,
-        className: moduleAccess.logistics ? 'text-purple-600' : 'text-gray-400',
-        disabled: !moduleAccess.logistics,
-        tooltip: moduleAccess.logistics ? '' : '请联系管理员获取物流模块权限'
-      },
-      admin: {
-        accessible: moduleAccess.admin,
-        className: moduleAccess.admin ? 'text-red-600' : 'text-gray-400',
-        disabled: !moduleAccess.admin,
-        tooltip: moduleAccess.admin ? '' : '请联系管理员获取管理模块权限'
-      },
-      platform: {
-        accessible: moduleAccess.platform,
-        className: moduleAccess.platform ? 'text-indigo-600' : 'text-gray-400',
-        disabled: !moduleAccess.platform,
-        tooltip: moduleAccess.platform ? '' : '仅限平台管理员访问'
+  const getUserRole = (user: User): string => {
+    if (!user) return '';
+    
+    const userType = getUserType(user);
+    
+    if (userType === 'platform_admin') {
+      if (user.username === 'platform_admin' || user.username === 'super_admin') {
+        return 'platform_super_admin';
       }
-    };
-  }, [moduleAccess]);
+      return 'platform_operator';
+    }
+    
+    // 工厂用户角色映射
+    return user.roleCode || user.role?.name || 'viewer';
+  };
 
-  return moduleStates;
+  const hasPermission = (permission: string): boolean => {
+    return permissions.includes(permission);
+  };
+
+  const hasAnyPermission = (requiredPermissions: string[]): boolean => {
+    return requiredPermissions.some(permission => hasPermission(permission));
+  };
+
+  const hasAllPermissions = (requiredPermissions: string[]): boolean => {
+    return requiredPermissions.every(permission => hasPermission(permission));
+  };
+
+  const canAccessDepartment = (department: string): boolean => {
+    if (!user) return false;
+
+    const userType = getUserType(user);
+    const userRole = getUserRole(user);
+
+    // 平台管理员可以访问所有部门
+    if (userType === 'platform_admin') {
+      return true;
+    }
+
+    // 工厂超级管理员可以访问所有部门
+    if (userRole === 'factory_super_admin') {
+      return true;
+    }
+
+    // 权限管理员可以访问所有部门（用于用户管理）
+    if (userRole === 'permission_admin') {
+      return true;
+    }
+
+    // 部门管理员、操作员、查看者只能访问自己的部门
+    return user.department === department;
+  };
+
+  const canManageUser = (targetUser: User): boolean => {
+    if (!user || !targetUser) return false;
+
+    const userType = getUserType(user);
+    const userRole = getUserRole(user);
+    const targetUserType = getUserType(targetUser);
+    const targetUserRole = getUserRole(targetUser);
+
+    // 平台管理员可以管理所有用户
+    if (userType === 'platform_admin' && userRole === 'platform_super_admin') {
+      return true;
+    }
+
+    // 不能跨工厂管理
+    if (user.factoryId !== targetUser.factoryId) {
+      return false;
+    }
+
+    // 工厂超级管理员可以管理工厂内所有用户
+    if (userRole === 'factory_super_admin') {
+      return true;
+    }
+
+    // 权限管理员可以管理非超级管理员用户
+    if (userRole === 'permission_admin') {
+      return targetUserRole !== 'factory_super_admin';
+    }
+
+    // 部门管理员可以管理本部门的操作员和查看者
+    if (userRole === 'department_admin') {
+      return user.department === targetUser.department && 
+             ['operator', 'viewer'].includes(targetUserRole);
+    }
+
+    return false;
+  };
+
+  return {
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    canAccessDepartment,
+    canManageUser,
+    getUserPermissions: () => permissions,
+    getUserRole: () => getUserRole(user),
+    getUserType: () => getUserType(user),
+    isLoading: loading
+  };
 }
+
+// 权限检查的快捷方法
+export function usePermissionCheck(permission: string) {
+  const { hasPermission, isLoading } = usePermissions();
+  return { hasPermission: hasPermission(permission), isLoading };
+}
+
+// 多权限检查的快捷方法
+export function useMultiPermissionCheck(permissions: string[], requireAll = false) {
+  const { hasAnyPermission, hasAllPermissions, isLoading } = usePermissions();
+  
+  const hasPermission = requireAll 
+    ? hasAllPermissions(permissions)
+    : hasAnyPermission(permissions);
+    
+  return { hasPermission, isLoading };
+}
+
+// 部门访问检查的快捷方法
+export function useDepartmentAccess(department: string) {
+  const { canAccessDepartment, isLoading } = usePermissions();
+  return { canAccess: canAccessDepartment(department), isLoading };
+}
+
+export default usePermissions;
