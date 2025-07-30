@@ -19,6 +19,164 @@ import {
 
 const prisma = new PrismaClient();
 
+// 角色代码映射到角色名称
+const mapRoleCodeToRoleName = (roleCode) => {
+  const roleMap = {
+    'developer': 'DEVELOPER',
+    'platform_admin': 'PLATFORM_ADMIN',
+    'super_admin': 'SUPER_ADMIN',
+    'permission_admin': 'PERMISSION_ADMIN',
+    'department_admin': 'DEPARTMENT_ADMIN',
+    'user': 'USER',
+    'unactivated': 'USER'
+  };
+  return roleMap[roleCode] || 'USER';
+};
+
+// 获取角色显示名称
+const getRoleDisplayName = (roleCode) => {
+  const displayNameMap = {
+    'developer': '系统开发者',
+    'platform_admin': '平台管理员',
+    'super_admin': '工厂超级管理员',
+    'permission_admin': '权限管理员',
+    'department_admin': '部门管理员',
+    'user': '普通用户',
+    'unactivated': '待激活用户'
+  };
+  return displayNameMap[roleCode] || '普通用户';
+};
+
+// 生成用户权限对象
+const generateUserPermissions = (user) => {
+  const roleCode = user.roleCode;
+  const department = user.department;
+  
+  // 开发者拥有所有权限
+  if (roleCode === 'developer') {
+    return {
+      modules: {
+        farming_access: true,
+        processing_access: true,
+        logistics_access: true,
+        trace_access: true,
+        admin_access: true,
+        platform_access: true,
+      },
+      features: [
+        'user_manage_all',
+        'whitelist_manage_all',
+        'stats_view_all',
+        'developer_debug_access',
+        'developer_system_config',
+        'developer_data_export',
+        'developer_cross_platform'
+      ],
+      role: 'DEVELOPER',
+      roleLevel: -1,
+      department: department
+    };
+  }
+  
+  // 平台管理员权限
+  if (roleCode === 'platform_admin') {
+    return {
+      modules: {
+        farming_access: false,
+        processing_access: false,
+        logistics_access: false,
+        trace_access: false,
+        admin_access: false,
+        platform_access: true,
+      },
+      features: ['platform_manage_all'],
+      role: 'PLATFORM_ADMIN',
+      roleLevel: 0,
+      department: null
+    };
+  }
+  
+  // 工厂超级管理员权限
+  if (roleCode === 'super_admin') {
+    return {
+      modules: {
+        farming_access: true,
+        processing_access: true,
+        logistics_access: true,
+        trace_access: true,
+        admin_access: true,
+        platform_access: false,
+      },
+      features: [
+        'user_manage_all',
+        'whitelist_manage_all',
+        'stats_view_all'
+      ],
+      role: 'SUPER_ADMIN',
+      roleLevel: 0,
+      department: department
+    };
+  }
+  
+  // 权限管理员权限
+  if (roleCode === 'permission_admin') {
+    return {
+      modules: {
+        farming_access: false,
+        processing_access: false,
+        logistics_access: false,
+        trace_access: true,
+        admin_access: true,
+        platform_access: false,
+      },
+      features: [
+        'user_manage_all',
+        'stats_view_all'
+      ],
+      role: 'PERMISSION_ADMIN',
+      roleLevel: 5,
+      department: department
+    };
+  }
+  
+  // 部门管理员权限
+  if (roleCode === 'department_admin') {
+    return {
+      modules: {
+        farming_access: department === 'farming',
+        processing_access: department === 'processing',
+        logistics_access: department === 'logistics',
+        trace_access: true,
+        admin_access: false,
+        platform_access: false,
+      },
+      features: [
+        'user_manage_own_dept',
+        'stats_view_own_dept'
+      ],
+      role: 'DEPARTMENT_ADMIN',
+      roleLevel: 10,
+      department: department
+    };
+  }
+  
+  // 普通用户权限
+  return {
+    modules: {
+      farming_access: department === 'farming',
+      processing_access: department === 'processing',
+      logistics_access: department === 'logistics',
+      trace_access: true,
+      admin_access: false,
+      platform_access: false,
+    },
+    features: [],
+    role: 'USER',
+    roleLevel: 50,
+    department: department
+  };
+};
+
 /**
  * 手机号验证接口
  * 验证手机号是否在白名单中且可以注册
@@ -232,17 +390,25 @@ export const login = async (req, res, next) => {
     // 生成认证令牌
     const tokens = await generateAuthTokens(user);
 
+    // 为开发者生成完整的权限数据
+    const userPermissions = generateUserPermissions(user);
+
     res.json(createSuccessResponse({
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
         fullName: user.fullName,
+        role: {
+          name: mapRoleCodeToRoleName(user.roleCode),
+          displayName: getRoleDisplayName(user.roleCode),
+          level: user.roleLevel
+        },
+        permissions: userPermissions,
         roleCode: user.roleCode,
         roleLevel: user.roleLevel,
         department: user.department,
         position: user.position,
-        permissions: user.permissions,
       },
       factory: {
         id: user.factory.id,

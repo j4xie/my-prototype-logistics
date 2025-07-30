@@ -1,276 +1,363 @@
 /**
  * 权限管理 Hook
  * 统一的权限检查和管理逻辑
+ * 使用新的权限结构，与 authStore 保持一致
  */
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { 
+  PermissionChecker, 
+  ModuleAccessState,
+  MODULE_PERMISSIONS,
+  FEATURE_PERMISSIONS,
+  USER_ROLES,
+  DEPARTMENTS,
+  type UserPermissions,
+  type ModulePermission,
+  type UserRole,
+  type Department
+} from '@/types/permissions';
+import type { User } from '@/types/state';
 
-// 权限配置（与后端保持一致）
-const PLATFORM_PERMISSIONS = {
-  'platform_super_admin': [
-    'create_factory',
-    'delete_factory', 
-    'manage_all_factories',
-    'view_factory_details',
-    'factory_activation_control',
-    'platform_settings',
-    'system_monitoring',
-    'platform_backup',
-    'manage_platform_admins',
-    'view_platform_analytics',
-    'export_platform_data',
-    'cross_factory_reports',
-    'system_maintenance',
-    'global_notifications',
-    'audit_all_logs'
-  ],
-  'platform_operator': [
-    'view_factories',
-    'view_factory_status',
-    'view_platform_analytics',
-    'basic_support',
-    'view_support_tickets',
-    'factory_health_check'
-  ]
-};
-
-const FACTORY_PERMISSIONS = {
-  'factory_super_admin': [
-    'manage_factory_users',
-    'create_users',
-    'delete_users',
-    'activate_users',
-    'assign_roles',
-    'factory_settings',
-    'manage_all_departments',
-    'factory_backup',
-    'factory_configuration',
-    'view_all_factory_data',
-    'export_factory_data',
-    'delete_factory_data',
-    'view_factory_reports',
-    'create_custom_reports',
-    'schedule_reports',
-    'manage_whitelist',
-    'audit_factory_logs',
-    'factory_notifications'
-  ],
-  'permission_admin': [
-    'activate_users',
-    'assign_roles',
-    'manage_permissions',
-    'audit_permissions',
-    'manage_whitelist',
-    'add_whitelist_users',
-    'remove_whitelist_users',
-    'whitelist_bulk_operations',
-    'review_user_applications',
-    'approve_user_registrations',
-    'reject_user_applications',
-    'view_user_reports',
-    'view_permission_reports',
-    'export_user_data',
-    'view_user_logs',
-    'permission_change_logs'
-  ],
-  'department_admin': [
-    'manage_department_users',
-    'activate_department_users',
-    'assign_department_roles',
-    'department_data_management',
-    'view_department_data',
-    'edit_department_data',
-    'export_department_data',
-    'view_department_reports',
-    'create_department_reports',
-    'department_settings',
-    'department_notifications'
-  ],
-  'operator': [
-    'data_entry',
-    'edit_own_records',
-    'basic_query',
-    'view_department_data',
-    'view_own_records',
-    'create_records',
-    'update_records',
-    'upload_files'
-  ],
-  'viewer': [
-    'read_authorized_data',
-    'view_assigned_records',
-    'basic_search',
-    'export_authorized_data'
-  ]
-};
-
-interface User {
-  id: number;
-  username: string;
-  role?: {
-    name: string;
-  };
-  roleCode?: string;
-  department?: string;
-  factoryId?: string;
-  type?: 'platform_admin' | 'factory_user';
+// 角色信息接口
+interface RoleInfo {
+  name: string;
+  isDeveloper: boolean;
+  isPlatformAdmin: boolean;
+  isSuperAdmin: boolean;
+  isPermissionAdmin: boolean;
+  isDepartmentAdmin: boolean;
+  level: number;
 }
 
+// Hook 返回值接口
 interface PermissionResult {
+  // 权限检查方法
   hasPermission: (permission: string) => boolean;
   hasAnyPermission: (permissions: string[]) => boolean;
   hasAllPermissions: (permissions: string[]) => boolean;
+  hasModuleAccess: (module: string) => boolean;
+  hasFeaturePermission: (feature: string) => boolean;
+  
+  // 业务权限检查
   canAccessDepartment: (department: string) => boolean;
   canManageUser: (targetUser: User) => boolean;
-  getUserPermissions: () => string[];
-  getUserRole: () => string;
+  hasRoleLevel: (requiredLevel: number) => boolean;
+  
+  // 用户信息获取
+  getUserPermissions: () => UserPermissions | null;
+  getUserRole: () => UserRole | null;
   getUserType: () => 'platform_admin' | 'factory_user' | null;
+  getModuleAccessState: () => ModuleAccessState;
+  
+  // 兼容性方法（向后兼容）
+  isAuthenticated: boolean;
+  roleLevel: number;
+  canAccessFarming: boolean;
+  canAccessProcessing: boolean;
+  canAccessLogistics: boolean;
+  canAccessTrace: boolean;
+  canAccessAdmin: boolean;
+  canAccessPlatform: boolean;
+  
+  // 状态信息
+  roleInfo: RoleInfo | null;
   isLoading: boolean;
 }
 
+/**
+ * 判断用户类型
+ */
+const getUserType = (user: User | null): 'platform_admin' | 'factory_user' | null => {
+  if (!user?.permissions) return null;
+  
+  // 检查是否为平台管理员
+  if (user.permissions.role === 'PLATFORM_ADMIN') {
+    return 'platform_admin';
+  }
+  
+  // 其他都是工厂用户
+  return 'factory_user';
+};
+
+/**
+ * 获取用户角色
+ */
+const getUserRole = (user: User | null): UserRole | null => {
+  if (!user?.permissions) return null;
+  return user.permissions.role;
+};
+
+/**
+ * 检查用户是否可以管理目标用户
+ */
+const canManageUser = (user: User | null, targetUser: User): boolean => {
+  if (!user?.permissions || !targetUser?.permissions) return false;
+
+  const userRole = user.permissions.role;
+  const userLevel = user.permissions.roleLevel;
+  const targetLevel = targetUser.permissions.roleLevel;
+
+  // 开发者拥有最高权限，可以管理所有用户
+  if (userRole === 'DEVELOPER') {
+    return true;
+  }
+
+  // 平台管理员可以管理所有用户（除了开发者）
+  if (userRole === 'PLATFORM_ADMIN') {
+    return targetUser.permissions.role !== 'DEVELOPER';
+  }
+
+  // 工厂超级管理员可以管理工厂内所有用户（除了平台管理员和开发者）
+  if (userRole === 'SUPER_ADMIN') {
+    return targetUser.permissions.role !== 'PLATFORM_ADMIN' && 
+           targetUser.permissions.role !== 'DEVELOPER';
+  }
+
+  // 权限管理员可以管理非超级管理员用户（除了开发者）
+  if (userRole === 'PERMISSION_ADMIN') {
+    return !['PLATFORM_ADMIN', 'SUPER_ADMIN', 'DEVELOPER'].includes(targetUser.permissions.role);
+  }
+
+  // 部门管理员可以管理本部门的普通用户
+  if (userRole === 'DEPARTMENT_ADMIN') {
+    return (
+      targetUser.permissions.role === 'USER' &&
+      user.permissions.department === targetUser.permissions.department
+    );
+  }
+
+  // 普通用户不能管理其他用户
+  return false;
+};
+
+/**
+ * 检查部门访问权限
+ */
+const canAccessDepartment = (user: User | null, department: string): boolean => {
+  if (!user?.permissions) return false;
+
+  const userRole = user.permissions.role;
+  const userDepartment = user.permissions.department;
+
+  // 开发者、平台管理员和工厂超级管理员可以访问所有部门
+  if (['DEVELOPER', 'PLATFORM_ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
+    return true;
+  }
+
+  // 权限管理员可以访问所有部门（用于用户管理）
+  if (userRole === 'PERMISSION_ADMIN') {
+    return true;
+  }
+
+  // 部门管理员和普通用户只能访问自己的部门
+  if (userDepartment) {
+    return userDepartment.toLowerCase() === department.toLowerCase();
+  }
+
+  // 如果没有部门信息，默认允许访问（向后兼容）
+  return true;
+};
+
+/**
+ * 检查用户是否为开发者
+ */
+const isDeveloper = (user: User | null): boolean => {
+  return user?.permissions?.role === 'DEVELOPER';
+};
+
+/**
+ * 权限管理 Hook
+ */
 export function usePermissions(): PermissionResult {
   const { user, loading } = useAuthStore();
 
-  const permissions = useMemo(() => {
-    if (!user) return [];
+  // 缓存用户权限对象
+  const userPermissions = useMemo(() => {
+    return user?.permissions || null;
+  }, [user?.permissions]);
 
-    const userType = getUserType(user);
-    const userRole = getUserRole(user);
+  // 基础权限检查方法
+  const hasPermission = useCallback((permission: string): boolean => {
+    if (!userPermissions) return false;
 
-    if (userType === 'platform_admin') {
-      return PLATFORM_PERMISSIONS[userRole as keyof typeof PLATFORM_PERMISSIONS] || [];
-    } else if (userType === 'factory_user') {
-      return FACTORY_PERMISSIONS[userRole as keyof typeof FACTORY_PERMISSIONS] || [];
+    // 开发者绕过所有权限检查
+    if (isDeveloper(user)) return true;
+
+    // 检查模块权限
+    const moduleKey = permission as keyof typeof MODULE_PERMISSIONS;
+    if (MODULE_PERMISSIONS[moduleKey]) {
+      return PermissionChecker.hasModuleAccess(userPermissions, moduleKey);
     }
 
-    return [];
+    // 检查功能权限
+    return PermissionChecker.hasFeaturePermission(userPermissions, permission);
+  }, [userPermissions, user]);
+
+  const hasAnyPermission = useCallback((permissions: string[]): boolean => {
+    return permissions.some(permission => hasPermission(permission));
+  }, [hasPermission]);
+
+  const hasAllPermissions = useCallback((permissions: string[]): boolean => {
+    return permissions.every(permission => hasPermission(permission));
+  }, [hasPermission]);
+
+  const hasModuleAccess = useCallback((module: string): boolean => {
+    if (!userPermissions) return false;
+    
+    // 开发者绕过所有权限检查
+    if (isDeveloper(user)) return true;
+    
+    const moduleKey = module.toUpperCase() + '_ACCESS' as keyof typeof MODULE_PERMISSIONS;
+    if (MODULE_PERMISSIONS[moduleKey]) {
+      return PermissionChecker.hasModuleAccess(userPermissions, moduleKey);
+    }
+    
+    return false;
+  }, [userPermissions, user]);
+
+  const hasFeaturePermission = useCallback((feature: string): boolean => {
+    if (!userPermissions) return false;
+    
+    // 开发者绕过所有权限检查
+    if (isDeveloper(user)) return true;
+    
+    return PermissionChecker.hasFeaturePermission(userPermissions, feature);
+  }, [userPermissions, user]);
+
+  const hasRoleLevel = useCallback((requiredLevel: number): boolean => {
+    if (!userPermissions) return false;
+    
+    // 开发者拥有最高权限级别（-1），总是满足要求
+    if (isDeveloper(user)) return true;
+    
+    return PermissionChecker.hasRoleLevel(userPermissions, requiredLevel);
+  }, [userPermissions, user]);
+
+  // 业务权限检查方法
+  const canAccessDepartmentCallback = useCallback((department: string): boolean => {
+    return canAccessDepartment(user, department);
   }, [user]);
 
-  const getUserType = (user: User): 'platform_admin' | 'factory_user' | null => {
-    if (!user) return null;
-    
-    // 检查是否为平台管理员
-    if (user.username === 'platform_admin' || 
-        user.role?.name === 'PLATFORM_ADMIN' ||
-        user.username === 'super_admin') {
-      return 'platform_admin';
+  const canManageUserCallback = useCallback((targetUser: User): boolean => {
+    return canManageUser(user, targetUser);
+  }, [user]);
+
+  // 信息获取方法
+  const getUserPermissionsCallback = useCallback((): UserPermissions | null => {
+    return userPermissions;
+  }, [userPermissions]);
+
+  const getUserRoleCallback = useCallback((): UserRole | null => {
+    return getUserRole(user);
+  }, [user]);
+
+  const getUserTypeCallback = useCallback((): 'platform_admin' | 'factory_user' | null => {
+    return getUserType(user);
+  }, [user]);
+
+  const getModuleAccessState = useCallback((): ModuleAccessState => {
+    if (!userPermissions) {
+      return {
+        farming: false,
+        processing: false,
+        logistics: false,
+        admin: false,
+        platform: false
+      };
     }
     
-    // 其他都是工厂用户
-    return 'factory_user';
-  };
+    return PermissionChecker.getModuleAccessState(userPermissions);
+  }, [userPermissions]);
 
-  const getUserRole = (user: User): string => {
-    if (!user) return '';
-    
-    const userType = getUserType(user);
-    
-    if (userType === 'platform_admin') {
-      if (user.username === 'platform_admin' || user.username === 'super_admin') {
-        return 'platform_super_admin';
-      }
-      return 'platform_operator';
+  // 计算角色信息
+  const roleInfo = useMemo((): RoleInfo | null => {
+    if (!user?.permissions) return null;
+
+    const role = user.permissions.role;
+    const level = user.permissions.roleLevel;
+
+    // 角色显示名称映射
+    const roleDisplayNames: Record<UserRole, string> = {
+      'DEVELOPER': '系统开发者',
+      'PLATFORM_ADMIN': '平台管理员',
+      'SUPER_ADMIN': '工厂超级管理员', 
+      'PERMISSION_ADMIN': '权限管理员',
+      'DEPARTMENT_ADMIN': '部门管理员',
+      'USER': '普通员工'
+    };
+
+    return {
+      name: roleDisplayNames[role] || '未知角色',
+      isDeveloper: role === 'DEVELOPER',
+      isPlatformAdmin: role === 'PLATFORM_ADMIN',
+      isSuperAdmin: role === 'SUPER_ADMIN',
+      isPermissionAdmin: role === 'PERMISSION_ADMIN',
+      isDepartmentAdmin: role === 'DEPARTMENT_ADMIN',
+      level
+    };
+  }, [user?.permissions]);
+
+  // 兼容性属性计算
+  const moduleAccess = useMemo(() => {
+    if (!userPermissions) {
+      return {
+        canAccessFarming: false,
+        canAccessProcessing: false,
+        canAccessLogistics: false,
+        canAccessTrace: false,
+        canAccessAdmin: false,
+        canAccessPlatform: false
+      };
     }
     
-    // 工厂用户角色映射
-    return user.roleCode || user.role?.name || 'viewer';
-  };
-
-  const hasPermission = (permission: string): boolean => {
-    return permissions.includes(permission);
-  };
-
-  const hasAnyPermission = (requiredPermissions: string[]): boolean => {
-    return requiredPermissions.some(permission => hasPermission(permission));
-  };
-
-  const hasAllPermissions = (requiredPermissions: string[]): boolean => {
-    return requiredPermissions.every(permission => hasPermission(permission));
-  };
-
-  const canAccessDepartment = (department: string): boolean => {
-    if (!user) return false;
-
-    const userType = getUserType(user);
-    const userRole = getUserRole(user);
-
-    // 平台管理员可以访问所有部门
-    if (userType === 'platform_admin') {
-      return true;
-    }
-
-    // 工厂超级管理员可以访问所有部门
-    if (userRole === 'factory_super_admin') {
-      return true;
-    }
-
-    // 权限管理员可以访问所有部门（用于用户管理）
-    if (userRole === 'permission_admin') {
-      return true;
-    }
-
-    // 部门管理员、操作员、查看者只能访问自己的部门
-    return user.department === department;
-  };
-
-  const canManageUser = (targetUser: User): boolean => {
-    if (!user || !targetUser) return false;
-
-    const userType = getUserType(user);
-    const userRole = getUserRole(user);
-    const targetUserType = getUserType(targetUser);
-    const targetUserRole = getUserRole(targetUser);
-
-    // 平台管理员可以管理所有用户
-    if (userType === 'platform_admin' && userRole === 'platform_super_admin') {
-      return true;
-    }
-
-    // 不能跨工厂管理
-    if (user.factoryId !== targetUser.factoryId) {
-      return false;
-    }
-
-    // 工厂超级管理员可以管理工厂内所有用户
-    if (userRole === 'factory_super_admin') {
-      return true;
-    }
-
-    // 权限管理员可以管理非超级管理员用户
-    if (userRole === 'permission_admin') {
-      return targetUserRole !== 'factory_super_admin';
-    }
-
-    // 部门管理员可以管理本部门的操作员和查看者
-    if (userRole === 'department_admin') {
-      return user.department === targetUser.department && 
-             ['operator', 'viewer'].includes(targetUserRole);
-    }
-
-    return false;
-  };
+    const moduleState = PermissionChecker.getModuleAccessState(userPermissions);
+    return {
+      canAccessFarming: moduleState.farming,
+      canAccessProcessing: moduleState.processing,
+      canAccessLogistics: moduleState.logistics,
+      canAccessTrace: moduleState.trace,
+      canAccessAdmin: moduleState.admin,
+      canAccessPlatform: moduleState.platform
+    };
+  }, [userPermissions]);
 
   return {
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
-    canAccessDepartment,
-    canManageUser,
-    getUserPermissions: () => permissions,
-    getUserRole: () => getUserRole(user),
-    getUserType: () => getUserType(user),
+    hasModuleAccess,
+    hasFeaturePermission,
+    hasRoleLevel,
+    canAccessDepartment: canAccessDepartmentCallback,
+    canManageUser: canManageUserCallback,
+    getUserPermissions: getUserPermissionsCallback,
+    getUserRole: getUserRoleCallback,
+    getUserType: getUserTypeCallback,
+    getModuleAccessState,
+    
+    // 兼容性属性
+    isAuthenticated: !!user,
+    roleLevel: userPermissions?.roleLevel || 999,
+    ...moduleAccess,
+    
+    roleInfo,
     isLoading: loading
   };
 }
 
-// 权限检查的快捷方法
+/**
+ * 权限检查的快捷方法
+ */
 export function usePermissionCheck(permission: string) {
   const { hasPermission, isLoading } = usePermissions();
   return { hasPermission: hasPermission(permission), isLoading };
 }
 
-// 多权限检查的快捷方法
+/**
+ * 多权限检查的快捷方法
+ */
 export function useMultiPermissionCheck(permissions: string[], requireAll = false) {
   const { hasAnyPermission, hasAllPermissions, isLoading } = usePermissions();
   
@@ -281,10 +368,104 @@ export function useMultiPermissionCheck(permissions: string[], requireAll = fals
   return { hasPermission, isLoading };
 }
 
-// 部门访问检查的快捷方法
+/**
+ * 部门访问检查的快捷方法
+ */
 export function useDepartmentAccess(department: string) {
   const { canAccessDepartment, isLoading } = usePermissions();
   return { canAccess: canAccessDepartment(department), isLoading };
+}
+
+/**
+ * 模块访问检查的快捷方法
+ */
+export function useModuleAccess(module: string) {
+  const { hasModuleAccess, isLoading } = usePermissions();
+  return { hasAccess: hasModuleAccess(module), isLoading };
+}
+
+/**
+ * 功能权限检查的快捷方法
+ */
+export function useFeaturePermission(feature: string) {
+  const { hasFeaturePermission, isLoading } = usePermissions();
+  return { hasPermission: hasFeaturePermission(feature), isLoading };
+}
+
+/**
+ * 模块状态管理 Hook
+ */
+export function useModuleStates() {
+  const { getModuleAccessState, getUserRole, getUserType } = usePermissions();
+  
+  const moduleStates = useMemo(() => {
+    const accessState = getModuleAccessState();
+    const userType = getUserType();
+    const userRole = getUserRole();
+    
+    // 生成模块状态信息
+    const getModuleState = (module: keyof ModuleAccessState) => {
+      const accessible = accessState[module];
+      
+      // 模块配置
+      const moduleConfig = {
+        farming: {
+          name: '农业生产管理',
+          color: 'text-green-600',
+          needPermission: '需要养殖部门权限'
+        },
+        processing: {
+          name: '加工生产管理', 
+          color: 'text-blue-600',
+          needPermission: '需要生产部门权限'
+        },
+        logistics: {
+          name: '物流配送管理',
+          color: 'text-orange-600', 
+          needPermission: '需要物流部门权限'
+        },
+        trace: {
+          name: '产品溯源查询',
+          color: 'text-purple-600',
+          needPermission: '所有用户都可访问'
+        },
+        admin: {
+          name: '系统管理',
+          color: 'text-red-600',
+          needPermission: '需要管理员权限'
+        },
+        platform: {
+          name: '平台管理',
+          color: 'text-indigo-600',
+          needPermission: '仅限平台管理员'
+        }
+      };
+      
+      const config = moduleConfig[module];
+      
+      return {
+        accessible,
+        tooltip: accessible ? config.name : config.needPermission,
+        className: accessible ? config.color : 'text-gray-400'
+      };
+    };
+    
+    return {
+      farming: getModuleState('farming'),
+      processing: getModuleState('processing'),
+      logistics: getModuleState('logistics'),
+      trace: getModuleState('trace'),
+      admin: getModuleState('admin'),
+      platform: getModuleState('platform'),
+      profile: {
+        accessible: true,
+        tooltip: '个人资料管理',
+        className: 'text-teal-600'
+      }
+    };
+  }, [getModuleAccessState, getUserRole, getUserType]);
+  
+  return moduleStates;
 }
 
 export default usePermissions;

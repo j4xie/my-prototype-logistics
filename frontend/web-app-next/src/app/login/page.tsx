@@ -67,10 +67,14 @@ export default function LoginPage() {
                   // 登录成功后根据用户角色跳转
       const { user } = useAuthStore.getState();
 
+      // 检查是否为开发者
+      if (user?.role?.name === 'DEVELOPER' || user?.permissions?.role === 'DEVELOPER') {
+        console.log('✅ 开发者登录成功，跳转到模块选择器（默认页面）');
+        router.push('/home/selector');
+      }
       // 检查是否为平台管理员
-      if (user?.username === 'platform_admin' ||
-          user?.role?.name === 'PLATFORM_ADMIN' ||
-          user?.username === 'super_admin') {
+      else if (user?.username === 'platform_admin' ||
+               user?.role?.name === 'PLATFORM_ADMIN') {
         console.log('✅ 平台管理员登录成功，跳转到平台管理页面');
         router.push('/platform');
       } else {
@@ -145,6 +149,61 @@ export default function LoginPage() {
               </p>
 
               <div className="mt-3 space-y-3">
+                {/* 开发者账号 */}
+                <div className="p-3 bg-yellow-100 rounded-lg border border-yellow-200">
+                  <p className="font-medium text-yellow-800 mb-2 flex items-center">
+                    🛠️ 系统开发者
+                  </p>
+                  <div className="text-xs text-yellow-700 mb-2">拥有所有权限，可在平台管理和工厂管理间切换</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-yellow-600 text-xs">用户名：</span>
+                        <code className="font-mono text-sm text-yellow-800">developer</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('developer', 'developer_username')}
+                          className="p-1 text-yellow-600 hover:text-yellow-800 transition-colors"
+                        >
+                          {copiedField === 'developer_username' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-yellow-600 text-xs">密码：</span>
+                        <code className="font-mono text-sm text-yellow-800">Developer@123</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('Developer@123', 'developer_password')}
+                          className="p-1 text-yellow-600 hover:text-yellow-800 transition-colors"
+                        >
+                          {copiedField === 'developer_password' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => quickFill('developer', 'Developer@123')}
+                      className="w-full text-xs text-yellow-600 hover:text-yellow-800 py-1 hover:bg-yellow-50 rounded transition-colors"
+                    >
+                      快速填充
+                    </button>
+                  </div>
+                </div>
+
                 {/* 平台管理员 */}
                 <div className="p-3 bg-purple-100 rounded-lg border border-purple-200">
                   <p className="font-medium text-purple-800 mb-2 flex items-center">

@@ -6,6 +6,7 @@ import { Providers } from './providers';
 // import { MSWProvider } from './msw-provider'; // Disabled per user request
 import { PermissionProvider } from '@/components/permissions';
 import PreviewModeIndicator from '@/components/ui/PreviewModeIndicator';
+import DeveloperNavigation from '@/components/developer/DeveloperNavigation';
 // import AiGlobalMonitor from '@/components/ai-global-monitor';
 // // import { Inter } from 'next/font/google';
 
@@ -38,7 +39,10 @@ export default function RootLayout({
       <body className="font-sans antialiased" suppressHydrationWarning={true}>
         <Providers>
           <PermissionProvider>
-            {children}
+            <DeveloperNavigation />
+            <main className="developer-layout">
+              {children}
+            </main>
             <PreviewModeIndicator />
           </PermissionProvider>
         </Providers>

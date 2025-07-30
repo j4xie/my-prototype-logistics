@@ -12,7 +12,7 @@ import { Shield, Lock, ArrowLeft, Home } from 'lucide-react';
 
 interface RouteGuardProps {
   children: React.ReactNode;
-  requiredModule?: 'farming' | 'processing' | 'logistics' | 'admin' | 'platform';
+  requiredModule?: 'farming' | 'processing' | 'logistics' | 'trace' | 'admin' | 'platform';
   requiredLevel?: number;
   fallbackRoute?: string;
   showFallback?: boolean;
@@ -111,6 +111,7 @@ export default function RouteGuard({
       farming: '农业管理',
       processing: '生产加工',
       logistics: '物流配送',
+      trace: '产品溯源',
       admin: '系统管理',
       platform: '平台管理'
     };

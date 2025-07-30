@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  usePermissions, 
-  usePermissionCheck, 
-  useMultiPermissionCheck, 
-  useDepartmentAccess 
+import {
+  usePermissions,
+  usePermissionCheck,
+  useMultiPermissionCheck,
+  useDepartmentAccess
 } from '@/hooks';
 import {
   PermissionGuard,
@@ -24,16 +24,16 @@ import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/u
  */
 export default function PermissionsTestPage() {
   const [testResults, setTestResults] = useState<Record<string, boolean>>({});
-  
+
   // 测试所有权限Hook
   const permissions = usePermissions();
-  const hasCreateFactory = usePermissionCheck('create_factory');
+  const hasCreateFactory = usePermissionCheck('PLATFORM_ACCESS');
   const hasMultiplePermissions = useMultiPermissionCheck([
-    'view_factories', 
-    'manage_departments', 
-    'view_user_reports'
+    'ADMIN_ACCESS',
+    'FARMING_ACCESS',
+    'user_manage_all'
   ]);
-  const departmentAccess = useDepartmentAccess();
+  const departmentAccess = useDepartmentAccess('default'); // 使用默认部门进行测试
 
   // 记录测试结果
   const recordTest = (testName: string, result: boolean) => {
@@ -66,19 +66,40 @@ export default function PermissionsTestPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h4 className="font-semibold mb-2">用户权限列表:</h4>
-              <ul className="text-sm text-gray-700">
-                {permissions.permissions.map((perm, idx) => (
-                  <li key={idx} className="p-1 bg-blue-50 rounded mb-1">{perm}</li>
-                ))}
-              </ul>
+              <div className="text-sm text-gray-700">
+                {permissions.getUserPermissions() ? (
+                  <div className="space-y-2">
+                    <div>
+                      <span className="font-semibold">模块权限:</span>
+                      <ul className="mt-1">
+                        {Object.entries(permissions.getUserPermissions()?.modules || {}).map(([module, hasAccess]) => (
+                          <li key={module} className={`p-1 rounded mb-1 ${hasAccess ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                            {module}: {hasAccess ? '有权限' : '无权限'}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <span className="font-semibold">功能权限:</span>
+                      <ul className="mt-1">
+                        {(permissions.getUserPermissions()?.features || []).map((feature, idx) => (
+                          <li key={idx} className="p-1 bg-blue-50 rounded mb-1">{feature}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-gray-500">无权限信息</div>
+                )}
+              </div>
             </div>
             <div>
               <h4 className="font-semibold mb-2">权限状态:</h4>
               <div className="space-y-1 text-sm">
-                <div>用户类型: <span className="font-mono">{permissions.userType}</span></div>
-                <div>角色: <span className="font-mono">{permissions.role}</span></div>
-                <div>部门访问: <span className="font-mono">{departmentAccess.hasAccess ? '有权限' : '无权限'}</span></div>
-                <div>可访问部门: <span className="font-mono">{departmentAccess.departments.join(', ')}</span></div>
+                <div>用户类型: <span className="font-mono">{permissions.getUserType() || '未知'}</span></div>
+                <div>角色: <span className="font-mono">{permissions.getUserRole() || '未知'}</span></div>
+                <div>部门访问: <span className="font-mono">{departmentAccess?.canAccess ? '有权限' : '无权限'}</span></div>
+                <div>是否加载中: <span className="font-mono">{permissions.isLoading ? '是' : '否'}</span></div>
               </div>
             </div>
           </div>
@@ -94,25 +115,25 @@ export default function PermissionsTestPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-3 border rounded">
               <h5 className="font-semibold">单权限检查</h5>
-              <p className="text-sm">创建工厂权限: 
-                <span className={`ml-2 px-2 py-1 rounded text-xs ${hasCreateFactory ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {hasCreateFactory ? '有权限' : '无权限'}
+              <p className="text-sm">创建工厂权限:
+                <span className={`ml-2 px-2 py-1 rounded text-xs ${hasCreateFactory.hasPermission ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {hasCreateFactory.hasPermission ? '有权限' : '无权限'}
                 </span>
               </p>
             </div>
             <div className="p-3 border rounded">
               <h5 className="font-semibold">多权限检查</h5>
-              <p className="text-sm">多项权限: 
-                <span className={`ml-2 px-2 py-1 rounded text-xs ${hasMultiplePermissions.hasAll ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                  {hasMultiplePermissions.hasAll ? '全部满足' : `${hasMultiplePermissions.matches}/${hasMultiplePermissions.total}`}
+              <p className="text-sm">多项权限:
+                <span className={`ml-2 px-2 py-1 rounded text-xs ${hasMultiplePermissions.hasPermission ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  {hasMultiplePermissions.hasPermission ? '有权限' : '无权限'}
                 </span>
               </p>
             </div>
             <div className="p-3 border rounded">
               <h5 className="font-semibold">部门访问权限</h5>
-              <p className="text-sm">部门数量: 
+              <p className="text-sm">部门访问:
                 <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                  {departmentAccess.departments.length}
+                  {departmentAccess.canAccess ? '可访问' : '无法访问'}
                 </span>
               </p>
             </div>
@@ -126,36 +147,36 @@ export default function PermissionsTestPage() {
           <CardTitle>权限守卫组件测试</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          
+
           {/* 平台级权限测试 */}
           <div className="border-l-4 border-purple-500 pl-4">
             <h5 className="font-semibold text-purple-700 mb-2">平台级权限测试</h5>
-            <PlatformGuard 
-              permission="create_factory"
-              fallback={<div className="text-red-600 text-sm">❌ 无平台创建工厂权限</div>}
+            <PlatformGuard
+              permission="PLATFORM_ACCESS"
+              fallback={<div className="text-red-600 text-sm">❌ 无平台管理权限</div>}
             >
-              <div className="text-green-600 text-sm">✅ 有平台创建工厂权限 - 显示创建工厂按钮</div>
-              <Button className="mt-2" size="sm">创建新工厂</Button>
+              <div className="text-green-600 text-sm">✅ 有平台管理权限 - 显示平台管理功能</div>
+              <Button className="mt-2" size="sm">平台管理</Button>
             </PlatformGuard>
           </div>
 
           {/* 工厂级权限测试 */}
           <div className="border-l-4 border-blue-500 pl-4">
             <h5 className="font-semibold text-blue-700 mb-2">工厂级权限测试</h5>
-            <FactoryGuard 
-              permission="manage_departments"
-              fallback={<div className="text-red-600 text-sm">❌ 无部门管理权限</div>}
+            <FactoryGuard
+              permission="ADMIN_ACCESS"
+              fallback={<div className="text-red-600 text-sm">❌ 无系统管理权限</div>}
             >
-              <div className="text-green-600 text-sm">✅ 有部门管理权限 - 显示部门管理功能</div>
-              <Button className="mt-2" size="sm">管理部门</Button>
+              <div className="text-green-600 text-sm">✅ 有系统管理权限 - 显示系统管理功能</div>
+              <Button className="mt-2" size="sm">系统管理</Button>
             </FactoryGuard>
           </div>
 
           {/* 角色级权限测试 */}
           <div className="border-l-4 border-green-500 pl-4">
             <h5 className="font-semibold text-green-700 mb-2">角色级权限测试</h5>
-            <RoleGuard 
-              roles={['factory_super_admin', 'permission_admin']}
+            <RoleGuard
+              roles={['SUPER_ADMIN', 'PERMISSION_ADMIN']}
               fallback={<div className="text-red-600 text-sm">❌ 非管理员角色</div>}
             >
               <div className="text-green-600 text-sm">✅ 管理员角色 - 显示高级管理功能</div>
@@ -166,8 +187,8 @@ export default function PermissionsTestPage() {
           {/* 部门级权限测试 */}
           <div className="border-l-4 border-orange-500 pl-4">
             <h5 className="font-semibold text-orange-700 mb-2">部门级权限测试</h5>
-            <DepartmentGuard 
-              departments={['生产部', '质检部']}
+            <DepartmentGuard
+              departments={['PROCESSING', 'FARMING']}
               fallback={<div className="text-red-600 text-sm">❌ 无生产部门访问权限</div>}
             >
               <div className="text-green-600 text-sm">✅ 有生产部门权限 - 显示生产数据</div>
@@ -178,11 +199,11 @@ export default function PermissionsTestPage() {
           {/* 复合权限测试 */}
           <div className="border-l-4 border-indigo-500 pl-4">
             <h5 className="font-semibold text-indigo-700 mb-2">复合权限测试</h5>
-            <CompositeGuard 
+            <CompositeGuard
               conditions={{
-                permissions: ['view_user_reports'],
-                roles: ['department_admin', 'factory_super_admin'],
-                departments: ['人事部', '管理部']
+                permissions: ['user_manage_all'],
+                roles: ['DEPARTMENT_ADMIN', 'SUPER_ADMIN'],
+                departments: ['ADMIN', 'MANAGEMENT']
               }}
               operator="AND"
               fallback={<div className="text-red-600 text-sm">❌ 不满足复合权限条件</div>}
@@ -203,13 +224,11 @@ export default function PermissionsTestPage() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              'platform_super_admin',
-              'platform_operator', 
-              'factory_super_admin',
-              'permission_admin',
-              'department_admin',
-              'operator',
-              'viewer'
+              'PLATFORM_ADMIN',
+              'SUPER_ADMIN',
+              'PERMISSION_ADMIN',
+              'DEPARTMENT_ADMIN',
+              'USER'
             ].map(role => (
               <Button
                 key={role}
@@ -291,10 +310,10 @@ export default function PermissionsTestPage() {
           <CardTitle>访问被拒绝示例</CardTitle>
         </CardHeader>
         <CardContent>
-          <PermissionGuard 
+          <PermissionGuard
             permission="non_existent_permission"
             fallback={
-              <AccessDenied 
+              <AccessDenied
                 message="您没有访问此功能的权限"
                 helpText="请联系管理员获取相应权限"
                 showContactInfo={true}

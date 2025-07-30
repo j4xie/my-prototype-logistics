@@ -17,6 +17,27 @@ body {
     'calt' 1;
 }
 
+/* Developer navigation styles */
+.developer-layout {
+  padding-top: 48px; /* 为开发者导航栏留出空间 */
+}
+
+.developer-nav {
+  z-index: 9999; /* 确保导航栏在所有内容之上 */
+}
+
+/* 移动端适配 */
+@media (max-width: 640px) {
+  .developer-nav .nav-buttons {
+    gap: 0.25rem;
+  }
+  
+  .developer-nav .nav-button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.625rem;
+  }
+}
+
 /* Scrollbar styles */
 ::-webkit-scrollbar {
   width: 6px;

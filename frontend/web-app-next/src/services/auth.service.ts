@@ -59,20 +59,18 @@ export class AuthService {
    */
   async login(credentials: LoginRequest): Promise<any> {
     try {
-      // 判断登录类型：平台管理员 vs 工厂用户
-      const isPlatformAdmin = ['platform_admin'].includes(credentials.username);
-      const isFactoryUser = ['super_admin', 'user', 'factory_admin', 'farming_admin', 'processing_admin', 'logistics_admin'].includes(credentials.username);
-
-      console.log(`[AuthService] 尝试登录 ${credentials.username} (${isPlatformAdmin ? '平台管理员' : isFactoryUser ? '工厂用户' : '真实API用户'})`);
-
+      // 统一使用真实后端API进行认证
+      console.log(`[AuthService] 使用真实后端API认证用户: ${credentials.username}`);
+      
       let response;
-      if (isPlatformAdmin) {
-        // 平台管理员登录 - 使用真实后端API
-        console.log(`[AuthService] 平台管理员使用真实后端API`);
+      // 根据用户名判断使用哪个登录端点
+      if (credentials.username === 'platform_admin') {
+        // 平台管理员登录端点
+        console.log(`[AuthService] 平台管理员登录`);
         response = await realApiClient.post('/api/auth/platform-login', credentials);
       } else {
-        // 所有其他用户都使用工厂登录接口
-        console.log(`[AuthService] 工厂用户使用真实后端API`);
+        // 工厂用户登录端点（包括developer、factory_admin等）
+        console.log(`[AuthService] 工厂用户登录: ${credentials.username}`);
 
         // 需要添加工厂ID - 默认使用测试工厂
         const loginData = {
