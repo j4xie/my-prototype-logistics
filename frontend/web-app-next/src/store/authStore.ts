@@ -37,6 +37,10 @@ async function processUserData(
   if (typeof userRole === 'string') {
     // 映射旧角色到新角色
     switch (userRole) {
+      case 'developer':
+      case 'DEVELOPER':
+        mappedRole = 'DEVELOPER';
+        break;
       case 'platform_admin':
       case 'PLATFORM_ADMIN':
         mappedRole = 'PLATFORM_ADMIN';
@@ -77,9 +81,25 @@ async function processUserData(
     mappedDepartment = departmentMap[department];
   }
 
-  // 生成新的权限结构
-  console.log(`[AuthStore] 生成权限: role=${mappedRole}, department=${mappedDepartment}`);
-  const newPermissions = generateUserPermissions(mappedRole, mappedDepartment);
+  // 优先使用后端返回的权限数据，如果没有则生成
+  console.log(`[AuthStore] 处理权限数据: role=${mappedRole}, department=${mappedDepartment}`, userData.permissions);
+  let newPermissions: UserPermissions;
+  
+  if (userData.permissions && userData.permissions.modules) {
+    // 使用后端返回的权限数据
+    newPermissions = {
+      modules: userData.permissions.modules,
+      features: userData.permissions.features || [],
+      role: userData.permissions.role || mappedRole,
+      roleLevel: userData.permissions.roleLevel || userData.roleLevel || 50,
+      department: userData.permissions.department || mappedDepartment
+    };
+    console.log(`[AuthStore] 使用后端权限数据:`, newPermissions);
+  } else {
+    // 生成权限数据（兜底）
+    newPermissions = generateUserPermissions(mappedRole, mappedDepartment);
+    console.log(`[AuthStore] 生成前端权限数据:`, newPermissions);
+  }
 
   // 生成兼容的旧权限结构
   const legacyPermissions = [];
@@ -92,6 +112,9 @@ async function processUserData(
   if (newPermissions.modules.logistics_access) {
     legacyPermissions.push({ id: '3', name: '物流管理', resource: 'logistics', action: 'manage' });
   }
+  if (newPermissions.modules.trace_access) {
+    legacyPermissions.push({ id: '5', name: '溯源查询', resource: 'trace', action: 'read' });
+  }
   if (newPermissions.modules.admin_access) {
     legacyPermissions.push({ id: '4', name: '系统管理', resource: 'admin', action: 'manage' });
   }
@@ -100,6 +123,7 @@ async function processUserData(
   }
 
   const roleDisplayNames = {
+    'DEVELOPER': '系统开发者',
     'PLATFORM_ADMIN': '平台管理员',
     'SUPER_ADMIN': '工厂超级管理员',
     'PERMISSION_ADMIN': '权限管理员',
@@ -261,187 +285,7 @@ const authAPI = {
   },
 };
 
-// 模拟登录函数（开发阶段使用）
-const mockLogin = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  // 模拟网络延迟
-  await new Promise(resolve => setTimeout(resolve, 800));
-
-  // 模拟超级管理员登录
-  if (credentials.username === 'super_admin' && credentials.password === 'super123') {
-    const permissions = generateUserPermissions('PLATFORM_ADMIN');
-    const legacyPermissions = [
-      { id: '0', name: '平台管理', resource: 'platform', action: 'manage' },
-      { id: '1', name: '农业管理', resource: 'farming', action: 'manage' },
-      { id: '2', name: '加工管理', resource: 'processing', action: 'manage' },
-      { id: '3', name: '物流管理', resource: 'logistics', action: 'manage' },
-      { id: '4', name: '系统管理', resource: 'admin', action: 'manage' },
-      { id: '5', name: '溯源查询', resource: 'trace', action: 'read' },
-    ];
-
-    const user: User = {
-      id: '0',
-      username: 'super_admin',
-      email: 'super@heiniu.com',
-      displayName: '平台超级管理员',
-      avatar: '',
-      role: {
-        id: 'platform_admin',
-        name: '平台超级管理员',
-        description: '平台最高权限，管理所有工厂租户',
-        level: 0,
-      },
-      permissions,
-      legacyPermissions,
-      createdAt: '2025-01-01T00:00:00Z',
-      lastLoginAt: new Date().toISOString(),
-    };
-
-    return {
-      user,
-      token: 'mock-jwt-token-super-' + Date.now(),
-      refreshToken: 'mock-refresh-token-super-' + Date.now(),
-      expiresIn: 3600, // 1小时
-    };
-  }
-
-  // 模拟工厂用户
-  if (credentials.username === 'user' && credentials.password === 'user123') {
-    const permissions = generateUserPermissions('SUPER_ADMIN');
-    const legacyPermissions = [
-      { id: '1', name: '农业管理', resource: 'farming', action: 'manage' },
-      { id: '2', name: '加工管理', resource: 'processing', action: 'manage' },
-      { id: '3', name: '物流管理', resource: 'logistics', action: 'manage' },
-      { id: '4', name: '系统管理', resource: 'admin', action: 'manage' },
-      { id: '5', name: '溯源查询', resource: 'trace', action: 'read' },
-    ];
-
-    const user: User = {
-      id: '1',
-      username: 'user',
-      email: 'user@heiniu.com',
-      displayName: '工厂超级管理员',
-      avatar: '',
-      role: {
-        id: 'super_admin',
-        name: '工厂超级管理员',
-        description: '工厂管理和操作权限',
-        level: 0,
-      },
-      permissions,
-      legacyPermissions,
-      createdAt: '2025-01-01T00:00:00Z',
-      lastLoginAt: new Date().toISOString(),
-    };
-
-    return {
-      user,
-      token: 'mock-jwt-token-user-' + Date.now(),
-      refreshToken: 'mock-refresh-token-user-' + Date.now(),
-      expiresIn: 3600,
-    };
-  }
-
-  // 模拟权限管理员登录
-  if (credentials.username === 'admin' && credentials.password === 'admin123') {
-    const permissions = generateUserPermissions('PERMISSION_ADMIN');
-    const legacyPermissions = [
-      { id: '4', name: '系统管理', resource: 'admin', action: 'manage' }
-    ];
-
-    const user: User = {
-      id: '2',
-      username: 'admin',
-      email: 'admin@heiniu.com',
-      displayName: '权限管理员',
-      avatar: '',
-      role: {
-        id: 'permission_admin',
-        name: '权限管理员',
-        description: '管理用户权限和角色分配',
-        level: 5,
-      },
-      permissions,
-      legacyPermissions,
-      createdAt: '2025-01-01T00:00:00Z',
-      lastLoginAt: new Date().toISOString(),
-    };
-
-    return {
-      user,
-      token: 'mock-jwt-token-admin-' + Date.now(),
-      refreshToken: 'mock-refresh-token-admin-' + Date.now(),
-      expiresIn: 3600,
-    };
-  }
-
-  // 模拟部门管理员登录
-  if (credentials.username === 'dept_admin' && credentials.password === 'dept123') {
-    const permissions = generateUserPermissions('DEPARTMENT_ADMIN', 'FARMING');
-    const legacyPermissions = [
-      { id: '1', name: '农业管理', resource: 'farming', action: 'manage' }
-    ];
-
-    const user: User = {
-      id: '3',
-      username: 'dept_admin',
-      email: 'dept@heiniu.com',
-      displayName: '养殖部门管理员',
-      avatar: '',
-      role: {
-        id: 'department_admin',
-        name: '部门管理员',
-        description: '管理本部门的人员和业务',
-        level: 10,
-      },
-      permissions,
-      legacyPermissions,
-      createdAt: '2025-01-01T00:00:00Z',
-      lastLoginAt: new Date().toISOString(),
-    };
-
-    return {
-      user,
-      token: 'mock-jwt-token-dept-' + Date.now(),
-      refreshToken: 'mock-refresh-token-dept-' + Date.now(),
-      expiresIn: 3600,
-    };
-  }
-
-  // 模拟普通员工登录
-  if (credentials.username === 'worker' && credentials.password === 'worker123') {
-    const permissions = generateUserPermissions('USER', 'PROCESSING');
-    const legacyPermissions = [
-      { id: '2', name: '加工管理', resource: 'processing', action: 'read' }
-    ];
-
-    const user: User = {
-      id: '4',
-      username: 'worker',
-      email: 'worker@heiniu.com',
-      displayName: '生产部员工',
-      avatar: '',
-      role: {
-        id: 'user',
-        name: '普通员工',
-        description: '操作层面的业务处理',
-        level: 50,
-      },
-      permissions,
-      legacyPermissions,
-      createdAt: '2025-01-01T00:00:00Z',
-      lastLoginAt: new Date().toISOString(),
-    };
-
-    return {
-      user,
-      token: 'mock-jwt-token-worker-' + Date.now(),
-      refreshToken: 'mock-refresh-token-worker-' + Date.now(),
-      expiresIn: 3600,
-    };
-  }
-
-  throw new Error('用户名或密码错误。可用账户：super_admin/super123, user/user123, admin/admin123, dept_admin/dept123, worker/worker123');
-};
+// Mock登录函数已移除 - 使用真实API认证
 
 // 默认认证状态
 const defaultAuthState = {
@@ -871,7 +715,7 @@ export const useAuth = () => useAuthStore(authSelectors.isAuthenticated);
 export const useUser = () => useAuthStore(authSelectors.user);
 export const useAuthLoading = () => useAuthStore(authSelectors.loading);
 export const useAuthError = () => useAuthStore(authSelectors.error);
-export const usePermissions = () => useAuthStore(authSelectors.permissions);
+export const useLegacyPermissions = () => useAuthStore(authSelectors.permissions);
 export const useIsAdmin = () => useAuthStore(authSelectors.isAdmin);
 
 // 导出权限检查Hook

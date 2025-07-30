@@ -36,10 +36,9 @@ export default function PlatformPage() {
         if (token && userInfo) {
           const userData = JSON.parse(userInfo);
 
-          // 检查是否为平台管理员 - 修复判断逻辑
+          // 检查是否为平台管理员
           if (userData.role?.name === 'PLATFORM_ADMIN' ||
-              userData.username === 'platform_admin' ||
-              userData.username === 'super_admin') {
+              userData.username === 'platform_admin') {
             console.log('✅ 平台管理员权限验证通过:', userData.username);
             setIsInitializing(false);
             return;

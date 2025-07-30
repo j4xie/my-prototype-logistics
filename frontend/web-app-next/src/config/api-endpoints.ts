@@ -7,10 +7,33 @@
 // 真实API配置
 export const REAL_API_CONFIG = {
   // 新后端服务地址
-    baseURL: process.env.NEXT_PUBLIC_API_URL ||
-    (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-      ? '/api/proxy'  // 生产环境通过Vercel代理
-      : 'http://localhost:3001'),  // 开发环境直接访问新后端
+  baseURL: (() => {
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    console.log('[API Config] 环境变量检测:', {
+      NEXT_PUBLIC_API_URL: envUrl,
+      NODE_ENV: process.env.NODE_ENV,
+      isDevelopment,
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
+    });
+
+    // 优先使用环境变量
+    if (envUrl) {
+      console.log('[API Config] 使用环境变量 baseURL:', envUrl);
+      return envUrl;
+    }
+
+    // 开发环境默认使用本地后端
+    if (isDevelopment) {
+      console.log('[API Config] 开发环境使用本地后端: http://localhost:3001');
+      return 'http://localhost:3001';
+    }
+
+    // 生产环境使用代理
+    console.log('[API Config] 生产环境使用代理: /api/proxy');
+    return '/api/proxy';
+  })(),
   timeout: 15000,
   retryAttempts: 3,
 } as const;

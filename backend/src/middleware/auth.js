@@ -4,6 +4,14 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
+ * 检查用户是否为开发者
+ * 开发者拥有最高权限，可以绕过所有权限检查
+ */
+const isDeveloper = (user) => {
+  return user && user.roleCode === 'developer' && user.roleLevel === -1;
+};
+
+/**
  * 工厂用户认证中间件
  * 验证JWT令牌并获取用户信息
  */
@@ -145,6 +153,12 @@ export const requireRole = (allowedRoles) => {
       });
     }
 
+    // 开发者绕过权限检查
+    if (isDeveloper(req.user)) {
+      console.log(`🛠️ 开发者 ${req.user.username} 绕过角色权限检查: ${allowedRoles.join(', ')}`);
+      return next();
+    }
+
     const userRole = req.user.roleCode;
     
     if (!allowedRoles.includes(userRole)) {
@@ -173,6 +187,12 @@ export const requirePermission = (requiredPermissions) => {
         message: '用户未认证',
         errorCode: 'USER_NOT_AUTHENTICATED',
       });
+    }
+
+    // 开发者绕过权限检查
+    if (isDeveloper(req.user)) {
+      console.log(`🛠️ 开发者 ${req.user.username} 绕过具体权限检查: ${requiredPermissions.join(', ')}`);
+      return next();
     }
 
     const userPermissions = req.user.permissions || [];
@@ -209,6 +229,12 @@ export const requireAdmin = (req, res, next) => {
     });
   }
 
+  // 开发者绕过管理员权限检查
+  if (isDeveloper(req.user)) {
+    console.log(`🛠️ 开发者 ${req.user.username} 绕过管理员权限检查`);
+    return next();
+  }
+
   const adminRoles = ['super_admin', 'permission_admin'];
   
   if (!adminRoles.includes(req.user.roleCode)) {
@@ -235,6 +261,12 @@ export const requireSuperAdmin = (req, res, next) => {
     });
   }
 
+  // 开发者绕过超级管理员权限检查
+  if (isDeveloper(req.user)) {
+    console.log(`🛠️ 开发者 ${req.user.username} 绕过超级管理员权限检查`);
+    return next();
+  }
+
   if (req.user.roleCode !== 'super_admin') {
     return res.status(403).json({
       success: false,
@@ -258,6 +290,12 @@ export const requireDepartment = (allowedDepartments) => {
         message: '用户未认证',
         errorCode: 'USER_NOT_AUTHENTICATED',
       });
+    }
+
+    // 开发者绕过部门权限检查
+    if (isDeveloper(req.user)) {
+      console.log(`🛠️ 开发者 ${req.user.username} 绕过部门权限检查: ${allowedDepartments.join(', ')}`);
+      return next();
     }
 
     const userDepartment = req.user.department;
@@ -312,4 +350,35 @@ export const optionalAuth = async (req, res, next) => {
     // 令牌无效，但继续执行
     next();
   }
+};
+
+/**
+ * 开发者或平台管理员权限中间件
+ * 允许开发者访问平台管理功能
+ */
+export const requirePlatformAccess = (req, res, next) => {
+  // 检查是否有平台管理员身份
+  if (req.admin) {
+    return next();
+  }
+
+  // 检查是否为开发者（通过工厂用户认证，但具有开发者权限）
+  if (req.user && isDeveloper(req.user)) {
+    console.log(`🛠️ 开发者 ${req.user.username} 获得平台管理访问权限`);
+    return next();
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: '需要平台管理员权限或开发者权限',
+    errorCode: 'PLATFORM_ACCESS_DENIED',
+  });
+};
+
+/**
+ * 开发者权限检查工具函数
+ * 供其他模块使用
+ */
+export const checkDeveloperPermission = (user) => {
+  return isDeveloper(user);
 };

@@ -27,54 +27,99 @@ export default function HomePage() {
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
-    // 只在访问根路径时进行认证检测和自动跳转
-    if (window.location.pathname === '/') {
-    checkAuthenticationStatus();
-    } else {
-      // 如果不是根路径，直接显示预览页面（虽然这个组件通常不会在其他路径显示）
-      setIsLoading(false);
-      setShowPreview(true);
-    }
+    const initializePage = async () => {
+      try {
+        console.log('🚀 HomePage useEffect - 开始初始化', {
+          pathname: window.location.pathname,
+          href: window.location.href
+        });
+
+        // 只在访问根路径时进行认证检测和自动跳转
+        if (window.location.pathname === '/') {
+          await checkAuthenticationStatus();
+        } else {
+          // 如果不是根路径，直接显示预览页面（虽然这个组件通常不会在其他路径显示）
+          console.log('📍 非根路径，直接显示预览页面');
+          setIsLoading(false);
+          setShowPreview(true);
+        }
+      } catch (error) {
+        console.error('❌ HomePage 初始化失败:', error);
+        setIsLoading(false);
+        setShowPreview(true);
+      }
+    };
+
+    initializePage();
   }, []);
 
   const checkAuthenticationStatus = async () => {
     try {
+      console.log('🔍 开始身份验证检查...');
       setIsLoading(true);
 
-      // 检查本地存储中的认证信息
-      const token = localStorage.getItem('auth_token');
-      const userInfo = localStorage.getItem('user_info');
+      // 添加5秒超时机制防止无限加载
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('身份验证超时')), 5000);
+      });
 
-      if (token && userInfo) {
-        try {
-          const userData = JSON.parse(userInfo);
+      const authCheckPromise = new Promise((resolve) => {
+        // 检查本地存储中的认证信息
+        const token = localStorage.getItem('auth_token');
+        const userInfo = localStorage.getItem('user_info');
 
-          // 根据用户角色重定向到相应页面
-          if (userData.role?.level === 0 || userData.role?.name === 'PLATFORM_ADMIN' || userData.username === 'super_admin') {
-            console.log(`✅ 平台超级管理员登录 - 重定向到平台管理:`, userData.name || userData.username);
-            router.push('/platform');
-          } else {
-            console.log(`✅ 工厂用户登录 - 重定向到模块选择器:`, userData.name || userData.username);
-            router.push('/home/selector');
+        console.log('📊 认证信息检查:', {
+          hasToken: !!token,
+          hasUserInfo: !!userInfo,
+          tokenLength: token?.length || 0
+        });
+
+        if (token && userInfo) {
+          try {
+            const userData = JSON.parse(userInfo);
+            console.log('👤 用户数据解析成功:', {
+              username: userData.username,
+              role: userData.role?.name || '未知角色'
+            });
+
+            // 根据用户角色重定向到相应页面
+            if (userData.role?.name === 'PLATFORM_ADMIN' || userData.username === 'platform_admin') {
+              console.log(`✅ 平台管理员登录 - 重定向到平台管理:`, userData.name || userData.username);
+              router.push('/platform');
+              resolve('redirect');
+              return;
+            } else {
+              console.log(`✅ 工厂用户登录 - 重定向到模块选择器:`, userData.name || userData.username);
+              router.push('/home/selector');
+              resolve('redirect');
+              return;
+            }
+          } catch (error) {
+            console.error('❌ 用户信息解析失败:', error);
+            // 清除无效的认证信息
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_info');
+            resolve('show_preview');
           }
-        } catch (error) {
-          console.error('用户信息解析失败:', error);
-          // 清除无效的认证信息
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user_info');
-          // 显示预览选项而不是直接跳转
-          setShowPreview(true);
+        } else {
+          // 未认证用户显示预览选项
+          console.log('🔒 未认证用户 - 显示登录和预览选项');
+          resolve('show_preview');
         }
-      } else {
-        // 未认证用户显示预览选项
-        console.log('🔒 未认证用户 - 显示登录和预览选项');
+      });
+
+      const result = await Promise.race([authCheckPromise, timeoutPromise]);
+
+      if (result === 'show_preview') {
         setShowPreview(true);
+        setIsLoading(false);
       }
+      // 如果是redirect，组件会被卸载，不需要设置状态
+
     } catch (error) {
-      console.error('身份验证检查失败:', error);
+      console.error('❌ 身份验证检查失败:', error);
       // 发生错误时显示预览选项
       setShowPreview(true);
-    } finally {
       setIsLoading(false);
     }
   };

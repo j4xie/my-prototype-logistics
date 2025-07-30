@@ -3,12 +3,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
-import { 
-  RouteGuard, 
-  PermissionAwareNavigation, 
-  PermissionCheck, 
+import {
+  RouteGuard,
+  PermissionAwareNavigation,
+  PermissionCheck,
   PermissionBadge,
-  usePermissionContext 
+  usePermissionContext
 } from '@/components/permissions';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthStore } from '@/store/authStore';
@@ -83,7 +83,7 @@ function PermissionDemoContent() {
                 <div key={module.key} className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">{module.name}:</span>
                   <div className="flex items-center gap-2">
-                    {permissions.hasModuleAccess(module.key) ? (
+                    {permissions?.hasModuleAccess?.(module.key) ? (
                       <Badge variant="default" className="text-xs">
                         <Eye className="h-3 w-3 mr-1" />
                         有权限
