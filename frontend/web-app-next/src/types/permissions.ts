@@ -3,11 +3,12 @@
  * 基于您的完整权限控制方案实现
  */
 
-// 五大核心模块权限
+// 六大核心模块权限
 export const MODULE_PERMISSIONS = {
   FARMING_ACCESS: 'farming_access',
   PROCESSING_ACCESS: 'processing_access', 
   LOGISTICS_ACCESS: 'logistics_access',
+  TRACE_ACCESS: 'trace_access',
   ADMIN_ACCESS: 'admin_access',
   PLATFORM_ACCESS: 'platform_access'
 } as const;
@@ -19,11 +20,17 @@ export const FEATURE_PERMISSIONS = {
   WHITELIST_MANAGE_OWN_DEPT: 'whitelist_manage_own_dept',
   WHITELIST_MANAGE_ALL: 'whitelist_manage_all',
   STATS_VIEW_OWN_DEPT: 'stats_view_own_dept',
-  STATS_VIEW_ALL: 'stats_view_all'
+  STATS_VIEW_ALL: 'stats_view_all',
+  // 开发者专用权限
+  DEVELOPER_DEBUG_ACCESS: 'developer_debug_access',
+  DEVELOPER_SYSTEM_CONFIG: 'developer_system_config', 
+  DEVELOPER_DATA_EXPORT: 'developer_data_export',
+  DEVELOPER_CROSS_PLATFORM: 'developer_cross_platform'
 } as const;
 
 // 用户角色定义
 export const USER_ROLES = {
+  DEVELOPER: 'developer',               // 系统开发者 (level -1)
   PLATFORM_ADMIN: 'platform_admin',     // 平台管理员 (level 0)
   SUPER_ADMIN: 'super_admin',           // 工厂超级管理员 (level 0)
   PERMISSION_ADMIN: 'permission_admin', // 权限管理员 (level 5)
@@ -43,6 +50,7 @@ export const DEPARTMENTS = {
 
 // 权限级别定义
 export const ROLE_LEVELS = {
+  [USER_ROLES.DEVELOPER]: -1,
   [USER_ROLES.PLATFORM_ADMIN]: 0,
   [USER_ROLES.SUPER_ADMIN]: 0,
   [USER_ROLES.PERMISSION_ADMIN]: 5,
@@ -58,6 +66,7 @@ export interface UserPermissions {
     [MODULE_PERMISSIONS.FARMING_ACCESS]?: boolean;
     [MODULE_PERMISSIONS.PROCESSING_ACCESS]?: boolean;
     [MODULE_PERMISSIONS.LOGISTICS_ACCESS]?: boolean;
+    [MODULE_PERMISSIONS.TRACE_ACCESS]?: boolean;
     [MODULE_PERMISSIONS.ADMIN_ACCESS]?: boolean;
     [MODULE_PERMISSIONS.PLATFORM_ACCESS]?: boolean;
   };
@@ -74,6 +83,7 @@ export interface ModuleAccessState {
   farming: boolean;
   processing: boolean;
   logistics: boolean;
+  trace: boolean;
   admin: boolean;
   platform: boolean;
 }
@@ -82,6 +92,27 @@ export interface ModuleAccessState {
  * 角色权限模板定义
  */
 export const ROLE_PERMISSION_TEMPLATES = {
+  // 系统开发者 - 拥有所有权限
+  [USER_ROLES.DEVELOPER]: {
+    modules: {
+      [MODULE_PERMISSIONS.FARMING_ACCESS]: true,
+      [MODULE_PERMISSIONS.PROCESSING_ACCESS]: true,
+      [MODULE_PERMISSIONS.LOGISTICS_ACCESS]: true,
+      [MODULE_PERMISSIONS.TRACE_ACCESS]: true,
+      [MODULE_PERMISSIONS.ADMIN_ACCESS]: true,
+      [MODULE_PERMISSIONS.PLATFORM_ACCESS]: true
+    },
+    features: [
+      FEATURE_PERMISSIONS.USER_MANAGE_ALL,
+      FEATURE_PERMISSIONS.WHITELIST_MANAGE_ALL,
+      FEATURE_PERMISSIONS.STATS_VIEW_ALL,
+      FEATURE_PERMISSIONS.DEVELOPER_DEBUG_ACCESS,
+      FEATURE_PERMISSIONS.DEVELOPER_SYSTEM_CONFIG,
+      FEATURE_PERMISSIONS.DEVELOPER_DATA_EXPORT,
+      FEATURE_PERMISSIONS.DEVELOPER_CROSS_PLATFORM
+    ]
+  },
+  
   // 平台管理员 - 只能管理平台
   [USER_ROLES.PLATFORM_ADMIN]: {
     modules: {
@@ -96,6 +127,7 @@ export const ROLE_PERMISSION_TEMPLATES = {
       [MODULE_PERMISSIONS.FARMING_ACCESS]: true,
       [MODULE_PERMISSIONS.PROCESSING_ACCESS]: true,
       [MODULE_PERMISSIONS.LOGISTICS_ACCESS]: true,
+      [MODULE_PERMISSIONS.TRACE_ACCESS]: true,
       [MODULE_PERMISSIONS.ADMIN_ACCESS]: true
     },
     features: [
@@ -105,9 +137,10 @@ export const ROLE_PERMISSION_TEMPLATES = {
     ]
   },
   
-  // 权限管理员 - 只有用户管理权限
+  // 权限管理员 - 只有用户管理权限 + 溯源查询
   [USER_ROLES.PERMISSION_ADMIN]: {
     modules: {
+      [MODULE_PERMISSIONS.TRACE_ACCESS]: true,
       [MODULE_PERMISSIONS.ADMIN_ACCESS]: true
     },
     features: [
@@ -115,9 +148,11 @@ export const ROLE_PERMISSION_TEMPLATES = {
     ]
   },
   
-  // 部门管理员 - 本部门模块 + 部门管理权限
+  // 部门管理员 - 本部门模块 + 部门管理权限 + 溯源查询
   [USER_ROLES.DEPARTMENT_ADMIN]: {
-    modules: {}, // 根据部门动态设置
+    modules: {
+      [MODULE_PERMISSIONS.TRACE_ACCESS]: true  // 部门管理员都能访问溯源查询
+    }, // 根据部门动态设置其他模块
     features: [
       FEATURE_PERMISSIONS.USER_MANAGE_OWN_DEPT,
       FEATURE_PERMISSIONS.WHITELIST_MANAGE_OWN_DEPT,
@@ -125,9 +160,11 @@ export const ROLE_PERMISSION_TEMPLATES = {
     ]
   },
   
-  // 普通工人 - 本部门模块访问
+  // 普通工人 - 本部门模块访问 + 溯源查询
   [USER_ROLES.USER]: {
-    modules: {}, // 根据部门动态设置
+    modules: {
+      [MODULE_PERMISSIONS.TRACE_ACCESS]: true  // 普通用户也能访问溯源查询
+    }, // 根据部门动态设置其他模块
     features: []
   }
 } as const;
@@ -229,6 +266,7 @@ export class PermissionChecker {
       farming: this.hasModuleAccess(userPermissions, 'FARMING_ACCESS'),
       processing: this.hasModuleAccess(userPermissions, 'PROCESSING_ACCESS'),
       logistics: this.hasModuleAccess(userPermissions, 'LOGISTICS_ACCESS'),
+      trace: this.hasModuleAccess(userPermissions, 'TRACE_ACCESS'),
       admin: this.hasModuleAccess(userPermissions, 'ADMIN_ACCESS'),
       platform: this.hasModuleAccess(userPermissions, 'PLATFORM_ACCESS')
     };
