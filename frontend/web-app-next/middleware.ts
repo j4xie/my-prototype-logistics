@@ -17,6 +17,10 @@ const ROUTE_PERMISSIONS = {
   '/logistics': { module: 'logistics', level: 50 },
   '/logistics/(.*)': { module: 'logistics', level: 50 },
   
+  // 产品溯源模块
+  '/trace': { module: 'trace', level: 50 },
+  '/trace/(.*)': { module: 'trace', level: 50 },
+  
   // 系统管理模块
   '/admin': { module: 'admin', level: 10 },
   '/admin/(.*)': { module: 'admin', level: 10 },

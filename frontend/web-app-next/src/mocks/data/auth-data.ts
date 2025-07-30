@@ -274,16 +274,10 @@ export const validateCredentials = (username: string, password: string): MockUse
   const user = mockUsers[username]
   if (!user) return null
 
-  // 简单密码验证 (开发环境)
+  // Mock认证已禁用 - 使用真实后端API
+  // 此处的密码验证仅用于数据结构参考，不再用于实际认证
   const validPasswords: Record<string, string> = {
-    'super_admin': 'super123',
-    'user': 'user123',
-    'admin': 'admin123',
-    'dept_admin': 'dept123',
-    'processing_admin': 'processing123',
-    'worker': 'worker123',
-    'processor': 'processor123',
-    'logistics_user': 'logistics123'
+    // Mock密码已移除，请使用真实数据库中的用户凭据
   }
 
   if (validPasswords[username] === password && user.status === 'active') {
