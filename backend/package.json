@@ -14,6 +14,7 @@
     "check": "node scripts/startup-check.js",
     "init-admin": "node scripts/init-platform-admin.js",
     "seed": "node scripts/seed-database.js",
+    "seed-initial": "node scripts/seed-initial-data.js",
     "test-api": "node scripts/test-api-endpoints.js"
   },
   "dependencies": {

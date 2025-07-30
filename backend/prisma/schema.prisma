@@ -39,6 +39,8 @@ model Factory {
   users        User[]
   whitelist    UserWhitelist[]
   sessions     Session[]
+  roleHistory  UserRoleHistory[]
+  settings     FactorySettings?
 
   // 索引优化
   @@index([industryCode, regionCode, factoryYear], name: "idx_factory_code")
@@ -57,9 +59,11 @@ model PlatformAdmin {
   email        String   @unique
   phone        String?  @db.VarChar(50)
   fullName     String?  @map("full_name") @db.VarChar(100)
+  role         PlatformRole @default(platform_operator) @map("role")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  @@index([role], name: "idx_platform_role")
   @@map("platform_admins")
 }
 
@@ -70,7 +74,9 @@ model UserWhitelist {
   phoneNumber String   @map("phone_number") @db.VarChar(50)
   status      WhitelistStatus @default(PENDING) @map("status") // 状态: PENDING, REGISTERED, EXPIRED
   addedByUserId Int?   @map("added_by_user_id") // 添加该白名单的管理员ID
+  invitedBy   Int?     @map("invited_by") // 邀请人ID
   expiresAt   DateTime? @map("expires_at") // 白名单过期时间
+  metadata    Json?    @map("metadata") // 附加元数据（姓名、部门等）
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -79,6 +85,8 @@ model UserWhitelist {
   addedByUser User?   @relation(fields: [addedByUserId], references: [id])
 
   @@unique([factoryId, phoneNumber]) // 确保同一工厂内手机号唯一
+  @@index([status, factoryId], name: "idx_status_factory")
+  @@index([expiresAt], name: "idx_expires_at")
   @@map("user_whitelist")
 }
 
@@ -92,11 +100,9 @@ model User {
   phone        String?  @db.VarChar(50)
   fullName     String?  @map("full_name") @db.VarChar(100)
   isActive     Boolean  @default(false) @map("is_active") // 新用户默认未激活
-  roleLevel    Int      @default(99) @map("role_level") // 角色等级，99为未激活
-  roleCode     String   @default("unactivated") @map("role_code") @db.VarChar(50) // 角色代码
-  department   String?  @map("department") @db.VarChar(100) // 所属部门
+  roleCode     FactoryUserRole @default(unactivated) @map("role_code") // 角色代码
+  department   Department? @map("department") // 所属部门
   position     String?  @map("position") @db.VarChar(100) // 职位
-  permissions  Json?    @map("permissions") // 权限列表，JSON数组
   lastLogin    DateTime? @map("last_login")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -105,9 +111,13 @@ model User {
   factory           Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   sessions          Session[]
   addedWhitelist    UserWhitelist[] // 该用户添加的白名单记录
+  roleHistory       UserRoleHistory[] // 角色变更历史
 
   @@unique([factoryId, username]) // 同一工厂内用户名唯一
   @@unique([factoryId, email])    // 同一工厂内邮箱唯一
+  @@index([roleCode, department], name: "idx_role_department")
+  @@index([factoryId, roleCode], name: "idx_factory_role")
+  @@index([isActive, factoryId], name: "idx_active_users")
   @@map("users")
 }
 
@@ -145,7 +155,105 @@ model TempToken {
   isUsed      Boolean  @default(false) @map("is_used")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  @@index([type, factoryId], name: "idx_type_factory")
+  @@index([expiresAt, isUsed], name: "idx_expires_used")
   @@map("temp_tokens")
+}
+
+// 用户角色变更历史表
+model UserRoleHistory {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  factoryId     String   @map("factory_id") @db.VarChar(20)
+  oldRoleCode   FactoryUserRole? @map("old_role_code")
+  newRoleCode   FactoryUserRole @map("new_role_code")
+  oldDepartment Department? @map("old_department")
+  newDepartment Department? @map("new_department")
+  changedBy     Int      @map("changed_by")
+  changedByType String   @map("changed_by_type") @db.VarChar(20)
+  reason        String?  @map("reason") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // 关联关系
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "idx_user")
+  @@index([factoryId], name: "idx_factory")
+  @@index([changedBy], name: "idx_changed_by")
+  @@index([createdAt], name: "idx_created_at")
+  @@map("user_role_history")
+}
+
+// 权限审计日志表
+model PermissionAuditLog {
+  id               Int      @id @default(autoincrement())
+  timestamp        DateTime @default(now()) @map("timestamp")
+  actorType        String   @map("actor_type") @db.VarChar(20)
+  actorId          Int      @map("actor_id")
+  username         String   @map("username") @db.VarChar(100)
+  action           String   @map("action") @db.VarChar(100)
+  resource         String?  @map("resource") @db.VarChar(200)
+  targetUserId     Int?     @map("target_user_id")
+  targetResourceId String?  @map("target_resource_id") @db.VarChar(100)
+  ipAddress        String?  @map("ip_address") @db.VarChar(45)
+  userAgent        String?  @map("user_agent") @db.Text
+  factoryId        String?  @map("factory_id") @db.VarChar(20)
+  department       String?  @map("department") @db.VarChar(50)
+  result           String   @default("success") @map("result") @db.VarChar(20)
+  errorMessage     String?  @map("error_message") @db.Text
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([actorType, actorId], name: "idx_actor")
+  @@index([timestamp], name: "idx_timestamp")
+  @@index([factoryId], name: "idx_factory")
+  @@index([action], name: "idx_action")
+  @@index([result], name: "idx_result")
+  @@map("permission_audit_logs")
+}
+
+// 数据访问日志表
+model DataAccessLog {
+  id         Int      @id @default(autoincrement())
+  timestamp  DateTime @default(now()) @map("timestamp")
+  userId     Int      @map("user_id")
+  userType   String   @map("user_type") @db.VarChar(20)
+  factoryId  String?  @map("factory_id") @db.VarChar(20)
+  department String?  @map("department") @db.VarChar(50)
+  dataType   String   @map("data_type") @db.VarChar(100)
+  resourceId String?  @map("resource_id") @db.VarChar(100)
+  operation  String   @map("operation") @db.VarChar(20)
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId, userType], name: "idx_user")
+  @@index([timestamp], name: "idx_timestamp")
+  @@index([factoryId], name: "idx_factory")
+  @@index([dataType], name: "idx_data_type")
+  @@index([operation], name: "idx_operation")
+  @@map("data_access_logs")
+}
+
+// 工厂设置表
+model FactorySettings {
+  id                     Int      @id @default(autoincrement())
+  factoryId              String   @unique @map("factory_id") @db.VarChar(20)
+  allowSelfRegistration  Boolean  @default(false) @map("allow_self_registration")
+  requireAdminApproval   Boolean  @default(true) @map("require_admin_approval")
+  defaultUserRole        FactoryUserRole @default(viewer) @map("default_user_role")
+  sessionTimeoutMinutes  Int      @default(1440) @map("session_timeout_minutes")
+  maxFailedLoginAttempts Int      @default(5) @map("max_failed_login_attempts")
+  passwordPolicy         Json?    @map("password_policy")
+  departmentSettings     Json?    @map("department_settings")
+  customPermissions      Json?    @map("custom_permissions")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
+  @@map("factory_settings")
 }
 
 // 枚举定义
@@ -164,8 +272,30 @@ enum TempTokenType {
   @@map("temp_token_type")
 }
 
-enum Role {
-  ADMIN
-  MANAGER
-  USER
+enum PlatformRole {
+  platform_super_admin // 平台超级管理员
+  platform_operator    // 平台操作员
+
+  @@map("platform_role")
+}
+
+enum FactoryUserRole {
+  factory_super_admin // 工厂超级管理员
+  permission_admin    // 权限管理员
+  department_admin    // 部门管理员
+  operator           // 操作员
+  viewer            // 查看者
+  unactivated       // 未激活
+
+  @@map("factory_user_role")
+}
+
+enum Department {
+  farming    // 养殖部门
+  processing // 加工部门
+  logistics  // 物流部门
+  quality    // 质检部门
+  management // 管理部门
+
+  @@map("department")
 }
