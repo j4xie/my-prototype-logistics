@@ -25,6 +25,14 @@ export {
   useOfflineState
 } from './useAiState';
 
+// 权限管理Hooks
+export {
+  usePermissions,
+  usePermissionCheck,
+  useMultiPermissionCheck,
+  useDepartmentAccess
+} from './usePermissions';
+
 // 示例：
 // export { useAuth } from './useAuth';
 // export { useLocalStorage } from './useLocalStorage';

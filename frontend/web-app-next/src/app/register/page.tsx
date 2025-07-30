@@ -103,27 +103,29 @@ export default function RegisterPage() {
     setSubmitError('');
 
     try {
-      // Mock验证手机号白名单
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 使用真实API验证手机号
+      const { authService } = await import('@/services/auth.service');
+      
+      const response = await authService.verifyPhone(phoneVerificationData.phone, 'TEST_2024_001');
 
-      // 模拟白名单数据
-      const mockWhitelist = [
-        { phone: '13800138001', name: '张三', department: '养殖部门', position: '养殖技术员' },
-        { phone: '13800138002', name: '李四', department: '加工部门', position: '质检员' },
-        { phone: '13800138003', name: '王五', department: '物流部门', position: '配送员' },
-        { phone: '13800138004', name: '赵六', department: '管理部门', position: '主管' },
-        { phone: '13800138005', name: '钱七', department: '质检部门', position: '检验员' }
-      ];
+      if (response.success && response.data) {
+        // 手机号验证成功
+        const { tempToken, message } = response.data;
+        const whitelistEntry = response.data.metadata || {
+          name: '待注册用户',
+          department: '未分配',
+          position: '待分配'
+        };
 
-      const whitelistEntry = mockWhitelist.find(entry => entry.phone === phoneVerificationData.phone);
-
-      if (whitelistEntry) {
-        // 手机号在白名单中，可以继续注册
-        setWhitelistInfo(whitelistEntry);
+        setWhitelistInfo({
+          ...whitelistEntry,
+          tempToken
+        });
+        
         setFormData(prev => ({
           ...prev,
           phone: phoneVerificationData.phone,
-          realName: whitelistEntry.name,
+          realName: whitelistEntry.name || '',
           department: whitelistEntry.department === '养殖部门' ? 'farming' :
                     whitelistEntry.department === '加工部门' ? 'processing' :
                     whitelistEntry.department === '物流部门' ? 'logistics' :
@@ -132,8 +134,8 @@ export default function RegisterPage() {
         }));
         setCurrentStep('complete-profile');
       } else {
-        // 手机号不在白名单中
-        setSubmitError('该手机号未在注册白名单中，请联系管理员添加后重试');
+        // 手机号验证失败
+        setSubmitError(response.message || '该手机号未在注册白名单中，请联系管理员添加后重试');
       }
     } catch (error) {
       console.error('手机号验证失败:', error);
@@ -202,13 +204,10 @@ export default function RegisterPage() {
         username: formData.username,
         password: formData.password,
         email: formData.email,
-        role: formData.role,
-        permissions: 'basic',
-        last_login: null,
-        is_active: false, // 注册后需要管理员审核
-        phone: formData.phone,
-        department: formData.department,
-        position: whitelistInfo?.position || formData.realName,
+        phoneNumber: formData.phone,
+        fullName: formData.realName,
+        tempToken: whitelistInfo?.tempToken,
+        factoryId: 'TEST_2024_001',
         confirmPassword: formData.confirmPassword
       };
 

@@ -15,6 +15,13 @@ import {
   authenticatePlatformAdmin, 
   optionalAuth 
 } from '../middleware/auth.js';
+import {
+  requirePlatformPermission,
+  requireFactoryPermission,
+  requireDataAccess,
+  auditPermission,
+  createPermissionChain
+} from '../middleware/permissions.js';
 import { validate } from '../middleware/validation.js';
 import { authSchemas } from '../middleware/validation.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
@@ -58,6 +65,7 @@ router.post('/login',
  */
 router.post('/platform-login', 
   validate(authSchemas.platformAdminLogin),
+  auditPermission('platform_login', 'auth'),
   asyncHandler(platformLogin)
 );
 
@@ -68,6 +76,7 @@ router.post('/platform-login',
  */
 router.post('/logout', 
   authenticateUser,
+  auditPermission('logout', 'auth'),
   asyncHandler(logout)
 );
 
@@ -106,6 +115,7 @@ router.put('/password',
       newPassword: authSchemas.userRegistration.body.shape.password,
     }),
   }),
+  auditPermission('change_password', 'auth'),
   asyncHandler(changePassword)
 );
 
