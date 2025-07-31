@@ -24,7 +24,7 @@ const mapRoleCodeToRoleName = (roleCode) => {
   const roleMap = {
     'developer': 'DEVELOPER',
     'platform_admin': 'PLATFORM_ADMIN',
-    'super_admin': 'SUPER_ADMIN',
+    'factory_super_admin': 'SUPER_ADMIN',
     'permission_admin': 'PERMISSION_ADMIN',
     'department_admin': 'DEPARTMENT_ADMIN',
     'user': 'USER',
@@ -38,7 +38,7 @@ const getRoleDisplayName = (roleCode) => {
   const displayNameMap = {
     'developer': '系统开发者',
     'platform_admin': '平台管理员',
-    'super_admin': '工厂超级管理员',
+    'factory_super_admin': '工厂超级管理员',
     'permission_admin': '权限管理员',
     'department_admin': '部门管理员',
     'user': '普通用户',
@@ -97,7 +97,7 @@ const generateUserPermissions = (user) => {
   }
   
   // 工厂超级管理员权限
-  if (roleCode === 'super_admin') {
+  if (roleCode === 'factory_super_admin') {
     return {
       modules: {
         farming_access: true,

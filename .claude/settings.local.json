@@ -43,7 +43,16 @@
       "Bash(sed:*)",
       "Bash(ss:*)",
       "Bash(kill:*)",
-      "Bash(PORT=3001 npm run dev)"
+      "Bash(PORT=3001 npm run dev)",
+      "Bash(powershell:*)",
+      "Bash(taskkill:*)",
+      "Bash(sc query:*)",
+      "Bash(dir:*)",
+      "Bash(where mysql)",
+      "Bash(wsl:*)",
+      "Bash(netsh:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npx prisma db execute:*)"
     ],
     "deny": []
   }

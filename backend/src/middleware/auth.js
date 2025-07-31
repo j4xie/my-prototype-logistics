@@ -235,7 +235,7 @@ export const requireAdmin = (req, res, next) => {
     return next();
   }
 
-  const adminRoles = ['super_admin', 'permission_admin'];
+  const adminRoles = ['factory_super_admin', 'permission_admin'];
   
   if (!adminRoles.includes(req.user.roleCode)) {
     return res.status(403).json({
@@ -267,7 +267,7 @@ export const requireSuperAdmin = (req, res, next) => {
     return next();
   }
 
-  if (req.user.roleCode !== 'super_admin') {
+  if (req.user.roleCode !== 'factory_super_admin') {
     return res.status(403).json({
       success: false,
       message: '需要超级管理员权限',

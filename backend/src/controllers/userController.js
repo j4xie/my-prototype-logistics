@@ -38,7 +38,7 @@ export const activateUser = async (req, res, next) => {
     }
 
     // 验证角色权限（只有super_admin可以创建permission_admin）
-    if (roleCode === 'permission_admin' && currentUser.roleCode !== 'super_admin') {
+    if (roleCode === 'permission_admin' && currentUser.roleCode !== 'factory_super_admin') {
       throw new BusinessLogicError('只有超级管理员可以创建权限管理员');
     }
 
@@ -289,7 +289,7 @@ export const toggleUserStatus = async (req, res, next) => {
     }
 
     // 防止超级管理员被停用
-    if (targetUser.roleCode === 'super_admin' && !isActive) {
+    if (targetUser.roleCode === 'factory_super_admin' && !isActive) {
       throw new BusinessLogicError('超级管理员不能被停用');
     }
 

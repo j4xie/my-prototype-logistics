@@ -161,7 +161,7 @@ export const userSchemas = {
       userId: baseSchemas.id,
     }),
     body: z.object({
-      roleCode: z.enum(['super_admin', 'permission_admin', 'department_admin', 'user']),
+      roleCode: z.enum(['factory_super_admin', 'permission_admin', 'department_admin', 'user']),
       roleLevel: z.number().int().min(1).max(99),
       department: z.string().optional(),
       position: z.string().optional(),
