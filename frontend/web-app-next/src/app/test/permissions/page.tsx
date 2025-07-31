@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   usePermissions,
   usePermissionCheck,
@@ -24,6 +24,12 @@ import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/u
  */
 export default function PermissionsTestPage() {
   const [testResults, setTestResults] = useState<Record<string, boolean>>({});
+  const [isClient, setIsClient] = useState(false);
+
+  // 确保只在客户端渲染权限组件
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 测试所有权限Hook
   const permissions = usePermissions();
@@ -34,6 +40,18 @@ export default function PermissionsTestPage() {
     'user_manage_all'
   ]);
   const departmentAccess = useDepartmentAccess('default'); // 使用默认部门进行测试
+
+  // 在服务器端渲染时显示加载状态
+  if (!isClient) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">权限系统测试</h1>
+          <p className="text-gray-600">正在加载权限系统...</p>
+        </div>
+      </div>
+    );
+  }
 
   // 记录测试结果
   const recordTest = (testName: string, result: boolean) => {
