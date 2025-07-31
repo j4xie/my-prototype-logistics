@@ -446,7 +446,7 @@ export const createSuperAdmin = async (req, res, next) => {
     const existingSuperAdmin = await prisma.user.findFirst({
       where: {
         factoryId,
-        roleCode: 'super_admin',
+        roleCode: 'factory_super_admin',
       },
     });
 
@@ -494,9 +494,9 @@ export const createSuperAdmin = async (req, res, next) => {
         phone,
         fullName,
         isActive: true,
-        roleCode: 'super_admin',
+        roleCode: 'factory_super_admin',
         roleLevel: 0,
-        department: 'admin',
+        department: 'management',
         position: '超级管理员',
         permissions: [
           'admin:read',

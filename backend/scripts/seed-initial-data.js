@@ -58,7 +58,7 @@ async function seedInitialData() {
         fullName: '工厂超级管理员',
         isActive: true,
         roleLevel: 1,
-        roleCode: 'super_admin',
+        roleCode: 'factory_super_admin',
         department: 'management',
         position: '超级管理员',
         permissions: ['all'],
