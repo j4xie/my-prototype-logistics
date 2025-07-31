@@ -51,7 +51,7 @@ const getRoleDisplayName = (roleCode) => {
 const generateUserPermissions = (user) => {
   const roleCode = user.roleCode;
   const department = user.department;
-  
+
   // 开发者拥有所有权限
   if (roleCode === 'developer') {
     return {
@@ -77,7 +77,7 @@ const generateUserPermissions = (user) => {
       department: department
     };
   }
-  
+
   // 平台管理员权限
   if (roleCode === 'platform_admin') {
     return {
@@ -95,7 +95,7 @@ const generateUserPermissions = (user) => {
       department: null
     };
   }
-  
+
   // 工厂超级管理员权限
   if (roleCode === 'factory_super_admin') {
     return {
@@ -117,7 +117,7 @@ const generateUserPermissions = (user) => {
       department: department
     };
   }
-  
+
   // 权限管理员权限
   if (roleCode === 'permission_admin') {
     return {
@@ -138,7 +138,7 @@ const generateUserPermissions = (user) => {
       department: department
     };
   }
-  
+
   // 部门管理员权限
   if (roleCode === 'department_admin') {
     return {
@@ -159,7 +159,7 @@ const generateUserPermissions = (user) => {
       department: department
     };
   }
-  
+
   // 普通用户权限
   return {
     modules: {
@@ -343,92 +343,66 @@ export const login = async (req, res, next) => {
   try {
     const { username, password, factoryId } = req.body;
 
-    // 🚀 临时演示数据 - 生产环境快速验证方案
-    const demoMode = process.env.NODE_ENV === 'production';
-    
-    if (demoMode) {
-      console.log('🎯 演示模式：使用内存数据验证登录');
+        console.log('🔍 登录请求:', { username, factoryId, timestamp: new Date().toISOString() });
+
+    // 🔧 临时解决方案：使用内存数据绕过数据库连接问题
+    if (process.env.NODE_ENV === 'production') {
+      console.log('⚡ 生产环境：使用内存数据进行登录验证');
       
-      // 模拟工厂和用户数据
-      const demoFactory = {
-        id: 'FCT_2025_001',
-        name: '黑牛演示工厂',
-        isActive: true
-      };
+      // 验证基本参数
+      if (!username || !password || !factoryId) {
+        throw new ValidationError('用户名、密码和工厂ID都是必需的');
+      }
       
-      const demoUsers = [
-        {
-          id: 'demo_001',
-          username: 'factory_admin',
-          factoryId: 'FCT_2025_001',
-          roleCode: 'factory_super_admin',
-          isActive: true,
-          fullName: '工厂管理员',
-          email: 'admin@demo.com'
-        },
-        {
-          id: 'demo_002', 
-          username: 'developer',
-          factoryId: 'FCT_2025_001',
-          roleCode: 'developer',
-          isActive: true,
-          fullName: '系统开发者',
-          email: 'dev@demo.com'
-        }
-      ];
-      
-      // 验证factoryId
-      if (factoryId !== demoFactory.id) {
+      // 验证工厂ID格式
+      if (factoryId !== 'FCT_2025_001') {
         throw new NotFoundError('工厂不存在或已停用');
       }
       
-      // 查找用户
-      const user = demoUsers.find(u => 
-        u.username === username && 
-        u.factoryId === factoryId
-      );
+      // 验证用户凭据
+      const validUsers = [
+        { username: 'factory_admin', password: 'SuperAdmin@123', roleCode: 'factory_super_admin' },
+        { username: 'developer', password: 'Developer@123', roleCode: 'developer' }
+      ];
       
+      const user = validUsers.find(u => u.username === username && u.password === password);
       if (!user) {
         throw new AuthenticationError('用户名或密码错误');
       }
       
-      if (!user.isActive) {
-        throw new BusinessLogicError('账户尚未激活，请联系管理员', 'USER_NOT_ACTIVATED');
-      }
+      // 模拟用户对象
+      const mockUser = {
+        id: 'demo_' + Date.now(),
+        username: user.username,
+        email: user.username + '@demo.com',
+        fullName: user.roleCode === 'developer' ? '系统开发者' : '工厂超级管理员',
+        factoryId: factoryId,
+        roleCode: user.roleCode,
+        isActive: true
+      };
       
-      // 验证密码（演示模式简化验证）
-      if (username === 'factory_admin' && password !== 'SuperAdmin@123') {
-        throw new AuthenticationError('用户名或密码错误');
-      }
+      // 生成权限和令牌
+      const userPermissions = generateUserPermissions(mockUser);
+      const tokens = await generateAuthTokens(mockUser);
       
-      if (username === 'developer' && password !== 'Developer@123') {
-        throw new AuthenticationError('用户名或密码错误');
-      }
-      
-      // 生成用户权限
-      const userPermissions = generateUserPermissions(user);
-      
-      // 生成认证token
-      const tokens = await generateAuthTokens(user);
-      
-      console.log('✅ 演示模式登录成功:', { username, factoryId });
+      console.log('✅ 内存数据登录成功:', { username, factoryId });
       
       res.json(createSuccessResponse({
         user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          fullName: user.fullName,
-          factoryId: user.factoryId,
-          roleCode: user.roleCode,
-          roleName: mapRoleCodeToRoleName(user.roleCode),
-          roleDisplayName: getRoleDisplayName(user.roleCode),
-          isActive: user.isActive,
+          id: mockUser.id,
+          username: mockUser.username,
+          email: mockUser.email,
+          fullName: mockUser.fullName,
+          factoryId: mockUser.factoryId,
+          roleCode: mockUser.roleCode,
+          roleName: mapRoleCodeToRoleName(mockUser.roleCode),
+          roleDisplayName: getRoleDisplayName(mockUser.roleCode),
+          isActive: mockUser.isActive,
           permissions: userPermissions,
         },
         factory: {
-          id: demoFactory.id,
-          name: demoFactory.name,
+          id: factoryId,
+          name: '黑牛演示工厂',
         },
         tokens: {
           accessToken: tokens.accessToken,
@@ -441,6 +415,7 @@ export const login = async (req, res, next) => {
     }
 
     // 验证工厂是否存在且激活
+    console.log('📊 查询工厂:', factoryId);
     const factory = await prisma.factory.findFirst({
       where: {
         id: factoryId,
@@ -449,8 +424,11 @@ export const login = async (req, res, next) => {
     });
 
     if (!factory) {
+      console.log('❌ 工厂不存在:', factoryId);
       throw new NotFoundError('工厂不存在或已停用');
     }
+    
+    console.log('✅ 工厂验证成功:', { id: factory.id, name: factory.name });
 
     // 查找用户
     const user = await prisma.user.findFirst({
