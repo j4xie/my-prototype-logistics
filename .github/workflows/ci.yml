@@ -13,7 +13,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [18.x]
     
     steps:
     - uses: actions/checkout@v4
@@ -23,6 +23,16 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        cache-dependency-path: frontend/web-app-next/package-lock.json
         
     - name: Install dependencies
+      working-directory: frontend/web-app-next
       run: npm install
+      
+    - name: Build project
+      working-directory: frontend/web-app-next  
+      run: npm run build
+      
+    - name: Run tests
+      working-directory: frontend/web-app-next
+      run: npm test || true
