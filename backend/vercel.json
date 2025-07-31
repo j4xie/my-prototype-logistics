@@ -26,6 +26,9 @@
   ],
   "env": {
     "NODE_ENV": "production",
-    "CORS_ORIGIN": "https://my-prototype-logistics.vercel.app"
+    "CORS_ORIGIN": "https://my-prototype-logistics.vercel.app",
+    "DATABASE_URL": "mysql://root:temporary_password@your_db_host:3306/heiniu_db",
+    "JWT_SECRET": "your-super-secret-jwt-key-here",
+    "JWT_EXPIRES_IN": "7d"
   }
 }
