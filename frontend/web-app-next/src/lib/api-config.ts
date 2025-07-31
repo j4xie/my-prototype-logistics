@@ -37,7 +37,7 @@ export const getApiConfig = (): ApiConfig => {
     mockEnabled: process.env.NEXT_PUBLIC_MOCK_ENABLED === 'true',
     mockHealthCheck: process.env.NEXT_PUBLIC_MOCK_HEALTH_CHECK === 'true', // 默认关闭
     schemaVersion: process.env.NEXT_PUBLIC_API_SCHEMA_VERSION || '1.0.0',
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001', // 默认使用真实后端
+    baseURL: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_REAL_API_BASE || 'https://backend-theta-taupe-21.vercel.app', // 生产环境回退URL
     timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '10000'),
     retryAttempts: parseInt(process.env.NEXT_PUBLIC_API_RETRY_ATTEMPTS || '3')
   };

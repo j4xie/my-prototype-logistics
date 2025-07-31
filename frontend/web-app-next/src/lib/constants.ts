@@ -9,7 +9,7 @@ export const APP_CONFIG = {
 
 // API Configuration
 export const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api',
+  baseUrl: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_REAL_API_BASE || 'https://backend-theta-taupe-21.vercel.app',
   timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '10000'),
 } as const;
 

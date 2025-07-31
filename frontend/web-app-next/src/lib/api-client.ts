@@ -100,7 +100,7 @@ export class MinimalApiClient {
 
   constructor(config: MinimalApiClientConfig = {}) {
     this.config = {
-      baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api',
+      baseURL: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_REAL_API_BASE || 'https://backend-theta-taupe-21.vercel.app',
       timeout: 10000,
       headers: { 'Content-Type': 'application/json' },
       retryAttempts: 3,
