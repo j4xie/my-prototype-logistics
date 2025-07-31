@@ -26,7 +26,7 @@
   ],
   "env": {
     "NODE_ENV": "production",
-    "CORS_ORIGIN": "https://my-prototype-logistics.vercel.app",
+          "CORS_ORIGIN": "https://my-prototype-logistics-3ru86x1fe-stevenj4xies-projects.vercel.app",
     "DATABASE_URL": "postgresql://neondb_owner:npg_kfzr1lpLcA8q@ep-holy-bread-aetqpx34-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
     "JWT_SECRET": "suyuan2025",
     "JWT_EXPIRES_IN": "7d"
