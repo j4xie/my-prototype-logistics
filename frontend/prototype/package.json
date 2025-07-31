@@ -1,0 +1,13 @@
+{
+  "name": "food-traceability-prototype",
+  "version": "1.0.0",
+  "description": "Static HTML prototype for food traceability system",
+  "main": "modern-app/index.html",
+  "scripts": {
+    "build": "echo 'Static site - no build required'",
+    "start": "echo 'Static site - no start script required'"
+  },
+  "keywords": ["prototype", "static", "html"],
+  "author": "",
+  "license": "ISC"
+}
