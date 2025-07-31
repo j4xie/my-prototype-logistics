@@ -10,7 +10,7 @@
     "NEXT_PUBLIC_MOCK_ENABLED": "false",
     "NODE_ENV": "production",
     "NEXT_PUBLIC_USE_REAL_AUTH_API": "true",
-    "NEXT_PUBLIC_API_BASE_URL": "https://backend-theta-taupe-21.vercel.app/api",
+    "NEXT_PUBLIC_API_URL": "https://backend-theta-taupe-21.vercel.app",
     "NEXT_PUBLIC_REAL_API_BASE": "https://backend-theta-taupe-21.vercel.app",
     "NEXT_PUBLIC_APP_ENV": "production",
     "NEXT_PUBLIC_DEBUG": "false"
