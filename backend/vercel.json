@@ -8,6 +8,10 @@
   ],
   "routes": [
     {
+      "src": "/favicon\\.(ico|png)",
+      "status": 404
+    },
+    {
       "src": "/api/(.*)",
       "dest": "src/index.js"
     },

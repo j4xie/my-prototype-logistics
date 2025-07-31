@@ -57,6 +57,15 @@ app.get('/', (req, res) => {
   });
 });
 
+// 静态资源拦截 - 直接返回404避免进入API路由
+app.get('/favicon.ico', (req, res) => {
+  res.status(404).send('Not Found');
+});
+
+app.get('/favicon.png', (req, res) => {
+  res.status(404).send('Not Found');
+});
+
 // 健康检查
 app.get('/health', (req, res) => {
   res.json({
