@@ -52,7 +52,9 @@
       "Bash(wsl:*)",
       "Bash(netsh:*)",
       "Bash(npx prisma migrate:*)",
-      "Bash(npx prisma db execute:*)"
+      "Bash(npx prisma db execute:*)",
+      "Bash(tasklist:*)",
+      "Bash(TASKKILL /F /PID 103284)"
     ],
     "deny": []
   }
