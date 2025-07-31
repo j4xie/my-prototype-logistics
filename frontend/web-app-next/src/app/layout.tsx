@@ -27,6 +27,11 @@ import DeveloperNavigation from '@/components/developer/DeveloperNavigation';
 export const metadata: Metadata = {
   title: '黑牛食品溯源系统',
   description: '食品溯源管理系统 - 农业生产、加工、物流全链路追踪',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
