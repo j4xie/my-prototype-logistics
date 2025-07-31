@@ -6,8 +6,8 @@
 
 import { useMemo, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { 
-  PermissionChecker, 
+import {
+  PermissionChecker,
   ModuleAccessState,
   MODULE_PERMISSIONS,
   FEATURE_PERMISSIONS,
@@ -39,18 +39,18 @@ interface PermissionResult {
   hasAllPermissions: (permissions: string[]) => boolean;
   hasModuleAccess: (module: string) => boolean;
   hasFeaturePermission: (feature: string) => boolean;
-  
+
   // 业务权限检查
   canAccessDepartment: (department: string) => boolean;
   canManageUser: (targetUser: User) => boolean;
   hasRoleLevel: (requiredLevel: number) => boolean;
-  
+
   // 用户信息获取
   getUserPermissions: () => UserPermissions | null;
   getUserRole: () => UserRole | null;
   getUserType: () => 'platform_admin' | 'factory_user' | null;
   getModuleAccessState: () => ModuleAccessState;
-  
+
   // 兼容性方法（向后兼容）
   isAuthenticated: boolean;
   roleLevel: number;
@@ -60,7 +60,7 @@ interface PermissionResult {
   canAccessTrace: boolean;
   canAccessAdmin: boolean;
   canAccessPlatform: boolean;
-  
+
   // 状态信息
   roleInfo: RoleInfo | null;
   isLoading: boolean;
@@ -71,12 +71,12 @@ interface PermissionResult {
  */
 const getUserType = (user: User | null): 'platform_admin' | 'factory_user' | null => {
   if (!user?.permissions) return null;
-  
+
   // 检查是否为平台管理员
   if (user.permissions.role === 'PLATFORM_ADMIN') {
     return 'platform_admin';
   }
-  
+
   // 其他都是工厂用户
   return 'factory_user';
 };
@@ -111,7 +111,7 @@ const canManageUser = (user: User | null, targetUser: User): boolean => {
 
   // 工厂超级管理员可以管理工厂内所有用户（除了平台管理员和开发者）
   if (userRole === 'SUPER_ADMIN') {
-    return targetUser.permissions.role !== 'PLATFORM_ADMIN' && 
+    return targetUser.permissions.role !== 'PLATFORM_ADMIN' &&
            targetUser.permissions.role !== 'DEVELOPER';
   }
 
@@ -205,33 +205,33 @@ export function usePermissions(): PermissionResult {
 
   const hasModuleAccess = useCallback((module: string): boolean => {
     if (!userPermissions) return false;
-    
+
     // 开发者绕过所有权限检查
     if (isDeveloper(user)) return true;
-    
+
     const moduleKey = module.toUpperCase() + '_ACCESS' as keyof typeof MODULE_PERMISSIONS;
     if (MODULE_PERMISSIONS[moduleKey]) {
       return PermissionChecker.hasModuleAccess(userPermissions, moduleKey);
     }
-    
+
     return false;
   }, [userPermissions, user]);
 
   const hasFeaturePermission = useCallback((feature: string): boolean => {
     if (!userPermissions) return false;
-    
+
     // 开发者绕过所有权限检查
     if (isDeveloper(user)) return true;
-    
+
     return PermissionChecker.hasFeaturePermission(userPermissions, feature);
   }, [userPermissions, user]);
 
   const hasRoleLevel = useCallback((requiredLevel: number): boolean => {
     if (!userPermissions) return false;
-    
+
     // 开发者拥有最高权限级别（-1），总是满足要求
     if (isDeveloper(user)) return true;
-    
+
     return PermissionChecker.hasRoleLevel(userPermissions, requiredLevel);
   }, [userPermissions, user]);
 
@@ -267,7 +267,7 @@ export function usePermissions(): PermissionResult {
         platform: false
       };
     }
-    
+
     return PermissionChecker.getModuleAccessState(userPermissions);
   }, [userPermissions]);
 
@@ -282,7 +282,7 @@ export function usePermissions(): PermissionResult {
     const roleDisplayNames: Record<UserRole, string> = {
       'DEVELOPER': '系统开发者',
       'PLATFORM_ADMIN': '平台管理员',
-      'SUPER_ADMIN': '工厂超级管理员', 
+      'SUPER_ADMIN': '工厂超级管理员',
       'PERMISSION_ADMIN': '权限管理员',
       'DEPARTMENT_ADMIN': '部门管理员',
       'USER': '普通员工'
@@ -311,7 +311,7 @@ export function usePermissions(): PermissionResult {
         canAccessPlatform: false
       };
     }
-    
+
     const moduleState = PermissionChecker.getModuleAccessState(userPermissions);
     return {
       canAccessFarming: moduleState.farming,
@@ -336,12 +336,12 @@ export function usePermissions(): PermissionResult {
     getUserRole: getUserRoleCallback,
     getUserType: getUserTypeCallback,
     getModuleAccessState,
-    
+
     // 兼容性属性
     isAuthenticated: !!user,
     roleLevel: userPermissions?.roleLevel || 999,
     ...moduleAccess,
-    
+
     roleInfo,
     isLoading: loading
   };
@@ -360,11 +360,11 @@ export function usePermissionCheck(permission: string) {
  */
 export function useMultiPermissionCheck(permissions: string[], requireAll = false) {
   const { hasAnyPermission, hasAllPermissions, isLoading } = usePermissions();
-  
-  const hasPermission = requireAll 
+
+  const hasPermission = requireAll
     ? hasAllPermissions(permissions)
     : hasAnyPermission(permissions);
-    
+
   return { hasPermission, isLoading };
 }
 
@@ -397,16 +397,16 @@ export function useFeaturePermission(feature: string) {
  */
 export function useModuleStates() {
   const { getModuleAccessState, getUserRole, getUserType } = usePermissions();
-  
+
   const moduleStates = useMemo(() => {
     const accessState = getModuleAccessState();
     const userType = getUserType();
     const userRole = getUserRole();
-    
+
     // 生成模块状态信息
     const getModuleState = (module: keyof ModuleAccessState) => {
       const accessible = accessState[module];
-      
+
       // 模块配置
       const moduleConfig = {
         farming: {
@@ -415,13 +415,13 @@ export function useModuleStates() {
           needPermission: '需要养殖部门权限'
         },
         processing: {
-          name: '加工生产管理', 
+          name: '加工生产管理',
           color: 'text-blue-600',
           needPermission: '需要生产部门权限'
         },
         logistics: {
           name: '物流配送管理',
-          color: 'text-orange-600', 
+          color: 'text-orange-600',
           needPermission: '需要物流部门权限'
         },
         trace: {
@@ -440,16 +440,16 @@ export function useModuleStates() {
           needPermission: '仅限平台管理员'
         }
       };
-      
+
       const config = moduleConfig[module];
-      
+
       return {
         accessible,
         tooltip: accessible ? config.name : config.needPermission,
         className: accessible ? config.color : 'text-gray-400'
       };
     };
-    
+
     return {
       farming: getModuleState('farming'),
       processing: getModuleState('processing'),
@@ -464,7 +464,7 @@ export function useModuleStates() {
       }
     };
   }, [getModuleAccessState, getUserRole, getUserType]);
-  
+
   return moduleStates;
 }
 

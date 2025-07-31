@@ -82,7 +82,7 @@ async function checkAccounts() {
     } else {
       // 按角色分组显示
       const roleGroups = {
-        'super_admin': '🔹 工厂超级管理员',
+        'factory_super_admin': '🔹 工厂超级管理员',
         'department_admin': '🔸 部门管理员', 
         'user': '👨‍💼 普通用户',
         'unactivated': '⏳ 待激活用户'

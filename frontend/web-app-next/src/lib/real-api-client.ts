@@ -20,6 +20,11 @@ export class RealApiClient {
   constructor() {
     this.baseURL = REAL_API_CONFIG.baseURL;
     
+    console.log('[RealApiClient] 初始化:', {
+      baseURL: this.baseURL,
+      REAL_API_CONFIG
+    });
+    
     // 从localStorage获取token
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('auth-token');
@@ -101,14 +106,28 @@ export class RealApiClient {
    */
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     const url = new URL(endpoint, this.baseURL);
-
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: data ? JSON.stringify(data) : undefined,
+    
+    console.log('[RealApiClient] POST 请求:', {
+      endpoint,
+      url: url.toString(),
+      baseURL: this.baseURL,
+      data,
+      headers: this.getHeaders()
     });
 
-    return this.handleResponse<T>(response);
+    try {
+      const response = await fetch(url.toString(), {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: data ? JSON.stringify(data) : undefined,
+      });
+
+      console.log('[RealApiClient] 响应状态:', response.status, response.statusText);
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      console.error('[RealApiClient] 请求失败:', error);
+      throw error;
+    }
   }
 
   /**

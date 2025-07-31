@@ -46,24 +46,21 @@ const ACCOUNTS_CONFIG = {
       password: 'DeptAdmin@123',
       email: 'farming@heiniu.com',
       fullName: '养殖部门管理员',
-      department: 'farming',
-      permissions: ['farming:read', 'farming:write', 'farming:delete', 'trace:read']
+      department: 'farming'
     },
     {
       username: 'processing_admin', 
       password: 'DeptAdmin@123',
       email: 'processing@heiniu.com',
       fullName: '加工部门管理员',
-      department: 'processing',
-      permissions: ['processing:read', 'processing:write', 'processing:delete', 'trace:read']
+      department: 'processing'
     },
     {
       username: 'logistics_admin',
       password: 'DeptAdmin@123', 
       email: 'logistics@heiniu.com',
       fullName: '物流部门管理员',
-      department: 'logistics',
-      permissions: ['logistics:read', 'logistics:write', 'logistics:delete', 'trace:read']
+      department: 'logistics'
     }
   ],
   testUsers: [
@@ -145,19 +142,9 @@ async function runUnifiedSeed() {
         phone: '13800138002',
         fullName: ACCOUNTS_CONFIG.factory.superAdmin.fullName,
         isActive: true,
-        roleCode: 'super_admin',
-        roleLevel: 0,
-        department: 'admin',
+        roleCode: 'factory_super_admin',
+        department: 'management',
         position: '超级管理员',
-        permissions: [
-          'admin:read', 'admin:write', 'admin:delete',
-          'user:read', 'user:write', 'user:delete',
-          'whitelist:read', 'whitelist:write', 'whitelist:delete',
-          'farming:read', 'farming:write', 'farming:delete',
-          'processing:read', 'processing:write', 'processing:delete',
-          'logistics:read', 'logistics:write', 'logistics:delete',
-          'quality:read', 'quality:write', 'quality:delete',
-        ],
       },
     });
     console.log(`   ✅ 超级管理员: ${superAdmin.username}`);
@@ -183,22 +170,9 @@ async function runUnifiedSeed() {
         phone: '13800138000',
         fullName: ACCOUNTS_CONFIG.developer.fullName,
         isActive: true,
-        roleCode: 'developer',
-        roleLevel: -1, // 最高权限级别
-        department: 'development',
+        roleCode: 'factory_super_admin',
+        department: 'management',
         position: '系统开发者',
-        permissions: [
-          'all', // 开发者拥有所有权限
-          'developer:debug', 'developer:config', 'developer:export',
-          'admin:read', 'admin:write', 'admin:delete',
-          'user:read', 'user:write', 'user:delete',
-          'whitelist:read', 'whitelist:write', 'whitelist:delete',
-          'farming:read', 'farming:write', 'farming:delete',
-          'processing:read', 'processing:write', 'processing:delete',
-          'logistics:read', 'logistics:write', 'logistics:delete',
-          'quality:read', 'quality:write', 'quality:delete',
-          'platform:read', 'platform:write', 'platform:delete',
-        ],
       },
     });
     console.log(`   ✅ 开发者账号: ${developer.username}`);
@@ -225,10 +199,8 @@ async function runUnifiedSeed() {
           fullName: dept.fullName,
           isActive: true,
           roleCode: 'department_admin',
-          roleLevel: 10,
           department: dept.department,
           position: '部门管理员',
-          permissions: dept.permissions,
         },
       });
       
@@ -284,9 +256,7 @@ async function runUnifiedSeed() {
           fullName: testUser.fullName,
           isActive: false, // 待激活状态
           roleCode: 'unactivated',
-          roleLevel: 99,
           department: testUser.department,
-          permissions: [],
         },
       });
       
