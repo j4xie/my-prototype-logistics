@@ -62,9 +62,9 @@ async function seedDatabase() {
         phone: '13800138002',
         fullName: '工厂超级管理员',
         isActive: true,
-        roleCode: 'super_admin',
+        roleCode: 'factory_super_admin',
         roleLevel: 0,
-        department: 'admin',
+        department: 'management',
         position: '超级管理员',
         permissions: [
           'admin:read', 'admin:write', 'admin:delete',

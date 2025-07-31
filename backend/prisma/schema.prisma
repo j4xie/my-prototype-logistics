@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -12,26 +12,26 @@ model Factory {
   id               String   @id @map("id") // 工厂ID (新格式: '144-GD-2025-001' 或老格式: 'FCT_2024_001')
   name             String   @map("name") // 工厂名称
   industry         String?  @map("industry") // 所属行业描述
-  address          String?  @map("address") @db.Text // 工厂地址
+  address          String?  @map("address") // 工厂地址
   employeeCount    Int?     @map("employee_count") // 员工数量
-  subscriptionPlan String?  @map("subscription_plan") @db.VarChar(50) // 订阅套餐
-  contactName      String?  @map("contact_name") @db.VarChar(100) // 负责人姓名
-  contactPhone     String?  @map("contact_phone") @db.VarChar(50) // 联系电话
+  subscriptionPlan String?  @map("subscription_plan") // 订阅套餐
+  contactName      String?  @map("contact_name") // 负责人姓名
+  contactPhone     String?  @map("contact_phone") // 联系电话
   contactEmail     String?  @map("contact_email") // 联系邮箱
   isActive         Boolean  @default(true) @map("is_active") // 工厂账户是否激活
-  
+
   // 新增字段 - 科学化编码支持
-  industryCode     String?  @map("industry_code") @db.VarChar(3) // 行业代码 (如: 144)
-  regionCode       String?  @map("region_code") @db.VarChar(2) // 地区代码 (如: GD)
+  industryCode     String?  @map("industry_code") // 行业代码 (如: 144)
+  regionCode       String?  @map("region_code") // 地区代码 (如: GD)
   factoryYear      Int?     @map("factory_year") // 建厂年份 (如: 2025)
   sequenceNumber   Int?     @map("sequence_number") // 同类型序号 (如: 1)
-  legacyId         String?  @map("legacy_id") @db.VarChar(50) // 老格式ID (如: FCT_2024_001)
-  
+  legacyId         String?  @map("legacy_id") // 老格式ID (如: FCT_2024_001)
+
   // 推断元数据
   inferenceData    Json?    @map("inference_data") // 推断过程数据
   confidence       Float?   @map("confidence") // 推断置信度
   manuallyVerified Boolean  @default(false) @map("manually_verified") // 是否人工验证
-  
+
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -54,11 +54,11 @@ model Factory {
 // 平台管理员表 - 独立于工厂的平台级管理
 model PlatformAdmin {
   id           Int      @id @default(autoincrement())
-  username     String   @unique @db.VarChar(100)
+  username     String   @unique
   passwordHash String   @map("password_hash")
   email        String   @unique
-  phone        String?  @db.VarChar(50)
-  fullName     String?  @map("full_name") @db.VarChar(100)
+  phone        String?
+  fullName     String?  @map("full_name")
   role         PlatformRole @default(platform_operator) @map("role")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -70,8 +70,8 @@ model PlatformAdmin {
 // 用户白名单表 - 支持白名单前置注册
 model UserWhitelist {
   id          Int      @id @default(autoincrement())
-  factoryId   String   @map("factory_id") @db.VarChar(20)
-  phoneNumber String   @map("phone_number") @db.VarChar(50)
+  factoryId   String   @map("factory_id")
+  phoneNumber String   @map("phone_number")
   status      WhitelistStatus @default(PENDING) @map("status") // 状态: PENDING, REGISTERED, EXPIRED
   addedByUserId Int?   @map("added_by_user_id") // 添加该白名单的管理员ID
   invitedBy   Int?     @map("invited_by") // 邀请人ID
@@ -93,16 +93,16 @@ model UserWhitelist {
 // 统一用户表 - 支持多租户的用户管理
 model User {
   id           Int      @id @default(autoincrement())
-  factoryId    String   @map("factory_id") @db.VarChar(20) // 所属工厂
-  username     String   @db.VarChar(100)
+  factoryId    String   @map("factory_id")  // 所属工厂
+  username     String
   passwordHash String   @map("password_hash")
   email        String
-  phone        String?  @db.VarChar(50)
-  fullName     String?  @map("full_name") @db.VarChar(100)
+  phone        String?
+  fullName     String?  @map("full_name")
   isActive     Boolean  @default(false) @map("is_active") // 新用户默认未激活
   roleCode     FactoryUserRole @default(unactivated) @map("role_code") // 角色代码
   department   Department? @map("department") // 所属部门
-  position     String?  @map("position") @db.VarChar(100) // 职位
+  position     String?  @map("position")  // 职位
   lastLogin    DateTime? @map("last_login")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -125,9 +125,9 @@ model User {
 model Session {
   id           String   @id @default(uuid())
   userId       Int      @map("user_id")
-  factoryId    String   @map("factory_id") @db.VarChar(20) // 工厂ID，用于数据隔离
-  token        String   @db.Text
-  refreshToken String   @map("refresh_token") @db.Text
+  factoryId    String   @map("factory_id")  // 工厂ID，用于数据隔离
+  token        String
+  refreshToken String   @map("refresh_token")
   expiresAt    DateTime @map("expires_at")
   isRevoked    Boolean  @default(false) @map("is_revoked") // 是否已撤销
   createdAt    DateTime @default(now()) @map("created_at")
@@ -137,19 +137,19 @@ model Session {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
 
-  // 唯一约束（使用前255个字符）
-  @@unique([token(length: 255)], name: "unique_token")
-  @@unique([refreshToken(length: 255)], name: "unique_refresh_token")
+  // 唯一约束
+  @@unique([token], name: "unique_token")
+  @@unique([refreshToken], name: "unique_refresh_token")
   @@map("sessions")
 }
 
 // 临时验证令牌表 - 用于手机验证等临时操作
 model TempToken {
   id          Int      @id @default(autoincrement())
-  token       String   @unique @db.VarChar(255)
+  token       String   @unique
   type        TempTokenType @map("type") // 令牌类型
-  factoryId   String   @map("factory_id") @db.VarChar(20)
-  phoneNumber String?  @map("phone_number") @db.VarChar(50)
+  factoryId   String   @map("factory_id")
+  phoneNumber String?  @map("phone_number")
   data        Json?    @map("data") // 附加数据
   expiresAt   DateTime @map("expires_at")
   isUsed      Boolean  @default(false) @map("is_used")
@@ -164,22 +164,22 @@ model TempToken {
 model UserRoleHistory {
   id            Int      @id @default(autoincrement())
   userId        Int      @map("user_id")
-  factoryId     String   @map("factory_id") @db.VarChar(20)
+  factoryId     String   @map("factory_id")
   oldRoleCode   FactoryUserRole? @map("old_role_code")
   newRoleCode   FactoryUserRole @map("new_role_code")
   oldDepartment Department? @map("old_department")
   newDepartment Department? @map("new_department")
   changedBy     Int      @map("changed_by")
-  changedByType String   @map("changed_by_type") @db.VarChar(20)
-  reason        String?  @map("reason") @db.Text
+  changedByType String   @map("changed_by_type")
+  reason        String?  @map("reason")
   createdAt     DateTime @default(now()) @map("created_at")
 
   // 关联关系
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
 
-  @@index([userId], name: "idx_user")
-  @@index([factoryId], name: "idx_factory")
+  @@index([userId], name: "idx_role_history_user")
+  @@index([factoryId], name: "idx_role_history_factory")
   @@index([changedBy], name: "idx_changed_by")
   @@index([createdAt], name: "idx_created_at")
   @@map("user_role_history")
@@ -189,26 +189,26 @@ model UserRoleHistory {
 model PermissionAuditLog {
   id               Int      @id @default(autoincrement())
   timestamp        DateTime @default(now()) @map("timestamp")
-  actorType        String   @map("actor_type") @db.VarChar(20)
+  actorType        String   @map("actor_type")
   actorId          Int      @map("actor_id")
-  username         String   @map("username") @db.VarChar(100)
-  action           String   @map("action") @db.VarChar(100)
-  resource         String?  @map("resource") @db.VarChar(200)
+  username         String   @map("username")
+  action           String   @map("action")
+  resource         String?  @map("resource")
   targetUserId     Int?     @map("target_user_id")
-  targetResourceId String?  @map("target_resource_id") @db.VarChar(100)
-  ipAddress        String?  @map("ip_address") @db.VarChar(45)
-  userAgent        String?  @map("user_agent") @db.Text
-  factoryId        String?  @map("factory_id") @db.VarChar(20)
-  department       String?  @map("department") @db.VarChar(50)
-  result           String   @default("success") @map("result") @db.VarChar(20)
-  errorMessage     String?  @map("error_message") @db.Text
+  targetResourceId String?  @map("target_resource_id")
+  ipAddress        String?  @map("ip_address")
+  userAgent        String?  @map("user_agent")
+  factoryId        String?  @map("factory_id")
+  department       String?  @map("department")
+  result           String   @default("success") @map("result")
+  errorMessage     String?  @map("error_message")
   createdAt        DateTime @default(now()) @map("created_at")
 
-  @@index([actorType, actorId], name: "idx_actor")
-  @@index([timestamp], name: "idx_timestamp")
-  @@index([factoryId], name: "idx_factory")
-  @@index([action], name: "idx_action")
-  @@index([result], name: "idx_result")
+  @@index([actorType, actorId], name: "idx_admin_actor")
+  @@index([timestamp], name: "idx_admin_timestamp")
+  @@index([factoryId], name: "idx_admin_factory")
+  @@index([action], name: "idx_admin_action")
+  @@index([result], name: "idx_admin_result")
   @@map("permission_audit_logs")
 }
 
@@ -217,28 +217,28 @@ model DataAccessLog {
   id         Int      @id @default(autoincrement())
   timestamp  DateTime @default(now()) @map("timestamp")
   userId     Int      @map("user_id")
-  userType   String   @map("user_type") @db.VarChar(20)
-  factoryId  String?  @map("factory_id") @db.VarChar(20)
-  department String?  @map("department") @db.VarChar(50)
-  dataType   String   @map("data_type") @db.VarChar(100)
-  resourceId String?  @map("resource_id") @db.VarChar(100)
-  operation  String   @map("operation") @db.VarChar(20)
-  ipAddress  String?  @map("ip_address") @db.VarChar(45)
-  userAgent  String?  @map("user_agent") @db.Text
+  userType   String   @map("user_type")
+  factoryId  String?  @map("factory_id")
+  department String?  @map("department")
+  dataType   String   @map("data_type")
+  resourceId String?  @map("resource_id")
+  operation  String   @map("operation")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  @@index([userId, userType], name: "idx_user")
-  @@index([timestamp], name: "idx_timestamp")
-  @@index([factoryId], name: "idx_factory")
+  @@index([userId, userType], name: "idx_data_user")
+  @@index([timestamp], name: "idx_data_timestamp")
+  @@index([factoryId], name: "idx_data_factory")
   @@index([dataType], name: "idx_data_type")
-  @@index([operation], name: "idx_operation")
+  @@index([operation], name: "idx_data_operation")
   @@map("data_access_logs")
 }
 
 // 工厂设置表
 model FactorySettings {
   id                     Int      @id @default(autoincrement())
-  factoryId              String   @unique @map("factory_id") @db.VarChar(20)
+  factoryId              String   @unique @map("factory_id")
   allowSelfRegistration  Boolean  @default(false) @map("allow_self_registration")
   requireAdminApproval   Boolean  @default(true) @map("require_admin_approval")
   defaultUserRole        FactoryUserRole @default(viewer) @map("default_user_role")
