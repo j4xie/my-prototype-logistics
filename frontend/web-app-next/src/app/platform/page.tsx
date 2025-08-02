@@ -36,14 +36,17 @@ export default function PlatformPage() {
         if (token && userInfo) {
           const userData = JSON.parse(userInfo);
 
-          // 检查是否为平台管理员
+          // 检查是否为平台管理员或开发者
           if (userData.role?.name === 'PLATFORM_ADMIN' ||
-              userData.username === 'platform_admin') {
-            console.log('✅ 平台管理员权限验证通过:', userData.username);
+              userData.role?.name === 'DEVELOPER' ||
+              userData.username === 'platform_admin' ||
+              userData.username === 'developer' ||
+              userData.permissions?.modules?.platform_access === true) {
+            console.log('✅ 平台管理权限验证通过:', userData.username);
             setIsInitializing(false);
             return;
           } else {
-            console.log('❌ 非平台管理员，跳转到登录页面:', userData.username);
+            console.log('❌ 无平台管理权限，跳转到登录页面:', userData.username);
             router.push('/login');
             return;
           }
