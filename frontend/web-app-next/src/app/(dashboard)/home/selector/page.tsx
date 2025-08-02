@@ -148,6 +148,11 @@ export default function HomeSelectorPage() {
   
   // 权限检查函数
   const checkModulePermission = (module: ModuleCard): boolean => {
+    // 对于个人中心，所有认证用户都可以访问
+    if (module.id === 'profile') {
+      return true;
+    }
+    
     // 检查模块访问权限
     if (!permissions.hasModuleAccess(module.permissionKey)) {
       return false;
@@ -522,30 +527,6 @@ export default function HomeSelectorPage() {
             </div>
           </Card>
 
-          {/* 权限测试入口 */}
-          {process.env.NODE_ENV === 'development' && (
-            <Card className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="font-semibold text-[#262626] text-sm mb-3">开发测试</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  className="h-10 text-xs"
-                  onClick={() => router.push('/test/permissions')}
-                >
-                  <Shield className="h-3 w-3 mr-1" />
-                  权限测试
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-10 text-xs"
-                  onClick={() => router.push('/test/real-api')}
-                >
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  API测试
-                </Button>
-              </div>
-            </Card>
-          )}
 
           {/* 系统信息 */}
           <div className="text-center text-xs text-[#8c8c8c] py-4">

@@ -437,7 +437,7 @@ export class AiErrorHandler {
    * Day 6: 替代内联Mock数据的端点映射
    */
   private getMockEndpointForDataType(dataType: string): string {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_REAL_API_BASE || 'https://backend-theta-taupe-21.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_REAL_API_BASE || 'http://localhost:3001';
 
     switch (dataType) {
       case 'farming':

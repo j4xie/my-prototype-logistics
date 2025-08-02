@@ -43,10 +43,12 @@ async function processUserData(
         break;
       case 'platform_admin':
       case 'PLATFORM_ADMIN':
+      case 'platform_super_admin':
         mappedRole = 'PLATFORM_ADMIN';
         break;
       case 'super_admin':
       case 'SUPER_ADMIN':
+      case 'factory_super_admin':
         mappedRole = 'SUPER_ADMIN';
         break;
       case 'permission_admin':
@@ -193,6 +195,25 @@ const authAPI = {
 
       // 处理真实API响应格式 {success: true, data: {user: {...}, token: '...'}}
       if (response?.success && response?.data) {
+        // 处理平台管理员登录响应 (admin字段)
+        if (response.data.admin && response.data.tokens) {
+          const adminData = {
+            ...response.data.admin,
+            roleCode: 'platform_admin',
+            role: 'PLATFORM_ADMIN',
+            isAdmin: true
+          };
+          console.log('[AuthStore] 平台管理员登录成功:', adminData);
+          
+          return await processUserData(
+            adminData, 
+            response.data.tokens.token, 
+            response.data.tokens.refreshToken, 
+            response.data.tokens.expiresIn
+          );
+        }
+        
+        // 处理普通用户登录响应 (user字段)
         const { user: userData, token, refreshToken, expiresIn } = response.data;
         console.log('[AuthStore] 真实API登录成功:', userData);
         

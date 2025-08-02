@@ -98,6 +98,33 @@ const generateUserPermissions = (user) => {
 
   // 工厂超级管理员权限
   if (roleCode === 'factory_super_admin') {
+    // 特殊处理：如果是开发者（通过position字段识别），给予所有权限
+    if (user.position === 'SYSTEM_DEVELOPER') {
+      return {
+        modules: {
+          farming_access: true,
+          processing_access: true,
+          logistics_access: true,
+          trace_access: true,
+          admin_access: true,
+          platform_access: true,  // 开发者可以访问平台管理
+        },
+        features: [
+          'user_manage_all',
+          'whitelist_manage_all',
+          'stats_view_all',
+          'developer_debug_access',
+          'developer_system_config',
+          'developer_data_export',
+          'developer_cross_platform'
+        ],
+        role: 'DEVELOPER',
+        roleLevel: -1,
+        department: department
+      };
+    }
+    
+    // 普通工厂超级管理员
     return {
       modules: {
         farming_access: true,
@@ -345,75 +372,6 @@ export const login = async (req, res, next) => {
 
         console.log('🔍 登录请求:', { username, factoryId, timestamp: new Date().toISOString() });
 
-    // 🔧 临时解决方案：使用内存数据绕过数据库连接问题
-    if (process.env.NODE_ENV === 'production') {
-      console.log('⚡ 生产环境：使用内存数据进行登录验证');
-      
-      // 验证基本参数
-      if (!username || !password || !factoryId) {
-        throw new ValidationError('用户名、密码和工厂ID都是必需的');
-      }
-      
-      // 验证工厂ID格式
-      if (factoryId !== 'FCT_2025_001') {
-        throw new NotFoundError('工厂不存在或已停用');
-      }
-      
-      // 验证用户凭据
-      const validUsers = [
-        { username: 'factory_admin', password: 'SuperAdmin@123', roleCode: 'factory_super_admin' },
-        { username: 'developer', password: 'Developer@123', roleCode: 'developer' }
-      ];
-      
-      const user = validUsers.find(u => u.username === username && u.password === password);
-      if (!user) {
-        throw new AuthenticationError('用户名或密码错误');
-      }
-      
-      // 模拟用户对象
-      const mockUser = {
-        id: 'demo_' + Date.now(),
-        username: user.username,
-        email: user.username + '@demo.com',
-        fullName: user.roleCode === 'developer' ? '系统开发者' : '工厂超级管理员',
-        factoryId: factoryId,
-        roleCode: user.roleCode,
-        isActive: true
-      };
-      
-      // 生成权限和令牌
-      const userPermissions = generateUserPermissions(mockUser);
-      const tokens = await generateAuthTokens(mockUser);
-      
-      console.log('✅ 内存数据登录成功:', { username, factoryId });
-      
-      res.json(createSuccessResponse({
-        user: {
-          id: mockUser.id,
-          username: mockUser.username,
-          email: mockUser.email,
-          fullName: mockUser.fullName,
-          factoryId: mockUser.factoryId,
-          roleCode: mockUser.roleCode,
-          roleName: mapRoleCodeToRoleName(mockUser.roleCode),
-          roleDisplayName: getRoleDisplayName(mockUser.roleCode),
-          isActive: mockUser.isActive,
-          permissions: userPermissions,
-        },
-        factory: {
-          id: factoryId,
-          name: '黑牛演示工厂',
-        },
-        tokens: {
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          expiresIn: tokens.expiresIn,
-        },
-      }, '登录成功'));
-      
-      return;
-    }
-
     // 验证工厂是否存在且激活
     console.log('📊 查询工厂:', factoryId);
     const factory = await prisma.factory.findFirst({
@@ -427,7 +385,7 @@ export const login = async (req, res, next) => {
       console.log('❌ 工厂不存在:', factoryId);
       throw new NotFoundError('工厂不存在或已停用');
     }
-    
+
     console.log('✅ 工厂验证成功:', { id: factory.id, name: factory.name });
 
     // 查找用户
@@ -475,9 +433,9 @@ export const login = async (req, res, next) => {
         email: user.email,
         fullName: user.fullName,
         role: {
-          name: mapRoleCodeToRoleName(user.roleCode),
-          displayName: getRoleDisplayName(user.roleCode),
-          level: user.roleLevel
+          name: user.position === 'SYSTEM_DEVELOPER' ? 'DEVELOPER' : mapRoleCodeToRoleName(user.roleCode),
+          displayName: user.position === 'SYSTEM_DEVELOPER' ? '系统开发者' : getRoleDisplayName(user.roleCode),
+          level: user.position === 'SYSTEM_DEVELOPER' ? -1 : user.roleLevel
         },
         permissions: userPermissions,
         roleCode: user.roleCode,

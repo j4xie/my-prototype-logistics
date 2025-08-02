@@ -8,7 +8,6 @@
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "build": "prisma generate",
-    "vercel-build": "prisma generate",
     "test": "jest",
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",
@@ -25,6 +24,7 @@
     "@prisma/client": "^5.5.2",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -32,7 +32,6 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.6.0",
     "node-fetch": "^3.3.2",
-    "pg": "^8.16.3",
     "prisma": "^5.5.2",
     "zod": "^3.22.4"
   },

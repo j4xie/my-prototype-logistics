@@ -1,6 +1,6 @@
 /**
  * 最小可行API客户端 (基于需求重新评估的结果)
- * 
+ *
  * @version 1.0.0
  * @description 专注于核心业务需求，避免过度工程化
  * @features 基础HTTP方法、认证管理、错误处理、重试机制、文件上传
@@ -100,7 +100,7 @@ export class MinimalApiClient {
 
   constructor(config: MinimalApiClientConfig = {}) {
     this.config = {
-      baseURL: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_REAL_API_BASE || 'https://backend-theta-taupe-21.vercel.app',
+      baseURL: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_REAL_API_BASE || 'http://localhost:3001',
       timeout: 10000,
       headers: { 'Content-Type': 'application/json' },
       retryAttempts: 3,
@@ -238,7 +238,7 @@ export class MinimalApiClient {
       }
 
       const error = new ApiError(errorMessage, response.status, 'HTTP_ERROR', response);
-      
+
       // 应用错误拦截器
       if (this.config.enableInterceptors) {
         for (const interceptor of this.errorInterceptors) {
@@ -252,7 +252,7 @@ export class MinimalApiClient {
           }
         }
       }
-      
+
       throw error;
     }
 
@@ -329,7 +329,7 @@ export class MinimalApiClient {
 
         const response = await fetch(requestConfig.url, requestOptions);
         clearTimeout(timeoutId);
-        
+
         return await this.handleResponse<T>(response);
 
       } catch (error) {
@@ -484,4 +484,4 @@ export function createExtendedApiClient(config?: MinimalApiClientConfig): Extend
 /**
  * 默认客户端实例
  */
-export const extendedApiClient = new ExtendedApiClient(); 
+export const extendedApiClient = new ExtendedApiClient();

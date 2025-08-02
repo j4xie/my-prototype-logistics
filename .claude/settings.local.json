@@ -54,8 +54,12 @@
       "Bash(npx prisma migrate:*)",
       "Bash(npx prisma db execute:*)",
       "Bash(tasklist:*)",
-      "Bash(TASKKILL /F /PID 103284)"
+      "Bash(TASKKILL /F /PID 103284)",
+      "Bash(del \"C:\\Users\\Steve\\heiniu\\frontend\\web-app-next\\test-vercel-connection.js\")",
+      "Bash(net start:*)",
+      "Bash(npx prisma:*)"
     ],
     "deny": []
-  }
+  },
+  "$schema": "https://json.schemastore.org/claude-code-settings.json"
 }

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -280,6 +280,7 @@ enum PlatformRole {
 }
 
 enum FactoryUserRole {
+  developer          // 系统开发者
   factory_super_admin // 工厂超级管理员
   permission_admin    // 权限管理员
   department_admin    // 部门管理员

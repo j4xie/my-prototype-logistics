@@ -196,7 +196,7 @@ export default function LoginPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => quickFill('developer', 'Developer@123')}
+                      onClick={() => quickFill('developer', 'Dev@123456')}
                       className="w-full text-xs text-yellow-600 hover:text-yellow-800 py-1 hover:bg-yellow-50 rounded transition-colors"
                     >
                       快速填充
@@ -252,7 +252,7 @@ export default function LoginPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => quickFill('platform_admin', 'Admin@123456')}
+                      onClick={() => quickFill('platform_admin', 'admin@123456')}
                       className="w-full text-xs text-purple-600 hover:text-purple-800 py-1 hover:bg-purple-50 rounded transition-colors"
                     >
                       快速填充
