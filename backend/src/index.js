@@ -8,9 +8,13 @@ import authRoutes from './routes/auth.js';
 import whitelistRoutes from './routes/whitelist.js';
 import usersRoutes from './routes/users.js';
 import platformRoutes from './routes/platform.js';
+import mobileRoutes from './routes/mobile.js';
 
 // 导入中间件
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+
+// 导入定时任务
+import { initCronJobs } from './services/cronJobs.js';
 
 // 配置环境变量
 dotenv.config();
@@ -39,6 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/whitelist', whitelistRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/platform', platformRoutes);
+app.use('/api/mobile', mobileRoutes);
 
 // 根路径
 app.get('/', (req, res) => {
@@ -52,6 +57,7 @@ app.get('/', (req, res) => {
       whitelist: '/api/whitelist',
       users: '/api/users',
       platform: '/api/platform',
+      mobile: '/api/mobile',
       health: '/health',
     },
   });
@@ -125,6 +131,7 @@ app.listen(PORT, () => {
   console.log('   👥 白名单管理: /api/whitelist');
   console.log('   👤 用户管理: /api/users');
   console.log('   🏭 平台管理: /api/platform');
+  console.log('   📱 移动端API: /api/mobile');
   console.log('');
   console.log('🔧 特性支持:');
   console.log('   ✅ 多租户架构');
@@ -133,5 +140,19 @@ app.listen(PORT, () => {
   console.log('   ✅ JWT认证');
   console.log('   ✅ 数据验证');
   console.log('   ✅ 错误处理');
+  console.log('   ✅ 定时任务');
   console.log('');
+  
+  // 初始化定时任务
+  try {
+    initCronJobs();
+    console.log('⏰ 定时任务初始化成功');
+    console.log('   🔄 白名单过期清理: 每天凌晨2点');
+    console.log('   🔄 会话清理: 每小时');
+    console.log('   🔄 工厂活跃状态更新: 每天凌晨3点');
+    console.log('   🔄 周报生成: 每周一早上8点');
+    console.log('');
+  } catch (error) {
+    console.error('❌ 定时任务初始化失败:', error);
+  }
 });

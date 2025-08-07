@@ -32,6 +32,17 @@ async function processUserData(
   const userRole = userData.roleCode || userData.role?.name || userData.role;
   const department = userData.department;
   
+  console.log('🔍 [AuthStore] 处理用户数据:', {
+    originalUserData: userData,
+    extractedRole: userRole,
+    department: department,
+    roleStructure: {
+      roleCode: userData.roleCode,
+      'role.name': userData.role?.name,
+      'role': userData.role
+    }
+  });
+  
   // 确定用户角色
   let mappedRole: keyof typeof USER_ROLES;
   if (typeof userRole === 'string') {
@@ -68,6 +79,12 @@ async function processUserData(
   } else {
     mappedRole = 'USER';
   }
+
+  console.log('📝 [AuthStore] 角色映射结果:', {
+    originalRole: userRole,
+    mappedRole: mappedRole,
+    roleType: typeof userRole
+  });
 
   // 映射部门
   let mappedDepartment: keyof typeof DEPARTMENTS | undefined;
@@ -133,7 +150,7 @@ async function processUserData(
     'USER': '普通员工'
   };
 
-  return {
+  const finalUserObject = {
     user: {
       id: String(userData.id || '1'),
       username: userData.username,
@@ -142,7 +159,7 @@ async function processUserData(
       avatar: userData.avatar || '',
       role: {
         id: mappedRole,
-        name: roleDisplayNames[mappedRole],
+        name: mappedRole, // 确保name字段存在且正确
         description: `角色级别: ${newPermissions.roleLevel}`,
         level: newPermissions.roleLevel,
       },
@@ -155,6 +172,17 @@ async function processUserData(
     refreshToken: refreshToken || 'mock-refresh-token',
     expiresIn: expiresIn || 3600,
   };
+
+  console.log('✅ [AuthStore] 最终用户对象:', {
+    userId: finalUserObject.user.id,
+    username: finalUserObject.user.username,
+    displayName: finalUserObject.user.displayName,
+    role: finalUserObject.user.role,
+    permissions: finalUserObject.user.permissions,
+    hasToken: !!finalUserObject.token
+  });
+
+  return finalUserObject;
 }
 
 /**
@@ -344,6 +372,17 @@ export const useAuthStore = create<AuthState>()(
               loading: false,
               error: null,
             }, false, 'auth/login/success');
+
+            // 确保localStorage中的数据结构正确
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('auth_token', response.token);
+              localStorage.setItem('user_info', JSON.stringify(response.user));
+              console.log('💾 [AuthStore] 已保存到localStorage:', {
+                token: response.token ? '已保存' : '未保存',
+                userInfo: JSON.stringify(response.user),
+                userInfoSize: JSON.stringify(response.user).length
+              });
+            }
 
             // 登录成功后的额外操作
             console.log('✅ 用户登录成功:', response.user.displayName);

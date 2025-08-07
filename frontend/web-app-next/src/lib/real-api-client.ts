@@ -102,10 +102,12 @@ export class RealApiClient {
   }
 
   /**
-   * POST请求
+   * POST请求 - 带重试机制
    */
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     const url = new URL(endpoint, this.baseURL);
+    const maxRetries = 3;
+    let lastError: Error;
     
     console.log('[RealApiClient] POST 请求:', {
       endpoint,
@@ -115,19 +117,39 @@ export class RealApiClient {
       headers: this.getHeaders()
     });
 
-    try {
-      const response = await fetch(url.toString(), {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: data ? JSON.stringify(data) : undefined,
-      });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[RealApiClient] 尝试 ${attempt}/${maxRetries}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+        
+        const response = await fetch(url.toString(), {
+          method: 'POST',
+          headers: this.getHeaders(),
+          body: data ? JSON.stringify(data) : undefined,
+          signal: controller.signal,
+        });
 
-      console.log('[RealApiClient] 响应状态:', response.status, response.statusText);
-      return this.handleResponse<T>(response);
-    } catch (error) {
-      console.error('[RealApiClient] 请求失败:', error);
-      throw error;
+        clearTimeout(timeoutId);
+        console.log('[RealApiClient] 响应状态:', response.status, response.statusText);
+        
+        return this.handleResponse<T>(response);
+        
+      } catch (error) {
+        lastError = error as Error;
+        console.error(`[RealApiClient] 尝试 ${attempt} 失败:`, error);
+        
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000; // 指数退避: 2s, 4s, 8s
+          console.log(`[RealApiClient] 等待 ${delay}ms 后重试...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
     }
+    
+    console.error('[RealApiClient] 所有重试都失败了');
+    throw lastError;
   }
 
   /**

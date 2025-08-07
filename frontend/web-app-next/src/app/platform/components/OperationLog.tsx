@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Table, TableColumn } from '@/components/ui/table';
-import { RefreshCw, Eye } from 'lucide-react';
+import { RefreshCw, Eye, Search, Filter, Download, Calendar } from 'lucide-react';
 import { platformApi } from '@/lib/api/platform';
 import type { OperationLog } from '@/mocks/data/platform-data';
 
@@ -19,6 +20,18 @@ export default function OperationLogTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  
+  // 筛选和搜索状态
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    action: '',
+    actorType: '',
+    factoryId: '',
+    result: ''
+  });
 
   const pageSize = 20;
 
@@ -28,10 +41,26 @@ export default function OperationLogTable() {
       setIsLoading(true);
       setError(null);
 
-      const response = await platformApi.logs.getLogs({
+      // 构建查询参数
+      const params: any = {
         page,
         size: pageSize
-      });
+      };
+
+      // 添加搜索关键词
+      if (searchKeyword.trim()) {
+        params.search = searchKeyword.trim();
+      }
+
+      // 添加筛选条件
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+      if (filters.action) params.action = filters.action;
+      if (filters.actorType) params.actorType = filters.actorType;
+      if (filters.factoryId) params.factoryId = filters.factoryId;
+      if (filters.result) params.result = filters.result;
+
+      const response = await platformApi.logs.getLogs(params);
 
       setLogs(response.data.logs || []);
       setTotal(response.data.pagination.total);
@@ -47,7 +76,58 @@ export default function OperationLogTable() {
 
   useEffect(() => {
     fetchLogs(currentPage);
-  }, [currentPage]);
+  }, [currentPage, searchKeyword, filters]);
+
+  // 处理搜索
+  const handleSearch = (value: string) => {
+    setSearchKeyword(value);
+    setCurrentPage(1); // 重置到第一页
+  };
+
+  // 处理筛选条件变更
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1); // 重置到第一页
+  };
+
+  // 清除筛选条件
+  const clearFilters = () => {
+    setFilters({
+      startDate: '',
+      endDate: '',
+      action: '',
+      actorType: '',
+      factoryId: '',
+      result: ''
+    });
+    setSearchKeyword('');
+    setCurrentPage(1);
+  };
+
+  // 导出日志
+  const handleExportLogs = async () => {
+    try {
+      const params: any = {};
+      
+      // 添加当前的筛选条件
+      if (searchKeyword.trim()) params.search = searchKeyword.trim();
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+      if (filters.action) params.action = filters.action;
+      if (filters.actorType) params.actorType = filters.actorType;
+      if (filters.factoryId) params.factoryId = filters.factoryId;
+      if (filters.result) params.result = filters.result;
+
+      // 构建导出URL
+      const queryString = new URLSearchParams(params).toString();
+      const exportUrl = `/api/platform/export/logs${queryString ? `?${queryString}` : ''}`;
+      
+      window.open(exportUrl, '_blank');
+    } catch (err) {
+      console.error('导出日志失败:', err);
+      alert('导出失败: ' + (err instanceof Error ? err.message : '未知错误'));
+    }
+  };
 
   // 格式化时间
   const formatDateTime = (dateString: string) => {
@@ -175,22 +255,137 @@ export default function OperationLogTable() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <CardTitle className="text-xl font-semibold">操作日志</CardTitle>
 
-          <Button
-            variant="secondary"
-            onClick={() => fetchLogs(currentPage)}
-            className="flex items-center gap-2"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            刷新
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              筛选
+            </Button>
+            
+            <Button
+              variant="secondary"
+              onClick={handleExportLogs}
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              导出
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={() => fetchLogs(currentPage)}
+              className="flex items-center gap-2"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              刷新
+            </Button>
+          </div>
         </div>
+
+        {/* 搜索框 */}
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="搜索操作人、操作类型、目标对象..."
+            value={searchKeyword}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* 高级筛选器 */}
+        {showFilters && (
+          <div className="border-t pt-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">开始时间</label>
+                <Input
+                  type="datetime-local"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">结束时间</label>
+                <Input
+                  type="datetime-local"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">操作类型</label>
+                <select
+                  value={filters.action}
+                  onChange={(e) => handleFilterChange('action', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value="">全部</option>
+                  <option value="CREATE_FACTORY">创建工厂</option>
+                  <option value="UPDATE_FACTORY">更新工厂</option>
+                  <option value="SUSPEND_FACTORY">暂停工厂</option>
+                  <option value="ACTIVATE_FACTORY">激活工厂</option>
+                  <option value="DELETE_FACTORY">删除工厂</option>
+                  <option value="LOGIN">登录</option>
+                  <option value="LOGOUT">登出</option>
+                  <option value="SIMULATE_LOGIN">模拟登录</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">操作者类型</label>
+                <select
+                  value={filters.actorType}
+                  onChange={(e) => handleFilterChange('actorType', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value="">全部</option>
+                  <option value="platform_admin">平台管理员</option>
+                  <option value="factory_admin">工厂管理员</option>
+                  <option value="factory_user">工厂用户</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">操作结果</label>
+                <select
+                  value={filters.result}
+                  onChange={(e) => handleFilterChange('result', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value="">全部</option>
+                  <option value="success">成功</option>
+                  <option value="failed">失败</option>
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <Button
+                  variant="secondary"
+                  onClick={clearFilters}
+                  className="w-full"
+                >
+                  清除筛选
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="text-sm text-gray-600">
           共 {total} 条日志记录
+          {(searchKeyword || Object.values(filters).some(v => v)) && (
+            <span className="ml-2 text-blue-600">（已筛选）</span>
+          )}
         </div>
       </CardHeader>
 

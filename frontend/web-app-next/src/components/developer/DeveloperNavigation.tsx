@@ -13,8 +13,32 @@ export default function DeveloperNavigation() {
   const pathname = usePathname();
   const { user } = useAuthStore();
 
-  // 只有开发者才显示导航栏
-  if (user?.role?.id !== 'DEVELOPER' && user?.permissions?.role !== 'DEVELOPER') {
+  // 调试当前用户信息
+  console.log('🔍 [DeveloperNavigation] 用户信息检查:', {
+    user: user,
+    roleId: user?.role?.id,
+    roleName: user?.role?.name,
+    permissionsRole: user?.permissions?.role,
+    username: user?.username
+  });
+
+  // 只有开发者才显示导航栏 - 修复权限判断
+  const isDeveloper = user?.role?.name === 'DEVELOPER' || 
+                      user?.role?.id === 'DEVELOPER' || 
+                      user?.permissions?.role === 'DEVELOPER' ||
+                      user?.username === 'developer';
+
+  console.log('🔍 [DeveloperNavigation] 权限判断:', {
+    isDeveloper,
+    conditions: {
+      'role.name === DEVELOPER': user?.role?.name === 'DEVELOPER',
+      'role.id === DEVELOPER': user?.role?.id === 'DEVELOPER',
+      'permissions.role === DEVELOPER': user?.permissions?.role === 'DEVELOPER',
+      'username === developer': user?.username === 'developer'
+    }
+  });
+
+  if (!isDeveloper) {
     return null;
   }
 

@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -7,185 +8,163 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 工厂表 - 多租户架构的核心
 model Factory {
-  id               String   @id @map("id") // 工厂ID (新格式: '144-GD-2025-001' 或老格式: 'FCT_2024_001')
-  name             String   @map("name") // 工厂名称
-  industry         String?  @map("industry") // 所属行业描述
-  address          String?  @map("address") // 工厂地址
-  employeeCount    Int?     @map("employee_count") // 员工数量
-  subscriptionPlan String?  @map("subscription_plan") // 订阅套餐
-  contactName      String?  @map("contact_name") // 负责人姓名
-  contactPhone     String?  @map("contact_phone") // 联系电话
-  contactEmail     String?  @map("contact_email") // 联系邮箱
-  isActive         Boolean  @default(true) @map("is_active") // 工厂账户是否激活
+  id               String            @id @map("id")
+  name             String            @map("name")
+  industry         String?           @map("industry")
+  address          String?           @map("address")
+  employeeCount    Int?              @map("employee_count")
+  subscriptionPlan String?           @map("subscription_plan")
+  contactName      String?           @map("contact_name")
+  contactPhone     String?           @map("contact_phone")
+  contactEmail     String?           @map("contact_email")
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  confidence       Float?            @map("confidence")
+  factoryYear      Int?              @map("factory_year")
+  industryCode     String?           @map("industry_code")
+  inferenceData    Json?             @map("inference_data")
+  legacyId         String?           @map("legacy_id")
+  manuallyVerified Boolean           @default(false) @map("manually_verified")
+  regionCode       String?           @map("region_code")
+  sequenceNumber   Int?              @map("sequence_number")
+  settings         FactorySettings?
+  sessions         Session[]
+  roleHistory      UserRoleHistory[]
+  whitelist        UserWhitelist[]
+  users            User[]
 
-  // 新增字段 - 科学化编码支持
-  industryCode     String?  @map("industry_code") // 行业代码 (如: 144)
-  regionCode       String?  @map("region_code") // 地区代码 (如: GD)
-  factoryYear      Int?     @map("factory_year") // 建厂年份 (如: 2025)
-  sequenceNumber   Int?     @map("sequence_number") // 同类型序号 (如: 1)
-  legacyId         String?  @map("legacy_id") // 老格式ID (如: FCT_2024_001)
-
-  // 推断元数据
-  inferenceData    Json?    @map("inference_data") // 推断过程数据
-  confidence       Float?   @map("confidence") // 推断置信度
-  manuallyVerified Boolean  @default(false) @map("manually_verified") // 是否人工验证
-
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  users        User[]
-  whitelist    UserWhitelist[]
-  sessions     Session[]
-  roleHistory  UserRoleHistory[]
-  settings     FactorySettings?
-
-  // 索引优化
-  @@index([industryCode, regionCode, factoryYear], name: "idx_factory_code")
-  @@index([legacyId], name: "idx_legacy_id")
-  @@index([industryCode], name: "idx_industry")
-  @@index([regionCode], name: "idx_region")
-  @@index([factoryYear], name: "idx_year")
+  @@index([industryCode, regionCode, factoryYear], map: "idx_factory_code")
+  @@index([legacyId], map: "idx_legacy_id")
+  @@index([industryCode], map: "idx_industry")
+  @@index([regionCode], map: "idx_region")
+  @@index([factoryYear], map: "idx_year")
   @@map("factories")
 }
 
-// 平台管理员表 - 独立于工厂的平台级管理
 model PlatformAdmin {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
-  passwordHash String   @map("password_hash")
-  email        String   @unique
-  phone        String?
-  fullName     String?  @map("full_name")
-  role         PlatformRole @default(platform_operator) @map("role")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             Int             @id @default(autoincrement())
+  username       String          @unique
+  passwordHash   String          @map("password_hash")
+  email          String          @unique
+  phone          String?
+  fullName       String?         @map("full_name")
+  role           PlatformRole    @default(platform_operator) @map("role")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  addedWhitelist UserWhitelist[]
 
-  @@index([role], name: "idx_platform_role")
+  @@index([role], map: "idx_platform_role")
   @@map("platform_admins")
 }
 
-// 用户白名单表 - 支持白名单前置注册
 model UserWhitelist {
-  id          Int      @id @default(autoincrement())
-  factoryId   String   @map("factory_id")
-  phoneNumber String   @map("phone_number")
-  status      WhitelistStatus @default(PENDING) @map("status") // 状态: PENDING, REGISTERED, EXPIRED
-  addedByUserId Int?   @map("added_by_user_id") // 添加该白名单的管理员ID
-  invitedBy   Int?     @map("invited_by") // 邀请人ID
-  expiresAt   DateTime? @map("expires_at") // 白名单过期时间
-  metadata    Json?    @map("metadata") // 附加元数据（姓名、部门等）
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                Int             @id @default(autoincrement())
+  factoryId         String          @map("factory_id")
+  phoneNumber       String          @map("phone_number")
+  status            WhitelistStatus @default(PENDING) @map("status")
+  addedByUserId     Int?            @map("added_by_user_id")
+  expiresAt         DateTime        @map("expires_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  addedByPlatformId Int?            @map("added_by_platform_id")
+  addedByPlatform   PlatformAdmin?  @relation(fields: [addedByPlatformId], references: [id])
+  addedByUser       User?           @relation(fields: [addedByUserId], references: [id])
+  factory           Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
 
-  // 关联关系
-  factory     Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  addedByUser User?   @relation(fields: [addedByUserId], references: [id])
-
-  @@unique([factoryId, phoneNumber]) // 确保同一工厂内手机号唯一
-  @@index([status, factoryId], name: "idx_status_factory")
-  @@index([expiresAt], name: "idx_expires_at")
+  @@unique([factoryId, phoneNumber])
+  @@index([status, factoryId], map: "idx_status_factory")
+  @@index([expiresAt], map: "idx_expires_at")
+  @@index([addedByPlatformId], map: "user_whitelist_added_by_platform_id_fkey")
+  @@index([addedByUserId], map: "user_whitelist_added_by_user_id_fkey")
   @@map("user_whitelist")
 }
 
-// 统一用户表 - 支持多租户的用户管理
 model User {
-  id           Int      @id @default(autoincrement())
-  factoryId    String   @map("factory_id")  // 所属工厂
-  username     String
-  passwordHash String   @map("password_hash")
-  email        String
-  phone        String?
-  fullName     String?  @map("full_name")
-  isActive     Boolean  @default(false) @map("is_active") // 新用户默认未激活
-  roleCode     FactoryUserRole @default(unactivated) @map("role_code") // 角色代码
-  department   Department? @map("department") // 所属部门
-  position     String?  @map("position")  // 职位
-  lastLogin    DateTime? @map("last_login")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             Int               @id @default(autoincrement())
+  factoryId      String            @map("factory_id")
+  username       String
+  passwordHash   String            @map("password_hash")
+  email          String
+  phone          String?
+  fullName       String?           @map("full_name")
+  isActive       Boolean           @default(false) @map("is_active")
+  roleCode       FactoryUserRole   @default(unactivated) @map("role_code")
+  department     Department?       @map("department")
+  position       String?           @map("position")
+  lastLogin      DateTime?         @map("last_login")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+  sessions       Session[]
+  roleHistory    UserRoleHistory[]
+  addedWhitelist UserWhitelist[]
+  factory        Factory           @relation(fields: [factoryId], references: [id], onDelete: Cascade)
 
-  // 关联关系
-  factory           Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  sessions          Session[]
-  addedWhitelist    UserWhitelist[] // 该用户添加的白名单记录
-  roleHistory       UserRoleHistory[] // 角色变更历史
-
-  @@unique([factoryId, username]) // 同一工厂内用户名唯一
-  @@unique([factoryId, email])    // 同一工厂内邮箱唯一
-  @@index([roleCode, department], name: "idx_role_department")
-  @@index([factoryId, roleCode], name: "idx_factory_role")
-  @@index([isActive, factoryId], name: "idx_active_users")
+  @@unique([factoryId, username])
+  @@unique([factoryId, email])
+  @@index([roleCode, department], map: "idx_role_department")
+  @@index([factoryId, roleCode], map: "idx_factory_role")
+  @@index([isActive, factoryId], map: "idx_active_users")
   @@map("users")
 }
 
-// 会话表 - 支持JWT令牌管理
 model Session {
   id           String   @id @default(uuid())
   userId       Int      @map("user_id")
-  factoryId    String   @map("factory_id")  // 工厂ID，用于数据隔离
-  token        String
-  refreshToken String   @map("refresh_token")
+  factoryId    String   @map("factory_id")
+  token        String   @unique
+  refreshToken String   @unique @map("refresh_token")
   expiresAt    DateTime @map("expires_at")
-  isRevoked    Boolean  @default(false) @map("is_revoked") // 是否已撤销
+  isRevoked    Boolean  @default(false) @map("is_revoked")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  factory      Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // 关联关系
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-
-  // 唯一约束
-  @@unique([token], name: "unique_token")
-  @@unique([refreshToken], name: "unique_refresh_token")
+  @@index([factoryId], map: "sessions_factory_id_fkey")
+  @@index([userId], map: "sessions_user_id_fkey")
   @@map("sessions")
 }
 
-// 临时验证令牌表 - 用于手机验证等临时操作
 model TempToken {
-  id          Int      @id @default(autoincrement())
-  token       String   @unique
-  type        TempTokenType @map("type") // 令牌类型
-  factoryId   String   @map("factory_id")
-  phoneNumber String?  @map("phone_number")
-  data        Json?    @map("data") // 附加数据
-  expiresAt   DateTime @map("expires_at")
-  isUsed      Boolean  @default(false) @map("is_used")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id          Int           @id @default(autoincrement())
+  token       String        @unique
+  type        TempTokenType @map("type")
+  factoryId   String        @map("factory_id")
+  phoneNumber String?       @map("phone_number")
+  data        Json?         @map("data")
+  expiresAt   DateTime      @map("expires_at")
+  isUsed      Boolean       @default(false) @map("is_used")
+  createdAt   DateTime      @default(now()) @map("created_at")
 
-  @@index([type, factoryId], name: "idx_type_factory")
-  @@index([expiresAt, isUsed], name: "idx_expires_used")
+  @@index([type, factoryId], map: "idx_type_factory")
+  @@index([expiresAt, isUsed], map: "idx_expires_used")
   @@map("temp_tokens")
 }
 
-// 用户角色变更历史表
 model UserRoleHistory {
-  id            Int      @id @default(autoincrement())
-  userId        Int      @map("user_id")
-  factoryId     String   @map("factory_id")
+  id            Int              @id @default(autoincrement())
+  userId        Int              @map("user_id")
+  factoryId     String           @map("factory_id")
   oldRoleCode   FactoryUserRole? @map("old_role_code")
-  newRoleCode   FactoryUserRole @map("new_role_code")
-  oldDepartment Department? @map("old_department")
-  newDepartment Department? @map("new_department")
-  changedBy     Int      @map("changed_by")
-  changedByType String   @map("changed_by_type")
-  reason        String?  @map("reason")
-  createdAt     DateTime @default(now()) @map("created_at")
+  newRoleCode   FactoryUserRole  @map("new_role_code")
+  oldDepartment Department?      @map("old_department")
+  newDepartment Department?      @map("new_department")
+  changedBy     Int              @map("changed_by")
+  changedByType String           @map("changed_by_type")
+  reason        String?          @map("reason")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  factory       Factory          @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // 关联关系
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-
-  @@index([userId], name: "idx_role_history_user")
-  @@index([factoryId], name: "idx_role_history_factory")
-  @@index([changedBy], name: "idx_changed_by")
-  @@index([createdAt], name: "idx_created_at")
+  @@index([userId], map: "idx_role_history_user")
+  @@index([factoryId], map: "idx_role_history_factory")
+  @@index([changedBy], map: "idx_changed_by")
+  @@index([createdAt], map: "idx_created_at")
   @@map("user_role_history")
 }
 
-// 权限审计日志表
 model PermissionAuditLog {
   id               Int      @id @default(autoincrement())
   timestamp        DateTime @default(now()) @map("timestamp")
@@ -204,15 +183,14 @@ model PermissionAuditLog {
   errorMessage     String?  @map("error_message")
   createdAt        DateTime @default(now()) @map("created_at")
 
-  @@index([actorType, actorId], name: "idx_admin_actor")
-  @@index([timestamp], name: "idx_admin_timestamp")
-  @@index([factoryId], name: "idx_admin_factory")
-  @@index([action], name: "idx_admin_action")
-  @@index([result], name: "idx_admin_result")
+  @@index([actorType, actorId], map: "idx_admin_actor")
+  @@index([timestamp], map: "idx_admin_timestamp")
+  @@index([factoryId], map: "idx_admin_factory")
+  @@index([action], map: "idx_admin_action")
+  @@index([result], map: "idx_admin_result")
   @@map("permission_audit_logs")
 }
 
-// 数据访问日志表
 model DataAccessLog {
   id         Int      @id @default(autoincrement())
   timestamp  DateTime @default(now()) @map("timestamp")
@@ -227,76 +205,72 @@ model DataAccessLog {
   userAgent  String?  @map("user_agent")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  @@index([userId, userType], name: "idx_data_user")
-  @@index([timestamp], name: "idx_data_timestamp")
-  @@index([factoryId], name: "idx_data_factory")
-  @@index([dataType], name: "idx_data_type")
-  @@index([operation], name: "idx_data_operation")
+  @@index([userId, userType], map: "idx_data_user")
+  @@index([timestamp], map: "idx_data_timestamp")
+  @@index([factoryId], map: "idx_data_factory")
+  @@index([dataType], map: "idx_data_type")
+  @@index([operation], map: "idx_data_operation")
   @@map("data_access_logs")
 }
 
-// 工厂设置表
 model FactorySettings {
-  id                     Int      @id @default(autoincrement())
-  factoryId              String   @unique @map("factory_id")
-  allowSelfRegistration  Boolean  @default(false) @map("allow_self_registration")
-  requireAdminApproval   Boolean  @default(true) @map("require_admin_approval")
+  id                     Int             @id @default(autoincrement())
+  factoryId              String          @unique @map("factory_id")
+  allowSelfRegistration  Boolean         @default(false) @map("allow_self_registration")
+  requireAdminApproval   Boolean         @default(true) @map("require_admin_approval")
   defaultUserRole        FactoryUserRole @default(viewer) @map("default_user_role")
-  sessionTimeoutMinutes  Int      @default(1440) @map("session_timeout_minutes")
-  maxFailedLoginAttempts Int      @default(5) @map("max_failed_login_attempts")
-  passwordPolicy         Json?    @map("password_policy")
-  departmentSettings     Json?    @map("department_settings")
-  customPermissions      Json?    @map("custom_permissions")
-  createdAt              DateTime @default(now()) @map("created_at")
-  updatedAt              DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  sessionTimeoutMinutes  Int             @default(1440) @map("session_timeout_minutes")
+  maxFailedLoginAttempts Int             @default(5) @map("max_failed_login_attempts")
+  passwordPolicy         Json?           @map("password_policy")
+  departmentSettings     Json?           @map("department_settings")
+  customPermissions      Json?           @map("custom_permissions")
+  createdAt              DateTime        @default(now()) @map("created_at")
+  updatedAt              DateTime        @updatedAt @map("updated_at")
+  factory                Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
 
   @@map("factory_settings")
 }
 
-// 枚举定义
 enum WhitelistStatus {
-  PENDING    // 待注册
-  REGISTERED // 已注册
-  EXPIRED    // 已过期
+  PENDING
+  REGISTERED
+  EXPIRED
 
   @@map("whitelist_status")
 }
 
 enum TempTokenType {
-  PHONE_VERIFICATION // 手机验证
-  PASSWORD_RESET     // 密码重置
+  PHONE_VERIFICATION
+  PASSWORD_RESET
 
   @@map("temp_token_type")
 }
 
 enum PlatformRole {
-  platform_super_admin // 平台超级管理员
-  platform_operator    // 平台操作员
+  platform_super_admin
+  platform_operator
+  system_developer
 
   @@map("platform_role")
 }
 
 enum FactoryUserRole {
-  developer          // 系统开发者
-  factory_super_admin // 工厂超级管理员
-  permission_admin    // 权限管理员
-  department_admin    // 部门管理员
-  operator           // 操作员
-  viewer            // 查看者
-  unactivated       // 未激活
+  factory_super_admin
+  permission_admin
+  department_admin
+  operator
+  viewer
+  unactivated
 
   @@map("factory_user_role")
 }
 
 enum Department {
-  farming    // 养殖部门
-  processing // 加工部门
-  logistics  // 物流部门
-  quality    // 质检部门
-  management // 管理部门
+  farming
+  processing
+  logistics
+  quality
+  management
 
   @@map("department")
 }
