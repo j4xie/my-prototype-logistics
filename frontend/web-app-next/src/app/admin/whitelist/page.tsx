@@ -27,6 +27,7 @@ import {
   WhitelistStatus,
   WhitelistApiError 
 } from '@/services/whitelist.service';
+import { useStatusActions, useErrorHandler } from '@/hooks';
 
 // 批量上传结果接口
 interface BulkUploadResult {
@@ -52,6 +53,10 @@ export default function WhitelistManagementPage() {
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+
+  // 使用新的通用Hooks
+  const { handleDelete, isLoading: statusLoading } = useStatusActions();
+  const { handleAsyncError } = useErrorHandler();
 
   const [newEntry, setNewEntry] = useState({
     phones: [] as string[],
@@ -208,24 +213,20 @@ export default function WhitelistManagementPage() {
     }
   };
 
-  // 删除条目
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个白名单条目吗？')) return;
-
-    try {
-      await whitelistService.deleteWhitelist(id);
-      
-      // 重新加载数据
-      await loadWhitelistData();
-      alert('删除成功');
-    } catch (error) {
-      console.error('删除失败:', error);
-      if (error instanceof WhitelistApiError) {
-        alert(`删除失败: ${error.message}`);
-      } else {
-        alert('删除失败，请重试');
-      }
-    }
+  // 删除条目 - 使用新的通用Hook
+  const onDeleteWhitelist = (id: number, phoneNumber: string) => {
+    handleDelete(
+      id.toString(),
+      phoneNumber,
+      {
+        itemType: '白名单条目',
+        confirmMessages: {
+          delete: `确定要删除白名单条目"${phoneNumber}"吗？此操作不可恢复！`
+        }
+      },
+      (idStr: string) => whitelistService.deleteWhitelist(parseInt(idStr)),
+      () => loadWhitelistData()
+    );
   };
 
   // 导出白名单
@@ -308,7 +309,7 @@ export default function WhitelistManagementPage() {
         </div>
 
         {/* 操作按钮区 */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           <Button
             onClick={() => setShowAddModal(true)}
             className="flex items-center justify-center gap-1 text-xs"
@@ -316,13 +317,22 @@ export default function WhitelistManagementPage() {
             <Plus className="w-3 h-3" />
             添加手机号
           </Button>
-                    <Button
+          <Button
             variant="secondary"
             onClick={() => setShowBulkUpload(true)}
             className="flex items-center justify-center gap-1 text-xs"
           >
             <Upload className="w-3 h-3" />
             批量上传
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={loadWhitelistData}
+            className="flex items-center justify-center gap-1 text-xs"
+            title="刷新白名单数据"
+          >
+            <RefreshCw className="w-3 h-3" />
+            刷新
           </Button>
           <Button
             variant="secondary"
@@ -415,7 +425,7 @@ export default function WhitelistManagementPage() {
                       <Button
                         variant="ghost"
                         size="small"
-                        onClick={() => handleDelete(entry.id)}
+                        onClick={() => onDeleteWhitelist(entry.id, entry.phoneNumber)}
                         className="text-red-500 hover:text-red-700 p-2"
                       >
                         <Trash2 className="w-4 h-4" />
