@@ -41,7 +41,7 @@ npm install -g pnpm
 pnpm --version
 ```
 
-### **步骤2: React Native CLI工具** (30分钟)
+### **步骤2: React Native CLI工具** (45分钟)
 
 #### 2.1 安装Expo CLI
 ```bash
@@ -59,6 +59,15 @@ npm install -g eas-cli
 
 # 验证安装
 eas --version
+```
+
+#### 2.3 安装认证相关全局工具 (新增)
+```bash
+# 全局安装React Native调试工具
+npm install -g react-native-debugger
+
+# 安装生物识别测试工具 (可选)
+npm install -g expo-module-scripts
 ```
 
 ### **步骤3: Android开发环境** (3小时)
@@ -137,7 +146,7 @@ npx expo login
 - 注册Google Play开发者账号 ($25一次性费用)
 - 配置开发者资料
 
-### **步骤6: 环境验证** (1.5小时)
+### **步骤6: 环境验证** (2小时)
 
 #### 6.1 创建测试项目
 ```bash
@@ -146,6 +155,11 @@ npx create-expo-app test-rn-env --template
 
 # 进入项目
 cd test-rn-env
+
+# 安装认证相关依赖进行测试
+npx expo install @react-native-async-storage/async-storage
+npx expo install expo-secure-store
+npx expo install expo-local-authentication
 
 # 启动项目
 npx expo start
@@ -159,15 +173,25 @@ npx expo start --android
 # 验证项目在模拟器中正常运行
 ```
 
-#### 6.3 真机测试 (可选)
+#### 6.3 认证功能测试 (新增)
+```bash
+# 测试AsyncStorage功能
+npx expo start --web
+
+# 在浏览器开发者工具中测试本地存储
+# 验证SecureStore是否可用 (仅真机)
+```
+
+#### 6.4 真机测试 (推荐)
 ```bash
 # 通过Expo Go应用测试
 npx expo start --tunnel
 
 # 使用手机扫描二维码
+# 测试生物识别API (需要真机)
 ```
 
-## ✅ 验收标准
+## ✅ 验收标准 (更新)
 
 ### 必须完成的验证项目
 - [ ] Node.js v18+正确安装
@@ -177,23 +201,36 @@ npx expo start --tunnel
 - [ ] 测试项目在模拟器中正常运行
 - [ ] VS Code插件正确安装
 - [ ] Expo账号已登录
+- [ ] **AsyncStorage在测试项目中可用** (新增)
+- [ ] **SecureStore模块可以正常导入** (新增)
+- [ ] **LocalAuthentication模块可以正常导入** (新增)
+
+### 强烈推荐的验证项目
+- [ ] **真机调试正常工作** (提升优先级)
+- [ ] **生物识别API在真机上可用** (新增)
+- [ ] **网络状态检测正常工作** (新增)
 
 ### 可选验证项目
-- [ ] 真机调试正常工作
 - [ ] Google Play Console账号已注册
 - [ ] EAS构建工具可用
+- [ ] **React Native Debugger可以连接** (新增)
 
-## 📊 时间分配
+## 📊 时间分配 (更新)
 
 | 步骤 | 预计时间 | 实际时间 | 备注 |
 |------|----------|----------|------|
 | Node.js环境 | 1小时 | - | 包括pnpm配置 |
-| React Native CLI | 30分钟 | - | Expo和EAS CLI |
+| React Native CLI | 45分钟 | - | Expo和EAS CLI + 认证工具 |
 | Android环境 | 3小时 | - | 最耗时的部分 |
 | 开发工具 | 1小时 | - | VS Code和Git |
 | 账号服务 | 1小时 | - | Expo账号必需 |
-| 环境验证 | 1.5小时 | - | 关键验证步骤 |
-| **总计** | **8小时** | **-** | **一个工作日** |
+| 环境验证 | 2小时 | - | 包含认证功能验证 |
+| **总计** | **8.75小时** | **-** | **约一个工作日** |
+
+### 时间分配说明 (新增)
+- **认证依赖测试**: 额外30分钟验证认证相关包
+- **真机测试**: 强烈建议额外1小时进行真机验证
+- **调试工具配置**: 可选额外30分钟配置高级调试工具
 
 ## 🚨 常见问题和解决方案
 
@@ -221,13 +258,32 @@ npx expo start --tunnel
 - 检查路径是否正确
 - 验证权限设置
 
-## 📝 输出文档
+### 问题5: 认证相关包安装失败 (新增)
+**解决方案**:
+- 检查Expo版本兼容性
+- 使用 `npx expo install` 而不是 `npm install`
+- 清理缓存后重新安装: `npx expo r -c`
+
+### 问题6: 生物识别API无法使用 (新增)
+**解决方案**:
+- 确认设备支持生物识别
+- 检查设备设置中是否启用生物识别
+- 在真机上测试，模拟器不支持
+- 提供密码登录备选方案
+
+### 问题7: SecureStore在Web端报错 (新增)
+**解决方案**:
+- SecureStore仅在移动端可用
+- Web端使用LocalStorage备选方案
+- 使用平台检测条件渲染
+
+## 📝 输出文档 (更新)
 
 任务完成后需要提供:
 
 ### 1. 环境配置报告
 ```markdown
-# 开发环境配置报告
+# 认证系统开发环境配置报告
 
 ## 软件版本信息
 - Node.js: v18.x.x
@@ -236,25 +292,41 @@ npx expo start --tunnel
 - Android Studio: vx.x.x
 - Android SDK: API Level 33
 
+## 认证相关依赖验证
+- [x] @react-native-async-storage/async-storage: vx.x.x
+- [x] expo-secure-store: vx.x.x  
+- [x] expo-local-authentication: vx.x.x
+- [x] @react-native-community/netinfo: vx.x.x
+
 ## 验证结果
 - [x] 测试项目创建成功
 - [x] Android模拟器运行正常
-- [x] 真机调试可用 (可选)
+- [x] 真机调试可用
+- [x] 认证相关API可用
+- [x] 生物识别功能测试通过 (真机)
 
 ## 遇到的问题和解决方案
-[记录具体问题和解决过程]
+[记录具体问题和解决过程，特别是认证相关问题]
 ```
 
-### 2. 团队环境配置指南
+### 2. 认证开发环境指南 (新增)
+基于实际配置过程，创建专门的认证系统开发环境配置指南，包括:
+- 认证相关依赖的最佳版本组合
+- 生物识别测试流程
+- 调试工具配置建议
+
+### 3. 团队环境配置指南 (更新)
 基于实际配置过程，更新和完善团队使用的配置指南。
 
-## 🔄 下一步行动
+## 🔄 下一步行动 (更新)
 
 任务完成后:
 1. 通知项目负责人环境配置完成
 2. 将环境配置文档分享给团队
-3. 协助其他团队成员配置环境
-4. 开始TASK-RN-002项目初始化
+3. **验证认证相关依赖在团队环境中的一致性** (新增)
+4. 协助其他团队成员配置环境
+5. **准备认证系统技术调研资料** (新增)
+6. 开始TASK-RN-002项目初始化
 
 ## 📞 支持联系
 
@@ -265,5 +337,6 @@ npx expo start --tunnel
 ---
 
 **任务创建时间**: 2025-01-25
+**任务更新时间**: 2025-08-05 (新增认证系统支持)
 **计划开始时间**: [待确定]
-**计划完成时间**: 开始后1个工作日
+**计划完成时间**: 开始后1个工作日 (约9小时包含认证验证)

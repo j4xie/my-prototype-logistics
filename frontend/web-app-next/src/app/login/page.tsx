@@ -67,18 +67,40 @@ export default function LoginPage() {
                   // 登录成功后根据用户角色跳转
       const { user } = useAuthStore.getState();
 
+      console.log('🔍 [Login] 登录成功，分析用户数据:', {
+        user: user,
+        userKeys: user ? Object.keys(user) : [],
+        role: user?.role,
+        permissions: user?.permissions,
+        username: user?.username
+      });
+
       // 检查是否为开发者
-      if (user?.role?.name === 'DEVELOPER' || user?.permissions?.role === 'DEVELOPER') {
-        console.log('✅ 开发者登录成功，跳转到模块选择器（默认页面）');
+      const isDeveloper = user?.role?.name === 'DEVELOPER' || user?.permissions?.role === 'DEVELOPER';
+      const isPlatformAdmin = user?.username === 'platform_admin' || user?.role?.name === 'PLATFORM_ADMIN' || user?.permissions?.role === 'PLATFORM_ADMIN';
+
+      console.log('🔍 [Login] 角色判断结果:', {
+        isDeveloper,
+        isPlatformAdmin,
+        conditions: {
+          'user.role.name === DEVELOPER': user?.role?.name === 'DEVELOPER',
+          'user.permissions.role === DEVELOPER': user?.permissions?.role === 'DEVELOPER',
+          'username === platform_admin': user?.username === 'platform_admin',
+          'user.role.name === PLATFORM_ADMIN': user?.role?.name === 'PLATFORM_ADMIN',
+          'user.permissions.role === PLATFORM_ADMIN': user?.permissions?.role === 'PLATFORM_ADMIN'
+        }
+      });
+
+      if (isDeveloper) {
+        console.log('✅ [Login] 开发者登录成功，跳转到模块选择器（默认页面）');
         router.push('/home/selector');
       }
       // 检查是否为平台管理员
-      else if (user?.username === 'platform_admin' ||
-               user?.role?.name === 'PLATFORM_ADMIN') {
-        console.log('✅ 平台管理员登录成功，跳转到平台管理页面');
+      else if (isPlatformAdmin) {
+        console.log('✅ [Login] 平台管理员登录成功，跳转到平台管理页面');
         router.push('/platform');
       } else {
-        console.log('✅ 工厂用户登录成功，跳转到模块选择器');
+        console.log('✅ [Login] 工厂用户登录成功，跳转到模块选择器');
         router.push('/home/selector');
       }
     } catch (error) {
@@ -142,10 +164,10 @@ export default function LoginPage() {
             </div>
             <div className="ml-3 flex-1">
               <h3 className="text-sm font-medium text-blue-800">
-                测试账号信息
+                可用账号信息
               </h3>
               <p className="mt-1 text-xs text-blue-700">
-                系统提供不同权限级别的测试账号
+                系统提供完整的权限等级账号
               </p>
 
               <div className="mt-3 space-y-3">
@@ -178,12 +200,12 @@ export default function LoginPage() {
                     <div className="flex items-center justify-between bg-white rounded p-2 border">
                       <div className="flex items-center space-x-2">
                         <span className="text-yellow-600 text-xs">密码：</span>
-                        <code className="font-mono text-sm text-yellow-800">Developer@123</code>
+                        <code className="font-mono text-sm text-yellow-800">Dev@123456</code>
                       </div>
                       <div className="flex space-x-1">
                         <button
                           type="button"
-                          onClick={() => copyToClipboard('Developer@123', 'developer_password')}
+                          onClick={() => copyToClipboard('Dev@123456', 'developer_password')}
                           className="p-1 text-yellow-600 hover:text-yellow-800 transition-colors"
                         >
                           {copiedField === 'developer_password' ? (
@@ -252,7 +274,7 @@ export default function LoginPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => quickFill('platform_admin', 'admin@123456')}
+                      onClick={() => quickFill('platform_admin', 'Admin@123456')}
                       className="w-full text-xs text-purple-600 hover:text-purple-800 py-1 hover:bg-purple-50 rounded transition-colors"
                     >
                       快速填充
@@ -260,26 +282,83 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* 工厂用户 */}
-                <div className="p-3 bg-blue-100 rounded-lg border border-blue-200">
-                  <p className="font-medium text-blue-800 mb-2 flex items-center">
-                    <Users className="w-4 h-4 mr-1" />
-                    工厂超级管理员
+                {/* 韩式酒肉加工厂 - 工厂超级管理员 */}
+                <div className="p-3 bg-green-100 rounded-lg border border-green-200">
+                  <p className="font-medium text-green-800 mb-2 flex items-center">
+                    🏭 工厂超级管理员
                   </p>
-                  <div className="text-xs text-blue-700 mb-2">工厂内部最高权限账号，具有完整管理权限</div>
+                  <div className="text-xs text-green-700 mb-2">工厂最高权限，可管理工厂内所有用户和数据</div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between bg-white rounded p-2 border">
                       <div className="flex items-center space-x-2">
-                        <span className="text-blue-600 text-xs">用户名：</span>
-                        <code className="font-mono text-sm text-blue-800">factory_admin</code>
+                        <span className="text-green-600 text-xs">用户名：</span>
+                        <code className="font-mono text-sm text-green-800">135_gd_2025_001_admin</code>
                       </div>
                       <div className="flex space-x-1">
                         <button
                           type="button"
-                          onClick={() => copyToClipboard('factory_admin', 'user_username')}
+                          onClick={() => copyToClipboard('135_gd_2025_001_admin', 'korean_admin_username')}
+                          className="p-1 text-green-600 hover:text-green-800 transition-colors"
+                        >
+                          {copiedField === 'korean_admin_username' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-600 text-xs">密码：</span>
+                        <code className="font-mono text-sm text-green-800">Admin@123456</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('Admin@123456', 'korean_admin_password')}
+                          className="p-1 text-green-600 hover:text-green-800 transition-colors"
+                        >
+                          {copiedField === 'korean_admin_password' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => quickFill('135_gd_2025_001_admin', 'Admin@123456')}
+                      className="w-full text-xs text-green-600 hover:text-green-800 py-1 hover:bg-green-50 rounded transition-colors"
+                    >
+                      快速填充
+                    </button>
+                    <div className="text-xs text-green-600 mt-1">
+                      韩式酒肉加工厂 - 超级管理员
+                    </div>
+                  </div>
+                </div>
+
+                {/* 权限管理员账号 */}
+                <div className="p-3 bg-blue-100 rounded-lg border border-blue-200">
+                  <p className="font-medium text-blue-800 mb-2 flex items-center">
+                    🔐 权限管理员
+                  </p>
+                  <div className="text-xs text-blue-700 mb-2">负责用户权限管理和角色分配</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-blue-600 text-xs">用户名：</span>
+                        <code className="font-mono text-sm text-blue-800">135_gd_2025_001_perm_admin</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('135_gd_2025_001_perm_admin', 'korean_perm_admin_username')}
                           className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
                         >
-                          {copiedField === 'user_username' ? (
+                          {copiedField === 'korean_perm_admin_username' ? (
                             <CheckCheck className="w-3 h-3 text-green-600" />
                           ) : (
                             <Copy className="w-3 h-3" />
@@ -290,15 +369,15 @@ export default function LoginPage() {
                     <div className="flex items-center justify-between bg-white rounded p-2 border">
                       <div className="flex items-center space-x-2">
                         <span className="text-blue-600 text-xs">密码：</span>
-                        <code className="font-mono text-sm text-blue-800">SuperAdmin@123</code>
+                        <code className="font-mono text-sm text-blue-800">PermAdmin@123456</code>
                       </div>
                       <div className="flex space-x-1">
                         <button
                           type="button"
-                          onClick={() => copyToClipboard('SuperAdmin@123', 'user_password')}
+                          onClick={() => copyToClipboard('PermAdmin@123456', 'korean_perm_admin_password')}
                           className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
                         >
-                          {copiedField === 'user_password' ? (
+                          {copiedField === 'korean_perm_admin_password' ? (
                             <CheckCheck className="w-3 h-3 text-green-600" />
                           ) : (
                             <Copy className="w-3 h-3" />
@@ -308,13 +387,249 @@ export default function LoginPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => quickFill('factory_admin', 'SuperAdmin@123')}
+                      onClick={() => quickFill('135_gd_2025_001_perm_admin', 'PermAdmin@123456')}
                       className="w-full text-xs text-blue-600 hover:text-blue-800 py-1 hover:bg-blue-50 rounded transition-colors"
                     >
                       快速填充
                     </button>
+                    <div className="text-xs text-blue-600 mt-1">
+                      韩式酒肉加工厂 - 权限管理员
+                    </div>
                   </div>
                 </div>
+
+                {/* 普通工厂用户账号 */}
+                <div className="p-3 bg-orange-100 rounded-lg border border-orange-200">
+                  <p className="font-medium text-orange-800 mb-2 flex items-center">
+                    👤 普通工厂用户
+                  </p>
+                  <div className="text-xs text-orange-700 mb-2">普通操作员权限，可查看和操作分配的功能模块</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-orange-600 text-xs">用户名：</span>
+                        <code className="font-mono text-sm text-orange-800">135_gd_2025_001_user</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('135_gd_2025_001_user', 'korean_user_username')}
+                          className="p-1 text-orange-600 hover:text-orange-800 transition-colors"
+                        >
+                          {copiedField === 'korean_user_username' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-orange-600 text-xs">密码：</span>
+                        <code className="font-mono text-sm text-orange-800">User@123456</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('User@123456', 'korean_user_password')}
+                          className="p-1 text-orange-600 hover:text-orange-800 transition-colors"
+                        >
+                          {copiedField === 'korean_user_password' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => quickFill('135_gd_2025_001_user', 'User@123456')}
+                      className="w-full text-xs text-orange-600 hover:text-orange-800 py-1 hover:bg-orange-50 rounded transition-colors"
+                    >
+                      快速填充
+                    </button>
+                    <div className="text-xs text-orange-600 mt-1">
+                      韩式酒肉加工厂 - 普通用户
+                    </div>
+                  </div>
+                </div>
+
+                {/* 谢氏鱼肉加工厂 - 工厂超级管理员 */}
+                <div className="p-3 bg-emerald-100 rounded-lg border border-emerald-200">
+                  <p className="font-medium text-emerald-800 mb-2 flex items-center">
+                    🏭 工厂超级管理员
+                  </p>
+                  <div className="text-xs text-emerald-700 mb-2">工厂最高权限，可管理工厂内所有用户和数据</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-emerald-600 text-xs">用户名：</span>
+                        <code className="font-mono text-sm text-emerald-800">135_zj_2025_001_admin</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('135_zj_2025_001_admin', 'xie_admin_username')}
+                          className="p-1 text-emerald-600 hover:text-emerald-800 transition-colors"
+                        >
+                          {copiedField === 'xie_admin_username' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-emerald-600 text-xs">密码：</span>
+                        <code className="font-mono text-sm text-emerald-800">Admin@123456</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('Admin@123456', 'xie_admin_password')}
+                          className="p-1 text-emerald-600 hover:text-emerald-800 transition-colors"
+                        >
+                          {copiedField === 'xie_admin_password' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => quickFill('135_zj_2025_001_admin', 'Admin@123456')}
+                      className="w-full text-xs text-emerald-600 hover:text-emerald-800 py-1 hover:bg-emerald-50 rounded transition-colors"
+                    >
+                      快速填充
+                    </button>
+                    <div className="text-xs text-emerald-600 mt-1">
+                      谢氏鱼肉加工厂 - 超级管理员
+                    </div>
+                  </div>
+                </div>
+
+                {/* 谢氏鱼肉加工厂 - 权限管理员 */}
+                <div className="p-3 bg-cyan-100 rounded-lg border border-cyan-200">
+                  <p className="font-medium text-cyan-800 mb-2 flex items-center">
+                    🔐 权限管理员
+                  </p>
+                  <div className="text-xs text-cyan-700 mb-2">负责用户权限管理和角色分配</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-cyan-600 text-xs">用户名：</span>
+                        <code className="font-mono text-sm text-cyan-800">135_zj_2025_001_perm_admin</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('135_zj_2025_001_perm_admin', 'xie_perm_admin_username')}
+                          className="p-1 text-cyan-600 hover:text-cyan-800 transition-colors"
+                        >
+                          {copiedField === 'xie_perm_admin_username' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-cyan-600 text-xs">密码：</span>
+                        <code className="font-mono text-sm text-cyan-800">PermAdmin@123456</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('PermAdmin@123456', 'xie_perm_admin_password')}
+                          className="p-1 text-cyan-600 hover:text-cyan-800 transition-colors"
+                        >
+                          {copiedField === 'xie_perm_admin_password' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => quickFill('135_zj_2025_001_perm_admin', 'PermAdmin@123456')}
+                      className="w-full text-xs text-cyan-600 hover:text-cyan-800 py-1 hover:bg-cyan-50 rounded transition-colors"
+                    >
+                      快速填充
+                    </button>
+                    <div className="text-xs text-cyan-600 mt-1">
+                      谢氏鱼肉加工厂 - 权限管理员
+                    </div>
+                  </div>
+                </div>
+
+                {/* 谢氏鱼肉加工厂 - 普通用户 */}
+                <div className="p-3 bg-amber-100 rounded-lg border border-amber-200">
+                  <p className="font-medium text-amber-800 mb-2 flex items-center">
+                    👤 普通工厂用户
+                  </p>
+                  <div className="text-xs text-amber-700 mb-2">普通操作员权限，可查看和操作分配的功能模块</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-amber-600 text-xs">用户名：</span>
+                        <code className="font-mono text-sm text-amber-800">135_zj_2025_001_user</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('135_zj_2025_001_user', 'xie_user_username')}
+                          className="p-1 text-amber-600 hover:text-amber-800 transition-colors"
+                        >
+                          {copiedField === 'xie_user_username' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-white rounded p-2 border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-amber-600 text-xs">密码：</span>
+                        <code className="font-mono text-sm text-amber-800">User@123456</code>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('User@123456', 'xie_user_password')}
+                          className="p-1 text-amber-600 hover:text-amber-800 transition-colors"
+                        >
+                          {copiedField === 'xie_user_password' ? (
+                            <CheckCheck className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => quickFill('135_zj_2025_001_user', 'User@123456')}
+                      className="w-full text-xs text-amber-600 hover:text-amber-800 py-1 hover:bg-amber-50 rounded transition-colors"
+                    >
+                      快速填充
+                    </button>
+                    <div className="text-xs text-amber-600 mt-1">
+                      谢氏鱼肉加工厂 - 普通用户
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -378,6 +693,7 @@ export default function LoginPage() {
                 <p className="text-xs text-red-600">{errors.password}</p>
               )}
             </div>
+
 
             {/* 登录按钮 */}
             <Button

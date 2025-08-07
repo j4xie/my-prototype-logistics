@@ -37,7 +37,7 @@ export default function OverviewCards() {
   // 加载状态
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {[...Array(4)].map((_, index) => (
           <Card key={index} className="animate-pulse">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -91,26 +91,26 @@ export default function OverviewCards() {
     },
     {
       title: '月收入',
-      value: `¥${(overview.total_revenue / 10000).toFixed(1)}万`,
+      value: '功能尚未实现',
       icon: TrendingUp,
-      iconColor: 'text-purple-600',
-      iconBg: 'bg-purple-100',
-      change: `活跃工厂: ${overview.active_factories}个`,
-      trend: 'up' as const
+      iconColor: 'text-gray-400',
+      iconBg: 'bg-gray-100',
+      change: '统计功能开发中',
+      trend: 'neutral' as const
     },
     {
       title: '数据使用量',
-      value: `${overview.data_usage_total_gb.toFixed(1)} GB`,
+      value: '功能尚未实现',
       icon: Database,
-      iconColor: 'text-orange-600',
-      iconBg: 'bg-orange-100',
-      change: `平均: ${(overview.data_usage_total_gb / overview.total_factories).toFixed(1)} GB/厂`,
+      iconColor: 'text-gray-400',
+      iconBg: 'bg-gray-100',
+      change: '统计功能开发中',
       trend: 'neutral' as const
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
 

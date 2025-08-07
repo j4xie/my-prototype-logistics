@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 const DB_CONFIG = {
   host: 'localhost',
   user: 'root',
-  password: 'password', // 需要根据实际情况修改
+  password: '1585785322@Qq', // 需要根据实际情况修改
   database: 'heiniu_db',
   port: 3306
 };

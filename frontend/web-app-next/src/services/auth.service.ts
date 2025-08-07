@@ -55,32 +55,29 @@ export class AuthService {
   }
 
   /**
-   * 用户登录 - 优先使用真实API
+   * 用户登录 - 使用统一登录接口
    */
   async login(credentials: LoginRequest): Promise<any> {
     try {
       // 统一使用真实后端API进行认证
-      console.log(`[AuthService] 使用真实后端API认证用户: ${credentials.username}`);
+      console.log(`[AuthService] 使用统一登录接口认证用户: ${credentials.username}`);
       
-      let response;
-      // 根据用户名判断使用哪个登录端点
-      if (credentials.username === 'platform_admin') {
-        // 平台管理员登录端点
-        console.log(`[AuthService] 平台管理员登录`);
-        response = await realApiClient.post('/api/auth/platform-login', credentials);
+      // 构建登录数据
+      const loginData: any = {
+        username: credentials.username,
+        password: credentials.password
+      };
+
+      // 如果提供了工厂ID，则添加到请求中
+      if (credentials.factoryId) {
+        loginData.factoryId = credentials.factoryId;
+        console.log(`[AuthService] 工厂用户登录，工厂ID: ${credentials.factoryId}`);
       } else {
-        // 工厂用户登录端点（包括developer、factory_admin等）
-        console.log(`[AuthService] 工厂用户登录: ${credentials.username}`);
-
-        // 需要添加工厂ID - 默认使用测试工厂
-        const loginData = {
-          username: credentials.username,
-          password: credentials.password,
-          factoryId: 'TEST_2024_001' // 默认测试工厂ID
-        };
-
-        response = await realApiClient.post('/api/auth/login', loginData);
+        console.log(`[AuthService] 平台用户登录 (无工厂ID)`);
       }
+
+      // 统一使用 /api/auth/login 端点，后端会智能识别用户类型
+      const response = await realApiClient.post('/api/auth/login', loginData);
 
       console.log(`[AuthService] 登录响应:`, response);
 

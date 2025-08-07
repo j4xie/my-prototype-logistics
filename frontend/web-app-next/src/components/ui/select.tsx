@@ -105,6 +105,7 @@ export const Select: React.FC<SelectProps> = ({
 
   // 处理选择
   const handleSelect = (optionValue: string) => {
+    console.log('Select handleSelect called with:', optionValue); // 调试信息
     setInternalValue(optionValue);
     onChange?.(optionValue);
     setIsOpen(false);
@@ -200,7 +201,13 @@ export const Select: React.FC<SelectProps> = ({
           }
           tabIndex={disabled ? -1 : 0}
           className={selectClasses}
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!disabled) {
+              setIsOpen(!isOpen);
+            }
+          }}
           onKeyDown={handleKeyDown}
         >
           <span
@@ -235,7 +242,7 @@ export const Select: React.FC<SelectProps> = ({
 
         {/* 下拉选项 */}
         {isOpen && (
-          <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+          <div className="absolute z-[9999] mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
             <ul
               ref={listRef}
               id={`${selectId}-listbox`}
@@ -260,7 +267,13 @@ export const Select: React.FC<SelectProps> = ({
                       'cursor-not-allowed text-gray-400': option.disabled,
                     }
                   )}
-                  onClick={() => !option.disabled && handleSelect(option.value)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!option.disabled) {
+                      handleSelect(option.value);
+                    }
+                  }}
                   onMouseEnter={() =>
                     !option.disabled && setFocusedIndex(index)
                   }
@@ -291,3 +304,48 @@ export const Select: React.FC<SelectProps> = ({
     </div>
   );
 };
+
+// 兼容 shadcn/ui 的子组件导出
+export const SelectTrigger = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { className?: string }
+>(({ children, className, ...props }, ref) => {
+  return (
+    <div ref={ref} className={className} {...props}>
+      {children}
+    </div>
+  );
+});
+SelectTrigger.displayName = 'SelectTrigger';
+
+export const SelectValue = React.forwardRef<
+  HTMLSpanElement,
+  React.HTMLAttributes<HTMLSpanElement> & { placeholder?: string }
+>(({ placeholder, ...props }, ref) => {
+  return <span ref={ref} {...props}>{placeholder}</span>;
+});
+SelectValue.displayName = 'SelectValue';
+
+export const SelectContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { className?: string }
+>(({ children, className, ...props }, ref) => {
+  return (
+    <div ref={ref} className={className} {...props}>
+      {children}
+    </div>
+  );
+});
+SelectContent.displayName = 'SelectContent';
+
+export const SelectItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { value: string; className?: string }
+>(({ children, value, className, ...props }, ref) => {
+  return (
+    <div ref={ref} data-value={value} className={className} {...props}>
+      {children}
+    </div>
+  );
+});
+SelectItem.displayName = 'SelectItem';

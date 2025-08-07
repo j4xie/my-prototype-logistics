@@ -43,7 +43,7 @@ export const validate = (schema) => {
 
 // 通用字段验证规则
 const phoneRegex = /^1[3-9]\d{9}$/;
-const factoryIdRegex = /^[A-Z]+_\d{4}_\d{3}$/;
+const factoryIdRegex = /^([A-Z]+_\d{4}_\d{3}|\d{3}-[A-Z]{2}-\d{4}-\d{3})$/;
 const usernameRegex = /^[a-zA-Z0-9_]{4,20}$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
@@ -84,7 +84,7 @@ export const authSchemas = {
     body: z.object({
       username: z.string().min(1, '用户名不能为空'),
       password: z.string().min(1, '密码不能为空'),
-      factoryId: baseSchemas.factoryId,
+      factoryId: z.string().optional(), // 统一登录接口中factoryId为完全可选，不验证格式
     }),
   },
 

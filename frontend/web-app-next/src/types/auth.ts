@@ -22,6 +22,7 @@ export interface RegisterRequest {
 export interface LoginRequest {
   username: string;
   password: string;
+  factoryId?: string; // 工厂ID，平台用户不需要，工厂用户需要
 }
 
 // 认证响应基础接口

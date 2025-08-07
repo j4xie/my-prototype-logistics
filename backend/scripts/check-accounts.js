@@ -57,7 +57,7 @@ async function checkAccounts() {
     }
 
     // 3. 检查工厂用户账号
-    console.log('\n👤 工厂用户账号 (按角色排序):');
+    console.log('\n👤 工厂用户账号 (按工厂和角色排序):');
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -66,13 +66,14 @@ async function checkAccounts() {
         email: true,
         fullName: true,
         roleCode: true,
-        roleLevel: true,
         department: true,
+        position: true,
         isActive: true,
         createdAt: true
       },
       orderBy: [
-        { roleLevel: 'asc' },
+        { factoryId: 'asc' },
+        { roleCode: 'asc' },
         { username: 'asc' }
       ]
     });
@@ -101,7 +102,10 @@ async function checkAccounts() {
           console.log(`\n   ${roleName}:`);
           usersByRole[roleCode].forEach(user => {
             const status = user.isActive ? '✅激活' : '❌停用';
-            console.log(`     ${user.username} | ${user.email} | ${user.fullName} | ${user.department || '无部门'} | ${status}`);
+            const factoryLabel = user.factoryId === 'TEST_2024_001' ? '🧪测试工厂' : user.factoryId;
+            const isTestUser = user.factoryId === 'TEST_2024_001' || user.position === 'SYSTEM_DEVELOPER';
+            const testMarker = isTestUser ? '🧪' : '🏢';
+            console.log(`     ${testMarker} ${user.username} | ${user.email} | ${user.fullName} | 工厂:${factoryLabel} | ${user.department || '无部门'} | ${status}`);
           });
         }
       });

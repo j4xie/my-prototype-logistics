@@ -13,8 +13,16 @@ export const PLATFORM_PERMISSIONS = {
       'create_factory',
       'delete_factory', 
       'manage_all_factories',
+      'view_factories',
       'view_factory_details',
       'factory_activation_control',
+      
+      // 用户管理
+      'manage_factory_users',
+      'create_users',
+      'delete_users',
+      'activate_users',
+      'view_users',
       
       // 平台管理
       'platform_settings',
@@ -30,7 +38,10 @@ export const PLATFORM_PERMISSIONS = {
       // 系统功能
       'system_maintenance',
       'global_notifications',
-      'audit_all_logs'
+      'audit_all_logs',
+      
+      // 白名单管理
+      'manage_whitelist'
     ],
     dataAccess: 'all' // 所有数据
   },

@@ -58,6 +58,47 @@ export interface OperationLog {
   created_at: string;
 }
 
+// 员工状态枚举
+export type EmployeeStatus = 'active' | 'inactive' | 'suspended';
+
+// 员工信息接口
+export interface Employee {
+  id: string;
+  factory_id: string;
+  username: string;
+  email: string;
+  phone?: string;
+  department?: string;
+  position?: string;
+  role: string;
+  status: EmployeeStatus;
+  last_login?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 白名单状态枚举
+export type WhitelistStatus = 'active' | 'expired' | 'suspended';
+
+// 白名单信息接口
+export interface Whitelist {
+  id: string;
+  factory_id: string;
+  factory_name: string;
+  identifier: string;        // 标识符（手机号、邮箱等）
+  identifier_type: 'phone' | 'email' | 'id_card';
+  name?: string;            // 姓名
+  department?: string;      // 部门
+  position?: string;        // 职位
+  status: WhitelistStatus;
+  expires_at?: string;      // 过期时间
+  created_by: string;       // 创建者ID
+  created_by_name: string;  // 创建者姓名
+  created_at: string;
+  updated_at: string;
+  last_used_at?: string;    // 最后使用时间
+}
+
 // 平台概览统计
 export interface PlatformOverview {
   total_factories: number;
