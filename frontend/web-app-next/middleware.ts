@@ -120,7 +120,9 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/api/mock-status',
-    '/api/:path*'
+    // 完全禁用所有API路径匹配，确保前端不拦截任何API请求
+    // '/api/mock-status',
+    // '/api/:path*'
+    '/((?!api).*)'  // 只匹配非API路径
   ]
 }

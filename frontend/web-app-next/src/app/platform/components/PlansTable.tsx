@@ -4,136 +4,34 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
-import { Table, TableColumn } from '@/components/ui/table';
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import { platformApi } from '@/lib/api/platform';
-import type { SubscriptionPlanInfo } from '@/mocks/data/platform-data';
+import { Plus, Settings } from 'lucide-react';
 
 /**
- * 套餐管理表格组件
- * 显示所有订阅套餐信息和管理操作
+ * 套餐管理简化框架组件
+ * 预留扩展空间的基础版本
  */
 export default function PlansTable() {
-  const [plans, setPlans] = useState<SubscriptionPlanInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isPlanning, setIsPlanning] = useState(true);
 
-  // 获取套餐列表
-  const fetchPlans = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const response = await platformApi.subscription.getPlans();
-      setPlans(response.data || []);
-    } catch (err) {
-      console.error('获取套餐列表失败:', err);
-      setError(err instanceof Error ? err.message : '获取数据失败');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPlans();
-  }, []);
-
-  // 格式化价格
-  const formatPrice = (monthly: number, yearly: number) => {
-    if (monthly === 0) return '免费';
-    return `¥${monthly}/月 | ¥${yearly}/年`;
-  };
-
-  // 获取状态显示
-  const getStatusBadge = (isActive: boolean) => {
-    return isActive ? (
-      <Badge variant="success">启用</Badge>
-    ) : (
-      <Badge variant="default">禁用</Badge>
-    );
-  };
-
-  // 表格列定义
-  const columns: TableColumn<SubscriptionPlanInfo>[] = [
+  // 模拟套餐数据（用于展示框架）
+  const mockPlans = [
     {
-      key: 'display_name',
-      title: '套餐名称',
-      width: '150px',
-      sortable: true,
-      render: (value) => <span className="font-medium">{value}</span>
+      name: '基础版',
+      price: '¥299/月',
+      features: ['最多20个用户', '10GB存储空间', '基础功能'],
+      status: 'active'
     },
     {
-      key: 'price_monthly',
-      title: '价格',
-      width: '180px',
-      render: (_, record) => formatPrice(record.price_monthly, record.price_yearly)
+      name: '专业版', 
+      price: '¥599/月',
+      features: ['最多50个用户', '50GB存储空间', '高级功能'],
+      status: 'active'
     },
     {
-      key: 'max_users',
-      title: '用户上限',
-      width: '100px',
-      align: 'center',
-      sortable: true
-    },
-    {
-      key: 'max_storage_gb',
-      title: '存储空间',
-      width: '120px',
-      align: 'center',
-      sortable: true,
-      render: (value) => `${value} GB`
-    },
-    {
-      key: 'features',
-      title: '特性',
-      width: '300px',
-      render: (features: string[]) => (
-        <div className="space-y-1">
-          {features.slice(0, 3).map((feature, index) => (
-            <div key={index} className="text-sm text-gray-600">
-              • {feature}
-            </div>
-          ))}
-          {features.length > 3 && (
-            <div className="text-xs text-gray-400">
-              +{features.length - 3} 更多特性
-            </div>
-          )}
-        </div>
-      )
-    },
-    {
-      key: 'is_active',
-      title: '状态',
-      width: '80px',
-      align: 'center',
-      render: (value) => getStatusBadge(value as boolean)
-    },
-    {
-      key: 'actions',
-      title: '操作',
-      width: '100px',
-      align: 'center',
-      render: (_, record) => (
-        <div className="flex justify-center items-center gap-1">
-          <Button
-            variant="ghost"
-            size="small"
-            className="h-8 w-8 p-0"
-            title="编辑套餐"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="small"
-            className="h-8 w-8 p-0"
-            title="删除套餐"
-          >
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
-        </div>
-      )
+      name: '企业版',
+      price: '¥1299/月', 
+      features: ['最多200个用户', '200GB存储空间', '企业级功能'],
+      status: 'active'
     }
   ];
 
@@ -141,47 +39,118 @@ export default function PlansTable() {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="text-xl font-semibold">套餐管理</CardTitle>
+          <CardTitle className="text-xl font-semibold">订阅套餐管理</CardTitle>
 
-          <Button
-            variant="primary"
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            新建套餐
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setIsPlanning(!isPlanning)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              {isPlanning ? '规划模式' : '管理模式'}
+            </Button>
+            
+            <Button
+              variant="primary"
+              onClick={() => alert('新建套餐功能暂未实现，请等待后续版本')}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              新建套餐
+            </Button>
+          </div>
         </div>
 
         <div className="text-sm text-gray-600">
-          共 {plans.length} 个套餐
+          套餐管理系统框架版本 - 预留扩展空间
         </div>
       </CardHeader>
 
       <CardContent>
-        {error ? (
-          // 错误状态
-          <div className="text-center py-8">
-            <p className="text-red-600">⚠️ {error}</p>
-            <Button
-              variant="secondary"
-              onClick={fetchPlans}
-              className="mt-4"
-            >
-              重试
-            </Button>
+        {isPlanning ? (
+          // 规划说明模式
+          <div className="space-y-6">
+            <div className="text-center py-8 bg-blue-50 rounded-lg border">
+              <h3 className="text-lg font-medium text-blue-800 mb-4">订阅套餐系统规划</h3>
+              <div className="text-sm text-blue-700 space-y-2 max-w-2xl mx-auto">
+                <p>• 支持多层级套餐配置（基础版、专业版、企业版）</p>
+                <p>• 灵活的功能权限控制和用户数量限制</p>
+                <p>• 支持月付/年付订阅模式和优惠策略</p>
+                <p>• 工厂升级/降级套餐的平滑过渡</p>
+                <p>• 套餐使用情况统计和分析</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 border rounded-lg">
+                <h4 className="font-medium text-gray-800 mb-2">套餐配置</h4>
+                <p className="text-sm text-gray-600">价格、功能、限制等配置项</p>
+              </div>
+              <div className="text-center p-4 border rounded-lg">
+                <h4 className="font-medium text-gray-800 mb-2">订阅管理</h4>
+                <p className="text-sm text-gray-600">工厂订阅状态和续费管理</p>
+              </div>
+              <div className="text-center p-4 border rounded-lg">
+                <h4 className="font-medium text-gray-800 mb-2">使用统计</h4>
+                <p className="text-sm text-gray-600">套餐使用情况和收入分析</p>
+              </div>
+            </div>
           </div>
         ) : (
-          // 表格内容
-          <Table
-            columns={columns}
-            data={plans}
-            loading={isLoading}
-            emptyText="暂无套餐数据"
-            hoverable={true}
-            striped={true}
-            responsive={true}
-            size="md"
-          />
+          // 简化的套餐列表展示
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600 mb-4">
+              当前框架展示 - 实际功能开发中
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {mockPlans.map((plan, index) => (
+                <div key={index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="font-medium text-gray-800">{plan.name}</h4>
+                    <Badge variant="success">
+                      {plan.status === 'active' ? '启用' : '禁用'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="text-lg font-semibold text-blue-600 mb-3">
+                    {plan.price}
+                  </div>
+                  
+                  <div className="space-y-1 mb-4">
+                    {plan.features.map((feature, idx) => (
+                      <div key={idx} className="text-sm text-gray-600">
+                        • {feature}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="secondary" 
+                      size="small"
+                      onClick={() => alert('编辑功能暂未实现')}
+                    >
+                      编辑
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      size="small"
+                      onClick={() => alert('统计功能暂未实现')}
+                    >
+                      统计
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center py-6 text-gray-500">
+              <p className="mb-2">🚧 功能开发中</p>
+              <p className="text-sm">完整的套餐管理功能将在后续版本中实现</p>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

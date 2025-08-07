@@ -99,8 +99,12 @@ export class MinimalApiClient {
   private currentMode: OperationMode = OperationMode.AUTO;
 
   constructor(config: MinimalApiClientConfig = {}) {
+    // 强制使用本地后端，忽略所有环境变量
+    const forceLocalBackend = 'http://localhost:3001';
+    console.log('[API Client] 强制使用本地后端:', forceLocalBackend);
+
     this.config = {
-      baseURL: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_REAL_API_BASE || 'http://localhost:3001',
+      baseURL: forceLocalBackend,
       timeout: 10000,
       headers: { 'Content-Type': 'application/json' },
       retryAttempts: 3,
@@ -110,6 +114,8 @@ export class MinimalApiClient {
       useMockData: false,
       mockDelay: 0,
       ...config,
+      // 确保baseURL不被覆盖
+      baseURL: forceLocalBackend,
     };
   }
 
@@ -300,6 +306,16 @@ export class MinimalApiClient {
     const maxAttempts = config.retries ?? this.config.retryAttempts;
     const url = this.buildUrl(endpoint);
     let lastError: Error;
+
+    // 详细的调试日志
+    console.log('[API Client] 请求详情:', {
+      method: method.toUpperCase(),
+      endpoint,
+      url,
+      baseURL: this.config.baseURL,
+      data: data ? JSON.stringify(data).substring(0, 100) + '...' : 'null',
+      timestamp: new Date().toISOString()
+    });
 
     // 应用请求拦截器
     let requestConfig = { ...config, url, method, data: data || null };

@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Building2, Settings, BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { showUnderDevelopment } from '@/components/ui/under-development';
 
 // 导入子组件
 import OverviewCards from './components/OverviewCards';
 import FactoriesTable from './components/FactoriesTable';
-import CreateFactoryModal from './components/CreateFactoryModal';
 import PlansTable from './components/PlansTable';
 import OperationLogTable from './components/OperationLog';
 
@@ -36,27 +36,82 @@ export default function PlatformPage() {
         if (token && userInfo) {
           const userData = JSON.parse(userInfo);
 
+          console.log('🔍 [Platform] 权限验证开始:', {
+            hasToken: !!token,
+            hasUserInfo: !!userInfo,
+            userData: userData,
+            userDataKeys: Object.keys(userData || {}),
+            roleStructure: {
+              'role': userData.role,
+              'role.name': userData.role?.name,
+              'role.id': userData.role?.id,
+              'username': userData.username,
+              'permissions': userData.permissions,
+              'permissions.modules': userData.permissions?.modules,
+              'permissions.role': userData.permissions?.role,
+              'platform_access': userData.permissions?.modules?.platform_access
+            }
+          });
+
           // 检查是否为平台管理员或开发者
-          if (userData.role?.name === 'PLATFORM_ADMIN' ||
-              userData.role?.name === 'DEVELOPER' ||
-              userData.username === 'platform_admin' ||
-              userData.username === 'developer' ||
-              userData.permissions?.modules?.platform_access === true) {
-            console.log('✅ 平台管理权限验证通过:', userData.username);
+          const conditions = {
+            roleNamePlatform: userData.role?.name === 'PLATFORM_ADMIN',
+            roleNameDeveloper: userData.role?.name === 'DEVELOPER',
+            usernameAdmin: userData.username === 'platform_admin',
+            usernameDev: userData.username === 'developer',
+            permissionsPlatform: userData.permissions?.modules?.platform_access === true,
+            permissionsRolePlatform: userData.permissions?.role === 'PLATFORM_ADMIN',
+            permissionsRoleDeveloper: userData.permissions?.role === 'DEVELOPER'
+          };
+
+          console.log('🔍 [Platform] 权限条件检查:', conditions);
+
+          const hasPermission = conditions.roleNamePlatform ||
+                                conditions.roleNameDeveloper ||
+                                conditions.usernameAdmin ||
+                                conditions.usernameDev ||
+                                conditions.permissionsPlatform ||
+                                conditions.permissionsRolePlatform ||
+                                conditions.permissionsRoleDeveloper;
+
+          if (hasPermission) {
+            console.log('✅ [Platform] 平台管理权限验证通过:', {
+              username: userData.username,
+              role: userData.role,
+              permissions: userData.permissions,
+              passedConditions: Object.entries(conditions).filter(([key, value]) => value).map(([key]) => key)
+            });
             setIsInitializing(false);
             return;
           } else {
-            console.log('❌ 无平台管理权限，跳转到登录页面:', userData.username);
+            console.log('❌ [Platform] 无平台管理权限，跳转到登录页面:', {
+              username: userData.username,
+              role: userData.role,
+              permissions: userData.permissions,
+              failedConditions: Object.entries(conditions).filter(([key, value]) => !value).map(([key]) => key),
+              recommendedFix: '检查用户角色和权限配置'
+            });
             router.push('/login');
             return;
           }
         } else {
-          console.log('❌ 未登录，跳转到登录页面');
+          console.log('❌ [Platform] 未登录，跳转到登录页面:', {
+            hasToken: !!token,
+            hasUserInfo: !!userInfo,
+            tokenLength: token?.length || 0,
+            userInfoLength: userInfo?.length || 0
+          });
           router.push('/login');
           return;
         }
       } catch (error) {
-        console.error('认证信息解析失败:', error);
+        console.error('❌ [Platform] 认证信息解析失败:', {
+          error: error,
+          errorMessage: error instanceof Error ? error.message : '未知错误',
+          token: token ? '存在' : '不存在',
+          userInfo: userInfo ? '存在' : '不存在',
+          userInfoPreview: userInfo ? userInfo.substring(0, 100) + '...' : null
+        });
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_info');
         router.push('/login');
@@ -85,9 +140,9 @@ export default function PlatformPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 页面头部 */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200 mt-16 md:mt-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center py-6 gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <Building2 className="w-8 h-8 text-blue-600" />
@@ -97,23 +152,27 @@ export default function PlatformPage() {
                 管理所有工厂租户、订阅套餐和平台运营
               </p>
             </div>
-            <div className="flex gap-3">
-              {/* 新增工厂按钮已移到FactoriesTable组件内 */}
-                             <Button variant="secondary" className="flex items-center gap-2">
-                 <BarChart3 className="w-4 h-4" />
-                 数据导出
-               </Button>
-               <Button variant="secondary" className="flex items-center gap-2">
-                 <Settings className="w-4 h-4" />
-                 平台设置
-               </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="secondary"
+                className="flex items-center gap-2 w-full sm:w-auto"
+                onClick={() => {
+                  showUnderDevelopment({
+                    feature: '数据导出功能',
+                    message: '数据导出功能正在开发中，包括工厂数据、用户统计和平台概览的导出。敬请期待！'
+                  });
+                }}
+              >
+                <BarChart3 className="w-4 h-4" />
+                数据导出
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
       {/* 主要内容区域 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Tab导航 */}
           <TabsList className="grid w-full grid-cols-4 bg-white rounded-lg shadow-sm border">
@@ -148,100 +207,26 @@ export default function PlatformPage() {
           </TabsList>
 
           {/* Dashboard Tab */}
-          <TabsContent value="dashboard" className="space-y-6">
+          <TabsContent value="dashboard" className="space-y-6 mt-8">
             <OverviewCards />
-
-            {/* 快速操作区域 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-blue-600" />
-                    工厂管理
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 text-sm mb-4">
-                    创建、管理和监控所有工厂租户
-                  </p>
-                                     <Button
-                     variant="secondary"
-                     className="w-full"
-                     onClick={() => setActiveTab('factories')}
-                   >
-                     查看工厂列表
-                   </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-green-600" />
-                    订阅套餐
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 text-sm mb-4">
-                    配置和管理各种订阅套餐方案
-                  </p>
-                                     <Button
-                     variant="secondary"
-                     className="w-full"
-                     onClick={() => setActiveTab('plans')}
-                   >
-                     管理套餐
-                   </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-purple-600" />
-                    系统日志
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 text-sm mb-4">
-                    查看平台所有操作和审计日志
-                  </p>
-                                     <Button
-                     variant="secondary"
-                     className="w-full"
-                     onClick={() => setActiveTab('logs')}
-                   >
-                     查看日志
-                   </Button>
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
 
           {/* 工厂管理Tab */}
-          <TabsContent value="factories">
+          <TabsContent value="factories" className="mt-8">
             <FactoriesTable />
           </TabsContent>
 
           {/* 订阅套餐Tab */}
-          <TabsContent value="plans">
+          <TabsContent value="plans" className="mt-8">
             <PlansTable />
           </TabsContent>
 
           {/* 操作日志Tab */}
-          <TabsContent value="logs">
-                              <OperationLogTable />
+          <TabsContent value="logs" className="mt-8">
+            <OperationLogTable />
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* 创建工厂弹窗 */}
-      <CreateFactoryModal
-        onSuccess={() => {
-          // 刷新数据
-          window.location.reload();
-        }}
-      />
     </div>
   );
 }

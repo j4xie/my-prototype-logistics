@@ -2,131 +2,142 @@
 
 > 海牛食品溯源系统 - React Native Android应用开发总体规划
 >
-> 创建时间: 2025-01-25
-> 版本: 1.0.0
-> 状态: 规划中
+> 创建时间: 2025-08-05
+> 版本: 2.0.0
+> 状态: 规划完成
 
 ## 📋 项目概览
 
 ### 目标
-开发海牛食品溯源系统的Android原生应用，基于React Native + Expo技术栈，实现与现有web-app-next功能对等的移动端体验。
+开发海牛食品溯源系统的Android原生应用，基于React Native + Expo技术栈，重点实现**加工模块**的完整功能，配合DeepSeek智能分析系统，同时为其他三个模块搭建基础框架。
 
 ### 技术栈
 - **框架**: React Native + Expo
 - **UI**: Material Design 3 for Android
 - **状态管理**: Zustand
 - **网络**: Axios + React Query
-- **导航**: React Navigation
+- **导航**: React Navigation 6
 - **测试**: Jest + React Native Testing Library
+- **智能分析**: DeepSeek LLM集成
+- **移动特性**: 相机、GPS、推送通知、生物识别
 
-## 🎯 开发阶段划分 (框架化开发方案)
+## 🎯 开发阶段划分 (重新调整后的4阶段9周计划)
 
-### **Phase 1: 基础架构与认证系统** (2.5周)
-**目标**: 建立完整的开发环境和认证系统
-- 开发环境配置与项目初始化
-- Cursor Rules集成与基础组件库
-- **用户认证系统完整开发** (登录、注册、权限、密码重置)
-- **P0核心系统**: 11个页面完整功能
-- **Platform平台管理**: 3个页面完整功能
+### **Phase 0: 环境搭建与项目初始化** (1周)
+**目标**: 建立完整的开发环境和项目基础架构
+- 开发环境配置与工具安装 (Android Studio、Node.js、React Native CLI)
+- React Native + Expo项目创建与基础配置
+- API客户端、存储服务、配置管理基础架构
+- 后端移动端路由准备和API适配
+- 应用激活机制架构设计
 
-### **Phase 2: 业务模块框架** (3周)
-**目标**: 搭建四大业务模块的基础框架
-- **🌱 养殖模块框架**: 主页 + 基础导航 + 核心页面骨架
-- **🏭 加工模块框架**: 主页 + 基础导航 + 核心页面骨架
-- **🚚 物流模块框架**: 主页 + 基础导航 + 核心页面骨架
-- **💰 销售管理框架**: 主页 + 基础导航 + 核心页面骨架
-- **移动端核心功能**: 二维码扫描、相机、GPS基础集成
+### **Phase 1: 认证系统迁移** (3周)
+**目标**: 完整迁移现有认证系统到移动端
+- **用户认证系统**: 登录、注册、密码重置、邮箱验证
+- **角色权限系统**: 6角色RBAC权限控制 (platform_admin, factory_admin, production_manager, quality_inspector, employee, developer)
+- **JWT令牌管理**: 移动端优化的token机制，支持生物识别登录
+- **用户资料管理**: 个人信息、头像上传、偏好设置
+- **移动端安全**: 本地存储加密、设备绑定、安全验证
 
-### **Phase 3: 管理系统完整开发** (2周)
-**目标**: 完成用户管理和系统管理完整功能
-- **👥 用户管理完整功能**: 9个页面 (用户CRUD、权限管理、组织架构)
-- **⚙️ 系统管理完整功能**: 系统设置、角色管理、配置管理
-- **移动端特性完善**: 推送通知、离线功能、生物识别
+### **Phase 2: 加工模块与智能分析** (3周)
+**目标**: 完整实现加工模块功能和DeepSeek智能分析系统
+- **Week 1**: 加工模块基础架构、数据录入界面、设备数据采集
+- **Week 2**: 可视化仪表板、实时监控、DeepSeek智能分析集成
+- **Week 3**: 移动端特色功能 (二维码扫描、拍照、GPS、推送)、权限导航系统完善
+- **其他模块**: 养殖、物流、销售 - 基础卡片界面 + "功能开发中"提示
 
-### **Phase 4: 集成测试与发布** (1.5周)
-**目标**: 完成测试、优化和应用发布
-- 认证系统集成测试
-- 业务模块框架验证
-- 移动端性能优化
-- Google Play Store上架
+### **Phase 3: 系统完善与应用发布** (2周)
+**目标**: 应用激活、测试优化和发布准备
+- **Week 1**: 应用激活机制实现、系统集成测试、应用性能优化
+- **Week 2**: APK构建签名、Google Play Store上架准备、生产环境部署
 
-## 📊 总体时间规划 (框架化开发)
+## 📊 总体时间规划 (9周完整计划)
 
 | 阶段 | 工期 | 开发范围 | 关键里程碑 | 交付物 |
 |------|------|----------|------------|--------|
-| Phase 1 | 2.5周 | 认证系统+核心功能完整 | 认证系统完全可用 | 功能完整的认证应用 |
-| Phase 2 | 3周 | 四大模块基础框架 | 业务模块框架搭建完成 | 可导航的业务框架应用 |
-| Phase 3 | 2周 | 管理系统完整功能 | 用户和系统管理完成 | 管理功能完整的应用 |
-| Phase 4 | 1.5周 | 集成测试+发布优化 | 应用发布就绪 | 上架的Android应用 |
-| **总计** | **9周** | **认证+管理完整+业务框架** | **项目完成** | **可扩展的企业应用** |
+| Phase 0 | 1周 | 环境搭建+项目初始化 | 开发环境完整就绪 | 可运行的空白项目 |
+| Phase 1 | 3周 | 认证系统完整迁移 | 认证系统完全可用 | 功能完整的认证应用 |
+| Phase 2 | 3周 | 加工模块+LLM智能分析 | 加工模块完整+智能分析 | 具备智能分析的加工应用 |
+| Phase 3 | 2周 | 系统完善+应用发布 | 应用发布就绪 | 上架的Android应用 |
+| **总计** | **9周** | **完整加工应用+智能分析** | **项目完成** | **企业级移动应用** |
 
 ## 🔄 任务依赖关系
 
 ```
-Phase 1 (基础架构)
-├── TASK-RN-001: 环境配置
-├── TASK-RN-002: 项目初始化
-├── TASK-RN-003: Cursor Rules集成
-├── TASK-RN-004: 基础组件开发
-└── TASK-RN-005: 导航系统
+Phase 0 (环境搭建) - 1周
+├── TASK-RN-001: 开发环境安装配置
+├── TASK-RN-002: 项目创建与基础配置
+├── TASK-RN-003: 基础服务层搭建
+├── TASK-RN-004: 后端移动端路由准备
+└── TASK-RN-005: 应用激活架构设计
 
-Phase 2 (核心功能)
-├── TASK-RN-006: 认证系统 (依赖: 001-005)
-├── TASK-RN-007: API服务适配 (依赖: 002,003)
-├── TASK-RN-008: 扫码功能 (依赖: 004,005)
-├── TASK-RN-009: 追踪查询 (依赖: 006,007)
-└── TASK-RN-010: 基础页面 (依赖: 004-009)
+Phase 1 (认证系统) - 3周
+├── TASK-RN-006: 用户认证核心功能 (依赖: 001-005)
+├── TASK-RN-007: 角色权限系统 (依赖: 006)
+├── TASK-RN-008: JWT令牌与安全机制 (依赖: 006,007)
+├── TASK-RN-009: 用户资料管理 (依赖: 006-008)
+└── TASK-RN-010: 移动端安全增强 (依赖: 006-009)
 
-Phase 3 (高级功能)
-├── TASK-RN-011: 相机功能 (依赖: 006-010)
-├── TASK-RN-012: 定位服务 (依赖: 006-010)
-├── TASK-RN-013: 推送通知 (依赖: 006-010)
-├── TASK-RN-014: 离线功能 (依赖: 007-010)
-└── TASK-RN-015: 性能优化 (依赖: 010-014)
+Phase 2 (加工模块+智能分析) - 3周
+├── TASK-RN-011: 加工模块基础架构 (依赖: 006-010)
+├── TASK-RN-012: 数据录入与设备集成 (依赖: 011)
+├── TASK-RN-013: 生产监控界面 (依赖: 011,012)
+├── TASK-RN-014: 可视化仪表板 (依赖: 011-013)
+├── TASK-RN-015: DeepSeek智能分析集成 (依赖: 014)
+├── TASK-RN-016: 其他模块框架 (依赖: 011)
+├── TASK-RN-017: 移动端特色功能 (依赖: 011-016)
+└── TASK-RN-018: 权限与导航系统完善 (依赖: 017)
 
-Phase 4 (测试发布)
-├── TASK-RN-016: 功能测试 (依赖: 010-015)
-├── TASK-RN-017: 性能测试 (依赖: 015)
-├── TASK-RN-018: 构建打包 (依赖: 016,017)
-└── TASK-RN-019: 应用发布 (依赖: 018)
+Phase 3 (系统完善+发布) - 2weeks
+├── TASK-RN-019: 应用激活机制实现 (依赖: 005,018)
+├── TASK-RN-020: 系统集成测试 (依赖: 011-019)
+├── TASK-RN-021: 应用性能优化 (依赖: 020)
+├── TASK-RN-022: APK构建与签名 (依赖: 021)
+├── TASK-RN-023: Google Play Store准备 (依赖: 022)
+└── TASK-RN-024: 生产环境部署 (依赖: 023)
 ```
 
 ## 📁 文件结构
 
 ```
 frontend/react-native-development/
-├── REACT-NATIVE-MASTER-PLAN.md          # 主计划文档
-├── phase-1/                             # Phase 1 文件
+├── REACT-NATIVE-MASTER-PLAN.md          # 主计划文档 (已更新为9周计划)
+├── phase-0/                             # Phase 0 环境搭建 (1周)
+│   ├── PHASE-0-PLAN.md                 # Phase 0 详细计划 ✅
+│   ├── TASK-RN-001-environment.md       # 开发环境安装配置
+│   ├── TASK-RN-002-project-setup.md     # 项目创建与基础配置
+│   ├── TASK-RN-003-services.md          # 基础服务层搭建
+│   ├── TASK-RN-004-backend-routes.md    # 后端移动端路由准备
+│   └── TASK-RN-005-activation.md        # 应用激活架构设计
+├── phase-1/                             # Phase 1 认证系统 (3周)
 │   ├── PHASE-1-PLAN.md                 # Phase 1 详细计划
-│   ├── TASK-RN-001-environment.md       # 环境配置任务
-│   ├── TASK-RN-002-initialization.md    # 项目初始化任务
-│   ├── TASK-RN-003-cursor-rules.md      # Cursor Rules集成任务
-│   ├── TASK-RN-004-components.md        # 基础组件开发任务
-│   └── TASK-RN-005-navigation.md        # 导航系统任务
-├── phase-2/                             # Phase 2 文件
-│   ├── PHASE-2-PLAN.md                 # Phase 2 详细计划
-│   ├── TASK-RN-006-auth.md             # 认证系统任务
-│   ├── TASK-RN-007-api.md              # API服务适配任务
-│   ├── TASK-RN-008-scanner.md          # 扫码功能任务
-│   ├── TASK-RN-009-tracking.md         # 追踪查询任务
-│   └── TASK-RN-010-pages.md            # 基础页面任务
-├── phase-3/                             # Phase 3 文件
-│   ├── PHASE-3-PLAN.md                 # Phase 3 详细计划
-│   ├── TASK-RN-011-camera.md           # 相机功能任务
-│   ├── TASK-RN-012-location.md         # 定位服务任务
-│   ├── TASK-RN-013-notifications.md    # 推送通知任务
-│   ├── TASK-RN-014-offline.md          # 离线功能任务
-│   └── TASK-RN-015-optimization.md     # 性能优化任务
-├── phase-4/                             # Phase 4 文件
-│   ├── PHASE-4-PLAN.md                 # Phase 4 详细计划
-│   ├── TASK-RN-016-testing.md          # 功能测试任务
-│   ├── TASK-RN-017-performance.md      # 性能测试任务
-│   ├── TASK-RN-018-build.md            # 构建打包任务
-│   └── TASK-RN-019-publish.md          # 应用发布任务
+│   ├── TASK-RN-006-auth-core.md        # 用户认证核心功能
+│   ├── TASK-RN-007-roles-permissions.md # 角色权限系统
+│   ├── TASK-RN-008-jwt-security.md     # JWT令牌与安全机制
+│   ├── TASK-RN-009-user-profile.md     # 用户资料管理
+│   └── TASK-RN-010-mobile-security.md  # 移动端安全增强
+├── phase-2/                             # Phase 2 加工模块+智能分析 (3周)
+│   ├── PHASE-2-PLAN.md                 # Phase 2 详细计划 ✅
+│   ├── TASK-RN-011-processing-base.md  # 加工模块基础架构 ✅
+│   ├── TASK-RN-012-data-input.md       # 数据录入与设备集成 ✅
+│   ├── TASK-RN-013-monitoring.md       # 生产监控界面 ✅
+│   ├── TASK-RN-014-dashboard.md        # 可视化仪表板 ✅
+│   ├── TASK-RN-015-llm-analytics.md    # DeepSeek智能分析集成 ✅
+│   ├── TASK-RN-016-other-modules.md    # 其他模块框架 ✅
+│   ├── TASK-RN-017-mobile-features.md  # 移动端特色功能 ✅
+│   └── TASK-RN-018-permissions-navigation.md # 权限与导航系统完善 ✅
+├── phase-3/                             # Phase 3 系统完善+发布 (2周)
+│   ├── PHASE-3-PLAN.md                 # Phase 3 详细计划 ✅
+│   ├── TASK-RN-019-activation.md       # 应用激活机制实现
+│   ├── TASK-RN-020-integration-test.md # 系统集成测试
+│   ├── TASK-RN-021-optimization.md     # 应用性能优化
+│   ├── TASK-RN-022-build-apk.md        # APK构建与签名
+│   ├── TASK-RN-023-playstore.md        # Google Play Store准备
+│   └── TASK-RN-024-deployment.md       # 生产环境部署
 └── resources/                           # 资源文件
-    ├── setup-checklist.md              # 环境配置检查清单
-    ├── component-library-spec.md       # 组件库规范
-    └── testing-strategy.md             # 测试策略
+    ├── activation-codes.md              # 激活码管理策略
+    ├── deepseek-integration.md          # DeepSeek集成指南
+    └── mobile-testing-strategy.md       # 移动端测试策略
 ```
 
 ## 💡 质量保证
@@ -137,14 +148,15 @@ frontend/react-native-development/
 1. **技术验证**: 代码构建成功，无严重错误
 2. **功能验证**: 核心功能正常工作
 3. **性能验证**: 满足移动端性能要求
-4. **规范验证**: 遵循Cursor Rules和开发规范
+4. **安全验证**: 权限控制和数据安全合规
 5. **文档验证**: 文档完整且准确
 
 ### 风险管理
-- **技术风险**: React Native版本兼容性、Expo限制
-- **时间风险**: 学习曲线、调试时间
-- **质量风险**: 移动端适配、性能问题
-- **发布风险**: Google Play政策、审核时间
+- **技术风险**: React Native版本兼容性、Expo限制、DeepSeek API稳定性
+- **时间风险**: 移动端开发学习曲线、调试复杂度
+- **质量风险**: 移动端适配、智能分析准确性、用户体验优化
+- **发布风险**: Google Play政策、企业应用激活机制
+- **成本风险**: DeepSeek API使用成本控制 (目标: <¥30/月)
 
 ## 📈 成功指标
 
@@ -153,29 +165,51 @@ frontend/react-native-development/
 - [ ] 页面切换响应 < 500ms
 - [ ] 内存使用 < 200MB
 - [ ] APK大小 < 50MB
+- [ ] DeepSeek分析响应时间 < 6秒
 
 ### 功能指标
 - [ ] 用户认证成功率 > 98%
 - [ ] 二维码识别准确率 > 95%
 - [ ] API调用成功率 > 99%
-- [ ] 离线功能覆盖率 > 80%
+- [ ] 智能分析准确率 > 85%
+- [ ] 推送通知到达率 > 95%
 
 ### 用户体验指标
 - [ ] 应用崩溃率 < 1%
 - [ ] 用户满意度 > 4.5/5
-- [ ] 功能完成度 100%
+- [ ] 加工模块功能完成度 100%
+- [ ] 其他模块框架完成度 100%
+
+### 成本控制指标
+- [ ] DeepSeek月度成本 < ¥30
+- [ ] 单次智能分析成本 < ¥0.02
+- [ ] 缓存命中率 > 60%
 
 ## 🚀 下一步行动
 
-1. **立即开始**: 阅读Phase 1详细计划
-2. **环境准备**: 按照TASK-RN-001执行环境配置
+1. **立即开始**: 阅读Phase 0详细计划 (`phase-0/PHASE-0-PLAN.md`)
+2. **环境准备**: 按照TASK-RN-001执行开发环境配置
 3. **团队协调**: 确定开发人员和时间安排
-4. **工具准备**: 确保Cursor Rules和开发工具就绪
+4. **API准备**: 配置DeepSeek API密钥和后端移动端路由
+5. **设备准备**: 准备Android测试设备和模拟器
+
+## 📋 关键决策记录
+
+### 技术选型决策
+- **LLM服务**: 选择DeepSeek替代GPT-4，成本节省95%+ (¥0.01-0.02 vs ¥0.5-1.0)
+- **开发重点**: 专注加工模块完整功能，其他模块仅搭建框架
+- **阶段调整**: 从原4阶段8周调整为4阶段9周，增加Phase 0环境搭建
+
+### 功能优先级决策
+1. **P0**: Phase 0-1 环境搭建和认证系统 (4周)
+2. **P0**: Phase 2 加工模块+DeepSeek智能分析 (3周) 
+3. **P1**: Phase 3 系统完善和应用发布 (2周)
+4. **P2**: 其他三大模块完整功能 (后续版本)
 
 ---
 
 **项目负责人**: [待分配]
 **预计开始时间**: [待确定]
-**预计完成时间**: 开始后8周
+**预计完成时间**: 开始后9周
 
-*本计划将根据实际执行情况进行调整和优化。*
+*本计划基于用户需求重新设计，重点突出加工模块和DeepSeek智能分析，确保在有限时间内交付最有价值的功能。*

@@ -37,6 +37,7 @@ import {
   UserStats,
   UserApiError 
 } from '@/services/user.service';
+import { useStatusActions, useErrorHandler } from '@/hooks';
 
 type TabType = 'active' | 'pending';
 type ModalModeType = 'view' | 'edit' | 'activate' | 'permissions';
@@ -64,6 +65,10 @@ export default function UserManagementPage() {
   const [modalMode, setModalMode] = useState<ModalModeType>('view');
   const [updateData, setUpdateData] = useState<UpdateUserParams>({});
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+
+  // 使用新的通用Hooks
+  const { handleStatusToggle, handleDelete, isLoading: statusLoading } = useStatusActions();
+  const { handleAsyncError } = useErrorHandler();
 
   // 加载活跃用户数据
   const loadActiveUsers = async () => {
@@ -185,25 +190,26 @@ export default function UserManagementPage() {
     }
   };
 
-  // 切换用户状态
-  const handleToggleUserStatus = async (user: UserType) => {
-    const action = user.isActive ? '停用' : '启用';
-    if (!confirm(`确定要${action}用户 ${user.fullName} 吗？`)) return;
-
-    try {
-      await userService.toggleUserStatus(user.id, !user.isActive);
-      
-      // 重新加载数据
-      await loadActiveUsers();
-      alert(`用户${action}成功`);
-    } catch (error) {
-      console.error('切换用户状态失败:', error);
-      if (error instanceof UserApiError) {
-        alert(`${action}失败: ${error.message}`);
-      } else {
-        alert(`用户${action}失败，请重试`);
-      }
-    }
+  // 切换用户状态 - 使用新的通用Hook
+  const onToggleUserStatus = (user: UserType) => {
+    const currentStatus = user.isActive ? 'active' : 'inactive';
+    const apiCall = user.isActive 
+      ? userService.deactivateUser 
+      : userService.activateUser;
+    
+    handleStatusToggle(
+      user.id,
+      currentStatus,
+      {
+        itemType: '用户',
+        confirmMessages: {
+          suspend: `确定要停用用户 ${user.fullName} 吗？停用后该用户将无法登录。`,
+          activate: `确定要启用用户 ${user.fullName} 吗？启用后该用户将恢复登录权限。`
+        }
+      },
+      apiCall,
+      () => loadActiveUsers()
+    );
   };
 
   // 重置用户密码
@@ -228,25 +234,20 @@ export default function UserManagementPage() {
     openUserModal(user, 'activate');
   };
 
-  // 删除用户
-  const handleDeleteUser = async (user: UserType) => {
-    const confirmMessage = `确定要删除用户 ${user.fullName} (@${user.username}) 吗？\n\n⚠️ 此操作不可恢复！`;
-    if (!confirm(confirmMessage)) return;
-
-    try {
-      await userService.deleteUser(user.id);
-      
-      // 重新加载数据
-      await loadActiveUsers();
-      alert('用户删除成功');
-    } catch (error) {
-      console.error('删除用户失败:', error);
-      if (error instanceof UserApiError) {
-        alert(`删除失败: ${error.message}`);
-      } else {
-        alert('删除用户失败，请重试');
-      }
-    }
+  // 删除用户 - 使用新的通用Hook
+  const onDeleteUser = (user: UserType) => {
+    handleDelete(
+      user.id,
+      `${user.fullName} (@${user.username})`,
+      {
+        itemType: '用户',
+        confirmMessages: {
+          delete: `确定要删除用户 ${user.fullName} (@${user.username}) 吗？\n\n⚠️ 此操作不可恢复！`
+        }
+      },
+      userService.deleteUser,
+      () => loadActiveUsers()
+    );
   };
 
   // 获取角色显示名称
@@ -502,7 +503,7 @@ export default function UserManagementPage() {
                                 <Edit className="w-3 h-3" />
                               </Button>
                               <Button
-                                onClick={() => handleToggleUserStatus(user)}
+                                onClick={() => onToggleUserStatus(user)}
                                 variant="ghost"
                                 size="small"
                                 className="p-1 h-auto"
@@ -526,7 +527,7 @@ export default function UserManagementPage() {
                                 <UserCog className="w-3 h-3" />
                               </Button>
                               <Button
-                                onClick={() => handleDeleteUser(user)}
+                                onClick={() => onDeleteUser(user)}
                                 variant="ghost"
                                 size="small"
                                 className="p-1 h-auto text-red-600"
