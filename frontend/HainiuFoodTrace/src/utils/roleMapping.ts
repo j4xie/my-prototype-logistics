@@ -37,9 +37,9 @@ export const isFactoryUser = (user: User): user is FactoryUser => {
 // 获取用户的统一角色（兼容两种用户类型）
 export const getUserRole = (user: User): UserRole => {
   if (isPlatformUser(user)) {
-    return user.role;
+    return user.platformUser?.role || 'platform_operator';
   } else {
-    return user.roleCode;
+    return user.factoryUser?.role || 'operator';
   }
 };
 
@@ -85,12 +85,16 @@ export const transformBackendUser = (backendUser: any): User => {
       email: backendUser.email,
       phone: backendUser.phone || undefined,
       fullName: backendUser.fullName || undefined,
-      role: backendUser.role,
-      userType: 'platform',
-      permissions: backendUser.permissions || generateDefaultPermissions(backendUser.role),
       avatar: backendUser.avatar || undefined,
       lastLoginAt: backendUser.lastLogin || undefined,
-      createdAt: backendUser.createdAt
+      createdAt: backendUser.createdAt,
+      updatedAt: backendUser.updatedAt,
+      isActive: backendUser.isActive ?? true,
+      userType: 'platform',
+      platformUser: {
+        role: backendUser.role,
+        permissions: backendUser.permissions || []
+      }
     } as PlatformUser;
   }
   
@@ -101,16 +105,19 @@ export const transformBackendUser = (backendUser: any): User => {
     email: backendUser.email,
     phone: backendUser.phone || undefined,
     fullName: backendUser.fullName || undefined,
-    roleCode: backendUser.roleCode || backendUser.role_code,
-    factoryId: backendUser.factoryId || backendUser.factory_id,
-    department: backendUser.department || undefined,
-    position: backendUser.position || undefined,
-    isActive: backendUser.isActive ?? backendUser.is_active ?? true,
-    userType: 'factory',
-    permissions: backendUser.permissions || generateDefaultPermissions(backendUser.roleCode || backendUser.role_code),
     avatar: backendUser.avatar || undefined,
     lastLoginAt: backendUser.lastLogin || backendUser.last_login || undefined,
-    createdAt: backendUser.createdAt || backendUser.created_at
+    createdAt: backendUser.createdAt || backendUser.created_at,
+    updatedAt: backendUser.updatedAt || backendUser.updated_at,
+    isActive: backendUser.isActive ?? backendUser.is_active ?? true,
+    userType: 'factory',
+    factoryUser: {
+      role: backendUser.roleCode || backendUser.role_code,
+      factoryId: backendUser.factoryId || backendUser.factory_id,
+      department: backendUser.department || undefined,
+      position: backendUser.position || undefined,
+      permissions: backendUser.permissions || []
+    }
   } as FactoryUser;
 };
 
@@ -137,15 +144,23 @@ const generateDefaultPermissions = (role: UserRole) => {
 
 // 判断用户是否有特定权限
 export const userHasPermission = (user: User, permission: string): boolean => {
-  return user.permissions.features.includes(permission);
+  if (isPlatformUser(user)) {
+    return user.platformUser.permissions.includes(permission);
+  } else {
+    return user.factoryUser.permissions.includes(permission);
+  }
 };
 
-// 判断用户是否有模块访问权限
-export const userHasModuleAccess = (user: User, module: keyof User['permissions']['modules']): boolean => {
-  return user.permissions.modules[module] || false;
+// 判断用户是否有管理权限
+export const userHasAdminAccess = (user: User): boolean => {
+  const role = getUserRole(user);
+  return ['system_developer', 'platform_super_admin', 'factory_super_admin', 'permission_admin'].includes(role);
 };
 
-// 获取用户角色级别（用于权限比较）
-export const getUserRoleLevel = (user: User): number => {
-  return user.permissions.level || 100;
+// 获取用户工厂ID（工厂用户专用）
+export const getUserFactoryId = (user: User): string | undefined => {
+  if (isFactoryUser(user)) {
+    return user.factoryUser.factoryId;
+  }
+  return undefined;
 };

@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # 海牛食品溯源 - MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: heiniu-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-HainiuRoot2024!}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-heiniu_foodtrace}
+      MYSQL_USER: ${MYSQL_USER:-heiniu_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-HainiuPass2024!}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./config/mysql.cnf:/etc/mysql/conf.d/custom.cnf
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - heiniu_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # 海牛食品溯源 - 后端API服务
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: heiniu-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      DATABASE_URL: mysql://${MYSQL_USER:-heiniu_user}:${MYSQL_PASSWORD:-HainiuPass2024!}@mysql:3306/${MYSQL_DATABASE:-heiniu_foodtrace}
+      JWT_SECRET: ${JWT_SECRET:-HainiuJWTSecret2024ForProduction}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-your-32-char-encryption-key-here}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,https://your-frontend-domain.com}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      UPLOAD_MAX_SIZE: ${UPLOAD_MAX_SIZE:-10485760}
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./temp:/app/temp
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - heiniu_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/mobile/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis缓存服务 (可选)
+  redis:
+    image: redis:7-alpine
+    container_name: heiniu-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - heiniu_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Nginx反向代理 (生产环境)
+  nginx:
+    image: nginx:alpine
+    container_name: heiniu-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - api
+    networks:
+      - heiniu_network
+    profiles:
+      - production
+
+  # 数据库备份服务
+  backup:
+    image: mysql:8.0
+    container_name: heiniu-backup
+    restart: "no"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: ${MYSQL_USER:-heiniu_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-HainiuPass2024!}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-heiniu_foodtrace}
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh
+    command: /bin/bash /backup.sh
+    depends_on:
+      - mysql
+    networks:
+      - heiniu_network
+    profiles:
+      - backup
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  heiniu_network:
+    driver: bridge

@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 
-const mobileAuthMiddleware = (req, res, next) => {
+const prisma = new PrismaClient();
+
+const mobileAuthMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
 
   if (!token) {
@@ -26,30 +29,81 @@ const mobileAuthMiddleware = (req, res, next) => {
         });
       }
       
-      // 设置临时用户信息
+      // 获取一个可用的工厂ID用于临时测试
+      const availableFactory = await prisma.factory.findFirst({
+        where: { isActive: true },
+        select: { id: true }
+      });
+      
+      // 设置临时用户信息（统一格式）
       req.user = {
         id: 1,
         username: 'mobile_user',
-        platform: 'mobile'
+        userType: 'mobile',
+        factoryId: availableFactory?.id || null,
+        permissions: ['basic_access']
       };
       
       return next();
     }
 
-    // 对于JWT token的验证逻辑
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
+    // 对于真实JWT token的验证逻辑
+    const { verifyToken, validateSession } = await import('../utils/jwt.js');
     
-    // 检查token是否为移动端token
-    if (decoded.platform !== 'mobile') {
+    const decoded = verifyToken(token);
+    
+    // 验证session是否有效（对于工厂用户）
+    if (decoded.type === 'factory_user') {
+      const session = await validateSession(token);
+      if (!session) {
+        return res.status(401).json({
+          success: false,
+          message: 'token已失效，请重新登录'
+        });
+      }
+      
+      // 统一用户上下文格式
+      req.user = {
+        id: session.user.id,
+        username: session.user.username,
+        userType: 'factory',
+        factoryId: session.user.factoryId,
+        roleCode: session.user.roleCode,
+        department: session.user.department,
+        permissions: session.user.permissions || []
+      };
+      req.factory = session.user.factory;
+      
+    } else if (decoded.type === 'platform_admin') {
+      // 获取可用的工厂ID供平台管理员测试使用
+      const availableFactory = await prisma.factory.findFirst({
+        where: { isActive: true },
+        select: { id: true }
+      });
+      
+      // 统一用户上下文格式（平台管理员）
+      req.user = {
+        id: decoded.adminId,
+        username: decoded.username,
+        email: decoded.email,
+        userType: 'platform',
+        factoryId: availableFactory?.id || null, // 给平台管理员分配一个工厂用于测试
+        permissions: ['platform_access', 'cross_factory_access']
+      };
+      
+      // 保留原有的req.admin以兼容现有代码
+      req.admin = decoded;
+      
+    } else {
       return res.status(401).json({
         success: false,
-        message: '无效的移动端token'
+        message: '无效的token类型'
       });
     }
 
-    req.user = decoded;
     next();
   } catch (error) {
+    console.error('Token验证失败:', error);
     return res.status(401).json({
       success: false,
       message: 'token无效或已过期'

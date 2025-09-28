@@ -46,10 +46,10 @@ export class AuthService {
         
         // 使用TokenManager保存认证信息
         const tokenData = {
-          accessToken: response.tokens.accessToken,
+          accessToken: response.tokens.token || response.tokens.accessToken,
           refreshToken: response.tokens.refreshToken,
           tempToken: response.tokens.tempToken,
-          expiresAt: Date.now() + response.tokens.expiresIn * 1000,
+          expiresAt: Date.now() + (response.tokens.expiresIn || 86400) * 1000, // 默认24小时
           tokenType: response.tokens.tokenType || 'Bearer'
         };
         
@@ -88,7 +88,7 @@ export class AuthService {
   // 发送验证码
   static async sendVerificationCode(phoneNumber: string): Promise<{ success: boolean; message?: string }> {
     try {
-      const response = await apiClient.post<{ success: boolean; message?: string }>('/mobile/auth/send-verification-code', {
+      const response = await apiClient.post<{ success: boolean; message?: string }>('/api/mobile/auth/send-verification', {
         phoneNumber,
         verificationType: 'registration'
       });
@@ -118,7 +118,7 @@ export class AuthService {
         tempToken?: string;
         factoryId?: string;
         whitelistInfo?: any;
-      }>('/mobile/auth/verify-phone', request);
+      }>('/api/auth/verify-phone', request);
       
       if (response.tempToken) {
         await StorageService.setSecureItem('temp_token', response.tempToken);
@@ -134,7 +134,7 @@ export class AuthService {
   // 注册第一阶段 - 手机验证
   static async registerPhaseOne(request: RegisterPhaseOneRequest): Promise<RegisterResponse> {
     try {
-      const response = await apiClient.post<RegisterResponse>('/mobile/auth/register-phase-one', request);
+      const response = await apiClient.post<RegisterResponse>('/api/mobile/auth/register-phase-one', request);
       
       if (response.tempToken) {
         await StorageService.setSecureItem('temp_token', response.tempToken);
@@ -150,7 +150,7 @@ export class AuthService {
   // 注册第二阶段 - 完整资料
   static async registerPhaseTwo(request: RegisterPhaseTwoRequest): Promise<RegisterResponse> {
     try {
-      const response = await apiClient.post<RegisterResponse>('/mobile/auth/register-phase-two', request);
+      const response = await apiClient.post<RegisterResponse>('/api/mobile/auth/register-phase-two', request);
       
       if (response.success && response.user && response.tokens) {
         // 转换后端用户数据为前端格式
@@ -200,12 +200,13 @@ export class AuthService {
         throw new Error('网络连接不可用，请检查网络设置');
       }
 
-      // 使用保存的token进行快速登录验证
+      // 使用统一登录接口进行生物识别登录验证
       const response = await NetworkManager.executeWithRetry(
-        () => apiClient.post<LoginResponse>('/mobile/auth/biometric-login', {
+        () => apiClient.post<LoginResponse>('/api/mobile/auth/unified-login', {
           username: savedCredentials.username,
-          encryptedToken: savedCredentials.encryptedToken,
-          deviceInfo: savedCredentials.deviceInfo
+          biometricToken: savedCredentials.encryptedToken,
+          deviceInfo: savedCredentials.deviceInfo,
+          loginType: 'biometric'
         }),
         { maxRetries: 2, baseDelay: 1000 }
       );
@@ -261,7 +262,7 @@ export class AuthService {
         throw new Error('设备未绑定，请先进行正常登录');
       }
 
-      const response = await apiClient.post<LoginResponse>('/mobile/auth/device-login', {
+      const response = await apiClient.post<LoginResponse>('/api/mobile/auth/device-login', {
         deviceId,
         deviceToken
       });
@@ -288,7 +289,7 @@ export class AuthService {
   static async logout(): Promise<void> {
     try {
       // 通知服务器登出
-      await apiClient.post('/mobile/auth/logout');
+      await apiClient.post('/api/mobile/auth/logout');
     } catch (error) {
       console.error('服务器登出失败:', error);
     } finally {
