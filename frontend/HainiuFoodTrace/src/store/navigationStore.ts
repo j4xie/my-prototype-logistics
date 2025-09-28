@@ -72,6 +72,32 @@ const ALL_TABS: TabConfig[] = [
     requiredModules: ['trace_access'],
   },
   
+  // 高级功能Tab
+  {
+    name: 'alerts',
+    title: '告警',
+    icon: 'warning',
+    component: 'AlertScreen',
+    requiredModules: ['alerts_access'],
+    requiredPermissions: ['alerts:view'],
+  },
+  {
+    name: 'reports',
+    title: '报表',
+    icon: 'bar-chart',
+    component: 'ReportScreen',
+    requiredModules: ['reports_access'],
+    requiredPermissions: ['reports:view'],
+  },
+  {
+    name: 'system',
+    title: '监控',
+    icon: 'pulse',
+    component: 'SystemScreen',
+    requiredModules: ['system_access'],
+    requiredPermissions: ['system:view'],
+  },
+
   // 管理Tab
   {
     name: 'admin',

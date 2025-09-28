@@ -96,7 +96,20 @@ export const FACTORY_PERMISSIONS = {
       // 系统功能
       'manage_whitelist',
       'audit_factory_logs',
-      'factory_notifications'
+      'factory_notifications',
+      
+      // Phase 2 - 加工模块权限
+      'processing_batch_create',
+      'processing_batch_view_all',
+      'processing_batch_edit',
+      'processing_batch_delete',
+      'quality_inspection_submit',
+      'quality_inspection_approve',
+      'quality_inspection_view_all',
+      'equipment_monitoring_view',
+      'equipment_data_export',
+      'dashboard_view_factory',
+      'alert_management_all'
     ],
     dataAccess: 'factory_all', // 工厂所有数据
     departmentAccess: 'all' // 所有部门
@@ -157,7 +170,16 @@ export const FACTORY_PERMISSIONS = {
       
       // 部门设置
       'department_settings',
-      'department_notifications'
+      'department_notifications',
+      
+      // Phase 2 - 部门级加工权限
+      'processing_batch_create',
+      'processing_batch_view_department',
+      'processing_batch_edit',
+      'quality_inspection_submit',
+      'quality_inspection_approve',
+      'equipment_monitoring_view',
+      'dashboard_view_department'
     ],
     dataAccess: 'department', // 本部门数据
     departmentAccess: 'own' // 仅本部门
@@ -179,7 +201,14 @@ export const FACTORY_PERMISSIONS = {
       // 基础功能
       'create_records',
       'update_records',
-      'upload_files'
+      'upload_files',
+      
+      // Phase 2 - 操作员级加工权限
+      'processing_batch_create',
+      'processing_batch_view_own',
+      'quality_inspection_submit',
+      'equipment_monitoring_view',
+      'work_record_submit'
     ],
     dataAccess: 'department_limited', // 有限的部门数据
     departmentAccess: 'own' // 仅本部门
