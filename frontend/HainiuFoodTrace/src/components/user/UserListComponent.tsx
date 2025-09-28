@@ -15,6 +15,8 @@ import { usePermission } from '../../hooks/usePermission';
 import { User, UserRole } from '../../types/auth';
 import { UserManagementModal } from '../modals/UserManagementModal';
 import { getUserRole } from '../../utils/roleMapping';
+import { UserApiClient } from '../../services/api/userApiClient';
+import { NetworkManager } from '../../services/networkManager';
 
 interface UserListComponentProps {
   onUserPress?: (user: User) => void;
@@ -32,128 +34,134 @@ export const UserListComponent: React.FC<UserListComponentProps> = ({ onUserPres
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
 
-  // 模拟用户数据
-  const mockUsers: User[] = [
-    {
-      id: 'user_1',
-      username: 'admin',
-      email: 'admin@heiniu.com',
-      fullName: '系统管理员',
-      phone: '13800138001',
-      userType: 'platform',
-      isActive: true,
-      createdAt: '2024-01-01T00:00:00.000Z',
-      updatedAt: '2024-01-01T00:00:00.000Z',
-      platformUser: {
-        role: 'platform_super_admin',
-        permissions: [],
-      }
-    },
-    {
-      id: 'user_2',
-      username: 'factory_admin',
-      email: 'factory@heiniu.com',
-      fullName: '工厂管理员',
-      phone: '13800138002',
-      userType: 'factory',
-      isActive: true,
-      createdAt: '2024-01-02T00:00:00.000Z',
-      updatedAt: '2024-01-02T00:00:00.000Z',
-      factoryUser: {
-        role: 'factory_super_admin',
-        department: '管理部',
-        factoryId: 'factory_1',
-        permissions: [],
-      }
-    },
-    {
-      id: 'user_3',
-      username: 'operator1',
-      email: 'operator1@heiniu.com',
-      fullName: '操作员张三',
-      phone: '13800138003',
-      userType: 'factory',
-      isActive: true,
-      createdAt: '2024-01-03T00:00:00.000Z',
-      updatedAt: '2024-01-03T00:00:00.000Z',
-      factoryUser: {
-        role: 'operator',
-        department: '加工部',
-        factoryId: 'factory_1',
-        permissions: [],
-      }
-    },
-    {
-      id: 'user_4',
-      username: 'viewer1',
-      email: 'viewer1@heiniu.com',
-      fullName: '查看员李四',
-      userType: 'factory',
-      isActive: false,
-      createdAt: '2024-01-04T00:00:00.000Z',
-      updatedAt: '2024-01-04T00:00:00.000Z',
-      factoryUser: {
-        role: 'viewer',
-        department: '质检部',
-        factoryId: 'factory_1',
-        permissions: [],
-      }
-    }
-  ];
+  // 分页和筛选状态
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    totalPages: 0
+  });
+  const [error, setError] = useState<string | null>(null);
 
   // 加载用户列表
-  const loadUsers = async () => {
+  const loadUsers = async (page: number = 1, clearPrevious: boolean = false) => {
     try {
       setLoading(true);
-      // 这里应该调用实际的API
-      // const userData = await UserService.getUsers();
-      // setUsers(userData);
-      
-      // 模拟API延迟
-      setTimeout(() => {
-        setUsers(mockUsers);
-        setLoading(false);
-      }, 1000);
+      setError(null);
+
+      // 检查网络连接
+      const isConnected = await NetworkManager.isConnected();
+      if (!isConnected) {
+        throw new Error('网络连接不可用，请检查网络设置');
+      }
+
+      // 调用真实的用户API
+      const response = await NetworkManager.executeWithRetry(
+        () => UserApiClient.getUserList({
+          page,
+          pageSize: pagination.pageSize,
+          userType: selectedUserType === 'all' ? undefined : selectedUserType,
+          search: searchQuery.trim() || undefined,
+        }),
+        { maxRetries: 2, baseDelay: 1000 }
+      );
+
+      if (response.success && response.data) {
+        const { users: newUsers, pagination: newPagination } = response.data;
+        
+        // 转换用户数据为前端格式
+        const transformedUsers: User[] = newUsers.map(user => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          phone: user.phone,
+          userType: user.userType,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          // 基于userType添加相应的用户信息
+          ...(user.userType === 'platform' ? {
+            platformUser: {
+              role: user.role as any,
+              permissions: []
+            }
+          } : {
+            factoryUser: {
+              role: user.role as any,
+              department: user.department,
+              factoryId: 'unknown', // 需要从API获取
+              permissions: []
+            }
+          })
+        }));
+
+        if (clearPrevious || page === 1) {
+          setUsers(transformedUsers);
+        } else {
+          setUsers(prev => [...prev, ...transformedUsers]);
+        }
+
+        setPagination({
+          page: newPagination.page,
+          pageSize: newPagination.pageSize,
+          total: newPagination.total,
+          totalPages: newPagination.totalPages
+        });
+
+        console.log('用户列表加载成功:', { 
+          count: transformedUsers.length, 
+          total: newPagination.total,
+          page: newPagination.page
+        });
+      } else {
+        throw new Error(response.message || '获取用户列表失败');
+      }
     } catch (error) {
       console.error('加载用户列表失败:', error);
+      setError(error.message || '加载失败');
+      
+      // 如果是首次加载失败，显示错误提示
+      if (page === 1) {
+        Alert.alert('加载失败', error.message || '无法获取用户列表，请检查网络连接后重试');
+      }
+    } finally {
       setLoading(false);
     }
   };
 
+  // 初始加载和搜索/筛选变化时重新加载
   useEffect(() => {
-    loadUsers();
-  }, []);
+    loadUsers(1, true);
+  }, [selectedUserType]);
+
+  // 搜索延迟执行
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim().length > 0 || searchQuery.trim().length === 0) {
+        loadUsers(1, true);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   // 刷新列表
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadUsers();
+    await loadUsers(1, true);
     setRefreshing(false);
   };
 
-  // 过滤用户
-  const filteredUsers = useMemo(() => {
-    return users.filter(user => {
-      // 搜索过滤
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch = 
-          user.username.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query) ||
-          (user.fullName && user.fullName.toLowerCase().includes(query)) ||
-          (user.phone && user.phone.includes(query));
-        
-        if (!matchesSearch) return false;
-      }
+  // 加载更多数据
+  const loadMoreUsers = async () => {
+    if (pagination.page < pagination.totalPages && !loading) {
+      await loadUsers(pagination.page + 1, false);
+    }
+  };
 
-      // 用户类型过滤
-      if (selectedUserType !== 'all' && user.userType !== selectedUserType) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [users, searchQuery, selectedUserType]);
+  // 由于搜索和筛选现在在服务器端处理，这里直接使用users数组
+  const filteredUsers = users;
 
   // 获取角色显示名称
   const getRoleDisplayName = (user: User): string => {
