@@ -40,13 +40,18 @@ This is 海牛食品溯源系统 (Heiniu Food Traceability System), focusing on 
 ```bash
 cd frontend/HainiuFoodTrace
 npm install                   # Install dependencies
-npm start                     # Start Expo development server
-npx expo start               # Alternative start command
-npx expo start --clear       # Start with cache cleared
-npm run android              # Start on Android
-npm run ios                  # Start on iOS (macOS only)
-npm run web                  # Start web version
+npm start                     # Start Expo development server (port 3010)
+npx expo start               # Alternative start command (port 3010)
+npx expo start --clear       # Start with cache cleared (port 3010)
+npm run android              # Start on Android (port 3010)
+npm run ios                  # Start on iOS (macOS only, port 3010)
+npm run web                  # Start web version (port 3010)
 ```
+
+**⚠️ PORT CONFIGURATION**:
+- **React Native Dev Server**: Port `3010` (Expo/Metro bundler)
+- **Backend API Server**: Port `3001` (Express API)
+- **MySQL Database**: Port `3306` (default)
 
 ### 🔧 Backend Services (Supporting Services Only)
 
@@ -63,7 +68,7 @@ npm run studio                # Open Prisma Studio (for database inspection)
 ### 🚀 Quick Start Scripts (Windows)
 
 **Primary Development Script**:
-- `start-backend-rn.cmd` - **MAIN**: Start MySQL + Backend + React Native (one-click setup)
+- `start-backend-rn.cmd` - **MAIN**: Start MySQL + Backend (3001) + React Native (3010) (one-click setup)
 
 **Alternative Scripts**:
 - `SOLUTION-HUB.cmd` - Development menu with PowerShell issue solutions
@@ -401,8 +406,17 @@ The project includes comprehensive PowerShell profile management:
 #### Backend Health Check
 - **Service Status**: Run `npm run check` in backend directory
 - **Database Connection**: Verify MySQL service: `sc query MySQL80` (Windows)
-- **Port Conflicts**: Ensure port 3001 is available
+- **Port Conflicts**: 
+  - Backend API: Ensure port 3001 is available
+  - React Native Dev Server: Ensure port 3010 is available
+  - MySQL: Ensure port 3306 is available
 - **Health Endpoint**: Test `curl http://localhost:3001/api/mobile/health`
+- **Port Check Commands (Windows)**:
+  ```cmd
+  netstat -ano | findstr :3001  # Backend API
+  netstat -ano | findstr :3010  # React Native
+  netstat -ano | findstr :3306  # MySQL
+  ```
 
 **IMPORTANT**: During Phase 1-3, do NOT attempt to fix backend issues by modifying code. Instead:
 1. Document the issue in `backend/rn-update-tableandlogic.md`

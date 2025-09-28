@@ -7,6 +7,7 @@ import {
   TokenManagerInstance as TokenManager
 } from '../services/serviceFactory';
 import { useAuthStore } from '../store/authStore';
+import { usePermissionStore } from '../store/permissionStore';
 import { 
   LoginRequest, 
   LoginResponse, 
@@ -75,7 +76,15 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginReturn {
     type: '生物识别'
   });
 
-  const { setUser, setPermissions, setFactory, setUserType, setAuthenticated } = useAuthStore();
+  const { setUser, setLoading } = useAuthStore();
+  const { setPermissions } = usePermissionStore();
+  
+  // 简化的状态设置函数
+  const setUserType = (userType: string) => {}; // 暂时不实现
+  const setFactory = (factory: any) => {}; // 暂时不实现  
+  const setAuthenticated = (authenticated: boolean) => {
+    setUser(authenticated ? (userIdentification as any) : null);
+  };
 
   // 初始化网络状态监听
   React.useEffect(() => {
@@ -130,11 +139,17 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginReturn {
    */
   const getDeviceInfo = useCallback(async (): Promise<LoginRequest['deviceInfo']> => {
     try {
-      // 获取真实的设备信息
-      const deviceId = await Application.getAndroidId() || 
-                      await Application.getIosIdForVendorAsync() ||
-                      Device.osInternalBuildId ||
-                      'device-' + Date.now(); // 降级方案
+      // 根据平台获取设备信息
+      let deviceId: string;
+      if (Platform.OS === 'ios') {
+        deviceId = await Application.getIosIdForVendorAsync() || 
+                   Device.osInternalBuildId ||
+                   'ios-device-' + Date.now();
+      } else {
+        deviceId = await Application.getAndroidId() || 
+                   Device.osInternalBuildId ||
+                   'android-device-' + Date.now();
+      }
       
       return {
         deviceId,

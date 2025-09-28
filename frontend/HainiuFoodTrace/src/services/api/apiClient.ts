@@ -53,13 +53,13 @@ class ApiClient {
             const refreshToken = await StorageService.getSecureItem('refresh_token');
             if (refreshToken) {
               const response = await this.refreshAccessToken(refreshToken);
-              if (response.success) {
-                // 保存新的tokens
-                await StorageService.setSecureItem('access_token', response.accessToken);
-                await StorageService.setSecureItem('refresh_token', response.refreshToken);
+              if (response.success && response.tokens) {
+                // 保存新的tokens (兼容后端返回格式)
+                await StorageService.setSecureItem('access_token', response.tokens.token || response.tokens.accessToken);
+                await StorageService.setSecureItem('refresh_token', response.tokens.refreshToken);
                 
                 // 重试原始请求
-                originalRequest.headers.Authorization = `Bearer ${response.accessToken}`;
+                originalRequest.headers.Authorization = `Bearer ${response.tokens.token || response.tokens.accessToken}`;
                 return this.client(originalRequest);
               }
             }
@@ -79,8 +79,10 @@ class ApiClient {
 
   // Token刷新方法
   private async refreshAccessToken(refreshToken: string): Promise<any> {
-    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-      refreshToken
+    const deviceId = await StorageService.getSecureItem('device_id') || 'unknown';
+    const response = await axios.post(`${API_BASE_URL}/mobile/auth/refresh-token`, {
+      refreshToken,
+      deviceId
     });
     return response.data;
   }

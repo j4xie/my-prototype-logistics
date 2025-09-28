@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { User, UserRole, UserPermissions } from '../../types/auth';
 import { useAuthStore } from '../../store/authStore';
-import { MockAuthService } from '../../mocks/mockAuthService';
+import { UserApiClient, UserListItem as ApiUserListItem } from '../../services/api/userApiClient';
 import { PermissionManager } from '../../components/auth/PermissionManager';
 
 interface UserManagementScreenProps {
@@ -63,26 +63,35 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({ navi
     try {
       setIsLoading(true);
       
-      // 获取Mock用户数据
-      const mockUsers = MockAuthService.getMockUsers();
-      const userList: UserListItem[] = Object.values(mockUsers).map(user => ({
-        id: user.id,
-        username: user.username,
-        fullName: user.username, // Mock数据没有fullName，使用username
-        phone: user.phone,
-        email: user.email,
-        role: user.userType === 'platform' ? user.platformUser?.role : user.factoryUser?.role,
-        department: user.userType === 'platform' ? user.platformUser?.department : user.factoryUser?.department,
-        isActive: user.isActive,
-        userType: user.userType,
-        createdAt: user.createdAt,
-      }));
+      // 使用真实API获取用户数据
+      const response = await UserApiClient.getUserList({
+        page: 1,
+        pageSize: 50, // 一次性加载更多用户
+        isActive: activeFilter === 'all' ? undefined : activeFilter === 'active'
+      });
 
-      setUsers(userList);
-      setFilteredUsers(userList);
+      if (response.success && response.data?.users) {
+        const userList: UserListItem[] = response.data.users.map(apiUser => ({
+          id: apiUser.id,
+          username: apiUser.username,
+          fullName: apiUser.fullName || apiUser.username,
+          phone: apiUser.phone || '',
+          email: apiUser.email || '',
+          role: apiUser.role,
+          department: apiUser.department || '',
+          isActive: apiUser.isActive,
+          userType: apiUser.userType,
+          createdAt: apiUser.createdAt,
+        }));
+
+        setUsers(userList);
+        setFilteredUsers(userList);
+      } else {
+        throw new Error(response.message || '获取用户列表失败');
+      }
     } catch (error) {
       console.error('加载用户列表失败:', error);
-      Alert.alert('错误', '加载用户列表失败');
+      Alert.alert('错误', '加载用户列表失败，请检查网络连接');
     } finally {
       setIsLoading(false);
     }
@@ -180,7 +189,20 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({ navi
 
     try {
       console.log('保存用户权限:', { userId: selectedUser.id, permissions });
-      Alert.alert('成功', '用户权限已更新');
+      
+      // 使用真实API更新用户权限
+      const response = await UserApiClient.updateUserPermissions(
+        selectedUser.id, 
+        permissions.features
+      );
+
+      if (response.success) {
+        Alert.alert('成功', '用户权限已更新');
+        // 刷新用户列表以获取最新数据
+        await loadUsers();
+      } else {
+        throw new Error(response.message || '权限更新失败');
+      }
     } catch (error) {
       console.error('保存用户权限失败:', error);
       Alert.alert('错误', '权限保存失败，请稍后重试');
@@ -481,11 +503,19 @@ export const UserManagementScreen: React.FC<UserManagementScreenProps> = ({ navi
             setSelectedUser(null);
           }}
           userRole={selectedUser.role}
-          currentPermissions={MockAuthService.getUserPermissions({
-            id: selectedUser.id,
+          currentPermissions={{
+            modules: {
+              farming_access: true,
+              processing_access: true,
+              logistics_access: true,
+              trace_access: true,
+              admin_access: selectedUser.role === 'factory_super_admin' || selectedUser.role === 'permission_admin',
+              platform_access: selectedUser.userType === 'platform',
+            },
+            features: [],
+            role: selectedUser.role,
             userType: selectedUser.userType,
-            permissions: MockAuthService.getUserPermissions({ userType: selectedUser.userType } as any)
-          } as any)}
+          }}
           onSavePermissions={saveUserPermissions}
         />
       )}

@@ -1,27 +1,25 @@
-import { MockConfigManager } from '../config/mockConfig';
-
 // 真实服务导入
 import { AuthService } from './auth/authService';
 import { BiometricManager } from './biometricManager';
 import { NetworkManager } from './networkManager';
 import { TokenManager } from './tokenManager';
 import { UserIdentificationService } from './userIdentification';
-
-// Mock服务导入
-import { MockAuthService } from '../mocks/mockAuthService';
-import { MockBiometricManager } from '../mocks/mockBiometricManager';
+import { ActivationService } from './activation/activationService';
+import { ProcessingService } from './processing/processingService';
+import { AlertService } from './alert/alertService';
+import { ReportService } from './report/reportService';
+import { SystemService } from './system/systemService';
+import { LocationService } from './location/locationService';
+import { NotificationService } from './notification/notificationService';
 
 /**
- * 服务工厂 - 根据配置返回真实服务或Mock服务
+ * 服务工厂 - 提供统一的服务访问接口
  */
 export class ServiceFactory {
   /**
    * 获取认证服务
    */
   static getAuthService() {
-    if (MockConfigManager.isServiceMocked('AUTH_SERVICE')) {
-      return MockAuthService;
-    }
     return AuthService;
   }
 
@@ -29,58 +27,97 @@ export class ServiceFactory {
    * 获取生物识别管理器
    */
   static getBiometricManager() {
-    if (MockConfigManager.isServiceMocked('BIOMETRIC_MANAGER')) {
-      return MockBiometricManager;
-    }
     return BiometricManager;
   }
 
   /**
-   * 获取网络管理器 (通常保持真实)
+   * 获取网络管理器
    */
   static getNetworkManager() {
-    if (MockConfigManager.isServiceMocked('NETWORK_MANAGER')) {
-      // 如果需要，这里可以添加MockNetworkManager
-      console.log('🎭 Mock NetworkManager not implemented, using real service');
-    }
     return NetworkManager;
   }
 
   /**
-   * 获取Token管理器 (通常保持真实)
+   * 获取Token管理器
    */
   static getTokenManager() {
-    if (MockConfigManager.isServiceMocked('TOKEN_MANAGER')) {
-      // 如果需要，这里可以添加MockTokenManager
-      console.log('🎭 Mock TokenManager not implemented, using real service');
-    }
     return TokenManager;
   }
 
   /**
-   * 获取用户识别服务 (通常保持真实)
+   * 获取用户识别服务
    */
   static getUserIdentificationService() {
-    if (MockConfigManager.isServiceMocked('USER_IDENTIFICATION')) {
-      // 如果需要，这里可以添加MockUserIdentificationService
-      console.log('🎭 Mock UserIdentificationService not implemented, using real service');
-    }
     return UserIdentificationService;
   }
 
   /**
-   * 获取所有服务的Mock状态
+   * 获取激活服务
+   */
+  static getActivationService() {
+    return ActivationService;
+  }
+
+  /**
+   * 获取加工处理服务
+   */
+  static getProcessingService() {
+    return ProcessingService;
+  }
+
+  /**
+   * 获取告警服务
+   */
+  static getAlertService() {
+    return AlertService;
+  }
+
+  /**
+   * 获取报表服务
+   */
+  static getReportService() {
+    return ReportService;
+  }
+
+  /**
+   * 获取系统监控服务
+   */
+  static getSystemService() {
+    return SystemService;
+  }
+
+  /**
+   * 获取位置服务
+   */
+  static getLocationService() {
+    return LocationService;
+  }
+
+  /**
+   * 获取通知服务
+   */
+  static getNotificationService() {
+    return NotificationService;
+  }
+
+  /**
+   * 获取服务状态
    */
   static getServiceStatus() {
-    const config = MockConfigManager.getConfig();
     return {
-      mockEnabled: config.ENABLE_MOCK,
       services: {
-        AuthService: MockConfigManager.isServiceMocked('AUTH_SERVICE') ? 'MOCK' : 'REAL',
-        BiometricManager: MockConfigManager.isServiceMocked('BIOMETRIC_MANAGER') ? 'MOCK' : 'REAL',
-        NetworkManager: MockConfigManager.isServiceMocked('NETWORK_MANAGER') ? 'MOCK' : 'REAL',
-        TokenManager: MockConfigManager.isServiceMocked('TOKEN_MANAGER') ? 'MOCK' : 'REAL',
-        UserIdentificationService: MockConfigManager.isServiceMocked('USER_IDENTIFICATION') ? 'MOCK' : 'REAL',
+        AuthService: 'REAL',
+        BiometricManager: 'REAL',
+        NetworkManager: 'REAL',
+        TokenManager: 'REAL',
+        UserIdentificationService: 'REAL',
+        ActivationService: 'REAL',
+        ProcessingService: 'REAL',
+        AlertService: 'REAL',
+        ReportService: 'REAL',
+        SystemService: 'REAL',
+        LocationService: 'REAL',
+        NotificationService: 'REAL',
       }
     };
   }
@@ -102,6 +139,13 @@ export const BiometricManagerInstance = ServiceFactory.getBiometricManager();
 export const NetworkManagerInstance = ServiceFactory.getNetworkManager();
 export const TokenManagerInstance = ServiceFactory.getTokenManager();
 export const UserIdentificationServiceInstance = ServiceFactory.getUserIdentificationService();
+export const ActivationServiceInstance = ServiceFactory.getActivationService();
+export const ProcessingServiceInstance = ServiceFactory.getProcessingService();
+export const AlertServiceInstance = ServiceFactory.getAlertService();
+export const ReportServiceInstance = ServiceFactory.getReportService();
+export const SystemServiceInstance = ServiceFactory.getSystemService();
+export const LocationServiceInstance = ServiceFactory.getLocationService();
+export const NotificationServiceInstance = ServiceFactory.getNotificationService();
 
 // 在开发环境中记录服务状态
 if (__DEV__) {

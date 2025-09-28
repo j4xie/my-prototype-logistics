@@ -1,0 +1,278 @@
+{
+  "auth": {
+    "unifiedLogin": {
+      "success": {
+        "success": true,
+        "message": "登录成功",
+        "data": {
+          "user": {
+            "id": "platform-admin-001",
+            "username": "platform_admin",
+            "email": "admin@heiniu.com",
+            "phone": "+86138000000002",
+            "fullName": "平台管理员",
+            "userType": "platform",
+            "platformUser": {
+              "role": "platform_super_admin",
+              "permissions": [
+                "platform_management",
+                "user_management",
+                "factory_management",
+                "system_monitoring"
+              ]
+            }
+          },
+          "tokens": {
+            "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "tokenType": "Bearer",
+            "expiresIn": 3600
+          }
+        }
+      },
+      "failure": {
+        "success": false,
+        "message": "用户名或密码错误",
+        "error": {
+          "code": "INVALID_CREDENTIALS",
+          "message": "用户名或密码错误",
+          "timestamp": "2025-01-14T10:00:00.000Z"
+        }
+      }
+    },
+    "registerPhaseOne": {
+      "success": {
+        "success": true,
+        "message": "验证码已发送",
+        "data": {
+          "tempToken": "temp_token_12345",
+          "phoneNumber": "+86138000000009",
+          "verificationCodeSent": true,
+          "expiresIn": 300
+        }
+      },
+      "phoneNotInWhitelist": {
+        "success": false,
+        "message": "手机号未在白名单中，请联系管理员",
+        "error": {
+          "code": "PHONE_NOT_WHITELISTED",
+          "message": "手机号未在白名单中",
+          "timestamp": "2025-01-14T10:00:00.000Z"
+        }
+      }
+    },
+    "registerPhaseTwo": {
+      "success": {
+        "success": true,
+        "message": "注册成功",
+        "data": {
+          "user": {
+            "id": "factory-new-001",
+            "username": "new_operator",
+            "email": "new@factory001.com",
+            "phone": "+86138000000009",
+            "fullName": "新注册用户",
+            "userType": "factory",
+            "factoryUser": {
+              "role": "operator",
+              "factoryId": "FAC001",
+              "department": "processing",
+              "permissions": ["production_operation"]
+            }
+          },
+          "tokens": {
+            "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            "tokenType": "Bearer",
+            "expiresIn": 3600
+          }
+        }
+      }
+    },
+    "refreshToken": {
+      "success": {
+        "success": true,
+        "data": {
+          "accessToken": "new_access_token_12345",
+          "expiresIn": 3600
+        }
+      }
+    }
+  },
+  "permissions": {
+    "batchCheck": {
+      "success": {
+        "success": true,
+        "data": {
+          "permissions": {
+            "farming_access": true,
+            "processing_access": true,
+            "logistics_access": true,
+            "trace_access": true,
+            "admin_access": true,
+            "platform_access": false,
+            "debug_access": false
+          },
+          "role": "factory_super_admin",
+          "userType": "factory",
+          "level": 1,
+          "departments": ["management", "processing"]
+        }
+      }
+    }
+  },
+  "processing": {
+    "dashboard": {
+      "success": {
+        "success": true,
+        "data": {
+          "summary": {
+            "activeBatches": 15,
+            "completedToday": 8,
+            "qualityIssues": 2,
+            "equipmentAlerts": 1
+          },
+          "recentBatches": [
+            {
+              "id": "BATCH-2025-001",
+              "productName": "有机大米",
+              "status": "processing",
+              "progress": 65,
+              "startTime": "2025-01-14T08:00:00.000Z"
+            }
+          ],
+          "equipmentStatus": [
+            {
+              "id": "EQ-001",
+              "name": "清洗机A",
+              "status": "running",
+              "efficiency": 92
+            }
+          ]
+        }
+      }
+    },
+    "workRecords": {
+      "success": {
+        "success": true,
+        "data": {
+          "records": [
+            {
+              "id": "WR-2025-001",
+              "operatorName": "张三",
+              "batchId": "BATCH-2025-001",
+              "operation": "清洗",
+              "startTime": "2025-01-14T08:00:00.000Z",
+              "endTime": "2025-01-14T09:30:00.000Z",
+              "status": "completed"
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "limit": 20,
+            "total": 45,
+            "totalPages": 3
+          }
+        }
+      }
+    }
+  },
+  "alerts": {
+    "list": {
+      "success": {
+        "success": true,
+        "data": {
+          "alerts": [
+            {
+              "id": "ALERT-2025-001",
+              "type": "quality",
+              "severity": "high",
+              "title": "质量指标异常",
+              "description": "批次BATCH-2025-001的pH值超出正常范围",
+              "timestamp": "2025-01-14T10:30:00.000Z",
+              "status": "active",
+              "batchId": "BATCH-2025-001"
+            },
+            {
+              "id": "ALERT-2025-002",
+              "type": "equipment",
+              "severity": "medium",
+              "title": "设备维护提醒",
+              "description": "清洗机A需要定期维护",
+              "timestamp": "2025-01-14T11:00:00.000Z",
+              "status": "pending",
+              "equipmentId": "EQ-001"
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "limit": 20,
+            "total": 12,
+            "totalPages": 1
+          }
+        }
+      }
+    }
+  },
+  "reports": {
+    "templates": {
+      "success": {
+        "success": true,
+        "data": {
+          "templates": [
+            {
+              "id": "RPT-TPL-001",
+              "name": "日产量报表",
+              "type": "production",
+              "description": "每日生产数据汇总",
+              "frequency": "daily"
+            },
+            {
+              "id": "RPT-TPL-002",
+              "name": "质量检验报表",
+              "type": "quality",
+              "description": "质量检验结果统计",
+              "frequency": "weekly"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "system": {
+    "health": {
+      "success": {
+        "success": true,
+        "data": {
+          "status": "healthy",
+          "services": {
+            "database": true,
+            "authentication": true,
+            "file_upload": true,
+            "permissions": true
+          },
+          "timestamp": "2025-01-14T12:00:00.000Z"
+        }
+      }
+    },
+    "monitor": {
+      "success": {
+        "success": true,
+        "data": {
+          "systemStatus": {
+            "cpu": 45.2,
+            "memory": 62.8,
+            "disk": 34.5,
+            "network": "normal"
+          },
+          "activeUsers": 23,
+          "apiRequests": {
+            "total": 1250,
+            "success": 1220,
+            "error": 30
+          }
+        }
+      }
+    }
+  }
+}

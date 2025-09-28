@@ -139,12 +139,18 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
   const navigateToMain = () => {
     // 根据用户类型导航到不同页面
     if (userIdentification) {
-      const navigationPath = UserIdentificationService.getSmartNavigationPath(
-        userIdentification as any
-      );
-      navigation.replace(navigationPath.replace('/', ''));
+      // 根据用户类型导航
+      const userType = userIdentification.userType;
+      if (userType === 'platform') {
+        navigation.replace('Main'); // 平台用户到主应用
+      } else if (userType === 'factory') {
+        navigation.replace('Main'); // 工厂用户也到主应用，通过权限控制显示不同内容
+      } else {
+        navigation.replace('Main'); // 默认到主应用
+      }
     } else {
-      navigation.replace('MainScreen');
+      // 没有用户识别信息时，默认到主应用
+      navigation.replace('Main');
     }
   };
 

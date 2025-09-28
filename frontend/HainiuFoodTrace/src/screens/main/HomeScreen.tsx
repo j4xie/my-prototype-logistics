@@ -140,6 +140,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             <Text style={styles.sectionTitle}>快速操作</Text>
             <View style={styles.quickActionsGrid}>
               
+              {/* 员工打卡 */}
+              <TouchableOpacity 
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate('TimeClock' as never)}
+              >
+                <View style={styles.quickActionIcon}>
+                  <Ionicons name="time" size={28} color="#10b981" />
+                </View>
+                <Text style={styles.quickActionText}>员工打卡</Text>
+              </TouchableOpacity>
+
               {/* 扫码功能 */}
               <TouchableOpacity style={styles.quickActionCard}>
                 <View style={styles.quickActionIcon}>
@@ -151,17 +162,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               {/* 数据录入 */}
               <TouchableOpacity style={styles.quickActionCard}>
                 <View style={styles.quickActionIcon}>
-                  <Ionicons name="add-circle" size={28} color="#10b981" />
+                  <Ionicons name="add-circle" size={28} color="#f59e0b" />
                 </View>
                 <Text style={styles.quickActionText}>数据录入</Text>
-              </TouchableOpacity>
-
-              {/* 报告查看 */}
-              <TouchableOpacity style={styles.quickActionCard}>
-                <View style={styles.quickActionIcon}>
-                  <Ionicons name="document-text" size={28} color="#f59e0b" />
-                </View>
-                <Text style={styles.quickActionText}>报告查看</Text>
               </TouchableOpacity>
 
               {/* 设置 */}

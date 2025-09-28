@@ -80,7 +80,7 @@ export class ActivationService {
         success: boolean;
         message: string;
         data?: any;
-      }>('/mobile/activation/activate', activationRequest);
+      }>('/api/mobile/activation/activate', activationRequest);
 
       if (response.success) {
         const activationStatus: ActivationStatus = {
@@ -132,7 +132,7 @@ export class ActivationService {
       const response = await apiClient.post<{
         success: boolean;
         isValid: boolean;
-      }>('/mobile/activation/validate', {
+      }>('/api/mobile/activation/validate', {
         activationCode: status.activationCode,
         deviceId: status.deviceId,
       });
@@ -195,5 +195,206 @@ export class ActivationService {
       appVersion: '1.0.0',
       platform: 'android' as const,
     };
+  }
+
+  /**
+   * 获取激活码状态
+   */
+  static async getActivationCodeStatus(code: string): Promise<{
+    success: boolean;
+    data?: {
+      isValid: boolean;
+      type: string;
+      maxUses: number;
+      usedCount: number;
+      validUntil?: string;
+    };
+    message?: string;
+  }> {
+    try {
+      const response = await apiClient.get<{
+        success: boolean;
+        data?: {
+          isValid: boolean;
+          type: string;
+          maxUses: number;
+          usedCount: number;
+          validUntil?: string;
+        };
+        message?: string;
+      }>(`/api/mobile/activation/status/${code}`);
+
+      return response;
+    } catch (error) {
+      console.error('获取激活码状态失败:', error);
+      return {
+        success: false,
+        message: '无法获取激活码状态'
+      };
+    }
+  }
+
+  /**
+   * 获取设备激活历史
+   */
+  static async getActivationHistory(): Promise<{
+    success: boolean;
+    data?: {
+      activations: Array<{
+        id: string;
+        activationCode: string;
+        deviceInfo: any;
+        activatedAt: string;
+        status: string;
+      }>;
+      total: number;
+    };
+    message?: string;
+  }> {
+    try {
+      const deviceId = await this.getOrCreateDeviceId();
+      
+      const response = await apiClient.get<{
+        success: boolean;
+        data?: {
+          activations: Array<{
+            id: string;
+            activationCode: string;
+            deviceInfo: any;
+            activatedAt: string;
+            status: string;
+          }>;
+          total: number;
+        };
+        message?: string;
+      }>(`/api/mobile/activation/history?deviceId=${deviceId}`);
+
+      return response;
+    } catch (error) {
+      console.error('获取激活历史失败:', error);
+      return {
+        success: false,
+        message: '无法获取激活历史'
+      };
+    }
+  }
+
+  /**
+   * 生成激活码 (管理员功能)
+   */
+  static async generateActivationCode(request: {
+    type: 'device' | 'user' | 'factory' | 'trial' | 'permanent';
+    factoryId?: string;
+    maxUses?: number;
+    validDays?: number;
+    notes?: string;
+  }): Promise<{
+    success: boolean;
+    data?: {
+      code: string;
+      type: string;
+      maxUses: number;
+      validUntil?: string;
+    };
+    message?: string;
+  }> {
+    try {
+      const response = await apiClient.post<{
+        success: boolean;
+        data?: {
+          code: string;
+          type: string;
+          maxUses: number;
+          validUntil?: string;
+        };
+        message?: string;
+      }>('/api/mobile/activation/generate', request);
+
+      return response;
+    } catch (error) {
+      console.error('生成激活码失败:', error);
+      return {
+        success: false,
+        message: '无法生成激活码'
+      };
+    }
+  }
+
+  /**
+   * 获取激活码列表 (管理员功能)
+   */
+  static async getActivationCodes(params?: {
+    page?: number;
+    limit?: number;
+    type?: string;
+    status?: string;
+    factoryId?: string;
+  }): Promise<{
+    success: boolean;
+    data?: {
+      codes: Array<{
+        id: string;
+        code: string;
+        type: string;
+        status: string;
+        maxUses: number;
+        usedCount: number;
+        validFrom: string;
+        validUntil?: string;
+        createdAt: string;
+      }>;
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    };
+    message?: string;
+  }> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.set('page', params.page.toString());
+      if (params?.limit) queryParams.set('limit', params.limit.toString());
+      if (params?.type) queryParams.set('type', params.type);
+      if (params?.status) queryParams.set('status', params.status);
+      if (params?.factoryId) queryParams.set('factoryId', params.factoryId);
+
+      const url = queryParams.toString() 
+        ? `/api/mobile/activation/codes?${queryParams.toString()}` 
+        : '/api/mobile/activation/codes';
+
+      const response = await apiClient.get<{
+        success: boolean;
+        data?: {
+          codes: Array<{
+            id: string;
+            code: string;
+            type: string;
+            status: string;
+            maxUses: number;
+            usedCount: number;
+            validFrom: string;
+            validUntil?: string;
+            createdAt: string;
+          }>;
+          pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+          };
+        };
+        message?: string;
+      }>(url);
+
+      return response;
+    } catch (error) {
+      console.error('获取激活码列表失败:', error);
+      return {
+        success: false,
+        message: '无法获取激活码列表'
+      };
+    }
   }
 }

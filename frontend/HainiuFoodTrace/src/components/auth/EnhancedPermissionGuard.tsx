@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
+import { usePermissionStore } from '../../store/permissionStore';
 import { UserRole, UserPermissions, User } from '../../types/auth';
 import { ROLE_LEVELS, FULL_ROLE_PERMISSIONS } from '../../constants/permissions';
 
@@ -16,6 +17,9 @@ interface PermissionCheckOptions {
 
 interface EnhancedPermissionGuardProps {
   children: React.ReactNode;
+  
+  // 基础权限检查
+  requiredAuth?: boolean;
   
   // 权限检查参数
   permissions?: string[];
@@ -51,6 +55,7 @@ interface PermissionCache {
 
 export const EnhancedPermissionGuard: React.FC<EnhancedPermissionGuardProps> = ({
   children,
+  requiredAuth = false,
   permissions = [],
   roles = [],
   modules = [],
@@ -75,7 +80,8 @@ export const EnhancedPermissionGuard: React.FC<EnhancedPermissionGuardProps> = (
     details: any;
   } | null>(null);
 
-  const { user, permissions: userPermissions, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
+  const { permissions: userPermissions } = usePermissionStore();
 
   // 权限缓存
   const [permissionCache, setPermissionCache] = useState<PermissionCache>({});
@@ -165,11 +171,30 @@ export const EnhancedPermissionGuard: React.FC<EnhancedPermissionGuardProps> = (
   }> => {
     try {
       // 检查是否已登录
-      if (!isAuthenticated || !user || !userPermissions) {
+      if (!isAuthenticated || !user) {
         return {
           hasAccess: false,
           reason: '未登录',
           details: { step: 'authentication' }
+        };
+      }
+
+      // 如果只需要认证，允许通过
+      if (requiredAuth && !permissions && !roles && !modules) {
+        return {
+          hasAccess: true,
+          reason: '已认证用户',
+          details: { step: 'authentication_only' }
+        };
+      }
+
+      // 如果没有权限数据，但用户已登录，临时允许通过
+      if (!userPermissions) {
+        console.warn('权限数据未加载，临时允许通过');
+        return {
+          hasAccess: true,
+          reason: '权限数据未加载，临时允许',
+          details: { step: 'fallback' }
         };
       }
 

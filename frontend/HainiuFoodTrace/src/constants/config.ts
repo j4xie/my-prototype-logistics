@@ -2,7 +2,9 @@ import { Platform } from 'react-native';
 
 // API配置
 export const API_BASE_URL = __DEV__ 
-  ? 'http://10.0.2.2:3010/api'  // Android模拟器，固定端口3010
+  ? Platform.OS === 'ios' 
+    ? 'http://localhost:3001/api'    // iOS模拟器使用localhost
+    : 'http://10.0.2.2:3001/api'     // Android模拟器使用10.0.2.2
   : 'https://your-production-api.com/api';
 
 // DeepSeek配置

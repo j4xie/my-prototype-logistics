@@ -10,6 +10,9 @@ import { FarmingScreen } from '../screens/main/FarmingScreen';
 import { ProcessingStackNavigator } from './ProcessingStackNavigator';
 import { LogisticsScreen } from '../screens/main/LogisticsScreen';
 import { TraceScreen } from '../screens/main/TraceScreen';
+import { AlertStackNavigator } from './AlertStackNavigator';
+import { ReportStackNavigator } from './ReportStackNavigator';
+import { SystemStackNavigator } from './SystemStackNavigator';
 import { AdminStackNavigator } from './AdminStackNavigator';
 import { PlatformScreen } from '../screens/main/PlatformScreen';
 import { DeveloperScreen } from '../screens/main/DeveloperScreen';
@@ -20,6 +23,9 @@ export type MainTabParamList = {
   processing: undefined;
   logistics: undefined;
   trace: undefined;
+  alerts: undefined;
+  reports: undefined;
+  system: undefined;
   admin: undefined;
   platform: undefined;
   developer: undefined;
@@ -34,6 +40,9 @@ const tabIcons: Record<string, string> = {
   processing: 'cog',
   logistics: 'car',
   trace: 'search',
+  alerts: 'warning',
+  reports: 'bar-chart',
+  system: 'pulse',
   admin: 'settings',
   platform: 'server',
   developer: 'code-slash',
@@ -46,6 +55,9 @@ const screenComponents: Record<string, React.ComponentType<any>> = {
   ProcessingScreen: ProcessingStackNavigator,
   LogisticsScreen,
   TraceScreen,
+  AlertScreen: AlertStackNavigator,
+  ReportScreen: ReportStackNavigator,
+  SystemScreen: SystemStackNavigator,
   AdminScreen: AdminStackNavigator,
   PlatformScreen,
   DeveloperScreen,

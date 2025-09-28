@@ -2,7 +2,34 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(npm run typecheck:*)"
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(rm:*)",
+      "Bash(npx typescript:*)",
+      "Bash(node_modules/.bin/tsc:*)",
+      "Bash(curl:*)",
+      "Bash(npm install)",
+      "Bash(pkill:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(brew services:*)",
+      "Bash(# 重新登录并显示完整响应\ncurl -X POST http://localhost:3001/api/mobile/auth/unified-login \\\n  -H \"\"Content-Type: application/json\"\" \\\n  -d ''{\n    \"\"username\"\": \"\"processing_admin\"\",\n    \"\"password\"\": \"\"DeptAdmin@123\"\",\n    \"\"deviceInfo\"\": {\n      \"\"deviceId\"\": \"\"TEST_DEVICE_PROCESSING\"\",\n      \"\"deviceModel\"\": \"\"Test Device\"\",\n      \"\"platform\"\": \"\"test\"\",\n      \"\"osVersion\"\": \"\"1.0\"\"\n    }\n  }'' | jq .)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma:*)",
+      "Bash(node:*)",
+      "Bash(timeout:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(npm test)",
+      "Bash(chmod:*)",
+      "Bash(npm test:*)",
+      "Bash(npm --version)",
+      "Bash(lsof:*)",
+      "Bash(gtimeout:*)"
     ],
     "deny": []
   }

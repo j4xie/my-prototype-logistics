@@ -18,7 +18,8 @@
     "seed": "node scripts/unified-seed.js",
     "seed-legacy": "node scripts/seed-database.js",
     "seed-initial": "node scripts/seed-initial-data.js",
-    "test-api": "node scripts/test-api-endpoints.js"
+    "test-api": "node scripts/test-api-endpoints.js",
+    "test-user-management": "node scripts/user-management-comprehensive-test.js"
   },
   "dependencies": {
     "@prisma/client": "^5.5.2",
@@ -27,13 +28,17 @@
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "exceljs": "^4.4.0",
     "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-slow-down": "^2.0.1",
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "mysql2": "^3.6.0",
     "node-cron": "^3.0.3",
     "node-fetch": "^3.3.2",
+    "pdfkit": "^0.14.0",
     "prisma": "^5.5.2",
     "winston": "^3.11.0",
     "zod": "^3.22.4"
@@ -41,6 +46,7 @@
   "devDependencies": {
     "@types/node": "^20.8.0",
     "axios": "^1.11.0",
+    "chalk": "^5.3.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.1"
   },

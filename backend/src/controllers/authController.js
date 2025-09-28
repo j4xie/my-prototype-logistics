@@ -75,6 +75,7 @@ const generatePlatformUserPermissions = (admin) => {
         'all_factories_access'
       ],
       role: 'DEVELOPER',
+      roleLevel: 0, // 最高级别权限
       userType: 'platform'
     };
   }
@@ -83,11 +84,11 @@ const generatePlatformUserPermissions = (admin) => {
   if (role === 'platform_super_admin') {
     return {
       modules: {
-        farming_access: false,
-        processing_access: false,
-        logistics_access: false,
-        trace_access: false,
-        admin_access: false,
+        farming_access: true,
+        processing_access: true,
+        logistics_access: true,
+        trace_access: true,
+        admin_access: true, // 修复：应该有管理权限
         platform_access: true,
       },
       features: [
@@ -96,6 +97,7 @@ const generatePlatformUserPermissions = (admin) => {
         'user_manage_all'
       ],
       role: 'PLATFORM_ADMIN',
+      roleLevel: 1,
       userType: 'platform'
     };
   }
@@ -103,15 +105,16 @@ const generatePlatformUserPermissions = (admin) => {
   // 平台操作员权限
   return {
     modules: {
-      farming_access: false,
-      processing_access: false,
-      logistics_access: false,
-      trace_access: false,
+      farming_access: true,
+      processing_access: true,
+      logistics_access: true,
+      trace_access: true, // 修复：应该有追溯权限
       admin_access: false,
       platform_access: true,
     },
-    features: ['platform_view_only'],
+    features: ['factory_view_all', 'stats_view_all'],
     role: 'PLATFORM_OPERATOR',
+    roleLevel: 2,
     userType: 'platform'
   };
 };
@@ -209,7 +212,7 @@ const generateUserPermissions = (user) => {
         'stats_view_all'
       ],
       role: 'SUPER_ADMIN',
-      roleLevel: 0,
+      roleLevel: 5, // 修复：工厂超级管理员级别应该大于平台用户最大级别2
       department: department
     };
   }
@@ -230,7 +233,7 @@ const generateUserPermissions = (user) => {
         'stats_view_all'
       ],
       role: 'PERMISSION_ADMIN',
-      roleLevel: 5,
+      roleLevel: 10,
       department: department
     };
   }
@@ -251,18 +254,54 @@ const generateUserPermissions = (user) => {
         'stats_view_own_dept'
       ],
       role: 'DEPARTMENT_ADMIN',
-      roleLevel: 10,
+      roleLevel: 15,
       department: department
     };
   }
 
-  // 普通用户权限
+  // 操作员权限
+  if (roleCode === 'operator') {
+    return {
+      modules: {
+        farming_access: department === 'farming',
+        processing_access: department === 'processing',
+        logistics_access: department === 'logistics',
+        trace_access: true,
+        admin_access: false,
+        platform_access: false,
+      },
+      features: ['data_input', 'stats_view_basic'],
+      role: 'OPERATOR',
+      roleLevel: 20,
+      department: department
+    };
+  }
+
+  // 查看者权限
+  if (roleCode === 'viewer') {
+    return {
+      modules: {
+        farming_access: false,
+        processing_access: false,
+        logistics_access: false,
+        trace_access: true,
+        admin_access: false,
+        platform_access: false,
+      },
+      features: ['stats_view_basic'],
+      role: 'VIEWER',
+      roleLevel: 30,
+      department: department
+    };
+  }
+
+  // 未激活用户或其他角色的默认权限
   return {
     modules: {
-      farming_access: department === 'farming',
-      processing_access: department === 'processing',
-      logistics_access: department === 'logistics',
-      trace_access: true,
+      farming_access: false,
+      processing_access: false,
+      logistics_access: false,
+      trace_access: false,
       admin_access: false,
       platform_access: false,
     },
@@ -408,9 +447,7 @@ export const register = async (req, res, next) => {
         phone: phoneNumber,
         fullName,
         isActive: false,
-        roleLevel: 99,
         roleCode: 'unactivated',
-        permissions: [],
       },
     });
 
@@ -809,7 +846,7 @@ export const unifiedLogin = async (username, password, deviceInfo = null) => {
       }
       
       // 生成工厂用户权限
-      const permissions = generateFactoryUserPermissions(user);
+      const permissions = generateUserPermissions(user);
       
       return {
         success: true,
@@ -941,9 +978,6 @@ export const sendVerificationCode = async (phoneNumber, verificationType) => {
  */
 export const checkWhitelistStatus = async (phoneNumber) => {
   try {
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
-    
     // 查找所有工厂的白名单记录
     const whitelistEntries = await prisma.userWhitelist.findMany({
       where: {
@@ -963,8 +997,6 @@ export const checkWhitelistStatus = async (phoneNumber) => {
         }
       }
     });
-    
-    await prisma.$disconnect();
     
     if (whitelistEntries.length === 0) {
       return {

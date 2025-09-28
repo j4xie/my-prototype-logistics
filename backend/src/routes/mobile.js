@@ -1,6 +1,13 @@
 import express from 'express';
 import multer from 'multer';
 import mobileAuthMiddleware from '../middleware/mobileAuth.js';
+import processingRoutes from './processing.js';
+import activationRoutes from './activation.js';
+import reportsRoutes from './reports.js';
+import systemRoutes from './system.js';
+import timeclockRoutes from './timeclock.js';
+import workTypesRoutes from './workTypes.js';
+import timeStatsRoutes from './timeStats.js';
 const router = express.Router();
 
 // 文件上传配置 (移动端优化)
@@ -387,6 +394,258 @@ router.post('/auth/device-login', async (req, res) => {
     });
   }
 });
+
+// Token刷新接口
+router.post('/auth/refresh-token', async (req, res) => {
+  const { refreshToken, deviceId } = req.body;
+  
+  try {
+    if (!refreshToken) {
+      return res.status(400).json({ 
+        success: false, 
+        message: '缺少refresh token' 
+      });
+    }
+
+    // 导入token刷新功能
+    const { refreshAuthToken } = await import('../utils/jwt.js');
+    
+    const newTokens = await refreshAuthToken(refreshToken);
+    
+    console.log('Token刷新成功:', {
+      deviceId: deviceId || 'unknown',
+      timestamp: new Date().toISOString()
+    });
+    
+    res.json({
+      success: true,
+      message: 'Token刷新成功',
+      tokens: {
+        accessToken: newTokens.token,
+        refreshToken: newTokens.refreshToken,
+        expiresIn: 24 * 60 * 60 // 24小时，单位秒
+      }
+    });
+  } catch (error) {
+    console.error('Token刷新失败:', error);
+    res.status(401).json({ 
+      success: false, 
+      message: 'Refresh token无效或已过期' 
+    });
+  }
+});
+
+// 用户信息验证接口
+router.get('/auth/profile', mobileAuthMiddleware, async (req, res) => {
+  try {
+    if (req.user) {
+      // 工厂用户
+      res.json({
+        success: true,
+        user: {
+          id: req.user.id,
+          username: req.user.username,
+          email: req.user.email,
+          userType: 'factory',
+          role: req.user.roleCode,
+          department: req.user.department,
+          permissions: req.user.permissions || [],
+          factory: req.factory ? {
+            id: req.factory.id,
+            name: req.factory.name,
+            code: req.factory.code
+          } : null
+        }
+      });
+    } else if (req.admin) {
+      // 平台管理员
+      res.json({
+        success: true,
+        user: {
+          id: req.admin.adminId,
+          username: req.admin.username,
+          email: req.admin.email,
+          userType: 'platform',
+          role: 'platform_admin',
+          permissions: ['admin:all']
+        }
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        message: '未找到用户信息'
+      });
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取用户信息失败'
+    });
+  }
+});
+
+// 设备列表查询接口
+router.get('/auth/devices', mobileAuthMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.id || req.admin?.adminId;
+    const userType = req.user ? 'factory' : 'platform';
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: '用户未认证'
+      });
+    }
+
+    // 由于当前设备信息存储在内存/日志中，这里提供模拟数据
+    // 基于当前登录的设备信息构建响应
+    const devices = [
+      {
+        id: `device_${userId}_1`,
+        deviceName: 'Android设备',
+        deviceModel: req.deviceInfo?.deviceModel || 'Unknown Android',
+        platform: 'android',
+        isActive: true,
+        lastLoginAt: new Date().toISOString(),
+        bindingDate: new Date().toISOString()
+      }
+    ];
+
+    // 如果有额外的设备信息，可以从这里扩展
+    console.log('获取设备列表:', {
+      userId,
+      userType,
+      deviceCount: devices.length
+    });
+
+    res.json({
+      success: true,
+      data: {
+        devices,
+        total: devices.length
+      }
+    });
+  } catch (error) {
+    console.error('获取设备列表失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取设备列表失败'
+    });
+  }
+});
+
+// 批量权限检查接口
+router.post('/permissions/batch-check', mobileAuthMiddleware, async (req, res) => {
+  try {
+    const { permissionChecks } = req.body;
+    
+    if (!permissionChecks || !Array.isArray(permissionChecks)) {
+      return res.status(400).json({
+        success: false,
+        message: '无效的权限检查请求'
+      });
+    }
+
+    // 导入权限检查函数
+    const { calculateUserPermissions, hasPermission } = await import('../config/permissions.js');
+    
+    const userId = req.user?.id || req.admin?.adminId;
+    const userType = req.user ? 'factory_user' : 'platform_admin';
+    const userRole = req.user?.roleCode || req.admin?.role || 'platform_admin';
+    const department = req.user?.department;
+
+    // 计算用户权限
+    const userPermissions = calculateUserPermissions(userType, userRole, department);
+    
+    // 批量检查权限
+    const results = [];
+    
+    for (const check of permissionChecks) {
+      const { type, values, operator = 'OR' } = check;
+      let hasAccess = false;
+      let reason = '';
+      
+      if (type === 'permission') {
+        if (operator === 'AND') {
+          // 所有权限都必须有
+          hasAccess = values.every(permission => hasPermission(userPermissions, permission));
+          reason = hasAccess ? '所有权限验证通过' : '缺少必要权限';
+        } else {
+          // 至少有一个权限
+          hasAccess = values.some(permission => hasPermission(userPermissions, permission));
+          reason = hasAccess ? '部分权限验证通过' : '无任何匹配权限';
+        }
+      } else if (type === 'role') {
+        hasAccess = values.includes(userRole);
+        reason = hasAccess ? '角色匹配' : '角色不匹配';
+      } else if (type === 'level') {
+        const minLevel = check.minimum || 0;
+        const userLevel = userPermissions.level || 99;
+        hasAccess = userLevel <= minLevel; // 数字越小权限越高
+        reason = hasAccess ? '权限级别满足' : '权限级别不足';
+      }
+      
+      results.push({
+        type,
+        values,
+        operator,
+        hasAccess,
+        reason
+      });
+    }
+    
+    const overallAccess = results.every(r => r.hasAccess);
+    
+    console.log('批量权限检查:', {
+      userId,
+      userType,
+      userRole,
+      checkCount: permissionChecks.length,
+      overallAccess
+    });
+
+    res.json({
+      success: true,
+      data: {
+        userId,
+        userType,
+        userRole,
+        hasAccess: overallAccess,
+        results,
+        userPermissions: userPermissions.permissions,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('批量权限检查失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '权限检查失败'
+    });
+  }
+});
+
+// Phase 2 - 加工模块路由
+router.use('/processing', processingRoutes);
+
+// Phase 3 - 激活管理路由
+router.use('/activation', activationRoutes);
+
+// Phase 3 - 报表生成路由
+router.use('/reports', reportsRoutes);
+
+// Phase 3 - 系统监控路由
+router.use('/system', systemRoutes);
+
+// 员工打卡时间追踪路由
+router.use('/timeclock', timeclockRoutes);
+
+// 工作类型管理路由
+router.use('/work-types', workTypesRoutes);
+
+// 时间统计路由
+router.use('/time-stats', timeStatsRoutes);
 
 // 移动端健康检查
 router.get('/health', (req, res) => {
