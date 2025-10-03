@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 海牛食品溯源系统 - 用户管理和白名单系统完整测试
+ * 白垩纪食品溯源系统 - 用户管理和白名单系统完整测试
  * 测试范围: authController.js 用户管理功能和白名单系统
  * 专注测试: 注册、登录、用户资料管理、白名单验证、8角色权限系统
  */
@@ -1491,7 +1491,7 @@ class UserManagementTester {
 
   // 主测试执行器
   async runAllTests() {
-    console.log(chalk.cyan.bold('🔍 海牛食品溯源系统 - 用户管理和白名单系统完整测试'));
+    console.log(chalk.cyan.bold('🔍 白垩纪食品溯源系统 - 用户管理和白名单系统完整测试'));
     console.log(chalk.cyan('📊 测试范围: authController.js 用户管理功能和白名单系统'));
     console.log(chalk.cyan(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`));
 

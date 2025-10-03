@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is 海牛食品溯源系统 (Heiniu Food Traceability System), focusing on **React Native mobile app** and **backend API** development:
+This is 白垩纪食品溯源系统 (Cretas Food Traceability System), focusing on **React Native mobile app** and **backend API** development:
 
 1. **Backend API** (Node.js + Express + MySQL/PostgreSQL + Prisma)
 2. **React Native Mobile App** (Expo + TypeScript + React Navigation + DeepSeek LLM)
@@ -38,7 +38,7 @@ This is 海牛食品溯源系统 (Heiniu Food Traceability System), focusing on 
 
 **Phase 1-3 Development Commands**:
 ```bash
-cd frontend/HainiuFoodTrace
+cd frontend/CretasFoodTrace
 npm install                   # Install dependencies
 npm start                     # Start Expo development server (port 3010)
 npx expo start               # Alternative start command (port 3010)
@@ -241,7 +241,7 @@ npm run seed
 npm run dev
 
 # 3. React Native (new terminal)
-cd frontend/HainiuFoodTrace  
+cd frontend/CretasFoodTrace  
 npx expo start
 ```
 
@@ -300,7 +300,7 @@ The project includes comprehensive PowerShell profile management:
   - User interaction flows (navigation, forms, buttons)
   - State management (Zustand stores)
   - Permission-based UI changes
-- **Command**: `npm test` (in HainiuFoodTrace directory)
+- **Command**: `npm test` (in CretasFoodTrace directory)
 
 #### API Interface Testing
 - **Mock Data**: Use sample data to test API client interfaces

@@ -9,7 +9,21 @@ import {
   startProduction,
   completeProduction,
   pauseProduction,
-  getBatchTimeline
+  getBatchTimeline,
+  createMaterialReceipt,
+  getMaterialReceipts,
+  updateMaterialReceipt,
+  clockIn,
+  clockOut,
+  getWorkSessions,
+  getActiveWorkSession,
+  startEquipmentUsage,
+  endEquipmentUsage,
+  getEquipmentUsageRecords,
+  recordEquipmentMaintenance,
+  getBatchCostAnalysis,
+  recalculateBatchCost,
+  getAICostAnalysis
 } from '../controllers/processingController.js';
 import {
   submitInspection,
@@ -47,6 +61,23 @@ const router = express.Router();
 // 所有路由都需要移动端认证
 router.use(mobileAuthMiddleware);
 
+// 原材料接收管理（工作流程1）
+router.post('/material-receipt', createMaterialReceipt);           // 创建原材料接收记录
+router.get('/materials', getMaterialReceipts);                     // 获取原材料列表
+router.put('/material-receipt/:batchId', updateMaterialReceipt);   // 更新原材料信息
+
+// 员工工作时段管理（工作流程2）
+router.post('/work-session/clock-in', clockIn);                    // 员工上班打卡
+router.post('/work-session/clock-out', clockOut);                  // 员工下班打卡
+router.get('/work-sessions', getWorkSessions);                     // 获取工作时段列表
+router.get('/work-session/active', getActiveWorkSession);          // 获取当前活动工作时段
+
+// 设备使用管理（工作流程3）
+router.post('/equipment-usage/start', startEquipmentUsage);        // 开始设备使用
+router.post('/equipment-usage/end', endEquipmentUsage);            // 结束设备使用
+router.get('/equipment-usage', getEquipmentUsageRecords);          // 获取设备使用记录
+router.post('/equipment-maintenance', recordEquipmentMaintenance); // 记录设备维修
+
 // 批次CRUD操作
 router.post('/batches', createBatch);                    // 创建新批次
 router.get('/batches', getBatches);                      // 查询批次列表 (支持分页、过滤)
@@ -59,6 +90,11 @@ router.post('/batches/:id/start', startProduction);     // 开始生产
 router.post('/batches/:id/complete', completeProduction); // 完成生产
 router.post('/batches/:id/pause', pauseProduction);     // 暂停生产
 router.get('/batches/:id/timeline', getBatchTimeline);  // 获取批次时间线
+
+// 成本分析和计算
+router.get('/batches/:batchId/cost-analysis', getBatchCostAnalysis);     // 获取批次成本分析
+router.post('/batches/:batchId/recalculate-cost', recalculateBatchCost); // 重新计算批次成本
+router.post('/ai-cost-analysis', getAICostAnalysis);                     // AI成本分析
 
 // 质检记录管理API
 router.post('/quality/inspections', submitInspection);             // 提交质检记录

@@ -692,7 +692,7 @@ class ProcessingApiClient {
   }
 
   // ==================== 文件上传相关 ====================
-  
+
   /**
    * 上传加工相关照片 (复用移动端上传系统)
    */
@@ -703,11 +703,11 @@ class ProcessingApiClient {
     [key: string]: any;
   }): Promise<ApiResponse<{ urls: string[]; fileIds: string[] }>> {
     const formData = new FormData();
-    
+
     files.forEach((file, index) => {
       formData.append(`files`, file);
     });
-    
+
     formData.append('metadata', JSON.stringify(metadata));
 
     return await apiClient.post('/api/mobile/upload/mobile', formData, {
@@ -715,6 +715,204 @@ class ProcessingApiClient {
         'Content-Type': 'multipart/form-data',
       },
     });
+  }
+
+  // ==================== 成本核算系统API (工作流程1-3) ====================
+
+  /**
+   * 工作流程1: 创建原材料接收记录
+   */
+  async createMaterialReceipt(data: {
+    rawMaterialCategory: string;  // 鱼类品种
+    rawMaterialWeight: number;     // 进货重量(kg)
+    rawMaterialCost: number;       // 进货成本(元)
+    productCategory: 'fresh' | 'frozen';  // 产品类型
+    expectedPrice?: number;        // 预期售价(元/kg)
+    notes?: string;
+  }): Promise<ApiResponse<ProcessingBatch>> {
+    return await apiClient.post(`${this.BASE_PATH}/material-receipt`, data);
+  }
+
+  /**
+   * 工作流程1: 获取原材料接收记录列表
+   */
+  async getMaterialReceipts(params?: {
+    page?: number;
+    limit?: number;
+    productCategory?: 'fresh' | 'frozen';
+    rawMaterialCategory?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<ApiResponse<{ materials: any[]; pagination: any }>> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.limit) queryParams.set('limit', params.limit.toString());
+    if (params?.productCategory) queryParams.set('productCategory', params.productCategory);
+    if (params?.rawMaterialCategory) queryParams.set('rawMaterialCategory', params.rawMaterialCategory);
+    if (params?.startDate) queryParams.set('startDate', params.startDate);
+    if (params?.endDate) queryParams.set('endDate', params.endDate);
+
+    const url = queryParams.toString() ? `${this.BASE_PATH}/materials?${queryParams.toString()}` : `${this.BASE_PATH}/materials`;
+    return await apiClient.get(url);
+  }
+
+  /**
+   * 工作流程1: 更新原材料信息
+   */
+  async updateMaterialReceipt(batchId: string, data: {
+    rawMaterialCategory?: string;
+    rawMaterialWeight?: number;
+    rawMaterialCost?: number;
+    productCategory?: 'fresh' | 'frozen';
+    expectedPrice?: number;
+    notes?: string;
+  }): Promise<ApiResponse<ProcessingBatch>> {
+    return await apiClient.put(`${this.BASE_PATH}/material-receipt/${batchId}`, data);
+  }
+
+  /**
+   * 工作流程2: 员工上班打卡
+   */
+  async clockIn(data: {
+    batchId: string;
+    workTypeId?: string;
+    notes?: string;
+  }): Promise<ApiResponse<any>> {
+    return await apiClient.post(`${this.BASE_PATH}/work-session/clock-in`, data);
+  }
+
+  /**
+   * 工作流程2: 员工下班打卡
+   */
+  async clockOut(data: {
+    sessionId?: string;
+    processedQuantity?: number;
+    notes?: string;
+  }): Promise<ApiResponse<any>> {
+    return await apiClient.post(`${this.BASE_PATH}/work-session/clock-out`, data);
+  }
+
+  /**
+   * 工作流程2: 获取员工工作时段列表
+   */
+  async getWorkSessions(params?: {
+    page?: number;
+    limit?: number;
+    batchId?: string;
+    userId?: number;
+    startDate?: string;
+    endDate?: string;
+    activeOnly?: boolean;
+  }): Promise<ApiResponse<{ sessions: any[]; pagination: any }>> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.limit) queryParams.set('limit', params.limit.toString());
+    if (params?.batchId) queryParams.set('batchId', params.batchId);
+    if (params?.userId) queryParams.set('userId', params.userId.toString());
+    if (params?.startDate) queryParams.set('startDate', params.startDate);
+    if (params?.endDate) queryParams.set('endDate', params.endDate);
+    if (params?.activeOnly) queryParams.set('activeOnly', params.activeOnly.toString());
+
+    const url = queryParams.toString() ? `${this.BASE_PATH}/work-sessions?${queryParams.toString()}` : `${this.BASE_PATH}/work-sessions`;
+    return await apiClient.get(url);
+  }
+
+  /**
+   * 工作流程2: 获取当前用户的活动工作时段
+   */
+  async getActiveWorkSession(): Promise<ApiResponse<any>> {
+    return await apiClient.get(`${this.BASE_PATH}/work-session/active`);
+  }
+
+  /**
+   * 工作流程3: 开始设备使用
+   */
+  async startEquipmentUsage(data: {
+    batchId: string;
+    equipmentId: string;
+    notes?: string;
+  }): Promise<ApiResponse<any>> {
+    return await apiClient.post(`${this.BASE_PATH}/equipment-usage/start`, data);
+  }
+
+  /**
+   * 工作流程3: 结束设备使用
+   */
+  async endEquipmentUsage(data: {
+    usageId: string;
+    notes?: string;
+  }): Promise<ApiResponse<any>> {
+    return await apiClient.post(`${this.BASE_PATH}/equipment-usage/end`, data);
+  }
+
+  /**
+   * 工作流程3: 获取设备使用记录
+   */
+  async getEquipmentUsageRecords(params?: {
+    page?: number;
+    limit?: number;
+    batchId?: string;
+    equipmentId?: string;
+    startDate?: string;
+    endDate?: string;
+    activeOnly?: boolean;
+  }): Promise<ApiResponse<{ usageRecords: any[]; pagination: any }>> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.limit) queryParams.set('limit', params.limit.toString());
+    if (params?.batchId) queryParams.set('batchId', params.batchId);
+    if (params?.equipmentId) queryParams.set('equipmentId', params.equipmentId);
+    if (params?.startDate) queryParams.set('startDate', params.startDate);
+    if (params?.endDate) queryParams.set('endDate', params.endDate);
+    if (params?.activeOnly) queryParams.set('activeOnly', params.activeOnly.toString());
+
+    const url = queryParams.toString() ? `${this.BASE_PATH}/equipment-usage?${queryParams.toString()}` : `${this.BASE_PATH}/equipment-usage`;
+    return await apiClient.get(url);
+  }
+
+  /**
+   * 工作流程3: 记录设备维修
+   */
+  async recordEquipmentMaintenance(data: {
+    equipmentId: string;
+    maintenanceType: 'routine' | 'repair' | 'emergency' | 'upgrade';
+    cost: number;
+    description?: string;
+    performedBy?: number;
+    durationMinutes?: number;
+    partsReplaced?: any;
+    nextScheduledDate?: string;
+  }): Promise<ApiResponse<any>> {
+    return await apiClient.post(`${this.BASE_PATH}/equipment-maintenance`, data);
+  }
+
+  /**
+   * 成本分析: 获取批次成本详细分析
+   */
+  async getBatchCostAnalysis(batchId: string): Promise<ApiResponse<any>> {
+    return await apiClient.get(`${this.BASE_PATH}/batches/${batchId}/cost-analysis`);
+  }
+
+  /**
+   * 成本分析: 重新计算批次成本
+   */
+  async recalculateBatchCost(batchId: string): Promise<ApiResponse<ProcessingBatch>> {
+    return await apiClient.post(`${this.BASE_PATH}/batches/${batchId}/recalculate-cost`, {});
+  }
+
+  /**
+   * AI成本分析
+   */
+  async getAICostAnalysis(params: {
+    batchId: string;
+    question?: string;
+    session_id?: string;
+  }): Promise<ApiResponse<{
+    analysis: string;
+    session_id: string;
+    message_count: number;
+  }>> {
+    return await apiClient.post(`${this.BASE_PATH}/ai-cost-analysis`, params);
   }
 }
 

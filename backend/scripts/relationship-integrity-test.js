@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 海牛食品溯源系统 - 数据关系完整性测试
+ * 白垩纪食品溯源系统 - 数据关系完整性测试
  * 阶段1-2: 外键约束和级联操作完整性验证
  * 专注测试：外键约束、级联删除、孤儿记录防护、复杂关系场景
  */
@@ -936,7 +936,7 @@ class RelationshipIntegrityTester {
 
   // 主测试执行器
   async runAllTests() {
-    console.log(chalk.cyan.bold('🔗 海牛食品溯源系统 - 数据关系完整性测试'));
+    console.log(chalk.cyan.bold('🔗 白垩纪食品溯源系统 - 数据关系完整性测试'));
     console.log(chalk.cyan('📊 测试范围: 外键约束、级联操作、孤儿防护、复杂关系'));
     console.log(chalk.cyan(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`));
 

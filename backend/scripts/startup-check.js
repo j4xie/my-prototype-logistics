@@ -276,7 +276,7 @@ function generateStartupInstructions(checks) {
  * 主检查函数
  */
 function runStartupCheck() {
-  console.log('🔍 黑牛食品溯源系统 - 启动检查');
+  console.log('🔍 白垩纪食品溯源系统 - 启动检查');
   console.log('==================================');
   console.log(`📁 项目目录: ${PROJECT_ROOT}`);
   

@@ -179,7 +179,13 @@ export const FACTORY_PERMISSIONS = {
       'quality_inspection_submit',
       'quality_inspection_approve',
       'equipment_monitoring_view',
-      'dashboard_view_department'
+      'dashboard_view_department',
+
+      // 部门白名单管理
+      'manage_department_whitelist',
+      'add_department_whitelist_users',
+      'remove_department_whitelist_users',
+      'view_department_whitelist',
     ],
     dataAccess: 'department', // 本部门数据
     departmentAccess: 'own' // 仅本部门

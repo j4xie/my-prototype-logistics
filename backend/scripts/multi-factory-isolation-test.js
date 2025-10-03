@@ -755,7 +755,7 @@ class MultiFactoryIsolationTester {
 
   async run() {
     console.log('正在初始化多工厂数据隔离测试器...');
-    console.log('🏭 海牛食品溯源系统 - 多工厂数据隔离验证测试');
+    console.log('🏭 白垩纪食品溯源系统 - 多工厂数据隔离验证测试');
     console.log('📊 测试范围: 5个独立工厂的业务数据隔离机制验证');
     console.log(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`);
 

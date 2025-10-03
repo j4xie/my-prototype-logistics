@@ -21,6 +21,7 @@ import {
   BiometricManagerInstance as BiometricManager,
   NetworkManagerInstance as NetworkManager
 } from '../../services/serviceFactory';
+import { getPostLoginRoute } from '../../utils/navigationHelper';
 
 const { width, height } = Dimensions.get('window');
 
@@ -134,25 +135,13 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
   };
 
   /**
-   * 导航到主界面
+   * 导航到主界面 - 基于角色的智能路由
    */
   const navigateToMain = () => {
-    // 根据用户类型导航到不同页面
-    if (userIdentification) {
-      // 根据用户类型导航
-      const userType = userIdentification.userType;
-      if (userType === 'platform') {
-        navigation.replace('Main'); // 平台用户到主应用
-      } else if (userType === 'factory') {
-        navigation.replace('Main'); // 工厂用户也到主应用，通过权限控制显示不同内容
-      } else {
-        navigation.replace('Main'); // 默认到主应用
-      }
-    } else {
-      // 没有用户识别信息时，默认到主应用
-      navigation.replace('Main');
-    }
+    const route = getPostLoginRoute();
+    navigation.replace('Main', route.params ? route : { screen: route.screen });
   };
+
 
   /**
    * 显示网络状态指示器
@@ -279,7 +268,7 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
             <View style={styles.logoCircle}>
               <Ionicons name="leaf" size={40} color="#FFFFFF" />
             </View>
-            <Text style={styles.title}>海牛食品溯源</Text>
+            <Text style={styles.title}>白垩纪食品溯源</Text>
             <Text style={styles.subtitle}>移动端管理系统</Text>
           </View>
 

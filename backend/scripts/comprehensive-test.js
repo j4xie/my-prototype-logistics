@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 海牛食品溯源系统 - 全面API测试脚本
+ * 白垩纪食品溯源系统 - 全面API测试脚本
  * 测试Phase 0-3所有核心API接口
  */
 
@@ -72,7 +72,7 @@ class ComprehensiveTester {
   }
 
   async runAllTests() {
-    console.log(chalk.cyan.bold('🚀 海牛食品溯源系统全面测试开始'));
+    console.log(chalk.cyan.bold('🚀 白垩纪食品溯源系统全面测试开始'));
     console.log(chalk.cyan(`📡 测试目标: ${this.baseURL}\n`));
 
     const startTime = Date.now();

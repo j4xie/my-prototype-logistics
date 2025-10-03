@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 海牛食品溯源系统 - 中间件和工具函数测试
+ * 白垩纪食品溯源系统 - 中间件和工具函数测试
  * 专门测试middleware和utils目录下的功能
  */
 
@@ -402,7 +402,7 @@ class MiddlewareUtilsTester {
 
   // 运行所有测试
   async runAllTests() {
-    console.log(chalk.cyan.bold('🧪 海牛食品溯源系统 - 中间件和工具函数测试'));
+    console.log(chalk.cyan.bold('🧪 白垩纪食品溯源系统 - 中间件和工具函数测试'));
     console.log(chalk.cyan(`📁 项目根目录: ${rootDir}`));
     console.log(chalk.cyan(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`));
 

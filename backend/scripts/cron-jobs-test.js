@@ -703,7 +703,7 @@ class CronJobsSystemTester {
 
   async run() {
     console.log('正在初始化定时任务系统测试器...');
-    console.log('⏰ 海牛食品溯源系统 - 定时任务系统完整测试');
+    console.log('⏰ 白垩纪食品溯源系统 - 定时任务系统完整测试');
     console.log('📊 测试范围: 4个核心定时任务的功能、性能和稳定性验证');
     console.log(`🕒 测试开始时间: ${new Date().toLocaleString()}\\n`);
 
