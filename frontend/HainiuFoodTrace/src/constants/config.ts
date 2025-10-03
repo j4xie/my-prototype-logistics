@@ -17,9 +17,9 @@ export const DEEPSEEK_CONFIG = {
 
 // 应用配置
 export const APP_CONFIG = {
-  NAME: '海牛食品溯源',
+  NAME: '白垩纪食品溯源',
   VERSION: '1.0.0',
-  COMPANY_CODE: 'HEINIU',
+  COMPANY_CODE: 'CRETAS',
   SUPPORTED_LANGUAGES: ['zh-CN'],
 };
 

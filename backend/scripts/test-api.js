@@ -2,7 +2,7 @@
 
 /**
  * API测试脚本
- * 用于测试海牛食品溯源系统的各个API端点
+ * 用于测试白垩纪食品溯源系统的各个API端点
  */
 
 import axios from 'axios';
