@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 海牛食品溯源系统 - 数据验证和约束检查测试
+ * 白垩纪食品溯源系统 - 数据验证和约束检查测试
  * 阶段1-3: 数据类型验证、字段长度限制、枚举值约束、业务规则验证
  * 专注测试：数据类型、字段长度、枚举值、必填字段、唯一约束、范围验证
  */
@@ -1066,7 +1066,7 @@ class DataValidationConstraintTester {
 
   // 主测试执行器
   async runAllTests() {
-    console.log(chalk.cyan.bold('🔍 海牛食品溯源系统 - 数据验证和约束检查测试'));
+    console.log(chalk.cyan.bold('🔍 白垩纪食品溯源系统 - 数据验证和约束检查测试'));
     console.log(chalk.cyan('📊 测试范围: 数据类型、字段长度、枚举值、必填字段、唯一约束、范围验证、业务逻辑'));
     console.log(chalk.cyan(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`));
 

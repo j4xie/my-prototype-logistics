@@ -319,7 +319,7 @@ export const PermissionBasedMenu: React.FC<DrawerContentComponentProps> = ({
           {currentRole?.displayName || user?.role || '未知角色'}
         </Text>
         <Text style={styles.userCompany}>
-          {user?.companyName || '海牛食品溯源系统'}
+          {user?.companyName || '白垩纪食品溯源系统'}
         </Text>
       </View>
 
@@ -412,7 +412,7 @@ export const PermissionBasedMenu: React.FC<DrawerContentComponentProps> = ({
       {/* 版本信息 */}
       <View style={styles.versionInfo}>
         <Text style={styles.versionText}>v1.0.0</Text>
-        <Text style={styles.versionSubtext}>海牛食品溯源系统</Text>
+        <Text style={styles.versionSubtext}>白垩纪食品溯源系统</Text>
       </View>
 
       {/* 退出按钮 */}

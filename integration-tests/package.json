@@ -1,7 +1,7 @@
 {
   "name": "heiniu-integration-tests",
   "version": "1.0.0",
-  "description": "海牛食品溯源系统 - 前后端集成测试套件",
+  "description": "白垩纪食品溯源系统 - 前后端集成测试套件",
   "type": "module",
   "main": "run-integration-tests.js",
   "scripts": {
@@ -35,7 +35,7 @@
     "nodejs",
     "api-testing"
   ],
-  "author": "海牛食品溯源系统团队",
+  "author": "白垩纪食品溯源系统团队",
   "license": "MIT",
   "engines": {
     "node": ">=14.0.0"

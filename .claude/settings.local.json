@@ -29,7 +29,20 @@
       "Bash(npm test:*)",
       "Bash(npm --version)",
       "Bash(lsof:*)",
-      "Bash(gtimeout:*)"
+      "Bash(gtimeout:*)",
+      "Bash(cat:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(git checkout:*)",
+      "Bash(awk:*)",
+      "Bash(xargs rm:*)",
+      "Read(//c/Users/Steve/Desktop/**)",
+      "Bash(powershell.exe:*)",
+      "Read(//c/Users/Steve/**)",
+      "Bash(xargs:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
