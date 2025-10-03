@@ -42,7 +42,10 @@
       "Bash(xargs:*)",
       "Bash(python:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx expo start:*)",
+      "Bash(git push:*)",
+      "Bash(npx expo prebuild:*)"
     ],
     "deny": []
   }
