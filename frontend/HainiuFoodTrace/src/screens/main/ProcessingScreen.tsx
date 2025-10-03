@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { usePermission } from '../../hooks/usePermission';
+import { hasWhitelistPermission } from '../../utils/navigationHelper';
 
 interface ProcessingScreenProps {
   navigation: any;
@@ -21,20 +22,43 @@ export const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ navigation }
   const { hasPermission } = usePermission();
 
   const processingSteps = [
-    { id: 1, name: '原料接收', icon: 'cube-outline', color: '#10b981' },
-    { id: 2, name: '清洗处理', icon: 'water-outline', color: '#3b82f6' },
-    { id: 3, name: '加工制作', icon: 'cog-outline', color: '#f59e0b' },
-    { id: 4, name: '质量检测', icon: 'shield-checkmark-outline', color: '#8b5cf6' },
-    { id: 5, name: '包装封装', icon: 'gift-outline', color: '#ef4444' },
-    { id: 6, name: '成品入库', icon: 'archive-outline', color: '#6b7280' },
+    { id: 1, name: '原料接收', icon: 'cube-outline', color: '#10b981', screen: 'MaterialReceipt' },
+    { id: 2, name: '清洗处理', icon: 'water-outline', color: '#3b82f6', screen: null },
+    { id: 3, name: '加工制作', icon: 'cog-outline', color: '#f59e0b', screen: null },
+    { id: 4, name: '质量检测', icon: 'shield-checkmark-outline', color: '#8b5cf6', screen: null },
+    { id: 5, name: '包装封装', icon: 'gift-outline', color: '#ef4444', screen: null },
+    { id: 6, name: '成品入库', icon: 'archive-outline', color: '#6b7280', screen: null },
   ];
 
-  const quickActions = [
-    { name: '扫码录入', icon: 'scan', color: '#3182ce' },
-    { name: '手动录入', icon: 'create', color: '#10b981' },
-    { name: '批量导入', icon: 'cloud-upload', color: '#f59e0b' },
-    { name: '数据导出', icon: 'download', color: '#8b5cf6' },
+  const baseQuickActions = [
+    { name: '员工打卡', icon: 'time', color: '#10b981', screen: 'EmployeeClock' },
+    { name: '设备使用', icon: 'hardware-chip', color: '#3b82f6', screen: 'EquipmentUsage' },
+    { name: '成本分析', icon: 'analytics', color: '#8b5cf6', screen: 'CostAnalysis' },
+    { name: '数据导出', icon: 'download', color: '#f59e0b', screen: 'DataExport' },
   ];
+
+  // 如果有白名单管理权限，添加白名单管理按钮
+  // department_admin: 仅本部门白名单
+  // factory_super_admin, permission_admin: 全工厂白名单
+  const quickActions = hasWhitelistPermission('department')
+    ? [...baseQuickActions, { name: '白名单管理', icon: 'people-circle', color: '#ec4899', screen: 'WhitelistManagement' }]
+    : baseQuickActions;
+
+  const handleStepPress = (step: any) => {
+    if (step.screen) {
+      navigation.navigate(step.screen);
+    } else {
+      // 功能开发中
+    }
+  };
+
+  const handleQuickAction = (action: any) => {
+    if (action.screen) {
+      navigation.navigate(action.screen);
+    } else {
+      // 功能开发中
+    }
+  };
 
   return (
     <>
@@ -61,7 +85,11 @@ export const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ navigation }
             <Text style={styles.sectionTitle}>快速操作</Text>
             <View style={styles.quickActionsGrid}>
               {quickActions.map((action, index) => (
-                <TouchableOpacity key={index} style={styles.quickActionCard}>
+                <TouchableOpacity
+                  key={index}
+                  style={styles.quickActionCard}
+                  onPress={() => handleQuickAction(action)}
+                >
                   <View style={[styles.quickActionIcon, { backgroundColor: action.color + '20' }]}>
                     <Ionicons name={action.icon as any} size={24} color={action.color} />
                   </View>
@@ -75,7 +103,11 @@ export const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ navigation }
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>加工流程管理</Text>
             {processingSteps.map((step) => (
-              <TouchableOpacity key={step.id} style={styles.stepCard}>
+              <TouchableOpacity
+                key={step.id}
+                style={styles.stepCard}
+                onPress={() => handleStepPress(step)}
+              >
                 <View style={[styles.stepIcon, { backgroundColor: step.color }]}>
                   <Ionicons name={step.icon as any} size={24} color="#fff" />
                 </View>

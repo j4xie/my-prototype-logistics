@@ -807,7 +807,7 @@ class RolePermissionTester {
 
   async run() {
     console.log('正在初始化8角色权限矩阵测试器...');
-    console.log('👤 海牛食品溯源系统 - 8角色完整权限矩阵测试');
+    console.log('👤 白垩纪食品溯源系统 - 8角色完整权限矩阵测试');
     console.log('📊 测试范围: 3个平台角色 + 5个工厂角色的完整权限验证');
     console.log(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`);
 

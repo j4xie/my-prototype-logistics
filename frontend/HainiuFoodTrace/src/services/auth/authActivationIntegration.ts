@@ -112,7 +112,7 @@ export class AuthActivationIntegration {
 
       // 执行生物识别登录
       const loginResponse = await AuthService.biometricLogin({
-        promptMessage: '使用生物识别快速登录海牛食品溯源系统',
+        promptMessage: '使用生物识别快速登录白垩纪食品溯源系统',
         cancelButtonText: '取消',
         disableDeviceFallback: false
       });

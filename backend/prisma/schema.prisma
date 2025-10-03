@@ -9,45 +9,45 @@ datasource db {
 }
 
 model Factory {
-  id               String                   @id @map("id")
-  name             String                   @map("name")
-  industry         String?                  @map("industry")
-  address          String?                  @map("address")
-  employeeCount    Int?                     @map("employee_count")
-  subscriptionPlan String?                  @map("subscription_plan")
-  contactName      String?                  @map("contact_name")
-  contactPhone     String?                  @map("contact_phone")
-  contactEmail     String?                  @map("contact_email")
-  isActive         Boolean                  @default(true) @map("is_active")
-  createdAt        DateTime                 @default(now()) @map("created_at")
-  updatedAt        DateTime                 @updatedAt @map("updated_at")
-  confidence       Float?                   @map("confidence")
-  factoryYear      Int?                     @map("factory_year")
-  industryCode     String?                  @map("industry_code")
-  inferenceData    Json?                    @map("inference_data")
-  legacyId         String?                  @map("legacy_id")
-  manuallyVerified Boolean                  @default(false) @map("manually_verified")
-  regionCode       String?                  @map("region_code")
-  sequenceNumber   Int?                     @map("sequence_number")
-  settings         FactorySettings?
-  sessions         Session[]
-  roleHistory      UserRoleHistory[]
-  whitelist        UserWhitelist[]
-  users            User[]
-  workRecords      EmployeeWorkRecord[]
-  equipment        FactoryEquipment[]
-  processingBatches ProcessingBatch[]
-  qualityInspections QualityInspection[]
+  id                   String                 @id @map("id")
+  name                 String                 @map("name")
+  industry             String?                @map("industry")
+  address              String?                @map("address")
+  employeeCount        Int?                   @map("employee_count")
+  subscriptionPlan     String?                @map("subscription_plan")
+  contactName          String?                @map("contact_name")
+  contactPhone         String?                @map("contact_phone")
+  contactEmail         String?                @map("contact_email")
+  isActive             Boolean                @default(true) @map("is_active")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+  confidence           Float?                 @map("confidence")
+  factoryYear          Int?                   @map("factory_year")
+  industryCode         String?                @map("industry_code")
+  inferenceData        Json?                  @map("inference_data")
+  legacyId             String?                @map("legacy_id")
+  manuallyVerified     Boolean                @default(false) @map("manually_verified")
+  regionCode           String?                @map("region_code")
+  sequenceNumber       Int?                   @map("sequence_number")
+  settings             FactorySettings?
+  sessions             Session[]
+  roleHistory          UserRoleHistory[]
+  whitelist            UserWhitelist[]
+  users                User[]
+  workRecords          EmployeeWorkRecord[]
+  equipment            FactoryEquipment[]
+  processingBatches    ProcessingBatch[]
+  qualityInspections   QualityInspection[]
   deviceMonitoringData DeviceMonitoringData[]
-  alertNotifications AlertNotification[]
-  dashboardMetrics DashboardMetric[]
-  activationCodes ActivationCode[]
-  systemLogs SystemLog[]
-  apiAccessLogs ApiAccessLog[]
-  reportTemplates ReportTemplate[]
-  timeClocks     EmployeeTimeClock[]
-  workTypes      WorkType[]
-  workSessions   EmployeeWorkSession[]
+  alertNotifications   AlertNotification[]
+  dashboardMetrics     DashboardMetric[]
+  activationCodes      ActivationCode[]
+  systemLogs           SystemLog[]
+  apiAccessLogs        ApiAccessLog[]
+  reportTemplates      ReportTemplate[]
+  timeClocks           EmployeeTimeClock[]
+  workTypes            WorkType[]
+  workSessions         EmployeeWorkSession[]
 
   @@index([industryCode, regionCode, factoryYear], map: "idx_factory_code")
   @@index([legacyId], map: "idx_legacy_id")
@@ -96,36 +96,43 @@ model UserWhitelist {
 }
 
 model User {
-  id             Int                    @id @default(autoincrement())
-  factoryId      String                 @map("factory_id")
-  username       String
-  passwordHash   String                 @map("password_hash")
-  email          String
-  phone          String?
-  fullName       String?                @map("full_name")
-  isActive       Boolean                @default(false) @map("is_active")
-  roleCode       FactoryUserRole        @default(unactivated) @map("role_code")
-  department     Department?            @map("department")
-  position       String?                @map("position")
-  lastLogin      DateTime?              @map("last_login")
-  createdAt      DateTime               @default(now()) @map("created_at")
-  updatedAt      DateTime               @updatedAt @map("updated_at")
-  sessions       Session[]
-  roleHistory    UserRoleHistory[]
-  addedWhitelist UserWhitelist[]
-  mobileDevices  MobileDevice[]
-  workRecords    EmployeeWorkRecord[]
-  processingBatches ProcessingBatch[]   @relation("BatchSupervisor")
-  qualityInspections QualityInspection[] @relation("QualityInspector")
-  resolvedAlerts AlertNotification[]    @relation("AlertResolver")
-  createdActivationCodes ActivationCode[] @relation("ActivationCreator")
-  activationRecords ActivationRecord[]  @relation("ActivationUser")
-  systemLogs     SystemLog[]            @relation("SystemLogUser")
-  apiAccessLogs  ApiAccessLog[]         @relation("ApiAccessUser")
-  createdReportTemplates ReportTemplate[] @relation("ReportCreator")
-  timeClocks     EmployeeTimeClock[]
-  workSessions   EmployeeWorkSession[]
-  factory        Factory                @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  id           Int             @id @default(autoincrement())
+  factoryId    String          @map("factory_id")
+  username     String
+  passwordHash String          @map("password_hash")
+  email        String
+  phone        String?
+  fullName     String?         @map("full_name")
+  isActive     Boolean         @default(false) @map("is_active")
+  roleCode     FactoryUserRole @default(unactivated) @map("role_code")
+  department   Department?     @map("department")
+  position     String?         @map("position")
+  lastLogin    DateTime?       @map("last_login")
+
+  // 新增：薪资和CCR成本字段
+  monthlySalary       Decimal? @map("monthly_salary") @db.Decimal(10, 2)
+  expectedWorkMinutes Int?     @map("expected_work_minutes")
+  ccrRate             Decimal? @map("ccr_rate") @db.Decimal(8, 4)
+
+  createdAt              DateTime              @default(now()) @map("created_at")
+  updatedAt              DateTime              @updatedAt @map("updated_at")
+  sessions               Session[]
+  roleHistory            UserRoleHistory[]
+  addedWhitelist         UserWhitelist[]
+  mobileDevices          MobileDevice[]
+  workRecords            EmployeeWorkRecord[]
+  processingBatches      ProcessingBatch[]     @relation("BatchSupervisor")
+  qualityInspections     QualityInspection[]   @relation("QualityInspector")
+  resolvedAlerts         AlertNotification[]   @relation("AlertResolver")
+  createdActivationCodes ActivationCode[]      @relation("ActivationCreator")
+  activationRecords      ActivationRecord[]    @relation("ActivationUser")
+  systemLogs             SystemLog[]           @relation("SystemLogUser")
+  apiAccessLogs          ApiAccessLog[]        @relation("ApiAccessUser")
+  createdReportTemplates ReportTemplate[]      @relation("ReportCreator")
+  timeClocks             EmployeeTimeClock[]
+  workSessions           EmployeeWorkSession[]
+  batchWorkSessions      BatchWorkSession[]
+  factory                Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
 
   @@unique([factoryId, username])
   @@unique([factoryId, email])
@@ -303,62 +310,72 @@ enum Department {
 
 // Phase 1 遗留表 - 移动设备管理
 model MobileDevice {
-  id           String   @id @default(uuid())
-  userId       Int      @map("user_id")
-  deviceId     String   @unique @map("device_id")
-  deviceName   String?  @map("device_name")
-  deviceModel  String?  @map("device_model")
-  osVersion    String?  @map("os_version")
-  platform     Platform @map("platform")
-  isActive     Boolean  @default(true) @map("is_active")
-  lastLoginAt  DateTime? @map("last_login_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-  
+  id          String    @id @default(uuid())
+  userId      Int       @map("user_id")
+  deviceId    String    @unique @map("device_id")
+  deviceName  String?   @map("device_name")
+  deviceModel String?   @map("device_model")
+  osVersion   String?   @map("os_version")
+  platform    Platform  @map("platform")
+  isActive    Boolean   @default(true) @map("is_active")
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId, deviceId], map: "idx_user_device")
   @@map("mobile_devices")
 }
 
 // Phase 1 遗留表 - 员工工作记录
 model EmployeeWorkRecord {
-  id               String          @id @default(uuid())
-  userId           Int             @map("user_id")
-  factoryId        String          @map("factory_id")
-  workDate         DateTime        @map("work_date") @db.Date
-  shift            Shift           @default(morning) @map("shift")
-  workHours        Decimal         @map("work_hours") @db.Decimal(4, 2)
-  workDescription  String?         @map("work_description") @db.Text
-  qualityCheck     QualityResult   @default(pending) @map("quality_check")
-  equipmentUsed    Json?           @map("equipment_used")
-  locationData     Json?           @map("location_data")
-  photos           Json?           @map("photos")
-  createdAt        DateTime        @default(now()) @map("created_at")
-  
+  id              String        @id @default(uuid())
+  userId          Int           @map("user_id")
+  factoryId       String        @map("factory_id")
+  workDate        DateTime      @map("work_date") @db.Date
+  shift           Shift         @default(morning) @map("shift")
+  workHours       Decimal       @map("work_hours") @db.Decimal(4, 2)
+  workDescription String?       @map("work_description") @db.Text
+  qualityCheck    QualityResult @default(pending) @map("quality_check")
+  equipmentUsed   Json?         @map("equipment_used")
+  locationData    Json?         @map("location_data")
+  photos          Json?         @map("photos")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId, workDate], map: "idx_user_work")
   @@index([factoryId, workDate], map: "idx_factory_work")
   @@map("employee_work_records")
 }
 
-// Phase 1 遗留表 - 工厂设备管理
+// Phase 1 遗留表 - 工厂设备管理（成本核算增强版）
 model FactoryEquipment {
-  id            String      @id @default(uuid())
-  factoryId     String      @map("factory_id")
-  equipmentCode String      @map("equipment_code")
-  equipmentName String      @map("equipment_name")
-  equipmentType String?     @map("equipment_type")
-  department    Department? @map("department")
-  status        EquipmentStatus @default(active) @map("status")
-  location      String?     @map("location")
-  specifications Json?      @map("specifications")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  
-  factory        Factory                  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  monitoringData DeviceMonitoringData[]
-  
+  id             String          @id @default(uuid())
+  factoryId      String          @map("factory_id")
+  equipmentCode  String          @map("equipment_code")
+  equipmentName  String          @map("equipment_name")
+  equipmentType  String?         @map("equipment_type")
+  department     Department?     @map("department")
+  status         EquipmentStatus @default(active) @map("status")
+  location       String?         @map("location")
+  specifications Json?           @map("specifications")
+
+  // 新增：设备成本字段
+  purchaseCost         Decimal?  @map("purchase_cost") @db.Decimal(12, 2)
+  hourlyOperationCost  Decimal?  @map("hourly_operation_cost") @db.Decimal(8, 2)
+  maintenanceCount     Int       @default(0) @map("maintenance_count")
+  totalMaintenanceCost Decimal?  @map("total_maintenance_cost") @db.Decimal(12, 2)
+  lastMaintenanceDate  DateTime? @map("last_maintenance_date")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  factory            Factory                @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  monitoringData     DeviceMonitoringData[]
+  maintenanceRecords EquipmentMaintenance[]
+  usageRecords       BatchEquipmentUsage[]
+
   @@index([factoryId, equipmentCode], map: "idx_factory_equipment")
   @@index([status, department], map: "idx_equipment_status")
   @@map("factory_equipment")
@@ -395,53 +412,71 @@ enum EquipmentStatus {
   @@map("equipment_status")
 }
 
-// Phase 2 核心表 - 加工批次追踪
+// Phase 2 核心表 - 加工批次追踪（成本核算增强版）
 model ProcessingBatch {
-  id             String       @id @default(uuid())
-  factoryId      String       @map("factory_id")
-  batchNumber    String       @unique @map("batch_number")
-  productType    String       @map("product_type")
-  rawMaterials   Json?        @map("raw_materials")
-  startDate      DateTime     @map("start_date") @db.Date
-  endDate        DateTime?    @map("end_date") @db.Date
-  status         BatchStatus  @default(planning) @map("status")
-  productionLine String?      @map("production_line")
-  supervisorId   Int?         @map("supervisor_id")
-  targetQuantity Decimal?     @map("target_quantity") @db.Decimal(10, 2)
-  actualQuantity Decimal?     @map("actual_quantity") @db.Decimal(10, 2)
+  id             String        @id @default(uuid())
+  factoryId      String        @map("factory_id")
+  batchNumber    String        @unique @map("batch_number")
+  productType    String        @map("product_type")
+  rawMaterials   Json?         @map("raw_materials")
+  startDate      DateTime      @map("start_date") @db.Date
+  endDate        DateTime?     @map("end_date") @db.Date
+  status         BatchStatus   @default(planning) @map("status")
+  productionLine String?       @map("production_line")
+  supervisorId   Int?          @map("supervisor_id")
+  targetQuantity Decimal?      @map("target_quantity") @db.Decimal(10, 2)
+  actualQuantity Decimal?      @map("actual_quantity") @db.Decimal(10, 2)
   qualityGrade   QualityGrade? @map("quality_grade")
-  notes          String?      @db.Text
-  createdAt      DateTime     @default(now()) @map("created_at")
-  
-  factory            Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  supervisor         User?               @relation("BatchSupervisor", fields: [supervisorId], references: [id])
+  notes          String?       @db.Text
+
+  // 新增：原材料成本字段
+  rawMaterialCost     Decimal?         @map("raw_material_cost") @db.Decimal(12, 2)
+  rawMaterialWeight   Decimal?         @map("raw_material_weight") @db.Decimal(10, 2)
+  rawMaterialCategory String?          @map("raw_material_category") @db.VarChar(100)
+  productCategory     ProductCategory? @map("product_category")
+  expectedPrice       Decimal?         @map("expected_price") @db.Decimal(12, 2)
+
+  // 新增：成本核算字段
+  laborCost     Decimal? @map("labor_cost") @db.Decimal(12, 2)
+  equipmentCost Decimal? @map("equipment_cost") @db.Decimal(12, 2)
+  totalCost     Decimal? @map("total_cost") @db.Decimal(12, 2)
+  profitMargin  Decimal? @map("profit_margin") @db.Decimal(12, 2)
+  profitRate    Decimal? @map("profit_rate") @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  factory            Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  supervisor         User?                 @relation("BatchSupervisor", fields: [supervisorId], references: [id])
   qualityInspections QualityInspection[]
-  
+  workSessions       BatchWorkSession[]
+  equipmentUsage     BatchEquipmentUsage[]
+
   @@index([factoryId, batchNumber], map: "idx_factory_batch")
   @@index([status, startDate], map: "idx_batch_status")
+  @@index([productCategory], map: "idx_product_category")
   @@map("processing_batches")
 }
 
 // Phase 2 核心表 - 质检记录管理
 model QualityInspection {
-  id             String            @id @default(uuid())
-  batchId        String            @map("batch_id")
-  factoryId      String            @map("factory_id")
-  inspectorId    Int               @map("inspector_id")
-  inspectionType InspectionType    @map("inspection_type")
-  inspectionDate DateTime          @map("inspection_date")
-  testItems      Json?             @map("test_items")
-  overallResult  InspectionResult  @map("overall_result")
-  qualityScore   Decimal?          @map("quality_score") @db.Decimal(3, 2)
-  defectDetails  Json?             @map("defect_details")
-  correctiveActions String?        @map("corrective_actions") @db.Text
-  photos         Json?             @map("photos")
-  createdAt      DateTime          @default(now()) @map("created_at")
-  
+  id                String           @id @default(uuid())
+  batchId           String           @map("batch_id")
+  factoryId         String           @map("factory_id")
+  inspectorId       Int              @map("inspector_id")
+  inspectionType    InspectionType   @map("inspection_type")
+  inspectionDate    DateTime         @map("inspection_date")
+  testItems         Json?            @map("test_items")
+  overallResult     InspectionResult @map("overall_result")
+  qualityScore      Decimal?         @map("quality_score") @db.Decimal(3, 2)
+  defectDetails     Json?            @map("defect_details")
+  correctiveActions String?          @map("corrective_actions") @db.Text
+  photos            Json?            @map("photos")
+  createdAt         DateTime         @default(now()) @map("created_at")
+
   batch     ProcessingBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
   factory   Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   inspector User            @relation("QualityInspector", fields: [inspectorId], references: [id])
-  
+
   @@index([batchId, inspectionDate], map: "idx_batch_inspection")
   @@index([inspectorId, inspectionDate], map: "idx_inspector_record")
   @@map("quality_inspections")
@@ -458,10 +493,10 @@ model DeviceMonitoringData {
   alertTriggered Boolean          @default(false) @map("alert_triggered")
   dataSource     String?          @map("data_source")
   createdAt      DateTime         @default(now()) @map("created_at")
-  
+
   equipment FactoryEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   factory   Factory          @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  
+
   @@index([equipmentId, timestamp], map: "idx_equipment_time")
   @@index([factoryId, timestamp], map: "idx_factory_monitoring")
   @@index([alertTriggered, status, timestamp], map: "idx_alert_status")
@@ -484,10 +519,10 @@ model AlertNotification {
   resolvedAt      DateTime?     @map("resolved_at")
   resolvedBy      Int?          @map("resolved_by")
   resolutionNotes String?       @map("resolution_notes") @db.Text
-  
-  factory   Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  resolver  User?   @relation("AlertResolver", fields: [resolvedBy], references: [id])
-  
+
+  factory  Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  resolver User?   @relation("AlertResolver", fields: [resolvedBy], references: [id])
+
   @@index([factoryId, createdAt], map: "idx_factory_alerts")
   @@index([status, severity, createdAt], map: "idx_alert_status_severity")
   @@map("alert_notifications")
@@ -495,17 +530,17 @@ model AlertNotification {
 
 // Phase 2 核心表 - 仪表板指标缓存
 model DashboardMetric {
-  id              String   @id @default(uuid())
-  factoryId       String   @map("factory_id")
-  metricType      String   @map("metric_type") @db.VarChar(100)
-  metricDate      DateTime @map("metric_date") @db.Date
-  metricData      Json     @map("metric_data")
-  cacheExpiresAt  DateTime @map("cache_expires_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
-  
+  id             String   @id @default(uuid())
+  factoryId      String   @map("factory_id")
+  metricType     String   @map("metric_type") @db.VarChar(100)
+  metricDate     DateTime @map("metric_date") @db.Date
+  metricData     Json     @map("metric_data")
+  cacheExpiresAt DateTime @map("cache_expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
   factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  
+
   @@unique([factoryId, metricType, metricDate], map: "unique_factory_metric_date")
   @@index([cacheExpiresAt], map: "idx_cache_expiry")
   @@index([factoryId, metricType, metricDate], map: "idx_factory_metrics")
@@ -587,25 +622,25 @@ enum AlertStatus {
 
 // Phase 3 - 激活码管理系统
 model ActivationCode {
-  id            String             @id @default(uuid())
-  code          String             @unique @map("code")
-  type          ActivationCodeType @map("type")
-  factoryId     String?            @map("factory_id")
-  maxUses       Int                @default(1) @map("max_uses")
-  usedCount     Int                @default(0) @map("used_count")
-  status        ActivationStatus   @default(active) @map("status")
-  validFrom     DateTime           @default(now()) @map("valid_from")
-  validUntil    DateTime?          @map("valid_until")
-  createdBy     Int?               @map("created_by")
-  metadata      Json?              @map("metadata")
-  notes         String?            @map("notes") @db.Text
-  createdAt     DateTime           @default(now()) @map("created_at")
-  updatedAt     DateTime           @updatedAt @map("updated_at")
-  
-  factory       Factory?           @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  creator       User?              @relation("ActivationCreator", fields: [createdBy], references: [id])
-  activations   ActivationRecord[]
-  
+  id         String             @id @default(uuid())
+  code       String             @unique @map("code")
+  type       ActivationCodeType @map("type")
+  factoryId  String?            @map("factory_id")
+  maxUses    Int                @default(1) @map("max_uses")
+  usedCount  Int                @default(0) @map("used_count")
+  status     ActivationStatus   @default(active) @map("status")
+  validFrom  DateTime           @default(now()) @map("valid_from")
+  validUntil DateTime?          @map("valid_until")
+  createdBy  Int?               @map("created_by")
+  metadata   Json?              @map("metadata")
+  notes      String?            @map("notes") @db.Text
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  factory     Factory?           @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  creator     User?              @relation("ActivationCreator", fields: [createdBy], references: [id])
+  activations ActivationRecord[]
+
   @@index([code], map: "idx_activation_code")
   @@index([status, type], map: "idx_activation_status_type")
   @@index([factoryId, status], map: "idx_factory_activation")
@@ -614,19 +649,19 @@ model ActivationCode {
 
 // 激活记录
 model ActivationRecord {
-  id               String         @id @default(uuid())
-  activationCodeId String         @map("activation_code_id")
-  deviceId         String         @map("device_id")
-  userId           Int?           @map("user_id")
-  deviceInfo       Json?          @map("device_info")
-  ipAddress        String?        @map("ip_address") @db.VarChar(45)
-  userAgent        String?        @map("user_agent") @db.Text
-  activatedAt      DateTime       @default(now()) @map("activated_at")
-  status           String         @default("success") @map("status")
-  
-  activationCode   ActivationCode @relation(fields: [activationCodeId], references: [id], onDelete: Cascade)
-  user            User?           @relation("ActivationUser", fields: [userId], references: [id])
-  
+  id               String   @id @default(uuid())
+  activationCodeId String   @map("activation_code_id")
+  deviceId         String   @map("device_id")
+  userId           Int?     @map("user_id")
+  deviceInfo       Json?    @map("device_info")
+  ipAddress        String?  @map("ip_address") @db.VarChar(45)
+  userAgent        String?  @map("user_agent") @db.Text
+  activatedAt      DateTime @default(now()) @map("activated_at")
+  status           String   @default("success") @map("status")
+
+  activationCode ActivationCode @relation(fields: [activationCodeId], references: [id], onDelete: Cascade)
+  user           User?          @relation("ActivationUser", fields: [userId], references: [id])
+
   @@index([activationCodeId], map: "idx_activation_record_code")
   @@index([deviceId], map: "idx_activation_device")
   @@index([activatedAt], map: "idx_activation_date")
@@ -635,20 +670,20 @@ model ActivationRecord {
 
 // 系统日志表
 model SystemLog {
-  id          String      @id @default(uuid())
-  level       LogLevel    @map("level")
-  category    String      @map("category") @db.VarChar(100)
-  message     String      @map("message") @db.Text
-  details     Json?       @map("details")
-  userId      Int?        @map("user_id")
-  factoryId   String?     @map("factory_id")
-  ipAddress   String?     @map("ip_address") @db.VarChar(45)
-  userAgent   String?     @map("user_agent") @db.Text
-  timestamp   DateTime    @default(now()) @map("timestamp")
-  
-  user        User?       @relation("SystemLogUser", fields: [userId], references: [id])
-  factory     Factory?    @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(uuid())
+  level     LogLevel @map("level")
+  category  String   @map("category") @db.VarChar(100)
+  message   String   @map("message") @db.Text
+  details   Json?    @map("details")
+  userId    Int?     @map("user_id")
+  factoryId String?  @map("factory_id")
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  timestamp DateTime @default(now()) @map("timestamp")
+
+  user    User?    @relation("SystemLogUser", fields: [userId], references: [id])
+  factory Factory? @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
   @@index([level, timestamp], map: "idx_log_level_time")
   @@index([category, timestamp], map: "idx_log_category_time")
   @@index([userId, timestamp], map: "idx_log_user_time")
@@ -658,22 +693,22 @@ model SystemLog {
 
 // API访问日志表
 model ApiAccessLog {
-  id            String    @id @default(uuid())
-  method        String    @map("method") @db.VarChar(10)
-  path          String    @map("path") @db.VarChar(500)
-  statusCode    Int       @map("status_code")
-  responseTime  Int       @map("response_time")
-  userId        Int?      @map("user_id")
-  factoryId     String?   @map("factory_id")
-  ipAddress     String?   @map("ip_address") @db.VarChar(45)
-  userAgent     String?   @map("user_agent") @db.Text
-  requestBody   Json?     @map("request_body")
-  responseBody  Json?     @map("response_body")
-  timestamp     DateTime  @default(now()) @map("timestamp")
-  
-  user          User?     @relation("ApiAccessUser", fields: [userId], references: [id])
-  factory       Factory?  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  
+  id           String   @id @default(uuid())
+  method       String   @map("method") @db.VarChar(10)
+  path         String   @map("path") @db.VarChar(500)
+  statusCode   Int      @map("status_code")
+  responseTime Int      @map("response_time")
+  userId       Int?     @map("user_id")
+  factoryId    String?  @map("factory_id")
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  requestBody  Json?    @map("request_body")
+  responseBody Json?    @map("response_body")
+  timestamp    DateTime @default(now()) @map("timestamp")
+
+  user    User?    @relation("ApiAccessUser", fields: [userId], references: [id])
+  factory Factory? @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
   @@index([method, path], map: "idx_api_method_path")
   @@index([statusCode, timestamp], map: "idx_api_status_time")
   @@index([userId, timestamp], map: "idx_api_user_time")
@@ -683,23 +718,23 @@ model ApiAccessLog {
 
 // 报表模板表
 model ReportTemplate {
-  id          String        @id @default(uuid())
-  name        String        @map("name") @db.VarChar(200)
-  type        ReportType    @map("type")
-  category    String        @map("category") @db.VarChar(100)
-  template    Json          @map("template")
-  parameters  Json?         @map("parameters")
-  isSystem    Boolean       @default(false) @map("is_system")
-  isActive    Boolean       @default(true) @map("is_active")
-  createdBy   Int?          @map("created_by")
-  factoryId   String?       @map("factory_id")
-  description String?       @map("description") @db.Text
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  
-  creator     User?         @relation("ReportCreator", fields: [createdBy], references: [id])
-  factory     Factory?      @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  
+  id          String     @id @default(uuid())
+  name        String     @map("name") @db.VarChar(200)
+  type        ReportType @map("type")
+  category    String     @map("category") @db.VarChar(100)
+  template    Json       @map("template")
+  parameters  Json?      @map("parameters")
+  isSystem    Boolean    @default(false) @map("is_system")
+  isActive    Boolean    @default(true) @map("is_active")
+  createdBy   Int?       @map("created_by")
+  factoryId   String?    @map("factory_id")
+  description String?    @map("description") @db.Text
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  creator User?    @relation("ReportCreator", fields: [createdBy], references: [id])
+  factory Factory? @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
   @@index([type, category], map: "idx_report_type_category")
   @@index([factoryId, isActive], map: "idx_report_factory_active")
   @@map("report_templates")
@@ -746,23 +781,23 @@ enum ReportType {
 
 // 员工打卡记录表
 model EmployeeTimeClock {
-  id             String          @id @default(uuid())
-  userId         Int             @map("user_id")
-  factoryId      String          @map("factory_id")
-  clockType      ClockType       @map("clock_type")
-  clockTime      DateTime        @map("clock_time")
-  workTypeId     String?         @map("work_type_id")
-  locationData   Json?           @map("location_data")
-  deviceInfo     Json?           @map("device_info")
-  ipAddress      String?         @map("ip_address") @db.VarChar(45)
-  status         ClockStatus     @default(normal) @map("status")
-  notes          String?         @db.Text
-  createdAt      DateTime        @default(now()) @map("created_at")
-  
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  factory        Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  workType       WorkType?       @relation(fields: [workTypeId], references: [id])
-  
+  id           String      @id @default(uuid())
+  userId       Int         @map("user_id")
+  factoryId    String      @map("factory_id")
+  clockType    ClockType   @map("clock_type")
+  clockTime    DateTime    @map("clock_time")
+  workTypeId   String?     @map("work_type_id")
+  locationData Json?       @map("location_data")
+  deviceInfo   Json?       @map("device_info")
+  ipAddress    String?     @map("ip_address") @db.VarChar(45)
+  status       ClockStatus @default(normal) @map("status")
+  notes        String?     @db.Text
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  factory  Factory   @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  workType WorkType? @relation(fields: [workTypeId], references: [id])
+
   @@index([userId, clockTime], map: "idx_user_clock")
   @@index([factoryId, clockTime], map: "idx_factory_clock")
   @@index([clockType, clockTime], map: "idx_clock_type_time")
@@ -771,20 +806,21 @@ model EmployeeTimeClock {
 
 // 工作类型表
 model WorkType {
-  id               String                @id @default(uuid())
-  factoryId        String                @map("factory_id")
-  typeCode         String                @map("type_code")
-  typeName         String                @map("type_name")
-  department       Department?           @map("department")
-  description      String?               @db.Text
-  colorCode        String?               @map("color_code") @db.VarChar(7)
-  isActive         Boolean               @default(true) @map("is_active")
-  createdAt        DateTime              @default(now()) @map("created_at")
-  
-  factory          Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  timeClocks       EmployeeTimeClock[]
-  workSessions     EmployeeWorkSession[]
-  
+  id          String      @id @default(uuid())
+  factoryId   String      @map("factory_id")
+  typeCode    String      @map("type_code")
+  typeName    String      @map("type_name")
+  department  Department? @map("department")
+  description String?     @db.Text
+  colorCode   String?     @map("color_code") @db.VarChar(7)
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  factory           Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  timeClocks        EmployeeTimeClock[]
+  workSessions      EmployeeWorkSession[]
+  batchWorkSessions BatchWorkSession[]    @relation("BatchWorkType")
+
   @@unique([factoryId, typeCode], map: "unique_factory_type")
   @@index([department, isActive], map: "idx_department_type")
   @@map("work_types")
@@ -805,11 +841,11 @@ model EmployeeWorkSession {
   workRecordId      String?       @map("work_record_id")
   status            SessionStatus @default(active) @map("status")
   createdAt         DateTime      @default(now()) @map("created_at")
-  
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  factory           Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  workType          WorkType      @relation(fields: [workTypeId], references: [id])
-  
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  factory  Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  workType WorkType @relation(fields: [workTypeId], references: [id])
+
   @@index([userId, sessionDate], map: "idx_user_session")
   @@index([workTypeId, sessionDate], map: "idx_work_type_session")
   @@index([factoryId, sessionDate], map: "idx_factory_session")
@@ -843,4 +879,91 @@ enum SessionStatus {
   paused
 
   @@map("session_status")
+}
+
+// ==================== 成本核算系统新增表 ====================
+
+// 批次员工工作时段表 - 记录批次级别的员工工作和成本
+model BatchWorkSession {
+  id                String    @id @default(uuid())
+  batchId           String    @map("batch_id")
+  userId            Int       @map("user_id")
+  workTypeId        String?   @map("work_type_id")
+  startTime         DateTime  @map("start_time")
+  endTime           DateTime? @map("end_time")
+  totalMinutes      Int?      @map("total_minutes")
+  processedQuantity Decimal?  @map("processed_quantity") @db.Decimal(10, 2)
+  ccrRate           Decimal   @map("ccr_rate") @db.Decimal(8, 4)
+  laborCost         Decimal?  @map("labor_cost") @db.Decimal(10, 2)
+  notes             String?   @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  batch    ProcessingBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workType WorkType?       @relation("BatchWorkType", fields: [workTypeId], references: [id])
+
+  @@index([batchId, userId], map: "idx_batch_user_work")
+  @@index([userId, startTime], map: "idx_user_work_time")
+  @@index([batchId, startTime], map: "idx_batch_work_time")
+  @@map("batch_work_sessions")
+}
+
+// 批次设备使用记录表 - 记录批次级别的设备使用和成本
+model BatchEquipmentUsage {
+  id            String    @id @default(uuid())
+  batchId       String    @map("batch_id")
+  equipmentId   String    @map("equipment_id")
+  startTime     DateTime  @map("start_time")
+  endTime       DateTime? @map("end_time")
+  usageDuration Int?      @map("usage_duration")
+  equipmentCost Decimal?  @map("equipment_cost") @db.Decimal(10, 2)
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  batch     ProcessingBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  equipment FactoryEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, equipmentId], map: "idx_batch_equipment")
+  @@index([equipmentId, startTime], map: "idx_equipment_usage_time")
+  @@index([batchId, startTime], map: "idx_batch_equipment_time")
+  @@map("batch_equipment_usage")
+}
+
+// 设备维修记录表 - 记录设备维修历史和成本
+model EquipmentMaintenance {
+  id                String          @id @default(uuid())
+  equipmentId       String          @map("equipment_id")
+  maintenanceDate   DateTime        @map("maintenance_date")
+  maintenanceType   MaintenanceType @map("maintenance_type")
+  cost              Decimal         @map("cost") @db.Decimal(10, 2)
+  description       String?         @db.Text
+  performedBy       Int?            @map("performed_by")
+  durationMinutes   Int?            @map("duration_minutes")
+  partsReplaced     Json?           @map("parts_replaced")
+  nextScheduledDate DateTime?       @map("next_scheduled_date")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  equipment FactoryEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId, maintenanceDate], map: "idx_equipment_maintenance")
+  @@index([maintenanceType, maintenanceDate], map: "idx_maintenance_type_date")
+  @@map("equipment_maintenance_records")
+}
+
+// 新增枚举 - 产品类别（新鲜/冻货）
+enum ProductCategory {
+  fresh
+  frozen
+
+  @@map("product_category")
+}
+
+// 新增枚举 - 维修类型
+enum MaintenanceType {
+  routine
+  repair
+  emergency
+  upgrade
+
+  @@map("maintenance_type")
 }

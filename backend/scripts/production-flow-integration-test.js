@@ -731,7 +731,7 @@ class ProductionFlowTester {
 
   async run() {
     console.log('正在初始化生产流程集成测试器...');
-    console.log('🔄 海牛食品溯源系统 - 完整生产流程集成测试');
+    console.log('🔄 白垩纪食品溯源系统 - 完整生产流程集成测试');
     console.log('📊 测试范围: 用户认证→批次管理→质检→设备监控→告警的完整数据流');
     console.log(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`);
 

@@ -6,7 +6,7 @@
 - **React Native (Expo) 开发服务器**: `3010`
   - Metro bundler: 3010
   - Expo DevTools: 3010
-  - 配置位置: `frontend/HainiuFoodTrace/package.json`
+  - 配置位置: `frontend/CretasFoodTrace/package.json`
 
 ### 后端服务
 - **Node.js Express API服务器**: `3001`
@@ -23,7 +23,7 @@
 
 ### 开发环境
 ```javascript
-// frontend/HainiuFoodTrace/src/constants/config.ts
+// frontend/CretasFoodTrace/src/constants/config.ts
 export const API_BASE_URL = __DEV__ 
   ? 'http://10.0.2.2:3001/api'  // Android模拟器访问后端3001端口
   : 'https://your-production-api.com/api';
@@ -34,7 +34,7 @@ export const API_BASE_URL = __DEV__
 ### 启动命令
 ```bash
 # 启动React Native开发服务器 (端口3010)
-cd frontend/HainiuFoodTrace
+cd frontend/CretasFoodTrace
 npm start  # 自动使用3010端口
 
 # 启动后端API服务器 (端口3001)

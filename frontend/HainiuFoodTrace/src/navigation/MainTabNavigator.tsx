@@ -14,7 +14,8 @@ import { AlertStackNavigator } from './AlertStackNavigator';
 import { ReportStackNavigator } from './ReportStackNavigator';
 import { SystemStackNavigator } from './SystemStackNavigator';
 import { AdminStackNavigator } from './AdminStackNavigator';
-import { PlatformScreen } from '../screens/main/PlatformScreen';
+import { PlatformStackNavigator } from './PlatformStackNavigator';
+import { ManagementStackNavigator } from './ManagementStackNavigator';
 import { DeveloperScreen } from '../screens/main/DeveloperScreen';
 
 export type MainTabParamList = {
@@ -28,6 +29,7 @@ export type MainTabParamList = {
   system: undefined;
   admin: undefined;
   platform: undefined;
+  management: undefined;
   developer: undefined;
 };
 
@@ -45,6 +47,7 @@ const tabIcons: Record<string, string> = {
   system: 'pulse',
   admin: 'settings',
   platform: 'server',
+  management: 'shield-checkmark',
   developer: 'code-slash',
 };
 
@@ -59,7 +62,8 @@ const screenComponents: Record<string, React.ComponentType<any>> = {
   ReportScreen: ReportStackNavigator,
   SystemScreen: SystemStackNavigator,
   AdminScreen: AdminStackNavigator,
-  PlatformScreen,
+  PlatformScreen: PlatformStackNavigator,
+  ManagementScreen: ManagementStackNavigator,
   DeveloperScreen,
 };
 

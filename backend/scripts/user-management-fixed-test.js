@@ -527,7 +527,7 @@ class UserManagementTester {
 
   async run() {
     console.log('正在初始化用户管理系统测试器...');
-    console.log('🔍 海牛食品溯源系统 - 用户管理和白名单系统测试（简化版）');
+    console.log('🔍 白垩纪食品溯源系统 - 用户管理和白名单系统测试（简化版）');
     console.log('📊 测试范围: authController.js 核心用户管理功能');
     console.log(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`);
 

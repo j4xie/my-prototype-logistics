@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 海牛食品溯源系统 - 告警系统完整测试
+ * 白垩纪食品溯源系统 - 告警系统完整测试
  * 阶段2-1: alertController.js 5个核心功能完整性验证
  * 专注测试：告警列表、告警确认、告警解决、告警统计、告警摘要
  */
@@ -1321,7 +1321,7 @@ class AlertSystemTester {
 
   // 主测试执行器
   async runAllTests() {
-    console.log(chalk.cyan.bold('🔔 海牛食品溯源系统 - 告警系统完整测试'));
+    console.log(chalk.cyan.bold('🔔 白垩纪食品溯源系统 - 告警系统完整测试'));
     console.log(chalk.cyan('📊 测试范围: alertController.js 5个核心功能'));
     console.log(chalk.cyan(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`));
 

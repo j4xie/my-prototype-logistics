@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { usePermission } from '../../hooks/usePermission';
+import { hasWhitelistPermission } from '../../utils/navigationHelper';
 
 interface LogisticsScreenProps {
   navigation: any;
@@ -29,12 +30,17 @@ export const LogisticsScreen: React.FC<LogisticsScreenProps> = ({ navigation }) 
     { id: 6, name: '签收确认', icon: 'checkmark-circle-outline', color: '#1e293b' },
   ];
 
-  const quickActions = [
+  const baseQuickActions = [
     { name: '扫码出库', icon: 'scan', color: '#3b82f6' },
     { name: '运输跟踪', icon: 'navigate', color: '#2563eb' },
     { name: '温度监控', icon: 'thermometer', color: '#1d4ed8' },
     { name: '签收管理', icon: 'checkmark-done', color: '#1e40af' },
   ];
+
+  // 如果有白名单管理权限，添加白名单管理按钮
+  const quickActions = hasWhitelistPermission('department')
+    ? [...baseQuickActions, { name: '白名单管理', icon: 'people-circle', color: '#ec4899', screen: 'WhitelistManagement' }]
+    : baseQuickActions;
 
   return (
     <>

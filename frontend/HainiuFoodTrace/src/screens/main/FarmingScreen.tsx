@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { usePermission } from '../../hooks/usePermission';
+import { hasWhitelistPermission } from '../../utils/navigationHelper';
 
 interface FarmingScreenProps {
   navigation: any;
@@ -29,12 +30,17 @@ export const FarmingScreen: React.FC<FarmingScreenProps> = ({ navigation }) => {
     { id: 6, name: '收获管理', icon: 'basket-outline', color: '#022c22' },
   ];
 
-  const quickActions = [
+  const baseQuickActions = [
     { name: '环境监测', icon: 'thermometer', color: '#10b981' },
     { name: '施肥记录', icon: 'water', color: '#059669' },
     { name: '病虫记录', icon: 'bug', color: '#047857' },
     { name: '收获记录', icon: 'basket', color: '#065f46' },
   ];
+
+  // 如果有白名单管理权限，添加白名单管理按钮
+  const quickActions = hasWhitelistPermission('department')
+    ? [...baseQuickActions, { name: '白名单管理', icon: 'people-circle', color: '#ec4899', screen: 'WhitelistManagement' }]
+    : baseQuickActions;
 
   return (
     <>

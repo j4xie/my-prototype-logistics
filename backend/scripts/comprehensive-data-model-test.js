@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 海牛食品溯源系统 - 数据模型完整性测试
+ * 白垩纪食品溯源系统 - 数据模型完整性测试
  * 测试所有23个数据模型的CRUD操作、数据关系和约束验证
  * 阶段1: 数据模型完整性测试
  */
@@ -855,7 +855,7 @@ class ComprehensiveDataModelTester {
 
   // 主测试执行器
   async runAllTests() {
-    console.log(chalk.cyan.bold('🧪 海牛食品溯源系统 - 数据模型完整性测试'));
+    console.log(chalk.cyan.bold('🧪 白垩纪食品溯源系统 - 数据模型完整性测试'));
     console.log(chalk.cyan(`📊 测试范围: 23个数据模型的CRUD操作和约束验证`));
     console.log(chalk.cyan(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`));
 

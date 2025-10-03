@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 海牛食品溯源系统 - 质量检测系统完整测试
+ * 白垩纪食品溯源系统 - 质量检测系统完整测试
  * 阶段2-3: qualityController.js 6个核心功能完整性验证
  * 专注测试：提交质检、查询质检、质检详情、更新质检、质检统计、质量趋势
  */
@@ -1517,7 +1517,7 @@ class QualityDetectionTester {
 
   // 主测试执行器
   async runAllTests() {
-    console.log(chalk.cyan.bold('🔍 海牛食品溯源系统 - 质量检测系统完整测试'));
+    console.log(chalk.cyan.bold('🔍 白垩纪食品溯源系统 - 质量检测系统完整测试'));
     console.log(chalk.cyan('📊 测试范围: qualityController.js 6个核心功能'));
     console.log(chalk.cyan(`🕒 测试开始时间: ${new Date().toLocaleString()}\n`));
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 海牛食品溯源系统 - 集成测试主执行器
+ * 白垩纪食品溯源系统 - 集成测试主执行器
  * 协调运行所有测试场景并生成综合报告
  */
 
@@ -50,7 +50,7 @@ class IntegrationTestRunner {
   displayWelcome() {
     console.clear();
     console.log(chalk.cyan.bold('\n' + '═'.repeat(60)));
-    console.log(chalk.cyan.bold('     海牛食品溯源系统 - 前后端集成测试套件'));
+    console.log(chalk.cyan.bold('     白垩纪食品溯源系统 - 前后端集成测试套件'));
     console.log(chalk.cyan.bold('═'.repeat(60)));
     console.log(chalk.white('\n📋 测试范围:'));
     console.log(chalk.gray('   • 认证系统 (登录、注册、Token管理)'));
@@ -270,7 +270,7 @@ class IntegrationTestRunner {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>集成测试报告 - 海牛食品溯源系统</title>
+    <title>集成测试报告 - 白垩纪食品溯源系统</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -349,7 +349,7 @@ class IntegrationTestRunner {
 <body>
     <div class="header">
         <h1>🧪 集成测试报告</h1>
-        <p>海牛食品溯源系统 - 前后端集成测试</p>
+        <p>白垩纪食品溯源系统 - 前后端集成测试</p>
         <p>执行时间: ${new Date().toLocaleString('zh-CN')}</p>
     </div>
     
@@ -397,7 +397,7 @@ class IntegrationTestRunner {
     
     <div class="footer">
         <p>生成时间: ${new Date().toISOString()}</p>
-        <p>海牛食品溯源系统 © 2025</p>
+        <p>白垩纪食品溯源系统 © 2025</p>
     </div>
 </body>
 </html>
@@ -537,7 +537,7 @@ function parseArgs() {
 
 // 显示帮助信息
 function showHelp() {
-  console.log(chalk.cyan('\n海牛食品溯源系统 - 集成测试'));
+  console.log(chalk.cyan('\n白垩纪食品溯源系统 - 集成测试'));
   console.log(chalk.white('\n用法: node run-integration-tests.js [选项]'));
   console.log(chalk.gray('\n选项:'));
   console.log(chalk.gray('  --skip-env      跳过环境启动（假设环境已运行）'));

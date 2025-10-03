@@ -1,4 +1,4 @@
-# 海牛食品溯源系统 - Phase 1&2 前后端对接方案
+# 白垩纪食品溯源系统 - Phase 1&2 前后端对接方案
 
 > **文档版本**: 1.0  
 > **创建时间**: 2025-08-07  
@@ -714,7 +714,7 @@ const DebugInfo = () => {
     if (__DEV__) {
       setDebugData({
         apiUrl: MOBILE_API_BASE,
-        userAgent: 'HainiuFoodTrace/1.0',
+        userAgent: 'CretasFoodTrace/1.0',
         version: '1.0.0'
       });
     }
@@ -823,4 +823,4 @@ export const getConfig = () => {
 
 **🎉 祝您集成顺利！**
 
-此文档涵盖了海牛食品溯源系统前后端对接的所有核心内容，请根据实际需求进行调整和扩展。
+此文档涵盖了白垩纪食品溯源系统前后端对接的所有核心内容，请根据实际需求进行调整和扩展。

@@ -143,7 +143,7 @@ class TestEnvironmentManager {
 
     return new Promise((resolve, reject) => {
       const frontendProcess = spawn('npx', ['expo', 'start', '--port', testConfig.services.frontend.port], {
-        cwd: './frontend/HainiuFoodTrace',
+        cwd: './frontend/CretasFoodTrace',
         shell: true,
         env: { ...process.env, NODE_ENV: 'test' }
       });
@@ -221,7 +221,7 @@ class TestEnvironmentManager {
 
   // 启动所有服务
   async startAll() {
-    console.log(chalk.cyan.bold('\n🚀 海牛食品溯源系统 - 集成测试环境启动\n'));
+    console.log(chalk.cyan.bold('\n🚀 白垩纪食品溯源系统 - 集成测试环境启动\n'));
     console.log(chalk.gray('═'.repeat(50)));
 
     try {

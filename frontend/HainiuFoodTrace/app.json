@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "HainiuFoodTrace",
-    "slug": "HainiuFoodTrace",
+    "name": "CretasFoodTrace",
+    "slug": "CretasFoodTrace",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,14 +14,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.stevenj4.HainiuFoodTrace"
+      "bundleIdentifier": "com.cretas.foodtrace"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.cretas.foodtrace"
     },
     "web": {
       "favicon": "./assets/favicon.png",

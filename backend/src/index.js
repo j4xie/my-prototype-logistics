@@ -49,7 +49,7 @@ app.use('/api/mobile', mobileRoutes);
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: '黑牛食品溯源系统后端API',
+    message: '白垩纪食品溯源系统后端API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     endpoints: {
@@ -119,7 +119,7 @@ process.on('uncaughtException', (error) => {
 // 启动服务器
 app.listen(PORT, () => {
   console.log('🚀 ===================================');
-  console.log(`🚀 黑牛食品溯源系统后端服务启动成功`);
+  console.log(`🚀 白垩纪食品溯源系统后端服务启动成功`);
   console.log(`🚀 服务地址: http://localhost:${PORT}`);
   console.log(`🚀 API文档: http://localhost:${PORT}/api`);
   console.log(`🚀 健康检查: http://localhost:${PORT}/health`);

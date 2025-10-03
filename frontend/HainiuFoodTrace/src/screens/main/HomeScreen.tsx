@@ -308,7 +308,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
           {/* 底部版本信息 */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>海牛食品溯源系统 v{deviceInfo?.version}</Text>
+            <Text style={styles.footerText}>白垩纪食品溯源系统 v{deviceInfo?.version}</Text>
             <Text style={styles.footerText}>Phase 1 - Tab导航版本</Text>
           </View>
         </ScrollView>

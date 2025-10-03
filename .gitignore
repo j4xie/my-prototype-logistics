@@ -33,4 +33,7 @@ out/
 # 临时文件
 tmp/
 temp/
-.tmp/ 
+.tmp/
+
+# 归档项目
+_archived/ 

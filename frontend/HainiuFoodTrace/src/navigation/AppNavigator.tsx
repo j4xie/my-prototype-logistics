@@ -23,7 +23,6 @@ import { TokenManager } from '../services/tokenManager';
 
 // 屏幕组件
 import EnhancedLoginScreen from '../screens/auth/EnhancedLoginScreen';
-import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { RegisterPhaseOneScreen } from '../screens/auth/RegisterPhaseOneScreen';
 import { RegisterPhaseTwoScreen } from '../screens/auth/RegisterPhaseTwoScreen';
 import { ActivationScreen } from '../screens/auth/ActivationScreen';
@@ -148,29 +147,12 @@ export const AppNavigator: React.FC = () => {
   
   const { user, isAuthenticated, refreshPermissions } = usePermission();
 
-  // 应用初始化
+  // 应用初始化 - 临时禁用自动登录，直接显示登录界面
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // 检查是否有有效Token
-        const hasValidToken = await TokenManager.getValidToken();
-        
-        if (hasValidToken) {
-          // 尝试自动登录
-          const autoLoginSuccess = await autoLogin();
-          
-          if (autoLoginSuccess) {
-            // 刷新权限数据
-            await refreshPermissions();
-            
-            // 设置主应用为初始路由
-            setInitialRoute('Main');
-          } else {
-            setInitialRoute('Auth');
-          }
-        } else {
-          setInitialRoute('Auth');
-        }
+        // 临时直接跳到认证界面，避免token验证问题
+        setInitialRoute('Auth');
       } catch (error) {
         console.error('App initialization error:', error);
         setInitialRoute('Auth');
@@ -180,7 +162,7 @@ export const AppNavigator: React.FC = () => {
     };
 
     initializeApp();
-  }, [autoLogin, refreshPermissions]);
+  }, []);
 
   // 监听网络状态变化
   useEffect(() => {

@@ -843,7 +843,7 @@ class PerformanceOptimizationTester {
 
   async run() {
     console.log('正在初始化性能优化系统测试器...');
-    console.log('⚡ 海牛食品溯源系统 - 性能优化系统完整测试');
+    console.log('⚡ 白垩纪食品溯源系统 - 性能优化系统完整测试');
     console.log('📊 测试范围: 缓存策略、查询优化、连接池管理、API响应速度优化');
     console.log(`🕒 测试开始时间: ${new Date().toLocaleString()}\\n`);
 
