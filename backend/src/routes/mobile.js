@@ -8,6 +8,15 @@ import systemRoutes from './system.js';
 import timeclockRoutes from './timeclock.js';
 import workTypesRoutes from './workTypes.js';
 import timeStatsRoutes from './timeStats.js';
+import materialRoutes from './material.js';
+import productTypeRoutes from './productType.js';
+import conversionRoutes from './conversion.js';
+import supplierRoutes from './supplier.js';
+import customerRoutes from './customer.js';
+import productionPlanRoutes from './productionPlan.js';
+import materialBatchRoutes from './materialBatch.js';
+import factorySettingsRoutes from './factorySettings.js';
+import { getEmployees } from '../controllers/userController.js';
 const router = express.Router();
 
 // 文件上传配置 (移动端优化)
@@ -535,6 +544,49 @@ router.get('/auth/devices', mobileAuthMiddleware, async (req, res) => {
   }
 });
 
+// 移动端登出接口
+// 注意：移动端登出主要依赖客户端清除token，服务器端仅记录登出事件
+// 因为unifiedLogin不创建session，所以这里简化处理
+router.post('/auth/logout', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: '未提供认证token'
+      });
+    }
+
+    // 尝试验证token并提取用户信息（仅用于日志记录）
+    try {
+      const { verifyToken } = await import('../utils/jwt.js');
+      const decoded = verifyToken(token);
+
+      console.log('📱 移动端登出:', {
+        userId: decoded.userId,
+        userType: decoded.type,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      // Token验证失败也允许登出（可能已过期）
+      console.log('⚠️ Token已失效的登出请求');
+    }
+
+    // 移动端登出成功响应
+    res.json({
+      success: true,
+      message: '登出成功'
+    });
+  } catch (error) {
+    console.error('移动端登出失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '登出失败，请重试'
+    });
+  }
+});
+
 // 批量权限检查接口
 router.post('/permissions/batch-check', mobileAuthMiddleware, async (req, res) => {
   try {
@@ -646,6 +698,23 @@ router.use('/work-types', workTypesRoutes);
 
 // 时间统计路由
 router.use('/time-stats', timeStatsRoutes);
+
+// 原料类型管理路由
+router.use('/materials', mobileAuthMiddleware, materialRoutes);
+
+// 🆕 生产计划管理系统路由
+router.use('/products', mobileAuthMiddleware, productTypeRoutes);           // 产品类型管理
+router.use('/conversions', mobileAuthMiddleware, conversionRoutes);         // 转换率管理
+router.use('/suppliers', mobileAuthMiddleware, supplierRoutes);             // 供应商管理
+router.use('/customers', mobileAuthMiddleware, customerRoutes);             // 客户管理
+router.use('/material-batches', mobileAuthMiddleware, materialBatchRoutes); // 原材料批次管理
+router.use('/production-plans', mobileAuthMiddleware, productionPlanRoutes); // 生产计划管理
+
+// 工厂设置路由（含AI设置管理）
+router.use('/factory-settings', factorySettingsRoutes);
+
+// 员工列表路由
+router.get('/employees', mobileAuthMiddleware, getEmployees);
 
 // 移动端健康检查
 router.get('/health', (req, res) => {

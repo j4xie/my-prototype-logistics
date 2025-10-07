@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>手机号验证 - 白垩纪食品溯源系统</title>
+    <link rel="stylesheet" href="../../assets/css/common.css">
+    <link rel="stylesheet" href="../../assets/css/flow-annotations.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 16px;
+            max-width: 428px;
+            margin: 0 auto;
+        }
+
+        .register-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .register-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 24px 32px 24px;
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .back-button:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+
+        .register-header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .register-header .subtitle {
+            opacity: 0.9;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .progress-indicator {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .progress-step {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .progress-step.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .progress-divider {
+            width: 32px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .register-body {
+            padding: 32px 24px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .phone-input-wrapper {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .country-code-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 14px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 48px;
+            white-space: nowrap;
+        }
+
+        .country-code-selector:active {
+            border-color: #667eea;
+            background: #f5f7ff;
+        }
+
+        .country-flag {
+            font-size: 20px;
+        }
+
+        .country-code {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .dropdown-arrow {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .phone-input {
+            flex: 1;
+            padding: 14px 16px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            min-height: 48px;
+        }
+
+        .phone-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .verification-code-section {
+            display: none;
+            margin-bottom: 24px;
+        }
+
+        .verification-code-section.visible {
+            display: block;
+        }
+
+        .verification-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .code-digit {
+            width: 48px;
+            height: 52px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .code-digit:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .code-digit.filled {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .resend-timer {
+            text-align: center;
+            font-size: 14px;
+            color: #999;
+        }
+
+        .resend-timer.clickable {
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .resend-timer.clickable:hover {
+            text-decoration: underline;
+        }
+
+        .btn-get-code {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 52px;
+            margin-bottom: 24px;
+        }
+
+        .btn-get-code:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-get-code:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-verify {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 52px;
+            margin-bottom: 24px;
+        }
+
+        .btn-verify:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(81, 207, 102, 0.4);
+        }
+
+        .btn-verify:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .login-prompt {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .login-prompt a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-prompt a:hover {
+            text-decoration: underline;
+        }
+
+        .info-message {
+            background: rgba(24, 144, 255, 0.1);
+            border-left: 3px solid #1890ff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #595959;
+            line-height: 1.6;
+        }
+
+        .info-message-title {
+            font-weight: 600;
+            color: #1890ff;
+            margin-bottom: 4px;
+        }
+
+        /* 流程标注 */
+        .phone-input-wrapper {
+            position: relative;
+        }
+
+        .btn-get-code {
+            position: relative;
+        }
+
+        .login-prompt {
+            position: relative;
+        }
+    </style>
+    <link rel="stylesheet" href="../../assets/css/mobile.css">
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-header">
+            <button class="back-button clickable-hotspot" data-flow-to="返回登录页" onclick="navigateToPage('login.html')">
+                ←
+            </button>
+            <h1>手机号验证</h1>
+            <p class="subtitle">第一步 / 共两步</p>
+            <div class="progress-indicator">
+                <div class="progress-step active">1</div>
+                <div class="progress-divider"></div>
+                <div class="progress-step">2</div>
+            </div>
+        </div>
+
+        <div class="register-body">
+            <div class="info-message">
+                <div class="info-message-title">📱 验证说明</div>
+                请使用已加入白名单的手机号进行注册。系统将发送6位验证码到您的手机。
+            </div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label">手机号</label>
+                    <div class="phone-input-wrapper clickable-hotspot" data-flow-to="输入后点击获取验证码">
+                        <div class="country-code-selector">
+                            <span class="country-flag">🇨🇳</span>
+                            <span class="country-code">+86</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </div>
+                        <input type="tel"
+                               class="phone-input"
+                               placeholder="请输入手机号"
+                               id="phoneNumber"
+                               maxlength="11"
+                               pattern="[0-9]*">
+                    </div>
+                </div>
+
+                <button type="button"
+                        class="btn-get-code clickable-hotspot"
+                        id="getCodeBtn"
+                        data-flow-to="验证通过跳转到注册第二步">
+                    获取验证码
+                </button>
+
+                <div class="verification-code-section" id="verificationSection">
+                    <div class="form-group">
+                        <label class="form-label">验证码</label>
+                        <div class="verification-inputs">
+                            <input type="text" class="code-digit" maxlength="1" pattern="[0-9]*">
+                            <input type="text" class="code-digit" maxlength="1" pattern="[0-9]*">
+                            <input type="text" class="code-digit" maxlength="1" pattern="[0-9]*">
+                            <input type="text" class="code-digit" maxlength="1" pattern="[0-9]*">
+                            <input type="text" class="code-digit" maxlength="1" pattern="[0-9]*">
+                            <input type="text" class="code-digit" maxlength="1" pattern="[0-9]*">
+                        </div>
+                        <div class="resend-timer" id="resendTimer">
+                            60秒后重新发送
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-verify" id="verifyBtn">
+                        验证并继续
+                    </button>
+                </div>
+
+                <div class="login-prompt clickable-hotspot" data-flow-to="返回登录页">
+                    已有账号？<a href="login.html">立即登录</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 验证码倒计时
+        let countdown = 60;
+        let countdownTimer = null;
+
+        // 获取验证码按钮
+        document.getElementById('getCodeBtn').addEventListener('click', function() {
+            const phoneNumber = document.getElementById('phoneNumber').value;
+
+            // 验证手机号
+            if (!phoneNumber || phoneNumber.length !== 11) {
+                alert('请输入正确的11位手机号');
+                return;
+            }
+
+            // 禁用按钮
+            this.disabled = true;
+            this.textContent = '发送中...';
+
+            // 模拟API调用
+            setTimeout(() => {
+                // 显示验证码输入区
+                document.getElementById('verificationSection').classList.add('visible');
+
+                // 聚焦到第一个验证码输入框
+                document.querySelector('.code-digit').focus();
+
+                // 更新按钮状态
+                this.textContent = '已发送验证码';
+
+                // 开始倒计时
+                startCountdown();
+
+                alert('验证码已发送到您的手机（模拟）：123456');
+            }, 1000);
+        });
+
+        // 倒计时函数
+        function startCountdown() {
+            countdown = 60;
+            const timerEl = document.getElementById('resendTimer');
+            const getCodeBtn = document.getElementById('getCodeBtn');
+
+            countdownTimer = setInterval(() => {
+                countdown--;
+                timerEl.textContent = `${countdown}秒后重新发送`;
+
+                if (countdown <= 0) {
+                    clearInterval(countdownTimer);
+                    timerEl.textContent = '重新发送验证码';
+                    timerEl.classList.add('clickable');
+                    getCodeBtn.disabled = false;
+                    getCodeBtn.textContent = '重新获取验证码';
+
+                    // 添加重新发送点击事件
+                    timerEl.onclick = function() {
+                        if (this.classList.contains('clickable')) {
+                            this.classList.remove('clickable');
+                            getCodeBtn.click();
+                        }
+                    };
+                }
+            }, 1000);
+        }
+
+        // 验证码输入框自动跳转
+        const codeInputs = document.querySelectorAll('.code-digit');
+        codeInputs.forEach((input, index) => {
+            // 输入时自动跳转到下一个
+            input.addEventListener('input', function(e) {
+                if (this.value.length === 1) {
+                    this.classList.add('filled');
+                    if (index < codeInputs.length - 1) {
+                        codeInputs[index + 1].focus();
+                    }
+
+                    // 检查是否全部填写完成
+                    checkCodeComplete();
+                } else {
+                    this.classList.remove('filled');
+                }
+            });
+
+            // 退格键返回上一个
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && this.value === '' && index > 0) {
+                    codeInputs[index - 1].focus();
+                    codeInputs[index - 1].value = '';
+                    codeInputs[index - 1].classList.remove('filled');
+                }
+            });
+
+            // 只允许输入数字
+            input.addEventListener('keypress', function(e) {
+                if (!/[0-9]/.test(e.key)) {
+                    e.preventDefault();
+                }
+            });
+
+            // 粘贴处理
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pasteData = e.clipboardData.getData('text').slice(0, 6);
+                const digits = pasteData.split('');
+
+                digits.forEach((digit, i) => {
+                    if (codeInputs[i] && /[0-9]/.test(digit)) {
+                        codeInputs[i].value = digit;
+                        codeInputs[i].classList.add('filled');
+                    }
+                });
+
+                if (digits.length > 0) {
+                    const lastIndex = Math.min(digits.length - 1, 5);
+                    codeInputs[lastIndex].focus();
+                }
+
+                checkCodeComplete();
+            });
+        });
+
+        // 检查验证码是否填写完整
+        function checkCodeComplete() {
+            const code = Array.from(codeInputs).map(input => input.value).join('');
+            const verifyBtn = document.getElementById('verifyBtn');
+
+            if (code.length === 6) {
+                verifyBtn.disabled = false;
+            } else {
+                verifyBtn.disabled = true;
+            }
+        }
+
+        // 验证按钮
+        document.getElementById('verifyBtn').addEventListener('click', function() {
+            const code = Array.from(codeInputs).map(input => input.value).join('');
+            const phoneNumber = document.getElementById('phoneNumber').value;
+
+            if (code.length !== 6) {
+                alert('请输入完整的6位验证码');
+                return;
+            }
+
+            // 禁用按钮
+            this.disabled = true;
+            this.textContent = '验证中...';
+
+            // 模拟API验证
+            setTimeout(() => {
+                // 验证成功，跳转到第二步
+                if (code === '123456') {
+                    alert('验证成功！即将跳转到注册第二步');
+                    // 在实际应用中，这里会跳转到 register-phase2.html
+                    // window.location.href = 'register-phase2.html?phone=' + encodeURIComponent(phoneNumber);
+
+                    // 演示用：重置表单
+                    this.textContent = '验证并继续';
+                    this.disabled = false;
+                } else {
+                    alert('验证码错误，请重新输入（正确验证码：123456）');
+                    codeInputs.forEach(input => {
+                        input.value = '';
+                        input.classList.remove('filled');
+                    });
+                    codeInputs[0].focus();
+                    this.textContent = '验证并继续';
+                    this.disabled = false;
+                }
+            }, 1000);
+        });
+
+        // 手机号输入框只允许数字
+        document.getElementById('phoneNumber').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+
+        // 页面跳转函数
+        function navigateToPage(page) {
+            window.location.href = page;
+        }
+    </script>
+    <script src="../../assets/js/flow-annotations.js"></script>
+    <script>
+        // 初始化流程标注（页面加载后）
+        document.addEventListener('DOMContentLoaded', function() {
+            // 可以在这里添加额外的流程标注配置
+            console.log('注册第一步页面已加载，流程标注系统已启用');
+        });
+    </script>
+</body>
+</html>

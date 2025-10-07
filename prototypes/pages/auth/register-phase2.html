@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>完善信息 - 白垩纪食品溯源系统</title>
+    <link rel="stylesheet" href="../../assets/css/common.css">
+    <link rel="stylesheet" href="../../assets/css/flow-annotations.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 16px;
+            max-width: 428px;
+            margin: 0 auto;
+        }
+
+        .register-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .register-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 24px 32px 24px;
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .back-button:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+
+        .register-header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .register-header .subtitle {
+            opacity: 0.9;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .progress-indicator {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .progress-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .progress-step.completed .progress-circle {
+            background: #52c41a;
+            color: white;
+        }
+
+        .progress-step.completed .progress-circle::after {
+            content: '✓';
+            position: absolute;
+            font-size: 16px;
+        }
+
+        .progress-step.active .progress-circle {
+            background: white;
+            color: #667eea;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .progress-divider {
+            width: 32px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .status-badge {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(82, 196, 26, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+        }
+
+        .register-body {
+            padding: 32px 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .form-label .required {
+            color: #ff4d4f;
+            margin-left: 2px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            min-height: 48px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-control.error {
+            border-color: #ff4d4f;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 20px;
+            color: #999;
+            user-select: none;
+        }
+
+        .password-toggle:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        .form-hint.error {
+            color: #ff4d4f;
+        }
+
+        .form-hint.success {
+            color: #52c41a;
+        }
+
+        .password-strength {
+            margin-top: 8px;
+            display: none;
+        }
+
+        .password-strength.visible {
+            display: block;
+        }
+
+        .strength-bar {
+            height: 4px;
+            background: #f0f0f0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s;
+            border-radius: 2px;
+        }
+
+        .strength-fill.weak {
+            width: 33%;
+            background: #ff4d4f;
+        }
+
+        .strength-fill.medium {
+            width: 66%;
+            background: #faad14;
+        }
+
+        .strength-fill.strong {
+            width: 100%;
+            background: #52c41a;
+        }
+
+        .strength-text {
+            font-size: 12px;
+        }
+
+        .strength-text.weak {
+            color: #ff4d4f;
+        }
+
+        .strength-text.medium {
+            color: #faad14;
+        }
+
+        .strength-text.strong {
+            color: #52c41a;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 14px 40px 14px 16px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            min-height: 48px;
+            background: white;
+            cursor: pointer;
+            appearance: none;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .select-arrow {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .agreement-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .agreement-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .agreement-text {
+            font-size: 13px;
+            color: #595959;
+            line-height: 1.6;
+        }
+
+        .agreement-text a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .agreement-text a:hover {
+            text-decoration: underline;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 16px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 52px;
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.98);
+            background: #f5f7ff;
+        }
+
+        .btn-primary {
+            flex: 2;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 52px;
+            position: relative;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .flow-annotation {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .flow-arrow {
+            color: #52c41a;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .flow-hint {
+            color: #8c8c8c;
+            font-size: 12px;
+        }
+
+        .login-prompt {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .login-prompt a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-prompt a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <link rel="stylesheet" href="../../assets/css/mobile.css">
+</head>
+<body>
+    <div class="status-badge">
+        ✓ 手机验证已完成，请填写用户信息
+    </div>
+
+    <div class="register-container">
+        <div class="register-header">
+            <button class="back-button clickable-hotspot" data-flow-to="返回上一步" onclick="navigateToPage('register-phase1.html')">
+                ←
+            </button>
+            <h1>完善信息</h1>
+            <p class="subtitle">第二步 / 共两步</p>
+            <div class="progress-indicator">
+                <div class="progress-step completed">
+                    <div class="progress-circle"></div>
+                    <div class="progress-label">手机验证</div>
+                </div>
+                <div class="progress-divider"></div>
+                <div class="progress-step active">
+                    <div class="progress-circle">2</div>
+                    <div class="progress-label">完善信息</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="register-body">
+            <form id="registerForm">
+                <!-- 用户名 -->
+                <div class="form-group">
+                    <label class="form-label">
+                        用户名 <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text"
+                               class="form-control"
+                               placeholder="请输入用户名（字母数字组合）"
+                               id="username"
+                               autocomplete="username">
+                    </div>
+                    <div class="form-hint" id="usernameHint">
+                        4-20位字符，支持字母、数字、下划线
+                    </div>
+                </div>
+
+                <!-- 密码 -->
+                <div class="form-group">
+                    <label class="form-label">
+                        密码 <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password"
+                               class="form-control"
+                               placeholder="请输入密码（8-20位）"
+                               id="password"
+                               autocomplete="new-password">
+                        <span class="password-toggle" id="passwordToggle1">👁️</span>
+                    </div>
+                    <div class="password-strength" id="passwordStrength">
+                        <div class="strength-bar">
+                            <div class="strength-fill" id="strengthFill"></div>
+                        </div>
+                        <div class="strength-text" id="strengthText">密码强度：弱</div>
+                    </div>
+                    <div class="form-hint">
+                        8-20位，包含大小写字母、数字和特殊字符
+                    </div>
+                </div>
+
+                <!-- 确认密码 -->
+                <div class="form-group">
+                    <label class="form-label">
+                        确认密码 <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password"
+                               class="form-control"
+                               placeholder="请再次输入密码"
+                               id="confirmPassword"
+                               autocomplete="new-password">
+                        <span class="password-toggle" id="passwordToggle2">👁️</span>
+                    </div>
+                    <div class="form-hint" id="confirmPasswordHint">
+                        请确保两次输入的密码一致
+                    </div>
+                </div>
+
+                <!-- 姓名 -->
+                <div class="form-group">
+                    <label class="form-label">
+                        姓名 <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text"
+                               class="form-control"
+                               placeholder="请输入真实姓名"
+                               id="fullName"
+                               autocomplete="name">
+                    </div>
+                    <div class="form-hint">
+                        请填写真实姓名，用于系统记录
+                    </div>
+                </div>
+
+                <!-- 部门选择 -->
+                <div class="form-group">
+                    <label class="form-label">
+                        部门 <span class="required">*</span>
+                    </label>
+                    <div class="select-wrapper">
+                        <select class="form-select" id="department">
+                            <option value="">请选择所属部门</option>
+                            <option value="production">📦 生产部</option>
+                            <option value="quality">✅ 质检部</option>
+                            <option value="warehouse">📦 仓储部</option>
+                            <option value="management">💼 管理部</option>
+                        </select>
+                        <span class="select-arrow">▼</span>
+                    </div>
+                </div>
+
+                <!-- 工种选择 -->
+                <div class="form-group">
+                    <label class="form-label">
+                        工种 <span class="required">*</span>
+                    </label>
+                    <div class="select-wrapper">
+                        <select class="form-select" id="jobType">
+                            <option value="">请选择工种</option>
+                            <option value="worker">👷 生产工</option>
+                            <option value="inspector">🔍 质检员</option>
+                            <option value="keeper">📋 仓管员</option>
+                            <option value="admin">💼 管理员</option>
+                        </select>
+                        <span class="select-arrow">▼</span>
+                    </div>
+                </div>
+
+                <!-- 用户协议 -->
+                <div class="agreement-wrapper">
+                    <input type="checkbox"
+                           class="agreement-checkbox"
+                           id="agreement">
+                    <label class="agreement-text" for="agreement">
+                        我已阅读并同意 <a href="#">《用户协议》</a> 和 <a href="#">《隐私政策》</a>
+                    </label>
+                </div>
+
+                <!-- 流程标注 -->
+                <div class="flow-annotation">
+                    <div class="flow-arrow">↓ 点击完成注册</div>
+                    <div class="flow-hint">注册成功后跳转到 → 设备激活页</div>
+                </div>
+
+                <!-- 按钮组 -->
+                <div class="button-group">
+                    <button type="button"
+                            class="btn-secondary clickable-hotspot"
+                            data-flow-to="返回手机验证步骤"
+                            onclick="navigateToPage('register-phase1.html')">
+                        上一步
+                    </button>
+                    <button type="submit"
+                            class="btn-primary clickable-hotspot"
+                            id="submitBtn"
+                            data-flow-to="完成注册跳转激活页"
+                            disabled>
+                        完成注册
+                    </button>
+                </div>
+
+                <div class="login-prompt clickable-hotspot" data-flow-to="返回登录页">
+                    已有账号？<a href="login.html">立即登录</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 表单验证状态
+        const formState = {
+            username: false,
+            password: false,
+            confirmPassword: false,
+            fullName: false,
+            department: false,
+            jobType: false,
+            agreement: false
+        };
+
+        // 密码显示/隐藏切换
+        document.getElementById('passwordToggle1').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                this.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                this.textContent = '👁️';
+            }
+        });
+
+        document.getElementById('passwordToggle2').addEventListener('click', function() {
+            const passwordInput = document.getElementById('confirmPassword');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                this.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                this.textContent = '👁️';
+            }
+        });
+
+        // 用户名验证
+        document.getElementById('username').addEventListener('input', function(e) {
+            const value = this.value;
+            const hint = document.getElementById('usernameHint');
+            const regex = /^[a-zA-Z0-9_]{4,20}$/;
+
+            if (!value) {
+                this.classList.remove('error');
+                hint.className = 'form-hint';
+                hint.textContent = '4-20位字符，支持字母、数字、下划线';
+                formState.username = false;
+            } else if (!regex.test(value)) {
+                this.classList.add('error');
+                hint.className = 'form-hint error';
+                hint.textContent = '用户名格式不正确';
+                formState.username = false;
+            } else {
+                this.classList.remove('error');
+                hint.className = 'form-hint success';
+                hint.textContent = '✓ 用户名可用';
+                formState.username = true;
+            }
+
+            checkFormValidity();
+        });
+
+        // 密码强度检测
+        document.getElementById('password').addEventListener('input', function(e) {
+            const value = this.value;
+            const strengthSection = document.getElementById('passwordStrength');
+            const strengthFill = document.getElementById('strengthFill');
+            const strengthText = document.getElementById('strengthText');
+
+            if (!value) {
+                strengthSection.classList.remove('visible');
+                formState.password = false;
+                checkFormValidity();
+                return;
+            }
+
+            strengthSection.classList.add('visible');
+
+            // 计算密码强度
+            let strength = 0;
+            if (value.length >= 8) strength++;
+            if (value.length >= 12) strength++;
+            if (/[a-z]/.test(value) && /[A-Z]/.test(value)) strength++;
+            if (/[0-9]/.test(value)) strength++;
+            if (/[^a-zA-Z0-9]/.test(value)) strength++;
+
+            // 更新强度显示
+            strengthFill.className = 'strength-fill';
+            strengthText.className = 'strength-text';
+
+            if (strength <= 2) {
+                strengthFill.classList.add('weak');
+                strengthText.classList.add('weak');
+                strengthText.textContent = '密码强度：弱';
+                formState.password = false;
+            } else if (strength <= 3) {
+                strengthFill.classList.add('medium');
+                strengthText.classList.add('medium');
+                strengthText.textContent = '密码强度：中等';
+                formState.password = value.length >= 8;
+            } else {
+                strengthFill.classList.add('strong');
+                strengthText.classList.add('strong');
+                strengthText.textContent = '密码强度：强';
+                formState.password = true;
+            }
+
+            // 验证确认密码
+            validateConfirmPassword();
+            checkFormValidity();
+        });
+
+        // 确认密码验证
+        document.getElementById('confirmPassword').addEventListener('input', validateConfirmPassword);
+
+        function validateConfirmPassword() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const confirmInput = document.getElementById('confirmPassword');
+            const hint = document.getElementById('confirmPasswordHint');
+
+            if (!confirmPassword) {
+                confirmInput.classList.remove('error');
+                hint.className = 'form-hint';
+                hint.textContent = '请确保两次输入的密码一致';
+                formState.confirmPassword = false;
+            } else if (password !== confirmPassword) {
+                confirmInput.classList.add('error');
+                hint.className = 'form-hint error';
+                hint.textContent = '✗ 两次密码输入不一致';
+                formState.confirmPassword = false;
+            } else {
+                confirmInput.classList.remove('error');
+                hint.className = 'form-hint success';
+                hint.textContent = '✓ 密码匹配';
+                formState.confirmPassword = true;
+            }
+
+            checkFormValidity();
+        }
+
+        // 姓名验证
+        document.getElementById('fullName').addEventListener('input', function(e) {
+            const value = this.value.trim();
+            formState.fullName = value.length >= 2;
+            checkFormValidity();
+        });
+
+        // 部门选择验证
+        document.getElementById('department').addEventListener('change', function(e) {
+            formState.department = this.value !== '';
+            checkFormValidity();
+        });
+
+        // 工种选择验证
+        document.getElementById('jobType').addEventListener('change', function(e) {
+            formState.jobType = this.value !== '';
+            checkFormValidity();
+        });
+
+        // 协议复选框
+        document.getElementById('agreement').addEventListener('change', function(e) {
+            formState.agreement = this.checked;
+            checkFormValidity();
+        });
+
+        // 检查表单整体有效性
+        function checkFormValidity() {
+            const submitBtn = document.getElementById('submitBtn');
+            const isValid = Object.values(formState).every(val => val === true);
+            submitBtn.disabled = !isValid;
+        }
+
+        // 表单提交
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // 收集表单数据
+            const formData = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                fullName: document.getElementById('fullName').value,
+                department: document.getElementById('department').value,
+                jobType: document.getElementById('jobType').value
+            };
+
+            // 禁用提交按钮
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '注册中...';
+
+            // 模拟API调用
+            setTimeout(() => {
+                console.log('注册数据：', formData);
+                alert('注册成功！\n\n即将跳转到设备激活页面\n\n用户名：' + formData.username + '\n姓名：' + formData.fullName);
+
+                // 实际应用中跳转到设备激活页
+                // window.location.href = 'activation.html';
+
+                // 演示用：重置按钮
+                submitBtn.textContent = '完成注册';
+                submitBtn.disabled = false;
+            }, 1500);
+        });
+
+        // 页面跳转函数
+        function navigateToPage(page) {
+            window.location.href = page;
+        }
+
+        // 页面加载时的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 可以从URL参数获取手机号等信息
+            const urlParams = new URLSearchParams(window.location.search);
+            const phone = urlParams.get('phone');
+
+            if (phone) {
+                console.log('来自手机验证：', phone);
+            }
+
+            console.log('注册第二步页面已加载');
+        });
+    </script>
+    <script src="../../assets/js/flow-annotations.js"></script>
+    <script src="../../assets/js/visual-flow.js"></script>
+</body>
+</html>

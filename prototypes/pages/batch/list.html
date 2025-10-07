@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>批次列表 - 白垩纪食品溯源系统</title>
+    <link rel="stylesheet" href="../../assets/css/common.css">
+    <link rel="stylesheet" href="../../assets/css/mobile.css">
+    <style>
+        /* 移动端布局 */
+        body {
+            max-width: 428px;
+            margin: 0 auto;
+        }
+
+        .filter-bar {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .filter-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-tab {
+            padding: 10px 16px;
+            border-radius: 20px;
+            border: 1px solid #d9d9d9;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            white-space: nowrap;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .filter-tab:active {
+            transform: scale(0.95);
+        }
+
+        .filter-tab.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .filter-tab .count {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 0 6px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .search-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .search-input-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+
+        .batch-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .batch-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .batch-card:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            border-color: #1890ff;
+        }
+
+        .batch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+
+        .batch-number {
+            font-size: 16px;
+            font-weight: bold;
+            color: #262626;
+        }
+
+        .batch-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .info-item {
+            font-size: 13px;
+        }
+
+        .info-label {
+            color: #8c8c8c;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            color: #262626;
+            font-weight: 500;
+        }
+
+        .batch-progress {
+            margin-bottom: 12px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #52c41a 0%, #95de64 100%);
+            transition: width 0.3s;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .action-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+
+        .action-btn-primary {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+
+        .action-btn-primary:hover {
+            background: #096dd9;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 72px; /* 底部导航栏上方 */
+            right: 16px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .fab:active {
+            transform: scale(0.9);
+        }
+    </style>
+    <link rel="stylesheet" href="../../assets/css/mobile.css">
+</head>
+<body>
+    <div class="page-container">
+        <!-- 页面头部 - 移动端简化版 -->
+        <div class="page-header">
+            <div class="navbar">
+                <a href="../../index.html" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(24,144,255,0.1);">
+                    <span style="font-size: 20px;">🦕</span>
+                </a>
+                <h1 style="font-size: 18px; font-weight: 600; color: #262626; flex: 1; text-align: center;">批次管理</h1>
+                <div class="avatar">张</div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="page-content">
+            <!-- 筛选栏 -->
+            <div class="filter-bar">
+                <div class="filter-tabs">
+                    <div class="filter-tab active">
+                        全部
+                        <span class="count">24</span>
+                    </div>
+                    <div class="filter-tab">
+                        计划中
+                        <span class="count">3</span>
+                    </div>
+                    <div class="filter-tab">
+                        进行中
+                        <span class="count">8</span>
+                    </div>
+                    <div class="filter-tab">
+                        质检中
+                        <span class="count">5</span>
+                    </div>
+                    <div class="filter-tab">
+                        已完成
+                        <span class="count">7</span>
+                    </div>
+                    <div class="filter-tab">
+                        已失败
+                        <span class="count">1</span>
+                    </div>
+                </div>
+
+                <div class="search-controls" style="flex-direction: column; gap: 12px;">
+                    <input type="text" class="search-input" placeholder="🔍 搜索批次号、产品类型..." style="width: 100%; min-height: 44px; font-size: 15px; padding: 12px 16px; border-radius: 10px;">
+                    <select class="form-control" style="width: 100%; min-height: 44px; font-size: 15px;">
+                        <option>按开始时间排序</option>
+                        <option>按产量排序</option>
+                        <option>按成本排序</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 批次卡片网格 -->
+            <div class="batch-grid">
+                <!-- 批次卡片 1 - 进行中 -->
+                <div class="batch-card" onclick="window.location.href='detail.html'">
+                    <div class="batch-header">
+                        <div>
+                            <div class="batch-number">FAC001-20250105-001</div>
+                            <div class="text-muted" style="font-size: 13px; margin-top: 4px;">速冻鱼排</div>
+                        </div>
+                        <span class="status-badge status-progress">进行中</span>
+                    </div>
+
+                    <div class="batch-info-grid">
+                        <div class="info-item">
+                            <div class="info-label">负责人</div>
+                            <div class="info-value">王师傅</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">开始时间</div>
+                            <div class="info-value">01-05 08:00</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">目标产量</div>
+                            <div class="info-value">500 kg</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">当前产量</div>
+                            <div class="info-value">340 kg</div>
+                        </div>
+                    </div>
+
+                    <div class="batch-progress">
+                        <div class="progress-label">
+                            <span>生产进度</span>
+                            <span>68%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 68%"></div>
+                        </div>
+                    </div>
+
+                    <div class="batch-actions">
+                        <button class="action-btn">📊 查看详情</button>
+                        <button class="action-btn action-btn-primary">✅ 完成生产</button>
+                    </div>
+                </div>
+
+                <!-- 批次卡片 2 - 质检中 -->
+                <div class="batch-card">
+                    <div class="batch-header">
+                        <div>
+                            <div class="batch-number">FAC001-20250104-015</div>
+                            <div class="text-muted" style="font-size: 13px; margin-top: 4px;">冷冻鱼丸</div>
+                        </div>
+                        <span class="status-badge status-check">质检中</span>
+                    </div>
+
+                    <div class="batch-info-grid">
+                        <div class="info-item">
+                            <div class="info-label">负责人</div>
+                            <div class="info-value">李师傅</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">完成时间</div>
+                            <div class="info-value">01-04 17:30</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">实际产量</div>
+                            <div class="info-value">450 kg</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">成本</div>
+                            <div class="info-value">¥5,625</div>
+                        </div>
+                    </div>
+
+                    <div class="batch-progress">
+                        <div class="progress-label">
+                            <span>生产进度</span>
+                            <span>100%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 100%"></div>
+                        </div>
+                    </div>
+
+                    <div class="batch-actions">
+                        <button class="action-btn">📊 查看详情</button>
+                        <button class="action-btn">✅ 创建质检</button>
+                    </div>
+                </div>
+
+                <!-- 批次卡片 3 - 已完成 -->
+                <div class="batch-card">
+                    <div class="batch-header">
+                        <div>
+                            <div class="batch-number">FAC001-20250103-008</div>
+                            <div class="text-muted" style="font-size: 13px; margin-top: 4px;">速冻虾仁</div>
+                        </div>
+                        <span class="status-badge status-completed">已完成</span>
+                    </div>
+
+                    <div class="batch-info-grid">
+                        <div class="info-item">
+                            <div class="info-label">负责人</div>
+                            <div class="info-value">赵师傅</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">完成时间</div>
+                            <div class="info-value">01-03 16:00</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">实际产量</div>
+                            <div class="info-value">300 kg</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">单位成本</div>
+                            <div class="info-value">¥18.5/kg</div>
+                        </div>
+                    </div>
+
+                    <div class="batch-progress">
+                        <div class="progress-label">
+                            <span>质检评分</span>
+                            <span class="text-success">95分</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 95%; background: linear-gradient(90deg, #52c41a 0%, #95de64 100%);"></div>
+                        </div>
+                    </div>
+
+                    <div class="batch-actions">
+                        <button class="action-btn">📊 查看详情</button>
+                        <button class="action-btn">🤖 AI分析</button>
+                    </div>
+                </div>
+
+                <!-- 批次卡片 4 - 计划中 -->
+                <div class="batch-card">
+                    <div class="batch-header">
+                        <div>
+                            <div class="batch-number">FAC001-20250105-002</div>
+                            <div class="text-muted" style="font-size: 13px; margin-top: 4px;">速冻带鱼段</div>
+                        </div>
+                        <span class="status-badge status-planning">计划中</span>
+                    </div>
+
+                    <div class="batch-info-grid">
+                        <div class="info-item">
+                            <div class="info-label">负责人</div>
+                            <div class="info-value">陈师傅</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">预计开始</div>
+                            <div class="info-value">01-06 08:00</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">目标产量</div>
+                            <div class="info-value">600 kg</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">预估成本</div>
+                            <div class="info-value">¥7,800</div>
+                        </div>
+                    </div>
+
+                    <div class="batch-progress">
+                        <div class="progress-label">
+                            <span>生产进度</span>
+                            <span>0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="batch-actions">
+                        <button class="action-btn">📊 查看详情</button>
+                        <button class="action-btn action-btn-primary">▶️ 开始生产</button>
+                        <button class="action-btn">✏️ 编辑</button>
+                    </div>
+                </div>
+
+                <!-- 批次卡片 5 - 已失败 -->
+                <div class="batch-card" style="opacity: 0.8;">
+                    <div class="batch-header">
+                        <div>
+                            <div class="batch-number">FAC001-20250102-003</div>
+                            <div class="text-muted" style="font-size: 13px; margin-top: 4px;">速冻鱼排</div>
+                        </div>
+                        <span class="status-badge status-failed">已失败</span>
+                    </div>
+
+                    <div class="batch-info-grid">
+                        <div class="info-item">
+                            <div class="info-label">负责人</div>
+                            <div class="info-value">张师傅</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">失败时间</div>
+                            <div class="info-value">01-02 14:20</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">失败原因</div>
+                            <div class="info-value text-danger">质检不合格</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">损失成本</div>
+                            <div class="info-value text-danger">¥4,200</div>
+                        </div>
+                    </div>
+
+                    <div style="padding: 12px; background: #fff1f0; border-radius: 6px; margin-top: 12px;">
+                        <div style="font-size: 13px; color: #cf1322;">
+                            ⚠️ 产品微生物指标超标，已做报废处理
+                        </div>
+                    </div>
+
+                    <div class="batch-actions" style="margin-top: 12px;">
+                        <button class="action-btn">📊 查看详情</button>
+                        <button class="action-btn">📝 原因分析</button>
+                    </div>
+                </div>
+
+                <!-- 批次卡片 6 - 已暂停 -->
+                <div class="batch-card">
+                    <div class="batch-header">
+                        <div>
+                            <div class="batch-number">FAC001-20250105-003</div>
+                            <div class="text-muted" style="font-size: 13px; margin-top: 4px;">速冻鱿鱼圈</div>
+                        </div>
+                        <span class="status-badge status-paused">已暂停</span>
+                    </div>
+
+                    <div class="batch-info-grid">
+                        <div class="info-item">
+                            <div class="info-label">负责人</div>
+                            <div class="info-value">孙师傅</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">暂停时间</div>
+                            <div class="info-value">01-05 11:30</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">当前产量</div>
+                            <div class="info-value">180 kg</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">目标产量</div>
+                            <div class="info-value">400 kg</div>
+                        </div>
+                    </div>
+
+                    <div style="padding: 12px; background: #fff7e6; border-radius: 6px; margin-top: 12px;">
+                        <div style="font-size: 13px; color: #fa8c16;">
+                            ⚠️ 设备故障：速冻机A出现异常告警，维修中
+                        </div>
+                    </div>
+
+                    <div class="batch-actions" style="margin-top: 12px;">
+                        <button class="action-btn">📊 查看详情</button>
+                        <button class="action-btn action-btn-primary">▶️ 恢复生产</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 创建批次浮动按钮 -->
+        <button class="fab" onclick="window.location.href='create.html'" title="创建新批次">
+            +
+        </button>
+
+        <!-- 底部导航栏 -->
+        <div class="bottom-nav">
+            <a href="../dashboard/overview.html" class="bottom-nav-item">
+                <div class="bottom-nav-icon">📊</div>
+                <div>概览</div>
+            </a>
+            <a href="list.html" class="bottom-nav-item active">
+                <div class="bottom-nav-icon">📦</div>
+                <div>批次</div>
+            </a>
+            <a href="../quality/list.html" class="bottom-nav-item">
+                <div class="bottom-nav-icon">✅</div>
+                <div>质检</div>
+            </a>
+            <a href="../equipment/monitoring.html" class="bottom-nav-item">
+                <div class="bottom-nav-icon">⚙️</div>
+                <div>设备</div>
+            </a>
+            <a href="../cost/dashboard.html" class="bottom-nav-item">
+                <div class="bottom-nav-icon">💰</div>
+                <div>成本</div>
+            </a>
+        </div>
+    </div>
+    <script src="../../assets/js/flow-navigator.js"></script>
+</body>
+</html>

@@ -45,9 +45,19 @@ model Factory {
   systemLogs           SystemLog[]
   apiAccessLogs        ApiAccessLog[]
   reportTemplates      ReportTemplate[]
-  timeClocks           EmployeeTimeClock[]
-  workTypes            WorkType[]
-  workSessions         EmployeeWorkSession[]
+  timeClocks                EmployeeTimeClock[]
+  workTypes                 WorkType[]
+  workSessions              EmployeeWorkSession[]
+  rawMaterialTypes          RawMaterialType[]
+  productTypes              ProductType[]
+  materialProductConversions MaterialProductConversion[]
+  merchants                 Merchant[]
+  suppliers                 Supplier[]  // 供应商关联
+  customers                 Customer[]  // 客户关联
+  productionPlans           ProductionPlan[]
+  materialBatches           MaterialBatch[]  // 原材料批次关联
+  aiWeeklyQuota             Int                       @default(20) @map("ai_weekly_quota")  // AI每周使用配额
+  aiUsageLogs               AIUsageLog[]  // AI使用日志
 
   @@index([industryCode, regionCode, factoryYear], map: "idx_factory_code")
   @@index([legacyId], map: "idx_legacy_id")
@@ -64,7 +74,7 @@ model PlatformAdmin {
   email          String          @unique
   phone          String?
   fullName       String?         @map("full_name")
-  role           PlatformRole    @default(platform_operator) @map("role")
+  role           PlatformRole    @default(platform_admin) @map("role")
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
   addedWhitelist UserWhitelist[]
@@ -90,8 +100,8 @@ model UserWhitelist {
   @@unique([factoryId, phoneNumber])
   @@index([status, factoryId], map: "idx_status_factory")
   @@index([expiresAt], map: "idx_expires_at")
-  @@index([addedByPlatformId], map: "user_whitelist_added_by_platform_id_fkey")
-  @@index([addedByUserId], map: "user_whitelist_added_by_user_id_fkey")
+  @@index([addedByPlatformId], map: "idx_whitelist_added_by_platform")
+  @@index([addedByUserId], map: "idx_whitelist_added_by_user")
   @@map("user_whitelist")
 }
 
@@ -129,10 +139,23 @@ model User {
   systemLogs             SystemLog[]           @relation("SystemLogUser")
   apiAccessLogs          ApiAccessLog[]        @relation("ApiAccessUser")
   createdReportTemplates ReportTemplate[]      @relation("ReportCreator")
-  timeClocks             EmployeeTimeClock[]
-  workSessions           EmployeeWorkSession[]
-  batchWorkSessions      BatchWorkSession[]
-  factory                Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  timeClocks               EmployeeTimeClock[]
+  workSessions             EmployeeWorkSession[]
+  batchWorkSessions        BatchWorkSession[]
+  createdMaterialTypes     RawMaterialType[]         @relation("MaterialTypeCreator")
+  createdProductTypes      ProductType[]             @relation("ProductTypeCreator")
+  createdConversionRates   MaterialProductConversion[] @relation("ConversionRateCreator")
+  createdMerchants         Merchant[]                @relation("MerchantCreator")
+  createdSuppliers         Supplier[]                @relation("SupplierCreator")
+  createdCustomers         Customer[]                @relation("CustomerCreator")
+  createdProductionPlans   ProductionPlan[]          @relation("ProductionPlanCreator")
+  materialConsumptions     MaterialConsumption[]     @relation("MaterialConsumptionRecorder")
+  shipmentRecords          ShipmentRecord[]          @relation("ShipmentRecorder")
+  createdMaterialBatches   MaterialBatch[]           @relation("MaterialBatchCreator")
+  batchAdjustments         MaterialBatchAdjustment[] @relation("BatchAdjuster")
+  dailyProductionRecords   DailyProductionRecord[]   @relation("DailyRecorder")
+  aiUsageLogs              AIUsageLog[]              // AI使用日志
+  factory                  Factory                   @relation(fields: [factoryId], references: [id], onDelete: Cascade)
 
   @@unique([factoryId, username])
   @@unique([factoryId, email])
@@ -155,8 +178,8 @@ model Session {
   factory      Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([factoryId], map: "sessions_factory_id_fkey")
-  @@index([userId], map: "sessions_user_id_fkey")
+  @@index([factoryId], map: "idx_sessions_factory_id")
+  @@index([userId], map: "idx_sessions_user_id")
   @@map("sessions")
 }
 
@@ -257,6 +280,7 @@ model FactorySettings {
   passwordPolicy         Json?           @map("password_policy")
   departmentSettings     Json?           @map("department_settings")
   customPermissions      Json?           @map("custom_permissions")
+  aiSettings             Json?           @map("ai_settings")  // AI分析设置
   createdAt              DateTime        @default(now()) @map("created_at")
   updatedAt              DateTime        @updatedAt @map("updated_at")
   factory                Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
@@ -280,9 +304,7 @@ enum TempTokenType {
 }
 
 enum PlatformRole {
-  platform_super_admin
-  platform_operator
-  system_developer
+  platform_admin  // 统一的平台管理员角色，拥有所有平台权限
 
   @@map("platform_role")
 }
@@ -417,7 +439,7 @@ model ProcessingBatch {
   id             String        @id @default(uuid())
   factoryId      String        @map("factory_id")
   batchNumber    String        @unique @map("batch_number")
-  productType    String        @map("product_type")
+  productType    String?       @map("product_type")
   rawMaterials   Json?         @map("raw_materials")
   startDate      DateTime      @map("start_date") @db.Date
   endDate        DateTime?     @map("end_date") @db.Date
@@ -445,11 +467,12 @@ model ProcessingBatch {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  factory            Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  supervisor         User?                 @relation("BatchSupervisor", fields: [supervisorId], references: [id])
-  qualityInspections QualityInspection[]
-  workSessions       BatchWorkSession[]
-  equipmentUsage     BatchEquipmentUsage[]
+  factory              Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  supervisor           User?                 @relation("BatchSupervisor", fields: [supervisorId], references: [id])
+  qualityInspections   QualityInspection[]
+  workSessions         BatchWorkSession[]
+  equipmentUsage       BatchEquipmentUsage[]
+  materialConsumptions MaterialConsumption[]
 
   @@index([factoryId, batchNumber], map: "idx_factory_batch")
   @@index([status, startDate], map: "idx_batch_status")
@@ -966,4 +989,394 @@ enum MaintenanceType {
   upgrade
 
   @@map("maintenance_type")
+}
+
+// 原料类型管理表
+model RawMaterialType {
+  id          String   @id @default(uuid())
+  factoryId   String   @map("factory_id")
+  name        String   // 原料名称：鲈鱼、带鱼等
+  category    String?  // 分类：鱼类、虾蟹类、贝类等
+  unit        String   @default("kg") // 计量单位
+  description String?  @db.Text // 描述
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   Int?     @map("created_by") // 允许为空
+
+  factory          Factory                     @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  creator          User?                       @relation("MaterialTypeCreator", fields: [createdBy], references: [id])
+  conversionRates  MaterialProductConversion[]
+  materialBatches  MaterialBatch[]             // 原材料批次关联
+
+  @@unique([factoryId, name]) // 同一工厂内原料名称唯一
+  @@index([factoryId])
+  @@index([category])
+  @@map("raw_material_types")
+}
+
+// ==================== 生产计划管理系统表 ====================
+
+// 产品类型表
+model ProductType {
+  id              String   @id @default(uuid())
+  factoryId       String   @map("factory_id")
+  name            String   // 产品名称：鱼片、鱼头、鱼骨等
+  code            String   // 产品代码：用于批次编号
+  category        String?  // 分类：主产品、副产品等
+  description     String?  @db.Text
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdBy       Int?     @map("created_by")
+
+  factory         Factory                     @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  creator         User?                       @relation("ProductTypeCreator", fields: [createdBy], references: [id])
+  conversionRates MaterialProductConversion[]
+  productionPlans ProductionPlan[]
+
+  @@unique([factoryId, name])
+  @@unique([factoryId, code])
+  @@index([factoryId, isActive])
+  @@map("product_types")
+}
+
+// 原料-产品转换率表
+model MaterialProductConversion {
+  id              String   @id @default(uuid())
+  factoryId       String   @map("factory_id")
+  materialTypeId  String   @map("material_type_id")
+  productTypeId   String   @map("product_type_id")
+  conversionRate  Decimal  @map("conversion_rate") @db.Decimal(5, 2) // 转换率（百分比）
+  wastageRate     Decimal? @map("wastage_rate") @db.Decimal(5, 2)    // 损耗率
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdBy       Int?     @map("created_by")
+
+  factory         Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  materialType    RawMaterialType @relation(fields: [materialTypeId], references: [id])
+  productType     ProductType     @relation(fields: [productTypeId], references: [id])
+  creator         User?           @relation("ConversionRateCreator", fields: [createdBy], references: [id])
+
+  @@unique([materialTypeId, productTypeId])
+  @@index([factoryId])
+  @@map("material_product_conversions")
+}
+
+// 商家表 (保留用于兼容)
+model Merchant {
+  id              String   @id @default(uuid())
+  factoryId       String   @map("factory_id")
+  name            String   // 商家名称
+  code            String   // 商家代码
+  contactPerson   String?  @map("contact_person")
+  contactPhone    String?  @map("contact_phone")
+  address         String?  @db.Text
+  businessType    String?  @map("business_type")
+  creditLevel     String?  @map("credit_level")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdBy       Int?     @map("created_by")
+
+  factory         Factory          @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  creator         User?            @relation("MerchantCreator", fields: [createdBy], references: [id])
+
+  @@unique([factoryId, code])
+  @@index([factoryId, isActive])
+  @@map("merchants")
+}
+
+// 供应商表 (提供原材料)
+model Supplier {
+  id              String   @id @default(uuid())
+  factoryId       String   @map("factory_id")
+  name            String   // 供应商名称：陈老板海鲜批发
+  code            String   // 供应商代码：SUP001
+  contactPerson   String?  @map("contact_person")  // 联系人
+  contactPhone    String?  @map("contact_phone")   // 联系电话
+  address         String?  @db.Text                // 地址
+  businessType    String?  @map("business_type")   // 经营类型：水产批发、养殖场等
+  creditLevel     String?  @map("credit_level")    // 信用等级：A/B/C
+  deliveryArea    String?  @map("delivery_area")   // 配送区域
+  paymentTerms    String?  @map("payment_terms")   // 付款条款
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdBy       Int?     @map("created_by")
+
+  factory         Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  creator         User?           @relation("SupplierCreator", fields: [createdBy], references: [id])
+  materialBatches MaterialBatch[] // 提供的原材料批次
+
+  @@unique([factoryId, code])
+  @@index([factoryId, isActive])
+  @@map("suppliers")
+}
+
+// 客户表 (购买成品)
+model Customer {
+  id              String   @id @default(uuid())
+  factoryId       String   @map("factory_id")
+  name            String   // 客户名称：王老板超市
+  code            String   // 客户代码：CUS001
+  contactPerson   String?  @map("contact_person")  // 联系人
+  contactPhone    String?  @map("contact_phone")   // 联系电话
+  address         String?  @db.Text                // 地址
+  businessType    String?  @map("business_type")   // 经营类型：超市、餐饮、批发等
+  creditLevel     String?  @map("credit_level")    // 信用等级：A/B/C
+  deliveryArea    String?  @map("delivery_area")   // 配送区域
+  paymentTerms    String?  @map("payment_terms")   // 付款条款
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdBy       Int?     @map("created_by")
+
+  factory         Factory          @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  creator         User?            @relation("CustomerCreator", fields: [createdBy], references: [id])
+  productionPlans ProductionPlan[] // 客户订单（生产计划）
+  shipmentRecords ShipmentRecord[] // 出货记录
+
+  @@unique([factoryId, code])
+  @@index([factoryId, isActive])
+  @@map("customers")
+}
+
+// 生产计划表
+model ProductionPlan {
+  id                      String      @id @default(uuid())
+  planNumber              String      @unique @map("plan_number")
+  factoryId               String      @map("factory_id")
+  productTypeId           String      @map("product_type_id")
+  customerId              String      @map("customer_id")  // 改为客户ID
+  plannedQuantity         Decimal     @map("planned_quantity") @db.Decimal(10, 2)
+  estimatedMaterialUsage  Decimal     @map("estimated_material_usage") @db.Decimal(10, 2)
+  actualMaterialUsed      Decimal?    @map("actual_material_used") @db.Decimal(10, 2)
+  actualQuantity          Decimal?    @map("actual_quantity") @db.Decimal(10, 2)
+  status                  PlanStatus  @default(pending) @map("status")
+  notes                   String?     @db.Text
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+  createdBy               Int         @map("created_by")
+
+  factory              Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  productType          ProductType           @relation(fields: [productTypeId], references: [id])
+  customer             Customer              @relation(fields: [customerId], references: [id])  // 关联到客户
+  creator              User                  @relation("ProductionPlanCreator", fields: [createdBy], references: [id])
+  materialConsumptions MaterialConsumption[]
+  shipmentRecords      ShipmentRecord[]
+  batchUsages          ProductionPlanBatchUsage[]  // 批次使用关联
+  dailyRecords         DailyProductionRecord[]     // 每日记录关联
+
+  @@index([factoryId, status])
+  @@index([createdAt])
+  @@index([customerId])  // 添加客户索引
+  @@map("production_plans")
+}
+
+// 原料消耗记录表
+model MaterialConsumption {
+  id               String   @id @default(uuid())
+  planId           String   @map("plan_id")
+  batchId          String   @map("batch_id")
+  consumedQuantity Decimal  @map("consumed_quantity") @db.Decimal(10, 2)
+  consumedAt       DateTime @default(now()) @map("consumed_at")
+  notes            String?  @db.Text
+  recordedBy       Int      @map("recorded_by")
+
+  plan             ProductionPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  batch            ProcessingBatch @relation(fields: [batchId], references: [id])
+  recorder         User            @relation("MaterialConsumptionRecorder", fields: [recordedBy], references: [id])
+
+  @@index([planId])
+  @@index([batchId])
+  @@index([consumedAt])
+  @@map("material_consumptions")
+}
+
+// 成品出库记录表
+model ShipmentRecord {
+  id              String        @id @default(uuid())
+  shipmentNumber  String        @unique @map("shipment_number")
+  planId          String        @map("plan_id")
+  customerId      String        @map("customer_id")  // 改为客户ID
+  shippedQuantity Decimal       @map("shipped_quantity") @db.Decimal(10, 2)
+  actualWeight    Decimal       @map("actual_weight") @db.Decimal(10, 2)
+  qualityGrade    QualityGrade? @map("quality_grade")
+  shippedAt       DateTime      @map("shipped_at")
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now()) @map("created_at")
+  recordedBy      Int           @map("recorded_by")
+
+  plan            ProductionPlan @relation(fields: [planId], references: [id])
+  customer        Customer       @relation(fields: [customerId], references: [id])  // 关联到客户
+  recorder        User           @relation("ShipmentRecorder", fields: [recordedBy], references: [id])
+
+  @@index([planId])
+  @@index([customerId])  // 改为客户索引
+  @@index([shippedAt])
+  @@map("shipment_records")
+}
+
+// 生产计划状态枚举
+enum PlanStatus {
+  pending       // 待生产
+  in_progress   // 生产中
+  completed     // 已完成
+  shipped       // 已出货
+  cancelled     // 已取消
+
+  @@map("plan_status")
+}
+
+// ==================== 批次管理系统新增表 ====================
+
+// 原材料批次表
+model MaterialBatch {
+  id                String   @id @default(uuid())
+  batchNumber       String   @unique @map("batch_number")  // 批次号: MAT-20251001-001
+  factoryId         String   @map("factory_id")
+  materialTypeId    String   @map("material_type_id")
+
+  // 数量信息
+  inboundQuantity   Decimal  @map("inbound_quantity") @db.Decimal(10, 2)   // 入库数量
+  remainingQuantity Decimal  @map("remaining_quantity") @db.Decimal(10, 2)  // 剩余数量
+  reservedQuantity  Decimal  @default(0) @map("reserved_quantity") @db.Decimal(10, 2)  // 已预留
+  usedQuantity      Decimal  @default(0) @map("used_quantity") @db.Decimal(10, 2)  // 已使用
+
+  // 成本信息
+  unitPrice         Decimal  @map("unit_price") @db.Decimal(10, 2)  // 单价
+  totalCost         Decimal  @map("total_cost") @db.Decimal(12, 2)  // 总成本
+
+  // 供应商信息
+  supplierId        String   @map("supplier_id")  // 供应商ID（必填）
+
+  // 日期信息
+  inboundDate       DateTime @map("inbound_date") @db.Date     // 入库日期
+  expiryDate        DateTime? @map("expiry_date") @db.Date     // 保质期
+  productionDate    DateTime? @map("production_date") @db.Date // 生产日期
+
+  // 状态
+  status            BatchInventoryStatus @default(available) @map("status")
+
+  // 质量信息
+  qualityGrade      String?  @map("quality_grade")        // 质量等级: A/B/C
+  qualityReport     Json?    @map("quality_report")       // 质检报告
+  storageLocation   String?  @map("storage_location")     // 存储位置
+
+  // 其他信息
+  notes             String?  @db.Text
+  createdBy         Int      @map("created_by")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  factory           Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  materialType      RawMaterialType @relation(fields: [materialTypeId], references: [id])
+  supplier          Supplier        @relation(fields: [supplierId], references: [id])  // 关联到供应商
+  creator           User            @relation("MaterialBatchCreator", fields: [createdBy], references: [id])
+
+  // 使用记录
+  planUsages        ProductionPlanBatchUsage[]
+  adjustments       MaterialBatchAdjustment[]
+
+  @@index([factoryId, materialTypeId, status])
+  @@index([inboundDate])
+  @@index([expiryDate])
+  @@index([supplierId])  // 改为供应商索引
+  @@index([status, expiryDate])
+  @@map("material_batches")
+}
+
+// 批次库存状态枚举
+enum BatchInventoryStatus {
+  available  // 可用
+  reserved   // 已预留
+  depleted   // 已用完
+  expired    // 已过期
+
+  @@map("batch_inventory_status")
+}
+
+// 生产计划-批次使用关联表
+model ProductionPlanBatchUsage {
+  id                String   @id @default(uuid())
+  productionPlanId  String   @map("production_plan_id")
+  materialBatchId   String   @map("material_batch_id")
+  plannedQuantity   Decimal  @map("planned_quantity") @db.Decimal(10, 2)  // 计划使用
+  actualQuantity    Decimal? @map("actual_quantity") @db.Decimal(10, 2)   // 实际使用
+  unitPrice         Decimal  @map("unit_price") @db.Decimal(10, 2)        // 锁定单价
+  totalCost         Decimal  @map("total_cost") @db.Decimal(12, 2)        // 锁定成本
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  productionPlan ProductionPlan @relation(fields: [productionPlanId], references: [id], onDelete: Cascade)
+  materialBatch  MaterialBatch  @relation(fields: [materialBatchId], references: [id])
+
+  @@unique([productionPlanId, materialBatchId])
+  @@index([productionPlanId])
+  @@index([materialBatchId])
+  @@map("production_plan_batch_usages")
+}
+
+// 批次库存调整记录表
+model MaterialBatchAdjustment {
+  id              String   @id @default(uuid())
+  materialBatchId String   @map("material_batch_id")
+  adjustmentType  String   @map("adjustment_type")  // loss / damage / correction
+  quantity        Decimal  @db.Decimal(10, 2)       // 调整数量（+ 或 -）
+  reason          String   @db.Text                 // 调整原因
+  adjustedBy      Int      @map("adjusted_by")
+  adjustedAt      DateTime @default(now()) @map("adjusted_at")
+
+  materialBatch MaterialBatch @relation(fields: [materialBatchId], references: [id], onDelete: Cascade)
+  adjuster      User          @relation("BatchAdjuster", fields: [adjustedBy], references: [id])
+
+  @@index([materialBatchId])
+  @@index([adjustedAt])
+  @@map("material_batch_adjustments")
+}
+
+// 每日生产记录表
+model DailyProductionRecord {
+  id                String   @id @default(uuid())
+  productionPlanId  String   @map("production_plan_id")
+  productionDate    DateTime @db.Date
+  dailyQuantity     Decimal  @map("daily_quantity") @db.Decimal(10, 2)  // 当日产量
+  workHours         Decimal? @map("work_hours") @db.Decimal(4, 2)       // 工作时长
+  workersCount      Int?     @map("workers_count")                      // 工人数量
+  userId            Int      @map("user_id")                            // 记录员工
+  issues            Json?    @map("issues")                             // 流程问题
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  productionPlan ProductionPlan @relation(fields: [productionPlanId], references: [id], onDelete: Cascade)
+  user           User           @relation("DailyRecorder", fields: [userId], references: [id])
+
+  @@index([productionPlanId, productionDate])
+  @@index([userId, productionDate])
+  @@index([productionDate])
+  @@map("daily_production_records")
+}
+
+// AI使用日志表
+model AIUsageLog {
+  id              Int      @id @default(autoincrement())
+  factoryId       String   @map("factory_id")
+  userId          Int      @map("user_id")
+  batchId         String?  @map("batch_id")
+  requestType     String   @map("request_type")  // 'analysis', 'question'
+  question        String?  @db.Text
+  responseLength  Int?     @map("response_length")
+  sessionId       String?  @map("session_id")
+  weekNumber      Int      @map("week_number")  // ISO周数(1-53)
+  year            Int                            // 年份(避免跨年问题)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  factory  Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([factoryId, year, weekNumber], map: "idx_factory_week")
+  @@index([createdAt], map: "idx_created_at")
+  @@map("ai_usage_logs")
 }

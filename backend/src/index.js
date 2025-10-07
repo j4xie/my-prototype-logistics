@@ -116,11 +116,12 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-// 启动服务器
-app.listen(PORT, () => {
+// 启动服务器 - 监听所有网络接口以支持 iOS Simulator
+app.listen(PORT, '0.0.0.0', () => {
   console.log('🚀 ===================================');
   console.log(`🚀 白垩纪食品溯源系统后端服务启动成功`);
-  console.log(`🚀 服务地址: http://localhost:${PORT}`);
+  console.log(`🚀 服���地址: http://localhost:${PORT}`);
+  console.log(`🚀 局域网访问: http://0.0.0.0:${PORT}`);
   console.log(`🚀 API文档: http://localhost:${PORT}/api`);
   console.log(`🚀 健康检查: http://localhost:${PORT}/health`);
   console.log(`🚀 环境: ${process.env.NODE_ENV || 'development'}`);

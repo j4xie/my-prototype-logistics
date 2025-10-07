@@ -511,7 +511,7 @@ const AlertsManager = () => {
 import SQLite from 'react-native-sqlite-storage';
 
 const db = SQLite.openDatabase(
-  { name: 'heiniu_offline.db', location: 'default' },
+  { name: 'cretas_offline.db', location: 'default' },
   () => console.log('Database opened'),
   error => console.log('Database error: ', error)
 );
@@ -738,12 +738,12 @@ const environments = {
     logLevel: 'debug'
   },
   staging: {
-    apiUrl: 'https://staging.heiniu.com/api',
+    apiUrl: 'https://staging.cretas.com/api',
     debug: false,
     logLevel: 'info'
   },
   production: {
-    apiUrl: 'https://api.heiniu.com/api',
+    apiUrl: 'https://api.cretas.com/api',
     debug: false,
     logLevel: 'error'
   }

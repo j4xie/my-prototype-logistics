@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 海牛食品溯源系统 - macOS一键启动脚本
+# 白垩纪食品溯源系统 - macOS一键启动脚本
 # 使用方法: ./start-system-macos.sh
 
 # 颜色定义
@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 # 项目路径 (macOS)
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/backend"
-FRONTEND_DIR="$PROJECT_ROOT/frontend/HainiuFoodTrace"
+FRONTEND_DIR="$PROJECT_ROOT/frontend/CretasFoodTrace"
 
 # 端口配置
 BACKEND_PORT=3001
@@ -31,7 +31,7 @@ print_message() {
 # 打印标题
 print_title() {
     echo -e "${WHITE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${WHITE}║                    海牛食品溯源系统                              ║${NC}"
+    echo -e "${WHITE}║                    白垩纪食品溯源系统                              ║${NC}"
     echo -e "${WHITE}║                 macOS一键启动脚本 v1.0                          ║${NC}"
     echo -e "${WHITE}║              (React Native + Backend)                        ║${NC}"
     echo -e "${WHITE}╚══════════════════════════════════════════════════════════════╝${NC}"
@@ -205,7 +205,7 @@ start_rn_web() {
 
 # 显示访问信息
 show_access_info() {
-    print_message "🌐 海牛食品溯源系统启动完成！" $GREEN
+    print_message "🌐 白垩纪食品溯源系统启动完成！" $GREEN
     
     echo
     echo -e "${WHITE}╔══════════════════════════════════════════════════════════════╗${NC}"
