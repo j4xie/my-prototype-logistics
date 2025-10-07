@@ -416,4 +416,124 @@ router.post('/whitelists/cleanup-expired',
   asyncHandler(cleanupExpiredWhitelists)
 );
 
+// ==================== AI配额管理 ====================
+
+/**
+ * 获取所有工厂的AI配额设置
+ * GET /api/platform/ai-quota
+ * 平台管理员查看和管理所有工厂的AI使用配额
+ */
+router.get('/ai-quota',
+  authenticatePlatformAdmin,
+  asyncHandler(async (req, res) => {
+    const { prisma } = await import('../config/database.js');
+
+    const factories = await prisma.factory.findMany({
+      select: {
+        id: true,
+        name: true,
+        aiWeeklyQuota: true,
+        _count: {
+          select: {
+            aiUsageLogs: true  // 总使用次数
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    res.json(createSuccessResponse(factories, '获取工厂AI配额成功'));
+  })
+);
+
+/**
+ * 更新工厂AI配额
+ * PUT /api/platform/ai-quota/:factoryId
+ * 平台管理员设置指定工厂的每周AI使用配额
+ */
+router.put('/ai-quota/:factoryId',
+  authenticatePlatformAdmin,
+  asyncHandler(async (req, res) => {
+    const { prisma } = await import('../config/database.js');
+
+    const { factoryId } = req.params;
+    const { weeklyQuota } = req.body;
+
+    // 验证配额范围
+    if (weeklyQuota < 0 || weeklyQuota > 1000) {
+      throw new Error('每周配额应在0-1000之间', 400);
+    }
+
+    await prisma.factory.update({
+      where: { id: factoryId },
+      data: { aiWeeklyQuota: weeklyQuota }
+    });
+
+    res.json(createSuccessResponse(
+      { factoryId, weeklyQuota },
+      '更新AI配额成功'
+    ));
+  })
+);
+
+/**
+ * 获取平台AI使用统计
+ * GET /api/platform/ai-usage-stats
+ * 平台管理员查看所有工厂本周的AI使用情况
+ */
+router.get('/ai-usage-stats',
+  authenticatePlatformAdmin,
+  asyncHandler(async (req, res) => {
+    const { prisma } = await import('../config/database.js');
+
+    // 获取当前周数
+    function getCurrentWeek() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const startOfYear = new Date(year, 0, 1);
+      const days = Math.floor((now - startOfYear) / (24 * 60 * 60 * 1000));
+      const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+      return { year, weekNumber };
+    }
+
+    const { year, weekNumber } = getCurrentWeek();
+
+    // 本周所有工厂的使用量
+    const weeklyUsage = await prisma.aiUsageLog.groupBy({
+      by: ['factoryId'],
+      where: { year, weekNumber },
+      _count: { id: true }
+    });
+
+    // 工厂信息
+    const factories = await prisma.factory.findMany({
+      select: {
+        id: true,
+        name: true,
+        aiWeeklyQuota: true
+      }
+    });
+
+    const stats = factories.map(factory => {
+      const usage = weeklyUsage.find(u => u.factoryId === factory.id);
+      const used = usage?._count.id || 0;
+      const quota = factory.aiWeeklyQuota || 20;
+      return {
+        factoryId: factory.id,
+        factoryName: factory.name,
+        weeklyQuota: quota,
+        used,
+        remaining: quota - used,
+        utilization: ((used / quota) * 100).toFixed(1)
+      };
+    });
+
+    res.json(createSuccessResponse({
+      currentWeek: `${year}-W${weekNumber}`,
+      factories: stats,
+      totalUsed: weeklyUsage.reduce((sum, u) => sum + u._count.id, 0)
+    }, '获取平台使用统计成功'));
+  })
+);
+
 export default router;

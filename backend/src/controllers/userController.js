@@ -487,3 +487,26 @@ function validateDepartmentPermissions(department, permissions) {
 
 // 导入密码生成函数
 import { generateRandomPassword, hashPassword } from '../utils/password.js';
+/**
+ * 获取员工列表（移动端）
+ * GET /api/mobile/employees
+ */
+export const getEmployees = async (req, res, next) => {
+  try {
+    const factoryId = req.user?.factoryId || req.user?.factoryUser?.factoryId || 'TEST_2024_001';
+    const { department } = req.query;
+
+    const where = { factoryId, isActive: true };
+    if (department) where.department = department;
+
+    const employees = await prisma.user.findMany({
+      where,
+      select: { id: true, username: true, fullName: true, department: true, roleCode: true },
+      orderBy: { fullName: 'asc' },
+    });
+
+    res.json(createSuccessResponse(employees, '获取员工列表成功'));
+  } catch (error) {
+    next(error);
+  }
+};

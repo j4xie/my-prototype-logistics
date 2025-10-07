@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>批次成本详情 - 白垩纪食品溯源系统</title>
+    <link rel="stylesheet" href="../../assets/css/common.css">
+    <link rel="stylesheet" href="../../assets/css/mobile.css">
+    <style>
+        /* 移动端专用样式 */
+        body {
+            background: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* 顶部导航栏 */
+        .mobile-header {
+            background: white;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .mobile-header .back-btn {
+            font-size: 24px;
+            color: #1890ff;
+            text-decoration: none;
+        }
+
+        .mobile-header .title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #262626;
+        }
+
+        .mobile-header .share-btn {
+            font-size: 20px;
+            color: #8c8c8c;
+        }
+
+        /* 页面内容 */
+        .mobile-content {
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        /* 卡片通用样式 */
+        .info-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 批次基本信息 */
+        .batch-info {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .batch-info .label {
+            color: #8c8c8c;
+        }
+
+        .batch-info .value {
+            color: #262626;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            background: #f6ffed;
+            color: #52c41a;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        /* 成本总览 */
+        .cost-overview {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            text-align: center;
+        }
+
+        .cost-item {
+            padding: 16px 0;
+        }
+
+        .cost-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #262626;
+            margin-bottom: 4px;
+        }
+
+        .cost-value.primary {
+            font-size: 32px;
+            color: #1890ff;
+        }
+
+        .cost-value.success {
+            color: #52c41a;
+        }
+
+        .cost-label {
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+
+        .trend-up {
+            color: #52c41a;
+            font-size: 14px;
+        }
+
+        /* 饼图容器 */
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0;
+        }
+
+        .pie-chart {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #1890ff 0deg 162deg,
+                #52c41a 162deg 295.2deg,
+                #fa8c16 295.2deg 360deg
+            );
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .pie-chart::after {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .chart-legend {
+            width: 100%;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+
+        .legend-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-color.blue { background: #1890ff; }
+        .legend-color.green { background: #52c41a; }
+        .legend-color.orange { background: #fa8c16; }
+
+        .legend-value {
+            font-weight: 600;
+            color: #262626;
+        }
+
+        /* 成本明细列表 */
+        .cost-detail-section {
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 14px;
+            color: #595959;
+        }
+
+        .detail-item .amount {
+            font-weight: 600;
+            color: #262626;
+        }
+
+        /* 成本对比 */
+        .comparison-item {
+            margin-bottom: 16px;
+        }
+
+        .comparison-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .comparison-value.warning {
+            color: #fa8c16;
+        }
+
+        .comparison-value.danger {
+            color: #ff4d4f;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.warning {
+            background: #fa8c16;
+        }
+
+        .progress-fill.danger {
+            background: #ff4d4f;
+        }
+
+        /* AI分析按钮 */
+        .ai-analysis-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: transform 0.2s ease;
+        }
+
+        .ai-analysis-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* AI分析结果卡片 */
+        .ai-result-card {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .ai-result-card.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .ai-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .ai-cost {
+            font-size: 12px;
+            color: #52c41a;
+            font-weight: 600;
+        }
+
+        .ai-conclusion {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #262626;
+        }
+
+        .ai-suggestions {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .suggestion-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 8px;
+        }
+
+        .suggestion-item {
+            display: flex;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 13px;
+            color: #595959;
+            line-height: 1.5;
+        }
+
+        .suggestion-num {
+            background: #667eea;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .ai-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(102, 126, 234, 0.2);
+            font-size: 12px;
+            color: #595959;
+        }
+
+        /* 底部操作按钮 */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            transition: transform 0.2s ease;
+        }
+
+        .action-btn.primary {
+            background: #1890ff;
+            color: white;
+        }
+
+        .action-btn.secondary {
+            background: white;
+            color: #1890ff;
+            border: 1px solid #1890ff;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .trend-link {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .trend-link a {
+            color: #1890ff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        /* 底部Tab导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #f0f0f0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            padding: 8px 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            text-align: center;
+            padding: 4px 0;
+            color: #8c8c8c;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .nav-item.active {
+            color: #1890ff;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* 流程标注 */
+        .flow-hint {
+            background: #e6f7ff;
+            border-left: 3px solid #1890ff;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #0050b3;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="mobile-header">
+        <a href="dashboard.html" class="back-btn">←</a>
+        <div class="title">批次成本详情</div>
+        <span class="share-btn">⋮</span>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="mobile-content">
+        <!-- 1. 批次基本信息 -->
+        <div class="info-card">
+            <div class="card-title">📋 批次信息</div>
+            <div class="batch-info">
+                <span class="label">批次号：</span>
+                <span class="value">FAC001-20250103-008</span>
+
+                <span class="label">产品：</span>
+                <span class="value">速冻虾仁</span>
+
+                <span class="label">产量：</span>
+                <span class="value">300 kg</span>
+
+                <span class="label">状态：</span>
+                <span class="value"><span class="status-badge">已完成 ✅</span></span>
+            </div>
+        </div>
+
+        <!-- 2. 成本总览 -->
+        <div class="info-card">
+            <div class="card-title">💰 成本总览</div>
+            <div class="cost-overview">
+                <div class="cost-item">
+                    <div class="cost-value primary">¥5,550</div>
+                    <div class="cost-label">总成本</div>
+                </div>
+                <div class="cost-item">
+                    <div class="cost-value">¥18.5</div>
+                    <div class="cost-label">单位成本/kg</div>
+                </div>
+                <div class="cost-item">
+                    <div class="cost-value success">23.5% <span class="trend-up">↑</span></div>
+                    <div class="cost-label">利润率</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 成本构成可视化 -->
+        <div class="info-card">
+            <div class="card-title">📊 成本构成</div>
+            <div class="chart-container">
+                <div class="pie-chart"></div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-label">
+                            <span class="legend-color blue"></span>
+                            <span>原料成本</span>
+                        </div>
+                        <span class="legend-value">¥2,500 (45%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-label">
+                            <span class="legend-color green"></span>
+                            <span>人工成本</span>
+                        </div>
+                        <span class="legend-value">¥2,050 (37%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-label">
+                            <span class="legend-color orange"></span>
+                            <span>设备成本</span>
+                        </div>
+                        <span class="legend-value">¥1,000 (18%)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flow-hint">💡 点击查看各项成本明细</div>
+        </div>
+
+        <!-- 4. 成本明细列表 -->
+        <div class="info-card">
+            <div class="card-title">📝 成本明细</div>
+
+            <div class="cost-detail-section">
+                <div class="section-header">原料成本详情</div>
+                <div class="detail-item">
+                    <span>鲈鱼：200kg × ¥10/kg</span>
+                    <span class="amount">¥2,000</span>
+                </div>
+                <div class="detail-item">
+                    <span>虾仁：50kg × ¥10/kg</span>
+                    <span class="amount">¥500</span>
+                </div>
+            </div>
+
+            <div class="cost-detail-section">
+                <div class="section-header">人工成本详情</div>
+                <div class="detail-item">
+                    <span>工时：82小时 × ¥25/小时</span>
+                    <span class="amount">¥2,050</span>
+                </div>
+                <div class="detail-item">
+                    <span>加班：0小时</span>
+                    <span class="amount">¥0</span>
+                </div>
+            </div>
+
+            <div class="cost-detail-section">
+                <div class="section-header">设备成本详情</div>
+                <div class="detail-item">
+                    <span>速冻机A：5.2小时 × ¥150/小时</span>
+                    <span class="amount">¥780</span>
+                </div>
+                <div class="detail-item">
+                    <span>其他设备</span>
+                    <span class="amount">¥220</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 成本对比 -->
+        <div class="info-card">
+            <div class="card-title">📈 成本对比分析</div>
+
+            <div class="comparison-item">
+                <div class="comparison-label">
+                    <span>与目标成本对比</span>
+                    <span class="comparison-value warning">超出 5.2%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill warning" style="width: 105.2%"></div>
+                </div>
+            </div>
+
+            <div class="comparison-item">
+                <div class="comparison-label">
+                    <span>与历史平均对比</span>
+                    <span class="comparison-value danger">高出 8.1%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill danger" style="width: 108.1%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. AI智能分析 -->
+        <div class="info-card">
+            <button class="ai-analysis-btn" onclick="showAIAnalysis()">
+                <span style="font-size: 20px;">🤖</span>
+                <span>DeepSeek AI 智能分析</span>
+            </button>
+            <div class="flow-hint" style="margin-top: 12px;">🚀 获取DeepSeek智能分析，优化成本结构</div>
+
+            <div class="ai-result-card" id="aiResult">
+                <div class="ai-header">
+                    <span class="ai-badge">缓存命中</span>
+                    <span class="ai-cost">成本：¥0.02</span>
+                </div>
+
+                <div class="ai-conclusion">
+                    <strong>分析结论：</strong><br>
+                    成本超标5.2%，主要原因是人工成本占比过高（37%），建议优化生产流程。原料采购价格比历史平均高8%，设备利用率偏低。
+                </div>
+
+                <div class="ai-suggestions">
+                    <div class="suggestion-title">💡 优化建议</div>
+                    <div class="suggestion-item">
+                        <span class="suggestion-num">1</span>
+                        <span>人工成本偏高，建议优化作业流程，减少无效工时</span>
+                    </div>
+                    <div class="suggestion-item">
+                        <span class="suggestion-num">2</span>
+                        <span>原料采购价格比历史平均高8%，建议寻找更优供应商</span>
+                    </div>
+                    <div class="suggestion-item">
+                        <span class="suggestion-num">3</span>
+                        <span>设备利用率较低，建议提高生产排程效率</span>
+                    </div>
+                </div>
+
+                <div class="ai-footer">
+                    <span>置信度：85%</span>
+                    <span>分析时间：2025-01-05 14:32</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. 底部操作 -->
+        <div class="info-card">
+            <div class="action-buttons">
+                <a href="#" class="action-btn primary" onclick="alert('生成PDF报告功能'); return false;">📄 导出报告</a>
+                <a href="trend.html" class="action-btn secondary">📊 查看趋势</a>
+            </div>
+            <div class="trend-link">
+                <a href="trend.html">→ 成本趋势分析页</a>
+            </div>
+            <div class="flow-hint" style="margin-top: 12px;">📄 导出报告将生成包含完整分析的PDF文件</div>
+        </div>
+    </div>
+
+    <!-- 底部Tab导航 -->
+    <div class="bottom-nav">
+        <a href="dashboard.html" class="nav-item">
+            <span class="nav-icon">🏠</span>
+            <span>首页</span>
+        </a>
+        <a href="dashboard.html" class="nav-item active">
+            <span class="nav-icon">💰</span>
+            <span>成本</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="nav-icon">📊</span>
+            <span>报表</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="nav-icon">👤</span>
+            <span>我的</span>
+        </a>
+    </div>
+
+    <script>
+        // AI分析按钮交互
+        function showAIAnalysis() {
+            const resultCard = document.getElementById('aiResult');
+            if (resultCard.classList.contains('show')) {
+                resultCard.classList.remove('show');
+            } else {
+                // 模拟API调用延迟
+                const btn = document.querySelector('.ai-analysis-btn');
+                btn.innerHTML = '<span style="font-size: 20px;">⏳</span><span>正在分析...</span>';
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    resultCard.classList.add('show');
+                    btn.innerHTML = '<span style="font-size: 20px;">🤖</span><span>DeepSeek AI 智能分析</span>';
+                    btn.disabled = false;
+                }, 1500);
+            }
+        }
+
+        // 流程导航提示
+        console.log('批次成本详情页面已加载');
+        console.log('流程步骤：');
+        console.log('1. 成本构成饼图 → 点击查看明细');
+        console.log('2. AI分析按钮 → 获取DeepSeek智能分析');
+        console.log('3. 导出报告按钮 → 生成PDF报告');
+        console.log('4. 查看趋势链接 → 成本趋势分析页');
+    </script>
+</body>
+</html>

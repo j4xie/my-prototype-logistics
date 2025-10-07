@@ -22,7 +22,7 @@
     "test-user-management": "node scripts/user-management-comprehensive-test.js"
   },
   "dependencies": {
-    "@prisma/client": "^5.5.2",
+    "@prisma/client": "^5.22.0",
     "@types/multer": "^2.0.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",

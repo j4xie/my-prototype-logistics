@@ -1,4 +1,4 @@
-# 海牛食品溯源系统 - 后端API Docker镜像
+# 白垩纪食品溯源系统 - 后端API Docker镜像
 FROM node:18-alpine
 
 # 设置工作目录

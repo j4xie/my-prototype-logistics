@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>创建批次 - 白垩纪食品溯源系统</title>
+    <link rel="stylesheet" href="../../assets/css/common.css">
+    <link rel="stylesheet" href="../../assets/css/mobile.css">
+    <style>
+        /* 移动端布局 */
+        body {
+            max-width: 428px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+
+        .page-content {
+            padding-bottom: 120px; /* 为底部按钮留空间 */
+        }
+
+        /* 表单容器 */
+        .form-container {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            position: relative;
+        }
+
+        /* 流程指示器 */
+        .flow-indicator {
+            position: absolute;
+            right: 16px;
+            top: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* 表单组 */
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .form-group.required .form-label::after {
+            content: '*';
+            color: #ff4d4f;
+            margin-left: 4px;
+            font-size: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 10px;
+        }
+
+        .form-hint {
+            font-size: 13px;
+            color: #8c8c8c;
+            margin-top: 6px;
+        }
+
+        /* 表单控件 */
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 16px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%238c8c8c' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 48px;
+        }
+
+        /* 数字输入框 */
+        .number-input-wrapper {
+            position: relative;
+        }
+
+        .number-input-wrapper .unit {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8c8c8c;
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        .number-input-wrapper .form-input {
+            padding-right: 50px;
+        }
+
+        /* 复选框列表 */
+        .checkbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .checkbox-item:active {
+            transform: scale(0.98);
+        }
+
+        .checkbox-item.checked {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .checkbox-content {
+            flex: 1;
+        }
+
+        .checkbox-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #262626;
+            margin-bottom: 4px;
+        }
+
+        .checkbox-meta {
+            font-size: 13px;
+            color: #8c8c8c;
+            display: flex;
+            gap: 16px;
+        }
+
+        .stock-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stock-indicator.low {
+            color: #ff4d4f;
+        }
+
+        .stock-indicator.normal {
+            color: #52c41a;
+        }
+
+        /* 单选按钮组 */
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+            position: relative;
+        }
+
+        .radio-item:active {
+            transform: scale(0.98);
+        }
+
+        .radio-item.checked {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .radio-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .radio-item input[type="radio"] {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .radio-item.disabled input[type="radio"] {
+            cursor: not-allowed;
+        }
+
+        .radio-content {
+            flex: 1;
+        }
+
+        .radio-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #262626;
+        }
+
+        .radio-status {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-available {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .status-busy {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+
+        /* 员工选择器 */
+        .employee-selector {
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .employee-selector:active {
+            transform: scale(0.98);
+        }
+
+        .employee-selector.selected {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .employee-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .employee-info {
+            flex: 1;
+        }
+
+        .employee-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #262626;
+            margin-bottom: 4px;
+        }
+
+        .employee-title {
+            font-size: 13px;
+            color: #8c8c8c;
+        }
+
+        .select-icon {
+            font-size: 20px;
+            color: #8c8c8c;
+        }
+
+        /* 日期选择器 */
+        .datetime-input {
+            position: relative;
+        }
+
+        .datetime-input input[type="datetime-local"] {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 16px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            font-size: 15px;
+            background: #fafafa;
+            cursor: pointer;
+        }
+
+        .datetime-input input[type="datetime-local"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        /* 底部操作栏 */
+        .action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 428px;
+            margin: 0 auto;
+            padding: 16px;
+            background: white;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .btn {
+            flex: 1;
+            min-height: 52px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #595959;
+            border: 2px solid #d9d9d9;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 验证错误 */
+        .error-message {
+            color: #ff4d4f;
+            font-size: 13px;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .form-group.error .form-input,
+        .form-group.error .form-select,
+        .form-group.error .form-textarea {
+            border-color: #ff4d4f;
+            background: #fff1f0;
+        }
+
+        .form-group.error .error-message {
+            display: block;
+        }
+
+        /* 流程箭头 */
+        .flow-arrow {
+            position: relative;
+            padding: 12px;
+            background: linear-gradient(135deg, #e6f7ff 0%, #f0f2ff 100%);
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .flow-arrow::before {
+            content: '→';
+            font-size: 20px;
+            color: #667eea;
+            margin-right: 8px;
+        }
+
+        .flow-text {
+            color: #262626;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* 草稿保存提示 */
+        .draft-indicator {
+            position: fixed;
+            top: 70px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: none;
+            z-index: 200;
+            animation: fadeInOut 2s;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            10%, 90% { opacity: 1; }
+        }
+
+        /* 员工选择弹窗 */
+        .employee-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 300;
+            max-width: 428px;
+            margin: 0 auto;
+            align-items: flex-end;
+        }
+
+        .employee-modal.show {
+            display: flex;
+        }
+
+        .employee-modal-content {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-height: 70vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #262626;
+        }
+
+        .modal-close {
+            font-size: 28px;
+            cursor: pointer;
+            color: #8c8c8c;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .modal-close:active {
+            background: #f5f5f5;
+            transform: scale(0.9);
+        }
+
+        .employee-list {
+            padding: 12px;
+        }
+
+        .employee-list-item {
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .employee-list-item:active {
+            background: #f5f5f5;
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- 页面头部 -->
+        <div class="page-header">
+            <div class="navbar">
+                <a href="list.html" class="back-button" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(24,144,255,0.1);">
+                    <span style="font-size: 20px;">←</span>
+                </a>
+                <h1 style="font-size: 18px; font-weight: 600; color: #262626; flex: 1; text-align: center;">创建批次</h1>
+                <button onclick="saveDraft()" style="padding: 8px 16px; background: rgba(102, 126, 234, 0.1); border: none; border-radius: 20px; color: #667eea; font-size: 14px; font-weight: 500; cursor: pointer; min-width: 44px; min-height: 44px;">
+                    💾 草稿
+                </button>
+            </div>
+        </div>
+
+        <!-- 草稿保存提示 -->
+        <div id="draftIndicator" class="draft-indicator">
+            ✓ 草稿已保存
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="page-content">
+            <!-- 流程指示 -->
+            <div class="flow-arrow">
+                <span class="flow-text">填写完成后点击底部"创建批次"按钮</span>
+            </div>
+
+            <!-- 表单容器 -->
+            <form id="batchForm" class="form-container">
+                <div class="flow-indicator">📋 新建批次</div>
+
+                <!-- 产品类型选择 -->
+                <div class="form-group required">
+                    <label class="form-label">产品类型</label>
+                    <select id="productType" name="productType" class="form-select" required>
+                        <option value="">请选择产品类型</option>
+                        <option value="frozen_fish_fillet">速冻鱼排</option>
+                        <option value="frozen_fish_ball">冷冻鱼丸</option>
+                        <option value="frozen_shrimp">速冻虾仁</option>
+                        <option value="frozen_hairtail">速冻带鱼段</option>
+                    </select>
+                    <div class="error-message">请选择产品类型</div>
+                </div>
+
+                <!-- 原材料选择 -->
+                <div class="form-group required">
+                    <label class="form-label">原材料选择</label>
+                    <div class="form-hint">可多选，库存不足时会标红提示</div>
+                    <div class="checkbox-list">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="materials" value="bass">
+                            <div class="checkbox-content">
+                                <div class="checkbox-title">鲈鱼</div>
+                                <div class="checkbox-meta">
+                                    <span class="stock-indicator normal">📦 库存: 500 kg</span>
+                                    <span>💰 ¥28/kg</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="materials" value="hairtail">
+                            <div class="checkbox-content">
+                                <div class="checkbox-title">带鱼</div>
+                                <div class="checkbox-meta">
+                                    <span class="stock-indicator normal">📦 库存: 300 kg</span>
+                                    <span>💰 ¥32/kg</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="materials" value="shrimp">
+                            <div class="checkbox-content">
+                                <div class="checkbox-title">虾仁</div>
+                                <div class="checkbox-meta">
+                                    <span class="stock-indicator low">📦 库存: 200 kg</span>
+                                    <span>💰 ¥85/kg</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="materials" value="squid">
+                            <div class="checkbox-content">
+                                <div class="checkbox-title">鱿鱼</div>
+                                <div class="checkbox-meta">
+                                    <span class="stock-indicator normal">📦 库存: 350 kg</span>
+                                    <span>💰 ¥45/kg</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="error-message">请至少选择一种原材料</div>
+                </div>
+
+                <!-- 目标产量 -->
+                <div class="form-group required">
+                    <label class="form-label">目标产量</label>
+                    <div class="number-input-wrapper">
+                        <input type="number" id="targetQuantity" name="targetQuantity" class="form-input" placeholder="请输入目标产量" min="1" step="0.1" required>
+                        <span class="unit">kg</span>
+                    </div>
+                    <div class="form-hint">根据原材料库存自动计算最大可生产量</div>
+                    <div class="error-message">请输入有效的目标产量</div>
+                </div>
+
+                <!-- 生产线选择 -->
+                <div class="form-group required">
+                    <label class="form-label">生产线选择</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="productionLine" value="line_a" required>
+                            <div class="radio-content">
+                                <div class="radio-title">生产线 A</div>
+                            </div>
+                            <span class="radio-status status-available">可用</span>
+                        </label>
+                        <label class="radio-item disabled">
+                            <input type="radio" name="productionLine" value="line_b" disabled>
+                            <div class="radio-content">
+                                <div class="radio-title">生产线 B</div>
+                            </div>
+                            <span class="radio-status status-busy">使用中</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="productionLine" value="line_c" required>
+                            <div class="radio-content">
+                                <div class="radio-title">生产线 C</div>
+                            </div>
+                            <span class="radio-status status-available">可用</span>
+                        </label>
+                    </div>
+                    <div class="error-message">请选择一条可用的生产线</div>
+                </div>
+
+                <!-- 负责人选择 -->
+                <div class="form-group required">
+                    <label class="form-label">负责人</label>
+                    <div id="employeeSelector" class="employee-selector" onclick="showEmployeeModal()">
+                        <div class="employee-avatar">?</div>
+                        <div class="employee-info">
+                            <div class="employee-name">请选择负责人</div>
+                            <div class="employee-title">点击选择</div>
+                        </div>
+                        <span class="select-icon">›</span>
+                    </div>
+                    <input type="hidden" id="selectedEmployee" name="supervisor" required>
+                    <div class="error-message">请选择负责人</div>
+                </div>
+
+                <!-- 开始日期 -->
+                <div class="form-group required">
+                    <label class="form-label">开始日期</label>
+                    <div class="datetime-input">
+                        <input type="datetime-local" id="startDate" name="startDate" class="form-input" required>
+                    </div>
+                    <div class="form-hint">默认为当前时间，可自定义选择</div>
+                    <div class="error-message">请选择开始日期</div>
+                </div>
+
+                <!-- 备注 -->
+                <div class="form-group">
+                    <label class="form-label">备注信息</label>
+                    <textarea id="notes" name="notes" class="form-textarea" placeholder="添加备注信息（可选）..."></textarea>
+                    <div class="form-hint">可选填写特殊要求、注意事项等</div>
+                </div>
+            </form>
+
+            <!-- 流程说明 -->
+            <div class="flow-arrow" style="margin-top: 24px;">
+                <span class="flow-text">点击"创建批次" → 创建成功后跳转到批次列表</span>
+            </div>
+
+            <div class="flow-arrow">
+                <span class="flow-text">点击"取消" → 返回批次列表（不保存）</span>
+            </div>
+        </div>
+
+        <!-- 底部操作栏 -->
+        <div class="action-bar">
+            <button type="button" class="btn btn-secondary" onclick="cancelCreate()">
+                ✕ 取消
+            </button>
+            <button type="submit" form="batchForm" class="btn btn-primary">
+                ✓ 创建批次
+            </button>
+        </div>
+
+        <!-- 员工选择弹窗 -->
+        <div id="employeeModal" class="employee-modal" onclick="hideEmployeeModal(event)">
+            <div class="employee-modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <div class="modal-title">选择负责人</div>
+                    <div class="modal-close" onclick="hideEmployeeModal()">×</div>
+                </div>
+                <div class="employee-list">
+                    <div class="employee-list-item" onclick="selectEmployee('wang', '王师傅', '生产主管')">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">王</div>
+                        <div class="employee-info">
+                            <div class="employee-name">王师傅</div>
+                            <div class="employee-title">生产主管 • 5年经验</div>
+                        </div>
+                    </div>
+                    <div class="employee-list-item" onclick="selectEmployee('li', '李师傅', '技术负责人')">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">李</div>
+                        <div class="employee-info">
+                            <div class="employee-name">李师傅</div>
+                            <div class="employee-title">技术负责人 • 8年经验</div>
+                        </div>
+                    </div>
+                    <div class="employee-list-item" onclick="selectEmployee('zhao', '赵师傅', '质检专员')">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">赵</div>
+                        <div class="employee-info">
+                            <div class="employee-name">赵师傅</div>
+                            <div class="employee-title">质检专员 • 3年经验</div>
+                        </div>
+                    </div>
+                    <div class="employee-list-item" onclick="selectEmployee('chen', '陈师傅', '生产组长')">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">陈</div>
+                        <div class="employee-info">
+                            <div class="employee-name">陈师傅</div>
+                            <div class="employee-title">生产组长 • 6年经验</div>
+                        </div>
+                    </div>
+                    <div class="employee-list-item" onclick="selectEmployee('sun', '孙师傅', '设备操作员')">
+                        <div class="employee-avatar" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">孙</div>
+                        <div class="employee-info">
+                            <div class="employee-name">孙师傅</div>
+                            <div class="employee-title">设备操作员 • 4年经验</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化表单
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认开始日期为当前时间
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('startDate').value = now.toISOString().slice(0, 16);
+
+            // 复选框选中效果
+            document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        this.closest('.checkbox-item').classList.add('checked');
+                    } else {
+                        this.closest('.checkbox-item').classList.remove('checked');
+                    }
+                });
+            });
+
+            // 单选按钮选中效果
+            document.querySelectorAll('.radio-item input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    document.querySelectorAll('.radio-item').forEach(item => {
+                        item.classList.remove('checked');
+                    });
+                    if (this.checked) {
+                        this.closest('.radio-item').classList.add('checked');
+                    }
+                });
+            });
+
+            // 表单验证
+            const form = document.getElementById('batchForm');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                let isValid = true;
+
+                // 验证产品类型
+                const productType = document.getElementById('productType');
+                if (!productType.value) {
+                    productType.closest('.form-group').classList.add('error');
+                    isValid = false;
+                } else {
+                    productType.closest('.form-group').classList.remove('error');
+                }
+
+                // 验证原材料（至少选一个）
+                const materials = document.querySelectorAll('input[name="materials"]:checked');
+                const materialsGroup = document.querySelector('input[name="materials"]').closest('.form-group');
+                if (materials.length === 0) {
+                    materialsGroup.classList.add('error');
+                    isValid = false;
+                } else {
+                    materialsGroup.classList.remove('error');
+                }
+
+                // 验证目标产量
+                const targetQuantity = document.getElementById('targetQuantity');
+                if (!targetQuantity.value || targetQuantity.value <= 0) {
+                    targetQuantity.closest('.form-group').classList.add('error');
+                    isValid = false;
+                } else {
+                    targetQuantity.closest('.form-group').classList.remove('error');
+                }
+
+                // 验证生产线
+                const productionLine = document.querySelector('input[name="productionLine"]:checked');
+                const productionLineGroup = document.querySelector('input[name="productionLine"]').closest('.form-group');
+                if (!productionLine) {
+                    productionLineGroup.classList.add('error');
+                    isValid = false;
+                } else {
+                    productionLineGroup.classList.remove('error');
+                }
+
+                // 验证负责人
+                const supervisor = document.getElementById('selectedEmployee');
+                if (!supervisor.value) {
+                    supervisor.closest('.form-group').classList.add('error');
+                    isValid = false;
+                } else {
+                    supervisor.closest('.form-group').classList.remove('error');
+                }
+
+                // 验证开始日期
+                const startDate = document.getElementById('startDate');
+                if (!startDate.value) {
+                    startDate.closest('.form-group').classList.add('error');
+                    isValid = false;
+                } else {
+                    startDate.closest('.form-group').classList.remove('error');
+                }
+
+                if (isValid) {
+                    // 模拟创建成功
+                    showSuccess();
+                } else {
+                    // 滚动到第一个错误
+                    const firstError = document.querySelector('.form-group.error');
+                    if (firstError) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            });
+
+            // 自动保存草稿
+            let saveTimeout;
+            form.addEventListener('input', function() {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    saveDraftSilent();
+                }, 2000);
+            });
+        });
+
+        // 显示员工选择弹窗
+        function showEmployeeModal() {
+            document.getElementById('employeeModal').classList.add('show');
+        }
+
+        // 隐藏员工选择弹窗
+        function hideEmployeeModal(event) {
+            if (!event || event.target.id === 'employeeModal') {
+                document.getElementById('employeeModal').classList.remove('show');
+            }
+        }
+
+        // 选择员工
+        function selectEmployee(id, name, title) {
+            document.getElementById('selectedEmployee').value = id;
+            const selector = document.getElementById('employeeSelector');
+            selector.classList.add('selected');
+            selector.querySelector('.employee-name').textContent = name;
+            selector.querySelector('.employee-title').textContent = title;
+            selector.querySelector('.employee-avatar').textContent = name.charAt(0);
+            hideEmployeeModal();
+        }
+
+        // 保存草稿（带提示）
+        function saveDraft() {
+            const formData = new FormData(document.getElementById('batchForm'));
+            localStorage.setItem('batchDraft', JSON.stringify(Object.fromEntries(formData)));
+
+            const indicator = document.getElementById('draftIndicator');
+            indicator.style.display = 'block';
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 2000);
+        }
+
+        // 静默保存草稿
+        function saveDraftSilent() {
+            const formData = new FormData(document.getElementById('batchForm'));
+            localStorage.setItem('batchDraft', JSON.stringify(Object.fromEntries(formData)));
+        }
+
+        // 取消创建
+        function cancelCreate() {
+            if (confirm('确定要取消创建吗？未保存的内容将会丢失。')) {
+                window.location.href = 'list.html';
+            }
+        }
+
+        // 创建成功
+        function showSuccess() {
+            // 清除草稿
+            localStorage.removeItem('batchDraft');
+
+            // 模拟创建成功，跳转到列表
+            alert('✓ 批次创建成功！\n批次号: FAC001-20250105-004\n状态: 计划中');
+            window.location.href = 'list.html';
+        }
+
+        // 模拟键盘避让（输入时页面上推）
+        document.querySelectorAll('input, textarea, select').forEach(input => {
+            input.addEventListener('focus', function() {
+                // 在移动端实际会触发键盘，这里仅模拟效果
+                setTimeout(() => {
+                    this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            });
+        });
+    </script>
+    <script src="../../assets/js/flow-navigator.js"></script>
+</body>
+</html>

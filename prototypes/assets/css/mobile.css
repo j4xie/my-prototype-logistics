@@ -1,0 +1,636 @@
+/* 白垩纪食品溯源系统 - 移动端样式 */
+
+/* ==================== 移动端CSS变量覆盖 ==================== */
+:root {
+    /* 移动端专属间距 - 更大的触摸友好间距 */
+    --mobile-spacing-xs: 8px;
+    --mobile-spacing-sm: 12px;
+    --mobile-spacing-md: 16px;
+    --mobile-spacing-lg: 20px;
+    --mobile-spacing-xl: 24px;
+
+    /* 移动端字体大小 */
+    --mobile-font-base: 16px;
+    --mobile-font-sm: 14px;
+    --mobile-font-lg: 18px;
+    --mobile-font-xl: 20px;
+
+    /* 触摸区域最小尺寸 */
+    --touch-target-min: 44px;
+
+    /* 移动端最大宽度 */
+    --mobile-max-width: 428px;
+}
+
+/* ==================== 基础重置 ==================== */
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%; /* 防止iOS自动缩放 */
+}
+
+body {
+    max-width: var(--mobile-max-width);
+    margin: 0 auto;
+    font-size: var(--mobile-font-base);
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+}
+
+/* 禁用选择和长按菜单（根据需要） */
+* {
+    -webkit-tap-highlight-color: rgba(24, 144, 255, 0.2); /* iOS点击高亮 */
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+input, textarea {
+    -webkit-user-select: auto;
+    user-select: auto;
+}
+
+/* ==================== 页面布局 ==================== */
+.page-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+}
+
+/* 页面头部 - 移动端简化 */
+.page-header {
+    padding: 12px 16px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* 导航栏 - 移动端布局 */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.logo {
+    font-size: 18px;
+}
+
+/* 桌面端导航菜单 - 移动端隐藏 */
+.nav-menu {
+    display: none;
+}
+
+/* 汉堡菜单按钮 */
+.menu-toggle {
+    display: block;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* 移动端侧边菜单 */
+.mobile-menu {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    width: 280px;
+    height: calc(100vh - 56px);
+    background: white;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 99;
+    overflow-y: auto;
+}
+
+.mobile-menu.active {
+    transform: translateX(0);
+}
+
+.mobile-menu-overlay {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+    z-index: 98;
+}
+
+.mobile-menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 移动端菜单项 */
+.mobile-nav-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-nav-item a {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 页面内容区 */
+.page-content {
+    padding: 16px;
+    flex: 1;
+    max-width: 100%;
+}
+
+/* ==================== 底部Tab导航栏 ==================== */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: var(--mobile-max-width);
+    margin: 0 auto;
+    height: 56px;
+    background: white;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+    padding-bottom: env(safe-area-inset-bottom); /* iOS安全区域 */
+}
+
+.bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 4px;
+    min-height: 44px;
+}
+
+.bottom-nav-item.active {
+    color: var(--primary-color);
+}
+
+.bottom-nav-icon {
+    font-size: 22px;
+    margin-bottom: 2px;
+}
+
+/* 为底部导航栏留出空间 */
+body.has-bottom-nav .page-content {
+    padding-bottom: 72px; /* 56px底栏 + 16px间距 */
+}
+
+/* ==================== 卡片组件 ==================== */
+.card {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+}
+
+.card-header {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+}
+
+/* ==================== 按钮组件 ==================== */
+.btn {
+    min-height: var(--touch-target-min);
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+}
+
+.btn-primary {
+    font-weight: 600;
+}
+
+/* 浮动操作按钮 (FAB) */
+.fab {
+    position: fixed;
+    bottom: 72px; /* 底部导航栏上方 */
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* ==================== 流程图导航按钮 ==================== */
+.flow-nav-btn {
+    position: fixed;
+    bottom: 72px;
+    left: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.flow-nav-btn:active {
+    transform: scale(0.95);
+}
+
+/* ==================== 流程图模态框 ==================== */
+.flow-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    max-width: var(--mobile-max-width);
+    margin: 0 auto;
+}
+
+.flow-modal.active {
+    display: flex;
+}
+
+.flow-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.flow-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.flow-modal-close {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.flow-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* 流程图节点 */
+.flow-node {
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    position: relative;
+}
+
+.flow-node.current {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.flow-node-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.flow-node.current .flow-node-title {
+    color: var(--primary-color);
+}
+
+.flow-node-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.flow-arrow {
+    text-align: center;
+    color: var(--primary-color);
+    font-size: 24px;
+    margin: 8px 0;
+}
+
+.flow-condition {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: #f0f2f5;
+    border-radius: 6px;
+}
+
+.flow-next-pages {
+    margin-top: 12px;
+}
+
+.flow-next-page {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.flow-next-page:active {
+    background: #e9ecef;
+    transform: scale(0.98);
+}
+
+.flow-next-page-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.flow-next-page-condition {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ==================== 面包屑导航 ==================== */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.breadcrumb-item {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.breadcrumb-item.active {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.breadcrumb-separator {
+    color: var(--text-disabled);
+}
+
+/* ==================== 表单组件 ==================== */
+.form-control {
+    min-height: var(--touch-target-min);
+    font-size: 16px; /* 防止iOS自动缩放 */
+    padding: 12px;
+}
+
+.form-label {
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+/* ==================== 搜索框 ==================== */
+.search-box {
+    margin-bottom: 16px;
+}
+
+.search-input {
+    height: var(--touch-target-min);
+    font-size: 16px;
+}
+
+/* ==================== 筛选栏 ==================== */
+.filter-bar {
+    margin-bottom: 16px;
+    padding: 16px;
+}
+
+.filter-tabs {
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+}
+
+.filter-tabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+}
+
+.filter-tab {
+    min-height: var(--touch-target-min);
+    padding: 10px 16px;
+    white-space: nowrap;
+}
+
+/* ==================== 批次卡片 - 移动端优化 ==================== */
+.batch-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.batch-card {
+    padding: 16px;
+    /* 移除hover效果，使用touch效果 */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.batch-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+/* ==================== 统计卡片网格 ==================== */
+.stats-grid {
+    grid-template-columns: 1fr; /* 单列 */
+    gap: 12px;
+}
+
+.stat-card {
+    padding: 16px;
+}
+
+/* ==================== 表格 - 移动端优化 ==================== */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    min-width: 600px; /* 确保表格可滚动 */
+}
+
+/* ==================== 模态框 - 移动端全屏 ==================== */
+.modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    margin: 0;
+}
+
+.modal-overlay {
+    align-items: flex-end; /* 从底部弹出 */
+}
+
+.modal.bottom-sheet {
+    border-radius: 20px 20px 0 0;
+    max-height: 90vh;
+}
+
+/* ==================== 空状态 ==================== */
+.empty-state {
+    padding: 40px 20px;
+}
+
+.empty-icon {
+    font-size: 48px;
+}
+
+/* ==================== 加载状态 ==================== */
+.loading {
+    padding: 40px 20px;
+}
+
+/* ==================== 下拉刷新 ==================== */
+.pull-to-refresh {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* ==================== 工具类 ==================== */
+.mobile-only {
+    display: block;
+}
+
+.desktop-only {
+    display: none;
+}
+
+/* ==================== 安全区域适配 (iPhone X+) ==================== */
+@supports (padding: env(safe-area-inset-bottom)) {
+    .page-header {
+        padding-top: calc(12px + env(safe-area-inset-top));
+    }
+
+    .bottom-nav {
+        height: calc(56px + env(safe-area-inset-bottom));
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .page-content {
+        padding-left: calc(16px + env(safe-area-inset-left));
+        padding-right: calc(16px + env(safe-area-inset-right));
+    }
+}
+
+/* ==================== 手势支持 ==================== */
+.swipeable {
+    touch-action: pan-y; /* 允许垂直滚动，禁止水平滚动 */
+}
+
+/* 长按效果 */
+.long-press {
+    transition: transform 0.2s;
+}
+
+.long-press:active {
+    transform: scale(0.95);
+}
+
+/* ==================== 性能优化 ==================== */
+* {
+    /* GPU加速 */
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+}
+
+/* 减少重绘 */
+.card, .btn, .batch-card {
+    will-change: transform;
+}
+
+/* ==================== 辅助功能 ==================== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==================== 暗黑模式支持 (可选) ==================== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1a1a1a;
+        --card-bg: #2a2a2a;
+        --text-primary: #ffffff;
+        --text-secondary: #b0b0b0;
+        --border-color: #404040;
+    }
+}
+
+/* ==================== 横屏适配 ==================== */
+@media (orientation: landscape) and (max-height: 428px) {
+    .page-header {
+        height: 48px;
+        padding: 8px 16px;
+    }
+
+    .bottom-nav {
+        height: 48px;
+    }
+
+    .flow-nav-btn, .fab {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+}

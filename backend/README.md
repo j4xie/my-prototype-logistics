@@ -99,7 +99,7 @@ cp .env.example .env
 **编辑 .env 文件**:
 ```env
 # 数据库配置
-DATABASE_URL="mysql://username:password@localhost:3306/heiniu_db"
+DATABASE_URL="mysql://username:password@localhost:3306/cretas_db"
 
 # JWT配置
 JWT_SECRET="your-super-secret-jwt-key-here"
@@ -328,8 +328,8 @@ npm run dev
 npm start
 
 # PM2部署（推荐生产环境）
-pm2 start src/index.js --name "heiniu-backend"
-pm2 logs heiniu-backend
+pm2 start src/index.js --name "cretas-backend"
+pm2 logs cretas-backend
 ```
 
 ## 📋 常见问题
@@ -368,7 +368,7 @@ CMD ["npm", "start"]
 
 ```env
 NODE_ENV=production
-DATABASE_URL="mysql://prod_user:prod_pass@db_host:3306/heiniu_prod"
+DATABASE_URL="mysql://prod_user:prod_pass@db_host:3306/cretas_prod"
 JWT_SECRET="production-jwt-secret-very-long-and-secure"
 JWT_REFRESH_SECRET="production-refresh-secret-very-long-and-secure"
 CORS_ORIGIN="https://your-frontend-domain.com"

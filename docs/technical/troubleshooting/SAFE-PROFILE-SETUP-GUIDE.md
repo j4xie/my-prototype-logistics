@@ -16,16 +16,16 @@
 
 ```cmd
 # 启动React Native环境
-C:\Users\Steve\heiniu\start-backend-rn.cmd
+C:\Users\Steve\cretas\start-backend-rn.cmd
 
 # 启动Web开发环境  
-C:\Users\Steve\heiniu\start-local.cmd
+C:\Users\Steve\cretas\start-local.cmd
 
 # 完整解决方案菜单
-C:\Users\Steve\heiniu\SOLUTION-HUB.cmd
+C:\Users\Steve\cretas\SOLUTION-HUB.cmd
 
 # 无Profile开发环境
-C:\Users\Steve\heiniu\NO-PROFILE-DEV.cmd
+C:\Users\Steve\cretas\NO-PROFILE-DEV.cmd
 ```
 
 **优势**:
@@ -40,13 +40,13 @@ C:\Users\Steve\heiniu\NO-PROFILE-DEV.cmd
 #### 安全脚本列表
 ```powershell
 # Web开发命令 (dev, dev-stop, dev-status)
-C:\Users\Steve\heiniu\SAFE-setup-dev-command.ps1
+C:\Users\Steve\cretas\SAFE-setup-dev-command.ps1
 
 # React Native命令 (dev-rn, dev-rn-stop, dev-rn-status)  
-C:\Users\Steve\heiniu\SAFE-setup-rn-command.ps1
+C:\Users\Steve\cretas\SAFE-setup-rn-command.ps1
 
 # Profile管理工具
-C:\Users\Steve\heiniu\Profile-Manager.ps1
+C:\Users\Steve\cretas\Profile-Manager.ps1
 ```
 
 ---
@@ -94,7 +94,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\Profile-Manager.ps1 -Action backup
 
 # 移除某个模块
-.\Profile-Manager.ps1 -Action remove -SectionName "HEINIU WEB DEV COMMANDS"
+.\Profile-Manager.ps1 -Action remove -SectionName "CRETAS WEB DEV COMMANDS"
 
 # 重置Profile到最小状态
 .\Profile-Manager.ps1 -Action reset
@@ -133,9 +133,9 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ### 标记系统
 安全脚本使用清晰的标记系统：
 ```powershell
-# === HEINIU WEB DEV COMMANDS START ===
+# === CRETAS WEB DEV COMMANDS START ===
 # 你的命令内容在这里
-# === HEINIU WEB DEV COMMANDS END ===
+# === CRETAS WEB DEV COMMANDS END ===
 ```
 
 这确保了：
@@ -266,7 +266,7 @@ SOLUTION-HUB.cmd
 
 ### 文件位置
 - **Profile路径**: `C:\Users\Steve\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1`
-- **脚本位置**: `C:\Users\Steve\heiniu\`
+- **脚本位置**: `C:\Users\Steve\cretas\`
 - **备份位置**: Profile同目录下的`.backup.*`文件
 
 ---

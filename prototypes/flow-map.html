@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>完整流程图 - 白垩纪食品溯源系统</title>
+    <link rel="stylesheet" href="assets/css/common.css">
+    <link rel="stylesheet" href="assets/css/mobile.css">
+    <style>
+        body {
+            background: #f5f5f5;
+            overflow-x: auto;
+        }
+
+        .flow-map-container {
+            min-height: 100vh;
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        .flow-map-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .flow-map-header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .flow-map-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .module-section {
+            margin-bottom: 24px;
+        }
+
+        .module-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .flow-diagram {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .flow-step {
+            position: relative;
+            margin-bottom: 0;
+        }
+
+        .flow-step-node {
+            background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
+            border: 2px solid #1890ff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .flow-step-node:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+        }
+
+        .flow-step-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .flow-step-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .flow-connector {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 20px;
+            margin: 8px 0;
+            position: relative;
+        }
+
+        .flow-connector-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 4px 0;
+            text-align: center;
+        }
+
+        .flow-branch {
+            margin-left: 20px;
+            padding-left: 16px;
+            border-left: 2px dashed var(--border-color);
+        }
+
+        .legend {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="flow-map-container">
+        <div class="flow-map-header">
+            <h1>🗺️ 系统完整流程图</h1>
+            <p>类似Figma Prototype的页面跳转流程</p>
+        </div>
+
+        <!-- 认证流程 -->
+        <div class="module-section">
+            <div class="module-title">
+                <span>🔐</span>
+                <span>认证与激活流程</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='index.html'">
+                        <div class="flow-step-title">主导航页</div>
+                        <div class="flow-step-desc">系统入口</div>
+                    </div>
+                    <div class="flow-connector">↓</div>
+                    <div class="flow-connector-label">点击登录或任意模块</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/auth/login.html'">
+                        <div class="flow-step-title">统一登录页</div>
+                        <div class="flow-step-desc">用户名/密码登录、生物识别</div>
+                    </div>
+                    <div class="flow-connector">↓</div>
+                    <div class="flow-connector-label">登录成功</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/dashboard/overview.html'">
+                        <div class="flow-step-title">生产概览</div>
+                        <div class="flow-step-desc">主页仪表板</div>
+                    </div>
+                </div>
+
+                <!-- 注册分支 -->
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed #d9d9d9;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 12px;">📝 注册流程分支</div>
+                    <div class="flow-branch">
+                        <div class="flow-step">
+                            <div class="flow-step-node" onclick="location.href='pages/auth/register-phase1.html'">
+                                <div class="flow-step-title">注册第一步 - 手机验证</div>
+                                <div class="flow-step-desc">验证码 + 白名单检查</div>
+                            </div>
+                            <div class="flow-connector">↓</div>
+                            <div class="flow-connector-label">验证通过</div>
+                        </div>
+
+                        <div class="flow-step">
+                            <div class="flow-step-node" onclick="location.href='pages/auth/register-phase2.html'">
+                                <div class="flow-step-title">注册第二步 - 完善信息</div>
+                                <div class="flow-step-desc">填写用户名、密码、部门等</div>
+                            </div>
+                            <div class="flow-connector">↓</div>
+                            <div class="flow-connector-label">注册成功</div>
+                        </div>
+
+                        <div class="flow-step">
+                            <div class="flow-step-node" onclick="location.href='pages/auth/activation.html'">
+                                <div class="flow-step-title">设备激活</div>
+                                <div class="flow-step-desc">激活码激活设备</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批次管理核心流程 -->
+        <div class="module-section">
+            <div class="module-title">
+                <span>📦</span>
+                <span>批次管理核心流程</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/batch/list.html'">
+                        <div class="flow-step-title">批次列表页</div>
+                        <div class="flow-step-desc">查看所有批次、状态筛选</div>
+                    </div>
+                </div>
+
+                <!-- 创建批次分支 -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;">
+                    <div>
+                        <div class="flow-connector-label">点击批次卡片</div>
+                        <div class="flow-connector">↓</div>
+                        <div class="flow-step-node" onclick="location.href='pages/batch/detail.html'">
+                            <div class="flow-step-title">批次详情</div>
+                            <div class="flow-step-desc">完整信息</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flow-connector-label">点击"+"按钮</div>
+                        <div class="flow-connector">↓</div>
+                        <div class="flow-step-node" onclick="location.href='pages/batch/create.html'">
+                            <div class="flow-step-title">创建批次</div>
+                            <div class="flow-step-desc">填写表单</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 批次详情分支 -->
+                <div style="margin-top: 12px;">
+                    <div class="flow-connector-label">从批次详情可跳转到：</div>
+                    <div style="display: grid; gap: 8px; margin-top: 8px;">
+                        <div class="flow-step-node" onclick="location.href='pages/batch/timeline.html'" style="background: #f0fff4; border-color: #52c41a;">
+                            <div class="flow-step-title" style="color: #52c41a;">批次时间线</div>
+                        </div>
+                        <div class="flow-step-node" onclick="location.href='pages/cost/batch-detail.html'" style="background: #fff7e6; border-color: #faad14;">
+                            <div class="flow-step-title" style="color: #faad14;">成本详情</div>
+                        </div>
+                        <div class="flow-step-node" onclick="location.href='pages/quality/create.html'" style="background: #f9f0ff; border-color: #722ed1;">
+                            <div class="flow-step-title" style="color: #722ed1;">创建质检</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 质检流程 -->
+        <div class="module-section">
+            <div class="module-title">
+                <span>✅</span>
+                <span>质检管理流程</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/quality/list.html'">
+                        <div class="flow-step-title">质检记录列表</div>
+                    </div>
+                    <div class="flow-connector">↓</div>
+                    <div class="flow-connector-label">点击"创建质检"</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/quality/create.html'">
+                        <div class="flow-step-title">创建质检记录</div>
+                        <div class="flow-step-desc">三阶段质检（原料/过程/成品）</div>
+                    </div>
+                    <div class="flow-connector">↓</div>
+                    <div class="flow-connector-label">提交质检</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/quality/detail.html'">
+                        <div class="flow-step-title">质检详情页</div>
+                        <div class="flow-step-desc">查看检测结果、照片</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px; padding: 12px; background: #f0f2f5; border-radius: 8px;">
+                    <div class="flow-step-node" onclick="location.href='pages/quality/statistics.html'" style="background: white;">
+                        <div class="flow-step-title">质检统计分析</div>
+                        <div class="flow-step-desc">合格率趋势、不合格项TOP10</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 员工管理流程 -->
+        <div class="module-section">
+            <div class="module-title">
+                <span>👥</span>
+                <span>员工管理流程</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/employee/clock.html'">
+                        <div class="flow-step-title">员工打卡页</div>
+                        <div class="flow-step-desc">上班/下班打卡</div>
+                    </div>
+                    <div class="flow-connector">↓</div>
+                    <div class="flow-connector-label">点击"查看历史"</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/employee/history.html'">
+                        <div class="flow-step-title">打卡历史记录</div>
+                    </div>
+                    <div class="flow-connector">↓</div>
+                    <div class="flow-connector-label">点击"统计分析"</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/employee/statistics.html'">
+                        <div class="flow-step-title">工时统计页</div>
+                        <div class="flow-step-desc">日/周/月统计</div>
+                    </div>
+                    <div class="flow-connector">↓</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/employee/work-record.html'">
+                        <div class="flow-step-title">工作记录页</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设备监控流程 -->
+        <div class="module-section">
+            <div class="module-title">
+                <span>⚙️</span>
+                <span>设备监控流程</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/equipment/list.html'">
+                        <div class="flow-step-title">设备列表页</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;">
+                    <div>
+                        <div class="flow-connector-label">点击设备</div>
+                        <div class="flow-connector">↓</div>
+                        <div class="flow-step-node" onclick="location.href='pages/equipment/detail.html'">
+                            <div class="flow-step-title">设备详情</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flow-connector-label">点击"实时监控"</div>
+                        <div class="flow-connector">↓</div>
+                        <div class="flow-step-node" onclick="location.href='pages/equipment/monitoring.html'">
+                            <div class="flow-step-title">实时监控</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-connector-label">查看告警</div>
+                    <div class="flow-connector">↓</div>
+                    <div class="flow-step-node" onclick="location.href='pages/equipment/alerts.html'">
+                        <div class="flow-step-title">设备告警页</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成本分析流程 -->
+        <div class="module-section">
+            <div class="module-title">
+                <span>💰</span>
+                <span>成本分析流程</span>
+            </div>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/cost/dashboard.html'">
+                        <div class="flow-step-title">成本仪表板</div>
+                    </div>
+                    <div class="flow-connector">↓</div>
+                    <div class="flow-connector-label">点击批次</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/cost/batch-detail.html'">
+                        <div class="flow-step-title">批次成本详情</div>
+                        <div class="flow-step-desc">成本构成、成本分析</div>
+                    </div>
+                    <div class="flow-connector">↓</div>
+                    <div class="flow-connector-label">点击"AI分析"</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-node" onclick="location.href='pages/cost/ai-analysis.html'"
+                         style="background: linear-gradient(135deg, #fff0f6 0%, #ffe6f7 100%); border-color: #eb2f96;">
+                        <div class="flow-step-title" style="color: #eb2f96;">🤖 AI成本分析</div>
+                        <div class="flow-step-desc">DeepSeek智能分析</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px;">
+                    <div class="flow-connector-label">查看趋势</div>
+                    <div class="flow-step-node" onclick="location.href='pages/cost/trend.html'">
+                        <div class="flow-step-title">成本趋势分析</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 溯源查询流程 -->
+        <div class="module-section">
+            <div class="module-title">
+                <span>🔍</span>
+                <span>溯源查询流程</span>
+            </div>
+            <div class="flow-diagram">
+                <div style="display: grid; gap: 12px;">
+                    <div class="flow-step-node" onclick="location.href='pages/trace/consumer.html'">
+                        <div class="flow-step-title">消费者溯源查询</div>
+                        <div class="flow-step-desc">C端扫码查询</div>
+                    </div>
+
+                    <div class="flow-step-node" onclick="location.href='pages/trace/enterprise.html'">
+                        <div class="flow-step-title">企业端详细追溯</div>
+                        <div class="flow-step-desc">B端完整档案</div>
+                    </div>
+
+                    <div class="flow-step-node" onclick="location.href='pages/trace/regulator.html'">
+                        <div class="flow-step-title">监管端追溯查询</div>
+                        <div class="flow-step-desc">监管部门专用</div>
+                    </div>
+
+                    <div class="flow-step-node" onclick="location.href='pages/trace/qr-generate.html'">
+                        <div class="flow-step-title">溯源码生成</div>
+                        <div class="flow-step-desc">二维码生成、打印</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图例说明 -->
+        <div class="legend">
+            <div class="legend-title">📖 图例说明</div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%); border: 2px solid #1890ff;"></div>
+                <span>可点击页面节点（点击跳转）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #fff0f6 0%, #ffe6f7 100%); border: 2px solid #eb2f96;"></div>
+                <span>AI增强功能页面</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 20px; width: 24px; text-align: center;">↓</span>
+                <span>页面跳转连接线</span>
+            </div>
+            <div class="legend-item">
+                <span style="width: 24px; text-align: center; color: #8c8c8c; font-size: 12px;">条件</span>
+                <span>触发跳转的条件说明</span>
+            </div>
+        </div>
+
+        <!-- 返回按钮 -->
+        <div style="margin-top: 24px; display: flex; gap: 12px;">
+            <a href="index.html" class="btn btn-default" style="flex: 1; text-align: center;">
+                ← 返回主导航
+            </a>
+            <a href="pages/auth/login.html" class="btn btn-primary" style="flex: 1; text-align: center;">
+                开始体验 →
+            </a>
+        </div>
+    </div>
+
+    <script src="assets/js/flow-navigator.js"></script>
+</body>
+</html>

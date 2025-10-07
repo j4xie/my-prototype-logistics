@@ -20,7 +20,7 @@ This is 白垩纪食品溯源系统 (Cretas Food Traceability System), focusing 
 - **No Backend Implementation**: Do NOT create/modify any backend logic, functions, or database schema
 - **API Interface Design**: Create complete API client interfaces in React Native
 - **No Mock APIs**: All development is based on real API interface design
-- **Requirement Collection**: Record ALL backend requirements in `/mnt/c/Users/Steve/heiniu/backend/rn-update-tableandlogic.md`
+- **Requirement Collection**: Record ALL backend requirements in `/mnt/c/Users/Steve/cretas/backend/rn-update-tableandlogic.md`
 
 #### Post-Phase 3: Backend Implementation
 - **Backend Development**: Implement all collected backend requirements
@@ -500,7 +500,7 @@ When adding backend requirements, include:
 - **Username**: `admin`
 - **Password**: `Admin@123456`
 - **Test Device ID**: `test-device-123`
-- **Activation Codes**: `DEV_TEST_2024`, `HEINIU_MOBILE_2024`
+- **Activation Codes**: `DEV_TEST_2024`, `CRETAS_MOBILE_2024`
 - **Test Factory ID**: `FAC001`
 - **Test Phone**: `+86138000000000`
 
