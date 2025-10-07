@@ -32,30 +32,31 @@ export const createBatch = async (req, res, next) => {
       notes
     } = req.body;
 
-    // 生成批次编号
-    const batchNumber = await generateBatchNumber(factoryId, productType);
+    // 生成批次编号 - 如果没有产品类型，使用原料类型
+    const batchType = productType || rawMaterials?.[0]?.materialType || '待定';
+    const batchNumber = await generateBatchNumber(factoryId, batchType);
 
     const batch = await prisma.processingBatch.create({
       data: {
-        factoryId,
         batchNumber,
-        productType,
+        productType: productType || null,
         rawMaterials,
-        startDate: new Date(startDate),
+        startDate: startDate ? new Date(startDate) : new Date(),
         productionLine,
-        supervisorId,
         targetQuantity: targetQuantity ? parseFloat(targetQuantity) : null,
         notes,
-        status: 'planning'
+        status: 'planning',
+        factory: { connect: { id: factoryId } },
+        ...(supervisorId && { supervisor: { connect: { id: supervisorId } } })
       },
       include: {
-        supervisor: {
+        supervisor: supervisorId ? {
           select: {
             id: true,
             username: true,
             fullName: true
           }
-        }
+        } : undefined
       }
     });
 
@@ -82,27 +83,35 @@ export const getBatches = async (req, res, next) => {
       search
     } = req.query;
 
+    console.log('🔍 getBatches - factoryId:', factoryId);
+    console.log('🔍 getBatches - userType:', req.user?.userType);
+
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    // 构建查询条件
-    const where = {
-      factoryId,
-      ...(status && { status }),
-      ...(productType && { productType: { contains: productType } }),
-      ...(startDate && endDate && {
-        startDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate)
-        }
-      }),
-      ...(search && {
-        OR: [
-          { batchNumber: { contains: search } },
-          { productType: { contains: search } },
-          { notes: { contains: search } }
-        ]
-      })
-    };
+
+    // 构建查询条件 - platform用户可以看到所有批次
+    const where = {};
+
+    // 只有工厂用户需要过滤factoryId
+    if (req.user?.userType === 'factory' && factoryId) {
+      where.factoryId = factoryId;
+    }
+
+    // 其他筛选条件
+    if (status) where.status = status;
+    if (productType) where.productType = { contains: productType };
+    if (startDate && endDate) {
+      where.startDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      };
+    }
+    if (search) {
+      where.OR = [
+        { batchNumber: { contains: search } },
+        { productType: { contains: search } },
+        { notes: { contains: search } }
+      ];
+    }
 
     const [batches, total] = await Promise.all([
       prisma.processingBatch.findMany({
@@ -131,6 +140,8 @@ export const getBatches = async (req, res, next) => {
       }),
       prisma.processingBatch.count({ where })
     ]);
+
+    console.log('✅ Found batches:', batches.length, 'Total:', total);
 
     res.json(createSuccessResponse({
       batches,
@@ -1638,9 +1649,36 @@ export default {
 export const getAICostAnalysis = async (req, res, next) => {
   try {
     const factoryId = safeGetFactoryId(req);
+    const userId = req.user.id;
     const { batchId, question, session_id } = req.body;
 
-    // 验证批次存在
+    // 1. 加载工厂AI设置
+    const factory = await prisma.factory.findUnique({
+      where: { id: factoryId },
+      select: {
+        aiWeeklyQuota: true,
+        settings: { select: { aiSettings: true } }
+      }
+    });
+
+    const aiSettings = factory?.settings?.aiSettings || {
+      enabled: true,
+      tone: 'professional',
+      goal: 'cost_optimization',
+      detailLevel: 'standard',
+      industryStandards: {
+        laborCostPercentage: 30,
+        equipmentUtilization: 80,
+        profitMargin: 20
+      }
+    };
+
+    // 检查AI是否启用（由中间件也检查，这里双重保险）
+    if (aiSettings.enabled === false) {
+      throw new AppError('AI分析功能已被工厂管理员禁用', 403);
+    }
+
+    // 2. 验证批次存在
     const batch = await prisma.processingBatch.findFirst({
       where: { id: batchId, factoryId }
     });
@@ -1649,13 +1687,13 @@ export const getAICostAnalysis = async (req, res, next) => {
       throw new NotFoundError('批次不存在');
     }
 
-    // 获取完整成本分析数据
+    // 3. 获取完整成本分析数据
     const costAnalysis = await getCostAnalysisData(batchId, factoryId);
 
-    // 格式化为AI提示
-    const prompt = formatCostDataForAI(costAnalysis, question);
+    // 4. 格式化为AI提示（传入AI设置）
+    const prompt = formatCostDataForAI(costAnalysis, question, aiSettings);
 
-    // 调用AI服务
+    // 5. 调用AI服务
     const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8085';
     const aiResponse = await fetch(`${AI_SERVICE_URL}/api/ai/chat`, {
       method: 'POST',
@@ -1673,10 +1711,24 @@ export const getAICostAnalysis = async (req, res, next) => {
 
     const aiResult = await aiResponse.json();
 
+    // 6. 记录AI使用日志（异步，不阻塞响应）
+    const { logAIUsage } = await import('../middleware/aiRateLimit.js');
+    logAIUsage({
+      factoryId,
+      userId,
+      batchId,
+      requestType: question ? 'question' : 'analysis',
+      question,
+      responseLength: aiResult.reply?.length,
+      sessionId: aiResult.session_id
+    });
+
+    // 7. 返回结果（包含配额信息）
     res.json(createSuccessResponse({
       analysis: aiResult.reply,
       session_id: aiResult.session_id,
-      message_count: aiResult.message_count
+      message_count: aiResult.message_count,
+      quota: req.aiQuota  // 剩余次数信息（由中间件提供）
     }));
 
   } catch (error) {
@@ -1770,12 +1822,35 @@ async function getCostAnalysisData(batchId, factoryId) {
 }
 
 /**
- * 格式化成本数据为AI提示
+ * 格式化成本数据为AI提示（支持AI设置）
  */
-function formatCostDataForAI(costData, userQuestion = null) {
+function formatCostDataForAI(costData, userQuestion = null, aiSettings = {}) {
   const { batch, laborStats, equipmentStats, costBreakdown, profitAnalysis } = costData;
 
-  let prompt = `请分析以下批次的成本数据：
+  // 根据设置动态生成提示词前缀
+  const toneMap = {
+    professional: '请用专业、严谨的语言分析',
+    friendly: '请用友好、易懂的语言分析',
+    concise: '请简明扼要地分析'
+  };
+
+  const goalMap = {
+    cost_optimization: '重点关注成本优化和降本增效',
+    efficiency: '重点关注生产效率和人员配置优化',
+    profit: '重点关注利润最大化和定价策略'
+  };
+
+  const detailMap = {
+    brief: '给出核心建议（3条以内）',
+    standard: '提供标准分析报告',
+    detailed: '提供详细分析和多角度建议'
+  };
+
+  const tone = toneMap[aiSettings.tone] || toneMap.professional;
+  const goal = goalMap[aiSettings.goal] || goalMap.cost_optimization;
+  const detailLevel = detailMap[aiSettings.detailLevel] || detailMap.standard;
+
+  let prompt = `${tone}以下批次的成本数据（${goal}）：
 
 **批次信息**：
 - 批次号: ${batch.batchNumber}
@@ -1824,13 +1899,27 @@ ${batch.expectedPrice ? `- 预期售价: ¥${batch.expectedPrice}/kg` : ''}
 - 盈亏平衡价: ¥${profitAnalysis.breakEvenPrice.toFixed(2)}/kg`;
   }
 
+  // 添加行业标准参考
+  if (aiSettings.industryStandards) {
+    const standards = aiSettings.industryStandards;
+    prompt += `
+
+**行业标准参考**：
+- 人工成本占比标准: ${standards.laborCostPercentage || 30}%
+- 设备利用率目标: ${standards.equipmentUtilization || 80}%
+- 利润率目标: ${standards.profitMargin || 20}%`;
+  }
+
+  // 添加用户问题或默认分析要求
   if (userQuestion) {
     prompt += `\n\n**用户问题**: ${userQuestion}`;
   } else {
-    prompt += `\n\n请分析：
-1. 成本结构是否合理？
-2. 有哪些优化空间？
-3. 具体改进建议是什么？`;
+    prompt += `\n\n请按照${detailLevel}的要求，分析成本结构合理性和优化空间。`;
+  }
+
+  // 添加自定义提示词
+  if (aiSettings.customPrompt) {
+    prompt += `\n\n**补充要求**: ${aiSettings.customPrompt}`;
   }
 
   return prompt;

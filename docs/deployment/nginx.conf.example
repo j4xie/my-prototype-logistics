@@ -1,4 +1,4 @@
-# 海牛食品溯源系统 - Nginx配置
+# 白垩纪食品溯源系统 - Nginx配置
 
 worker_processes auto;
 worker_cpu_affinity auto;
@@ -72,7 +72,7 @@ http {
     # HTTP重定向到HTTPS (生产环境)
     server {
         listen 80;
-        server_name heiniu.example.com;
+        server_name cretas.example.com;
         
         location /.well-known/acme-challenge/ {
             root /var/www/certbot;
@@ -86,7 +86,7 @@ http {
     # HTTPS主服务器
     server {
         listen 443 ssl http2;
-        server_name heiniu.example.com;
+        server_name cretas.example.com;
 
         # SSL配置
         ssl_certificate /etc/nginx/ssl/cert.pem;

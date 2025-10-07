@@ -48,7 +48,7 @@ curl http://localhost:3001/api/health
 
 #### Step 4: 启动 React Native (端口 3010)
 ```cmd
-cd frontend/HainiuFoodTrace
+cd frontend/CretasFoodTrace
 npm start
 ```
 

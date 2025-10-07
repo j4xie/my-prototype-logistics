@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>登录 - 白垩纪食品溯源系统</title>
+    <link rel="stylesheet" href="../../assets/css/common.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 16px;
+            max-width: 428px;
+            margin: 0 auto;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 24px;
+            text-align: center;
+            color: white;
+        }
+
+        .login-header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            opacity: 0.9;
+            font-size: 13px;
+        }
+
+        .login-body {
+            padding: 32px 24px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 18px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 14px 14px 44px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px; /* 防止iOS自动缩放 */
+            transition: all 0.3s;
+            min-height: 48px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .forgot-password {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 52px;
+        }
+
+        .btn-login:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 16px;
+            color: #999;
+            font-size: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .alternative-login {
+            display: flex;
+            gap: 12px;
+        }
+
+        .alt-btn {
+            flex: 1;
+            padding: 14px 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 15px;
+            min-height: 48px;
+        }
+
+        .alt-btn:active {
+            border-color: #667eea;
+            background: #f5f7ff;
+            transform: scale(0.98);
+        }
+
+        .register-prompt {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .register-prompt a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .register-prompt a:hover {
+            text-decoration: underline;
+        }
+
+        .back-home {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+        }
+
+        .back-home a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            font-size: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .back-home a:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+    </style>
+    <link rel="stylesheet" href="../../assets/css/mobile.css">
+</head>
+<body>
+    <div class="back-home">
+        <a href="../../index.html" title="返回导航">
+            ←
+        </a>
+    </div>
+
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🦕 白垩纪溯源系统</h1>
+            <p>Cretas Food Traceability System</p>
+        </div>
+
+        <div class="login-body">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">用户名 / 手机号</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input type="text"
+                               class="form-control"
+                               placeholder="请输入用户名或手机号"
+                               id="username"
+                               value="super_admin">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password"
+                               class="form-control"
+                               placeholder="请输入密码"
+                               id="password"
+                               value="Admin@123456">
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="rememberMe" checked>
+                        <span>记住我</span>
+                    </label>
+                    <a href="#" class="forgot-password">忘记密码?</a>
+                </div>
+
+                <button type="submit" class="btn-login">登 录</button>
+
+                <div class="divider">
+                    <span>或使用以下方式登录</span>
+                </div>
+
+                <div class="alternative-login">
+                    <button type="button" class="alt-btn">
+                        <span>📱</span>
+                        <span>手机验证码</span>
+                    </button>
+                    <button type="button" class="alt-btn">
+                        <span>👆</span>
+                        <span>生物识别</span>
+                    </button>
+                </div>
+
+                <div class="register-prompt">
+                    还没有账号? <a href="register-phase1.html">立即注册</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // 模拟登录验证
+            if (username && password) {
+                // 显示加载状态
+                const submitBtn = this.querySelector('.btn-login');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '登录中...';
+                submitBtn.disabled = true;
+
+                // 模拟API调用延迟
+                setTimeout(() => {
+                    // 根据用户名模拟不同角色跳转
+                    let targetPage;
+                    if (username.includes('admin')) {
+                        targetPage = '../dashboard/overview.html';
+                    } else if (username.includes('operator')) {
+                        targetPage = '../employee/clock.html';
+                    } else {
+                        targetPage = '../dashboard/overview.html';
+                    }
+
+                    alert('登录成功！跳转到 ' + targetPage);
+                    // window.location.href = targetPage;
+
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }, 1000);
+            } else {
+                alert('请输入用户名和密码');
+            }
+        });
+    </script>
+    <script src="../../assets/js/flow-navigator.js"></script>
+</body>
+</html>

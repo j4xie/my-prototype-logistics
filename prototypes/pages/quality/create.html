@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>创建质检记录 - 白垩纪食品溯源系统</title>
+    <link rel="stylesheet" href="../../assets/css/common.css">
+    <link rel="stylesheet" href="../../assets/css/mobile.css">
+    <style>
+        /* 移动端布局 */
+        body {
+            max-width: 428px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+
+        .page-content {
+            padding-bottom: 120px; /* 为底部按钮留空间 */
+        }
+
+        /* 质检类型卡片选择器 */
+        .inspection-type-section {
+            margin-bottom: 24px;
+        }
+
+        .type-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .type-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        .type-card:active {
+            transform: scale(0.98);
+        }
+
+        .type-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f0f2ff 0%, #e6f7ff 100%);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .type-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .type-icon {
+            font-size: 36px;
+            margin-right: 16px;
+        }
+
+        .type-info {
+            flex: 1;
+        }
+
+        .type-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 4px;
+        }
+
+        .type-subtitle {
+            font-size: 13px;
+            color: #8c8c8c;
+        }
+
+        .type-check {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #d9d9d9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .type-card.selected .type-check {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .type-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .type-item-tag {
+            background: #f0f0f0;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #595959;
+        }
+
+        .type-card.selected .type-item-tag {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        /* 批次选择器 */
+        .batch-selector-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 48px 12px 16px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            font-size: 15px;
+            background: #fafafa;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: #8c8c8c;
+        }
+
+        .batch-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .batch-item {
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .batch-item:active {
+            transform: scale(0.98);
+        }
+
+        .batch-item.selected {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .batch-radio {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            accent-color: #667eea;
+        }
+
+        .batch-info {
+            flex: 1;
+        }
+
+        .batch-number {
+            font-size: 15px;
+            font-weight: 500;
+            color: #262626;
+            margin-bottom: 4px;
+        }
+
+        .batch-meta {
+            font-size: 13px;
+            color: #8c8c8c;
+            display: flex;
+            gap: 12px;
+        }
+
+        .batch-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-processing {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .status-completed {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        /* 检测项表单 */
+        .inspection-items-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            display: none; /* 默认隐藏，选择类型后显示 */
+        }
+
+        .inspection-items-section.show {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .form-group.required .form-label::after {
+            content: '*';
+            color: #ff4d4f;
+            margin-left: 4px;
+            font-size: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 10px;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-top: 6px;
+        }
+
+        .standard-range {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #e6f7ff;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #1890ff;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 16px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .number-input-wrapper {
+            position: relative;
+        }
+
+        .number-input-wrapper .unit {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8c8c8c;
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        .number-input-wrapper .form-input {
+            padding-right: 50px;
+        }
+
+        /* 单选按钮组 */
+        .radio-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .radio-option {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+            font-size: 14px;
+            font-weight: 500;
+            color: #595959;
+        }
+
+        .radio-option:active {
+            transform: scale(0.95);
+        }
+
+        .radio-option.selected {
+            border-color: #667eea;
+            background: #f0f2ff;
+            color: #667eea;
+        }
+
+        /* 滑块选择器 */
+        .slider-wrapper {
+            padding: 8px 0;
+        }
+
+        .slider-value {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .slider-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .slider-max {
+            font-size: 14px;
+            color: #8c8c8c;
+            margin-left: 4px;
+        }
+
+        .slider-input {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            outline: none;
+        }
+
+        .slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            background: white;
+            border: 4px solid #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+
+        /* 照片上传区 */
+        .photo-upload-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        .upload-button {
+            width: 100%;
+            min-height: 120px;
+            border: 3px dashed #d9d9d9;
+            border-radius: 12px;
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 16px;
+        }
+
+        .upload-button:active {
+            transform: scale(0.98);
+        }
+
+        .upload-button:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            color: #8c8c8c;
+        }
+
+        .upload-text {
+            font-size: 15px;
+            color: #595959;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            font-size: 13px;
+            color: #8c8c8c;
+            margin-top: 4px;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .photo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-delete {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .photo-delete:active {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(0.9);
+        }
+
+        /* 质检结果判定 */
+        .result-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        .result-score {
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, #f0f2ff 0%, #e6f7ff 100%);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .score-value {
+            font-size: 56px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .score-label {
+            font-size: 14px;
+            color: #8c8c8c;
+        }
+
+        .result-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .result-badge.pass {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 2px solid #b7eb8f;
+        }
+
+        .result-badge.conditional {
+            background: #fff7e6;
+            color: #fa8c16;
+            border: 2px solid #ffd591;
+        }
+
+        .result-badge.fail {
+            background: #fff1f0;
+            color: #ff4d4f;
+            border: 2px solid #ffccc7;
+        }
+
+        /* 不合格项记录 */
+        .defect-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            display: none;
+        }
+
+        .defect-section.show {
+            display: block;
+        }
+
+        .form-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px 16px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #fafafa;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        /* 底部操作栏 */
+        .action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 428px;
+            margin: 0 auto;
+            padding: 16px;
+            background: white;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .btn {
+            flex: 1;
+            min-height: 52px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #595959;
+            border: 2px solid #d9d9d9;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #d9d9d9;
+            color: #8c8c8c;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* 流程箭头 */
+        .flow-arrow {
+            position: relative;
+            padding: 12px;
+            background: linear-gradient(135deg, #e6f7ff 0%, #f0f2ff 100%);
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .flow-arrow::before {
+            content: '→';
+            font-size: 20px;
+            color: #667eea;
+            margin-right: 8px;
+        }
+
+        .flow-text {
+            color: #262626;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* 隐藏的输入 */
+        #photoInput {
+            display: none;
+        }
+
+        /* 验证错误 */
+        .error-message {
+            color: #ff4d4f;
+            font-size: 13px;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .form-group.error .form-input {
+            border-color: #ff4d4f;
+            background: #fff1f0;
+        }
+
+        .form-group.error .error-message {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- 页面头部 -->
+        <div class="page-header">
+            <div class="navbar">
+                <a href="list.html" class="back-button" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(24,144,255,0.1);">
+                    <span style="font-size: 20px;">←</span>
+                </a>
+                <h1 style="font-size: 18px; font-weight: 600; color: #262626; flex: 1; text-align: center;">创建质检记录</h1>
+                <button onclick="saveDraft()" style="padding: 8px 16px; background: rgba(102, 126, 234, 0.1); border: none; border-radius: 20px; color: #667eea; font-size: 14px; font-weight: 500; cursor: pointer; min-width: 44px; min-height: 44px;">
+                    💾 草稿
+                </button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="page-content">
+            <!-- 流程指示 -->
+            <div class="flow-arrow">
+                <span class="flow-text">选择质检类型 → 选择批次 → 填写检测项 → 提交质检</span>
+            </div>
+
+            <!-- 质检类型选择 -->
+            <div class="inspection-type-section">
+                <h3 style="font-size: 16px; font-weight: 600; color: #262626; margin-bottom: 16px; padding-left: 4px;">1. 选择质检类型 <span style="color: #ff4d4f;">*</span></h3>
+
+                <div class="type-cards">
+                    <!-- 原料质检 -->
+                    <div class="type-card" onclick="selectInspectionType('raw_material')">
+                        <div class="type-card-header">
+                            <div class="type-icon">🥩</div>
+                            <div class="type-info">
+                                <div class="type-title">原料质检</div>
+                                <div class="type-subtitle">感官检查、温度监控</div>
+                            </div>
+                            <div class="type-check" id="check-raw_material"></div>
+                        </div>
+                        <div class="type-items">
+                            <span class="type-item-tag">温度 ≤4°C</span>
+                            <span class="type-item-tag">外观检测</span>
+                            <span class="type-item-tag">气味检测</span>
+                            <span class="type-item-tag">色泽检测</span>
+                        </div>
+                    </div>
+
+                    <!-- 过程质检 -->
+                    <div class="type-card" onclick="selectInspectionType('process')">
+                        <div class="type-card-header">
+                            <div class="type-icon">🔬</div>
+                            <div class="type-info">
+                                <div class="type-title">过程质检</div>
+                                <div class="type-subtitle">加工温度、pH值控制</div>
+                            </div>
+                            <div class="type-check" id="check-process"></div>
+                        </div>
+                        <div class="type-items">
+                            <span class="type-item-tag">温度 85-95°C</span>
+                            <span class="type-item-tag">pH值 6.5-7.5</span>
+                            <span class="type-item-tag">水分 ≤75%</span>
+                        </div>
+                    </div>
+
+                    <!-- 成品质检 -->
+                    <div class="type-card" onclick="selectInspectionType('finished')">
+                        <div class="type-card-header">
+                            <div class="type-icon">✅</div>
+                            <div class="type-info">
+                                <div class="type-title">成品质检</div>
+                                <div class="type-subtitle">全面检测、微生物检测</div>
+                            </div>
+                            <div class="type-check" id="check-finished"></div>
+                        </div>
+                        <div class="type-items">
+                            <span class="type-item-tag">感官评分</span>
+                            <span class="type-item-tag">蛋白质检测</span>
+                            <span class="type-item-tag">微生物检测</span>
+                            <span class="type-item-tag">重量检测</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 批次选择 -->
+            <div class="batch-selector-section" id="batchSection" style="display: none;">
+                <h3 style="font-size: 16px; font-weight: 600; color: #262626; margin-bottom: 16px;">2. 选择质检批次 <span style="color: #ff4d4f;">*</span></h3>
+
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="搜索批次号..." oninput="searchBatch(this.value)">
+                    <span class="search-icon">🔍</span>
+                </div>
+
+                <div class="batch-list" id="batchList">
+                    <label class="batch-item">
+                        <input type="radio" name="batch" value="FAC001-20250105-001" class="batch-radio" onchange="selectBatch(this.value)">
+                        <div class="batch-info">
+                            <div class="batch-number">FAC001-20250105-001</div>
+                            <div class="batch-meta">
+                                <span>速冻鱼排</span>
+                                <span>•</span>
+                                <span>500kg</span>
+                            </div>
+                        </div>
+                        <span class="batch-status status-processing">加工中</span>
+                    </label>
+
+                    <label class="batch-item">
+                        <input type="radio" name="batch" value="FAC001-20250105-002" class="batch-radio" onchange="selectBatch(this.value)">
+                        <div class="batch-info">
+                            <div class="batch-number">FAC001-20250105-002</div>
+                            <div class="batch-meta">
+                                <span>冷冻鱼丸</span>
+                                <span>•</span>
+                                <span>300kg</span>
+                            </div>
+                        </div>
+                        <span class="batch-status status-processing">加工中</span>
+                    </label>
+
+                    <label class="batch-item">
+                        <input type="radio" name="batch" value="FAC001-20250104-003" class="batch-radio" onchange="selectBatch(this.value)">
+                        <div class="batch-info">
+                            <div class="batch-number">FAC001-20250104-003</div>
+                            <div class="batch-meta">
+                                <span>速冻虾仁</span>
+                                <span>•</span>
+                                <span>200kg</span>
+                            </div>
+                        </div>
+                        <span class="batch-status status-completed">已完成</span>
+                    </label>
+
+                    <label class="batch-item">
+                        <input type="radio" name="batch" value="FAC001-20250104-004" class="batch-radio" onchange="selectBatch(this.value)">
+                        <div class="batch-info">
+                            <div class="batch-number">FAC001-20250104-004</div>
+                            <div class="batch-meta">
+                                <span>速冻带鱼段</span>
+                                <span>•</span>
+                                <span>400kg</span>
+                            </div>
+                        </div>
+                        <span class="batch-status status-completed">已完成</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 检测项表单 - 原料质检 -->
+            <div class="inspection-items-section" id="items-raw_material">
+                <div class="section-title">
+                    <span>🥩</span>
+                    <span>3. 原料质检检测项</span>
+                </div>
+
+                <!-- 温度检测 -->
+                <div class="form-group required">
+                    <label class="form-label">
+                        温度检测
+                        <span class="standard-range">标准: ≤4°C</span>
+                    </label>
+                    <div class="number-input-wrapper">
+                        <input type="number" id="raw-temp" class="form-input" placeholder="请输入温度" step="0.1" oninput="calculateScore()">
+                        <span class="unit">°C</span>
+                    </div>
+                    <div class="error-message">请输入有效的温度值</div>
+                </div>
+
+                <!-- 外观检测 -->
+                <div class="form-group required">
+                    <label class="form-label">外观检测</label>
+                    <div class="radio-group">
+                        <div class="radio-option" onclick="selectRadio(this, 'raw-appearance', '优')" data-score="30">优</div>
+                        <div class="radio-option" onclick="selectRadio(this, 'raw-appearance', '良')" data-score="20">良</div>
+                        <div class="radio-option" onclick="selectRadio(this, 'raw-appearance', '差')" data-score="0">差</div>
+                    </div>
+                    <input type="hidden" id="raw-appearance">
+                </div>
+
+                <!-- 气味检测 -->
+                <div class="form-group required">
+                    <label class="form-label">气味检测</label>
+                    <div class="radio-group">
+                        <div class="radio-option" onclick="selectRadio(this, 'raw-smell', '正常')" data-score="30">正常</div>
+                        <div class="radio-option" onclick="selectRadio(this, 'raw-smell', '异常')" data-score="0">异常</div>
+                    </div>
+                    <input type="hidden" id="raw-smell">
+                </div>
+
+                <!-- 色泽检测 -->
+                <div class="form-group required">
+                    <label class="form-label">色泽检测</label>
+                    <div class="radio-group">
+                        <div class="radio-option" onclick="selectRadio(this, 'raw-color', '正常')" data-score="20">正常</div>
+                        <div class="radio-option" onclick="selectRadio(this, 'raw-color', '异常')" data-score="0">异常</div>
+                    </div>
+                    <input type="hidden" id="raw-color">
+                </div>
+            </div>
+
+            <!-- 检测项表单 - 过程质检 -->
+            <div class="inspection-items-section" id="items-process">
+                <div class="section-title">
+                    <span>🔬</span>
+                    <span>3. 过程质检检测项</span>
+                </div>
+
+                <!-- 加工温度 -->
+                <div class="form-group required">
+                    <label class="form-label">
+                        加工温度
+                        <span class="standard-range">标准: 85-95°C</span>
+                    </label>
+                    <div class="number-input-wrapper">
+                        <input type="number" id="process-temp" class="form-input" placeholder="请输入加工温度" step="0.1" oninput="calculateScore()">
+                        <span class="unit">°C</span>
+                    </div>
+                    <div class="error-message">请输入有效的温度值</div>
+                </div>
+
+                <!-- pH值检测 -->
+                <div class="form-group required">
+                    <label class="form-label">
+                        pH值检测
+                        <span class="standard-range">标准: 6.5-7.5</span>
+                    </label>
+                    <div class="number-input-wrapper">
+                        <input type="number" id="process-ph" class="form-input" placeholder="请输入pH值" step="0.1" min="0" max="14" oninput="calculateScore()">
+                        <span class="unit">pH</span>
+                    </div>
+                    <div class="error-message">请输入有效的pH值</div>
+                </div>
+
+                <!-- 水分含量 -->
+                <div class="form-group required">
+                    <label class="form-label">
+                        水分含量
+                        <span class="standard-range">标准: ≤75%</span>
+                    </label>
+                    <div class="number-input-wrapper">
+                        <input type="number" id="process-moisture" class="form-input" placeholder="请输入水分含量" step="0.1" min="0" max="100" oninput="calculateScore()">
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="error-message">请输入有效的水分含量</div>
+                </div>
+            </div>
+
+            <!-- 检测项表单 - 成品质检 -->
+            <div class="inspection-items-section" id="items-finished">
+                <div class="section-title">
+                    <span>✅</span>
+                    <span>3. 成品质检检测项</span>
+                </div>
+
+                <!-- 感官评分 -->
+                <div class="form-group required">
+                    <label class="form-label">感官评分 (1-10分)</label>
+                    <div class="slider-wrapper">
+                        <div class="slider-value">
+                            <span class="slider-number" id="sensory-score-display">5</span>
+                            <span class="slider-max">/10</span>
+                        </div>
+                        <input type="range" id="finished-sensory" class="slider-input" min="1" max="10" value="5" oninput="updateSlider(this); calculateScore()">
+                        <div class="slider-labels">
+                            <span>差</span>
+                            <span>良</span>
+                            <span>优</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 蛋白质含量 -->
+                <div class="form-group required">
+                    <label class="form-label">蛋白质含量</label>
+                    <div class="number-input-wrapper">
+                        <input type="number" id="finished-protein" class="form-input" placeholder="请输入蛋白质含量" step="0.1" min="0" max="100" oninput="calculateScore()">
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="error-message">请输入有效的蛋白质含量</div>
+                </div>
+
+                <!-- 微生物检测 -->
+                <div class="form-group required">
+                    <label class="form-label">微生物检测</label>
+                    <div class="radio-group">
+                        <div class="radio-option" onclick="selectRadio(this, 'finished-microbe', '合格')" data-score="30">合格</div>
+                        <div class="radio-option" onclick="selectRadio(this, 'finished-microbe', '不合格')" data-score="0">不合格</div>
+                    </div>
+                    <input type="hidden" id="finished-microbe">
+                </div>
+
+                <!-- 重量检测 -->
+                <div class="form-group required">
+                    <label class="form-label">重量检测</label>
+                    <div class="number-input-wrapper">
+                        <input type="number" id="finished-weight" class="form-input" placeholder="请输入重量" step="0.01" min="0" oninput="calculateScore()">
+                        <span class="unit">kg</span>
+                    </div>
+                    <div class="form-hint">抽检样品的实际重量</div>
+                    <div class="error-message">请输入有效的重量值</div>
+                </div>
+            </div>
+
+            <!-- 照片上传 -->
+            <div class="photo-upload-section" id="photoSection" style="display: none;">
+                <h3 style="font-size: 16px; font-weight: 600; color: #262626; margin-bottom: 16px;">4. 上传质检照片 (最多10张)</h3>
+
+                <input type="file" id="photoInput" accept="image/*" multiple onchange="handlePhotoUpload(event)">
+
+                <div class="upload-button" onclick="document.getElementById('photoInput').click()">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">点击拍照或选择照片</div>
+                    <div class="upload-hint">支持JPG、PNG格式，每张不超过5MB</div>
+                </div>
+
+                <div class="photo-grid" id="photoGrid"></div>
+            </div>
+
+            <!-- 质检结果判定 -->
+            <div class="result-section" id="resultSection" style="display: none;">
+                <h3 style="font-size: 16px; font-weight: 600; color: #262626; margin-bottom: 16px;">5. 质检结果判定</h3>
+
+                <div class="result-score">
+                    <div class="score-value" id="scoreValue">--</div>
+                    <div class="score-label">质量评分</div>
+                </div>
+
+                <div class="result-badge" id="resultBadge">
+                    <span>--</span>
+                </div>
+            </div>
+
+            <!-- 不合格项记录 -->
+            <div class="defect-section" id="defectSection">
+                <h3 style="font-size: 16px; font-weight: 600; color: #ff4d4f; margin-bottom: 16px;">⚠️ 不合格项记录</h3>
+
+                <div class="form-group required">
+                    <label class="form-label">缺陷详情</label>
+                    <textarea id="defect-details" class="form-textarea" placeholder="请详细描述发现的质量问题..."></textarea>
+                    <div class="error-message">请填写缺陷详情</div>
+                </div>
+
+                <div class="form-group required">
+                    <label class="form-label">纠正措施</label>
+                    <textarea id="corrective-action" class="form-textarea" placeholder="请描述拟采取的纠正措施..."></textarea>
+                    <div class="error-message">请填写纠正措施</div>
+                </div>
+            </div>
+
+            <!-- 流程说明 -->
+            <div class="flow-arrow" id="submitFlowArrow" style="display: none;">
+                <span class="flow-text">点击"提交质检" → 提交成功后跳转到质检列表</span>
+            </div>
+        </div>
+
+        <!-- 底部操作栏 -->
+        <div class="action-bar">
+            <button type="button" class="btn btn-secondary" onclick="cancelInspection()">
+                ✕ 取消
+            </button>
+            <button type="button" class="btn btn-primary" id="submitBtn" disabled onclick="submitInspection()">
+                ✓ 提交质检
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 全局状态
+        let currentType = null;
+        let selectedBatch = null;
+        let uploadedPhotos = [];
+        let qualityScore = 0;
+
+        // 选择质检类型
+        function selectInspectionType(type) {
+            currentType = type;
+
+            // 更新卡片选中状态
+            document.querySelectorAll('.type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+
+            // 更新勾选图标
+            document.querySelectorAll('.type-check').forEach(check => {
+                check.textContent = '';
+            });
+            document.getElementById('check-' + type).textContent = '✓';
+
+            // 隐藏所有检测项表单
+            document.querySelectorAll('.inspection-items-section').forEach(section => {
+                section.classList.remove('show');
+            });
+
+            // 显示对应的检测项表单
+            document.getElementById('items-' + type).classList.add('show');
+
+            // 显示批次选择、照片上传和流程箭头
+            document.getElementById('batchSection').style.display = 'block';
+            document.getElementById('photoSection').style.display = 'block';
+            document.getElementById('submitFlowArrow').style.display = 'block';
+
+            // 重置质量评分
+            calculateScore();
+            checkFormValidity();
+        }
+
+        // 选择批次
+        function selectBatch(batchNumber) {
+            selectedBatch = batchNumber;
+
+            // 更新选中状态
+            document.querySelectorAll('.batch-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.closest('.batch-item').classList.add('selected');
+
+            checkFormValidity();
+        }
+
+        // 搜索批次
+        function searchBatch(keyword) {
+            const items = document.querySelectorAll('.batch-item');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(keyword.toLowerCase())) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // 单选按钮选择
+        function selectRadio(element, inputId, value) {
+            // 移除同组其他选项的选中状态
+            const group = element.parentElement;
+            group.querySelectorAll('.radio-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+
+            // 添加当前选项的选中状态
+            element.classList.add('selected');
+
+            // 设置隐藏输入的值
+            document.getElementById(inputId).value = value;
+
+            // 重新计算评分
+            calculateScore();
+        }
+
+        // 更新滑块显示
+        function updateSlider(slider) {
+            const display = document.getElementById('sensory-score-display');
+            display.textContent = slider.value;
+        }
+
+        // 计算质量评分
+        function calculateScore() {
+            if (!currentType) return;
+
+            let score = 0;
+            let maxScore = 100;
+
+            if (currentType === 'raw_material') {
+                // 原料质检评分逻辑
+                const temp = parseFloat(document.getElementById('raw-temp').value);
+                const appearance = document.querySelector('#raw-appearance').value;
+                const smell = document.querySelector('#raw-smell').value;
+                const color = document.querySelector('#raw-color').value;
+
+                // 温度评分 (20分)
+                if (temp <= 4) {
+                    score += 20;
+                } else if (temp <= 6) {
+                    score += 10;
+                }
+
+                // 外观评分 (30分)
+                const appearanceScore = document.querySelector('.radio-option.selected[onclick*="raw-appearance"]')?.dataset.score;
+                if (appearanceScore) score += parseInt(appearanceScore);
+
+                // 气味评分 (30分)
+                const smellScore = document.querySelector('.radio-option.selected[onclick*="raw-smell"]')?.dataset.score;
+                if (smellScore) score += parseInt(smellScore);
+
+                // 色泽评分 (20分)
+                const colorScore = document.querySelector('.radio-option.selected[onclick*="raw-color"]')?.dataset.score;
+                if (colorScore) score += parseInt(colorScore);
+
+            } else if (currentType === 'process') {
+                // 过程质检评分逻辑
+                const temp = parseFloat(document.getElementById('process-temp').value);
+                const ph = parseFloat(document.getElementById('process-ph').value);
+                const moisture = parseFloat(document.getElementById('process-moisture').value);
+
+                // 温度评分 (40分)
+                if (temp >= 85 && temp <= 95) {
+                    score += 40;
+                } else if (temp >= 80 && temp <= 100) {
+                    score += 20;
+                }
+
+                // pH值评分 (30分)
+                if (ph >= 6.5 && ph <= 7.5) {
+                    score += 30;
+                } else if (ph >= 6.0 && ph <= 8.0) {
+                    score += 15;
+                }
+
+                // 水分含量评分 (30分)
+                if (moisture <= 75) {
+                    score += 30;
+                } else if (moisture <= 80) {
+                    score += 15;
+                }
+
+            } else if (currentType === 'finished') {
+                // 成品质检评分逻辑
+                const sensory = parseInt(document.getElementById('finished-sensory').value);
+                const protein = parseFloat(document.getElementById('finished-protein').value);
+                const microbe = document.querySelector('#finished-microbe').value;
+                const weight = parseFloat(document.getElementById('finished-weight').value);
+
+                // 感官评分 (30分)
+                score += sensory * 3;
+
+                // 蛋白质含量评分 (30分)
+                if (protein >= 15) {
+                    score += 30;
+                } else if (protein >= 12) {
+                    score += 20;
+                } else if (protein >= 10) {
+                    score += 10;
+                }
+
+                // 微生物检测评分 (30分)
+                const microbeScore = document.querySelector('.radio-option.selected[onclick*="finished-microbe"]')?.dataset.score;
+                if (microbeScore) score += parseInt(microbeScore);
+
+                // 重量检测评分 (10分) - 有数值即得分
+                if (weight > 0) {
+                    score += 10;
+                }
+            }
+
+            qualityScore = Math.min(score, 100);
+
+            // 显示结果
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('scoreValue').textContent = qualityScore;
+
+            const badge = document.getElementById('resultBadge');
+            const defectSection = document.getElementById('defectSection');
+
+            if (qualityScore >= 80) {
+                badge.className = 'result-badge pass';
+                badge.innerHTML = '<span>✅</span><span>合格</span>';
+                defectSection.classList.remove('show');
+            } else if (qualityScore >= 60) {
+                badge.className = 'result-badge conditional';
+                badge.innerHTML = '<span>⚠️</span><span>条件合格</span>';
+                defectSection.classList.remove('show');
+            } else {
+                badge.className = 'result-badge fail';
+                badge.innerHTML = '<span>❌</span><span>不合格</span>';
+                defectSection.classList.add('show');
+            }
+
+            checkFormValidity();
+        }
+
+        // 处理照片上传
+        function handlePhotoUpload(event) {
+            const files = Array.from(event.target.files);
+
+            if (uploadedPhotos.length + files.length > 10) {
+                alert('最多只能上传10张照片');
+                return;
+            }
+
+            files.forEach(file => {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(`文件 ${file.name} 超过5MB限制`);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedPhotos.push({
+                        file: file,
+                        url: e.target.result
+                    });
+                    renderPhotos();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 渲染照片网格
+        function renderPhotos() {
+            const grid = document.getElementById('photoGrid');
+            grid.innerHTML = '';
+
+            uploadedPhotos.forEach((photo, index) => {
+                const item = document.createElement('div');
+                item.className = 'photo-item';
+                item.innerHTML = `
+                    <img src="${photo.url}" class="photo-img" alt="质检照片${index + 1}">
+                    <div class="photo-delete" onclick="deletePhoto(${index})">×</div>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        // 删除照片
+        function deletePhoto(index) {
+            uploadedPhotos.splice(index, 1);
+            renderPhotos();
+        }
+
+        // 检查表单有效性
+        function checkFormValidity() {
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (!currentType || !selectedBatch) {
+                submitBtn.disabled = true;
+                return;
+            }
+
+            // 检查是否填写了检测项
+            let hasItems = false;
+            if (currentType === 'raw_material') {
+                hasItems = document.getElementById('raw-temp').value &&
+                          document.getElementById('raw-appearance').value &&
+                          document.getElementById('raw-smell').value &&
+                          document.getElementById('raw-color').value;
+            } else if (currentType === 'process') {
+                hasItems = document.getElementById('process-temp').value &&
+                          document.getElementById('process-ph').value &&
+                          document.getElementById('process-moisture').value;
+            } else if (currentType === 'finished') {
+                hasItems = document.getElementById('finished-sensory').value &&
+                          document.getElementById('finished-protein').value &&
+                          document.getElementById('finished-microbe').value &&
+                          document.getElementById('finished-weight').value;
+            }
+
+            // 如果不合格，需要填写缺陷详情和纠正措施
+            if (qualityScore < 60 && hasItems) {
+                const defectDetails = document.getElementById('defect-details').value.trim();
+                const correctiveAction = document.getElementById('corrective-action').value.trim();
+                hasItems = hasItems && defectDetails && correctiveAction;
+            }
+
+            submitBtn.disabled = !hasItems;
+        }
+
+        // 保存草稿
+        function saveDraft() {
+            const draftData = {
+                type: currentType,
+                batch: selectedBatch,
+                score: qualityScore,
+                photos: uploadedPhotos.length
+            };
+
+            localStorage.setItem('inspectionDraft', JSON.stringify(draftData));
+            alert('✓ 草稿已保存');
+        }
+
+        // 取消质检
+        function cancelInspection() {
+            if (confirm('确定要取消质检吗？未保存的内容将会丢失。')) {
+                window.location.href = 'list.html';
+            }
+        }
+
+        // 提交质检
+        function submitInspection() {
+            // 简单验证
+            if (!currentType || !selectedBatch) {
+                alert('请完成所有必填项');
+                return;
+            }
+
+            // 如果不合格，检查缺陷记录
+            if (qualityScore < 60) {
+                const defectDetails = document.getElementById('defect-details').value.trim();
+                const correctiveAction = document.getElementById('corrective-action').value.trim();
+
+                if (!defectDetails || !correctiveAction) {
+                    alert('不合格项必须填写缺陷详情和纠正措施');
+                    return;
+                }
+            }
+
+            // 清除草稿
+            localStorage.removeItem('inspectionDraft');
+
+            // 模拟提交成功
+            const typeNames = {
+                'raw_material': '原料质检',
+                'process': '过程质检',
+                'finished': '成品质检'
+            };
+
+            const resultText = qualityScore >= 80 ? '合格' : (qualityScore >= 60 ? '条件合格' : '不合格');
+
+            alert(`✓ 质检记录创建成功！\n\n类型: ${typeNames[currentType]}\n批次: ${selectedBatch}\n评分: ${qualityScore}分\n结果: ${resultText}\n照片: ${uploadedPhotos.length}张`);
+
+            window.location.href = 'list.html';
+        }
+
+        // 页面加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 监听所有输入变化，检查表单有效性
+            document.querySelectorAll('input, textarea, select').forEach(input => {
+                input.addEventListener('input', checkFormValidity);
+                input.addEventListener('change', checkFormValidity);
+            });
+
+            // 尝试加载草稿
+            const draft = localStorage.getItem('inspectionDraft');
+            if (draft) {
+                const confirm = window.confirm('发现未完成的草稿，是否继续编辑？');
+                if (confirm) {
+                    const data = JSON.parse(draft);
+                    if (data.type) {
+                        // 这里可以恢复草稿数据
+                        console.log('恢复草稿:', data);
+                    }
+                }
+            }
+        });
+    </script>
+    <script src="../../assets/js/flow-navigator.js"></script>
+</body>
+</html>

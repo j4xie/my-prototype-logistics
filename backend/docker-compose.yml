@@ -1,16 +1,16 @@
 version: '3.8'
 
 services:
-  # 海牛食品溯源 - MySQL数据库
+  # 白垩纪食品溯源 - MySQL数据库
   mysql:
     image: mysql:8.0
-    container_name: heiniu-mysql
+    container_name: cretas-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-HainiuRoot2024!}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-heiniu_foodtrace}
-      MYSQL_USER: ${MYSQL_USER:-heiniu_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-HainiuPass2024!}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CretasRoot2024!}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cretas_foodtrace}
+      MYSQL_USER: ${MYSQL_USER:-cretas_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-CretasPass2024!}
     ports:
       - "3306:3306"
     volumes:
@@ -18,24 +18,24 @@ services:
       - ./config/mysql.cnf:/etc/mysql/conf.d/custom.cnf
     command: --default-authentication-plugin=mysql_native_password
     networks:
-      - heiniu_network
+      - cretas_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
       retries: 10
 
-  # 海牛食品溯源 - 后端API服务
+  # 白垩纪食品溯源 - 后端API服务
   api:
     build: 
       context: .
       dockerfile: Dockerfile
-    container_name: heiniu-api
+    container_name: cretas-api
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3001
-      DATABASE_URL: mysql://${MYSQL_USER:-heiniu_user}:${MYSQL_PASSWORD:-HainiuPass2024!}@mysql:3306/${MYSQL_DATABASE:-heiniu_foodtrace}
-      JWT_SECRET: ${JWT_SECRET:-HainiuJWTSecret2024ForProduction}
+      DATABASE_URL: mysql://${MYSQL_USER:-cretas_user}:${MYSQL_PASSWORD:-CretasPass2024!}@mysql:3306/${MYSQL_DATABASE:-cretas_foodtrace}
+      JWT_SECRET: ${JWT_SECRET:-CretasJWTSecret2024ForProduction}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-your-32-char-encryption-key-here}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,https://your-frontend-domain.com}
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -50,7 +50,7 @@ services:
       mysql:
         condition: service_healthy
     networks:
-      - heiniu_network
+      - cretas_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/mobile/health"]
       interval: 30s
@@ -61,14 +61,14 @@ services:
   # Redis缓存服务 (可选)
   redis:
     image: redis:7-alpine
-    container_name: heiniu-redis
+    container_name: cretas-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - heiniu_network
+      - cretas_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -78,7 +78,7 @@ services:
   # Nginx反向代理 (生产环境)
   nginx:
     image: nginx:alpine
-    container_name: heiniu-nginx
+    container_name: cretas-nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -90,20 +90,20 @@ services:
     depends_on:
       - api
     networks:
-      - heiniu_network
+      - cretas_network
     profiles:
       - production
 
   # 数据库备份服务
   backup:
     image: mysql:8.0
-    container_name: heiniu-backup
+    container_name: cretas-backup
     restart: "no"
     environment:
       MYSQL_HOST: mysql
-      MYSQL_USER: ${MYSQL_USER:-heiniu_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-HainiuPass2024!}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-heiniu_foodtrace}
+      MYSQL_USER: ${MYSQL_USER:-cretas_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-CretasPass2024!}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cretas_foodtrace}
     volumes:
       - ./backups:/backups
       - ./scripts/backup.sh:/backup.sh
@@ -111,7 +111,7 @@ services:
     depends_on:
       - mysql
     networks:
-      - heiniu_network
+      - cretas_network
     profiles:
       - backup
 
@@ -122,5 +122,5 @@ volumes:
     driver: local
 
 networks:
-  heiniu_network:
+  cretas_network:
     driver: bridge

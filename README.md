@@ -374,10 +374,10 @@ cretas/
 │   ├── main.py                 # FastAPI服务
 │   ├── README.md               # AI服务文档
 │   ├── COST_COMPARISON.md      # 详细成本对比
-│   └── test_heiniu.py          # 测试脚本
+│   └── test_cretas.py          # 测试脚本
 │
 └── frontend/
-    └── HainiuFoodTrace/        # React Native移动应用
+    └── CretasFoodTrace/        # React Native移动应用
         ├── src/
         │   ├── screens/        # 界面 (含AI分析看板)
         │   ├── services/       # API客户端
@@ -427,7 +427,7 @@ npm run dev
 
 #### 4. 启动 React Native
 ```bash
-cd frontend/HainiuFoodTrace
+cd frontend/CretasFoodTrace
 npm install
 npm start
 ```
@@ -477,7 +477,7 @@ quick-test.cmd
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  React Native 移动端 (frontend/HainiuFoodTrace)            │
+│  React Native 移动端 (frontend/CretasFoodTrace)            │
 │  └─ 成本分析看板 + AI智能分析按钮                            │
 └──────────────────────────┬──────────────────────────────────┘
                            │ HTTP
@@ -687,7 +687,7 @@ python main.py
 
 ### React Native 开发
 ```bash
-cd frontend/HainiuFoodTrace
+cd frontend/CretasFoodTrace
 npm install
 npm start
 # 使用 Expo Go 或 Android 模拟器测试

@@ -236,7 +236,7 @@ curl http://localhost:8085/
 quick-test.cmd
 
 # 或手动运行
-python test_heiniu.py
+python test_cretas.py
 ```
 
 ### 使用 curl 测试

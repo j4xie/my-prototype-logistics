@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>批次详情 - 白垩纪食品溯源系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 60px;
+        }
+
+        /* 顶部导航 */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .back-btn:active {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .navbar-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .more-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: background 0.3s;
+        }
+
+        .more-btn:active {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* 内容区 */
+        .content {
+            padding: 12px;
+        }
+
+        /* 卡片通用样式 */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        /* 批次头部卡片 */
+        .batch-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .batch-number {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: rgba(255, 152, 0, 0.9);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .batch-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .batch-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            opacity: 0.9;
+        }
+
+        .info-value {
+            font-weight: 600;
+        }
+
+        /* 生产进度卡片 */
+        .progress-card {
+            text-align: center;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .progress-ring-container {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 20px;
+        }
+
+        .progress-ring {
+            width: 160px;
+            height: 160px;
+        }
+
+        .progress-ring-circle {
+            stroke-dasharray: 408.4;
+            stroke-dashoffset: 408.4;
+            transition: stroke-dashoffset 0.5s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .progress-ring-bg {
+            stroke: #f0f0f0;
+        }
+
+        .progress-ring-fill {
+            stroke: #667eea;
+            stroke-linecap: round;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .progress-label {
+            font-size: 13px;
+            color: #666;
+            margin-top: -8px;
+        }
+
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .stat-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* 成本分析卡片 */
+        .cost-card {
+
+        }
+
+        .cost-chart-container {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin: 16px 0;
+        }
+
+        .pie-chart {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #667eea 0deg 144deg,
+                #f59e0b 144deg 252deg,
+                #10b981 252deg 360deg
+            );
+            flex-shrink: 0;
+        }
+
+        .pie-chart-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .cost-legend {
+            flex: 1;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 8px;
+        }
+
+        .legend-color-material { background: #667eea; }
+        .legend-color-labor { background: #f59e0b; }
+        .legend-color-equipment { background: #10b981; }
+
+        .legend-text {
+            flex: 1;
+            color: #666;
+        }
+
+        .legend-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .cost-summary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+        }
+
+        .cost-summary-item {
+            text-align: center;
+        }
+
+        .cost-summary-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .cost-summary-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        /* 关联信息标签页 */
+        .tabs-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .tabs-header {
+            display: flex;
+            background: #f8f9fa;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .tab-content {
+            padding: 16px;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .record-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .record-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .record-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .record-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-passed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-active {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .record-info {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .record-arrow {
+            color: #667eea;
+            font-size: 12px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 32px;
+            padding-bottom: 16px;
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            bottom: -8px;
+            width: 2px;
+            background: #e5e7eb;
+        }
+
+        .timeline-item:last-child::before {
+            display: none;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #e5e7eb;
+        }
+
+        .timeline-content {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .timeline-time {
+            font-size: 11px;
+            color: #999;
+        }
+
+        /* 操作按钮区 */
+        .action-section {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary::after {
+            content: '→ 进入质检流程';
+            position: absolute;
+            right: 16px;
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:active {
+            background: #f8f9fa;
+        }
+
+        .action-links {
+            display: flex;
+            gap: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+
+        .action-link {
+            flex: 1;
+            text-align: center;
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.3s;
+            position: relative;
+        }
+
+        .action-link:active {
+            background: #f8f9fa;
+        }
+
+        .action-link::after {
+            content: '→';
+            margin-left: 4px;
+        }
+
+        .action-link:first-child::before {
+            content: '→ 批次成本详情页';
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            opacity: 0.6;
+            white-space: nowrap;
+        }
+
+        .action-link:last-child::before {
+            content: '→ 批次时间线页';
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            opacity: 0.6;
+            white-space: nowrap;
+        }
+
+        /* 底部Tab导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #666;
+            text-decoration: none;
+            font-size: 11px;
+            padding: 4px 12px;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active {
+            color: #667eea;
+        }
+
+        .nav-icon {
+            font-size: 22px;
+        }
+
+        /* 流程标注样式 */
+        .flow-annotation {
+            font-size: 10px;
+            color: #10b981;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="navbar">
+        <div class="navbar-left">
+            <div class="back-btn" onclick="history.back()">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M12.5 15L7.5 10L12.5 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="navbar-title">批次详情</div>
+        </div>
+        <div class="more-btn">⋯</div>
+    </div>
+
+    <!-- 内容区 -->
+    <div class="content">
+        <!-- 批次头部卡片 -->
+        <div class="card batch-header">
+            <div class="batch-number">FAC001-20250105-001</div>
+            <div class="status-badge">进行中</div>
+            <div class="batch-info-row">
+                <span class="info-label">产品类型</span>
+                <span class="info-value">速冻鱼排</span>
+            </div>
+            <div class="batch-info-row">
+                <span class="info-label">负责人</span>
+                <span class="info-value">王师傅</span>
+            </div>
+            <div class="batch-info-row">
+                <span class="info-label">开始时间</span>
+                <span class="info-value">2025-01-05 08:00</span>
+            </div>
+        </div>
+
+        <!-- 生产进度卡片 -->
+        <div class="card progress-card">
+            <div class="card-title">生产进度</div>
+            <div class="progress-ring-container">
+                <svg class="progress-ring" viewBox="0 0 140 140">
+                    <circle class="progress-ring-circle progress-ring-bg"
+                            cx="70" cy="70" r="65"
+                            fill="none" stroke-width="10"/>
+                    <circle class="progress-ring-circle progress-ring-fill"
+                            cx="70" cy="70" r="65"
+                            fill="none" stroke-width="10"
+                            style="stroke-dashoffset: 130.688"/>
+                </svg>
+                <div class="progress-text">
+                    68<span style="font-size: 18px;">%</span>
+                </div>
+            </div>
+            <div class="progress-label">完成率</div>
+
+            <div class="progress-stats">
+                <div class="stat-item">
+                    <div class="stat-label">目标产量</div>
+                    <div class="stat-value">500 <span style="font-size: 12px;">kg</span></div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">当前产量</div>
+                    <div class="stat-value">340 <span style="font-size: 12px;">kg</span></div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">完成率</div>
+                    <div class="stat-value">68<span style="font-size: 12px;">%</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成本分析卡片 -->
+        <div class="card cost-card">
+            <div class="card-title">成本分析</div>
+            <div class="cost-chart-container">
+                <div class="pie-chart">
+                    <div class="pie-chart-center"></div>
+                </div>
+                <div class="cost-legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-color-material"></div>
+                        <span class="legend-text">原料成本</span>
+                        <span class="legend-value">¥2,500</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-color-labor"></div>
+                        <span class="legend-text">人工成本</span>
+                        <span class="legend-value">¥2,250</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-color-equipment"></div>
+                        <span class="legend-text">设备成本</span>
+                        <span class="legend-value">¥1,500</span>
+                    </div>
+                </div>
+            </div>
+            <div class="cost-summary">
+                <div class="cost-summary-item">
+                    <div class="cost-summary-label">总成本</div>
+                    <div class="cost-summary-value">¥6,250</div>
+                </div>
+                <div class="cost-summary-item">
+                    <div class="cost-summary-label">单位成本</div>
+                    <div class="cost-summary-value">¥18.4<span style="font-size: 12px;">/kg</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关联信息标签页 -->
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <button class="tab-btn active" onclick="switchTab(0)">质检记录 (2)</button>
+                <button class="tab-btn" onclick="switchTab(1)">工时记录 (5)</button>
+                <button class="tab-btn" onclick="switchTab(2)">设备使用 (3)</button>
+                <button class="tab-btn" onclick="switchTab(3)">时间线 (8)</button>
+            </div>
+
+            <!-- 质检记录 -->
+            <div class="tab-content active">
+                <div class="record-item">
+                    <div class="record-header">
+                        <div class="record-title">原料质检</div>
+                        <div class="record-badge badge-passed">已通过</div>
+                    </div>
+                    <div class="record-info">
+                        检验员：李检验<br>
+                        时间：2025-01-05 08:30<br>
+                        结果：合格，新鲜度A级
+                    </div>
+                    <div class="record-arrow flow-annotation">查看详情 → 质检详情</div>
+                </div>
+                <div class="record-item">
+                    <div class="record-header">
+                        <div class="record-title">半成品质检</div>
+                        <div class="record-badge badge-active">进行中</div>
+                    </div>
+                    <div class="record-info">
+                        检验员：张质检<br>
+                        时间：2025-01-05 14:15<br>
+                        状态：待检验
+                    </div>
+                    <div class="record-arrow flow-annotation">查看详情 → 质检详情</div>
+                </div>
+            </div>
+
+            <!-- 工时记录 -->
+            <div class="tab-content">
+                <div class="record-item">
+                    <div class="record-header">
+                        <div class="record-title">王师傅 - 主加工</div>
+                        <div class="record-badge badge-active">工作中</div>
+                    </div>
+                    <div class="record-info">
+                        开始时间：08:00<br>
+                        累计工时：6.5小时<br>
+                        工时成本：¥520
+                    </div>
+                </div>
+                <div class="record-item">
+                    <div class="record-header">
+                        <div class="record-title">张三 - 辅助加工</div>
+                        <div class="record-badge badge-active">工作中</div>
+                    </div>
+                    <div class="record-info">
+                        开始时间：08:00<br>
+                        累计工时：6.5小时<br>
+                        工时成本：¥455
+                    </div>
+                </div>
+                <div class="record-item">
+                    <div class="record-header">
+                        <div class="record-title">李四 - 包装</div>
+                        <div class="record-badge badge-passed">已完成</div>
+                    </div>
+                    <div class="record-info">
+                        工作时间：10:00-12:00<br>
+                        累计工时：2小时<br>
+                        工时成本：¥140
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设备使用 -->
+            <div class="tab-content">
+                <div class="record-item">
+                    <div class="record-header">
+                        <div class="record-title">切片机-001</div>
+                        <div class="record-badge badge-active">使用中</div>
+                    </div>
+                    <div class="record-info">
+                        开始时间：08:30<br>
+                        累计时长：6小时<br>
+                        设备成本：¥720
+                    </div>
+                </div>
+                <div class="record-item">
+                    <div class="record-header">
+                        <div class="record-title">速冻柜-002</div>
+                        <div class="record-badge badge-active">使用中</div>
+                    </div>
+                    <div class="record-info">
+                        开始时间：13:00<br>
+                        累计时长：1.5小时<br>
+                        设备成本：¥450
+                    </div>
+                </div>
+                <div class="record-item">
+                    <div class="record-header">
+                        <div class="record-title">包装机-003</div>
+                        <div class="record-badge badge-passed">已完成</div>
+                    </div>
+                    <div class="record-info">
+                        工作时间：10:00-12:00<br>
+                        累计时长：2小时<br>
+                        设备成本：¥330
+                    </div>
+                </div>
+            </div>
+
+            <!-- 时间线 -->
+            <div class="tab-content">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">批次创建</div>
+                        <div class="timeline-time">2025-01-05 08:00</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">原料入库</div>
+                        <div class="timeline-time">2025-01-05 08:15</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">原料质检通过</div>
+                        <div class="timeline-time">2025-01-05 08:30</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">开始切片加工</div>
+                        <div class="timeline-time">2025-01-05 08:45</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">包装完成</div>
+                        <div class="timeline-time">2025-01-05 12:00</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">开始速冻</div>
+                        <div class="timeline-time">2025-01-05 13:00</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">半成品质检</div>
+                        <div class="timeline-time">2025-01-05 14:15</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">产量更新 340kg</div>
+                        <div class="timeline-time">2025-01-05 14:30</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮区 -->
+        <div class="action-section">
+            <div class="action-buttons">
+                <button class="btn btn-primary">完成生产</button>
+                <button class="btn btn-secondary">暂停生产</button>
+                <button class="btn btn-secondary">添加记录</button>
+            </div>
+            <div class="action-links">
+                <a href="#" class="action-link">查看成本详情</a>
+                <a href="#" class="action-link">查看完整时间线</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部Tab导航 -->
+    <div class="bottom-nav">
+        <a href="../index.html" class="nav-item">
+            <div class="nav-icon">🏠</div>
+            <div>首页</div>
+        </a>
+        <a href="#" class="nav-item active">
+            <div class="nav-icon">📦</div>
+            <div>生产</div>
+        </a>
+        <a href="#" class="nav-item">
+            <div class="nav-icon">📊</div>
+            <div>报表</div>
+        </a>
+        <a href="#" class="nav-item">
+            <div class="nav-icon">👤</div>
+            <div>我的</div>
+        </a>
+    </div>
+
+    <script>
+        // 标签页切换
+        function switchTab(index) {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabBtns.forEach((btn, i) => {
+                if (i === index) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            tabContents.forEach((content, i) => {
+                if (i === index) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+
+        // 设置进度环动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressCircle = document.querySelector('.progress-ring-fill');
+            const percentage = 68;
+            const circumference = 408.4;
+            const offset = circumference - (percentage / 100) * circumference;
+
+            setTimeout(() => {
+                progressCircle.style.strokeDashoffset = offset;
+            }, 300);
+        });
+    </script>
+</body>
+</html>
