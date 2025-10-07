@@ -5,62 +5,46 @@
 
 // 平台管理员权限配置
 export const PLATFORM_PERMISSIONS = {
-  'platform_super_admin': {
-    name: '平台超级管理员',
-    description: '平台最高权限，可以管理所有工厂和平台设置',
+  'platform_admin': {
+    name: '平台管理员',
+    description: '平台最高权限，可以管理所有工厂、用户和平台设置',
     permissions: [
       // 工厂管理
       'create_factory',
-      'delete_factory', 
+      'delete_factory',
       'manage_all_factories',
       'view_factories',
       'view_factory_details',
       'factory_activation_control',
-      
+
       // 用户管理
       'manage_factory_users',
+      'manage_all_users',
       'create_users',
       'delete_users',
       'activate_users',
       'view_users',
-      
+
       // 平台管理
       'platform_settings',
       'system_monitoring',
       'platform_backup',
       'manage_platform_admins',
-      
+
       // 数据分析
       'view_platform_analytics',
       'export_platform_data',
       'cross_factory_reports',
-      
+
       // 系统功能
       'system_maintenance',
       'global_notifications',
       'audit_all_logs',
-      
+
       // 白名单管理
       'manage_whitelist'
     ],
     dataAccess: 'all' // 所有数据
-  },
-  
-  'platform_operator': {
-    name: '平台操作员', 
-    description: '平台支持人员，有限的查看和支持权限',
-    permissions: [
-      // 查看权限
-      'view_factories',
-      'view_factory_status',
-      'view_platform_analytics',
-      
-      // 支持功能
-      'basic_support',
-      'view_support_tickets',
-      'factory_health_check'
-    ],
-    dataAccess: 'readonly' // 只读访问
   }
 };
 
@@ -325,7 +309,7 @@ export const DATA_ACCESS_RULES = {
 // 权限计算工具函数
 export function calculateUserPermissions(userType, role, department = null) {
   if (userType === 'platform_admin') {
-    return PLATFORM_PERMISSIONS[role] || PLATFORM_PERMISSIONS['platform_operator'];
+    return PLATFORM_PERMISSIONS[role] || PLATFORM_PERMISSIONS['platform_admin'];
   }
   
   if (userType === 'factory_user') {

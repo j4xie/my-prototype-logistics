@@ -48,31 +48,36 @@ const mobileAuthMiddleware = async (req, res, next) => {
     }
 
     // 对于真实JWT token的验证逻辑
-    const { verifyToken, validateSession } = await import('../utils/jwt.js');
-    
+    const { verifyToken } = await import('../utils/jwt.js');
+
     const decoded = verifyToken(token);
-    
-    // 验证session是否有效（对于工厂用户）
+
+    // 验证token是否有效（移动端不需要session验证）
     if (decoded.type === 'factory_user') {
-      const session = await validateSession(token);
-      if (!session) {
+      // 获取用户信息
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        include: { factory: true }
+      });
+
+      if (!user || !user.isActive) {
         return res.status(401).json({
           success: false,
-          message: 'token已失效，请重新登录'
+          message: '用户不存在或已停用'
         });
       }
-      
+
       // 统一用户上下文格式
       req.user = {
-        id: session.user.id,
-        username: session.user.username,
+        id: user.id,
+        username: user.username,
         userType: 'factory',
-        factoryId: session.user.factoryId,
-        roleCode: session.user.roleCode,
-        department: session.user.department,
-        permissions: session.user.permissions || []
+        factoryId: user.factoryId,
+        roleCode: user.roleCode,
+        department: user.department,
+        permissions: decoded.permissions || []
       };
-      req.factory = session.user.factory;
+      req.factory = user.factory;
       
     } else if (decoded.type === 'platform_admin') {
       // 获取可用的工厂ID供平台管理员测试使用

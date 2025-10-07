@@ -1,5 +1,6 @@
 import express from 'express';
 import mobileAuthMiddleware from '../middleware/mobileAuth.js';
+import { aiRateLimitMiddleware } from '../middleware/aiRateLimit.js';
 import {
   createBatch,
   getBatches,
@@ -94,7 +95,7 @@ router.get('/batches/:id/timeline', getBatchTimeline);  // 获取批次时间线
 // 成本分析和计算
 router.get('/batches/:batchId/cost-analysis', getBatchCostAnalysis);     // 获取批次成本分析
 router.post('/batches/:batchId/recalculate-cost', recalculateBatchCost); // 重新计算批次成本
-router.post('/ai-cost-analysis', getAICostAnalysis);                     // AI成本分析
+router.post('/ai-cost-analysis', aiRateLimitMiddleware, getAICostAnalysis);  // AI成本分析（含限流）
 
 // 质检记录管理API
 router.post('/quality/inspections', submitInspection);             // 提交质检记录

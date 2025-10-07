@@ -46,15 +46,20 @@ export const getDashboardOverview = async (req, res, next) => {
       passedInspections,
       activeEquipment,
       totalEquipment,
-      activeAlerts
+      activeAlerts,
+      onDutyWorkers,
+      totalWorkers
     ] = await Promise.all([
       // 总批次数
       prisma.processingBatch.count({
         where: { factoryId, createdAt: dateFilter }
       }),
-      // 进行中的批次
+      // 进行中的批次（包括 planning, in_progress, quality_check）
       prisma.processingBatch.count({
-        where: { factoryId, status: 'in_progress' }
+        where: {
+          factoryId,
+          status: { in: ['planning', 'in_progress', 'quality_check'] }
+        }
       }),
       // 完成的批次
       prisma.processingBatch.count({
@@ -79,6 +84,34 @@ export const getDashboardOverview = async (req, res, next) => {
       // 活跃告警数
       prisma.alertNotification.count({
         where: { factoryId, status: { in: ['new', 'acknowledged', 'in_progress'] } }
+      }),
+      // 在岗人员数（今日已打卡上班且未打卡下班的人员）
+      prisma.employeeTimeClock.groupBy({
+        by: ['userId'],
+        where: {
+          factoryId,
+          clockTime: dateFilter,
+          clockType: 'clock_in'
+        },
+        _count: { userId: true }
+      }).then(clockIns => {
+        // 获取今日已打卡下班的人员
+        return prisma.employeeTimeClock.groupBy({
+          by: ['userId'],
+          where: {
+            factoryId,
+            clockTime: dateFilter,
+            clockType: 'clock_out'
+          }
+        }).then(clockOuts => {
+          const clockOutUserIds = new Set(clockOuts.map(c => c.userId));
+          // 打卡上班但未打卡下班的人员数
+          return clockIns.filter(c => !clockOutUserIds.has(c.userId)).length;
+        });
+      }),
+      // 总员工数
+      prisma.factoryUser.count({
+        where: { factoryId }
       })
     ]);
 
@@ -94,7 +127,9 @@ export const getDashboardOverview = async (req, res, next) => {
         activeBatches,
         completedBatches,
         qualityInspections,
-        activeAlerts
+        activeAlerts,
+        onDutyWorkers,
+        totalWorkers
       },
       kpi: {
         productionEfficiency: Math.round(productionEfficiency),

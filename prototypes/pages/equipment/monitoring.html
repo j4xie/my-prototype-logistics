@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>设备监控 - 白垩纪食品溯源系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            padding-bottom: 70px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(26, 31, 58, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(74, 144, 226, 0.2);
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #4a90e2;
+        }
+
+        .refresh-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+
+        .refresh-btn.spinning {
+            animation: spin 1s linear;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .refresh-countdown {
+            position: absolute;
+            bottom: -16px;
+            right: 0;
+            font-size: 10px;
+            color: #4a90e2;
+            white-space: nowrap;
+        }
+
+        /* Overview Cards */
+        .overview {
+            padding: 16px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .overview-card {
+            background: rgba(26, 31, 58, 0.8);
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .overview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+        }
+
+        .overview-card.total::before { color: #4a90e2; }
+        .overview-card.running::before { color: #50e3c2; }
+        .overview-card.alert::before { color: #ff6b6b; }
+        .overview-card.maintenance::before { color: #ffd93d; }
+
+        .overview-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .overview-value {
+            font-size: 32px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+        }
+
+        .overview-card.total .overview-value { color: #4a90e2; }
+        .overview-card.running .overview-value { color: #50e3c2; }
+        .overview-card.alert .overview-value {
+            color: #ff6b6b;
+            animation: pulse-alert 2s infinite;
+        }
+        .overview-card.maintenance .overview-value { color: #ffd93d; }
+
+        @keyframes pulse-alert {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .overview-unit {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-left: 4px;
+        }
+
+        /* Equipment List */
+        .equipment-list {
+            padding: 0 16px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .equipment-card {
+            background: rgba(26, 31, 58, 0.8);
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .equipment-card.alert {
+            border-color: rgba(255, 107, 107, 0.5);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.2);
+        }
+
+        .equipment-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .equipment-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .status-indicator.normal {
+            background: #50e3c2;
+            box-shadow: 0 0 10px rgba(80, 227, 194, 0.8);
+        }
+
+        .status-indicator.alert {
+            background: #ff6b6b;
+            animation: blink-alert 1s infinite;
+        }
+
+        @keyframes blink-alert {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+                opacity: 1;
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 107, 107, 1);
+                opacity: 0.6;
+            }
+        }
+
+        .equipment-id {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            background: rgba(74, 144, 226, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: pulse-banner 2s infinite;
+        }
+
+        @keyframes pulse-banner {
+            0%, 100% { background: rgba(255, 107, 107, 0.1); }
+            50% { background: rgba(255, 107, 107, 0.2); }
+        }
+
+        .alert-banner-icon {
+            font-size: 20px;
+        }
+
+        .alert-banner-text {
+            flex: 1;
+            font-size: 14px;
+            color: #ff6b6b;
+        }
+
+        .alert-value {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        /* Parameters Grid */
+        .parameters {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .parameter {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(74, 144, 226, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .parameter.alert-param {
+            border-color: rgba(255, 107, 107, 0.5);
+            background: rgba(255, 107, 107, 0.05);
+        }
+
+        .parameter-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .parameter-value {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            color: #50e3c2;
+            animation: data-update 3s infinite;
+        }
+
+        .parameter.alert-param .parameter-value {
+            color: #ff6b6b;
+        }
+
+        @keyframes data-update {
+            0%, 95%, 100% { opacity: 1; }
+            97% { opacity: 0.7; }
+        }
+
+        .parameter-unit {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-left: 4px;
+        }
+
+        .parameter-status {
+            font-size: 11px;
+            color: rgba(80, 227, 194, 0.8);
+        }
+
+        .parameter.alert-param .parameter-status {
+            color: #ff6b6b;
+        }
+
+        /* Chart */
+        .chart-container {
+            height: 80px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(74, 144, 226, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+        }
+
+        .chart {
+            position: relative;
+            height: 40px;
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(to top, rgba(80, 227, 194, 0.8), rgba(80, 227, 194, 0.3));
+            border-radius: 2px 2px 0 0;
+            animation: chart-grow 2s ease-out;
+            position: relative;
+        }
+
+        @keyframes chart-grow {
+            from { height: 0; }
+            to { height: var(--height); }
+        }
+
+        /* Actions */
+        .equipment-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .action-btn.primary {
+            background: rgba(74, 144, 226, 0.2);
+            color: #4a90e2;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+
+        .action-btn.primary:active {
+            transform: scale(0.98);
+            background: rgba(74, 144, 226, 0.3);
+        }
+
+        .action-btn.alert-btn {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .action-btn.alert-btn:active {
+            transform: scale(0.98);
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        /* Alert Summary */
+        .alert-summary {
+            padding: 0 16px 16px;
+        }
+
+        .summary-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .summary-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #4a90e2;
+        }
+
+        .summary-count {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            background: rgba(74, 144, 226, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .alert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .alert-item {
+            background: rgba(26, 31, 58, 0.8);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .alert-item:active {
+            transform: scale(0.98);
+            background: rgba(26, 31, 58, 0.95);
+        }
+
+        .alert-item-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            min-width: 60px;
+        }
+
+        .alert-item-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .alert-item-device {
+            font-size: 13px;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .alert-item-type {
+            font-size: 12px;
+            color: #ff6b6b;
+        }
+
+        /* Bottom Tab Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 31, 58, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(74, 144, 226, 0.2);
+            display: flex;
+            padding: 8px 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .nav-item.active {
+            color: #4a90e2;
+        }
+
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+        }
+
+        /* Flow Annotations */
+        .flow-note {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px dashed rgba(74, 144, 226, 0.3);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 10px;
+            color: #4a90e2;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="back-btn" onclick="goBack()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90e2" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </div>
+            <div class="header-title">设备监控</div>
+        </div>
+        <div class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a90e2" stroke-width="2">
+                <path d="M23 4v6h-6M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            <div class="refresh-countdown" id="countdown">30s</div>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="overview">
+        <div class="overview-card total">
+            <div class="overview-label">总设备数</div>
+            <div>
+                <span class="overview-value" id="totalCount">12</span>
+                <span class="overview-unit">台</span>
+            </div>
+        </div>
+        <div class="overview-card running">
+            <div class="overview-label">运行中</div>
+            <div>
+                <span class="overview-value" id="runningCount">8</span>
+                <span class="overview-unit">台</span>
+            </div>
+        </div>
+        <div class="overview-card alert">
+            <div class="overview-label">告警中</div>
+            <div>
+                <span class="overview-value" id="alertCount">3</span>
+                <span class="overview-unit">台</span>
+            </div>
+        </div>
+        <div class="overview-card maintenance">
+            <div class="overview-label">维护中</div>
+            <div>
+                <span class="overview-value" id="maintenanceCount">1</span>
+                <span class="overview-unit">台</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipment List -->
+    <div class="equipment-list">
+        <!-- Equipment 1 - Normal -->
+        <div class="equipment-card">
+            <div class="flow-note">→ 点击查看设备详情</div>
+            <div class="equipment-header">
+                <div class="equipment-name">
+                    <div class="status-indicator normal"></div>
+                    <span>速冻机A</span>
+                </div>
+                <div class="equipment-id">EQ-001</div>
+            </div>
+
+            <div class="parameters">
+                <div class="parameter">
+                    <div class="parameter-label">温度</div>
+                    <div>
+                        <span class="parameter-value" id="temp1">-18</span>
+                        <span class="parameter-unit">°C</span>
+                    </div>
+                    <div class="parameter-status">正常范围</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-label">湿度</div>
+                    <div>
+                        <span class="parameter-value" id="humidity1">45</span>
+                        <span class="parameter-unit">%</span>
+                    </div>
+                    <div class="parameter-status">正常</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-label">压力</div>
+                    <div>
+                        <span class="parameter-value" id="pressure1">101</span>
+                        <span class="parameter-unit">kPa</span>
+                    </div>
+                    <div class="parameter-status">正常</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-label">运行时长</div>
+                    <div>
+                        <span class="parameter-value" id="runtime1">5.2</span>
+                        <span class="parameter-unit">小时</span>
+                    </div>
+                    <div class="parameter-status">正常</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-label">温度趋势（最近10分钟）</div>
+                <div class="chart">
+                    <div class="chart-bar" style="height: 60%; --height: 60%;"></div>
+                    <div class="chart-bar" style="height: 65%; --height: 65%;"></div>
+                    <div class="chart-bar" style="height: 62%; --height: 62%;"></div>
+                    <div class="chart-bar" style="height: 58%; --height: 58%;"></div>
+                    <div class="chart-bar" style="height: 61%; --height: 61%;"></div>
+                    <div class="chart-bar" style="height: 63%; --height: 63%;"></div>
+                    <div class="chart-bar" style="height: 59%; --height: 59%;"></div>
+                    <div class="chart-bar" style="height: 62%; --height: 62%;"></div>
+                    <div class="chart-bar" style="height: 60%; --height: 60%;"></div>
+                    <div class="chart-bar" style="height: 61%; --height: 61%;"></div>
+                </div>
+            </div>
+
+            <div class="equipment-actions">
+                <button class="action-btn primary" onclick="viewDetails('EQ-001')">
+                    <span>📊</span>
+                    <span>查看详情</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Equipment 2 - Alert -->
+        <div class="equipment-card alert">
+            <div class="flow-note">→ 设备告警页</div>
+            <div class="equipment-header">
+                <div class="equipment-name">
+                    <div class="status-indicator alert"></div>
+                    <span>切割机B</span>
+                </div>
+                <div class="equipment-id">EQ-002</div>
+            </div>
+
+            <div class="alert-banner">
+                <div class="alert-banner-icon">⚠️</div>
+                <div class="alert-banner-text">
+                    温度过高 <span class="alert-value" id="temp2">85</span>°C（超限）
+                </div>
+            </div>
+
+            <div class="parameters">
+                <div class="parameter alert-param">
+                    <div class="parameter-label">温度</div>
+                    <div>
+                        <span class="parameter-value" id="temp2-display">85</span>
+                        <span class="parameter-unit">°C</span>
+                    </div>
+                    <div class="parameter-status">⚠️ 超限</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-label">湿度</div>
+                    <div>
+                        <span class="parameter-value" id="humidity2">52</span>
+                        <span class="parameter-unit">%</span>
+                    </div>
+                    <div class="parameter-status">正常</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-label">压力</div>
+                    <div>
+                        <span class="parameter-value" id="pressure2">98</span>
+                        <span class="parameter-unit">kPa</span>
+                    </div>
+                    <div class="parameter-status">正常</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-label">运行时长</div>
+                    <div>
+                        <span class="parameter-value" id="runtime2">3.7</span>
+                        <span class="parameter-unit">小时</span>
+                    </div>
+                    <div class="parameter-status">正常</div>
+                </div>
+            </div>
+
+            <div class="equipment-actions">
+                <button class="action-btn alert-btn" onclick="viewAlert('EQ-002')">
+                    <span>⚠️</span>
+                    <span>查看告警</span>
+                </button>
+                <button class="action-btn primary" onclick="confirmAlert('EQ-002')">
+                    <span>✓</span>
+                    <span>确认告警</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Equipment 3 - Normal -->
+        <div class="equipment-card">
+            <div class="flow-note">→ 设备详情页</div>
+            <div class="equipment-header">
+                <div class="equipment-name">
+                    <div class="status-indicator normal"></div>
+                    <span>包装机C</span>
+                </div>
+                <div class="equipment-id">EQ-003</div>
+            </div>
+
+            <div class="parameters">
+                <div class="parameter">
+                    <div class="parameter-label">温度</div>
+                    <div>
+                        <span class="parameter-value" id="temp3">22</span>
+                        <span class="parameter-unit">°C</span>
+                    </div>
+                    <div class="parameter-status">正常范围</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-label">湿度</div>
+                    <div>
+                        <span class="parameter-value" id="humidity3">48</span>
+                        <span class="parameter-unit">%</span>
+                    </div>
+                    <div class="parameter-status">正常</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-label">速度</div>
+                    <div>
+                        <span class="parameter-value" id="speed3">120</span>
+                        <span class="parameter-unit">件/分</span>
+                    </div>
+                    <div class="parameter-status">正常</div>
+                </div>
+                <div class="parameter">
+                    <div class="parameter-label">运行时长</div>
+                    <div>
+                        <span class="parameter-value" id="runtime3">6.8</span>
+                        <span class="parameter-unit">小时</span>
+                    </div>
+                    <div class="parameter-status">正常</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-label">包装速度趋势（最近10分钟）</div>
+                <div class="chart">
+                    <div class="chart-bar" style="height: 75%; --height: 75%;"></div>
+                    <div class="chart-bar" style="height: 78%; --height: 78%;"></div>
+                    <div class="chart-bar" style="height: 72%; --height: 72%;"></div>
+                    <div class="chart-bar" style="height: 80%; --height: 80%;"></div>
+                    <div class="chart-bar" style="height: 76%; --height: 76%;"></div>
+                    <div class="chart-bar" style="height: 79%; --height: 79%;"></div>
+                    <div class="chart-bar" style="height: 74%; --height: 74%;"></div>
+                    <div class="chart-bar" style="height: 77%; --height: 77%;"></div>
+                    <div class="chart-bar" style="height: 75%; --height: 75%;"></div>
+                    <div class="chart-bar" style="height: 78%; --height: 78%;"></div>
+                </div>
+            </div>
+
+            <div class="equipment-actions">
+                <button class="action-btn primary" onclick="viewDetails('EQ-003')">
+                    <span>📊</span>
+                    <span>查看详情</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Summary -->
+    <div class="alert-summary">
+        <div class="summary-header">
+            <div class="summary-title">告警摘要</div>
+            <div class="summary-count">最新3条</div>
+        </div>
+        <div class="alert-list">
+            <div class="alert-item" onclick="viewAlert('EQ-002')">
+                <div class="alert-item-time">14:32</div>
+                <div class="alert-item-content">
+                    <div class="alert-item-device">切割机B (EQ-002)</div>
+                    <div class="alert-item-type">⚠️ 温度过高告警</div>
+                </div>
+            </div>
+            <div class="alert-item" onclick="viewAlert('EQ-005')">
+                <div class="alert-item-time">13:15</div>
+                <div class="alert-item-content">
+                    <div class="alert-item-device">清洗机E (EQ-005)</div>
+                    <div class="alert-item-type">⚠️ 水压异常告警</div>
+                </div>
+            </div>
+            <div class="alert-item" onclick="viewAlert('EQ-007')">
+                <div class="alert-item-time">11:48</div>
+                <div class="alert-item-content">
+                    <div class="alert-item-device">烘干机G (EQ-007)</div>
+                    <div class="alert-item-type">⚠️ 运行时间超限</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="navigate('home')">
+            <div class="nav-icon">🏠</div>
+            <div class="nav-label">首页</div>
+        </div>
+        <div class="nav-item active" onclick="navigate('equipment')">
+            <div class="nav-icon">⚙️</div>
+            <div class="nav-label">设备</div>
+        </div>
+        <div class="nav-item" onclick="navigate('alerts')">
+            <div class="nav-icon">⚠️</div>
+            <div class="nav-label">告警</div>
+        </div>
+        <div class="nav-item" onclick="navigate('profile')">
+            <div class="nav-icon">👤</div>
+            <div class="nav-label">我的</div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-refresh countdown
+        let countdown = 30;
+        let countdownInterval;
+        let dataUpdateInterval;
+
+        function startCountdown() {
+            countdownInterval = setInterval(() => {
+                countdown--;
+                document.getElementById('countdown').textContent = countdown + 's';
+
+                if (countdown <= 0) {
+                    autoRefresh();
+                    countdown = 30;
+                }
+            }, 1000);
+        }
+
+        // Auto refresh
+        function autoRefresh() {
+            console.log('自动刷新数据...');
+            updateData();
+
+            // Visual feedback
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.classList.add('spinning');
+            setTimeout(() => {
+                refreshBtn.classList.remove('spinning');
+            }, 1000);
+        }
+
+        // Manual refresh
+        function manualRefresh() {
+            console.log('手动刷新数据...');
+            countdown = 30;
+            document.getElementById('countdown').textContent = '30s';
+            updateData();
+
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.classList.add('spinning');
+            setTimeout(() => {
+                refreshBtn.classList.remove('spinning');
+            }, 1000);
+        }
+
+        // Simulate real-time data update
+        function updateData() {
+            // Equipment 1 - Temperature fluctuation
+            const temp1 = -18 + (Math.random() - 0.5) * 2;
+            document.getElementById('temp1').textContent = temp1.toFixed(1);
+
+            const humidity1 = 45 + (Math.random() - 0.5) * 4;
+            document.getElementById('humidity1').textContent = Math.round(humidity1);
+
+            const pressure1 = 101 + (Math.random() - 0.5) * 2;
+            document.getElementById('pressure1').textContent = Math.round(pressure1);
+
+            // Equipment 2 - Alert temperature
+            const temp2 = 85 + (Math.random() - 0.5) * 3;
+            document.getElementById('temp2').textContent = Math.round(temp2);
+            document.getElementById('temp2-display').textContent = Math.round(temp2);
+
+            // Equipment 3 - Speed fluctuation
+            const speed3 = 120 + (Math.random() - 0.5) * 10;
+            document.getElementById('speed3').textContent = Math.round(speed3);
+        }
+
+        // Continuous data updates (simulate real-time)
+        function startDataUpdates() {
+            dataUpdateInterval = setInterval(() => {
+                // Subtle data changes
+                const temp1 = parseFloat(document.getElementById('temp1').textContent);
+                const newTemp1 = temp1 + (Math.random() - 0.5) * 0.2;
+                document.getElementById('temp1').textContent = newTemp1.toFixed(1);
+
+                const temp2 = parseFloat(document.getElementById('temp2').textContent);
+                const newTemp2 = temp2 + (Math.random() - 0.5) * 0.5;
+                document.getElementById('temp2').textContent = Math.round(newTemp2);
+                document.getElementById('temp2-display').textContent = Math.round(newTemp2);
+
+                const speed3 = parseFloat(document.getElementById('speed3').textContent);
+                const newSpeed3 = speed3 + (Math.random() - 0.5) * 2;
+                document.getElementById('speed3').textContent = Math.round(newSpeed3);
+
+                // Update runtime
+                const runtime1 = parseFloat(document.getElementById('runtime1').textContent);
+                document.getElementById('runtime1').textContent = (runtime1 + 0.001).toFixed(3);
+
+                const runtime2 = parseFloat(document.getElementById('runtime2').textContent);
+                document.getElementById('runtime2').textContent = (runtime2 + 0.001).toFixed(3);
+
+                const runtime3 = parseFloat(document.getElementById('runtime3').textContent);
+                document.getElementById('runtime3').textContent = (runtime3 + 0.001).toFixed(3);
+            }, 3000);
+        }
+
+        // Navigation
+        function goBack() {
+            console.log('返回上一页');
+            alert('返回：设备管理列表页');
+        }
+
+        function navigate(page) {
+            console.log('导航到：', page);
+            alert('导航到：' + page);
+        }
+
+        function viewDetails(equipmentId) {
+            console.log('查看设备详情：', equipmentId);
+            alert('跳转到设备详情页：' + equipmentId + '\n\n将显示：\n- 完整参数历史\n- 详细趋势图表\n- 维护记录\n- 操作日志');
+        }
+
+        function viewAlert(equipmentId) {
+            console.log('查看告警：', equipmentId);
+            alert('跳转到设备告警详情页：' + equipmentId + '\n\n将显示：\n- 告警详细信息\n- 告警级别和类型\n- 处理建议\n- 历史告警记录');
+        }
+
+        function confirmAlert(equipmentId) {
+            console.log('确认告警：', equipmentId);
+            if (confirm('确认已处理此告警？\n\n设备：' + equipmentId + '\n告警：温度过高')) {
+                alert('告警已确认！\n\n系统将记录：\n- 确认时间\n- 操作人员\n- 处理备注');
+            }
+        }
+
+        // Initialize
+        startCountdown();
+        startDataUpdates();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            clearInterval(countdownInterval);
+            clearInterval(dataUpdateInterval);
+        });
+    </script>
+</body>
+</html>
