@@ -1,7 +1,0 @@
-  /**
-   * 导航到主界面 - 基于角色的智能路由
-   */
-  const navigateToMain = () => {
-    const route = getPostLoginRoute();
-    navigation.replace('Main', route.params ? route : { screen: route.screen });
-  };

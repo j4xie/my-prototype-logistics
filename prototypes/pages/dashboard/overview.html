@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>生产概览 - 白垩纪食品溯源系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary-color: #1890ff;
+            --primary-gradient: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            --success-color: #52c41a;
+            --success-gradient: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+            --warning-color: #faad14;
+            --warning-gradient: linear-gradient(135deg, #faad14 0%, #d48806 100%);
+            --danger-color: #ff4d4f;
+            --danger-gradient: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+            --purple-gradient: linear-gradient(135deg, #722ed1 0%, #531dab 100%);
+            --cyan-gradient: linear-gradient(135deg, #13c2c2 0%, #08979c 100%);
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-primary: #262626;
+            --text-secondary: #8c8c8c;
+            --border-color: #f0f0f0;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding-bottom: 60px;
+            line-height: 1.5;
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            position: sticky;
+            top: 0;
+            background: var(--primary-gradient);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-md);
+            z-index: 100;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .navbar-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* 主内容区 */
+        .main-content {
+            padding: 16px;
+        }
+
+        /* 统计卡片区 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: currentColor;
+            opacity: 0.05;
+            border-radius: 50%;
+            transform: translate(30%, -30%);
+        }
+
+        .stat-card:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card.primary { color: var(--primary-color); }
+        .stat-card.success { color: var(--success-color); }
+        .stat-card.warning { color: var(--warning-color); }
+        .stat-card.danger { color: var(--danger-color); }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: currentColor;
+            color: white;
+            opacity: 0.9;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-footer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .trend-up {
+            color: var(--success-color);
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .trend-down {
+            color: var(--danger-color);
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .progress-ring {
+            width: 40px;
+            height: 40px;
+            position: relative;
+        }
+
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-bg {
+            fill: none;
+            stroke: #f0f0f0;
+            stroke-width: 4;
+        }
+
+        .progress-ring-bar {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 4;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--danger-color);
+            color: white;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 0 6px;
+        }
+
+        /* 快捷入口 */
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--primary-gradient);
+            border-radius: 2px;
+        }
+
+        .quick-actions {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .action-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-item:active {
+            transform: scale(0.95);
+        }
+
+        .action-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .action-item:active .action-icon {
+            transform: scale(0.9);
+        }
+
+        .action-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* 最新动态 */
+        .timeline {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .timeline-item:first-child {
+            padding-top: 0;
+        }
+
+        .timeline-item:active {
+            background: #fafafa;
+            margin: 0 -16px;
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+
+        .timeline-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .timeline-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .timeline-title {
+            font-size: 14px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .timeline-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .timeline-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .timeline-arrow {
+            display: flex;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        /* 底部导航栏 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+            z-index: 100;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            padding: 4px 0;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+
+        .nav-icon {
+            font-size: 22px;
+            position: relative;
+        }
+
+        .nav-label {
+            font-size: 11px;
+        }
+
+        .nav-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--danger-color);
+            color: white;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 0 4px;
+        }
+
+        /* 流程标注 */
+        .flow-annotation {
+            position: absolute;
+            background: rgba(255, 77, 79, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+
+        .flow-annotation::after {
+            content: '';
+            position: absolute;
+            border: 6px solid transparent;
+            border-top-color: rgba(255, 77, 79, 0.9);
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 360px) {
+            .actions-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
+            }
+
+            .action-icon {
+                width: 46px;
+                height: 46px;
+                font-size: 20px;
+            }
+
+            .action-label {
+                font-size: 11px;
+            }
+        }
+
+        /* 加载动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card {
+            animation: fadeInUp 0.5s ease backwards;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="navbar">
+        <div class="navbar-left">
+            <div class="logo">🏭</div>
+            <div class="navbar-title">生产概览</div>
+        </div>
+        <div class="user-avatar">👤</div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <!-- 统计卡片区 -->
+        <div class="stats-grid">
+            <!-- 今日产量 -->
+            <div class="stat-card primary" onclick="navigateTo('production-detail')">
+                <div class="flow-annotation" style="top: -35px; right: 10px;">点击查看详情</div>
+                <div class="stat-header">
+                    <div class="stat-icon">📊</div>
+                </div>
+                <div class="stat-label">今日产量</div>
+                <div class="stat-value">2,847</div>
+                <div class="stat-footer">
+                    <div class="trend-up">
+                        <span>↑</span>
+                        <span>12.5%</span>
+                    </div>
+                    <span style="color: var(--text-secondary);">较昨日</span>
+                </div>
+            </div>
+
+            <!-- 进行中批次 -->
+            <div class="stat-card success" onclick="navigateTo('batch-list')">
+                <div class="stat-header">
+                    <div class="stat-icon">📦</div>
+                </div>
+                <div class="stat-label">进行中批次</div>
+                <div class="stat-value">15</div>
+                <div class="stat-footer">
+                    <span style="color: var(--success-color);">●</span>
+                    <span style="color: var(--text-secondary);">运行正常</span>
+                </div>
+            </div>
+
+            <!-- 质检合格率 -->
+            <div class="stat-card warning" onclick="navigateTo('quality-detail')">
+                <div class="stat-header">
+                    <div class="progress-ring">
+                        <svg width="40" height="40">
+                            <circle class="progress-ring-bg" cx="20" cy="20" r="16"/>
+                            <circle class="progress-ring-bar" cx="20" cy="20" r="16"
+                                    stroke="currentColor"
+                                    stroke-dasharray="100.53"
+                                    stroke-dashoffset="4.21"/>
+                        </svg>
+                        <div class="progress-text">96%</div>
+                    </div>
+                </div>
+                <div class="stat-label">质检合格率</div>
+                <div class="stat-value">96.8%</div>
+                <div class="stat-footer">
+                    <div class="trend-up">
+                        <span>↑</span>
+                        <span>2.3%</span>
+                    </div>
+                    <span style="color: var(--text-secondary);">本周平均</span>
+                </div>
+            </div>
+
+            <!-- 设备告警 -->
+            <div class="stat-card danger" onclick="navigateTo('alert-list')">
+                <div class="badge">3</div>
+                <div class="stat-header">
+                    <div class="stat-icon">⚠️</div>
+                </div>
+                <div class="stat-label">设备告警</div>
+                <div class="stat-value">3</div>
+                <div class="stat-footer">
+                    <span style="color: var(--danger-color);">●</span>
+                    <span style="color: var(--text-secondary);">需要处理</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快捷入口 -->
+        <div class="section-title">快捷入口</div>
+        <div class="quick-actions">
+            <div class="flow-annotation" style="top: -35px; left: 20px;">点击进入模块</div>
+            <div class="actions-grid">
+                <div class="action-item" onclick="navigateTo('batch-management')">
+                    <div class="action-icon" style="background: var(--primary-gradient);">📦</div>
+                    <div class="action-label">批次管理</div>
+                </div>
+                <div class="action-item" onclick="navigateTo('quality-management')">
+                    <div class="action-icon" style="background: var(--success-gradient);">✅</div>
+                    <div class="action-label">质检管理</div>
+                </div>
+                <div class="action-item" onclick="navigateTo('employee-clock')">
+                    <div class="action-icon" style="background: var(--cyan-gradient);">👥</div>
+                    <div class="action-label">员工打卡</div>
+                </div>
+                <div class="action-item" onclick="navigateTo('equipment-monitor')">
+                    <div class="action-icon" style="background: var(--warning-gradient);">⚙️</div>
+                    <div class="action-label">设备监控</div>
+                </div>
+                <div class="action-item" onclick="navigateTo('cost-analysis')">
+                    <div class="action-icon" style="background: var(--purple-gradient);">💰</div>
+                    <div class="action-label">成本分析</div>
+                </div>
+                <div class="action-item" onclick="navigateTo('data-report')">
+                    <div class="action-icon" style="background: var(--primary-gradient);">📊</div>
+                    <div class="action-label">数据报表</div>
+                </div>
+                <div class="action-item" onclick="navigateTo('trace-query')">
+                    <div class="action-icon" style="background: var(--success-gradient);">🔍</div>
+                    <div class="action-label">溯源查询</div>
+                </div>
+                <div class="action-item" onclick="navigateTo('system-settings')">
+                    <div class="action-icon" style="background: linear-gradient(135deg, #8c8c8c 0%, #595959 100%);">⚙️</div>
+                    <div class="action-label">系统设置</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最新动态 -->
+        <div class="section-title">最新动态</div>
+        <div class="timeline">
+            <div class="timeline-item" onclick="navigateTo('activity-detail-1')">
+                <div class="timeline-icon" style="background: var(--success-gradient); color: white;">✓</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">批次 BT20241005-001 质检完成</div>
+                    <div class="timeline-desc">质检员：张三 | 合格率：98.5%</div>
+                    <div class="timeline-time">2分钟前</div>
+                </div>
+                <div class="timeline-arrow">›</div>
+            </div>
+
+            <div class="timeline-item" onclick="navigateTo('activity-detail-2')">
+                <div class="timeline-icon" style="background: var(--primary-gradient); color: white;">📦</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">新批次 BT20241005-002 已创建</div>
+                    <div class="timeline-desc">操作员：李四 | 计划产量：1500kg</div>
+                    <div class="timeline-time">15分钟前</div>
+                </div>
+                <div class="timeline-arrow">›</div>
+            </div>
+
+            <div class="timeline-item" onclick="navigateTo('activity-detail-3')">
+                <div class="timeline-icon" style="background: var(--warning-gradient); color: white;">⚠️</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">设备 EQ-003 温度异常告警</div>
+                    <div class="timeline-desc">当前温度：45°C | 阈值：40°C</div>
+                    <div class="timeline-time">1小时前</div>
+                </div>
+                <div class="timeline-arrow">›</div>
+            </div>
+
+            <div class="timeline-item" onclick="navigateTo('activity-detail-4')">
+                <div class="timeline-icon" style="background: var(--cyan-gradient); color: white;">👤</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">员工 王五 完成打卡</div>
+                    <div class="timeline-desc">类型：下班打卡 | 工时：8.5小时</div>
+                    <div class="timeline-time">2小时前</div>
+                </div>
+                <div class="timeline-arrow">›</div>
+            </div>
+
+            <div class="timeline-item" onclick="navigateTo('activity-detail-5')">
+                <div class="timeline-icon" style="background: var(--purple-gradient); color: white;">💰</div>
+                <div class="timeline-content">
+                    <div class="timeline-title">今日成本核算完成</div>
+                    <div class="timeline-desc">总成本：¥12,458 | 单位成本：¥4.38/kg</div>
+                    <div class="timeline-time">3小时前</div>
+                </div>
+                <div class="timeline-arrow">›</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <div class="bottom-nav">
+        <div class="flow-annotation" style="bottom: 65px; left: 50%; transform: translateX(-50%);">切换模块</div>
+        <div class="nav-item active" onclick="switchTab('overview')">
+            <div class="nav-icon">🏠</div>
+            <div class="nav-label">概览</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('batch')">
+            <div class="nav-icon">📦</div>
+            <div class="nav-label">批次</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('quality')">
+            <div class="nav-icon">✅</div>
+            <div class="nav-label">质检</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('equipment')">
+            <div class="nav-icon">
+                ⚙️
+                <span class="nav-badge">3</span>
+            </div>
+            <div class="nav-label">设备</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('cost')">
+            <div class="nav-icon">💰</div>
+            <div class="nav-label">成本</div>
+        </div>
+    </div>
+
+    <script>
+        // 移除流程标注（5秒后）
+        setTimeout(() => {
+            document.querySelectorAll('.flow-annotation').forEach(el => {
+                el.style.animation = 'fadeOut 0.5s ease forwards';
+            });
+            setTimeout(() => {
+                document.querySelectorAll('.flow-annotation').forEach(el => el.remove());
+            }, 500);
+        }, 5000);
+
+        // 导航函数
+        function navigateTo(page) {
+            console.log('导航到:', page);
+            // 这里添加实际的导航逻辑
+            alert('导航到: ' + page + '\n（实际开发中会跳转到对应页面）');
+        }
+
+        // 底部Tab切换
+        function switchTab(tab) {
+            console.log('切换Tab:', tab);
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // 这里添加实际的Tab切换逻辑
+            const tabNames = {
+                'overview': '概览',
+                'batch': '批次管理',
+                'quality': '质检管理',
+                'equipment': '设备监控',
+                'cost': '成本分析'
+            };
+            alert('切换到: ' + tabNames[tab] + '\n（实际开发中会切换到对应模块）');
+        }
+
+        // 添加淡出动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                to {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 实时更新数据（模拟）
+        function updateStats() {
+            // 这里可以添加实时数据更新逻辑
+            console.log('更新统计数据...');
+        }
+
+        // 每30秒更新一次数据
+        setInterval(updateStats, 30000);
+    </script>
+</body>
+</html>

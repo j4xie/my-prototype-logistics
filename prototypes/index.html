@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>白垩纪食品溯源系统 - 页面流程图</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: #f5f7fa;
+            padding: 24px;
+            overflow-x: auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .control-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .control-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .control-btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .flow-container {
+            position: relative;
+            min-width: 1600px;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        /* 页面卡片4x9网格 */
+        .pages-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 80px 60px;
+            position: relative;
+        }
+
+        .page-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .page-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .page-card.highlight {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        }
+
+        .page-number {
+            position: absolute;
+            top: -12px;
+            left: 12px;
+            background: #667eea;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .page-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .page-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: #262626;
+            margin-bottom: 6px;
+        }
+
+        .page-module {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-bottom: 8px;
+        }
+
+        .page-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-top: auto;
+        }
+
+        .status-done {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+
+        .status-core {
+            background: #fff1f0;
+            color: #ff4d4f;
+            border: 1px solid #ffa39e;
+        }
+
+        /* 流程箭头标注 */
+        .flow-arrow-label {
+            position: absolute;
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+        }
+
+        .flow-arrow-label::before {
+            content: '→';
+            margin-right: 4px;
+        }
+
+        /* SVG连接线容器 */
+        svg.flow-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .flow-line {
+            stroke: #1890ff;
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 6, 4;
+            opacity: 0.6;
+        }
+
+        .flow-line-arrow {
+            fill: #1890ff;
+        }
+
+        /* 显示/隐藏流程线 */
+        body:not(.show-flows) svg.flow-lines {
+            display: none;
+        }
+
+        body:not(.show-flows) .flow-arrow-label {
+            display: none;
+        }
+
+        /* 图例 */
+        .legend {
+            margin-top: 32px;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 12px;
+        }
+
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #262626;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🦕 白垩纪食品溯源系统 - 页面流程图</h1>
+        <p>Figma风格的页面跳转流程可视化 | 共34个页面</p>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn control-btn-primary" onclick="toggleFlowLines()">
+            🗺️ 显示/隐藏流程连线
+        </button>
+        <button class="control-btn control-btn-secondary" onclick="window.location.href='flow-map.html'">
+            📋 查看详细流程图
+        </button>
+    </div>
+
+    <div class="flow-container">
+        <!-- SVG连接线层 -->
+        <svg class="flow-lines" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" class="flow-line-arrow" />
+                </marker>
+            </defs>
+            <!-- 连接线将通过JS动态生成 -->
+        </svg>
+
+        <!-- 4x9网格显示所有34个页面 -->
+        <div class="pages-grid" id="pagesGrid">
+            <!-- 第1行 -->
+            <div class="page-card" data-page="1" onclick="location.href='pages/auth/login.html'">
+                <div class="page-number">1</div>
+                <div class="page-icon">🔐</div>
+                <div class="page-title">统一登录</div>
+                <div class="page-module">认证模块</div>
+                <div class="page-status status-done">✓ 高保真</div>
+                <div class="flow-arrow-label" style="top: 50%; right: -90px;">登录页</div>
+            </div>
+
+            <div class="page-card" data-page="2" onclick="location.href='pages/auth/register-phase1.html'">
+                <div class="page-number">2</div>
+                <div class="page-icon">📱</div>
+                <div class="page-title">注册-手机验证</div>
+                <div class="page-module">认证模块</div>
+                <div class="page-status status-done">✓ 高保真</div>
+                <div class="flow-arrow-label" style="top: 50%; right: -100px;">验证通过</div>
+            </div>
+
+            <div class="page-card" data-page="3" onclick="location.href='pages/auth/register-phase2.html'">
+                <div class="page-number">3</div>
+                <div class="page-icon">📝</div>
+                <div class="page-title">注册-完善信息</div>
+                <div class="page-module">认证模块</div>
+                <div class="page-status status-done">✓ 高保真</div>
+                <div class="flow-arrow-label" style="top: 50%; right: -100px;">注册成功</div>
+            </div>
+
+            <div class="page-card" data-page="4" onclick="location.href='pages/auth/activation.html'">
+                <div class="page-number">4</div>
+                <div class="page-icon">🔓</div>
+                <div class="page-title">设备激活</div>
+                <div class="page-module">认证模块</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <!-- 第2行 -->
+            <div class="page-card highlight" data-page="5" onclick="location.href='pages/dashboard/overview.html'">
+                <div class="page-number">5</div>
+                <div class="page-icon">📊</div>
+                <div class="page-title">生产概览</div>
+                <div class="page-module">仪表板</div>
+                <div class="page-status status-core">⭐ 首页</div>
+                <div class="flow-arrow-label" style="bottom: -35px; left: 50%; transform: translateX(-50%);">点击模块入口</div>
+            </div>
+
+            <div class="page-card" data-page="6" onclick="location.href='pages/dashboard/production.html'">
+                <div class="page-number">6</div>
+                <div class="page-icon">📈</div>
+                <div class="page-title">生产统计</div>
+                <div class="page-module">仪表板</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="7" onclick="location.href='pages/dashboard/quality.html'">
+                <div class="page-number">7</div>
+                <div class="page-icon">✅</div>
+                <div class="page-title">质量统计</div>
+                <div class="page-module">仪表板</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="8" onclick="location.href='pages/dashboard/alerts.html'">
+                <div class="page-number">8</div>
+                <div class="page-icon">🔔</div>
+                <div class="page-title">告警中心</div>
+                <div class="page-module">仪表板</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <!-- 第3行 - 批次管理 -->
+            <div class="page-card highlight" data-page="9" onclick="location.href='pages/batch/list.html'">
+                <div class="page-number">9</div>
+                <div class="page-icon">📦</div>
+                <div class="page-title">批次列表</div>
+                <div class="page-module">批次管理</div>
+                <div class="page-status status-core">⭐ 核心</div>
+                <div class="flow-arrow-label" style="top: 50%; right: -100px;">点击批次</div>
+            </div>
+
+            <div class="page-card" data-page="10" onclick="location.href='pages/batch/detail.html'">
+                <div class="page-number">10</div>
+                <div class="page-icon">📋</div>
+                <div class="page-title">批次详情</div>
+                <div class="page-module">批次管理</div>
+                <div class="page-status status-done">✓ 高保真</div>
+                <div class="flow-arrow-label" style="bottom: -35px; left: 50%; transform: translateX(-50%);">查看详情</div>
+            </div>
+
+            <div class="page-card" data-page="11" onclick="location.href='pages/batch/create.html'">
+                <div class="page-number">11</div>
+                <div class="page-icon">➕</div>
+                <div class="page-title">创建批次</div>
+                <div class="page-module">批次管理</div>
+                <div class="page-status status-done">✓ 高保真</div>
+            </div>
+
+            <div class="page-card" data-page="12" onclick="location.href='pages/batch/edit.html'">
+                <div class="page-number">12</div>
+                <div class="page-icon">✏️</div>
+                <div class="page-title">编辑批次</div>
+                <div class="page-module">批次管理</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <!-- 第4行 -->
+            <div class="page-card" data-page="13" onclick="location.href='pages/batch/timeline.html'">
+                <div class="page-number">13</div>
+                <div class="page-icon">⏱️</div>
+                <div class="page-title">批次时间线</div>
+                <div class="page-module">批次管理</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="14" onclick="location.href='pages/quality/list.html'">
+                <div class="page-number">14</div>
+                <div class="page-icon">📄</div>
+                <div class="page-title">质检列表</div>
+                <div class="page-module">质检管理</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card highlight" data-page="15" onclick="location.href='pages/quality/create.html'">
+                <div class="page-number">15</div>
+                <div class="page-icon">✅</div>
+                <div class="page-title">创建质检</div>
+                <div class="page-module">质检管理</div>
+                <div class="page-status status-done">✓ 高保真</div>
+                <div class="flow-arrow-label" style="top: 50%; right: -110px;">提交质检</div>
+            </div>
+
+            <div class="page-card" data-page="16" onclick="location.href='pages/quality/detail.html'">
+                <div class="page-number">16</div>
+                <div class="page-icon">🔍</div>
+                <div class="page-title">质检详情</div>
+                <div class="page-module">质检管理</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <!-- 第5行 -->
+            <div class="page-card" data-page="17" onclick="location.href='pages/quality/statistics.html'">
+                <div class="page-number">17</div>
+                <div class="page-icon">📊</div>
+                <div class="page-title">质检统计</div>
+                <div class="page-module">质检管理</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card highlight" data-page="18" onclick="location.href='pages/employee/clock.html'">
+                <div class="page-number">18</div>
+                <div class="page-icon">⏰</div>
+                <div class="page-title">员工打卡</div>
+                <div class="page-module">员工管理</div>
+                <div class="page-status status-core">⭐ 高频</div>
+                <div class="flow-arrow-label" style="top: 50%; right: -90px;">打卡成功</div>
+            </div>
+
+            <div class="page-card" data-page="19" onclick="location.href='pages/employee/history.html'">
+                <div class="page-number">19</div>
+                <div class="page-icon">📅</div>
+                <div class="page-title">打卡历史</div>
+                <div class="page-module">员工管理</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="20" onclick="location.href='pages/employee/statistics.html'">
+                <div class="page-number">20</div>
+                <div class="page-icon">📊</div>
+                <div class="page-title">工时统计</div>
+                <div class="page-module">员工管理</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <!-- 第6行 -->
+            <div class="page-card" data-page="21" onclick="location.href='pages/employee/work-record.html'">
+                <div class="page-number">21</div>
+                <div class="page-icon">📝</div>
+                <div class="page-title">工作记录</div>
+                <div class="page-module">员工管理</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="22" onclick="location.href='pages/equipment/list.html'">
+                <div class="page-number">22</div>
+                <div class="page-icon">🔧</div>
+                <div class="page-title">设备列表</div>
+                <div class="page-module">设备监控</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card highlight" data-page="23" onclick="location.href='pages/equipment/monitoring.html'">
+                <div class="page-number">23</div>
+                <div class="page-icon">⚙️</div>
+                <div class="page-title">设备监控</div>
+                <div class="page-module">设备监控</div>
+                <div class="page-status status-done">✓ 高保真</div>
+                <div class="flow-arrow-label" style="top: 50%; right: -100px;">查看设备</div>
+            </div>
+
+            <div class="page-card" data-page="24" onclick="location.href='pages/equipment/detail.html'">
+                <div class="page-number">24</div>
+                <div class="page-icon">🔍</div>
+                <div class="page-title">设备详情</div>
+                <div class="page-module">设备监控</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <!-- 第7行 -->
+            <div class="page-card" data-page="25" onclick="location.href='pages/equipment/alerts.html'">
+                <div class="page-number">25</div>
+                <div class="page-icon">🚨</div>
+                <div class="page-title">设备告警</div>
+                <div class="page-module">设备监控</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="26" onclick="location.href='pages/cost/dashboard.html'">
+                <div class="page-number">26</div>
+                <div class="page-icon">💰</div>
+                <div class="page-title">成本仪表板</div>
+                <div class="page-module">成本分析</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card highlight" data-page="27" onclick="location.href='pages/cost/batch-detail.html'">
+                <div class="page-number">27</div>
+                <div class="page-icon">💵</div>
+                <div class="page-title">批次成本详情</div>
+                <div class="page-module">成本分析</div>
+                <div class="page-status status-done">✓ AI分析</div>
+                <div class="flow-arrow-label" style="bottom: -35px; left: 50%; transform: translateX(-50%);">AI分析</div>
+            </div>
+
+            <div class="page-card" data-page="28" onclick="location.href='pages/cost/trend.html'">
+                <div class="page-number">28</div>
+                <div class="page-icon">📈</div>
+                <div class="page-title">成本趋势</div>
+                <div class="page-module">成本分析</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <!-- 第8行 -->
+            <div class="page-card" data-page="29" onclick="location.href='pages/cost/ai-analysis.html'">
+                <div class="page-number">29</div>
+                <div class="page-icon">🤖</div>
+                <div class="page-title">AI成本分析</div>
+                <div class="page-module">成本分析</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="30" onclick="location.href='pages/trace/consumer.html'">
+                <div class="page-number">30</div>
+                <div class="page-icon">👤</div>
+                <div class="page-title">消费者查询</div>
+                <div class="page-module">溯源查询</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="31" onclick="location.href='pages/trace/enterprise.html'">
+                <div class="page-number">31</div>
+                <div class="page-icon">🏢</div>
+                <div class="page-title">企业端追溯</div>
+                <div class="page-module">溯源查询</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="32" onclick="location.href='pages/trace/regulator.html'">
+                <div class="page-number">32</div>
+                <div class="page-icon">👮</div>
+                <div class="page-title">监管端追溯</div>
+                <div class="page-module">溯源查询</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <!-- 第9行 -->
+            <div class="page-card" data-page="33" onclick="location.href='pages/trace/qr-generate.html'">
+                <div class="page-number">33</div>
+                <div class="page-icon">📱</div>
+                <div class="page-title">溯源码生成</div>
+                <div class="page-module">溯源查询</div>
+                <div class="page-status">开发中</div>
+            </div>
+
+            <div class="page-card" data-page="34" onclick="location.href='flow-map.html'">
+                <div class="page-number">34</div>
+                <div class="page-icon">🗺️</div>
+                <div class="page-title">完整流程图</div>
+                <div class="page-module">系统工具</div>
+                <div class="page-status status-done">✓ 完成</div>
+            </div>
+        </div>
+
+        <!-- 图例说明 -->
+        <div class="legend">
+            <div class="legend-title">📖 图例说明</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div style="width: 20px; height: 20px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 4px;"></div>
+                    <span>✓ 高保真页面（完整设计）</span>
+                </div>
+                <div class="legend-item">
+                    <div style="width: 20px; height: 20px; background: #fff1f0; border: 1px solid #ffa39e; border-radius: 4px;"></div>
+                    <span>⭐ 核心页面</span>
+                </div>
+                <div class="legend-item">
+                    <div style="width: 20px; height: 20px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;"></div>
+                    <span>开发中（基础框架）</span>
+                </div>
+                <div class="legend-item">
+                    <div style="width: 60px; height: 3px; background: #1890ff;"></div>
+                    <span>页面跳转流程线</span>
+                </div>
+                <div class="legend-item">
+                    <div style="padding: 4px 10px; background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); color: white; border-radius: 12px; font-size: 11px;">→ 标注</div>
+                    <span>跳转目标标注</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面连接关系定义
+        const connections = [
+            // 认证流程
+            { from: 1, to: 5 },      // 登录 → 生产概览
+            { from: 1, to: 2 },      // 登录 → 注册第一步
+            { from: 2, to: 3 },      // 注册第一步 → 注册第二步
+            { from: 3, to: 4 },      // 注册第二步 → 激活
+            { from: 4, to: 5 },      // 激活 → 生产概览
+
+            // 仪表板流程
+            { from: 5, to: 9 },      // 生产概览 → 批次列表
+            { from: 5, to: 18 },     // 生产概览 → 员工打卡
+            { from: 5, to: 23 },     // 生产概览 → 设备监控
+            { from: 5, to: 27 },     // 生产概览 → 成本分析
+
+            // 批次管理流程
+            { from: 9, to: 10 },     // 批次列表 → 批次详情
+            { from: 9, to: 11 },     // 批次列表 → 创建批次
+            { from: 10, to: 13 },    // 批次详情 → 时间线
+            { from: 10, to: 15 },    // 批次详情 → 创建质检
+            { from: 10, to: 27 },    // 批次详情 → 成本详情
+            { from: 11, to: 9 },     // 创建批次 → 批次列表
+
+            // 质检流程
+            { from: 15, to: 16 },    // 创建质检 → 质检详情
+            { from: 16, to: 14 },    // 质检详情 → 质检列表
+
+            // 员工流程
+            { from: 18, to: 19 },    // 员工打卡 → 打卡历史
+            { from: 19, to: 20 },    // 打卡历史 → 工时统计
+
+            // 设备流程
+            { from: 23, to: 24 },    // 设备监控 → 设备详情
+            { from: 23, to: 25 },    // 设备监控 → 设备告警
+
+            // 成本流程
+            { from: 27, to: 29 },    // 成本详情 → AI分析
+            { from: 27, to: 28 }     // 成本详情 → 成本趋势
+        ];
+
+        // 切换流程线显示/隐藏
+        let flowLinesVisible = true;
+        function toggleFlowLines() {
+            flowLinesVisible = !flowLinesVisible;
+            document.body.classList.toggle('show-flows', flowLinesVisible);
+            if (flowLinesVisible) {
+                drawAllFlowLines();
+            }
+        }
+
+        // 绘制所有流程连接线
+        function drawAllFlowLines() {
+            const svg = document.querySelector('svg.flow-lines');
+            if (!svg) return;
+
+            // 清除现有线条
+            const existingLines = svg.querySelectorAll('line, path');
+            existingLines.forEach(line => line.remove());
+
+            connections.forEach(conn => {
+                const fromCard = document.querySelector(`[data-page="${conn.from}"]`);
+                const toCard = document.querySelector(`[data-page="${conn.to}"]`);
+
+                if (fromCard && toCard) {
+                    const fromRect = fromCard.getBoundingClientRect();
+                    const toRect = toCard.getBoundingClientRect();
+                    const containerRect = document.querySelector('.pages-grid').getBoundingClientRect();
+
+                    // 计算相对于grid容器的坐标
+                    const x1 = fromRect.left - containerRect.left + fromRect.width / 2;
+                    const y1 = fromRect.top - containerRect.top + fromRect.height / 2;
+                    const x2 = toRect.left - containerRect.left + toRect.width / 2;
+                    const y2 = toRect.top - containerRect.top + toRect.height / 2;
+
+                    // 创建线条
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', x1);
+                    line.setAttribute('y1', y1);
+                    line.setAttribute('x2', x2);
+                    line.setAttribute('y2', y2);
+                    line.setAttribute('class', 'flow-line');
+                    line.setAttribute('marker-end', 'url(#arrowhead)');
+
+                    svg.appendChild(line);
+                }
+            });
+        }
+
+        // 页面加载后绘制流程线
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.body.classList.add('show-flows');
+                drawAllFlowLines();
+            }, 500);
+        });
+
+        // 窗口大小改变时重绘
+        window.addEventListener('resize', drawAllFlowLines);
+    </script>
+</body>
+</html>
