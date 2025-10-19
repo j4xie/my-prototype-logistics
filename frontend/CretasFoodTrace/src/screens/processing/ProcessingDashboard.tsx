@@ -225,6 +225,14 @@ export default function ProcessingDashboard() {
               >
                 成本分析
               </Button>
+              <Button
+                mode="outlined"
+                icon="chart-line"
+                onPress={() => navigation.navigate('FoodProcessingAnalysis')}
+                style={styles.actionButton}
+              >
+                食品加工分析
+              </Button>
             </View>
           </Card.Content>
         </Card>

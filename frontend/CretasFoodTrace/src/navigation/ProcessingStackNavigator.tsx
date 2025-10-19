@@ -11,6 +11,7 @@ import QualityInspectionListScreen from '../screens/processing/QualityInspection
 import EquipmentMonitoringScreen from '../screens/processing/EquipmentMonitoringScreen';
 import CostAnalysisDashboard from '../screens/processing/CostAnalysisDashboard';
 import ProductionPlanManagementScreen from '../screens/processing/ProductionPlanManagementScreen';
+import FoodProcessingAnalysisScreen from '../screens/processing/FoodProcessingAnalysisScreen';
 
 const Stack = createNativeStackNavigator<ProcessingStackParamList>();
 
@@ -67,6 +68,12 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="ProductionPlanManagement"
         component={ProductionPlanManagementScreen}
+      />
+
+      {/* 食品加工数据分析 */}
+      <Stack.Screen
+        name="FoodProcessingAnalysis"
+        component={FoodProcessingAnalysisScreen}
       />
 
       {/* TODO: 添加其他页面 */}

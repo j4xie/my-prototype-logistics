@@ -29,6 +29,7 @@
     "expo": "~53.0.23",
     "expo-application": "~6.1.5",
     "expo-barcode-scanner": "^13.0.1",
+    "expo-clipboard": "~7.1.5",
     "expo-device": "~7.1.4",
     "expo-file-system": "^18.1.11",
     "expo-haptics": "~14.1.4",

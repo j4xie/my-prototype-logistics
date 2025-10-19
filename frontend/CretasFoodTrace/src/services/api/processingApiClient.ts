@@ -138,6 +138,24 @@ export const processingAPI = {
     const response = await apiClient.post('/api/mobile/processing/ai-cost-analysis', params);
     return response.data;
   },
+
+  /**
+   * 食品加工数据分析（新功能）
+   * 基于实际数据 vs 平均数据的AI智能分析
+   */
+  analyzeFoodProcessing: async (sectionData: Record<string, string>): Promise<{
+    success: boolean;
+    data?: {
+      analysis: string;
+    };
+    analysis?: string;
+    message?: string;
+  }> => {
+    const response = await apiClient.post('/api/mobile/ai/food-processing-analysis', {
+      section_data: sectionData,
+    });
+    return response.data;
+  },
 };
 
 // 别名导出，兼容旧代码

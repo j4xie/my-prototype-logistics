@@ -16,6 +16,7 @@ import customerRoutes from './customer.js';
 import productionPlanRoutes from './productionPlan.js';
 import materialBatchRoutes from './materialBatch.js';
 import factorySettingsRoutes from './factorySettings.js';
+import aiAnalysisRoutes from './aiAnalysis.js';
 import { getEmployees } from '../controllers/userController.js';
 const router = express.Router();
 
@@ -712,6 +713,9 @@ router.use('/production-plans', mobileAuthMiddleware, productionPlanRoutes); // 
 
 // 工厂设置路由（含AI设置管理）
 router.use('/factory-settings', factorySettingsRoutes);
+
+// AI分析路由
+router.use('/ai', aiAnalysisRoutes);
 
 // 员工列表路由
 router.get('/employees', mobileAuthMiddleware, getEmployees);

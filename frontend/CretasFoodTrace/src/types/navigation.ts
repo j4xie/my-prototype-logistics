@@ -65,6 +65,9 @@ export type ProcessingStackParamList = {
 
   // 生产计划管理
   ProductionPlanManagement: undefined;
+
+  // 食品加工数据分析
+  FoodProcessingAnalysis: undefined;
 };
 
 // ==================== 打卡模块导航参数 ====================
