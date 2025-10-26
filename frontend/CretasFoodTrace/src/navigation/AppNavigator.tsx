@@ -5,6 +5,7 @@ import { PaperProvider } from 'react-native-paper';
 import { RootStackParamList } from '../types/navigation';
 import { useAuthStore } from '../store/authStore';
 import EnhancedLoginScreen from '../screens/auth/EnhancedLoginScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen';
 import MainNavigator from './MainNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -31,16 +32,14 @@ export function AppNavigator() {
                 name="Login"
                 component={EnhancedLoginScreen}
               />
-              {/* TODO: 添加注册页面
               <Stack.Screen
-                name="RegisterPhaseOne"
-                component={RegisterPhaseOneScreen}
+                name="LoginScreen"
+                component={EnhancedLoginScreen}
               />
               <Stack.Screen
-                name="RegisterPhaseTwo"
-                component={RegisterPhaseTwoScreen}
+                name="RegisterScreen"
+                component={RegisterScreen}
               />
-              */}
             </>
           ) : (
             // 已登录 - 显示主应用

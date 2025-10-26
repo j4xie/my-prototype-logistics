@@ -11,6 +11,7 @@ import HomeScreen from '../screens/main/HomeScreen';
 import ProcessingStackNavigator from './ProcessingStackNavigator';
 import ManagementStackNavigator from './ManagementStackNavigator';
 import PlatformStackNavigator from './PlatformStackNavigator';
+import AttendanceStackNavigator from './AttendanceStackNavigator';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -26,8 +27,8 @@ export function MainNavigator() {
   // 调试日志
   console.log('🏠 MainNavigator - User:', user ? {
     userType: user.userType,
-    hasPlatformUser: !!user.platformUser,
-    hasFactoryUser: !!user.factoryUser,
+    hasPlatformUser: user.userType === 'platform',
+    hasFactoryUser: user.userType === 'factory',
   } : 'null');
 
   // 登录后根据角色智能跳转
@@ -45,9 +46,9 @@ export function MainNavigator() {
 
   // 获取用户权限 - 安全访问
   const permissions = user?.userType === 'platform'
-    ? user.platformUser?.permissions || []
+    ? (user as any).platformUser?.permissions || (user as any).permissions || []
     : user?.userType === 'factory'
-      ? user.factoryUser?.permissions || []
+      ? (user as any).factoryUser?.permissions || (user as any).permissions || []
       : [];
 
   // 检查是否有某个权限 - 兼容对象和数组格式
@@ -74,13 +75,14 @@ export function MainNavigator() {
 
   // 获取用户角色 - 安全访问
   const userRole = user?.userType === 'platform'
-    ? user.platformUser?.role || 'viewer'
+    ? (user as any).platformUser?.role || (user as any).role || 'viewer'
     : user?.userType === 'factory'
-      ? user.factoryUser?.role || 'viewer'
+      ? (user as any).factoryUser?.role || (user as any).role || 'viewer'
       : 'viewer';
 
   return (
     <Tab.Navigator
+      id="MainTabNavigator"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#2196F3',
@@ -98,6 +100,20 @@ export function MainNavigator() {
           ),
         }}
       />
+
+      {/* 考勤模块 - 所有工厂用户可见（操作员必用） */}
+      {user?.userType === 'factory' && (
+        <Tab.Screen
+          name="AttendanceTab"
+          component={AttendanceStackNavigator}
+          options={{
+            title: '考勤',
+            tabBarIcon: ({ color, size }) => (
+              <Icon source="clock-outline" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
 
       {/* 生产模块 - 有生产权限的用户可见 */}
       {hasPermission('processing_access') && (
@@ -153,72 +169,9 @@ export function MainNavigator() {
         }}
       />
 
-      {/* TODO: 其他模块根据权限动态添加 */}
       {/*
-      {hasPermission('farming_access') && (
-        <Tab.Screen
-          name="FarmingTab"
-          component={FarmingStackNavigator}
-          options={{
-            title: '养殖',
-            tabBarIcon: ({ color, size }) => (
-              <Icon source="fishbowl-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
-
-      {hasPermission('logistics_access') && (
-        <Tab.Screen
-          name="LogisticsTab"
-          component={LogisticsStackNavigator}
-          options={{
-            title: '物流',
-            tabBarIcon: ({ color, size }) => (
-              <Icon source="truck-delivery" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
-
-      {hasPermission('trace_access') && (
-        <Tab.Screen
-          name="TraceTab"
-          component={TraceStackNavigator}
-          options={{
-            title: '溯源',
-            tabBarIcon: ({ color, size }) => (
-              <Icon source="qrcode-scan" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
-
-      {userRole === 'operator' && (
-        <Tab.Screen
-          name="TimeClockTab"
-          component={TimeClockStackNavigator}
-          options={{
-            title: '打卡',
-            tabBarIcon: ({ color, size }) => (
-              <Icon source="clock-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
-
-      {hasPermission('admin_access') && (
-        <Tab.Screen
-          name="AdminTab"
-          component={AdminStackNavigator}
-          options={{
-            title: '管理',
-            tabBarIcon: ({ color, size }) => (
-              <Icon source="cog" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
+        其他模块（农场、物流、溯源等）在 Phase 4+ 中实现
+        详见: docs/prd/PRD-Phase3-完善计划.md
       */}
     </Tab.Navigator>
   );
