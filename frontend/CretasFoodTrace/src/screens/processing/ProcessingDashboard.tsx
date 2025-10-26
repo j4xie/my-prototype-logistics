@@ -212,10 +212,17 @@ export default function ProcessingDashboard() {
               <Button
                 mode="outlined"
                 icon="monitor-dashboard"
-                onPress={() => navigation.navigate('EquipmentMonitoring', {})}
-                style={styles.actionButton}
+                onPress={() => {
+                  Alert.alert(
+                    '功能开发中',
+                    '设备监控功能正在开发中，敬请期待',
+                    [{ text: '确定', onPress: () => {} }]
+                  );
+                }}
+                disabled={true}
+                style={[styles.actionButton, styles.disabledButton]}
               >
-                设备监控
+                设备监控（开发中）
               </Button>
               <Button
                 mode="outlined"
@@ -280,6 +287,9 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginBottom: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   placeholder: {
     textAlign: 'center',
