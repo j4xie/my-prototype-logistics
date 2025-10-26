@@ -8,9 +8,10 @@ import BatchListScreen from '../screens/processing/BatchListScreen';
 import BatchDetailScreen from '../screens/processing/BatchDetailScreen';
 import CreateBatchScreen from '../screens/processing/CreateBatchScreen';
 import QualityInspectionListScreen from '../screens/processing/QualityInspectionListScreen';
-import EquipmentMonitoringScreen from '../screens/processing/EquipmentMonitoringScreen';
 import CostAnalysisDashboard from '../screens/processing/CostAnalysisDashboard';
 import ProductionPlanManagementScreen from '../screens/processing/ProductionPlanManagementScreen';
+import MaterialBatchManagementScreen from '../screens/processing/MaterialBatchManagementScreen';
+import MaterialReceiptScreen from '../screens/processing/MaterialReceiptScreen';
 
 const Stack = createNativeStackNavigator<ProcessingStackParamList>();
 
@@ -21,6 +22,7 @@ const Stack = createNativeStackNavigator<ProcessingStackParamList>();
 export function ProcessingStackNavigator() {
   return (
     <Stack.Navigator
+      id="ProcessingStackNavigator"
       screenOptions={{
         headerShown: false, // 使用自定义Appbar
       }}
@@ -51,12 +53,6 @@ export function ProcessingStackNavigator() {
         component={QualityInspectionListScreen}
       />
 
-      {/* 设备监控 */}
-      <Stack.Screen
-        name="EquipmentMonitoring"
-        component={EquipmentMonitoringScreen}
-      />
-
       {/* 成本分析 */}
       <Stack.Screen
         name="CostAnalysisDashboard"
@@ -69,15 +65,27 @@ export function ProcessingStackNavigator() {
         component={ProductionPlanManagementScreen}
       />
 
-      {/* TODO: 添加其他页面 */}
+      {/* 原材料管理 - Phase 2新增 */}
+      <Stack.Screen
+        name="MaterialBatchManagement"
+        component={MaterialBatchManagementScreen}
+      />
+      <Stack.Screen
+        name="MaterialReceipt"
+        component={MaterialReceiptScreen}
+      />
+
       {/*
-      <Stack.Screen name="CreateQualityRecord" component={CreateQualityRecordScreen} />
-      <Stack.Screen name="QualityInspectionDetail" component={QualityInspectionDetailScreen} />
-      <Stack.Screen name="EquipmentDetail" component={EquipmentDetailScreen} />
-      <Stack.Screen name="EquipmentAlerts" component={EquipmentAlertsScreen} />
-      <Stack.Screen name="CostComparison" component={CostComparisonScreen} />
-      <Stack.Screen name="DeepSeekAnalysis" component={DeepSeekAnalysisScreen} />
-      <Stack.Screen name="DataExport" component={DataExportScreen} />
+        Phase 3+ 计划的页面:
+        - CreateQualityRecord (质检记录)
+        - QualityInspectionDetail (质检详情)
+        - EquipmentDetail (设备详情)
+        - EquipmentAlerts (设备告警)
+        - CostComparison (成本对比)
+        - DeepSeekAnalysis (AI分析详情)
+        - DataExport (数据导出)
+
+        详见: docs/prd/PRD-Phase3-完善计划.md
       */}
     </Stack.Navigator>
   );

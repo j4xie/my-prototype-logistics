@@ -4,10 +4,9 @@ import { AIQuotaManagementScreen } from '../screens/platform';
 
 export type PlatformStackParamList = {
   AIQuotaManagement: undefined;
-  // TODO: Phase 2功能 - 其他平台管理页面
-  // PlatformDashboard: undefined;
-  // FactoryList: undefined;
-  // SystemMonitoring: undefined;
+  // PlatformDashboard: undefined;      // 待 Phase 4 实现
+  // FactoryList: undefined;            // 待 Phase 4 实现
+  // SystemMonitoring: undefined;       // 待 Phase 4 实现
 };
 
 const Stack = createNativeStackNavigator<PlatformStackParamList>();
@@ -19,6 +18,7 @@ const Stack = createNativeStackNavigator<PlatformStackParamList>();
 export function PlatformStackNavigator() {
   return (
     <Stack.Navigator
+      id="PlatformStackNavigator"
       screenOptions={{
         headerShown: false,
       }}
@@ -29,16 +29,12 @@ export function PlatformStackNavigator() {
         component={AIQuotaManagementScreen}
       />
 
-      {/* TODO: 添加其他平台管理页面 */}
       {/*
-      <Stack.Screen
-        name="PlatformDashboard"
-        component={PlatformDashboardScreen}
-      />
-      <Stack.Screen
-        name="FactoryList"
-        component={FactoryListScreen}
-      />
+        Phase 4+ 计划的页面:
+        - PlatformDashboard (平台仪表板)
+        - FactoryList (工厂列表)
+        - SystemMonitoring (系统监控)
+        详见: docs/prd/PRD-Phase3-完善计划.md
       */}
     </Stack.Navigator>
   );
