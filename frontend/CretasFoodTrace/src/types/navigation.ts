@@ -11,8 +11,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 export type RootStackParamList = {
   // 认证流程
   Login: undefined;
-  RegisterPhaseOne: undefined;
-  RegisterPhaseTwo: { phoneNumber: string; tempToken?: string };
+  LoginScreen: undefined;                                         // 登录屏幕（新的命名）
+  RegisterScreen: undefined;                                      // 注册屏幕（新API）
+  RegisterPhaseOne: undefined;                                    // 旧的注册流程（已弃用）
+  RegisterPhaseTwo: { phoneNumber: string; tempToken?: string };  // 旧的注册流程（已弃用）
 
   // 主应用
   Main: NavigatorScreenParams<MainTabParamList>;

@@ -44,12 +44,9 @@ export function MainNavigator() {
     }
   }, [user]);
 
-  // 获取用户权限 - 安全访问
-  const permissions = user?.userType === 'platform'
-    ? (user as any).platformUser?.permissions || (user as any).permissions || []
-    : user?.userType === 'factory'
-      ? (user as any).factoryUser?.permissions || (user as any).permissions || []
-      : [];
+  // 获取用户权限 - 从 user 的顶级 permissions 获取完整权限对象
+  // 这个对象包含 modules（权限列表）、features（功能列表）等信息
+  const permissions = (user as any)?.permissions || {};
 
   // 检查是否有某个权限 - 兼容对象和数组格式
   const hasPermission = (perm: string) => {

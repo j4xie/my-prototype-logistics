@@ -8,6 +8,60 @@ This is 白垩纪食品溯源系统 (Cretas Food Traceability System), focusing 
 
 1. **Backend API** (Node.js + Express + MySQL/PostgreSQL + Prisma)
 2. **React Native Mobile App** (Expo + TypeScript + React Navigation + DeepSeek LLM)
+3. **Spring Boot Backend** (Java 17 + Spring Boot 2.7.15 - cretas-backend-system)
+
+## 🔧 Server Management & Deployment
+
+### 宝塔面板API管理
+
+本项目使用**宝塔面板API**进行服务器管理和应用部署。
+
+**重要配置**:
+- **宝塔面板地址**: `https://106.14.165.234:8888` (必须使用HTTPS)
+- **API密钥**: 见 `.claude/bt-api-guide.md`
+- **应用服务器**: 47.251.121.76:10010
+
+**详细使用指南**: 参见 [`.claude/bt-api-guide.md`](./.claude/bt-api-guide.md)
+
+**快速参考**:
+```bash
+# 1. 生成API签名
+python3 << 'EOF'
+import hashlib, time
+api_sk = "YOUR_API_KEY"
+request_time = str(int(time.time()))
+md5_api_sk = hashlib.md5(api_sk.encode()).hexdigest()
+request_token = hashlib.md5((request_time + md5_api_sk).encode()).hexdigest()
+print(f"{request_time}|{request_token}")
+EOF
+
+# 2. 调用API (必须使用 -k 参数和 HTTPS)
+curl -k -X POST "https://106.14.165.234:8888/system?action=GetSystemTotal" \
+  -d "request_time=$REQUEST_TIME" \
+  -d "request_token=$REQUEST_TOKEN"
+```
+
+### Spring Boot 后端部署
+
+**部署位置**:
+- JAR文件: `/www/wwwroot/cretas/cretas-backend-system-1.0.0.jar`
+- 日志文件: `/www/wwwroot/cretas/cretas-backend.log`
+- 端口: 10010
+
+**部署步骤**:
+1. 编译JAR: `mvn clean package -DskipTests`
+2. 上传到服务器: `/www/wwwroot/cretas/`
+3. 执行重启脚本: `bash /www/wwwroot/cretas/restart.sh`
+
+**重启脚本** (`/www/wwwroot/cretas/restart.sh`):
+```bash
+#!/bin/bash
+cd /www/wwwroot/cretas
+ps aux | grep cretas-backend-system | grep -v grep | awk '{print $2}' | xargs -r kill -9
+sleep 2
+nohup java -jar cretas-backend-system-1.0.0.jar --server.port=10010 > cretas-backend.log 2>&1 &
+echo "Started with PID: $!"
+```
 
 ## 🎯 Development Strategy (IMPORTANT)
 
@@ -31,6 +85,71 @@ This is 白垩纪食品溯源系统 (Cretas Food Traceability System), focusing 
 - ✅ **Requirement Clarity**: All backend needs are centrally documented
 - ✅ **Reduced Dependencies**: No blocking between frontend and backend teams
 - ✅ **Efficient Integration**: Clear requirements lead to faster final integration
+
+---
+
+## 🎯 Current Development Phase: Phase 3 功能完善
+
+**Status**: Phase 1-2 已完成 ✅ | Phase 3 开发中 🔨 | Phase 4-5 计划中 📅
+
+**Current Strategy**: **优先完善已有功能，再添加新功能**
+
+### Phase 3 Development Priority
+
+#### P0 (紧急修复 - 2小时)
+- 设备监控集成到导航 (EquipmentMonitoringScreen)
+
+#### P1 (核心功能 - 3-4天)
+- AI智能分析详情页 (DeepSeekAnalysisScreen)
+- 质检完整流程 (CreateQualityRecordScreen, QualityInspectionDetailScreen)
+- 成本对比分析、设备告警、库存增强
+
+#### P2 (辅助功能 - 5-7天)
+- 用户注册流程 (RegisterPhaseOne/Two)
+- 数据报表导出 (DataExportScreen)
+- 工厂设置、员工效率、库存盘点、异常预警
+
+**详见**: [`docs/prd/PRD-Phase3-完善计划.md`](./docs/prd/PRD-Phase3-完善计划.md)
+
+### 📱 Already Implemented Pages (24个)
+
+**认证模块**:
+- ✅ EnhancedLoginScreen
+
+**主导航**:
+- ✅ HomeScreen (首页)
+- ✅ ProfileScreen (个人中心)
+
+**考勤模块**:
+- ✅ TimeClockScreen (打卡)
+- ✅ AttendanceStatisticsScreen (工时统计)
+
+**生产模块** (9个页面):
+- ✅ ProcessingDashboard (仪表板)
+- ✅ BatchListScreen, BatchDetailScreen, CreateBatchScreen
+- ✅ QualityInspectionListScreen
+- ✅ CostAnalysisDashboard (成本分析)
+- ✅ ProductionPlanManagementScreen (生产计划)
+- ✅ MaterialReceiptScreen, MaterialBatchManagementScreen (原材料)
+
+**管理模块** (10个页面):
+- ✅ ManagementScreen + ProductType, MaterialType, ConversionRate
+- ✅ WorkType, AISettings, User, Whitelist, Supplier, Customer
+
+**平台管理**:
+- ✅ AIQuotaManagementScreen
+
+### 🔗 Documentation Reference
+
+**PRD Documents**:
+- 📋 [PRD-实现状态总览](./docs/prd/PRD-实现状态总览.md) - 完整的页面实现情况和优先级
+- 📚 [PRD-系统产品需求文档-v4.0](./docs/prd/PRD-系统产品需求文档-v4.0.md) - 分阶段的需求文档
+- 🛠️ [PRD-Phase3-完善计划](./docs/prd/PRD-Phase3-完善计划.md) - Phase 3的详细开发任务
+
+**Backend Requirements**:
+- 🔧 [`backend/rn-update-tableandlogic.md`](./backend/rn-update-tableandlogic.md) - API和数据库需求
+
+---
 
 ## Development Commands
 
