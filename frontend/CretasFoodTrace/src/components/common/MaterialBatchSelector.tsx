@@ -179,7 +179,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
               </Text>
             </View>
 
-            <List.Icon icon="arrow-right" size={20} />
+            <List.Icon icon="arrow-right" />
 
             <View style={styles.statItem}>
               <Text variant="labelSmall" style={styles.statLabel}>已选量</Text>
@@ -220,7 +220,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
         <Card style={styles.emptyCard}>
           <Card.Content>
             <View style={styles.emptyContainer}>
-              <List.Icon icon="package-variant-closed" color="#9E9E9E" size={48} />
+              <List.Icon icon="package-variant-closed" color="#9E9E9E" />
               <Text variant="bodyMedium" style={styles.emptyText}>
                 暂无可用批次
               </Text>
@@ -278,28 +278,28 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
                     {/* 批次详情 */}
                     <View style={styles.batchDetails}>
                       <View style={styles.detailRow}>
-                        <List.Icon icon="package-variant" size={16} style={styles.detailIcon} />
+                        <List.Icon icon="package-variant" style={styles.detailIcon} />
                         <Text variant="bodySmall" style={styles.detailText}>
                           可用: <Text style={styles.detailValue}>{remainingQty}kg</Text>
                         </Text>
                       </View>
 
                       <View style={styles.detailRow}>
-                        <List.Icon icon="currency-cny" size={16} style={styles.detailIcon} />
+                        <List.Icon icon="currency-cny" style={styles.detailIcon} />
                         <Text variant="bodySmall" style={styles.detailText}>
                           单价: <Text style={styles.detailValue}>¥{item.unitPrice}/kg</Text>
                         </Text>
                       </View>
 
                       <View style={styles.detailRow}>
-                        <List.Icon icon="store" size={16} style={styles.detailIcon} />
+                        <List.Icon icon="store" style={styles.detailIcon} />
                         <Text variant="bodySmall" style={styles.detailText}>
                           供应商: <Text style={styles.detailValue}>{item.supplier.name}</Text>
                         </Text>
                       </View>
 
                       <View style={styles.detailRow}>
-                        <List.Icon icon="calendar" size={16} style={styles.detailIcon} />
+                        <List.Icon icon="calendar" style={styles.detailIcon} />
                         <Text variant="bodySmall" style={styles.detailText}>
                           入库: <Text style={styles.detailValue}>
                             {new Date(item.inboundDate).toLocaleDateString('zh-CN')}
@@ -309,7 +309,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
 
                       {item.expiryDate && (
                         <View style={styles.detailRow}>
-                          <List.Icon icon="clock-alert-outline" size={16} style={styles.detailIcon} />
+                          <List.Icon icon="clock-alert-outline" style={styles.detailIcon} />
                           <Text variant="bodySmall" style={styles.detailText}>
                             保质期: <Text style={[
                               styles.detailValue,
@@ -380,7 +380,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
 
                   {!isSufficient && (
                     <View style={styles.warningBox}>
-                      <List.Icon icon="alert" color="#F44336" size={20} />
+                      <List.Icon icon="alert" color="#F44336" />
                       <Text variant="bodySmall" style={styles.warningText}>
                         ⚠️ 选中批次不足，还需 {shortage.toFixed(1)}kg
                       </Text>
@@ -396,7 +396,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
       {/* 操作提示 */}
       {availableBatches.length > 0 && (
         <View style={styles.hintBox}>
-          <List.Icon icon="information-outline" size={16} color="#757575" />
+          <List.Icon icon="information-outline" color="#757575" />
           <Text variant="bodySmall" style={styles.hintText}>
             {mode === 'fifo'
               ? '系统已按FIFO（先进先出）原则自动推荐批次，您可手动调整'
