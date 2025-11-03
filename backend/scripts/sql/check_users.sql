@@ -1,1 +1,0 @@
-SELECT id, username, department, role_code FROM users WHERE username = 'factory_admin';

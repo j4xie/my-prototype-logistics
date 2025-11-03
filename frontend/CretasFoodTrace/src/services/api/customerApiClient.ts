@@ -1,124 +1,218 @@
 import { apiClient } from './apiClient';
+import { DEFAULT_FACTORY_ID } from '../../constants/config';
+
+/**
+ * 客户管理API客户端 - MVP精简版
+ * MVP保留：8个核心API（基础CRUD +活跃列表+搜索+状态切换）
+ * 已移除：16个高级API（财务管理、评级系统、统计分析、导入导出等）
+ * 路径：/api/mobile/{factoryId}/customers/*
+ *
+ * 业务场景：管理客户基本信息，用于生产计划选择目标客户
+ */
+
+// ========== 类型定义 ==========
 
 export interface Customer {
   id: string;
   factoryId: string;
+  customerCode: string;
+  code: string; // 别名，指向customerCode
   name: string;
-  code: string;
   contactPerson?: string;
   contactPhone?: string;
+  email?: string;
   address?: string;
   businessType?: string;
-  creditLevel?: string;
-  deliveryArea?: string;
-  paymentTerms?: string;
+  customerType?: string;
+  industry?: string;
   isActive: boolean;
   createdAt: string;
-  updatedAt: string;
-  _count?: {
-    productionPlans: number;
-    shipmentRecords: number;
-  };
+  updatedAt?: string;
 }
 
-export interface CustomerStats {
-  totalOrders: number;
-  activeOrders: number;
-  completedOrders: number;
-  totalShipments: number;
-  totalSalesQuantity: number;
-  recentOrders: any[];
+export interface CreateCustomerRequest {
+  customerCode: string;
+  name: string;
+  contactPerson?: string;
+  contactPhone?: string;
+  email?: string;
+  address?: string;
+  businessType?: string;
+  customerType?: string;
+  industry?: string;
 }
 
-export interface CustomerListResponse {
-  success: boolean;
-  message?: string;
-  data: Customer[];
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 }
 
-export interface CustomerDetailResponse {
-  success: boolean;
-  message?: string;
-  data: Customer;
-}
-
-export interface CustomerStatsResponse {
-  success: boolean;
-  message?: string;
-  data: {
-    customer: Customer;
-    stats: CustomerStats;
-  };
-}
+// ========== API客户端类 ==========
 
 class CustomerApiClient {
-  private baseUrl = '/api/mobile/customers';
+  private getFactoryPath(factoryId?: string) {
+    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}`;
+  }
 
   /**
-   * 获取客户列表
+   * 1. 获取客户列表（分页）
+   * GET /api/mobile/{factoryId}/customers
    */
   async getCustomers(params?: {
+    factoryId?: string;
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDirection?: 'ASC' | 'DESC';
+    keyword?: string;
     isActive?: boolean;
-  }): Promise<CustomerListResponse> {
-    return apiClient.get(this.baseUrl, { params });
+  }): Promise<{data: Customer[]}> {
+    const { factoryId, ...queryParams } = params || {};
+    const response: any = await apiClient.get(
+      `${this.getFactoryPath(factoryId)}/customers`,
+      { params: queryParams }
+    );
+    const apiResponse = response.data || response;
+    if (apiResponse.content) {
+      return { data: apiResponse.content };
+    }
+    return { data: apiResponse };
   }
 
   /**
-   * 获取客户详情
+   * 2. 创建客户
+   * POST /api/mobile/{factoryId}/customers
    */
-  async getCustomerById(id: string): Promise<CustomerDetailResponse> {
-    return apiClient.get(`${this.baseUrl}/${id}`);
+  async createCustomer(
+    request: CreateCustomerRequest,
+    factoryId?: string
+  ): Promise<{data: Customer}> {
+    const response: any = await apiClient.post(
+      `${this.getFactoryPath(factoryId)}/customers`,
+      request
+    );
+    const apiData = response.data || response;
+    return { data: apiData };
   }
 
   /**
-   * 获取客户统计信息
+   * 3. 获取客户详情
+   * GET /api/mobile/{factoryId}/customers/{customerId}
    */
-  async getCustomerStats(id: string): Promise<CustomerStatsResponse> {
-    return apiClient.get(`${this.baseUrl}/${id}/stats`);
+  async getCustomerById(customerId: string, factoryId?: string): Promise<Customer> {
+    const response: any = await apiClient.get(
+      `${this.getFactoryPath(factoryId)}/customers/${customerId}`
+    );
+    return response.data || response;
   }
 
   /**
-   * 创建客户
-   */
-  async createCustomer(data: {
-    name: string;
-    contactPerson?: string;
-    contactPhone?: string;
-    address?: string;
-    businessType?: string;
-    creditLevel?: string;
-    deliveryArea?: string;
-    paymentTerms?: string;
-  }): Promise<CustomerDetailResponse> {
-    return apiClient.post(this.baseUrl, data);
-  }
-
-  /**
-   * 更新客户
+   * 4. 更新客户
+   * PUT /api/mobile/{factoryId}/customers/{customerId}
    */
   async updateCustomer(
-    id: string,
-    data: {
-      name?: string;
-      contactPerson?: string;
-      contactPhone?: string;
-      address?: string;
-      businessType?: string;
-      creditLevel?: string;
-      deliveryArea?: string;
-      paymentTerms?: string;
-      isActive?: boolean;
-    }
-  ): Promise<CustomerDetailResponse> {
-    return apiClient.put(`${this.baseUrl}/${id}`, data);
+    customerId: string,
+    request: Partial<CreateCustomerRequest>,
+    factoryId?: string
+  ): Promise<Customer> {
+    const response: any = await apiClient.put(
+      `${this.getFactoryPath(factoryId)}/customers/${customerId}`,
+      request
+    );
+    return response.data || response;
   }
 
   /**
-   * 删除客户（软删除）
+   * 5. 删除客户
+   * DELETE /api/mobile/{factoryId}/customers/{customerId}
    */
-  async deleteCustomer(id: string): Promise<{ success: boolean; message: string }> {
-    return apiClient.delete(`${this.baseUrl}/${id}`);
+  async deleteCustomer(customerId: string, factoryId?: string): Promise<void> {
+    await apiClient.delete(`${this.getFactoryPath(factoryId)}/customers/${customerId}`);
   }
+
+  /**
+   * 6. 获取活跃客户列表
+   * GET /api/mobile/{factoryId}/customers/active
+   */
+  async getActiveCustomers(factoryId?: string): Promise<Customer[]> {
+    const response: any = await apiClient.get(
+      `${this.getFactoryPath(factoryId)}/customers/active`
+    );
+    return response.data || response;
+  }
+
+  /**
+   * 7. 搜索客户
+   * GET /api/mobile/{factoryId}/customers/search
+   */
+  async searchCustomers(params: {
+    keyword: string;
+    factoryId?: string;
+    customerType?: string;
+    industry?: string;
+    isActive?: boolean;
+  }): Promise<Customer[]> {
+    const { factoryId, ...queryParams } = params;
+    const response: any = await apiClient.get(
+      `${this.getFactoryPath(factoryId)}/customers/search`,
+      { params: queryParams }
+    );
+    return response.data || response;
+  }
+
+  /**
+   * 8. 切换客户状态
+   * PUT /api/mobile/{factoryId}/customers/{customerId}/status
+   */
+  async toggleCustomerStatus(
+    customerId: string,
+    isActive: boolean,
+    factoryId?: string
+  ): Promise<Customer> {
+    const response: any = await apiClient.put(
+      `${this.getFactoryPath(factoryId)}/customers/{customerId}/status`,
+      { isActive }
+    );
+    return response.data || response;
+  }
+
+  // ===== 以下方法在MVP中暂不使用，已注释保留供后续版本使用 =====
+
+  /*
+   * MVP暂不使用的功能（16个方法）：
+   *
+   * 财务管理相关（4个）：
+   * - updateCreditLimit: 更新信用额度（MVP无财务功能）
+   * - updateBalance: 更新余额（MVP无财务功能）
+   * - getCustomersWithOutstandingBalance: 获取欠款客户（MVP无财务功能）
+   * - getCustomerPurchaseHistory: 购买历史（MVP暂不需要）
+   *
+   * 评级系统相关（3个）：
+   * - updateCustomerRating: 更新评级（MVP无评级系统）
+   * - getVipCustomers: VIP客户（MVP无评级系统）
+   * - getRatingDistribution: 评级分布（统计功能）
+   *
+   * 统计分析相关（4个）：
+   * - getCustomerStatistics: 客户统计（后期添加）
+   * - getOverallStatistics: 总体统计（后期添加）
+   * - getTypeDistribution: 类型分布（后期添加）
+   * - getIndustryDistribution: 行业分布（后期添加）
+   *
+   * 筛选查询相关（3个）：
+   * - getCustomersByType: 按类型筛选（可用search或列表API筛选）
+   * - getCustomersByIndustry: 按行业筛选（可用search或列表API筛选）
+   * - checkCustomerCodeExists: 代码检查（前端可验证）
+   *
+   * 批量操作相关（2个）：
+   * - exportCustomers: 导出（MVP数据量小）
+   * - importCustomers: 导入（MVP数据量小，手动添加）
+   *
+   * 如需使用这些功能，请查看Git历史或参考完整版API文档
+   */
 }
 
 export const customerApiClient = new CustomerApiClient();
+export default customerApiClient;
