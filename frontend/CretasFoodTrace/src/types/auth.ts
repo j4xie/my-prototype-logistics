@@ -118,6 +118,7 @@ export interface LoginRequest {
     appVersion: string;
     platform: 'ios' | 'android';
   };
+  factoryId?: string;
   rememberMe?: boolean;
   biometricEnabled?: boolean;
 }
@@ -130,6 +131,19 @@ export interface LoginResponse {
   tokens?: AuthTokens;
   requiresTwoFactor?: boolean;
   tempToken?: string;
+}
+
+// 修改密码请求接口
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+// 修改密码响应接口
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+  timestamp?: string;
 }
 
 // 注册请求接口 (第一阶段 - 手机验证)
@@ -204,6 +218,50 @@ export interface DeviceBindingInfo {
   isActive: boolean;
   platform: 'ios' | 'android';
   appVersion: string;
+}
+
+// 用户注册请求接口 (新的 /api/auth/register)
+export interface RegisterRequest {
+  tempToken: string;           // 临时令牌（验证手机后获得）
+  username: string;            // 用户名
+  password: string;            // 密码
+  realName: string;            // 真实姓名
+  factoryId: string;           // 工厂ID
+  department?: string;         // 部门（可选）
+  position?: string;           // 职位（可选）
+  email?: string;              // 邮箱（可选）
+}
+
+// 用户注册响应接口 (新的 /api/auth/register)
+export interface RegisterResponseData {
+  accessToken: string;         // 访问令牌
+  refreshToken: string;        // 刷新令牌
+  tokenType: string;           // 令牌类型
+  expiresIn: number;           // 令牌过期时间（秒）
+  user: UserDTO;               // 用户信息
+  message: string;             // 提示消息
+}
+
+// UserDTO - 用户数据传输对象
+export interface UserDTO {
+  id: number;
+  username: string;
+  email?: string;
+  phone?: string;
+  fullName: string;
+  isActive: boolean;
+  roleCode: FactoryRole | PlatformRole;
+  roleDisplayName: string;
+  factoryId?: string;
+  department?: Department;
+  departmentDisplayName?: string;
+  position?: string;
+  ccrRate?: number;
+  monthlySalary?: number;
+  expectedWorkMinutes?: number;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin?: string;
 }
 
 // API 错误响应

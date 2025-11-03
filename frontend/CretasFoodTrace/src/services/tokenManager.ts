@@ -133,7 +133,7 @@ export class TokenManager {
       }
 
       console.log('🔄 Refreshing token...');
-      const response = await apiClient.post<TokenRefreshResponse>('/mobile/auth/refresh-token', {
+      const response = await apiClient.post<TokenRefreshResponse>('/api/mobile/auth/refresh', {
         refreshToken
       });
 

@@ -1,6 +1,10 @@
 import { apiClient } from './apiClient';
+import { DEFAULT_FACTORY_ID } from '../../constants/config';
 
-// ==================== 类型定义 ====================
+/**
+ * 转换率管理API客户端
+ * 总计15个API - 路径：/api/mobile/{factoryId}/conversions/*
+ */
 
 export interface ConversionRate {
   id: string;
@@ -9,115 +13,148 @@ export interface ConversionRate {
   productTypeId: string;
   conversionRate: number;
   wastageRate?: number;
+  isActive: boolean;
   notes?: string;
   createdAt: string;
-  updatedAt: string;
-  materialType: {
-    id: string;
-    name: string;
-    category?: string;
-    unit: string;
-  };
-  productType: {
-    id: string;
-    name: string;
-    code: string;
-  };
+  updatedAt?: string;
 }
-
-export interface EstimateUsageRequest {
-  productTypeId: string;
-  plannedQuantity: number;
-  materialTypeId?: string;
-}
-
-export interface EstimateUsageResponse {
-  success: boolean;
-  message?: string;
-  data: {
-    productType: {
-      id: string;
-      name: string;
-    };
-    materialType: {
-      id: string;
-      name: string;
-      unit: string;
-    };
-    plannedQuantity: number;
-    conversionRate: number;
-    wastageRate: number;
-    baseRequirement: number;
-    estimatedUsage: number;
-  };
-}
-
-// ==================== API Client ====================
 
 class ConversionApiClient {
-  private baseUrl = '/api/mobile/conversions';
-
-  /**
-   * 获取转换率列表
-   */
-  async getConversionRates(params?: {
-    materialTypeId?: string;
-    productTypeId?: string;
-  }): Promise<{
-    success: boolean;
-    data: ConversionRate[];
-  }> {
-    return apiClient.get(this.baseUrl, { params });
+  private getPath(factoryId?: string) {
+    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/conversions`;
   }
 
-  /**
-   * 获取转换率矩阵
-   */
-  async getConversionMatrix(): Promise<{
-    success: boolean;
-    data: {
-      materials: any[];
-      products: any[];
-      matrix: any[];
-    };
-  }> {
-    return apiClient.get(`${this.baseUrl}/matrix`);
+  // 1. 分页查询转换率配置
+  async getConversionRates(params?: { factoryId?: string; page?: number; size?: number }) {
+    const { factoryId, ...query } = params || {};
+    return await apiClient.get(this.getPath(factoryId), { params: query });
   }
 
-  /**
-   * 创建或更新转换率
-   */
-  async upsertConversionRate(data: {
+  // 2. 创建转换率配置
+  async createConversionRate(data: any, factoryId?: string) {
+    return await apiClient.post(this.getPath(factoryId), data);
+  }
+
+  // 3. 获取转换率详情
+  async getConversionRateById(id: string, factoryId?: string) {
+    return await apiClient.get(`${this.getPath(factoryId)}/${id}`);
+  }
+
+  // 4. 更新转换率配置
+  async updateConversionRate(id: string, data: any, factoryId?: string) {
+    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, data);
+  }
+
+  // 5. 删除转换率配置
+  async deleteConversionRate(id: string, factoryId?: string) {
+    return await apiClient.delete(`${this.getPath(factoryId)}/${id}`);
+  }
+
+  // 6. 根据原材料类型查询转换率
+  async getConversionsByMaterial(materialTypeId: string, factoryId?: string) {
+    return await apiClient.get(`${this.getPath(factoryId)}/material/${materialTypeId}`);
+  }
+
+  // 7. 根据产品类型查询转换率
+  async getConversionsByProduct(productTypeId: string, factoryId?: string) {
+    return await apiClient.get(`${this.getPath(factoryId)}/product/${productTypeId}`);
+  }
+
+  // 8. 获取特定原材料和产品的转换率
+  async getSpecificConversionRate(params: {
     materialTypeId: string;
     productTypeId: string;
-    conversionRate: number;
-    wastageRate?: number;
-    notes?: string;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    data: ConversionRate;
-  }> {
-    return apiClient.post(this.baseUrl, data);
+    factoryId?: string;
+  }) {
+    const { factoryId, ...query } = params;
+    return await apiClient.get(`${this.getPath(factoryId)}/rate`, { params: query });
   }
 
-  /**
-   * 删除转换率
-   */
-  async deleteConversionRate(id: string): Promise<{
-    success: boolean;
-    message: string;
-  }> {
-    return apiClient.delete(`${this.baseUrl}/${id}`);
+  // 9. 计算原材料需求量
+  async calculateMaterialRequirement(params: {
+    productTypeId: string;
+    productQuantity: number;
+    factoryId?: string;
+  }) {
+    const { factoryId, ...data } = params;
+    return await apiClient.post(`${this.getPath(factoryId)}/calculate/material-requirement`, data);
   }
 
-  /**
-   * 预估原料用量
-   * 根据产品类型和计划产量，计算需要的原料数量
-   */
-  async estimateMaterialUsage(data: EstimateUsageRequest): Promise<EstimateUsageResponse> {
-    return apiClient.post(`${this.baseUrl}/estimate`, data);
+  // 10. 计算产品产出量
+  async calculateProductOutput(params: {
+    materialTypeId: string;
+    materialQuantity: number;
+    factoryId?: string;
+  }) {
+    const { factoryId, ...data } = params;
+    return await apiClient.post(`${this.getPath(factoryId)}/calculate/product-output`, data);
+  }
+
+  // 11. 验证转换率配置
+  async validateConversionRate(data: any, factoryId?: string) {
+    return await apiClient.post(`${this.getPath(factoryId)}/validate`, data);
+  }
+
+  // 12. 批量激活/停用转换率配置
+  async batchActivateConversions(ids: string[], isActive: boolean, factoryId?: string) {
+    return await apiClient.put(`${this.getPath(factoryId)}/batch/activate`, { ids, isActive });
+  }
+
+  // 13. 获取转换率统计信息
+  async getConversionStatistics(factoryId?: string) {
+    return await apiClient.get(`${this.getPath(factoryId)}/statistics`);
+  }
+
+  // 14. 导出转换率配置
+  async exportConversionRates(params?: { factoryId?: string; [key: string]: any }) {
+    const { factoryId, ...query } = params || {};
+    return await apiClient.get(`${this.getPath(factoryId)}/export`, {
+      params: query,
+      responseType: 'blob'
+    });
+  }
+
+  // 15. 批量导入转换率配置
+  async importConversionRates(file: File, factoryId?: string) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return await apiClient.post(`${this.getPath(factoryId)}/import`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
+
+  // 16. 预估原料用量（前端辅助方法，调用calculateMaterialRequirement）
+  async estimateMaterialUsage(params: {
+    productTypeId: string;
+    plannedQuantity: number;
+    factoryId?: string;
+  }) {
+    // 调用计算原材料需求量API
+    const result = await this.calculateMaterialRequirement({
+      productTypeId: params.productTypeId,
+      productQuantity: params.plannedQuantity,
+      factoryId: params.factoryId
+    });
+
+    // 转换返回格式以匹配前端期望
+    if (result.success && result.data) {
+      const materialReq = Array.isArray(result.data) ? result.data[0] : result.data;
+      return {
+        success: true,
+        data: {
+          plannedQuantity: params.plannedQuantity,
+          estimatedUsage: materialReq.requiredQuantity || materialReq.quantity,
+          conversionRate: materialReq.conversionRate || 0.6,
+          wastageRate: materialReq.wastageRate || 0.05,
+          materialTypeId: materialReq.materialTypeId,
+          materialTypeName: materialReq.materialTypeName || materialReq.name
+        }
+      };
+    }
+
+    return result;
   }
 }
 
 export const conversionApiClient = new ConversionApiClient();
+export default conversionApiClient;

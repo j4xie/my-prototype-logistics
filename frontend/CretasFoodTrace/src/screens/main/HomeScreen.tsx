@@ -22,9 +22,9 @@ export default function HomeScreen() {
   const modules: ModuleConfig[] = useMemo(() => {
     if (!user) return [];
 
-    const userPermissions = user.userType === 'platform'
-      ? user.platformUser?.permissions || []
-      : user.factoryUser?.permissions || [];
+    // 从 user 的顶级 permissions 获取权限对象
+    // 这个对象包含 modules, features, role 等完整权限信息
+    const userPermissions = user?.permissions || {};
 
     const allModules: ModuleConfig[] = [
       {
