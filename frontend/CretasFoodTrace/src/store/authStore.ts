@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'auth-storage-v2', // 存储key - 更改版本号清除旧缓存
+      name: 'auth-storage-v3', // 存储key - 更改版本号清除旧缓存 (v3: fixed auth sync)
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         user: state.user,

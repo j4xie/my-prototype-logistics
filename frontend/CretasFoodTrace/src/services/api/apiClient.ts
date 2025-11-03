@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StorageService } from '../storage/storageService';
 import { API_BASE_URL } from '../../constants/config';
+import { useAuthStore } from '../../store/authStore';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -83,10 +84,8 @@ class ApiClient {
 
   // Token刷新方法
   private async refreshAccessToken(refreshToken: string): Promise<any> {
-    const deviceId = await StorageService.getSecureItem('device_id') || 'unknown';
-    const response = await axios.post(`${API_BASE_URL}/mobile/auth/refresh-token`, {
-      refreshToken,
-      deviceId
+    const response = await axios.post(`${API_BASE_URL}/api/mobile/auth/refresh`, {
+      refreshToken
     });
     return response.data;
   }
@@ -100,6 +99,14 @@ class ApiClient {
       AsyncStorage.removeItem('auth_token'),
       AsyncStorage.removeItem('user_info')
     ]);
+
+    // 同步清除authStore状态，强制返回登录页
+    try {
+      useAuthStore.getState().logout();
+      console.log('✅ AuthStore cleared - user will be redirected to login');
+    } catch (error) {
+      console.error('Failed to clear auth store:', error);
+    }
   }
 
   // 认证失败回调

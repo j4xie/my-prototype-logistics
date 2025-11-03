@@ -36,11 +36,26 @@ export default function ManagementScreen() {
           route: 'ProductTypeManagement',
         },
         {
+          id: 'material-types',
+          title: '原材料类型管理',
+          description: '配置原材料类型(鲈鱼、带鱼、三文鱼等)',
+          icon: 'food-drumstick',
+          route: 'MaterialTypeManagement',
+        },
+        {
           id: 'conversion-rates',
           title: '转换率配置',
           description: '设置原料到产品的转换率和损耗率',
           icon: 'swap-horizontal',
           route: 'ConversionRate',
+        },
+        {
+          id: 'work-types',
+          title: '工作类型管理',
+          description: '配置工种类型和时薪标准(加工工、质检员等)',
+          icon: 'account-hard-hat',
+          route: 'WorkTypeManagement',
+          adminOnly: true,
         },
       ],
     },
@@ -58,28 +73,6 @@ export default function ManagementScreen() {
         },
       ],
     },
-    // TODO: Phase 2功能 - 暂时注释
-    /*
-    {
-      title: '业务伙伴管理',
-      icon: 'handshake',
-      items: [
-        {
-          id: 'suppliers',
-          title: '供应商管理',
-          description: '管理供应商信息和采购历史',
-          icon: 'truck-delivery',
-          route: 'SupplierManagement',
-        },
-        {
-          id: 'customers',
-          title: '客户管理',
-          description: '管理客户信息和销售历史',
-          icon: 'store',
-          route: 'CustomerManagement',
-        },
-      ],
-    },
     {
       title: '系统管理',
       icon: 'shield-account',
@@ -93,10 +86,48 @@ export default function ManagementScreen() {
           adminOnly: true,
         },
         {
+          id: 'whitelist',
+          title: '白名单管理',
+          description: '管理允许注册的手机号白名单',
+          icon: 'shield-check',
+          route: 'WhitelistManagement',
+          adminOnly: true,
+        },
+      ],
+    },
+    {
+      title: '业务伙伴管理',
+      icon: 'handshake',
+      items: [
+        {
+          id: 'suppliers',
+          title: '供应商管理',
+          description: '管理供应商信息和采购历史',
+          icon: 'truck-delivery',
+          route: 'SupplierManagement',
+          adminOnly: false, // 所有角色可查看，但只有管理员可编辑
+        },
+        {
+          id: 'customers',
+          title: '客户管理',
+          description: '管理客户信息和销售历史',
+          icon: 'store',
+          route: 'CustomerManagement',
+          adminOnly: false, // 所有角色可查看，但只有管理员可编辑
+        },
+      ],
+    },
+    // TODO: Phase 3功能 - 暂时注释
+    /*
+    {
+      title: '工厂配置',
+      icon: 'factory',
+      items: [
+        {
           id: 'factory-settings',
           title: '工厂设置',
           description: '工厂基本信息和配置',
-          icon: 'factory',
+          icon: 'cog',
           route: 'FactorySettings',
           adminOnly: true,
         },

@@ -111,7 +111,7 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
       return;
     }
 
-    if (!biometricStatus.enabled) {
+    if (!biometricStatus.isEnrolled) {
       Alert.alert('提示', '生物识别登录未启用，请先进行普通登录');
       return;
     }
@@ -221,21 +221,21 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
       <TouchableOpacity
         style={[
           styles.biometricButton,
-          !biometricStatus.enabled && styles.biometricButtonDisabled
+          !biometricStatus.isEnrolled && styles.biometricButtonDisabled
         ]}
         onPress={handleBiometricLogin}
-        disabled={!biometricStatus.enabled || isLoading}
+        disabled={!biometricStatus.isEnrolled || isLoading}
       >
-        <Ionicons 
-          name="finger-print" 
-          size={24} 
-          color={biometricStatus.enabled ? '#4ECDC4' : '#999'} 
+        <Ionicons
+          name="finger-print"
+          size={24}
+          color={biometricStatus.isEnrolled ? '#4ECDC4' : '#999'}
         />
         <Text style={[
           styles.biometricText,
-          !biometricStatus.enabled && styles.biometricTextDisabled
+          !biometricStatus.isEnrolled && styles.biometricTextDisabled
         ]}>
-          {biometricStatus.enabled ? `使用${biometricStatus.type}登录` : `${biometricStatus.type}未启用`}
+          {biometricStatus.isEnrolled ? '使用生物识别登录' : '生物识别未启用'}
         </Text>
       </TouchableOpacity>
     );

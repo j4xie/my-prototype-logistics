@@ -15,7 +15,7 @@ PODS:
     - React-Core
   - EXNotifications (0.31.4):
     - ExpoModulesCore
-  - Expo (53.0.22):
+  - Expo (53.0.23):
     - DoubleConversion
     - ExpoModulesCore
     - glog
@@ -49,6 +49,8 @@ PODS:
   - ExpoFileSystem (18.1.11):
     - ExpoModulesCore
   - ExpoFont (13.3.2):
+    - ExpoModulesCore
+  - ExpoHaptics (14.1.4):
     - ExpoModulesCore
   - ExpoImageManipulator (13.1.7):
     - EXImageLoader
@@ -1438,7 +1440,7 @@ PODS:
     - ReactCommon/turbomodule/core
   - react-native-netinfo (11.4.1):
     - React-Core
-  - react-native-safe-area-context (5.4.0):
+  - react-native-safe-area-context (5.6.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1453,8 +1455,8 @@ PODS:
     - React-hermes
     - React-ImageManager
     - React-jsi
-    - react-native-safe-area-context/common (= 5.4.0)
-    - react-native-safe-area-context/fabric (= 5.4.0)
+    - react-native-safe-area-context/common (= 5.6.1)
+    - react-native-safe-area-context/fabric (= 5.6.1)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -1464,7 +1466,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/common (5.4.0):
+  - react-native-safe-area-context/common (5.6.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1488,7 +1490,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context/fabric (5.4.0):
+  - react-native-safe-area-context/fabric (5.6.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2180,6 +2182,7 @@ DEPENDENCIES:
   - ExpoDevice (from `../node_modules/expo-device/ios`)
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
+  - ExpoHaptics (from `../node_modules/expo-haptics/ios`)
   - ExpoImageManipulator (from `../node_modules/expo-image-manipulator/ios`)
   - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
@@ -2302,6 +2305,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-file-system/ios"
   ExpoFont:
     :path: "../node_modules/expo-font/ios"
+  ExpoHaptics:
+    :path: "../node_modules/expo-haptics/ios"
   ExpoImageManipulator:
     :path: "../node_modules/expo-image-manipulator/ios"
   ExpoImagePicker:
@@ -2484,11 +2489,12 @@ SPEC CHECKSUMS:
   EXConstants: 98bcf0f22b820f9b28f9fee55ff2daededadd2f8
   EXImageLoader: 1fe96c70cdc78bedc985ec4b1fab5dd8e67dc38b
   EXNotifications: be5e949edf1d60b70e77178b81aa505298fadd07
-  Expo: a64c53f1ebaa36c439a87874759b6690785e60a4
+  Expo: dd7f49380001a55ea776f905f8b3c1c540160b09
   ExpoAsset: ef06e880126c375f580d4923fdd1cdf4ee6ee7d6
   ExpoDevice: 7082f03af1c588333ef1417d5aa8287081d94b24
   ExpoFileSystem: 7f92f7be2f5c5ed40a7c9efc8fa30821181d9d63
   ExpoFont: cf508bc2e6b70871e05386d71cab927c8524cc8e
+  ExpoHaptics: 0ff6e0d83cd891178a306e548da1450249d54500
   ExpoImageManipulator: 1e06e7a1e56f454e75d01b7032c1e44963bfc865
   ExpoImagePicker: 0963da31800c906e01c03e25d7c849f16ebf02a2
   ExpoKeepAwake: bf0811570c8da182bfb879169437d4de298376e7
@@ -2536,7 +2542,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 96a2f2a176268581733be182fa6eebab1c0193be
   React-microtasksnativemodule: bda561d2648e1e52bd9e5a87f8889836bdbde2e2
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
-  react-native-safe-area-context: 562163222d999b79a51577eda2ea8ad2c32b4d06
+  react-native-safe-area-context: 895c49ee2613865f90318789be89a8e286fe7b69
   React-NativeModulesApple: 1ecb83880dd11baf2228f8dd89d8419c387e03ad
   React-oscompat: 0592889a9fcf0eacb205532028e4a364e22907dd
   React-perflogger: c584fa50e422a46f37404d083fad12eb289d5de4
@@ -2581,6 +2587,6 @@ SPEC CHECKSUMS:
   Yoga: adb397651e1c00672c12e9495babca70777e411e
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 261056c2136c38347592a841c8e6dc06b3c842f4
+PODFILE CHECKSUM: 7687f307b1e6163510ae512f3a5d12e3df20879d
 
 COCOAPODS: 1.16.2
