@@ -14,6 +14,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { processingAPI } from '../../services/api/processingApiClient';
+import { aiApiClient } from '../../services/api/aiApiClient';
 import type { BatchCostAnalysis, AIQuota } from '../../types/processing';
 
 type CostAnalysisDashboardProps = ProcessingScreenProps<'CostAnalysisDashboard'>;
@@ -78,6 +79,8 @@ export default function CostAnalysisDashboard() {
 
   /**
    * AI分析（仅点击按钮时调用）
+   *
+   * 🔄 已迁移到新的统一AI API: aiApiClient.analyzeBatchCost()
    */
   const handleAiAnalysis = async (question?: string) => {
     if (!batchId) return;
@@ -86,17 +89,19 @@ export default function CostAnalysisDashboard() {
     setShowAiSection(true); // 显示AI区域
 
     try {
-      const response = await processingAPI.aiCostAnalysis({
-        batchId: batchId.toString(),
+      // 使用新的统一AI API
+      const response = await aiApiClient.analyzeBatchCost({
+        batchId: Number(batchId),
         question: question || undefined,
-        session_id: aiSessionId || undefined,
+        sessionId: aiSessionId || undefined,
+        analysisType: 'default',
       });
 
       if (response.success) {
-        setAiAnalysis(response.data.analysis);
-        setAiSessionId(response.data.session_id);
-        if (response.data.quota) {
-          setQuota(response.data.quota);
+        setAiAnalysis(response.analysis);
+        setAiSessionId(response.session_id || '');
+        if (response.quota) {
+          setQuota(response.quota);
         }
       }
     } catch (error: any) {

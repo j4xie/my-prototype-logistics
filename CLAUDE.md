@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is 白垩纪食品溯源系统 (Cretas Food Traceability System), focusing on **React Native mobile app** and **backend API** development:
+This is 白垩纪食品溯源系统 (Cretas Food Traceability System), focusing on **React Native mobile app** and **Spring Boot backend API** development:
 
-1. **Backend API** (Node.js + Express + MySQL/PostgreSQL + Prisma)
-2. **React Native Mobile App** (Expo + TypeScript + React Navigation + DeepSeek LLM)
-3. **Spring Boot Backend** (Java 17 + Spring Boot 2.7.15 - cretas-backend-system)
+1. **Spring Boot Backend** (Java 11 + Spring Boot 2.7.15 + MySQL + Spring Data JPA + Hibernate)
+2. **React Native Mobile App** (Expo 53+ + TypeScript + React Navigation 7+ + Zustand)
+3. **Python AI Service** (DeepSeek API integration for intelligent cost analysis)
 
 ## 🔧 Server Management & Deployment
 
@@ -17,9 +17,8 @@ This is 白垩纪食品溯源系统 (Cretas Food Traceability System), focusing 
 本项目使用**宝塔面板API**进行服务器管理和应用部署。
 
 **重要配置**:
-- **宝塔面板地址**: `https://106.14.165.234:8888` (必须使用HTTPS)
-- **API密钥**: 见 `.claude/bt-api-guide.md`
-- **应用服务器**: 47.251.121.76:10010
+- **宝塔面板地址**: `https://139.196.165.140:16435/a96c4c2e`
+- **应用服务器**: 139.196.165.140:10010
 
 **详细使用指南**: 参见 [`.claude/bt-api-guide.md`](./.claude/bt-api-guide.md)
 
@@ -402,6 +401,138 @@ The project includes comprehensive PowerShell profile management:
 ├── permissionStore.ts    // Role-based permission management
 └── index.ts              // Store exports and persistence configuration
 ```
+
+### Modal Layout Pattern (React Native Paper)
+
+**Standard Modal Layout for Management Screens**
+
+All management screens with create/edit modals MUST follow this standardized layout pattern to ensure:
+- ✅ All form fields visible without scrolling (for forms with up to 8 fields)
+- ✅ Action buttons always visible at bottom of modal
+- ✅ Consistent user experience across all management screens
+- ✅ Proper ScrollView behavior for content overflow
+
+#### Implementation Requirements
+
+**Modal Structure**:
+```typescript
+<Modal
+  visible={modalVisible}
+  onDismiss={() => setModalVisible(false)}
+  contentContainerStyle={styles.modalContent}
+>
+  {/* Modal title - OUTSIDE ScrollView */}
+  <Text style={styles.modalTitle}>
+    {editingItem ? '编辑项目' : '添加项目'}
+  </Text>
+
+  {/* Scrollable content area */}
+  <ScrollView
+    style={styles.modalScrollView}
+    contentContainerStyle={{ paddingBottom: 16 }}
+  >
+    {/* All form inputs go here */}
+    <TextInput label="字段1" />
+    <TextInput label="字段2" />
+    {/* ... more inputs ... */}
+  </ScrollView>
+
+  {/* Action buttons - OUTSIDE ScrollView, at bottom */}
+  <View style={styles.modalActions}>
+    <Button mode="outlined" onPress={() => setModalVisible(false)}>
+      取消
+    </Button>
+    <Button mode="contained" onPress={handleSave}>
+      {editingItem ? '更新' : '创建'}
+    </Button>
+  </View>
+</Modal>
+```
+
+**Required StyleSheet Properties**:
+```typescript
+const styles = StyleSheet.create({
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 20,
+    borderRadius: 8,
+    maxHeight: 800,  // ⚠️ CRITICAL: Use 800px fixed height, NOT percentage
+  },
+  modalScrollView: {
+    flexGrow: 0,      // ⚠️ CRITICAL: Must be 0, not 1
+    flexShrink: 1,    // Allows shrinking if content is small
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    paddingTop: 16,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+});
+```
+
+#### Critical Design Rules
+
+1. **Modal Title Position**: MUST be outside `<ScrollView>` to remain visible at top
+2. **Action Buttons Position**: MUST be outside `<ScrollView>` to remain fixed at bottom
+3. **maxHeight Value**: MUST use `800` (fixed pixels), NOT `'85%'` or percentage values
+   - Reason: Percentage heights cause layout collapse on Android
+   - 800px accommodates forms with 6-8 input fields without scrolling
+4. **ScrollView flexGrow**: MUST be `0`, NOT `1`
+   - Reason: `flex: 1` or `flexGrow: 1` causes content to disappear
+5. **ScrollView flexShrink**: MUST be `1` to allow proper sizing
+6. **Content Padding**: Add `contentContainerStyle={{ paddingBottom: 16 }}` for proper spacing
+
+#### Screens Implementing This Pattern
+
+**已完成 (Completed)**:
+- ✅ MaterialTypeManagementScreen.tsx (原材料类型管理)
+- ✅ WhitelistManagementScreen.tsx (白名单管理)
+- ✅ SupplierManagementScreen.tsx (供应商管理)
+- ✅ WorkTypeManagementScreen.tsx (工种管理)
+- ✅ CustomerManagementScreen.tsx (客户管理)
+- ✅ UserManagementScreen.tsx (用户管理)
+
+**待应用 (To Be Applied)**:
+- 🔲 ProductTypeManagementScreen.tsx (产品类型管理)
+- 🔲 ConversionRateManagementScreen.tsx (转化率管理)
+- 🔲 Any future management screens with create/edit modals
+
+#### Common Issues Solved
+
+**Issue 1: Modal content not displaying**
+- ❌ Problem: Using `flex: 1` or `flexGrow: 1` on ScrollView
+- ✅ Solution: Use `flexGrow: 0` and `flexShrink: 1`
+
+**Issue 2: Buttons hidden below scrollable content**
+- ❌ Problem: Buttons inside ScrollView
+- ✅ Solution: Move buttons outside ScrollView in separate View
+
+**Issue 3: Need to scroll to see last field**
+- ❌ Problem: Modal height too small (e.g., `maxHeight: '85%'` or 650px)
+- ✅ Solution: Use `maxHeight: 800` fixed pixels
+
+**Issue 4: Layout collapse on Android**
+- ❌ Problem: Using percentage-based heights (`'85%'`)
+- ✅ Solution: Use fixed pixel values (800)
+
+#### When to Use This Pattern
+
+- ✅ Create/Edit modals in management screens
+- ✅ Forms with 3-8 input fields
+- ✅ Modals requiring action buttons (Save/Cancel)
+- ✅ Any screen where users need to see all fields at once
+
+#### When NOT to Use This Pattern
+
+- ❌ Full-screen forms (use regular Screen instead)
+- ❌ Forms with >10 fields (consider multi-step form)
+- ❌ Simple confirmation dialogs (use Dialog component)
+- ❌ Bottom sheets or slide-up panels (use different component)
 
 ### Error Handling
 - **Backend**: Centralized middleware with mobile-optimized responses
