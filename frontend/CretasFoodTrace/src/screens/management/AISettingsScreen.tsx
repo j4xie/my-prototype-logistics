@@ -14,7 +14,8 @@ import {
   ProgressBar,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import { factorySettingsAPI } from '../../services/api/factorySettingsApiClient';
+import { factorySettingsApiClient } from '../../services/api/factorySettingsApiClient';
+import { useAuthStore } from '../../store/authStore';
 import type { AISettings, AISettingsResponse, AIUsageStats } from '../../types/processing';
 import { AI_TONE_OPTIONS, AI_GOAL_OPTIONS, AI_DETAIL_OPTIONS } from '../../types/processing';
 
@@ -24,6 +25,8 @@ import { AI_TONE_OPTIONS, AI_GOAL_OPTIONS, AI_DETAIL_OPTIONS } from '../../types
  */
 export default function AISettingsScreen() {
   const navigation = useNavigation();
+  const { user } = useAuthStore();
+  const factoryId = user?.factoryId || user?.factoryUser?.factoryId;
 
   // 设置状态
   const [settings, setSettings] = useState<AISettings>({
@@ -52,14 +55,33 @@ export default function AISettingsScreen() {
   const loadSettings = async () => {
     try {
       setLoading(true);
-      const response = await factorySettingsAPI.getAISettings();
-      if (response.success) {
-        setSettings(response.data.settings);
-        setWeeklyQuota(response.data.weeklyQuota);
+      if (!factorySettingsApiClient || !factorySettingsApiClient.getAISettings) {
+        console.error('factorySettingsApiClient 未正确初始化');
+        return;
       }
-    } catch (error) {
+      const response: any = await factorySettingsApiClient.getAISettings(factoryId);
+      if (response && response.success && response.data) {
+        // 后端直接返回AI设置对象
+        const aiSettings = response.data;
+        setSettings({
+          enabled: aiSettings.enabled ?? true,
+          tone: aiSettings.tone || 'professional',
+          goal: aiSettings.goal || 'cost_optimization',
+          detailLevel: aiSettings.detailLevel || 'standard',
+          industryStandards: aiSettings.industryStandards || {
+            laborCostPercentage: 30,
+            equipmentUtilization: 80,
+            profitMargin: 20,
+          },
+          customPrompt: aiSettings.customPrompt || '',
+        });
+      }
+    } catch (error: any) {
       console.error('加载AI设置失败:', error);
-      Alert.alert('错误', '加载设置失败');
+      // 如果API不存在，使用默认设置，不显示错误提示
+      if (error.response?.status !== 404) {
+        Alert.alert('错误', error.response?.data?.message || '加载设置失败');
+      }
     } finally {
       setLoading(false);
     }
@@ -67,25 +89,42 @@ export default function AISettingsScreen() {
 
   const loadUsageStats = async () => {
     try {
-      const response = await factorySettingsAPI.getAIUsageStats('week');
-      if (response.success) {
-        setUsageStats(response.data);
+      if (!factorySettingsApiClient || !factorySettingsApiClient.getAIUsageStats) {
+        console.error('factorySettingsApiClient 未正确初始化');
+        return;
       }
-    } catch (error) {
+      const response: any = await factorySettingsApiClient.getAIUsageStats(factoryId);
+      if (response && response.success && response.data) {
+        // 适配后端返回的数据结构
+        const backendData = response.data;
+        setUsageStats({
+          totalCalls: backendData.weeklyUsed || 0,
+          byType: {
+            analysis: backendData.weeklyUsed || 0,
+            question: 0,
+          },
+          byUser: {},
+        });
+        if (backendData.weeklyQuota) {
+          setWeeklyQuota(backendData.weeklyQuota);
+        }
+      }
+    } catch (error: any) {
       console.error('加载使用统计失败:', error);
+      // 静默失败，不显示错误提示（该功能可能未实现）
     }
   };
 
   const handleSave = async () => {
     try {
       setSaving(true);
-      const response = await factorySettingsAPI.updateAISettings(settings);
+      const response: any = await factorySettingsApiClient.updateAISettings(settings, factoryId);
       if (response.success) {
         Alert.alert('成功', '设置已保存');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('保存失败:', error);
-      Alert.alert('错误', '保存失败');
+      Alert.alert('错误', error.response?.data?.message || '保存失败');
     } finally {
       setSaving(false);
     }
@@ -157,17 +196,17 @@ export default function AISettingsScreen() {
                   <View style={styles.usageRow}>
                     <Text variant="bodyMedium">本周已用:</Text>
                     <Text variant="titleMedium" style={{ color: '#1976D2' }}>
-                      {usageStats.totalCalls}次
+                      {usageStats?.totalCalls || 0}次
                     </Text>
                   </View>
                   <View style={styles.usageRow}>
                     <Text variant="bodyMedium">剩余:</Text>
                     <Text variant="titleMedium" style={{ color: '#388E3C' }}>
-                      {weeklyQuota - usageStats.totalCalls}次
+                      {weeklyQuota - (usageStats?.totalCalls || 0)}次
                     </Text>
                   </View>
                   <ProgressBar
-                    progress={usageStats.totalCalls / weeklyQuota}
+                    progress={(usageStats?.totalCalls || 0) / weeklyQuota}
                     color="#1976D2"
                     style={styles.progressBar}
                   />
@@ -370,7 +409,7 @@ export default function AISettingsScreen() {
                     总调用
                   </Text>
                   <Text variant="headlineMedium" style={styles.statValue}>
-                    {usageStats.totalCalls}
+                    {usageStats?.totalCalls || 0}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
@@ -378,7 +417,7 @@ export default function AISettingsScreen() {
                     分析请求
                   </Text>
                   <Text variant="headlineMedium" style={styles.statValue}>
-                    {usageStats.byType.analysis}
+                    {usageStats?.byType?.analysis || 0}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
@@ -386,18 +425,18 @@ export default function AISettingsScreen() {
                     追问次数
                   </Text>
                   <Text variant="headlineMedium" style={styles.statValue}>
-                    {usageStats.byType.question}
+                    {usageStats?.byType?.question || 0}
                   </Text>
                 </View>
               </View>
 
-              {Object.keys(usageStats.byUser).length > 0 && (
+              {usageStats?.byUser && Object.keys(usageStats.byUser).length > 0 && (
                 <>
                   <Divider style={styles.divider} />
                   <Text variant="bodySmall" style={styles.userStatsTitle}>
                     按用户统计:
                   </Text>
-                  {Object.entries(usageStats.byUser).map(([userName, count]) => (
+                  {Object.entries(usageStats?.byUser || {}).map(([userName, count]) => (
                     <View key={userName} style={styles.userStatRow}>
                       <Text variant="bodyMedium">{userName}</Text>
                       <Text variant="bodyMedium" style={{ color: '#1976D2' }}>

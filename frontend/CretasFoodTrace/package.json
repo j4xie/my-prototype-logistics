@@ -47,6 +47,7 @@
     "react-native-gesture-handler": "~2.24.0",
     "react-native-gifted-charts": "^1.4.64",
     "react-native-paper": "^5.14.5",
+    "react-native-paper-dates": "^0.22.50",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "^5.6.1",
     "react-native-screens": "~4.11.1",

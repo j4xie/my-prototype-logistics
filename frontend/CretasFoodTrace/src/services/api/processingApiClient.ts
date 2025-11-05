@@ -2,9 +2,8 @@ import { apiClient } from './apiClient';
 import { DEFAULT_FACTORY_ID } from '../../constants/config';
 
 /**
- * 生产加工管理API客户端 - MVP精简版
- * MVP保留：12个核心API
- * 已移除：5个高级API（暂停生产、成本分析、时间线、质检统计）
+ * 生产加工管理API客户端
+ * 核心API：13个（批次管理8个 + 原材料2个 + 质检2个 + AI分析2个）
  * 路径：/api/mobile/{factoryId}/processing/*
  *
  * 注意：Dashboard相关API（4个）已移至 dashboardApiClient.ts
@@ -128,6 +127,50 @@ class ProcessingApiClient {
   // 11. 创建质检记录
   async createQualityInspection(data: any, factoryId?: string) {
     return await apiClient.post(`${this.getPath(factoryId)}/quality/inspections`, data);
+  }
+
+  // ===== AI成本分析 (2个API) =====
+
+  // 12. 获取批次成本分析数据
+  async getBatchCostAnalysis(batchId: number | string, factoryId?: string) {
+    return await apiClient.get(`${this.getPath(factoryId)}/batches/${batchId}/cost-analysis`);
+  }
+
+  // 13. AI成本分析 - 已移除，请使用 aiApiClient.analyzeBatchCost()
+  // 迁移指南: frontend/CretasFoodTrace/AI_API_MIGRATION_GUIDE.md
+
+  // ===== 时间范围成本分析 (Phase 3新增) =====
+
+  // 14. 获取时间范围内的成本汇总分析
+  async getTimeRangeCostAnalysis(params: {
+    startDate: string;  // ISO format date string
+    endDate: string;    // ISO format date string
+    factoryId?: string;
+  }) {
+    const { factoryId, startDate, endDate } = params;
+    // 后端实际API路径: /api/mobile/{factoryId}/reports/cost-analysis
+    // 转换ISO日期字符串为LocalDate格式 (YYYY-MM-DD)
+    const startLocalDate = startDate.split('T')[0];
+    const endLocalDate = endDate.split('T')[0];
+
+    return await apiClient.get(`/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/reports/cost-analysis`, {
+      params: {
+        startDate: startLocalDate,
+        endDate: endLocalDate
+      }
+    });
+  }
+
+  // 15. AI时间范围成本分析（生成周报/月报等）
+  async aiTimeRangeCostAnalysis(params: {
+    startDate: string;
+    endDate: string;
+    question?: string;
+    session_id?: string;
+    factoryId?: string;
+  }) {
+    const { factoryId, ...data } = params;
+    return await apiClient.post(`${this.getPath(factoryId)}/ai-cost-analysis/time-range`, data);
   }
 
   // ===== MVP暂不使用的功能 =====
