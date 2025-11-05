@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from './apiClient';
+import { DEFAULT_FACTORY_ID } from '../../constants/config';
 
 /**
  * 生产概览数据
@@ -80,13 +81,17 @@ export const dashboardAPI = {
   /**
    * 获取生产概览
    * @param period - 时间周期: today, week, month
+   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
    */
-  getDashboardOverview: async (period: 'today' | 'week' | 'month' = 'today'): Promise<{
+  getDashboardOverview: async (
+    period: 'today' | 'week' | 'month' = 'today',
+    factoryId: string = DEFAULT_FACTORY_ID
+  ): Promise<{
     success: boolean;
     data: DashboardOverviewData;
     message?: string;
   }> => {
-    const response = await apiClient.get('/api/mobile/processing/dashboard/overview', {
+    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/overview`, {
       params: { period },
     });
     return response.data;
@@ -94,20 +99,22 @@ export const dashboardAPI = {
 
   /**
    * 获取生产统计
-   * @param startDate - 开始日期
-   * @param endDate - 结束日期
-   * @param department - 部门（可选）
+   * @param params - 查询参数
+   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
    */
-  getProductionStatistics: async (params?: {
-    startDate?: string;
-    endDate?: string;
-    department?: string;
-  }): Promise<{
+  getProductionStatistics: async (
+    params?: {
+      startDate?: string;
+      endDate?: string;
+      department?: string;
+    },
+    factoryId: string = DEFAULT_FACTORY_ID
+  ): Promise<{
     success: boolean;
     data: ProductionStatisticsData;
     message?: string;
   }> => {
-    const response = await apiClient.get('/api/mobile/processing/dashboard/production', {
+    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/production`, {
       params,
     });
     return response.data;
@@ -115,26 +122,31 @@ export const dashboardAPI = {
 
   /**
    * 获取设备统计
+   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
    */
-  getEquipmentDashboard: async (): Promise<{
+  getEquipmentDashboard: async (factoryId: string = DEFAULT_FACTORY_ID): Promise<{
     success: boolean;
     data: EquipmentDashboardData;
     message?: string;
   }> => {
-    const response = await apiClient.get('/api/mobile/processing/dashboard/equipment');
+    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/equipment`);
     return response.data;
   },
 
   /**
    * 获取质量统计
    * @param period - 时间周期: week, month, quarter
+   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
    */
-  getQualityDashboard: async (period: 'week' | 'month' | 'quarter' = 'month'): Promise<{
+  getQualityDashboard: async (
+    period: 'week' | 'month' | 'quarter' = 'month',
+    factoryId: string = DEFAULT_FACTORY_ID
+  ): Promise<{
     success: boolean;
     data: any;
     message?: string;
   }> => {
-    const response = await apiClient.get('/api/mobile/processing/dashboard/quality', {
+    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/quality`, {
       params: { period },
     });
     return response.data;
@@ -143,13 +155,17 @@ export const dashboardAPI = {
   /**
    * 获取告警统计
    * @param period - 时间周期: week, month
+   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
    */
-  getAlertsDashboard: async (period: 'week' | 'month' = 'week'): Promise<{
+  getAlertsDashboard: async (
+    period: 'week' | 'month' = 'week',
+    factoryId: string = DEFAULT_FACTORY_ID
+  ): Promise<{
     success: boolean;
     data: any;
     message?: string;
   }> => {
-    const response = await apiClient.get('/api/mobile/processing/dashboard/alerts', {
+    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/alerts`, {
       params: { period },
     });
     return response.data;
@@ -157,18 +173,21 @@ export const dashboardAPI = {
 
   /**
    * 获取趋势分析
-   * @param period - 时间周期: week, month, quarter
-   * @param metric - 指标类型: production, quality
+   * @param params - 查询参数
+   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
    */
-  getTrendAnalysis: async (params: {
-    period?: 'week' | 'month' | 'quarter';
-    metric?: 'production' | 'quality';
-  } = {}): Promise<{
+  getTrendAnalysis: async (
+    params: {
+      period?: 'week' | 'month' | 'quarter';
+      metric?: 'production' | 'quality';
+    } = {},
+    factoryId: string = DEFAULT_FACTORY_ID
+  ): Promise<{
     success: boolean;
     data: any;
     message?: string;
   }> => {
-    const response = await apiClient.get('/api/mobile/processing/dashboard/trends', {
+    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/trends`, {
       params,
     });
     return response.data;

@@ -12,7 +12,8 @@ import { DEFAULT_FACTORY_ID } from '../../constants/config';
 
 class FactorySettingsApiClient {
   private getPath(factoryId?: string) {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/factory-settings`;
+    // 注意：后端路径是 /settings，不是 /factory-settings
+    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/settings`;
   }
 
   // ===== 基础设置 (2个API) =====
@@ -63,6 +64,13 @@ class FactorySettingsApiClient {
     return await apiClient.put(`${this.getPath(factoryId)}/production`, data);
   }
 
+  // ===== AI使用统计（可选功能） =====
+  
+  // 9. 获取AI使用统计
+  async getAIUsageStats(factoryId?: string) {
+    return await apiClient.get(`${this.getPath(factoryId)}/ai/usage-stats`);
+  }
+
   // ===== MVP暂不使用的功能 =====
   /*
    * 以下功能在MVP阶段暂不实现，后续根据需要逐步添加：
@@ -81,10 +89,6 @@ class FactorySettingsApiClient {
    * - getQualityStandards: 获取质量标准（后期质检模块需要）
    * - updateQualityStandards: 更新质量标准
    *   GET/PUT /api/mobile/{factoryId}/factory-settings/quality-standards
-   *
-   * AI使用统计（1个）：
-   * - getAIUsageStats: 获取AI使用统计（统计功能）
-   *   GET /api/mobile/{factoryId}/factory-settings/ai/usage-stats
    *
    * 批量操作（1个）：
    * - batchUpdateSettings: 批量更新设置（单个更新已足够）

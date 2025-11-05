@@ -135,8 +135,10 @@ export class AuthService {
 
       const data = rawResponse.data;
 
-      // 检查是否有必需字段 (token/userId)
-      if (!data.token || !data.userId) {
+      // 检查是否有必需字段 (token/accessToken/userId)
+      // 后端现在同时返回 token 和 accessToken 两个字段（值相同）
+      const tokenValue = data.token || data.accessToken;
+      if (!tokenValue || !data.userId) {
         return {
           success: false,
           message: '登录响应中缺少用户信息或Token'
@@ -166,9 +168,10 @@ export class AuthService {
       };
 
       // 构建tokens对象 - 从data中提取token信息
+      // 使用 tokenValue 变量，兼容 token 或 accessToken 字段
       const backendTokens = {
-        token: data.token,
-        accessToken: data.token,
+        token: tokenValue,
+        accessToken: tokenValue,
         refreshToken: data.refreshToken,
         expiresIn: data.expiresIn,
         tokenType: 'Bearer'
@@ -316,15 +319,46 @@ export class AuthService {
   // 注册第一阶段 - 手机验证
   static async registerPhaseOne(request: RegisterPhaseOneRequest): Promise<RegisterResponse> {
     try {
-      const response = await apiClient.post<RegisterResponse>('/api/mobile/auth/register-phase-one', request);
+      console.log('📤 发送注册第一阶段请求:', request);
       
-      if (response.tempToken) {
+      // 后端返回格式: ApiResponse<RegisterPhaseOneResponse>
+      const rawResponse = await apiClient.post<any>('/api/mobile/auth/register-phase-one', request);
+      
+      console.log('📥 注册第一阶段响应:', rawResponse);
+      
+      // 适配后端响应格式
+      let response: RegisterResponse;
+      
+      // 检查是否是 ApiResponse 格式 (有 code, data, success, message)
+      if (rawResponse.success !== undefined && rawResponse.data) {
+        const data = rawResponse.data;
+        response = {
+          success: rawResponse.success || rawResponse.code === 200,
+          message: rawResponse.message || data.message || '验证成功',
+          tempToken: data.tempToken,
+          factoryId: data.factoryId,
+          phoneNumber: data.phoneNumber,
+          expiresAt: data.expiresAt,
+          isNewUser: data.isNewUser
+        };
+      } else {
+        // 直接返回格式
+        response = rawResponse as RegisterResponse;
+      }
+      
+      if (response.success && response.tempToken) {
         await StorageService.setSecureItem('temp_token', response.tempToken);
+        console.log('✅ 临时Token已保存');
       }
       
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error('注册第一阶段失败:', error);
+      // 处理错误响应
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        throw new Error(errorData.message || errorData.error || '手机验证失败');
+      }
       throw this.handleAuthError(error);
     }
   }

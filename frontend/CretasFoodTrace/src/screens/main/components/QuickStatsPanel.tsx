@@ -137,18 +137,24 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
 
       case 'department_admin':
         // 部门管理员:显示部门今日生产数据
-        const department = user.userType === 'factory' ? user.factoryUser?.department : 'unknown';
+        if (loading) {
+          return (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" />
+            </View>
+          );
+        }
         return (
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Icon source="package-variant" size={24} color="#2196F3" />
               <Text variant="bodySmall" style={styles.statLabel}>进行中批次</Text>
-              <Text variant="titleMedium" style={styles.statValue}>-- 个</Text>
+              <Text variant="titleMedium" style={styles.statValue}>{statsData.totalBatches} 个</Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="account-group" size={24} color="#4CAF50" />
               <Text variant="bodySmall" style={styles.statLabel}>今日出勤</Text>
-              <Text variant="titleMedium" style={styles.statValue}>-- / --</Text>
+              <Text variant="titleMedium" style={styles.statValue}>{statsData.onDutyWorkers} / {statsData.totalWorkers}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="alert-circle" size={24} color="#F44336" />
