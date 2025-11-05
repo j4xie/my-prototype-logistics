@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI成本分析 - 输入输出示例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+
+        .section {
+            padding: 40px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            border-right: 3px solid #667eea;
+        }
+
+        .output-section {
+            background: #ffffff;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .section-icon {
+            font-size: 2em;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .data-block {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .data-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+        }
+
+        .block-title {
+            font-size: 1.3em;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .data-row {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            color: #666;
+            font-weight: 500;
+            display: inline-block;
+            min-width: 120px;
+        }
+
+        .data-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #856404;
+        }
+
+        .success {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .warning {
+            color: #ffc107;
+            font-weight: 600;
+        }
+
+        .danger {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .material-item, .equipment-item, .labor-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .cost-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .cost-summary h3 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .cost-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .cost-item:last-child {
+            border-bottom: none;
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .risk-item {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+
+        .analysis-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .analysis-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .analysis-section h3 {
+            color: #764ba2;
+            margin: 20px 0 15px 0;
+            font-size: 1.4em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .action-plan {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 5px solid #28a745;
+        }
+
+        .action-plan h4 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        li {
+            margin: 8px 0;
+            line-height: 1.8;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin: 0 5px;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        footer p {
+            margin: 5px 0;
+        }
+
+        @media (max-width: 1200px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .input-section {
+                border-right: none;
+                border-bottom: 3px solid #667eea;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+
+            .data-block, .analysis-section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AI成本分析系统</h1>
+            <p>输入输出示例 - 批次 FISH_2025_001（三文鱼刺身）</p>
+        </header>
+
+        <div class="content">
+            <!-- 输入部分 -->
+            <div class="section input-section">
+                <div class="section-header">
+                    <span class="section-icon">📥</span>
+                    <h2 class="section-title">输入内容（发送给AI的数据）</h2>
+                </div>
+
+                <div class="data-block">
+                    <div class="block-title">📋 批次信息</div>
+                    <div class="data-row">
+                        <span class="data-label">批次号:</span>
+                        <span class="data-value">FISH_2025_001 - 三文鱼刺身</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">状态:</span>
+                        <span class="data-value badge badge-success">COMPLETED</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">计划产量:</span>
+                        <span class="data-value">500.00kg</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">实际产量:</span>
+                        <span class="data-value">480.00kg</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">良品:</span>
+                        <span class="data-value success">456.00kg</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">次品:</span>
+                        <span class="data-value danger">24.00kg</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">良品率:</span>
+                        <span class="data-value warning">95.00%</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">效率:</span>
+                        <span class="data-value">96.00%</span>
+                    </div>
+                </div>
+
+                <div class="data-block">
+                    <div class="block-title">📅 生产计划</div>
+                    <div class="data-row">
+                        <span class="data-label">计划号:</span>
+                        <span class="data-value">PLAN_2025_W01</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">完成率:</span>
+                        <span class="data-value">96.00%</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">计划日期:</span>
+                        <span class="data-value">2025-01-10</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">计划时间:</span>
+                        <span class="data-value">08:00 - 16:00</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">实际时间:</span>
+                        <span class="data-value warning">08:15 - 16:30 (延迟45分钟)</span>
+                    </div>
+                </div>
+
+                <div class="data-block">
+                    <div class="block-title">🥬 原材料消耗（共3种）</div>
+                    <div class="material-item">
+                        <strong>挪威三文鱼</strong><br>
+                        消耗: 520.00kg | 成本: ¥15,600.00<br>
+                        供应商: 北欧海鲜供应商 (SUP_2024_001)<br>
+                        联系人: 张经理 (13800138000)<br>
+                        批次: MB_2025_001 | 入库: 2025-01-05 | <span class="warning">到期: 2025-01-15</span><br>
+                        库存: 初始1000.00kg, 剩余480.00kg
+                    </div>
+                    <div class="material-item">
+                        <strong>海盐</strong><br>
+                        消耗: 2.50kg | 成本: ¥50.00<br>
+                        供应商: 本地调味品公司 (SUP_2024_002)<br>
+                        批次: MB_2025_002 | 库存充足
+                    </div>
+                    <div class="material-item">
+                        <strong>芥末酱</strong><br>
+                        消耗: 1.20kg | 成本: ¥120.00<br>
+                        供应商: 日本调味品进口商 (SUP_2024_003)<br>
+                        批次: MB_2025_003 | 库存充足
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">原材料总成本:</span>
+                        <span class="data-value">¥15,770.00</span>
+                    </div>
+                </div>
+
+                <div class="data-block">
+                    <div class="block-title">🔧 设备使用（共3台，9.50小时）</div>
+                    <div class="equipment-item">
+                        <strong>切片机A</strong> (SL-2000)<br>
+                        状态: RUNNING | 使用: 4.00h | 成本: ¥200.00
+                    </div>
+                    <div class="equipment-item">
+                        <strong>冷藏柜B</strong> (CF-5000)<br>
+                        状态: RUNNING | 使用: 8.00h | 成本: ¥400.00
+                    </div>
+                    <div class="equipment-item">
+                        <strong>包装机C</strong> (PK-1000)<br>
+                        状态: RUNNING | 使用: 1.50h | 成本: ¥75.00
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">设备总成本:</span>
+                        <span class="data-value">¥675.00</span>
+                    </div>
+                </div>
+
+                <div class="data-block">
+                    <div class="block-title">👥 人工工时（共4人，28.00小时）</div>
+                    <div class="labor-item">
+                        <strong>张三</strong> (生产部 - 切片工)<br>
+                        工作: 8.00h | 时薪: ¥30.00/h | 成本: ¥240.00
+                    </div>
+                    <div class="labor-item">
+                        <strong>李四</strong> (生产部 - 包装工)<br>
+                        工作: 8.00h | 时薪: ¥25.00/h | 成本: ¥200.00
+                    </div>
+                    <div class="labor-item">
+                        <strong>王五</strong> (质检部 - 质检员)<br>
+                        工作: 6.00h | 时薪: ¥35.00/h | 成本: ¥210.00
+                    </div>
+                    <div class="labor-item">
+                        <strong>赵六</strong> (生产部 - 助理工)<br>
+                        工作: 6.00h | 时薪: ¥25.00/h | 成本: ¥150.00
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">人工总成本:</span>
+                        <span class="data-value">¥800.00</span>
+                    </div>
+                </div>
+
+                <div class="data-block">
+                    <div class="block-title">✅ 质量检验（共2次）</div>
+                    <div class="data-row">
+                        <strong>第一次检验</strong> (2025-01-10 14:00)<br>
+                        检验员: 王五<br>
+                        抽样: 50个 | 合格: 48个 | 不合格: 2个 | 合格率: 96.00%<br>
+                        备注: 发现2个切片厚度不均问题
+                    </div>
+                    <div class="data-row">
+                        <strong>第二次检验</strong> (2025-01-10 15:30)<br>
+                        检验员: 王五<br>
+                        抽样: 50个 | 合格: 47个 | 不合格: 3个 | 合格率: 94.00%<br>
+                        备注: 包装密封有3个不合格
+                    </div>
+                </div>
+
+                <div class="cost-summary">
+                    <h3>💰 成本汇总</h3>
+                    <div class="cost-item">
+                        <span>原材料成本</span>
+                        <span>¥15,770.00 (90.36%)</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>人工成本</span>
+                        <span>¥800.00 (4.58%)</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>设备成本</span>
+                        <span>¥675.00 (3.87%)</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>其他成本</span>
+                        <span>¥210.00 (1.20%)</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>总成本</span>
+                        <span>¥17,455.00</span>
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3);">
+                        <div class="cost-item">
+                            <span>单位成本（实际产量）</span>
+                            <span>¥36.37/kg</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>单位良品成本</span>
+                            <span>¥38.28/kg</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-block">
+                    <div class="block-title">⚠️ 风险预警（共2项）</div>
+                    <div class="risk-item">
+                        <strong>原材料即将到期</strong><br>
+                        挪威三文鱼 (MB_2025_001) 将于2025-01-15到期，剩余480.00kg
+                    </div>
+                    <div class="risk-item">
+                        <strong>良品率偏低</strong><br>
+                        实际良品率95.00%低于目标98.00%，次品率5.00%
+                    </div>
+                </div>
+            </div>
+
+            <!-- 输出部分 -->
+            <div class="section output-section">
+                <div class="section-header">
+                    <span class="section-icon">📤</span>
+                    <h2 class="section-title">输出内容（AI返回的分析报告）</h2>
+                </div>
+
+                <div class="analysis-section">
+                    <h2>1. 生产效率分析</h2>
+
+                    <h3>1.1 产量达成</h3>
+                    <div class="data-row">计划产量: 500.00kg</div>
+                    <div class="data-row">实际产量: 480.00kg</div>
+                    <div class="data-row">完成率: <span class="success">96.00%</span></div>
+                    <div class="data-row">评价: 产量完成率良好，接近目标值</div>
+
+                    <h3>1.2 良品率分析</h3>
+                    <div class="data-row">良品产量: 456.00kg</div>
+                    <div class="data-row">次品产量: 24.00kg</div>
+                    <div class="data-row">良品率: <span class="warning">95.00%</span></div>
+                    <div class="data-row">目标良品率: 98.00%</div>
+                    <div class="data-row">差距: <span class="danger">-3.00%</span></div>
+                    <div class="data-row">评价: <span class="warning">⚠️ 需要改进</span> - 良品率低于目标3个百分点</div>
+
+                    <h3>1.3 时间效率</h3>
+                    <div class="data-row">计划开始: 08:00 → 实际开始: 08:15 (延迟15分钟)</div>
+                    <div class="data-row">计划结束: 16:00 → 实际结束: 16:30 (延迟30分钟)</div>
+                    <div class="data-row">总延迟: <span class="warning">45分钟</span></div>
+                    <div class="data-row">生产效率: 96.00%</div>
+                </div>
+
+                <div class="analysis-section">
+                    <h2>2. 原材料成本分析</h2>
+
+                    <h3>2.1 原材料结构</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>原材料</th>
+                                <th>消耗量</th>
+                                <th>成本(¥)</th>
+                                <th>占比</th>
+                                <th>供应商</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>挪威三文鱼</td>
+                                <td>520.00kg</td>
+                                <td>15,600.00</td>
+                                <td>98.92%</td>
+                                <td>北欧海鲜供应商</td>
+                            </tr>
+                            <tr>
+                                <td>海盐</td>
+                                <td>2.50kg</td>
+                                <td>50.00</td>
+                                <td>0.32%</td>
+                                <td>本地调味品公司</td>
+                            </tr>
+                            <tr>
+                                <td>芥末酱</td>
+                                <td>1.20kg</td>
+                                <td>120.00</td>
+                                <td>0.76%</td>
+                                <td>日本调味品进口商</td>
+                            </tr>
+                            <tr style="font-weight: bold;">
+                                <td>总计</td>
+                                <td>523.70kg</td>
+                                <td>15,770.00</td>
+                                <td>100%</td>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>2.2 原材料利用率</h3>
+                    <div class="data-row">投入量: 523.70kg</div>
+                    <div class="data-row">产出量: 480.00kg (实际) / 456.00kg (良品)</div>
+                    <div class="data-row">损耗率: <span class="warning">8.35%</span> (投入-实际) / <span class="danger">12.93%</span> (投入-良品)</div>
+                    <div class="data-row">评价: <span class="warning">⚠️ 偏高</span> - 正常三文鱼刺身损耗率应在5-8%</div>
+
+                    <h3>2.3 原材料成本占比</h3>
+                    <div class="data-row">原材料成本: ¥15,770.00</div>
+                    <div class="data-row">总成本: ¥17,455.00</div>
+                    <div class="data-row">占比: 90.36%</div>
+                    <div class="data-row">评价: <span class="success">✅ 正常</span> - 食品加工行业原材料成本占比通常在85-95%</div>
+
+                    <h3>2.4 库存风险预警</h3>
+                    <div class="risk-item">
+                        <strong>⚠️ 紧急关注：</strong><br>
+                        挪威三文鱼 (MB_2025_001) 将于 <strong>2025-01-15</strong> 到期（剩余5天）<br>
+                        剩余库存: 480.00kg<br>
+                        建议: 立即安排使用计划或促销处理，避免过期损失
+                    </div>
+                </div>
+
+                <div class="analysis-section">
+                    <h2>3. 设备使用效率分析</h2>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>设备</th>
+                                <th>型号</th>
+                                <th>使用时长</th>
+                                <th>成本(¥)</th>
+                                <th>单位成本</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>切片机A</td>
+                                <td>SL-2000</td>
+                                <td>4.00h</td>
+                                <td>200.00</td>
+                                <td>¥50.00/h</td>
+                            </tr>
+                            <tr>
+                                <td>冷藏柜B</td>
+                                <td>CF-5000</td>
+                                <td>8.00h</td>
+                                <td>400.00</td>
+                                <td>¥50.00/h</td>
+                            </tr>
+                            <tr>
+                                <td>包装机C</td>
+                                <td>PK-1000</td>
+                                <td>1.50h</td>
+                                <td>75.00</td>
+                                <td>¥50.00/h</td>
+                            </tr>
+                            <tr style="font-weight: bold;">
+                                <td>总计</td>
+                                <td>-</td>
+                                <td>9.50h</td>
+                                <td>675.00</td>
+                                <td>¥50.00/h</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="data-row">总生产时长: 8小时15分钟 (08:15-16:30)</div>
+                    <div class="data-row">设备总使用时长: 9.50小时</div>
+                    <div class="data-row">设备利用率: <span class="success">115%</span> (部分设备并行使用)</div>
+                    <div class="data-row">评价: <span class="success">✅ 良好</span> - 设备使用合理，冷藏柜全程运行符合食品安全要求</div>
+                </div>
+
+                <div class="analysis-section">
+                    <h2>4. 人工成本分析</h2>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>员工</th>
+                                <th>部门</th>
+                                <th>岗位</th>
+                                <th>工时</th>
+                                <th>时薪(¥)</th>
+                                <th>成本(¥)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>张三</td>
+                                <td>生产部</td>
+                                <td>切片工</td>
+                                <td>8.00h</td>
+                                <td>30.00</td>
+                                <td>240.00</td>
+                            </tr>
+                            <tr>
+                                <td>李四</td>
+                                <td>生产部</td>
+                                <td>包装工</td>
+                                <td>8.00h</td>
+                                <td>25.00</td>
+                                <td>200.00</td>
+                            </tr>
+                            <tr>
+                                <td>王五</td>
+                                <td>质检部</td>
+                                <td>质检员</td>
+                                <td>6.00h</td>
+                                <td>35.00</td>
+                                <td>210.00</td>
+                            </tr>
+                            <tr>
+                                <td>赵六</td>
+                                <td>生产部</td>
+                                <td>助理工</td>
+                                <td>6.00h</td>
+                                <td>25.00</td>
+                                <td>150.00</td>
+                            </tr>
+                            <tr style="font-weight: bold;">
+                                <td>总计</td>
+                                <td>-</td>
+                                <td>4人</td>
+                                <td>28.00h</td>
+                                <td>-</td>
+                                <td>800.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>人效分析</h3>
+                    <div class="data-row">总人工时长: 28.00小时</div>
+                    <div class="data-row">良品产量: 456.00kg</div>
+                    <div class="data-row">人均产量: 114.00kg/人 或 16.29kg/人·小时</div>
+                    <div class="data-row">单位人工成本: ¥1.75/kg (按良品)</div>
+                    <div class="data-row">评价: <span class="success">✅ 效率良好</span> - 人效指标合理</div>
+                </div>
+
+                <div class="analysis-section">
+                    <h2>7. 风险与问题总结</h2>
+
+                    <h3>高风险项 🔴</h3>
+                    <div class="risk-item" style="border-color: #dc3545;">
+                        <strong>1. 原材料即将过期</strong><br>
+                        挪威三文鱼480kg将于5天后(2025-01-15)到期<br>
+                        潜在损失: ¥14,400.00<br>
+                        紧急度: ⭐⭐⭐⭐⭐
+                    </div>
+                    <div class="risk-item" style="border-color: #dc3545;">
+                        <strong>2. 良品率低于目标</strong><br>
+                        当前95% vs 目标98%<br>
+                        导致额外成本: ¥550.00/批次<br>
+                        紧急度: ⭐⭐⭐⭐
+                    </div>
+
+                    <h3>中风险项 🟡</h3>
+                    <div class="risk-item">
+                        <strong>1. 原材料损耗率偏高</strong><br>
+                        当前8.35% vs 正常5-8%<br>
+                        改进空间: 节约¥200-400/批次<br>
+                        紧急度: ⭐⭐⭐
+                    </div>
+                    <div class="risk-item">
+                        <strong>2. 生产时间延迟</strong><br>
+                        总延迟45分钟<br>
+                        影响: 降低生产效率，增加能耗成本<br>
+                        紧急度: ⭐⭐
+                    </div>
+                </div>
+
+                <div class="analysis-section">
+                    <h2>8. 优化建议与行动计划</h2>
+
+                    <div class="action-plan" style="border-color: #dc3545;">
+                        <h4>✅ 立即行动项 (24小时内)</h4>
+                        <strong>处理即将过期原材料</strong>
+                        <ul>
+                            <li>行动: 立即安排生产计划消耗480kg挪威三文鱼</li>
+                            <li>或: 联系供应商协商退换货</li>
+                            <li>或: 启动促销活动快速消耗成品</li>
+                            <li>责任人: 生产主管 + 采购主管</li>
+                            <li>目标: 避免¥14,400损失</li>
+                        </ul>
+
+                        <strong>质量问题整改</strong>
+                        <ul>
+                            <li>检查切片机SL-2000校准状态，调整切片厚度</li>
+                            <li>检查包装机PK-1000封口参数，测试包装材料</li>
+                            <li>对张三(切片工)进行操作培训</li>
+                            <li>责任人: 设备维护员 + 质检主管</li>
+                            <li>目标: 良品率提升至98%</li>
+                        </ul>
+                    </div>
+
+                    <div class="action-plan" style="border-color: #ffc107;">
+                        <h4>📊 短期优化 (1周内)</h4>
+                        <strong>优化采购管理</strong>
+                        <ul>
+                            <li>建立原材料周转率监控机制</li>
+                            <li>目标: 三文鱼库存周转率 ≤ 7天</li>
+                            <li>工具: 设置库存预警系统，到期前7天自动提醒</li>
+                            <li>责任人: 采购主管 + IT支持</li>
+                        </ul>
+
+                        <strong>降低原材料损耗</strong>
+                        <ul>
+                            <li>分析切片、包装环节损耗原因</li>
+                            <li>目标: 损耗率从8.35%降至6%以内</li>
+                            <li>预期收益: 节约¥400/批次</li>
+                        </ul>
+                    </div>
+
+                    <div class="action-plan">
+                        <h4>🔧 中期改进 (1个月内)</h4>
+                        <ul>
+                            <li>建立切片机、包装机定期保养制度</li>
+                            <li>组织切片工、包装工技能培训</li>
+                            <li>目标: 人为操作失误率 < 1%</li>
+                        </ul>
+                    </div>
+
+                    <div class="action-plan">
+                        <h4>💡 长期优化 (3个月内)</h4>
+                        <ul>
+                            <li>建立批次成本核算标准</li>
+                            <li>设定各成本项目预警阈值</li>
+                            <li>评估供应商交货周期和新鲜度</li>
+                            <li>谈判更优惠的采购价格</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="analysis-section">
+                    <h2>9. 预期效果</h2>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>优化项</th>
+                                <th>当前状态</th>
+                                <th>目标状态</th>
+                                <th>成本节约(¥)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>良品率提升</td>
+                                <td>95% → 98%</td>
+                                <td>+3%</td>
+                                <td>550.00</td>
+                            </tr>
+                            <tr>
+                                <td>损耗率降低</td>
+                                <td>8.35% → 6%</td>
+                                <td>-2.35%</td>
+                                <td>400.00</td>
+                            </tr>
+                            <tr>
+                                <td>避免过期损失</td>
+                                <td>风险存在</td>
+                                <td>零损失</td>
+                                <td>14,400.00 (一次性)</td>
+                            </tr>
+                            <tr>
+                                <td>生产时间优化</td>
+                                <td>延迟45min</td>
+                                <td>准时</td>
+                                <td>100.00</td>
+                            </tr>
+                            <tr style="font-weight: bold; background: #f8f9fa;">
+                                <td>总计</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>¥1,050.00/批次</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="text-align: center; margin-top: 30px;">
+                        <div class="metric-card" style="display: inline-block; min-width: 300px;">
+                            <div class="metric-label">投资回报率（每月20批次）</div>
+                            <div class="metric-value">¥21,000</div>
+                            <div class="metric-label">每月可节约</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-section">
+                    <h2>10. 总体评价</h2>
+
+                    <h3>⭐ 优势</h3>
+                    <div class="data-row"><span class="success">✅</span> 成本结构合理，原材料、人工、设备占比符合行业标准</div>
+                    <div class="data-row"><span class="success">✅</span> 设备使用效率高，人效指标良好</div>
+                    <div class="data-row"><span class="success">✅</span> 产量完成率96%，接近目标</div>
+
+                    <h3>⚠️ 待改进</h3>
+                    <div class="data-row"><span class="warning">⚠️</span> <strong>良品率偏低</strong> (95% vs 98%目标) - <strong>核心问题</strong></div>
+                    <div class="data-row"><span class="warning">⚠️</span> <strong>原材料库存管理</strong> - 存在过期风险</div>
+                    <div class="data-row"><span class="warning">⚠️</span> <strong>原材料损耗率</strong> - 略高于正常水平</div>
+                    <div class="data-row"><span class="warning">⚠️</span> <strong>生产时间控制</strong> - 存在延迟现象</div>
+
+                    <h3>🎯 关键指标改进目标</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>指标</th>
+                                <th>当前值</th>
+                                <th>目标值</th>
+                                <th>改进幅度</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>良品率</td>
+                                <td>95.00%</td>
+                                <td>98.00%</td>
+                                <td class="success">+3%</td>
+                            </tr>
+                            <tr>
+                                <td>损耗率</td>
+                                <td>8.35%</td>
+                                <td>6.00%</td>
+                                <td class="success">-2.35%</td>
+                            </tr>
+                            <tr>
+                                <td>单位成本</td>
+                                <td>¥38.28/kg</td>
+                                <td>¥36.50/kg</td>
+                                <td class="success">-4.65%</td>
+                            </tr>
+                            <tr>
+                                <td>库存周转率</td>
+                                <td>未知</td>
+                                <td>≤7天</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>生产准时率</td>
+                                <td>94.5%</td>
+                                <td>100%</td>
+                                <td class="success">+5.5%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p><strong>分析完成时间:</strong> 2025-01-10 17:00</p>
+            <p><strong>分析师:</strong> DeepSeek AI (食品生产成本分析专家)</p>
+            <p><strong>下次分析建议:</strong> 1周后跟踪改进效果</p>
+            <p style="margin-top: 20px; opacity: 0.8;">
+                © 2025 白垩纪食品溯源系统 | AI成本分析系统 v2.0
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

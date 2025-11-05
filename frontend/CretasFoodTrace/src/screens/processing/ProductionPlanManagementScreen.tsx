@@ -30,7 +30,7 @@ import { CustomerSelector } from '../../components/common/CustomerSelector';
 import { MaterialBatchSelector, SelectedBatch, AvailableBatch } from '../../components/common/MaterialBatchSelector';
 
 type ProductionPlan = ApiProductionPlan;
-type NavigationProp = NativeStackNavigationProp<ProcessingStackParamList, 'ProductionPlanManagement'>;
+type NavigationProp = NativeStackNavigationProp<ProcessingStackParamList>;
 
 /**
  * 生产计划管理页面
@@ -130,11 +130,16 @@ export default function ProductionPlanManagementScreen() {
       });
 
       if (response.success && response.data) {
-        setPlans(response.data.plans);
+        // 安全地访问 plans 数组
+        const plansData = response.data.plans || response.data || [];
+        setPlans(Array.isArray(plansData) ? plansData : []);
+      } else {
+        setPlans([]);
       }
     } catch (error: any) {
       console.error('加载生产计划失败:', error);
       Alert.alert('错误', error.response?.data?.message || '加载生产计划失败');
+      setPlans([]);
     } finally {
       setLoading(false);
     }
@@ -149,20 +154,25 @@ export default function ProductionPlanManagementScreen() {
       ]);
 
       if (productsRes.success && productsRes.data) {
-        setProductTypes(productsRes.data.productTypes);
+        const productTypesData = productsRes.data.productTypes || productsRes.data || [];
+        setProductTypes(Array.isArray(productTypesData) ? productTypesData : []);
       }
 
       if (customersRes.success && customersRes.data) {
-        setCustomers(customersRes.data);
+        const customersData = customersRes.data.customers || customersRes.data || [];
+        setCustomers(Array.isArray(customersData) ? customersData : []);
       }
 
       if (stockRes.success && stockRes.data) {
         // 转换库存汇总数据为界面需要的格式
-        const summaryData = stockRes.data.summary.map(item => ({
-          category: item.category,
-          available: item.totalAvailable,
-          batchCount: item.batchCount,
-        }));
+        const summary = stockRes.data.summary || [];
+        const summaryData = Array.isArray(summary) 
+          ? summary.map(item => ({
+              category: item.category,
+              available: item.totalAvailable,
+              batchCount: item.batchCount,
+            }))
+          : [];
         setAvailableStock(summaryData);
       }
     } catch (error) {

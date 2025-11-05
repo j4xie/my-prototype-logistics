@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
-import { Text, Appbar, FAB, Searchbar, Card, SegmentedButtons } from 'react-native-paper';
+import { Text, Appbar, Button, Searchbar, Card, SegmentedButtons } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { BatchStatusBadge, BatchStatus } from '../../components/processing';
-import { processingAPI, BatchResponse } from '../../services/api/processingApiClient';
+import { processingApiClient as processingAPI, BatchResponse } from '../../services/api/processingApiClient';
 
 type BatchListScreenProps = ProcessingScreenProps<'BatchList'>;
 
@@ -14,6 +14,9 @@ type BatchListScreenProps = ProcessingScreenProps<'BatchList'>;
 export default function BatchListScreen() {
   const navigation = useNavigation<BatchListScreenProps['navigation']>();
   const route = useRoute<BatchListScreenProps['route']>();
+
+  // 检查是否为成本分析模式
+  const showCostAnalysis = (route.params as any)?.showCostAnalysis || false;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -90,7 +93,14 @@ export default function BatchListScreen() {
 
   const renderBatchCard = ({ item }: { item: BatchResponse }) => (
     <TouchableOpacity
-      onPress={() => navigation.navigate('BatchDetail', { batchId: item.id.toString() })}
+      onPress={() => {
+        // 根据模式导航到不同页面
+        if (showCostAnalysis) {
+          navigation.navigate('CostAnalysisDashboard', { batchId: item.id.toString() });
+        } else {
+          navigation.navigate('BatchDetail', { batchId: item.id.toString() });
+        }
+      }}
       activeOpacity={0.7}
     >
       <Card style={styles.batchCard} mode="elevated">
@@ -135,6 +145,11 @@ export default function BatchListScreen() {
               <Text variant="bodySmall" style={styles.timestamp}>
                 {new Date(item.createdAt).toLocaleString('zh-CN')}
               </Text>
+              {showCostAnalysis && (
+                <Text variant="bodySmall" style={styles.costAnalysisHint}>
+                  💰 点击查看成本分析
+                </Text>
+              )}
             </View>
           </View>
         </Card.Content>
@@ -146,7 +161,7 @@ export default function BatchListScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="批次列表" />
+        <Appbar.Content title={showCostAnalysis ? "选择批次进行成本分析" : "批次列表"} />
       </Appbar.Header>
 
       <Searchbar
@@ -183,20 +198,29 @@ export default function BatchListScreen() {
               {searchQuery ? '未找到匹配的批次' : loading ? '加载中...' : '暂无批次数据'}
             </Text>
             {!loading && !searchQuery && (
-              <Text variant="bodySmall" style={styles.emptyHint}>
-                点击右下角按钮创建第一个批次
-              </Text>
+              <>
+                <Text variant="bodySmall" style={styles.emptyHint}>
+                  {showCostAnalysis
+                    ? '当前没有可分析的批次'
+                    : '请先在生产计划管理中创建生产计划，批次将自动生成'}
+                </Text>
+                {!showCostAnalysis && (
+                  <Button
+                    mode="contained"
+                    icon="calendar-check"
+                    onPress={() => navigation.navigate('ProductionPlanManagement')}
+                    style={styles.emptyButton}
+                  >
+                    前往生产计划管理
+                  </Button>
+                )}
+              </>
             )}
           </View>
         }
       />
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={() => navigation.navigate('CreateBatch')}
-        label="创建批次"
-      />
+      {/* FAB按钮已移除：批次应由生产计划自动创建，不应直接创建 */}
     </View>
   );
 }
@@ -256,9 +280,16 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   timestamp: {
     color: '#9E9E9E',
+  },
+  costAnalysisHint: {
+    color: '#4CAF50',
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
@@ -275,9 +306,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
+  emptyButton: {
+    marginTop: 16,
   },
 });
