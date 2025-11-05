@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, Button, Appbar, ActivityIndicator } from 'react-native-paper';
+import { Text, Card, Button, Appbar, ActivityIndicator, Dialog, Portal } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
@@ -21,6 +21,7 @@ export default function ProcessingDashboard() {
 
   // 状态管理
   const [loading, setLoading] = useState(false);
+  const [costAnalysisDialogVisible, setCostAnalysisDialogVisible] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     inProgressBatches: 0,
     totalBatches: 0,
@@ -227,10 +228,49 @@ export default function ProcessingDashboard() {
               <Button
                 mode="outlined"
                 icon="cash"
-                onPress={() => navigation.navigate('CostAnalysisDashboard', {})}
+                onPress={() => setCostAnalysisDialogVisible(true)}
                 style={styles.actionButton}
               >
                 成本分析
+              </Button>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* AI智能分析 - Phase 3新增 */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Title
+            title="AI智能分析"
+            subtitle="DeepSeek驱动的智能成本分析"
+            left={(props) => <Card.Title {...props} titleStyle={{}} />}
+          />
+          <Card.Content>
+            <View style={styles.actionsGrid}>
+              <Button
+                mode="contained"
+                icon="robot"
+                onPress={() => navigation.navigate('AIReportList')}
+                style={styles.actionButton}
+                buttonColor="#9C27B0"
+              >
+                AI分析报告
+              </Button>
+              <Button
+                mode="contained"
+                icon="compare"
+                onPress={() => navigation.navigate('BatchComparison')}
+                style={styles.actionButton}
+                buttonColor="#FF9800"
+              >
+                批次对比分析
+              </Button>
+              <Button
+                mode="outlined"
+                icon="calendar-range"
+                onPress={() => navigation.navigate('TimeRangeCostAnalysis')}
+                style={styles.actionButton}
+              >
+                时间范围分析
               </Button>
             </View>
           </Card.Content>
@@ -246,6 +286,47 @@ export default function ProcessingDashboard() {
           </Card.Content>
         </Card>
       </ScrollView>
+
+      {/* 成本分析选择对话框 */}
+      <Portal>
+        <Dialog
+          visible={costAnalysisDialogVisible}
+          onDismiss={() => setCostAnalysisDialogVisible(false)}
+        >
+          <Dialog.Title>选择分析方式</Dialog.Title>
+          <Dialog.Content>
+            <Button
+              mode="contained"
+              icon="clipboard-list"
+              onPress={() => {
+                setCostAnalysisDialogVisible(false);
+                navigation.navigate('BatchList', {
+                  showCostAnalysis: true
+                });
+              }}
+              style={styles.dialogButton}
+            >
+              按批次分析
+            </Button>
+            <Button
+              mode="contained"
+              icon="calendar-range"
+              onPress={() => {
+                setCostAnalysisDialogVisible(false);
+                navigation.navigate('TimeRangeCostAnalysis' as any);
+              }}
+              style={styles.dialogButton}
+            >
+              按时间范围分析
+            </Button>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setCostAnalysisDialogVisible(false)}>
+              取消
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
@@ -290,6 +371,9 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  dialogButton: {
+    marginBottom: 12,
   },
   placeholder: {
     textAlign: 'center',

@@ -59,14 +59,25 @@ export type ProcessingStackParamList = {
 
   // 成本分析
   CostAnalysisDashboard: { batchId?: string };
+  TimeRangeCostAnalysis: undefined;
   CostComparison: { batchIds: string[] };
   DeepSeekAnalysis: { batchId: string };
+
+  // AI智能分析
+  AIReportList: undefined;
+  AIAnalysisDetail: { reportId: number; reportType: string; title: string };
+  BatchComparison: undefined;
+  AIConversationHistory: { sessionId?: string };
 
   // 数据导出
   DataExport: { reportType: 'batch' | 'cost' | 'quality' | 'equipment' };
 
   // 生产计划管理
   ProductionPlanManagement: undefined;
+
+  // 原材料管理
+  MaterialReceipt: undefined;
+  MaterialBatchManagement: undefined;
 };
 
 // ==================== 打卡模块导航参数 ====================

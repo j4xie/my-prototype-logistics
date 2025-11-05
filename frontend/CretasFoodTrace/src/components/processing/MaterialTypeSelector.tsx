@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { materialAPI, MaterialType } from '../../services/api/materialApiClient';
+import { useAuthStore } from '../../store/authStore';
 
 interface MaterialTypeSelectorProps {
   value: string;
@@ -22,6 +23,9 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
   placeholder = '选择原料类型',
   error,
 }) => {
+  const { user } = useAuthStore();
+  const factoryId = user?.factoryId || user?.factoryUser?.factoryId;
+  
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [materials, setMaterials] = useState<MaterialType[]>([]);
@@ -42,11 +46,12 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
   const fetchMaterialTypes = async () => {
     try {
       setLoading(true);
-      const result = await materialAPI.getMaterialTypes();
+      const result = await materialAPI.getMaterialTypes(factoryId);
       console.log('✅ Material types loaded:', result.length);
       setMaterials(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to fetch material types:', error);
+      Alert.alert('错误', error.response?.data?.message || '加载原材料类型失败');
       setMaterials([]);
     } finally {
       setLoading(false);
@@ -96,7 +101,7 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
         name: newMaterialName.trim(),
         category: newMaterialCategory,
         unit: 'kg',
-      });
+      }, factoryId);
 
       console.log('✅ Material type created:', newMaterialName);
 

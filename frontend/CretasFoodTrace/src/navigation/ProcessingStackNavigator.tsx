@@ -9,9 +9,16 @@ import BatchDetailScreen from '../screens/processing/BatchDetailScreen';
 import CreateBatchScreen from '../screens/processing/CreateBatchScreen';
 import QualityInspectionListScreen from '../screens/processing/QualityInspectionListScreen';
 import CostAnalysisDashboard from '../screens/processing/CostAnalysisDashboard';
+import TimeRangeCostAnalysisScreen from '../screens/processing/TimeRangeCostAnalysisScreen';
 import ProductionPlanManagementScreen from '../screens/processing/ProductionPlanManagementScreen';
 import MaterialBatchManagementScreen from '../screens/processing/MaterialBatchManagementScreen';
 import MaterialReceiptScreen from '../screens/processing/MaterialReceiptScreen';
+
+// AI智能分析页面 - Phase 3
+import AIReportListScreen from '../screens/processing/AIReportListScreen';
+import AIAnalysisDetailScreen from '../screens/processing/AIAnalysisDetailScreen';
+import BatchComparisonScreen from '../screens/processing/BatchComparisonScreen';
+import AIConversationHistoryScreen from '../screens/processing/AIConversationHistoryScreen';
 
 const Stack = createNativeStackNavigator<ProcessingStackParamList>();
 
@@ -58,6 +65,10 @@ export function ProcessingStackNavigator() {
         name="CostAnalysisDashboard"
         component={CostAnalysisDashboard}
       />
+      <Stack.Screen
+        name="TimeRangeCostAnalysis"
+        component={TimeRangeCostAnalysisScreen}
+      />
 
       {/* 生产计划管理 */}
       <Stack.Screen
@@ -73,6 +84,24 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="MaterialReceipt"
         component={MaterialReceiptScreen}
+      />
+
+      {/* AI智能分析 - Phase 3新增 */}
+      <Stack.Screen
+        name="AIReportList"
+        component={AIReportListScreen}
+      />
+      <Stack.Screen
+        name="AIAnalysisDetail"
+        component={AIAnalysisDetailScreen}
+      />
+      <Stack.Screen
+        name="BatchComparison"
+        component={BatchComparisonScreen}
+      />
+      <Stack.Screen
+        name="AIConversationHistory"
+        component={AIConversationHistoryScreen}
       />
 
       {/*

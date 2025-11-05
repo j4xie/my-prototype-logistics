@@ -12,6 +12,8 @@ import {
   WorkTypeManagementScreen,
 } from '../screens/management';
 import AISettingsScreen from '../screens/management/AISettingsScreen';
+// Phase 4启用：规格配置管理
+// import MaterialSpecManagementScreen from '../screens/management/MaterialSpecManagementScreen';
 
 export type ManagementStackParamList = {
   ManagementHome: undefined;
@@ -24,6 +26,7 @@ export type ManagementStackParamList = {
   WhitelistManagement: undefined; // ✅ Phase 1
   SupplierManagement: undefined; // ✅ Phase 2
   CustomerManagement: undefined; // ✅ Phase 2
+  // MaterialSpecManagement: undefined; // 🔜 Phase 4启用：规格配置管理
   // ProductionPlanManagement 已移动到 Processing 模块
   // TODO: 以下页面待后续实现
   // FactorySettings: undefined;
@@ -90,9 +93,18 @@ export function ManagementStackNavigator() {
         options={{ title: '客户管理' }}
       />
 
+      {/* Phase 4启用：规格配置管理
+      <Stack.Screen
+        name="MaterialSpecManagement"
+        component={MaterialSpecManagementScreen}
+        options={{ title: '规格配置管理' }}
+      />
+      */}
+
       {/*
         Phase 3+ 计划的页面:
         - FactorySettings (工厂设置)
+        - MaterialSpecManagement (规格配置管理 - Phase 4启用)
         详见: docs/prd/PRD-Phase3-完善计划.md
       */}
     </Stack.Navigator>

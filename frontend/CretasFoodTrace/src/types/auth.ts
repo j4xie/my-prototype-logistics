@@ -149,8 +149,7 @@ export interface ChangePasswordResponse {
 // 注册请求接口 (第一阶段 - 手机验证)
 export interface RegisterPhaseOneRequest {
   phoneNumber: string;
-  verificationType: 'register' | 'reset_password';
-  factoryId?: string;
+  factoryId?: string; // 可选，如不提供则通过手机号从白名单推断
 }
 
 // 注册请求接口 (第二阶段 - 完整资料)
@@ -177,6 +176,10 @@ export interface RegisterResponse {
   success: boolean;
   message: string;
   tempToken?: string;
+  expiresAt?: number; // 临时令牌过期时间（时间戳）
+  phoneNumber?: string;
+  factoryId?: string;
+  isNewUser?: boolean; // 是否是新用户
   user?: User;
   tokens?: AuthTokens;
   nextStep?: 'phone_verification' | 'complete_profile' | 'done';
