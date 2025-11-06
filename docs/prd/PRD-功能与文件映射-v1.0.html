@@ -707,10 +707,42 @@
                         <li><code>PUT /api/mobile/{factoryId}/processing/batches/{batchId}/complete</code> - 完成生产</li>
                     </ul>
 
-                    <p><strong>数据库表</strong>：</p>
+                    <p><strong>数据库表</strong> <span style="color: #667eea; font-weight: 600;">✨ 更新于 2025-11-05</span>：</p>
                     <ul style="line-height: 2;">
-                        <li><code>processing_batch</code> - 批次主表</li>
-                        <li><code>material_batch</code> - 原材料批次（消耗记录）</li>
+                        <li><code>processing_batches</code> - 批次主表 ✅ 优化版
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>核心字段</strong>: batch_number, product_name, quantity, unit, start_time, end_time, status</li>
+                                <li>💰 <strong>成本字段</strong>: material_cost, labor_cost, equipment_cost, other_cost, total_cost</li>
+                                <li>🔗 <strong>关联关系</strong>: Factory, User (supervisor), BatchWorkSession, BatchEquipmentUsage</li>
+                                <li>📝 <strong>状态管理</strong>: pending, processing, completed, cancelled</li>
+                            </ul>
+                        </li>
+                        <li><code>production_batches</code> - 生产批次表 ✅ 企业版（更新于 2025-11-05 13:30）
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>生产字段</strong>: batch_number, production_plan_id, product_type_id, planned_quantity, actual_quantity, good_quantity, defect_quantity</li>
+                                <li>🏭 <strong>生产线字段</strong>: equipment_id, equipment_name, supervisor_id, supervisor_name, worker_count, work_duration_minutes</li>
+                                <li>💰 <strong>成本字段</strong>: material_cost, labor_cost, equipment_cost, other_cost, total_cost, unit_cost</li>
+                                <li>📈 <strong>指标字段</strong>: yield_rate (良品率), efficiency (效率)</li>
+                                <li>🎯 <strong>质量状态</strong>: PENDING_INSPECTION, PASSED, FAILED, PARTIAL_PASS</li>
+                                <li>🔧 <strong>自动计算</strong>: calculateMetrics() 方法自动计算总成本、单位成本、良品率、效率</li>
+                                <li>📈 <strong>数据库索引</strong>: factory_id, batch_number, status, production_plan_id</li>
+                            </ul>
+                        </li>
+                        <li><code>batch_work_sessions</code> - 批次工作会话关联 ✅ 优化版（更新于 2025-11-05 13:40）
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>核心字段</strong>: batch_id (Long), work_session_id, employee_id, work_minutes, labor_cost</li>
+                                <li>🔗 <strong>关联关系</strong>: ProcessingBatch, EmployeeWorkSession, User</li>
+                                <li>📈 <strong>索引</strong>: batch_id, work_session_id</li>
+                            </ul>
+                        </li>
+                        <li><code>batch_equipment_usage</code> - 批次设备使用记录 ✅ 优化版（更新于 2025-11-05 13:40）
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>核心字段</strong>: batch_id (Long), equipment_id, start_time, end_time, usage_hours, power_consumption, equipment_cost</li>
+                                <li>🔗 <strong>关联关系</strong>: ProcessingBatch, FactoryEquipment</li>
+                                <li>📈 <strong>索引</strong>: batch_id, equipment_id</li>
+                            </ul>
+                        </li>
+                        <li><code>material_batches</code> - 原材料批次（消耗记录）</li>
                         <li><code>quality_inspection</code> - 质检记录</li>
                     </ul>
                 </div>
@@ -809,10 +841,21 @@
                         <li><code>GET /api/mobile/{factoryId}/processing/material-inventory</code> - 库存查询</li>
                     </ul>
 
-                    <p><strong>数据库表</strong>：</p>
+                    <p><strong>数据库表</strong> <span style="color: #667eea; font-weight: 600;">✨ 更新于 2025-11-05</span>：</p>
                     <ul style="line-height: 2;">
-                        <li><code>material_batch</code> - 原材料批次表</li>
+                        <li><code>material_batches</code> - 原材料批次表 ✅ 优化版
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>核心字段</strong>: receipt_quantity, used_quantity, reserved_quantity, unit_price</li>
+                                <li>🔢 <strong>计算属性</strong> (@Transient): getCurrentQuantity(), getTotalPrice(), getTotalWeight()</li>
+                                <li>📈 <strong>数据库索引</strong>: factory_id, status, expire_date, material_type_id</li>
+                                <li>🔗 <strong>关联关系</strong>: Factory, RawMaterialType, Supplier, MaterialConsumption, MaterialBatchAdjustment, ProductionPlanBatchUsage</li>
+                                <li>📝 <strong>状态管理</strong>: AVAILABLE, IN_USE, EXPIRED, DEPLETED (MaterialBatchStatus枚举)</li>
+                            </ul>
+                        </li>
                         <li><code>raw_material_type</code> - 原材料类型表</li>
+                        <li><code>material_consumption</code> - 原材料消耗记录（新增关联）</li>
+                        <li><code>material_batch_adjustment</code> - 批次调整记录（新增关联）</li>
+                        <li><code>production_plan_batch_usage</code> - 生产计划批次使用（新增关联）</li>
                     </ul>
                 </div>
 
