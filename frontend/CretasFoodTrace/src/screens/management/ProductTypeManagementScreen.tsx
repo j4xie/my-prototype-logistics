@@ -18,6 +18,10 @@ import { useNavigation } from '@react-navigation/native';
 import { productTypeApiClient } from '../../services/api/productTypeApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
+import { logger } from '../../utils/logger';
+
+// 创建ProductTypeManagement专用logger
+const productTypeLogger = logger.createContextLogger('ProductTypeManagement');
 
 interface ProductType {
   id: string;
@@ -58,16 +62,19 @@ export default function ProductTypeManagementScreen() {
       setLoading(true);
 
       if (!factoryId) {
-        console.warn('⚠️ 工厂ID不存在，无法加载产品类型');
+        productTypeLogger.warn('工厂ID不存在', { userType: user?.userType });
         Alert.alert('错误', '无法获取工厂信息，请重新登录');
         return;
       }
 
-      console.log('📡 调用后端API - 获取产品类型列表');
+      productTypeLogger.debug('获取产品类型列表', { factoryId });
       const response = await productTypeApiClient.getProductTypes({ factoryId });
 
       if (response?.data) {
-        console.log(`✅ 加载成功: ${response.data.length} 个产品类型`);
+        productTypeLogger.info('产品类型列表加载成功', {
+          productTypeCount: response.data.length,
+          factoryId,
+        });
         // 将后端DTO映射到前端显示格式
         const mappedTypes: ProductType[] = response.data.map((item: any) => ({
           id: item.id,
@@ -80,11 +87,11 @@ export default function ProductTypeManagementScreen() {
         }));
         setProductTypes(mappedTypes);
       } else {
-        console.warn('⚠️ API返回数据为空');
+        productTypeLogger.warn('API返回数据为空', { factoryId });
         setProductTypes([]);
       }
     } catch (error: unknown) {
-      console.error('❌ 加载产品类型失败:', error);
+      productTypeLogger.error('加载产品类型失败', error as Error, { factoryId });
       const errorMessage = error instanceof Error ? error.message : '加载产品类型失败';
       Alert.alert('错误', errorMessage);
       setProductTypes([]);
