@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 289 个 ✅
-- **待迁移**: 47 个
-- **完成度**: 86%
+- **已迁移**: 301 个 ✅
+- **待迁移**: 35 个
+- **完成度**: 90%
 
 ### 迁移优先级
 
@@ -459,7 +459,10 @@ logger.configure({
 - [x] ProductionReportScreen.tsx (4个) - ✅ 已迁移 (Batch 22)
 - [x] EfficiencyReportScreen.tsx (4个) - ✅ 已迁移 (Batch 22)
 - [x] CostReportScreen.tsx (4个) - ✅ 已迁移 (Batch 22)
-- [ ] 其他Screen组件 (~7个)
+- [x] FeedbackScreen.tsx (4个) - ✅ 已迁移 (Batch 23)
+- [x] QualityAnalyticsScreen.tsx (4个) - ✅ 已迁移 (Batch 23)
+- [x] EquipmentManagementScreen.tsx (4个) - ✅ 已迁移 (Batch 23)
+- [ ] 其他Screen组件 (~4个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -505,7 +508,10 @@ logger.configure({
 | `ProductionReportScreen.tsx` | 4 | productionReportLogger | 2d7bcf13 | ✅ |
 | `EfficiencyReportScreen.tsx` | 4 | efficiencyReportLogger | 2d7bcf13 | ✅ |
 | `CostReportScreen.tsx` | 4 | costReportLogger | 2d7bcf13 | ✅ |
-| **总计** | **289** | - | - | **86%** |
+| `FeedbackScreen.tsx` | 4 | feedbackLogger | 200d4179 | ✅ |
+| `QualityAnalyticsScreen.tsx` | 4 | qualityAnalyticsLogger | 200d4179 | ✅ |
+| `EquipmentManagementScreen.tsx` | 4 | equipmentMgmtLogger | 200d4179 | ✅ |
+| **总计** | **301** | - | - | **90%** |
 
 ---
 
