@@ -21,9 +21,15 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
-import { equipmentApiClient, type Equipment } from '../../services/api/equipmentApiClient';
+import { alertApiClient } from '../../services/api/alertApiClient';
+import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { Alert } from 'react-native';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建EquipmentAlerts专用logger
+const equipmentAlertsLogger = logger.createContextLogger('EquipmentAlerts');
 
 // Types
 type EquipmentAlertsScreenNavigationProp = NativeStackNavigationProp<
@@ -94,18 +100,22 @@ export default function EquipmentAlertsScreen() {
     setLoading(true);
     try {
       // API integration - GET /equipment/alerts (with pagination and filtering)
-      console.log('🔍 Fetching equipment alerts...', { factoryId, statusFilter });
+      equipmentAlertsLogger.debug('获取设备告警列表', {
+        factoryId,
+        statusFilter,
+        equipmentId,
+      });
 
-      const response = await equipmentApiClient.getEquipmentAlerts(
-        {
-          status: statusFilter !== 'all' ? statusFilter.toUpperCase() : undefined,
-          page: 1,
-          size: 100,
-        },
-        factoryId
-      );
+      const response = await alertApiClient.getEquipmentAlerts({
+        factoryId,
+        status: statusFilter !== 'all' ? (statusFilter.toUpperCase() as 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED') : undefined,
+        page: 1,
+        size: 100,
+      });
 
-      console.log('✅ Equipment alerts loaded:', response.data.totalElements, 'alerts');
+      equipmentAlertsLogger.info('设备告警加载成功', {
+        alertCount: response.data.content.length,
+      });
 
       // Transform API response to local format
       const transformedAlerts: EquipmentAlert[] = response.data.content.map((alert) => ({
@@ -136,8 +146,11 @@ export default function EquipmentAlertsScreen() {
 
       setAlerts(filteredAlerts);
 
-    } catch (error: any) {
-      console.error('❌ Failed to fetch equipment alerts:', error);
+    } catch (error) {
+      equipmentAlertsLogger.error('加载设备告警失败', error, {
+        factoryId,
+        statusFilter,
+      });
       Alert.alert('加载失败', error.response?.data?.message || '无法加载设备告警，请稍后重试');
       setAlerts([]);
     } finally {
@@ -157,17 +170,18 @@ export default function EquipmentAlertsScreen() {
 
   const handleAcknowledge = async (alertId: string) => {
     try {
-      console.log('🔔 Acknowledging alert:', alertId);
+      equipmentAlertsLogger.debug('确认告警', { alertId });
 
       const response = await equipmentApiClient.acknowledgeAlert(alertId, undefined, factoryId);
 
       if (response.success) {
+        equipmentAlertsLogger.info('告警确认成功', { alertId });
         Alert.alert('成功', '告警已确认');
         // Refresh alerts list
         await fetchAlerts();
       }
-    } catch (error: any) {
-      console.error('❌ Failed to acknowledge alert:', error);
+    } catch (error) {
+      equipmentAlertsLogger.error('确认告警失败', error, { alertId });
       const errorMessage = error.response?.data?.message || '确认告警失败，请稍后重试';
       Alert.alert('操作失败', errorMessage);
     }
@@ -186,7 +200,7 @@ export default function EquipmentAlertsScreen() {
           text: '确定',
           onPress: async () => {
             try {
-              console.log('✅ Resolving alert:', alertId);
+              equipmentAlertsLogger.debug('解决告警', { alertId });
 
               const response = await equipmentApiClient.resolveAlert(
                 alertId,
@@ -195,12 +209,13 @@ export default function EquipmentAlertsScreen() {
               );
 
               if (response.success) {
+                equipmentAlertsLogger.info('告警解决成功', { alertId });
                 Alert.alert('成功', '告警已解决');
                 // Refresh alerts list
                 await fetchAlerts();
               }
-            } catch (error: any) {
-              console.error('❌ Failed to resolve alert:', error);
+            } catch (error) {
+              equipmentAlertsLogger.error('解决告警失败', error, { alertId });
               const errorMessage = error.response?.data?.message || '解决告警失败，请稍后重试';
               Alert.alert('操作失败', errorMessage);
             }
