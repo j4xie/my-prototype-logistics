@@ -21,6 +21,10 @@ import { useAuthStore } from '../../store/authStore';
 import { timeclockApiClient, ClockRecord, ApiResponse, PagedResponse } from '../../services/api/timeclockApiClient';
 import { getFactoryId, isPlatformUser, isFactoryUser } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建AttendanceHistory专用logger
+const attendanceLogger = logger.createContextLogger('AttendanceHistory');
 
 interface AttendanceRecord {
   id: string;
@@ -186,12 +190,15 @@ export default function AttendanceHistoryScreen() {
         setRecords(attendanceRecords);
         setFilteredRecords(attendanceRecords);
       } else {
-        console.warn('获取考勤记录失败:', historyResponse.message);
+        attendanceLogger.warn('获取考勤记录失败', { message: historyResponse.message });
         setRecords([]);
         setFilteredRecords([]);
       }
     } catch (error) {
-      console.error('加载考勤记录失败:', error);
+      attendanceLogger.error('加载考勤记录失败', error, {
+        startDate: formatDate(startDate),
+        endDate: formatDate(endDate),
+      });
       Alert.alert('加载失败', '无法加载考勤记录，请稍后重试');
       setRecords([]);
       setFilteredRecords([]);
@@ -281,7 +288,11 @@ export default function AttendanceHistoryScreen() {
         return;
       }
 
-      console.log('📊 Loading attendance statistics from API...');
+      attendanceLogger.debug('加载考勤统计数据', {
+        userId,
+        startDate: formatDate(startDate),
+        endDate: formatDate(endDate),
+      });
 
       const response = await timeclockApiClient.getAttendanceStatistics(
         userId,
@@ -293,11 +304,15 @@ export default function AttendanceHistoryScreen() {
       );
 
       if (response.success && response.data) {
-        console.log('✅ Attendance statistics loaded:', response.data);
+        attendanceLogger.info('考勤统计数据加载成功', {
+          totalWorkDuration: response.data.totalWorkDuration,
+          attendanceDays: response.data.attendanceDays,
+          lateDays: response.data.lateDays,
+        });
         setApiStats(response.data);
       }
     } catch (error) {
-      console.error('❌ Failed to load attendance statistics:', error);
+      attendanceLogger.warn('加载考勤统计失败，使用本地计算', error);
       // 不显示错误，静默失败，使用本地计算
       setApiStats(null);
     }
@@ -409,7 +424,10 @@ export default function AttendanceHistoryScreen() {
 
     try {
       setSavingEdit(true);
-      console.log('📝 Saving attendance edit...');
+      attendanceLogger.info('保存考勤记录修改', {
+        recordId: editingRecord.id,
+        recordDate: formatDate(editingRecord.date),
+      });
 
       const userId = getUserId();
       const factoryId = getFactoryId(user);
@@ -447,7 +465,7 @@ export default function AttendanceHistoryScreen() {
         factoryId
       );
 
-      console.log('✅ Attendance record edited successfully');
+      attendanceLogger.info('考勤记录修改成功', { recordId: editingRecord.id });
 
       // 关闭对话框并刷新数据
       closeEditDialog();
@@ -455,7 +473,11 @@ export default function AttendanceHistoryScreen() {
         { text: '确定', onPress: () => loadAttendanceRecords() },
       ]);
     } catch (error) {
-      console.error('❌ Failed to edit attendance record:', error);
+      attendanceLogger.error('修改考勤记录失败', error, {
+        recordId: editingRecord.id,
+        clockInTime: editingClockIn,
+        clockOutTime: editingClockOut,
+      });
       const errorMessage =
         error.response?.data?.message || error.message || '修改考勤记录失败，请重试';
       Alert.alert('修改失败', errorMessage);
