@@ -19,6 +19,10 @@ import { useNavigation } from '@react-navigation/native';
 import { supplierApiClient, Supplier, CreateSupplierRequest } from '../../services/api/supplierApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建SupplierManagement专用logger
+const supplierLogger = logger.createContextLogger('SupplierManagement');
 
 /**
  * 供应商管理页面
@@ -82,14 +86,19 @@ export default function SupplierManagementScreen() {
       });
 
       if (response && response.data) {
+        const supplierCount = Array.isArray(response.data) ? response.data.length : 0;
         setSuppliers(Array.isArray(response.data) ? response.data : []);
+        supplierLogger.info('供应商列表加载成功', {
+          supplierCount,
+          factoryId,
+        });
       } else {
         setSuppliers([]);
+        supplierLogger.warn('供应商API返回空数据', { factoryId });
       }
     } catch (error) {
-      console.error('加载供应商列表失败:', error);
+      supplierLogger.error('加载供应商列表失败', error, { factoryId });
       const errorMessage = error.response?.data?.message || error.message || '加载供应商列表失败';
-      console.error('错误详情:', error.response?.data);
       Alert.alert('错误', errorMessage);
       setSuppliers([]);
     } finally {
@@ -105,13 +114,15 @@ export default function SupplierManagementScreen() {
 
     try {
       setLoading(true);
+      supplierLogger.debug('搜索供应商', { keyword: searchQuery, factoryId: user?.factoryId });
       const results = await supplierApiClient.searchSuppliers({
         keyword: searchQuery,
         factoryId: user?.factoryId,
       });
       setSuppliers(results);
+      supplierLogger.info('搜索完成', { resultCount: results.length, keyword: searchQuery });
     } catch (error) {
-      console.error('搜索失败:', error);
+      supplierLogger.error('搜索失败', error, { keyword: searchQuery });
       Alert.alert('错误', '搜索失败');
     } finally {
       setLoading(false);
@@ -169,6 +180,10 @@ export default function SupplierManagementScreen() {
           formData as Partial<CreateSupplierRequest>,
           user?.factoryId
         );
+        supplierLogger.info('供应商信息已更新', {
+          supplierId: editingSupplier.id,
+          supplierName: formData.name,
+        });
         Alert.alert('成功', '供应商信息已更新');
       } else {
         // 创建供应商
@@ -180,13 +195,20 @@ export default function SupplierManagementScreen() {
           formData as CreateSupplierRequest,
           user?.factoryId
         );
+        supplierLogger.info('供应商创建成功', {
+          supplierCode: formData.supplierCode,
+          supplierName: formData.name,
+        });
         Alert.alert('成功', '供应商创建成功');
       }
 
       setModalVisible(false);
       loadSuppliers();
     } catch (error) {
-      console.error('保存供应商失败:', error);
+      supplierLogger.error('保存供应商失败', error, {
+        isEdit: !!editingSupplier,
+        supplierCode: formData.supplierCode,
+      });
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }
   };
@@ -203,10 +225,11 @@ export default function SupplierManagementScreen() {
           onPress: async () => {
             try {
               await supplierApiClient.deleteSupplier(supplierId, user?.factoryId);
+              supplierLogger.info('供应商已删除', { supplierId, supplierName });
               Alert.alert('成功', '供应商已删除');
               loadSuppliers();
             } catch (error) {
-              console.error('删除供应商失败:', error);
+              supplierLogger.error('删除供应商失败', error, { supplierId, supplierName });
               Alert.alert('错误', error.response?.data?.message || '删除失败');
             }
           },
@@ -222,10 +245,15 @@ export default function SupplierManagementScreen() {
         !currentStatus,
         user?.factoryId
       );
+      const newStatus = !currentStatus;
+      supplierLogger.info('供应商状态已切换', {
+        supplierId,
+        newStatus: newStatus ? '启用' : '停用',
+      });
       Alert.alert('成功', currentStatus ? '供应商已停用' : '供应商已启用');
       loadSuppliers();
     } catch (error) {
-      console.error('切换状态失败:', error);
+      supplierLogger.error('切换状态失败', error, { supplierId, currentStatus });
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }
   };
