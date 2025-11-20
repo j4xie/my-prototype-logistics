@@ -22,6 +22,10 @@ import { useAuthStore } from '../../store/authStore';
 import { API_CONFIG } from '../../constants/config';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建EntityDataExport专用logger
+const entityExportLogger = logger.createContextLogger('EntityDataExport');
 
 type EntityType = 'customer' | 'supplier' | 'equipment' | 'user' | 'materialType';
 type OperationMode = 'export' | 'template' | 'import';
@@ -36,6 +40,13 @@ interface ImportResult {
     reason: string;
     rawData: string;
   }>;
+}
+
+// FormData文件上传类型定义
+interface FormDataFile {
+  uri: string;
+  name: string;
+  type: string;
 }
 
 /**
@@ -146,7 +157,7 @@ export default function EntityDataExportScreen() {
 
     try {
       const apiUrl = `${API_CONFIG.BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/export`;
-      console.log('导出数据 - API URL:', apiUrl);
+      entityExportLogger.info('导出数据', { entityType, endpoint: currentEntity.endpoint });
 
       // 生成文件名
       const timestamp = new Date().getTime();
@@ -160,7 +171,7 @@ export default function EntityDataExportScreen() {
         throw new Error(`下载失败，HTTP状态码: ${downloadResult.status}`);
       }
 
-      console.log('文件下载成功:', downloadResult.uri);
+      entityExportLogger.info('文件下载成功', { fileName, fileUri: downloadResult.uri });
 
       // 获取文件信息
       const fileInfo = await FileSystem.getInfoAsync(downloadResult.uri);
@@ -183,7 +194,7 @@ export default function EntityDataExportScreen() {
                 try {
                   await Sharing.shareAsync(downloadResult.uri);
                 } catch (shareError) {
-                  console.error('分享文件失败:', shareError);
+                  entityExportLogger.error('分享文件失败', shareError);
                   Alert.alert('分享失败', '无法分享文件，请稍后重试');
                 }
               },
@@ -198,7 +209,7 @@ export default function EntityDataExportScreen() {
         );
       }
     } catch (error) {
-      console.error('导出失败:', error);
+      entityExportLogger.error('导出失败', error, { entityType });
       Alert.alert('导出失败', error.message || '导出数据时出现错误，请重试');
     } finally {
       setLoading(false);
@@ -222,7 +233,7 @@ export default function EntityDataExportScreen() {
 
     try {
       const apiUrl = `${API_CONFIG.BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/export/template`;
-      console.log('下载模板 - API URL:', apiUrl);
+      entityExportLogger.info('下载模板', { entityType, endpoint: currentEntity.endpoint });
 
       // 生成文件名
       const fileName = `${currentEntity.label}_导入模板.xlsx`;
@@ -235,7 +246,7 @@ export default function EntityDataExportScreen() {
         throw new Error(`下载失败，HTTP状态码: ${downloadResult.status}`);
       }
 
-      console.log('模板下载成功:', downloadResult.uri);
+      entityExportLogger.info('模板下载成功', { fileName, fileUri: downloadResult.uri });
 
       // 检查分享功能是否可用
       const isAvailable = await Sharing.isAvailableAsync();
@@ -255,7 +266,7 @@ export default function EntityDataExportScreen() {
                 try {
                   await Sharing.shareAsync(downloadResult.uri);
                 } catch (shareError) {
-                  console.error('分享失败:', shareError);
+                  entityExportLogger.error('分享模板失败', shareError);
                   Alert.alert('分享失败', '无法分享文件，请稍后重试');
                 }
               },
@@ -270,7 +281,7 @@ export default function EntityDataExportScreen() {
         );
       }
     } catch (error) {
-      console.error('下载模板失败:', error);
+      entityExportLogger.error('下载模板失败', error, { entityType });
       Alert.alert('下载失败', error.message || '下载模板时出现错误，请重试');
     } finally {
       setLoading(false);
@@ -302,7 +313,10 @@ export default function EntityDataExportScreen() {
       }
 
       const file = result.assets[0];
-      console.log('选择的文件:', file);
+      entityExportLogger.info('选择导入文件', {
+        fileName: file.name,
+        fileSize: `${((file.size || 0) / 1024).toFixed(2)}KB`
+      });
 
       // 验证文件大小（10MB限制）
       if (file.size && file.size > 10 * 1024 * 1024) {
@@ -314,14 +328,15 @@ export default function EntityDataExportScreen() {
 
       // 构建FormData
       const formData = new FormData();
-      formData.append('file', {
+      const fileData: FormDataFile = {
         uri: file.uri,
         name: file.name,
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      } as any);
+      };
+      formData.append('file', fileData as any as Blob);
 
       const apiUrl = `${API_CONFIG.BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/import`;
-      console.log('导入数据 - API URL:', apiUrl);
+      entityExportLogger.info('上传导入文件', { entityType, endpoint: currentEntity.endpoint });
 
       // 发送请求
       const response = await fetch(apiUrl, {
@@ -333,7 +348,11 @@ export default function EntityDataExportScreen() {
       });
 
       const responseData = await response.json();
-      console.log('导入响应:', responseData);
+      entityExportLogger.info('导入响应', {
+        success: response.ok,
+        totalCount: responseData.data?.totalCount,
+        successCount: responseData.data?.successCount
+      });
 
       if (!response.ok) {
         throw new Error(responseData.message || '导入失败');
@@ -352,7 +371,7 @@ export default function EntityDataExportScreen() {
         setShowResultDialog(true);
       }
     } catch (error) {
-      console.error('导入失败:', error);
+      entityExportLogger.error('导入失败', error, { entityType });
       Alert.alert('导入失败', error.message || '导入数据时出现错误，请重试');
     } finally {
       setLoading(false);

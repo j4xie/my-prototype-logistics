@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 125 个 ✅
-- **待迁移**: 211 个
-- **完成度**: 37%
+- **已迁移**: 137 个 ✅
+- **待迁移**: 199 个
+- **完成度**: 41%
 
 ### 迁移优先级
 
@@ -433,10 +433,10 @@ logger.configure({
 - [x] MaterialBatchManagementScreen.tsx (38个) - ✅ 已迁移
 - [x] MaterialTypeManagementScreen.tsx (15个) - ✅ 已迁移
 - [x] CreateQualityRecordScreen.tsx (12个) - ✅ 已迁移
-- [ ] EntityDataExportScreen.tsx (12个)
+- [x] EntityDataExportScreen.tsx (12个) - ✅ 已迁移
 - [ ] ConversionRateScreen.tsx (10个)
 - [ ] ProductionPlanManagementScreen.tsx (10个)
-- [ ] 其他Screen组件 (~60个)
+- [ ] 其他Screen组件 (~48个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -455,8 +455,9 @@ logger.configure({
 | `CostAnalysisDashboard.tsx` | 2 | costAnalysisLogger | 3bc81c11 | ✅ |
 | `MaterialBatchManagementScreen.tsx` | 38 | materialBatchLogger | 08ae36e6 | ✅ |
 | `MaterialTypeManagementScreen.tsx` | 15 | materialTypeLogger | ccd4a6d7 | ✅ |
-| `CreateQualityRecordScreen.tsx` | 12 | qualityRecordLogger | - | ✅ |
-| **总计** | **125** | - | - | **37%** |
+| `CreateQualityRecordScreen.tsx` | 12 | qualityRecordLogger | 19ade454 | ✅ |
+| `EntityDataExportScreen.tsx` | 12 | entityExportLogger | - | ✅ |
+| **总计** | **137** | - | - | **41%** |
 
 ---
 
