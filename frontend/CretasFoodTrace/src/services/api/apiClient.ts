@@ -2,6 +2,10 @@ import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { StorageService } from '../storage/storageService';
 import { API_BASE_URL } from '../../constants/config';
 import { useAuthStore } from '../../store/authStore';
+import { logger } from '../../utils/logger';
+
+// 创建ApiClient专用logger
+const apiLogger = logger.createContextLogger('ApiClient');
 
 class ApiClient {
   private client: AxiosInstance;
@@ -27,9 +31,9 @@ class ApiClient {
         const accessToken = await StorageService.getSecureItem('secure_access_token');
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
-          console.log('🔑 Using token from SecureStore');
+          apiLogger.debug('使用SecureStore中的Token');
         } else {
-          console.warn('⚠️ No token found in SecureStore');
+          apiLogger.warn('SecureStore中未找到Token');
         }
         return config;
       },
@@ -65,7 +69,7 @@ class ApiClient {
               }
             }
           } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
+            apiLogger.error('Token刷新失败', refreshError);
           }
 
           // 刷新失败，清除所有认证信息
@@ -97,9 +101,9 @@ class ApiClient {
     // 同步清除authStore状态，强制返回登录页
     try {
       useAuthStore.getState().logout();
-      console.log('✅ AuthStore cleared - user will be redirected to login');
+      apiLogger.info('AuthStore已清除，用户将重定向到登录页');
     } catch (error) {
-      console.error('Failed to clear auth store:', error);
+      apiLogger.error('清除AuthStore失败', error);
     }
   }
 
