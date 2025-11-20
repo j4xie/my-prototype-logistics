@@ -18,6 +18,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useNavigation } from '@react-navigation/native';
 import { userApiClient } from '../../services/api/userApiClient';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 个人中心页面
@@ -109,7 +110,7 @@ export default function ProfileScreen() {
         '密码已成功修改，下次登录请使用新密码。',
         [{ text: '确定' }]
       );
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to change password:', error);
 
       const errorMessage = error.response?.data?.message || error.message || '修改密码失败，请检查旧密码是否正确';

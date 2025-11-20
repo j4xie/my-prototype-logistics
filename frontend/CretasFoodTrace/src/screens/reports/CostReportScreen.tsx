@@ -15,6 +15,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { getFactoryId } from '../../types/auth';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 成本报表页面
@@ -76,7 +77,7 @@ export default function CostReportScreen() {
         setBatchCosts([]);
         setCostStats(null);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to load cost data:', error);
       const errorMessage =
         error.response?.data?.message || error.message || '加载成本数据失败，请稍后重试';
