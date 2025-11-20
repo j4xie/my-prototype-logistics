@@ -20,6 +20,10 @@ import type {
   WorkHoursRankingItem,
 } from '../../services/api/personnelApiClient';
 import { getFactoryId } from '../../types/auth';
+import { logger } from '../../utils/logger';
+
+// 创建PersonnelReport专用logger
+const personnelReportLogger = logger.createContextLogger('PersonnelReport');
 
 /**
  * 人员报表页面
@@ -60,7 +64,7 @@ export default function PersonnelReportScreen() {
         return;
       }
 
-      console.log('📊 Loading personnel data...', { timeRange, factoryId });
+      personnelReportLogger.debug('加载人员报表数据', { timeRange, factoryId });
 
       // 计算日期范围
       const endDate = new Date();
@@ -87,12 +91,12 @@ export default function PersonnelReportScreen() {
       const [statsResponse, rankingResponse] = await Promise.all([
         personnelApiClient.getPersonnelStatistics(factoryId, startDateStr, endDateStr)
           .catch((err) => {
-            console.error('人员统计API失败:', err);
+            personnelReportLogger.error('人员统计API失败', err, { factoryId, startDateStr, endDateStr });
             return { success: false, data: null };
           }),
         personnelApiClient.getWorkHoursRanking(factoryId, startDateStr, endDateStr, 10)
           .catch((err) => {
-            console.error('工时排行API失败:', err);
+            personnelReportLogger.error('工时排行API失败', err, { factoryId, startDateStr, endDateStr });
             return { success: false, data: [] };
           }),
       ]);
@@ -100,21 +104,32 @@ export default function PersonnelReportScreen() {
       // 设置人员统计数据
       if (statsResponse.success && statsResponse.data) {
         setPersonnelStats(statsResponse.data);
-        console.log('✅ Personnel statistics loaded:', statsResponse.data);
+        personnelReportLogger.info('人员统计数据加载成功', {
+          totalEmployees: statsResponse.data.totalEmployees,
+          totalPresent: statsResponse.data.totalPresent,
+          avgAttendanceRate: statsResponse.data.avgAttendanceRate.toFixed(1) + '%',
+        });
       } else {
         setPersonnelStats(null);
+        personnelReportLogger.warn('人员统计数据为空', { factoryId });
       }
 
       // 设置工时排行榜
       if (rankingResponse.success && rankingResponse.data) {
         setWorkHoursRanking(rankingResponse.data);
-        console.log('✅ Work hours ranking loaded:', rankingResponse.data.length, 'items');
+        personnelReportLogger.info('工时排行榜加载成功', {
+          itemCount: rankingResponse.data.length,
+        });
       } else {
         setWorkHoursRanking([]);
+        personnelReportLogger.warn('工时排行榜数据为空', { factoryId });
       }
 
     } catch (error) {
-      console.error('❌ Failed to load personnel data:', error);
+      personnelReportLogger.error('加载人员报表失败', error, {
+        factoryId: getFactoryId(user),
+        timeRange,
+      });
       const errorMessage =
         error.response?.data?.message || error.message || '加载人员数据失败，请稍后重试';
       Alert.alert('加载失败', errorMessage);
