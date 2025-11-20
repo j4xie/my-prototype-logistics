@@ -19,6 +19,10 @@ import { useAuthStore } from '../../store/authStore';
 import type { AISettings, AISettingsResponse, AIUsageStats } from '../../types/processing';
 import { AI_TONE_OPTIONS, AI_GOAL_OPTIONS, AI_DETAIL_OPTIONS } from '../../types/processing';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建AISettings专用logger
+const aiSettingsLogger = logger.createContextLogger('AISettings');
 
 /**
  * AI分析设置界面
@@ -57,7 +61,9 @@ export default function AISettingsScreen() {
     try {
       setLoading(true);
       if (!factorySettingsApiClient || !factorySettingsApiClient.getAISettings) {
-        console.error('factorySettingsApiClient 未正确初始化');
+        aiSettingsLogger.error('factorySettingsApiClient未正确初始化', new Error('API client not initialized'), {
+          factoryId,
+        });
         return;
       }
       const response: any = await factorySettingsApiClient.getAISettings(factoryId);
@@ -76,9 +82,14 @@ export default function AISettingsScreen() {
           },
           customPrompt: aiSettings.customPrompt || '',
         });
+        aiSettingsLogger.info('AI设置加载成功', {
+          factoryId,
+          enabled: aiSettings.enabled,
+          tone: aiSettings.tone,
+        });
       }
     } catch (error) {
-      console.error('加载AI设置失败:', error);
+      aiSettingsLogger.error('加载AI设置失败', error as Error, { factoryId });
       // 如果API不存在，使用默认设置，不显示错误提示
       if (error.response?.status !== 404) {
         Alert.alert('错误', error.response?.data?.message || '加载设置失败');
@@ -91,7 +102,9 @@ export default function AISettingsScreen() {
   const loadUsageStats = async () => {
     try {
       if (!factorySettingsApiClient || !factorySettingsApiClient.getAIUsageStats) {
-        console.error('factorySettingsApiClient 未正确初始化');
+        aiSettingsLogger.error('factorySettingsApiClient未正确初始化', new Error('API client not initialized'), {
+          factoryId,
+        });
         return;
       }
       const response: any = await factorySettingsApiClient.getAIUsageStats(factoryId);
@@ -109,9 +122,14 @@ export default function AISettingsScreen() {
         if (backendData.weeklyQuota) {
           setWeeklyQuota(backendData.weeklyQuota);
         }
+        aiSettingsLogger.info('AI使用统计加载成功', {
+          factoryId,
+          weeklyUsed: backendData.weeklyUsed || 0,
+          weeklyQuota: backendData.weeklyQuota,
+        });
       }
     } catch (error) {
-      console.error('加载使用统计失败:', error);
+      aiSettingsLogger.warn('加载使用统计失败', { factoryId, error: (error as Error).message });
       // 静默失败，不显示错误提示（该功能可能未实现）
     }
   };
@@ -121,11 +139,16 @@ export default function AISettingsScreen() {
       setSaving(true);
       const response: any = await factorySettingsApiClient.updateAISettings(settings, factoryId);
       if (response.success) {
+        aiSettingsLogger.info('AI设置保存成功', {
+          factoryId,
+          enabled: settings.enabled,
+          tone: settings.tone,
+        });
         Alert.alert('成功', '设置已保存');
       }
     } catch (error) {
-      console.error('保存失败:', error);
-      Alert.alert('错误', error.response?.data?.message || '保存失败');
+      aiSettingsLogger.error('保存AI设置失败', error as Error, { factoryId });
+      Alert.alert('错误', (error as any).response?.data?.message || '保存失败');
     } finally {
       setSaving(false);
     }
