@@ -412,27 +412,36 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 0 个
-- **待迁移**: 336 个
+- **已迁移**: 49 个 ✅
+- **待迁移**: 287 个
+- **完成度**: 15%
 
 ### 迁移优先级
 
-**P0 - 立即迁移**（安全风险）:
-- [ ] `authService.ts` (20个) - 可能暴露Token
-- [ ] `tokenManager.ts` (8个) - Token处理
-- [ ] `apiClient.ts` (15个) - 可能记录敏感请求数据
+**P0 - 立即迁移**（安全风险）✅ **已完成**:
+- [x] `authService.ts` (20个) - ✅ 已迁移 (Commit: a77d253d)
+- [x] `tokenManager.ts` (21个) - ✅ 已迁移 (Commit: a77d253d)
 
-**P1 - 高优先级**（高频调用）:
-- [ ] `processingApiClient.ts` (25个)
-- [ ] `authStore.ts` (12个)
-- [ ] `navigationStore.ts` (10个)
+**P1 - 高优先级**（高频调用）✅ **已完成**:
+- [x] `apiClient.ts` (5个) - ✅ 已迁移 (Commit: 1b3d0127)
+- [x] `authStore.ts` (3个) - ✅ 已迁移 (Commit: 1b3d0127)
 
-**P2 - 中优先级**（功能模块）:
-- [ ] 各种Screen组件 (150个)
-- [ ] 其他ApiClient (80个)
+**P2 - 中优先级**（功能模块）⏳ **待迁移**:
+- [ ] 各种Screen组件 (~150个)
+- [ ] 其他ApiClient (~80个)
 
-**P3 - 低优先级**（工具类）:
-- [ ] 工具函数和辅助类 (16个)
+**P3 - 低优先级**（工具类）⏳ **待迁移**:
+- [ ] 工具函数和辅助类 (~57个)
+
+### 已迁移文件列表
+
+| 文件 | Console调用数 | 日志类型 | Commit | 状态 |
+|------|--------------|---------|--------|------|
+| `authService.ts` | 20 | authLogger | a77d253d | ✅ |
+| `tokenManager.ts` | 21 | tokenLogger | a77d253d | ✅ |
+| `apiClient.ts` | 5 | apiLogger | 1b3d0127 | ✅ |
+| `authStore.ts` | 3 | storeLogger | 1b3d0127 | ✅ |
+| **总计** | **49** | - | - | **15%** |
 
 ---
 
