@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.ConvertToFrozenRequest;
+import com.cretas.aims.dto.material.UndoFrozenRequest;
 import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
@@ -460,5 +461,31 @@ public class MaterialBatchController {
                 factoryId, batchId, request.getConvertedBy());
         MaterialBatchDTO result = materialBatchService.convertToFrozen(factoryId, batchId, request);
         return ApiResponse.success("已成功转为冻品", result);
+    }
+
+    /**
+     * 撤销转冻品操作
+     *
+     * @param factoryId 工厂ID
+     * @param batchId 批次ID
+     * @param request 撤销请求参数
+     * @return 撤销后的批次信息
+     * @since 2025-11-20
+     */
+    @PostMapping("/{batchId}/undo-frozen")
+    @Operation(summary = "撤销转冻品操作",
+               description = "撤销误操作的转冻品，仅允许转换后10分钟内撤销")
+    public ApiResponse<MaterialBatchDTO> undoFrozen(
+            @Parameter(description = "工厂ID", required = true)
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "批次ID", required = true)
+            @PathVariable @NotBlank String batchId,
+            @Parameter(description = "撤销请求参数", required = true)
+            @RequestBody @Valid UndoFrozenRequest request) {
+
+        log.info("撤销转冻品: factoryId={}, batchId={}, operatorId={}, reason={}",
+                factoryId, batchId, request.getOperatorId(), request.getReason());
+        MaterialBatchDTO result = materialBatchService.undoFrozen(factoryId, batchId, request);
+        return ApiResponse.success("已成功撤销转冻品操作", result);
     }
 }
