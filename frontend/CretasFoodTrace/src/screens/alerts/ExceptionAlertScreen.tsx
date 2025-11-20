@@ -16,6 +16,10 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { alertApiClient, AlertDTO } from '../../services/api/alertApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
+import { logger } from '../../utils/logger';
+
+// 创建ExceptionAlert专用logger
+const exceptionAlertLogger = logger.createContextLogger('ExceptionAlert');
 
 type AlertType =
   | 'material_expiry'    // 原料到期
@@ -143,12 +147,12 @@ export default function ExceptionAlertScreen() {
     setLoading(true);
     try {
       if (!factoryId) {
-        console.warn('⚠️ 工厂ID不存在，无法加载告警数据');
+        exceptionAlertLogger.warn('工厂ID不存在，无法加载告警数据');
         Alert.alert('错误', '无法获取工厂信息，请重新登录');
         return;
       }
 
-      console.log('📡 调用后端API - 获取设备告警列表');
+      exceptionAlertLogger.debug('调用后端API - 获取设备告警列表', { factoryId });
       const response = await alertApiClient.getEquipmentAlerts({
         factoryId,
         page: 0,
@@ -156,7 +160,9 @@ export default function ExceptionAlertScreen() {
       });
 
       if (response.success && response.data?.content) {
-        console.log(`✅ 加载成功: ${response.data.content.length} 个告警`);
+        exceptionAlertLogger.info('告警列表加载成功', {
+          alertCount: response.data.content.length,
+        });
 
         // 将后端AlertDTO映射到前端ExceptionAlert
         const mappedAlerts: ExceptionAlert[] = response.data.content.map((dto: AlertDTO) => ({
@@ -175,12 +181,15 @@ export default function ExceptionAlertScreen() {
         setAlerts(mappedAlerts);
         applyFilters(mappedAlerts, statusFilter, typeFilter, searchQuery);
       } else {
-        console.warn('⚠️ API返回数据为空');
+        exceptionAlertLogger.warn('API返回数据为空', {
+          success: response.success,
+          hasData: !!response.data,
+        });
         setAlerts([]);
         setFilteredAlerts([]);
       }
     } catch (error: unknown) {
-      console.error('❌ 加载告警列表失败:', error);
+      exceptionAlertLogger.error('加载告警列表失败', error, { factoryId });
       const errorMessage = error instanceof Error ? error.message : '加载告警列表失败';
       Alert.alert('错误', errorMessage);
       setAlerts([]);
@@ -265,7 +274,11 @@ export default function ExceptionAlertScreen() {
         return;
       }
 
-      console.log(`📡 调用后端API - 解决告警 ${alertId}`);
+      exceptionAlertLogger.debug('调用后端API - 解决告警', {
+        alertId,
+        factoryId,
+        userId,
+      });
       const response = await alertApiClient.resolveAlert({
         factoryId,
         alertId,
@@ -274,7 +287,7 @@ export default function ExceptionAlertScreen() {
       });
 
       if (response.success) {
-        console.log('✅ 告警解决成功');
+        exceptionAlertLogger.info('告警解决成功', { alertId });
 
         // 更新本地状态
         const updatedAlerts = alerts.map(alert =>
@@ -290,7 +303,7 @@ export default function ExceptionAlertScreen() {
         Alert.alert('错误', response.message || '解决告警失败');
       }
     } catch (error: unknown) {
-      console.error('❌ 解决告警失败:', error);
+      exceptionAlertLogger.error('解决告警失败', error, { alertId });
       const errorMessage = error instanceof Error ? error.message : '解决告警失败';
       Alert.alert('错误', errorMessage);
     }
@@ -479,11 +492,22 @@ export default function ExceptionAlertScreen() {
                     alert.status === 'resolved' && styles.alertItemResolved,
                   ]}
                   onPress={() => {
-                    // TODO: 导航到详情页或相关页面
-                    if (alert.type === 'material_expiry') {
-                      // navigation.navigate('MaterialBatchManagement');
-                    } else if (alert.type === 'equipment_fault') {
-                      // navigation.navigate('EquipmentDetail', { equipmentId: alert.relatedId });
+                    // ✅ 点击alert跳转到相关页面 (2025-11-20)
+                    if (alert.type === 'material_expiry' && alert.relatedId) {
+                      // 跳转到物料批次管理
+                      (navigation as any).navigate('Processing', {
+                        screen: 'MaterialBatchManagement',
+                        params: { highlightId: alert.relatedId },
+                      });
+                    } else if (alert.type === 'equipment_fault' && alert.relatedId) {
+                      // 跳转到设备详情
+                      (navigation as any).navigate('Processing', {
+                        screen: 'EquipmentDetail',
+                        params: { equipmentId: alert.relatedId },
+                      });
+                    } else {
+                      // 其他类型alert暂无详情页
+                      Alert.alert('提示', `${alert.title}\n\n${alert.message}`);
                     }
                   }}
                   onLongPress={() => {
