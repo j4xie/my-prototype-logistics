@@ -18,6 +18,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { feedbackApiClient } from '../../services/api/feedbackApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建Feedback专用logger
+const feedbackLogger = logger.createContextLogger('Feedback');
 
 type FeedbackType = 'bug' | 'feature' | 'other';
 
@@ -132,9 +136,10 @@ export default function FeedbackScreen() {
       if (!result.canceled && result.assets) {
         const newScreenshots = result.assets.map(asset => asset.uri);
         setScreenshots([...screenshots, ...newScreenshots].slice(0, 3));
+        feedbackLogger.debug('截图已添加', { count: newScreenshots.length });
       }
     } catch (error) {
-      console.error('选择图片失败:', error);
+      feedbackLogger.error('选择图片失败', error as Error);
     }
   };
 
@@ -190,12 +195,21 @@ export default function FeedbackScreen() {
         screenshots,
       };
 
-      console.log('💾 提交用户反馈:', feedbackData);
+      feedbackLogger.debug('提交用户反馈', {
+        type: feedbackData.type,
+        titleLength: feedbackData.title.length,
+        contentLength: feedbackData.content.length,
+        hasScreenshots: feedbackData.screenshots.length > 0,
+      });
 
       const response = await feedbackApiClient.submitFeedback(feedbackData, factoryId);
 
       if (response.success) {
-        console.log('✅ 反馈提交成功: feedbackId=', response.data.feedbackId);
+        feedbackLogger.info('反馈提交成功', {
+          feedbackId: response.data.feedbackId,
+          type: feedbackData.type,
+          factoryId,
+        });
         Alert.alert(
           '提交成功',
           response.message || '感谢您的反馈！我们会尽快处理。',
@@ -215,7 +229,10 @@ export default function FeedbackScreen() {
         );
       }
     } catch (error) {
-      console.error('❌ 提交反馈失败:', error);
+      feedbackLogger.error('提交反馈失败', error as Error, {
+        type: feedbackType,
+        factoryId,
+      });
       Alert.alert(
         '提交失败',
         error.response?.data?.message || error.message || '提交反馈时出现错误，请重试'
