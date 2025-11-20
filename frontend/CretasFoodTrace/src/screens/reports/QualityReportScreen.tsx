@@ -16,6 +16,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { qualityInspectionApiClient } from '../../services/api/qualityInspectionApiClient';
 import { getFactoryId } from '../../types/auth';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 质量报表页面
@@ -77,11 +78,12 @@ export default function QualityReportScreen() {
         setRecentInspections([]);
         setQualityStats(null);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to load quality data:', error);
-      const errorMessage =
-        error.response?.data?.message || error.message || '加载质检数据失败，请稍后重试';
-      Alert.alert('加载失败', errorMessage);
+      handleError(error, {
+        title: '加载失败',
+        customMessage: '加载质检数据失败，请稍后重试',
+      });
       setRecentInspections([]);
       setQualityStats(null);
     } finally {

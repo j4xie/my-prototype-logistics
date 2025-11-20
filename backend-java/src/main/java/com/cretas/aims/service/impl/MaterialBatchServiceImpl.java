@@ -744,11 +744,11 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     @Transactional
-    public MaterialBatchDTO convertToFrozen(String factoryId, Long batchId, ConvertToFrozenRequest request) {
+    public MaterialBatchDTO convertToFrozen(String factoryId, String batchId, ConvertToFrozenRequest request) {
         log.info("开始转冻品: factoryId={}, batchId={}", factoryId, batchId);
 
         // 1. 查询原材料批次
-        MaterialBatch batch = materialBatchRepository.findById(String.valueOf(batchId))
+        MaterialBatch batch = materialBatchRepository.findById(batchId)
                 .orElseThrow(() -> new ResourceNotFoundException("批次不存在: " + batchId));
 
         // 2. 验证工厂ID

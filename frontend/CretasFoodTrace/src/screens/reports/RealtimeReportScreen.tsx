@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { getFactoryId } from '../../types/auth';
+import { handleError } from '../../utils/errorHandler';
 
 export default function RealtimeReportScreen() {
   const navigation = useNavigation();
@@ -48,8 +49,12 @@ export default function RealtimeReportScreen() {
       });
 
       console.log('✅ Realtime data loaded');
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to load realtime data:', error);
+      handleError(error, {
+        showAlert: false,
+        logError: true,
+      });
       setRealtimeData(null);
     } finally {
       setLoading(false);
