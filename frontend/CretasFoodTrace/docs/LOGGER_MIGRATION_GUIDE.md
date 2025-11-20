@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 49 个 ✅
-- **待迁移**: 287 个
-- **完成度**: 15%
+- **已迁移**: 60 个 ✅
+- **待迁移**: 276 个
+- **完成度**: 18%
 
 ### 迁移优先级
 
@@ -426,8 +426,11 @@ logger.configure({
 - [x] `apiClient.ts` (5个) - ✅ 已迁移 (Commit: 1b3d0127)
 - [x] `authStore.ts` (3个) - ✅ 已迁移 (Commit: 1b3d0127)
 
-**P2 - 中优先级**（功能模块）⏳ **待迁移**:
-- [ ] 各种Screen组件 (~150个)
+**P2 - 中优先级**（功能模块）🔨 **进行中**:
+- [x] EnhancedLoginScreen.tsx (2个) - ✅ 已迁移
+- [x] ProcessingDashboard.tsx (7个) - ✅ 已迁移
+- [x] CostAnalysisDashboard.tsx (2个) - ✅ 已迁移
+- [ ] 其他Screen组件 (~139个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -441,7 +444,10 @@ logger.configure({
 | `tokenManager.ts` | 21 | tokenLogger | a77d253d | ✅ |
 | `apiClient.ts` | 5 | apiLogger | 1b3d0127 | ✅ |
 | `authStore.ts` | 3 | storeLogger | 1b3d0127 | ✅ |
-| **总计** | **49** | - | - | **15%** |
+| `EnhancedLoginScreen.tsx` | 2 | loginLogger | - | ✅ |
+| `ProcessingDashboard.tsx` | 7 | dashboardLogger | - | ✅ |
+| `CostAnalysisDashboard.tsx` | 2 | costAnalysisLogger | - | ✅ |
+| **总计** | **60** | - | - | **18%** |
 
 ---
 

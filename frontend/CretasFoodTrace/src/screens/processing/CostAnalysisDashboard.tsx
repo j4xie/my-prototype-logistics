@@ -16,6 +16,11 @@ import { ProcessingScreenProps } from '../../types/navigation';
 import { processingAPI } from '../../services/api/processingApiClient';
 import { aiApiClient } from '../../services/api/aiApiClient';
 import type { BatchCostAnalysis, AIQuota } from '../../types/processing';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建CostAnalysisDashboard专用logger
+const costAnalysisLogger = logger.createContextLogger('CostAnalysisDashboard');
 
 type CostAnalysisDashboardProps = ProcessingScreenProps<'CostAnalysisDashboard'>;
 
@@ -63,8 +68,8 @@ export default function CostAnalysisDashboard() {
       if (response.success) {
         setCostData(response.data);
       }
-    } catch (error: any) {
-      console.error('加载成本数据失败:', error);
+    } catch (error) {
+      costAnalysisLogger.error('加载成本数据失败', error, { batchId });
       Alert.alert('错误', '加载成本数据失败');
     } finally {
       setLoading(false);
@@ -104,8 +109,8 @@ export default function CostAnalysisDashboard() {
           setQuota(response.quota);
         }
       }
-    } catch (error: any) {
-      console.error('AI分析失败:', error);
+    } catch (error) {
+      costAnalysisLogger.error('AI分析失败', error, { batchId, hasQuestion: !!question });
 
       // 处理429错误（超限）
       if (error.response?.status === 429) {

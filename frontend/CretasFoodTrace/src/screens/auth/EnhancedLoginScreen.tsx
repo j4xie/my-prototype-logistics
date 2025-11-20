@@ -20,6 +20,10 @@ import { getPostLoginRoute } from '../../utils/navigationHelper';
 import { useAuthStore } from '../../store/authStore';
 import { NeoCard, NeoButton, ScreenWrapper } from '../../components/ui';
 import { theme } from '../../theme';
+import { logger } from '../../utils/logger';
+
+// 创建LoginScreen专用logger
+const loginLogger = logger.createContextLogger('EnhancedLoginScreen');
 
 const { width } = Dimensions.get('window');
 
@@ -84,7 +88,7 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
         navigateToMain();
       }
     } catch (error) {
-      console.error('Login failed:', error);
+      loginLogger.error('用户登录失败', error, { username: username.trim() });
     }
   };
 
@@ -109,7 +113,7 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
       if (success) {
         navigateToMain();
       }
-    } catch (error: any) {
+    } catch (error) {
       Alert.alert('生物识别登录失败', error.message);
     }
   };
@@ -121,7 +125,11 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
       return;
     }
     const route = getPostLoginRoute(user);
-    console.log('Login successful, navigating to:', route);
+    loginLogger.info('登录成功，准备导航', {
+      userId: user.id,
+      userType: user.userType,
+      targetRoute: route
+    });
   };
 
   const renderNetworkStatus = () => {
