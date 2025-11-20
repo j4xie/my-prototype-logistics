@@ -22,6 +22,10 @@ import { userApiClient, UserDTO, CreateUserRequest } from '../../services/api/us
 import { useAuthStore } from '../../store/authStore';
 import { NotImplementedError } from '../../errors';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建UserManagement专用logger
+const userManagementLogger = logger.createContextLogger('UserManagement');
 
 /**
  * 用户管理页面
@@ -93,11 +97,17 @@ export default function UserManagementScreen() {
       });
 
       if (response.content) {
+        userManagementLogger.info('用户列表加载成功', {
+          userCount: response.content.length,
+          factoryId: user?.factoryId,
+        });
         setUsers(response.content);
       }
     } catch (error) {
-      console.error('加载用户列表失败:', error);
-      Alert.alert('错误', error.response?.data?.message || '加载用户列表失败');
+      userManagementLogger.error('加载用户列表失败', error as Error, {
+        factoryId: user?.factoryId,
+      });
+      Alert.alert('错误', (error as any).response?.data?.message || '加载用户列表失败');
     } finally {
       setLoading(false);
     }
@@ -115,9 +125,16 @@ export default function UserManagementScreen() {
         keyword: searchQuery,
         factoryId: user?.factoryId,
       });
+      userManagementLogger.info('用户搜索完成', {
+        keyword: searchQuery,
+        resultCount: results.length,
+      });
       setUsers(results);
     } catch (error) {
-      console.error('搜索失败:', error);
+      userManagementLogger.error('搜索用户失败', error as Error, {
+        keyword: searchQuery,
+        factoryId: user?.factoryId,
+      });
       Alert.alert('错误', '搜索失败');
     } finally {
       setLoading(false);
@@ -190,11 +207,19 @@ export default function UserManagementScreen() {
         Alert.alert('成功', '用户创建成功');
       }
 
+      userManagementLogger.info(editingUser ? '用户更新成功' : '用户创建成功', {
+        username: formData.username,
+        realName: formData.realName,
+        role: formData.role,
+      });
       setModalVisible(false);
       loadUsers();
     } catch (error) {
-      console.error('保存用户失败:', error);
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      userManagementLogger.error('保存用户失败', error as Error, {
+        isEdit: !!editingUser,
+        username: formData.username,
+      });
+      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
     }
   };
 
@@ -210,11 +235,18 @@ export default function UserManagementScreen() {
           onPress: async () => {
             try {
               await userApiClient.deleteUser(userId, user?.factoryId);
+              userManagementLogger.info('用户删除成功', {
+                userId,
+                userName,
+              });
               Alert.alert('成功', '用户已删除');
               loadUsers();
             } catch (error) {
-              console.error('删除用户失败:', error);
-              Alert.alert('错误', error.response?.data?.message || '删除失败');
+              userManagementLogger.error('删除用户失败', error as Error, {
+                userId,
+                userName,
+              });
+              Alert.alert('错误', (error as any).response?.data?.message || '删除失败');
             }
           },
         },
