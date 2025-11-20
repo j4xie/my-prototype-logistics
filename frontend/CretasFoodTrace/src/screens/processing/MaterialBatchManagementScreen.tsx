@@ -25,6 +25,10 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { API_CONFIG } from '../../constants/config';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建MaterialBatchManagement专用logger
+const materialBatchLogger = logger.createContextLogger('MaterialBatchManagement');
 
 /**
  * 原材料批次管理页面
@@ -92,7 +96,7 @@ export default function MaterialBatchManagementScreen() {
       setLoading(true);
       let response;
 
-      console.log('🔍 Loading batches with filter:', filterTab);
+      materialBatchLogger.debug('加载批次列表', { filterTab });
 
       switch (filterTab) {
         case 'expiring':
@@ -120,9 +124,9 @@ export default function MaterialBatchManagementScreen() {
           setBatches(Array.isArray(response.data) ? response.data : response.data?.content || []);
       }
 
-      console.log('✅ Batches loaded:', batches.length, 'batches');
+      materialBatchLogger.info('批次列表加载成功', { count: batches.length });
     } catch (error) {
-      console.error('❌ Failed to load batches:', error);
+      materialBatchLogger.error('加载批次列表失败', error, { filterTab });
       handleError(error, {
         showAlert: true,
         title: '加载失败',
@@ -190,7 +194,7 @@ export default function MaterialBatchManagementScreen() {
   const handleExportInventory = async () => {
     try {
       setExporting(true);
-      console.log('📥 Exporting inventory...');
+      materialBatchLogger.info('开始导出库存数据');
 
       const factoryId = user?.factoryId || user?.factoryUser?.factoryId;
       if (!factoryId) {
@@ -204,14 +208,14 @@ export default function MaterialBatchManagementScreen() {
       const fileName = `inventory_${timestamp}.xlsx`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
-      console.log('📥 Downloading to:', fileUri);
+      materialBatchLogger.debug('开始下载文件', { fileUri });
       const downloadResult = await FileSystem.downloadAsync(apiUrl, fileUri);
 
       if (downloadResult.status !== 200) {
         throw new Error(`下载失败，HTTP状态码: ${downloadResult.status}`);
       }
 
-      console.log('✅ Export completed:', downloadResult.uri);
+      materialBatchLogger.info('导出完成', { uri: downloadResult.uri });
 
       // 获取文件信息
       const fileInfo = await FileSystem.getInfoAsync(downloadResult.uri);
@@ -229,7 +233,7 @@ export default function MaterialBatchManagementScreen() {
                 try {
                   await Sharing.shareAsync(downloadResult.uri);
                 } catch (error) {
-                  console.error('分享失败:', error);
+                  materialBatchLogger.error('分享文件失败', error);
                   Alert.alert('分享失败', '无法分享文件');
                 }
               },
@@ -240,7 +244,7 @@ export default function MaterialBatchManagementScreen() {
         Alert.alert('导出成功', `文件已保存到：${downloadResult.uri}`);
       }
     } catch (error) {
-      console.error('❌ Export failed:', error);
+      materialBatchLogger.error('导出库存数据失败', error);
       handleError(error, {
         showAlert: true,
         title: '导出失败',
@@ -275,7 +279,7 @@ export default function MaterialBatchManagementScreen() {
       }
 
       setLoading(true);
-      console.log('➕ Creating batch:', formData);
+      materialBatchLogger.info('创建批次', { batchNumber: formData.batchNumber });
 
       const batchData = {
         materialTypeId: formData.materialTypeId.trim(),
@@ -287,7 +291,7 @@ export default function MaterialBatchManagementScreen() {
       };
 
       const response = await materialBatchApiClient.createBatch(batchData, user?.factoryId);
-      console.log('✅ Batch created:', response);
+      materialBatchLogger.info('批次创建成功', { batchNumber: formData.batchNumber });
 
       Alert.alert('创建成功', `批次 ${formData.batchNumber} 创建成功！`);
 
@@ -305,7 +309,7 @@ export default function MaterialBatchManagementScreen() {
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      console.error('❌ Failed to create batch:', error);
+      materialBatchLogger.error('创建批次失败', error);
       Alert.alert('创建失败', error.response?.data?.message || error.message || '创建批次失败，请重试');
     } finally {
       setLoading(false);
@@ -320,7 +324,7 @@ export default function MaterialBatchManagementScreen() {
 
     try {
       setLoading(true);
-      console.log('✏️ Updating batch:', selectedBatch.id, formData);
+      materialBatchLogger.info('更新批次', { batchId: selectedBatch.id });
 
       const updateData = {
         materialTypeId: formData.materialTypeId.trim(),
@@ -330,7 +334,7 @@ export default function MaterialBatchManagementScreen() {
       };
 
       const response = await materialBatchApiClient.updateBatch(selectedBatch.id, updateData, user?.factoryId);
-      console.log('✅ Batch updated:', response);
+      materialBatchLogger.info('批次更新成功', { batchId: selectedBatch.id });
 
       Alert.alert('更新成功', '批次信息已更新！');
 
@@ -340,7 +344,7 @@ export default function MaterialBatchManagementScreen() {
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      console.error('❌ Failed to update batch:', error);
+      materialBatchLogger.error('更新批次失败', error, { batchId: selectedBatch.id });
       Alert.alert('更新失败', error.response?.data?.message || error.message || '更新批次失败，请重试');
     } finally {
       setLoading(false);
@@ -355,10 +359,10 @@ export default function MaterialBatchManagementScreen() {
 
     try {
       setLoading(true);
-      console.log('🗑️ Deleting batch:', selectedBatch.id);
+      materialBatchLogger.info('删除批次', { batchId: selectedBatch.id });
 
       await materialBatchApiClient.deleteBatch(selectedBatch.id, user?.factoryId);
-      console.log('✅ Batch deleted');
+      materialBatchLogger.info('批次删除成功', { batchId: selectedBatch.id });
 
       Alert.alert('删除成功', `批次 ${selectedBatch.batchNumber} 已删除`);
 
@@ -368,7 +372,7 @@ export default function MaterialBatchManagementScreen() {
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      console.error('❌ Failed to delete batch:', error);
+      materialBatchLogger.error('删除批次失败', error, { batchId: selectedBatch.id });
       Alert.alert('删除失败', error.response?.data?.message || error.message || '删除批次失败，请重试');
     } finally {
       setLoading(false);
@@ -421,7 +425,10 @@ export default function MaterialBatchManagementScreen() {
       }
 
       setBatchOpsLoading(true);
-      console.log('🔒 Reserving batch:', selectedBatch.id, batchOpsData);
+      materialBatchLogger.info('预留批次', {
+        batchId: selectedBatch.id,
+        quantity: batchOpsData.quantity
+      });
 
       await materialBatchApiClient.reserveBatch(
         selectedBatch.id,
@@ -430,7 +437,7 @@ export default function MaterialBatchManagementScreen() {
         user?.factoryId
       );
 
-      console.log('✅ Batch reserved');
+      materialBatchLogger.info('批次预留成功', { batchId: selectedBatch.id });
       Alert.alert(
         '预留成功',
         `已预留批次 ${selectedBatch.batchNumber}\n数量: ${batchOpsData.quantity} kg`
@@ -443,7 +450,7 @@ export default function MaterialBatchManagementScreen() {
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      console.error('❌ Failed to reserve batch:', error);
+      materialBatchLogger.error('预留批次失败', error, { batchId: selectedBatch.id });
       Alert.alert('预留失败', error.response?.data?.message || error.message || '预留批次失败，请重试');
     } finally {
       setBatchOpsLoading(false);
@@ -472,7 +479,10 @@ export default function MaterialBatchManagementScreen() {
       }
 
       setBatchOpsLoading(true);
-      console.log('🔓 Releasing batch:', selectedBatch.id, batchOpsData);
+      materialBatchLogger.info('释放批次', {
+        batchId: selectedBatch.id,
+        quantity: batchOpsData.quantity
+      });
 
       await materialBatchApiClient.releaseBatch(
         selectedBatch.id,
@@ -481,7 +491,7 @@ export default function MaterialBatchManagementScreen() {
         user?.factoryId
       );
 
-      console.log('✅ Batch released');
+      materialBatchLogger.info('批次释放成功', { batchId: selectedBatch.id });
       Alert.alert(
         '释放成功',
         `已释放批次 ${selectedBatch.batchNumber}\n数量: ${batchOpsData.quantity} kg`
@@ -494,7 +504,7 @@ export default function MaterialBatchManagementScreen() {
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      console.error('❌ Failed to release batch:', error);
+      materialBatchLogger.error('释放批次失败', error, { batchId: selectedBatch.id });
       Alert.alert('释放失败', error.response?.data?.message || error.message || '释放批次失败，请重试');
     } finally {
       setBatchOpsLoading(false);
@@ -523,7 +533,10 @@ export default function MaterialBatchManagementScreen() {
       }
 
       setBatchOpsLoading(true);
-      console.log('📦 Consuming batch:', selectedBatch.id, batchOpsData);
+      materialBatchLogger.info('消耗批次', {
+        batchId: selectedBatch.id,
+        quantity: batchOpsData.quantity
+      });
 
       await materialBatchApiClient.consumeBatch(
         selectedBatch.id,
@@ -532,7 +545,7 @@ export default function MaterialBatchManagementScreen() {
         user?.factoryId
       );
 
-      console.log('✅ Batch consumed');
+      materialBatchLogger.info('批次消耗成功', { batchId: selectedBatch.id });
       Alert.alert(
         '消耗成功',
         `已消耗批次 ${selectedBatch.batchNumber}\n数量: ${batchOpsData.quantity} kg`
@@ -545,7 +558,7 @@ export default function MaterialBatchManagementScreen() {
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      console.error('❌ Failed to consume batch:', error);
+      materialBatchLogger.error('消耗批次失败', error, { batchId: selectedBatch.id });
       Alert.alert('消耗失败', error.response?.data?.message || error.message || '消耗批次失败，请重试');
     } finally {
       setBatchOpsLoading(false);
@@ -570,7 +583,10 @@ export default function MaterialBatchManagementScreen() {
       }
 
       setBatchOpsLoading(true);
-      console.log('⚖️ Adjusting batch:', selectedBatch.id, batchOpsData);
+      materialBatchLogger.info('调整批次', {
+        batchId: selectedBatch.id,
+        newQuantity: batchOpsData.newQuantity
+      });
 
       await materialBatchApiClient.adjustBatch(
         selectedBatch.id,
@@ -579,7 +595,7 @@ export default function MaterialBatchManagementScreen() {
         user?.factoryId
       );
 
-      console.log('✅ Batch adjusted');
+      materialBatchLogger.info('批次调整成功', { batchId: selectedBatch.id });
       Alert.alert(
         '调整成功',
         `已调整批次 ${selectedBatch.batchNumber}\n原数量: ${selectedBatch.remainingQuantity} kg\n新数量: ${batchOpsData.newQuantity} kg`
@@ -592,7 +608,7 @@ export default function MaterialBatchManagementScreen() {
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      console.error('❌ Failed to adjust batch:', error);
+      materialBatchLogger.error('调整批次失败', error, { batchId: selectedBatch.id });
       Alert.alert('调整失败', error.response?.data?.message || error.message || '调整批次失败，请重试');
     } finally {
       setBatchOpsLoading(false);
@@ -603,7 +619,7 @@ export default function MaterialBatchManagementScreen() {
   const handleConvertToFrozen = async (batch: MaterialBatch) => {
     try {
       setConvertingToFrozen(true);
-      console.log('❄️ Converting to frozen:', batch.id);
+      materialBatchLogger.info('转为冻品', { batchId: batch.id });
 
       // 获取当前日期
       const today = new Date().toISOString().split('T')[0];
@@ -620,7 +636,7 @@ export default function MaterialBatchManagementScreen() {
         user?.factoryId
       );
 
-      console.log('✅ Successfully converted to frozen');
+      materialBatchLogger.info('转冻品成功', { batchId: batch.id });
       Alert.alert(
         '转换成功',
         `批次 ${batch.batchNumber} 已成功转为冻品\n保质期已延长，存储位置已更新`
@@ -628,8 +644,8 @@ export default function MaterialBatchManagementScreen() {
 
       // 刷新列表
       await loadBatches();
-    } catch (error: any) {
-      console.error('❌ Failed to convert to frozen:', error);
+    } catch (error) {
+      materialBatchLogger.error('转冻品失败', error, { batchId: batch.id });
       Alert.alert(
         '转换失败',
         error.response?.data?.message || error.message || '转冻品失败，请重试'
@@ -643,7 +659,7 @@ export default function MaterialBatchManagementScreen() {
   const handleUndoFrozen = async (batch: MaterialBatch) => {
     try {
       setUndoingFrozen(true);
-      console.log('⏪ Undoing frozen:', batch.id, 'reason:', undoReason);
+      materialBatchLogger.info('撤销冻品转换', { batchId: batch.id, reason: undoReason });
 
       // 调用API
       await materialBatchApiClient.undoFrozen(
@@ -655,7 +671,7 @@ export default function MaterialBatchManagementScreen() {
         user?.factoryId
       );
 
-      console.log('✅ Successfully undone frozen conversion');
+      materialBatchLogger.info('撤销冻品成功', { batchId: batch.id });
       Alert.alert(
         '撤销成功',
         `批次 ${batch.batchNumber} 已恢复为鲜品状态`
@@ -668,8 +684,8 @@ export default function MaterialBatchManagementScreen() {
 
       // 刷新列表
       await loadBatches();
-    } catch (error: any) {
-      console.error('❌ Failed to undo frozen:', error);
+    } catch (error) {
+      materialBatchLogger.error('撤销冻品失败', error, { batchId: batch.id });
       const errorMsg = error.response?.data?.message || error.message || '撤销失败';
       Alert.alert('撤销失败', errorMsg);
     } finally {
@@ -823,12 +839,12 @@ export default function MaterialBatchManagementScreen() {
                         onPress: async () => {
                           try {
                             setHandlingExpired(true);
-                            console.log('🔄 Handling expired batches...');
+                            materialBatchLogger.info('处理过期批次', { count: batches.length });
 
                             // API integration - POST /material-batches/handle-expired
                             const response = await materialBatchApiClient.handleExpiredBatches(user?.factoryId);
 
-                            console.log('✅ Expired batches handled:', response);
+                            materialBatchLogger.info('过期批次处理成功', { count: batches.length });
 
                             Alert.alert(
                               '处理成功',
@@ -844,7 +860,7 @@ export default function MaterialBatchManagementScreen() {
                               ]
                             );
                           } catch (error) {
-                            console.error('❌ Failed to handle expired batches:', error);
+                            materialBatchLogger.error('处理过期批次失败', error);
                             Alert.alert('处理失败', error.response?.data?.message || '无法处理过期批次，请稍后重试');
                           } finally {
                             setHandlingExpired(false);
@@ -1148,6 +1164,26 @@ export default function MaterialBatchManagementScreen() {
                       </Button>
                     </View>
                   )}
+
+                  {/* Undo Frozen - P1-007 */}
+                  {batch.status === 'frozen' && (
+                    <View style={styles.conversionSection}>
+                      <Button
+                        mode="outlined"
+                        icon="undo"
+                        onPress={() => {
+                          setSelectedBatch(batch);
+                          setUndoReason('');
+                          setShowUndoDialog(true);
+                        }}
+                        style={styles.conversionButton}
+                        buttonColor="#FFF3E0"
+                        textColor="#F57C00"
+                      >
+                        撤销转冻品 (10分钟内)
+                      </Button>
+                    </View>
+                  )}
                 </Card.Content>
               </Card>
             );
@@ -1448,6 +1484,39 @@ export default function MaterialBatchManagementScreen() {
               disabled={batchOpsLoading}
             >
               调整
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Undo Frozen Dialog - P1-007 */}
+        <Dialog visible={showUndoDialog} onDismiss={() => setShowUndoDialog(false)}>
+          <Dialog.Title>撤销转冻品</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={{ marginBottom: 16 }}>
+              批次号: <Text style={{ fontWeight: 'bold' }}>{selectedBatch?.batchNumber}</Text>
+            </Text>
+            <Text variant="bodySmall" style={{ marginBottom: 16, color: '#FF6F00' }}>
+              ⚠️ 注意：只能撤销10分钟内的转冻品操作
+            </Text>
+            <TextInput
+              label="撤销原因 *"
+              value={undoReason}
+              onChangeText={setUndoReason}
+              mode="outlined"
+              style={styles.dialogInput}
+              placeholder="例如：误操作、批次选错、需要继续加工等"
+              multiline
+              numberOfLines={3}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowUndoDialog(false)}>取消</Button>
+            <Button
+              onPress={() => selectedBatch && handleUndoFrozen(selectedBatch)}
+              loading={undoingFrozen}
+              disabled={!undoReason || undoReason.length < 2 || undoingFrozen}
+            >
+              确认撤销
             </Button>
           </Dialog.Actions>
         </Dialog>
