@@ -36,12 +36,16 @@ import {
   ApiErrorResponse
 } from '../../types/apiResponses';
 import { transformBackendUser, getUserRole } from '../../utils/roleMapping';
+import { logger } from '../../utils/logger';
+
+// 创建AuthService专用logger
+const authLogger = logger.createContextLogger('AuthService');
 
 export class AuthService {
   // 登录方法 - 支持新的 /api/auth/login 端点
   static async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
-      console.log('开始登录流程:', { username: credentials.username });
+      authLogger.info('开始登录流程', { username: credentials.username });
 
       // 检查网络连接
       const isConnected = await NetworkManager.isConnected();
@@ -61,21 +65,21 @@ export class AuthService {
       // 仅当需要明确指定工厂用户时才传递 factoryId（目前不需要）
       // 因为后端会通过用户名自动识别是平台用户还是工厂用户
 
-      console.log('📤 发送登录请求:', JSON.stringify(loginPayload, null, 2));
+      authLogger.debug('发送登录请求', loginPayload);
 
       const rawResponse = await NetworkManager.executeWithRetry(
         () => apiClient.post<UnifiedLoginApiResponse>('/api/mobile/auth/unified-login', loginPayload),
         { maxRetries: 2, baseDelay: 1000 }
       );
 
-      console.log('🔍 Raw API Response:', JSON.stringify(rawResponse, null, 2));
+      authLogger.debug('Raw API Response', rawResponse);
 
       // 转换新API的响应格式为内部格式
       const response = this.adaptNewApiResponse(rawResponse);
 
       if (response.success && response.user && response.tokens) {
-        // 调试日志: 打印转换后的用户数据
-        console.log('✅ Transformed User Data:', JSON.stringify(response.user, null, 2));
+        // 调试日志: 打印转换后的用户数据（敏感字段会被自动脱敏）
+        authLogger.debug('Transformed User Data', response.user);
 
         // 使用TokenManager保存认证信息
         const tokenData = {
@@ -101,7 +105,7 @@ export class AuthService {
           }
         }
 
-        console.log('登录成功:', {
+        authLogger.info('登录成功', {
           userId: response.user.id,
           role: getUserRole(response.user),
           userType: response.user.userType
@@ -110,7 +114,7 @@ export class AuthService {
 
       return response;
     } catch (error) {
-      console.error('登录失败:', error);
+      authLogger.error('登录失败', error);
       throw this.handleAuthError(error);
     }
   }
@@ -257,7 +261,7 @@ export class AuthService {
         tokenType: backendTokens.tokenType ?? 'Bearer'
       };
 
-      console.log('✅ API响应适配成功:', {
+      authLogger.debug('API响应适配成功', {
         userId: user.id,
         username: user.username,
         userType: user.userType,
@@ -271,7 +275,7 @@ export class AuthService {
         tokens: tokens
       };
     } catch (error) {
-      console.error('适配API响应失败:', error);
+      authLogger.error('适配API响应失败', error);
       return {
         success: false,
         message: '登录响应处理失败'
@@ -287,7 +291,7 @@ export class AuthService {
       });
       return response;
     } catch (error) {
-      console.error('发送验证码失败:', error);
+      authLogger.error('发送验证码失败', error);
       throw this.handleAuthError(error);
     }
   }
@@ -322,7 +326,7 @@ export class AuthService {
 
       return response;
     } catch (error) {
-      console.error('验证手机号失败:', error);
+      authLogger.error('验证手机号失败', error);
       throw this.handleAuthError(error);
     }
   }
@@ -330,12 +334,12 @@ export class AuthService {
   // 注册第一阶段 - 手机验证
   static async registerPhaseOne(request: RegisterPhaseOneRequest): Promise<RegisterResponse> {
     try {
-      console.log('📤 发送注册第一阶段请求:', request);
+      authLogger.debug('发送注册第一阶段请求', request);
 
       // 后端返回格式: ApiResponse<RegisterPhaseOneResponse>
       const rawResponse = await apiClient.post<RegisterPhaseOneApiResponse>('/api/mobile/auth/register-phase-one', request);
 
-      console.log('📥 注册第一阶段响应:', rawResponse);
+      authLogger.debug('注册第一阶段响应', rawResponse);
 
       // 适配后端响应格式
       let response: RegisterResponse;
@@ -359,12 +363,12 @@ export class AuthService {
 
       if (response.success && response.tempToken) {
         await StorageService.setSecureItem('temp_token', response.tempToken);
-        console.log('✅ 临时Token已保存');
+        authLogger.debug('临时Token已保存');
       }
 
       return response;
     } catch (error) {
-      console.error('注册第一阶段失败:', error);
+      authLogger.error('注册第一阶段失败', error);
       // 处理错误响应
       const apiError = error as ApiErrorResponse;
       if (apiError.response?.data) {
@@ -396,7 +400,7 @@ export class AuthService {
 
       return response;
     } catch (error) {
-      console.error('注册第二阶段失败:', error);
+      authLogger.error('注册第二阶段失败', error);
       throw this.handleAuthError(error);
     }
   }
@@ -404,7 +408,7 @@ export class AuthService {
   // 用户注册 - 支持新的 /api/auth/register 端点
   static async register(request: RegisterRequest): Promise<LoginResponse> {
     try {
-      console.log('开始用户注册流程:', { username: request.username });
+      authLogger.info('开始用户注册流程', { username: request.username });
 
       // 前端验证
       if (!request.tempToken || !request.username || !request.password || !request.realName || !request.factoryId) {
@@ -436,14 +440,14 @@ export class AuthService {
         { maxRetries: 2, baseDelay: 1000 }
       );
 
-      console.log('🔍 Raw Register API Response:', JSON.stringify(rawResponse, null, 2));
+      authLogger.debug('Raw Register API Response', rawResponse);
 
       // 转换API响应为内部格式
       const response = this.adaptRegisterResponse(rawResponse);
 
       if (response.success && response.user && response.tokens) {
-        // 调试日志: 打印转换后的用户数据
-        console.log('✅ Transformed User Data:', JSON.stringify(response.user, null, 2));
+        // 调试日志: 打印转换后的用户数据（敏感字段会被自动脱敏）
+        authLogger.debug('Transformed User Data', response.user);
 
         // 使用TokenManager保存认证信息
         const tokenData = {
@@ -460,7 +464,7 @@ export class AuthService {
         // 清除临时token
         await StorageService.removeSecureItem('temp_token');
 
-        console.log('用户注册成功:', {
+        authLogger.info('用户注册成功', {
           userId: response.user.id,
           role: getUserRole(response.user),
           userType: response.user.userType
@@ -469,7 +473,7 @@ export class AuthService {
 
       return response;
     } catch (error) {
-      console.error('用户注册失败:', error);
+      authLogger.error('用户注册失败', error);
       throw this.handleAuthError(error);
     }
   }
@@ -577,7 +581,7 @@ export class AuthService {
         message: '注册响应中缺少用户信息'
       };
     } catch (error) {
-      console.error('适配注册API响应失败:', error);
+      authLogger.error('适配注册API响应失败', error);
       return {
         success: false,
         message: '注册响应处理失败'
@@ -645,13 +649,13 @@ export class AuthService {
           encryptedToken: response.tokens.accessToken,
           deviceInfo: savedCredentials.deviceInfo
         });
-        
-        console.log('生物识别登录成功:', { 
-          userId: transformedUser.id, 
+
+        authLogger.info('生物识别登录成功', {
+          userId: transformedUser.id,
           role: getUserRole(transformedUser),
           userType: transformedUser.userType
         });
-        
+
         // 返回转换后的用户数据
         response.user = transformedUser;
       }
@@ -659,7 +663,7 @@ export class AuthService {
       return response;
 
     } catch (error) {
-      console.error('生物识别登录失败:', error);
+      authLogger.error('生物识别登录失败', error);
       throw this.handleAuthError(error);
     }
   }
@@ -692,7 +696,7 @@ export class AuthService {
 
       return response;
     } catch (error) {
-      console.error('设备登录失败:', error);
+      authLogger.error('设备登录失败', error);
       throw this.handleAuthError(error);
     }
   }
@@ -703,20 +707,20 @@ export class AuthService {
       // 通知服务器登出 - 调用移动端API端点
       const response = await apiClient.post<LogoutApiResponse>('/api/mobile/auth/logout');
 
-      console.log('服务器登出成功:', {
+      authLogger.info('服务器登出成功', {
         code: response.code,
         message: response.message,
         timestamp: response.timestamp
       });
     } catch (error) {
-      console.error('服务器登出失败:', error);
+      authLogger.warn('服务器登出失败', error);
       // 即使服务器登出失败，也继续清除本地数据
       // 保证用户可以成功退出应用
     } finally {
       // 清除本地认证信息
       await this.clearAuthData();
 
-      console.log('本地认证数据已清除，用户登出完成');
+      authLogger.info('本地认证数据已清除，用户登出完成');
     }
   }
 
@@ -739,7 +743,7 @@ export class AuthService {
         throw new Error('新密码长度必须在6-20个字符之间');
       }
 
-      console.log('开始重置密码流程');
+      authLogger.info('开始重置密码流程');
 
       // 检查网络连接
       const isConnected = await NetworkManager.isConnected();
@@ -757,7 +761,7 @@ export class AuthService {
       );
 
       if (response.success || response.code === 200) {
-        console.log('密码重置成功');
+        authLogger.info('密码重置成功');
         return {
           success: true,
           message: response.message || '密码重置成功，请使用新密码登录'
@@ -766,7 +770,7 @@ export class AuthService {
         throw new Error(response.message || '密码重置失败');
       }
     } catch (error) {
-      console.error('密码重置失败:', error);
+      authLogger.error('密码重置失败', error);
       throw this.handleAuthError(error);
     }
   }
@@ -790,7 +794,7 @@ export class AuthService {
         throw new Error('新密码长度必须在6-20个字符之间');
       }
 
-      console.log('开始修改密码:', { username: '***' });
+      authLogger.info('开始修改密码');
 
       // 检查网络连接
       const isConnected = await NetworkManager.isConnected();
@@ -811,7 +815,7 @@ export class AuthService {
       );
 
       if (response.success) {
-        console.log('密码修改成功:', {
+        authLogger.info('密码修改成功', {
           message: response.message,
           timestamp: response.timestamp
         });
@@ -825,7 +829,7 @@ export class AuthService {
         throw new Error(response.message || '密码修改失败');
       }
     } catch (error) {
-      console.error('密码修改失败:', error);
+      authLogger.error('密码修改失败', error);
       throw this.handleAuthError(error);
     }
   }
@@ -856,7 +860,7 @@ export class AuthService {
         return { isAuthenticated: false, user: null };
       }
     } catch (error) {
-      console.error('检查认证状态失败:', error);
+      authLogger.error('检查认证状态失败', error);
       return { isAuthenticated: false, user: null };
     }
   }
@@ -864,7 +868,7 @@ export class AuthService {
   // 保存认证令牌 (已使用TokenManager替代)
   private static async saveAuthTokens(tokens: AuthTokens): Promise<void> {
     // This method is deprecated, use TokenManager.storeTokens instead
-    console.warn('saveAuthTokens is deprecated, use TokenManager.storeTokens instead');
+    authLogger.warn('saveAuthTokens is deprecated, use TokenManager.storeTokens instead');
   }
 
   // 保存用户信息
@@ -887,15 +891,15 @@ export class AuthService {
     deviceInfo: any;
   } | null> {
     // This method is deprecated, use BiometricManager.getBiometricCredentials instead
-    console.warn('getSavedBiometricCredentials is deprecated, use BiometricManager.getBiometricCredentials instead');
+    authLogger.warn('getSavedBiometricCredentials is deprecated, use BiometricManager.getBiometricCredentials instead');
     return null;
   }
 
   // 保存生物识别凭据 (已使用BiometricManager替代)
   static async saveBiometricCredentials(username: string, password: string, deviceInfo: any): Promise<void> {
     // This method is deprecated, use BiometricManager.saveBiometricCredentials instead
-    console.warn('saveBiometricCredentials is deprecated, use BiometricManager.saveBiometricCredentials instead');
-    
+    authLogger.warn('saveBiometricCredentials is deprecated, use BiometricManager.saveBiometricCredentials instead');
+
     await BiometricManager.saveBiometricCredentials({
       username,
       encryptedToken: password, // This should be the encrypted token, not password
@@ -923,7 +927,7 @@ export class AuthService {
       const user = JSON.parse(userInfo) as User;
       return user.permissions.features.includes(permission);
     } catch (error) {
-      console.error('权限检查失败:', error);
+      authLogger.error('权限检查失败', error);
       return false;
     }
   }
@@ -935,7 +939,7 @@ export class AuthService {
       if (!user) return false;
       return getUserRole(user) === role;
     } catch (error) {
-      console.error('角色检查失败:', error);
+      authLogger.error('角色检查失败', error);
       return false;
     }
   }
@@ -946,7 +950,7 @@ export class AuthService {
       const userInfo = await StorageService.getItem('user_info');
       return userInfo ? JSON.parse(userInfo) : null;
     } catch (error) {
-      console.error('获取当前用户失败:', error);
+      authLogger.error('获取当前用户失败', error);
       return null;
     }
   }
