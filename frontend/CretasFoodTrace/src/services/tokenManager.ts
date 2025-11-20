@@ -3,6 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Alert } from 'react-native';
 import { apiClient } from './api/apiClient';
 import { SecureStorageUnavailableError, TokenStorageError } from '../errors';
+import { logger } from '../utils/logger';
+
+// 创建TokenManager专用logger
+const tokenLogger = logger.createContextLogger('TokenManager');
 
 export interface AuthTokens {
   accessToken: string;
@@ -51,7 +55,7 @@ export class TokenManager {
           await SecureStore.setItemAsync(this.TEMP_TOKEN_KEY, tokens.tempToken);
         }
       } catch (secureStoreError) {
-        console.error('⚠️ SecureStore not available:', secureStoreError);
+        tokenLogger.error('SecureStore不可用', secureStoreError);
 
         // 抛出安全错误，不允许静默降级
         throw new SecureStorageUnavailableError(
@@ -59,9 +63,9 @@ export class TokenManager {
         );
       }
 
-      console.log('✅ Tokens stored successfully');
+      tokenLogger.debug('Tokens存储成功');
     } catch (error) {
-      console.error('❌ Failed to store tokens:', error);
+      tokenLogger.error('Token存储失败', error);
       throw new Error('Token存储失败');
     }
   }
@@ -74,22 +78,22 @@ export class TokenManager {
       // 获取当前访问token
       let accessToken = await this.getAccessToken();
       if (!accessToken) {
-        console.log('⚠️ No access token found');
+        tokenLogger.debug('未找到访问令牌');
         return null;
       }
 
       // 检查token是否即将过期 (提前5分钟刷新)
       const isExpiringSoon = await this.isTokenExpiringSoon(5 * 60 * 1000);
-      
+
       if (isExpiringSoon) {
-        console.log('⏰ Token expiring soon, attempting refresh...');
+        tokenLogger.info('Token即将过期，尝试刷新');
         const refreshedToken = await this.refreshTokenIfNeeded();
         return refreshedToken || accessToken;
       }
 
       return accessToken;
     } catch (error) {
-      console.error('❌ Error getting valid token:', error);
+      tokenLogger.error('获取有效Token失败', error);
       return null;
     }
   }
@@ -100,7 +104,7 @@ export class TokenManager {
   static async refreshToken(): Promise<string | null> {
     // 防止并发刷新
     if (this.isRefreshing && this.refreshPromise) {
-      console.log('🔄 Token refresh already in progress, waiting...');
+      tokenLogger.debug('Token刷新已在进行中，等待...');
       return await this.refreshPromise;
     }
 
@@ -123,17 +127,17 @@ export class TokenManager {
     try {
       const refreshToken = await this.getRefreshToken();
       if (!refreshToken) {
-        console.log('⚠️ No refresh token available');
+        tokenLogger.warn('无可用的刷新令牌');
         return null;
       }
 
-      console.log('🔄 Refreshing token...');
+      tokenLogger.info('正在刷新Token');
       const response = await apiClient.post<TokenRefreshResponse>('/api/mobile/auth/refresh', {
         refreshToken
       });
 
       if (response.success && response.accessToken) {
-        // 存储新的tokens
+        // 存储新的tokens（敏感字段会被自动脱敏）
         const newTokens: AuthTokens = {
           accessToken: response.accessToken,
           refreshToken: response.refreshToken || refreshToken,
@@ -142,14 +146,14 @@ export class TokenManager {
         };
 
         await this.storeTokens(newTokens);
-        console.log('✅ Token refreshed successfully');
+        tokenLogger.info('Token刷新成功');
         return response.accessToken;
       } else {
-        console.log('❌ Token refresh failed:', response.message);
+        tokenLogger.warn('Token刷新失败', { message: response.message });
         return null;
       }
     } catch (error) {
-      console.error('❌ Token refresh error:', error);
+      tokenLogger.error('Token刷新错误', error);
       return null;
     }
   }
@@ -181,7 +185,7 @@ export class TokenManager {
 
       return timeUntilExpiry <= thresholdMs;
     } catch (error) {
-      console.error('Error checking token expiry:', error);
+      tokenLogger.error('检查Token过期时间失败', error);
       return true;
     }
   }
@@ -197,7 +201,7 @@ export class TokenManager {
       const expiry = parseInt(expiryTime, 10);
       return Date.now() >= expiry;
     } catch (error) {
-      console.error('Error checking token expiry:', error);
+      tokenLogger.error('检查Token过期状态失败', error);
       return true;
     }
   }
@@ -210,7 +214,7 @@ export class TokenManager {
       // 只使用SecureStore，不允许降级
       return await SecureStore.getItemAsync(this.ACCESS_TOKEN_KEY);
     } catch (error) {
-      console.error('Error getting access token:', error);
+      tokenLogger.error('获取访问令牌失败', error);
       // 如果SecureStore不可用，返回null让上层处理
       return null;
     }
@@ -224,7 +228,7 @@ export class TokenManager {
       // 只使用SecureStore，不允许降级
       return await SecureStore.getItemAsync(this.REFRESH_TOKEN_KEY);
     } catch (error) {
-      console.error('Error getting refresh token:', error);
+      tokenLogger.error('获取刷新令牌失败', error);
       // 如果SecureStore不可用，返回null让上层处理
       return null;
     }
@@ -238,7 +242,7 @@ export class TokenManager {
       // 只使用SecureStore，不允许降级
       return await SecureStore.getItemAsync(this.TEMP_TOKEN_KEY);
     } catch (error) {
-      console.error('Error getting temp token:', error);
+      tokenLogger.error('获取临时令牌失败', error);
       // 如果SecureStore不可用，返回null让上层处理
       return null;
     }
@@ -252,7 +256,7 @@ export class TokenManager {
       // 只使用SecureStore，不允许降级
       await SecureStore.setItemAsync(this.TEMP_TOKEN_KEY, tempToken);
     } catch (error) {
-      console.error('Error storing temp token:', error);
+      tokenLogger.error('临时令牌存储失败', error);
       // 抛出安全错误
       throw new TokenStorageError('临时令牌存储失败', error as Error);
     }
@@ -275,9 +279,9 @@ export class TokenManager {
         AsyncStorage.removeItem(this.TOKEN_TYPE_KEY).catch(() => {}),
       ]);
 
-      console.log('✅ All tokens cleared');
+      tokenLogger.info('所有Token已清除');
     } catch (error) {
-      console.error('❌ Error clearing tokens:', error);
+      tokenLogger.error('清除Token失败', error);
       throw error;
     }
   }
@@ -315,7 +319,7 @@ export class TokenManager {
         timeUntilExpiry,
       };
     } catch (error) {
-      console.error('Error getting token info:', error);
+      tokenLogger.error('获取Token信息失败', error);
       return {
         hasAccessToken: false,
         hasRefreshToken: false,
