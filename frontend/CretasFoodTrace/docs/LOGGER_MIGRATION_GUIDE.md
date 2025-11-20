@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 208 个 ✅
-- **待迁移**: 128 个
-- **完成度**: 62%
+- **已迁移**: 232 个 ✅
+- **待迁移**: 104 个
+- **完成度**: 69%
 
 ### 迁移优先级
 
@@ -443,7 +443,11 @@ logger.configure({
 - [x] EquipmentDetailScreen.tsx (7个) - ✅ 已迁移
 - [x] EquipmentAlertsScreen.tsx (7个) - ✅ 已迁移
 - [x] SupplierManagementScreen.tsx (6个) - ✅ 已迁移
-- [ ] 其他Screen组件 (~18个)
+- [x] PersonnelReportScreen.tsx (6个) - ✅ 已迁移
+- [x] FactorySettingsScreen.tsx (6个) - ✅ 已迁移
+- [x] DepartmentManagementScreen.tsx (6个) - ✅ 已迁移
+- [x] DeepSeekAnalysisScreen.tsx (6个) - ✅ 已迁移
+- [ ] 其他Screen组件 (~15个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -473,7 +477,11 @@ logger.configure({
 | `EquipmentDetailScreen.tsx` | 7 | equipmentDetailLogger | b2f6bb56 | ✅ |
 | `EquipmentAlertsScreen.tsx` | 7 | equipmentAlertsLogger | 482baae9 | ✅ |
 | `SupplierManagementScreen.tsx` | 6 | supplierLogger | 711c2d2a | ✅ |
-| **总计** | **208** | - | - | **62%** |
+| `PersonnelReportScreen.tsx` | 6 | personnelReportLogger | 6e9444da | ✅ |
+| `FactorySettingsScreen.tsx` | 6 | factorySettingsLogger | 7b61d43d | ✅ |
+| `DepartmentManagementScreen.tsx` | 6 | departmentLogger | 7b61d43d | ✅ |
+| `DeepSeekAnalysisScreen.tsx` | 6 | deepSeekLogger | 7b61d43d | ✅ |
+| **总计** | **232** | - | - | **69%** |
 
 ---
 
