@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 188 个 ✅
-- **待迁移**: 148 个
-- **完成度**: 56%
+- **已迁移**: 195 个 ✅
+- **待迁移**: 141 个
+- **完成度**: 58%
 
 ### 迁移优先级
 
@@ -440,7 +440,8 @@ logger.configure({
 - [x] AttendanceHistoryScreen.tsx (8个) - ✅ 已迁移
 - [x] ExceptionAlertScreen.tsx (8个) - ✅ 已迁移
 - [x] TimeRangeCostAnalysisScreen.tsx (7个) - ✅ 已迁移
-- [ ] 其他Screen组件 (~20个)
+- [x] EquipmentDetailScreen.tsx (7个) - ✅ 已迁移
+- [ ] 其他Screen组件 (~19个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -467,7 +468,8 @@ logger.configure({
 | `AttendanceHistoryScreen.tsx` | 8 | attendanceLogger | f4215737 | ✅ |
 | `ExceptionAlertScreen.tsx` | 8 | exceptionAlertLogger | 42c7b99d | ✅ |
 | `TimeRangeCostAnalysisScreen.tsx` | 7 | timeRangeLogger | 395bc7de | ✅ |
-| **总计** | **188** | - | - | **56%** |
+| `EquipmentDetailScreen.tsx` | 7 | equipmentDetailLogger | b2f6bb56 | ✅ |
+| **总计** | **195** | - | - | **58%** |
 
 ---
 
