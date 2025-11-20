@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 165 个 ✅
-- **待迁移**: 171 个
-- **完成度**: 49%
+- **已迁移**: 173 个 ✅
+- **待迁移**: 163 个
+- **完成度**: 51%
 
 ### 迁移优先级
 
@@ -437,7 +437,8 @@ logger.configure({
 - [x] ConversionRateScreen.tsx (10个) - ✅ 已迁移
 - [x] ProductionPlanManagementScreen.tsx (10个) - ✅ 已迁移
 - [x] QuickStatsPanel.tsx (8个) - ✅ 已迁移
-- [ ] 其他Screen组件 (~30个)
+- [x] AttendanceHistoryScreen.tsx (8个) - ✅ 已迁移
+- [ ] 其他Screen组件 (~22个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -461,7 +462,8 @@ logger.configure({
 | `ConversionRateScreen.tsx` | 10 | conversionLogger | 7df81497 | ✅ |
 | `ProductionPlanManagementScreen.tsx` | 10 | productionPlanLogger | c575cc08 | ✅ |
 | `QuickStatsPanel.tsx` | 8 | quickStatsLogger | 3c0d467f | ✅ |
-| **总计** | **165** | - | - | **49%** |
+| `AttendanceHistoryScreen.tsx` | 8 | attendanceLogger | f4215737 | ✅ |
+| **总计** | **173** | - | - | **51%** |
 
 ---
 
