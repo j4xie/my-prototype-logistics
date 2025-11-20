@@ -1,0 +1,27 @@
+{
+  "data": {
+    "totalHours": 48.5,
+    "regularHours": 40.0,
+    "overtimeHours": 8.5,
+    "averageDailyHours": 9.7,
+    "period": "2025-01-13 至 2025-01-18",
+    "employeeRecords": [
+      {
+        "userId": 3,
+        "userName": "王五",
+        "department": "processing",
+        "totalHours": 48.5,
+        "regularHours": 40.0,
+        "overtimeHours": 8.5
+      },
+      {
+        "userId": 4,
+        "userName": "赵六",
+        "department": "processing",
+        "totalHours": 45.0,
+        "regularHours": 40.0,
+        "overtimeHours": 5.0
+      }
+    ]
+  }
+}

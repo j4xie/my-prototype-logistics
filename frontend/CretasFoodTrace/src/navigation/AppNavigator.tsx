@@ -1,24 +1,21 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PaperProvider } from 'react-native-paper';
-import { RootStackParamList } from '../types/navigation';
+import { Provider as PaperProvider } from 'react-native-paper';
 import { useAuthStore } from '../store/authStore';
+import { theme } from '../theme';
 import EnhancedLoginScreen from '../screens/auth/EnhancedLoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import MainNavigator from './MainNavigator';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createNativeStackNavigator();
 
-/**
- * 应用根导航器
- * 根据认证状态切换登录页和主应用
- */
 export function AppNavigator() {
   const { isAuthenticated } = useAuthStore();
 
   return (
-    <PaperProvider>
+    <PaperProvider theme={theme}>
       <NavigationContainer>
         <Stack.Navigator
           screenOptions={{
@@ -33,12 +30,20 @@ export function AppNavigator() {
                 component={EnhancedLoginScreen}
               />
               <Stack.Screen
+                name="EnhancedLogin"
+                component={EnhancedLoginScreen}
+              />
+              <Stack.Screen
                 name="LoginScreen"
                 component={EnhancedLoginScreen}
               />
               <Stack.Screen
                 name="RegisterScreen"
                 component={RegisterScreen}
+              />
+              <Stack.Screen
+                name="ForgotPassword"
+                component={ForgotPasswordScreen}
               />
             </>
           ) : (

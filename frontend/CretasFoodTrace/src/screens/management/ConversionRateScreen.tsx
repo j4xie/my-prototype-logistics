@@ -14,6 +14,11 @@ import {
   Chip,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { materialTypeApiClient } from '../../services/api/materialTypeApiClient';
+import { productTypeApiClient } from '../../services/api/productTypeApiClient';
+import { conversionApiClient } from '../../services/api/conversionApiClient';
+import { useAuthStore } from '../../store/authStore';
+import { getFactoryId } from '../../types/auth';
 
 interface MaterialType {
   id: string;
@@ -44,6 +49,8 @@ interface ConversionRate {
  */
 export default function ConversionRateScreen() {
   const navigation = useNavigation();
+  const user = useAuthStore((state) => state.user);
+  const factoryId = getFactoryId(user);
   const [loading, setLoading] = useState(true);
   const [materials, setMaterials] = useState<MaterialType[]>([]);
   const [products, setProducts] = useState<ProductType[]>([]);
@@ -65,29 +72,77 @@ export default function ConversionRateScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      // TODO: 实际API调用
-      // const [materialsRes, productsRes, conversionsRes] = await Promise.all([
-      //   materialTypeApi.getMaterialTypes(),
-      //   productTypeApi.getProductTypes(),
-      //   conversionApi.getConversionRates(),
-      // ]);
 
-      // Mock 数据
-      setMaterials([
-        { id: '1', name: '鲈鱼', category: '鱼类', unit: 'kg' },
-        { id: '2', name: '带鱼', category: '鱼类', unit: 'kg' },
+      if (!factoryId) {
+        console.warn('⚠️ 工厂ID不存在，无法加载转换率数据');
+        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        return;
+      }
+
+      console.log('📡 调用后端API - 获取转换率配置数据');
+
+      // 并行加载三类数据
+      const [materialsRes, productsRes, conversionsRes] = await Promise.all([
+        materialTypeApiClient.getMaterialTypes({ factoryId }),
+        productTypeApiClient.getProductTypes({ factoryId }),
+        conversionApiClient.getConversionRates({ factoryId }),
       ]);
 
-      setProducts([
-        { id: '1', name: '鱼片', code: 'YP001', category: '主产品' },
-        { id: '2', name: '鱼头', code: 'YT001', category: '副产品' },
-      ]);
+      // 处理原料类型数据
+      if (materialsRes?.data) {
+        const materialsArray = Array.isArray(materialsRes.data)
+          ? materialsRes.data
+          : materialsRes.data.content || [];
+        const mappedMaterials: MaterialType[] = materialsArray.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          category: item.category || undefined,
+          unit: item.unit || 'kg',
+        }));
+        setMaterials(mappedMaterials);
+        console.log(`✅ 加载原料类型: ${mappedMaterials.length} 个`);
+      }
 
-      setConversions([
-        { id: '1', materialTypeId: '1', productTypeId: '1', conversionRate: 60, wastageRate: 5 },
-      ]);
-    } catch (error) {
-      Alert.alert('错误', '加载数据失败');
+      // 处理产品类型数据
+      if (productsRes?.data) {
+        const productsArray = Array.isArray(productsRes.data)
+          ? productsRes.data
+          : productsRes.data.content || [];
+        const mappedProducts: ProductType[] = productsArray.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          code: item.productCode || item.code || '',
+          category: item.category || undefined,
+        }));
+        setProducts(mappedProducts);
+        console.log(`✅ 加载产品类型: ${mappedProducts.length} 个`);
+      }
+
+      // 处理转换率数据
+      if (conversionsRes?.data) {
+        const conversionsArray = Array.isArray(conversionsRes.data)
+          ? conversionsRes.data
+          : conversionsRes.data.content || [];
+        const mappedConversions: ConversionRate[] = conversionsArray.map((item: any) => ({
+          id: item.id,
+          materialTypeId: item.materialTypeId,
+          productTypeId: item.productTypeId,
+          conversionRate: item.conversionRate,
+          wastageRate: item.wastageRate || undefined,
+          notes: item.notes || undefined,
+        }));
+        setConversions(mappedConversions);
+        console.log(`✅ 加载转换率配置: ${mappedConversions.length} 个`);
+      }
+
+      console.log('✅ 所有数据加载完成');
+    } catch (error: unknown) {
+      console.error('❌ 加载转换率数据失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '加载数据失败';
+      Alert.alert('错误', errorMessage);
+      setMaterials([]);
+      setProducts([]);
+      setConversions([]);
     } finally {
       setLoading(false);
     }
@@ -130,20 +185,41 @@ export default function ConversionRateScreen() {
       return;
     }
 
+    if (!factoryId || !selectedMaterial || !selectedProduct) {
+      Alert.alert('错误', '数据不完整，无法保存');
+      return;
+    }
+
     try {
-      // await conversionApi.upsertConversionRate({
-      //   materialTypeId: selectedMaterial!.id,
-      //   productTypeId: selectedProduct!.id,
-      //   conversionRate: rate,
-      //   wastageRate: formData.wastageRate ? parseFloat(formData.wastageRate) : undefined,
-      //   notes: formData.notes,
-      // });
+      const existing = conversions.find(
+        (c) => c.materialTypeId === selectedMaterial.id && c.productTypeId === selectedProduct.id
+      );
+
+      const conversionData = {
+        materialTypeId: selectedMaterial.id,
+        productTypeId: selectedProduct.id,
+        conversionRate: rate,
+        wastageRate: formData.wastageRate ? parseFloat(formData.wastageRate) : undefined,
+        notes: formData.notes || undefined,
+      };
+
+      if (existing?.id) {
+        // 更新现有转换率
+        await conversionApiClient.updateConversionRate(existing.id, conversionData, factoryId);
+        console.log('✅ 转换率更新成功');
+      } else {
+        // 创建新转换率
+        await conversionApiClient.createConversionRate(conversionData, factoryId);
+        console.log('✅ 转换率创建成功');
+      }
 
       Alert.alert('成功', '转换率保存成功');
       setModalVisible(false);
       loadData();
-    } catch (error) {
-      Alert.alert('错误', '保存失败');
+    } catch (error: unknown) {
+      console.error('❌ 保存转换率失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '保存失败';
+      Alert.alert('错误', errorMessage);
     }
   };
 

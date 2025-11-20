@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "code": "WORK001",
+      "name": "加工工",
+      "description": "负责鱼类加工处理",
+      "hourlyRate": 35,
+      "overtimeMultiplier": 1.5,
+      "department": "processing",
+      "isActive": true,
+      "createdAt": "2024-09-01T00:00:00Z"
+    },
+    {
+      "id": 2,
+      "code": "WORK002",
+      "name": "质检员",
+      "description": "负责质量检验",
+      "hourlyRate": 40,
+      "overtimeMultiplier": 1.5,
+      "department": "quality",
+      "isActive": true,
+      "createdAt": "2024-09-01T00:00:00Z"
+    },
+    {
+      "id": 3,
+      "code": "WORK003",
+      "name": "仓管员",
+      "description": "负责库存管理",
+      "hourlyRate": 32,
+      "overtimeMultiplier": 1.5,
+      "department": "logistics",
+      "isActive": true,
+      "createdAt": "2024-09-01T00:00:00Z"
+    }
+  ]
+}

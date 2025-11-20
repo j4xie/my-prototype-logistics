@@ -394,6 +394,14 @@ export default function CostAnalysisDashboard() {
 
                     <View style={styles.aiActions}>
                       <Button
+                        mode="contained"
+                        icon="file-document-outline"
+                        onPress={() => navigation.navigate('DeepSeekAnalysis', { batchId: batchId || 'current' })}
+                        compact
+                      >
+                        查看详细分析
+                      </Button>
+                      <Button
                         mode="outlined"
                         icon="refresh"
                         onPress={() => handleAiAnalysis()}

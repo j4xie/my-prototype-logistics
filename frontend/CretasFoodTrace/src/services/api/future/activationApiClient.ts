@@ -65,8 +65,8 @@ class ActivationApiClient {
    * 使用激活码激活移动设备，首次使用时必需
    */
   async activateDevice(request: ActivationRequest): Promise<ActivationResponse> {
-    const response: any = await apiClient.post('/api/mobile/activation/activate', request);
-    return response.data || response;
+    // apiClient拦截器已统一返回data
+    return await apiClient.post<ActivationResponse>('/api/mobile/activation/activate', request);
   }
 
   /**
@@ -76,8 +76,8 @@ class ActivationApiClient {
    * 获取当前用户已绑定的所有设备
    */
   async getUserDevices(): Promise<UserDevice[]> {
-    const response: any = await apiClient.get('/api/mobile/devices');
-    return response.data || response;
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<UserDevice[]>('/api/mobile/devices');
   }
 
   /**

@@ -18,6 +18,7 @@ import { factorySettingsApiClient } from '../../services/api/factorySettingsApiC
 import { useAuthStore } from '../../store/authStore';
 import type { AISettings, AISettingsResponse, AIUsageStats } from '../../types/processing';
 import { AI_TONE_OPTIONS, AI_GOAL_OPTIONS, AI_DETAIL_OPTIONS } from '../../types/processing';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * AI分析设置界面
@@ -76,7 +77,7 @@ export default function AISettingsScreen() {
           customPrompt: aiSettings.customPrompt || '',
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('加载AI设置失败:', error);
       // 如果API不存在，使用默认设置，不显示错误提示
       if (error.response?.status !== 404) {
@@ -109,7 +110,7 @@ export default function AISettingsScreen() {
           setWeeklyQuota(backendData.weeklyQuota);
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('加载使用统计失败:', error);
       // 静默失败，不显示错误提示（该功能可能未实现）
     }
@@ -122,7 +123,7 @@ export default function AISettingsScreen() {
       if (response.success) {
         Alert.alert('成功', '设置已保存');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('保存失败:', error);
       Alert.alert('错误', error.response?.data?.message || '保存失败');
     } finally {

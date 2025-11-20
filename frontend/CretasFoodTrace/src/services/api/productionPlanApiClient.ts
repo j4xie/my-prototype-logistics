@@ -8,6 +8,33 @@ import { DEFAULT_FACTORY_ID } from '../../constants/config';
  * 路径：/api/mobile/{factoryId}/production-plans/*
  */
 
+/**
+ * 后端统一响应格式
+ */
+export interface ApiResponse<T> {
+  success: boolean;
+  code: number;
+  message: string;
+  data: T;
+}
+
+/**
+ * 分页响应格式
+ */
+export interface PagedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+/**
+ * 生产计划
+ */
 export interface ProductionPlan {
   id: string;
   planNumber: string;
@@ -24,6 +51,88 @@ export interface ProductionPlan {
   updatedAt?: string;
 }
 
+/**
+ * 查询参数
+ */
+export interface ProductionPlanQueryParams {
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  productTypeId?: string;
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDirection?: 'ASC' | 'DESC';
+}
+
+/**
+ * 材料消耗记录
+ */
+export interface MaterialConsumption {
+  materialBatchId: string;
+  materialTypeId: string;
+  quantity: number;
+  unit?: string;
+  timestamp?: string;
+}
+
+/**
+ * 转换率配置
+ */
+export interface ConversionRate {
+  materialTypeId: string;
+  materialTypeName?: string;
+  materialType?: {
+    id: string;
+    name: string;
+  };
+  conversionRate?: number;
+  rate?: number;
+  wastageRate?: number;
+}
+
+/**
+ * 原材料批次
+ */
+export interface MaterialBatch {
+  id: string;
+  materialTypeId: string;
+  batchNumber: string;
+  quantity: number;
+  remainingQuantity?: number;
+  availableQuantity?: number;
+  unit?: string;
+  receivedDate: string;
+  expiryDate?: string;
+  supplierId?: string;
+}
+
+/**
+ * 库存信息（带转换率）
+ */
+export interface StockWithConversion {
+  materialType: {
+    id: string;
+    name: string;
+  } | null;
+  batches: MaterialBatch[];
+  totalAvailable: number;
+  conversionRate: number | null;
+  wastageRate: number | null;
+}
+
+/**
+ * 库存汇总
+ */
+export interface StockSummary {
+  summary: Array<{
+    materialTypeId: string;
+    materialTypeName: string;
+    totalQuantity: number;
+    batchCount: number;
+  }>;
+}
+
 class ProductionPlanApiClient {
   private getPath(factoryId?: string) {
     return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/production-plans`;
@@ -32,66 +141,66 @@ class ProductionPlanApiClient {
   // ===== 核心CRUD操作 (6个API) =====
 
   // 1. 获取生产计划列表（分页）
-  async getProductionPlans(params?: { factoryId?: string; [key: string]: any }) {
+  async getProductionPlans(params?: ProductionPlanQueryParams & { factoryId?: string }): Promise<ApiResponse<PagedResponse<ProductionPlan>>> {
     const { factoryId, ...query } = params || {};
     return await apiClient.get(this.getPath(factoryId), { params: query });
   }
 
   // 2. 创建生产计划
-  async createProductionPlan(data: any, factoryId?: string) {
+  async createProductionPlan(data: Partial<ProductionPlan>, factoryId?: string): Promise<ApiResponse<ProductionPlan>> {
     return await apiClient.post(this.getPath(factoryId), data);
   }
 
   // 3. 获取生产计划详情
-  async getProductionPlanById(planId: string, factoryId?: string) {
+  async getProductionPlanById(planId: string, factoryId?: string): Promise<ApiResponse<ProductionPlan>> {
     return await apiClient.get(`${this.getPath(factoryId)}/${planId}`);
   }
 
   // 4. 更新生产计划
-  async updateProductionPlan(planId: string, data: any, factoryId?: string) {
+  async updateProductionPlan(planId: string, data: Partial<ProductionPlan>, factoryId?: string): Promise<ApiResponse<ProductionPlan>> {
     return await apiClient.put(`${this.getPath(factoryId)}/${planId}`, data);
   }
 
   // 5. 删除生产计划
-  async deleteProductionPlan(planId: string, factoryId?: string) {
+  async deleteProductionPlan(planId: string, factoryId?: string): Promise<ApiResponse<{ deleted: boolean }>> {
     return await apiClient.delete(`${this.getPath(factoryId)}/${planId}`);
   }
 
   // ===== 生产流程控制 (3个API) =====
 
   // 6. 开始生产
-  async startProduction(planId: string, factoryId?: string) {
+  async startProduction(planId: string, factoryId?: string): Promise<ApiResponse<ProductionPlan>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${planId}/start`);
   }
 
   // 7. 完成生产
-  async completeProduction(planId: string, actualQuantity: number, factoryId?: string) {
+  async completeProduction(planId: string, actualQuantity: number, factoryId?: string): Promise<ApiResponse<ProductionPlan>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${planId}/complete`, {
       actualQuantity
     });
   }
 
   // 8. 取消生产计划
-  async cancelProductionPlan(planId: string, reason?: string, factoryId?: string) {
+  async cancelProductionPlan(planId: string, reason?: string, factoryId?: string): Promise<ApiResponse<ProductionPlan>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${planId}/cancel`, { reason });
   }
 
   // ===== 材料管理 (1个API) =====
 
   // 9. 记录材料消耗
-  async recordMaterialConsumption(planId: string, consumption: any, factoryId?: string) {
+  async recordMaterialConsumption(planId: string, consumption: MaterialConsumption, factoryId?: string): Promise<ApiResponse<{ recorded: boolean }>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${planId}/consumption`, consumption);
   }
 
   // ===== 快速查询 (2个API) =====
 
   // 10. 获取今日生产计划
-  async getTodayPlans(factoryId?: string) {
+  async getTodayPlans(factoryId?: string): Promise<ApiResponse<ProductionPlan[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/today`);
   }
 
   // 11. 获取待执行的计划
-  async getPendingExecutionPlans(factoryId?: string) {
+  async getPendingExecutionPlans(factoryId?: string): Promise<ApiResponse<ProductionPlan[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/pending-execution`);
   }
 
@@ -99,14 +208,14 @@ class ProductionPlanApiClient {
 
   // 12. 获取可用库存（前端辅助方法）
   // 注意：这个方法调用material-batches API来获取库存信息
-  async getAvailableStock(params?: { productTypeId?: string; factoryId?: string }) {
+  async getAvailableStock(params?: { productTypeId?: string; factoryId?: string }): Promise<ApiResponse<StockWithConversion | StockSummary>> {
     const factoryId = params?.factoryId || DEFAULT_FACTORY_ID;
 
     if (params?.productTypeId) {
       // 有产品ID：查询该产品所需原料的库存和转换率
       try {
         // 1. 先获取产品的转换率配置（确定需要哪种原料）
-        const conversionRes = await apiClient.get(
+        const conversionRes = await apiClient.get<ApiResponse<ConversionRate[]>>(
           `/api/mobile/${factoryId}/conversions/product/${params.productTypeId}`
         );
 
@@ -115,26 +224,28 @@ class ProductionPlanApiClient {
           const materialTypeId = conversion.materialTypeId;
 
           // 2. 查询该原料的所有可用批次
-          const batchesRes = await apiClient.get(
+          const batchesRes = await apiClient.get<ApiResponse<MaterialBatch[] | { batches: MaterialBatch[] }>>(
             `/api/mobile/${factoryId}/material-batches/material-type/${materialTypeId}`
           );
 
           if (batchesRes.success && batchesRes.data) {
             const batches = Array.isArray(batchesRes.data) ? batchesRes.data : batchesRes.data.batches || [];
-            const totalAvailable = batches.reduce((sum: number, b: any) =>
+            const totalAvailable = batches.reduce((sum: number, b: MaterialBatch) =>
               sum + (b.remainingQuantity || b.availableQuantity || 0), 0
             );
 
             return {
               success: true,
+              code: 200,
+              message: 'Success',
               data: {
                 materialType: {
                   id: materialTypeId,
-                  name: conversion.materialTypeName || conversion.materialType?.name
+                  name: conversion.materialTypeName || conversion.materialType?.name || ''
                 },
                 batches,
                 totalAvailable,
-                conversionRate: conversion.conversionRate || conversion.rate,
+                conversionRate: conversion.conversionRate || conversion.rate || null,
                 wastageRate: conversion.wastageRate || 0.05
               }
             };
@@ -144,6 +255,8 @@ class ProductionPlanApiClient {
         // 未配置转换率
         return {
           success: true,
+          code: 200,
+          message: 'No conversion rate configured',
           data: {
             materialType: null,
             batches: [],
@@ -159,20 +272,22 @@ class ProductionPlanApiClient {
     } else {
       // 无产品ID：查询所有原料的库存汇总
       try {
-        const statsRes = await apiClient.get(
+        const statsRes = await apiClient.get<ApiResponse<{ byMaterialType?: Array<any>; summary?: Array<any> }>>(
           `/api/mobile/${factoryId}/material-batches/inventory/statistics`
         );
 
         if (statsRes.success && statsRes.data) {
           return {
             success: true,
+            code: 200,
+            message: 'Success',
             data: {
               summary: statsRes.data.byMaterialType || statsRes.data.summary || []
             }
           };
         }
 
-        return statsRes;
+        return statsRes as ApiResponse<StockSummary>;
       } catch (error) {
         console.error('获取库存汇总失败:', error);
         throw error;

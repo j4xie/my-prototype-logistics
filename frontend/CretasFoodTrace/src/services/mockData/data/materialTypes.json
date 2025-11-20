@@ -1,0 +1,43 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "code": "MAT001",
+      "name": "新鲜鲈鱼",
+      "category": "海鲜类",
+      "specification": "活鱼，500-800g/条",
+      "unit": "kg",
+      "shelfLife": 7,
+      "storageType": "fresh",
+      "storageConditions": "0-4°C冷藏",
+      "isActive": true,
+      "createdAt": "2024-10-01T00:00:00Z"
+    },
+    {
+      "id": 2,
+      "code": "MAT002",
+      "name": "冻三文鱼",
+      "category": "海鲜类",
+      "specification": "整条，2-3kg/条",
+      "unit": "kg",
+      "shelfLife": 30,
+      "storageType": "frozen",
+      "storageConditions": "-18°C冷冻",
+      "isActive": true,
+      "createdAt": "2024-10-02T00:00:00Z"
+    },
+    {
+      "id": 3,
+      "code": "MAT003",
+      "name": "新鲜带鱼",
+      "category": "海鲜类",
+      "specification": "中等大小",
+      "unit": "kg",
+      "shelfLife": 5,
+      "storageType": "fresh",
+      "storageConditions": "0-4°C冷藏",
+      "isActive": true,
+      "createdAt": "2024-10-03T00:00:00Z"
+    }
+  ]
+}

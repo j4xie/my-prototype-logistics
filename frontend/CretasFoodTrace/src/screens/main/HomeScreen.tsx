@@ -8,6 +8,7 @@ import { ModuleConfig } from '../../types/navigation';
 import { ModuleCard } from './components/ModuleCard';
 import { QuickStatsPanel } from './components/QuickStatsPanel';
 import { MainTabParamList } from '../../types/navigation';
+import { UserPermissions } from '../../types/auth';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'HomeTab'>;
 
@@ -98,10 +99,10 @@ export default function HomeScreen() {
         }
 
         // 如果是对象格式 (后端返回的格式)
-        if (typeof userPermissions === 'object' && userPermissions !== null) {
-          const permsObj = userPermissions as any;
+        if (typeof userPermissions === 'object' && userPermissions !== null && !Array.isArray(userPermissions)) {
+          const permsObj = userPermissions as Partial<UserPermissions>;
           // 检查 modules 对象
-          if (permsObj.modules && permsObj.modules[perm] === true) {
+          if (permsObj.modules && permsObj.modules[perm as keyof typeof permsObj.modules] === true) {
             return true;
           }
           // 检查 features 数组
@@ -130,7 +131,7 @@ export default function HomeScreen() {
     // 跳转到对应模块
     if (module.route) {
       // @ts-ignore - 动态路由
-      navigation.navigate(module.route as any);
+      navigation.navigate(module.route as keyof MainTabParamList);
     } else if (module.id === 'settings') {
       // 系统设置暂时显示提示
       Alert.alert('系统设置', '此功能正在完善中');

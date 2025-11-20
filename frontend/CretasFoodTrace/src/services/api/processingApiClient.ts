@@ -3,13 +3,38 @@ import { DEFAULT_FACTORY_ID } from '../../constants/config';
 
 /**
  * 生产加工管理API客户端
- * 核心API：13个（批次管理8个 + 原材料2个 + 质检2个 + AI分析2个）
+ * 核心API：20个（批次管理7个 + 原材料2个 + 质检9个 + AI分析2个）
  * 路径：/api/mobile/{factoryId}/processing/*
  *
  * 注意：Dashboard相关API（4个）已移至 dashboardApiClient.ts
+ * Phase 3 P1-002: 新增质检完整流程API（9个）
  */
 
 // ========== 类型定义 ==========
+
+/**
+ * 后端统一响应格式
+ */
+export interface ApiResponse<T> {
+  success: boolean;
+  code: number;
+  message: string;
+  data: T;
+}
+
+/**
+ * 分页响应格式
+ */
+export interface PagedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
 
 export interface ProcessingBatch {
   id: number;
@@ -45,6 +70,44 @@ export interface QualityInspection {
   inspectionTime: string;
 }
 
+export interface BatchCostData {
+  batchId: string;
+  batchNumber: string;
+  productType: string;
+  totalCost: number;
+  laborCost: number;
+  materialCost: number;
+  equipmentCost: number;
+  otherCost: number;
+  quantity: number;
+  unitCost: number;
+  date: string;
+}
+
+export interface MaterialType {
+  id: string;
+  name: string;
+  unit?: string;
+  category?: string;
+}
+
+export interface TimeRangeCostAnalysis {
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  totalCost: number;
+  laborCost: number;
+  materialCost: number;
+  equipmentCost: number;
+  batches: BatchCostData[];
+  summary: {
+    averageCostPerBatch: number;
+    totalBatches: number;
+    totalQuantity: number;
+  };
+}
+
 // ========== API客户端类 ==========
 
 class ProcessingApiClient {
@@ -55,42 +118,47 @@ class ProcessingApiClient {
   // ===== 批次管理 (8个API) =====
 
   // 1. 获取批次列表
-  async getBatches(params?: { factoryId?: string; status?: string; page?: number; size?: number }) {
+  async getBatches(params?: { factoryId?: string; status?: string; page?: number; size?: number }): Promise<ApiResponse<PagedResponse<ProcessingBatch>>> {
     const { factoryId, ...query } = params || {};
     return await apiClient.get(`${this.getPath(factoryId)}/batches`, { params: query });
   }
 
   // 2. 创建批次
-  async createBatch(data: any, factoryId?: string) {
+  async createBatch(data: Partial<ProcessingBatch>, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/batches`, data);
   }
 
   // 3. 获取批次详情
-  async getBatchById(batchId: string, factoryId?: string) {
+  async getBatchById(batchId: string, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
     return await apiClient.get(`${this.getPath(factoryId)}/batches/${batchId}`);
   }
 
+  // 3.5. 更新批次信息
+  async updateBatch(batchId: string, data: Partial<ProcessingBatch>, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
+    return await apiClient.put(`${this.getPath(factoryId)}/batches/${batchId}`, data);
+  }
+
   // 4. 开始生产
-  async startProduction(batchId: string, factoryId?: string) {
+  async startProduction(batchId: string, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/batches/${batchId}/start`);
   }
 
   // 5. 完成生产
-  async completeProduction(batchId: string, actualQuantity: number, factoryId?: string) {
+  async completeProduction(batchId: string, actualQuantity: number, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/batches/${batchId}/complete`, {
       actualQuantity
     });
   }
 
   // 6. 取消生产
-  async cancelProduction(batchId: string, reason?: string, factoryId?: string) {
+  async cancelProduction(batchId: string, reason?: string, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/batches/${batchId}/cancel`, {
       reason
     });
   }
 
   // 7. 记录材料消耗
-  async recordMaterialConsumption(batchId: string, consumption: any, factoryId?: string) {
+  async recordMaterialConsumption(batchId: string, consumption: MaterialConsumptionRecord, factoryId?: string): Promise<ApiResponse<{ recorded: boolean }>> {
     return await apiClient.post(`${this.getPath(factoryId)}/batches/${batchId}/material-consumption`, consumption);
   }
 
@@ -105,19 +173,25 @@ class ProcessingApiClient {
   // ===== 原材料 (2个API) =====
 
   // 8. 获取原材料列表
-  async getMaterials(factoryId?: string) {
+  async getMaterials(factoryId?: string): Promise<ApiResponse<MaterialType[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/materials`);
   }
 
   // 9. 记录原料接收
-  async recordMaterialReceipt(data: any, factoryId?: string) {
+  async recordMaterialReceipt(data: { materialTypeId: string; quantity: number; unit?: string; supplierId?: string; receivedDate?: string }, factoryId?: string): Promise<ApiResponse<{ recorded: boolean }>> {
     return await apiClient.post(`${this.getPath(factoryId)}/material-receipt`, data);
   }
 
-  // ===== 质检 (2个API) =====
+  // ===== 质检 (Phase 3 P1-002: 完整质检流程) =====
 
-  // 10. 获取质检记录
-  async getQualityInspections(params?: { batchId?: string; factoryId?: string }) {
+  // 10. 获取质检记录列表
+  async getQualityInspections(params?: {
+    batchId?: string;
+    status?: 'draft' | 'submitted' | 'reviewed' | 'all';
+    factoryId?: string;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PagedResponse<QualityInspection>>> {
     const { factoryId, ...query } = params || {};
     return await apiClient.get(`${this.getPath(factoryId)}/quality/inspections`, {
       params: query
@@ -125,28 +199,109 @@ class ProcessingApiClient {
   }
 
   // 11. 创建质检记录
-  async createQualityInspection(data: any, factoryId?: string) {
+  async createQualityInspection(data: {
+    batchId: string;
+    inspectionType: 'raw_material' | 'process' | 'final_product';
+    inspector: string;
+    inspectionDate: string;
+    inspectionTime: string;
+    scores: {
+      freshness: number;
+      appearance: number;
+      smell: number;
+      other: number;
+    };
+    conclusion: 'pass' | 'conditional_pass' | 'fail';
+    notes?: string;
+    photos?: string[]; // Photo URIs or IDs
+    status?: 'draft' | 'submitted';
+  }, factoryId?: string): Promise<ApiResponse<QualityInspection>> {
     return await apiClient.post(`${this.getPath(factoryId)}/quality/inspections`, data);
+  }
+
+  // 12. 获取质检记录详情
+  async getQualityInspectionById(inspectionId: string, factoryId?: string): Promise<ApiResponse<QualityInspection>> {
+    return await apiClient.get(`${this.getPath(factoryId)}/quality/inspections/${inspectionId}`);
+  }
+
+  // 13. 更新质检记录（仅草稿状态）
+  async updateQualityInspection(
+    inspectionId: string,
+    data: Partial<{
+      inspector: string;
+      inspectionDate: string;
+      inspectionTime: string;
+      scores: {
+        freshness: number;
+        appearance: number;
+        smell: number;
+        other: number;
+      };
+      conclusion: 'pass' | 'conditional_pass' | 'fail';
+      notes?: string;
+      photos?: string[];
+      status?: 'draft' | 'submitted';
+    }>,
+    factoryId?: string
+  ): Promise<ApiResponse<QualityInspection>> {
+    return await apiClient.put(`${this.getPath(factoryId)}/quality/inspections/${inspectionId}`, data);
+  }
+
+  // 14. 删除质检记录（仅草稿状态）
+  async deleteQualityInspection(inspectionId: string, factoryId?: string): Promise<ApiResponse<{ deleted: boolean }>> {
+    return await apiClient.delete(`${this.getPath(factoryId)}/quality/inspections/${inspectionId}`);
+  }
+
+  // 15. 审核质检记录
+  async reviewQualityInspection(
+    inspectionId: string,
+    data: {
+      approved: boolean;
+      reviewNotes?: string;
+    },
+    factoryId?: string
+  ): Promise<ApiResponse<QualityInspection>> {
+    return await apiClient.post(
+      `${this.getPath(factoryId)}/quality/inspections/${inspectionId}/review`,
+      data
+    );
+  }
+
+  // 16. 上传质检照片
+  async uploadQualityInspectionPhoto(
+    inspectionId: string,
+    photoData: FormData,
+    factoryId?: string
+  ): Promise<ApiResponse<{ photoUrl: string }>> {
+    return await apiClient.post(
+      `${this.getPath(factoryId)}/quality/inspections/${inspectionId}/photos`,
+      photoData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
   }
 
   // ===== AI成本分析 (2个API) =====
 
-  // 12. 获取批次成本分析数据
-  async getBatchCostAnalysis(batchId: number | string, factoryId?: string) {
+  // 17. 获取批次成本分析数据
+  async getBatchCostAnalysis(batchId: number | string, factoryId?: string): Promise<ApiResponse<BatchCostData>> {
     return await apiClient.get(`${this.getPath(factoryId)}/batches/${batchId}/cost-analysis`);
   }
 
-  // 13. AI成本分析 - 已移除，请使用 aiApiClient.analyzeBatchCost()
+  // 18. AI成本分析 - 已移除，请使用 aiApiClient.analyzeBatchCost()
   // 迁移指南: frontend/CretasFoodTrace/AI_API_MIGRATION_GUIDE.md
 
   // ===== 时间范围成本分析 (Phase 3新增) =====
 
-  // 14. 获取时间范围内的成本汇总分析
+  // 19. 获取时间范围内的成本汇总分析
   async getTimeRangeCostAnalysis(params: {
     startDate: string;  // ISO format date string
     endDate: string;    // ISO format date string
     factoryId?: string;
-  }) {
+  }): Promise<ApiResponse<TimeRangeCostAnalysis>> {
     const { factoryId, startDate, endDate } = params;
     // 后端实际API路径: /api/mobile/{factoryId}/reports/cost-analysis
     // 转换ISO日期字符串为LocalDate格式 (YYYY-MM-DD)
@@ -161,19 +316,35 @@ class ProcessingApiClient {
     });
   }
 
-  // 15. AI时间范围成本分析（生成周报/月报等）
+  // 20. AI时间范围成本分析（生成周报/月报等）
   async aiTimeRangeCostAnalysis(params: {
     startDate: string;
     endDate: string;
     question?: string;
     session_id?: string;
     factoryId?: string;
-  }) {
+  }): Promise<ApiResponse<{ analysis: string; session_id: string }>> {
     const { factoryId, ...data } = params;
     return await apiClient.post(`${this.getPath(factoryId)}/ai-cost-analysis/time-range`, data);
   }
 
   // ===== MVP暂不使用的功能 =====
+  // ===== 成本对比 (1个API) =====
+
+  /**
+   * 获取批次成本对比数据
+   * @param batchIds 批次ID数组
+   * @param factoryId 工厂ID（可选）
+   * @returns 批次成本数据列表
+   */
+  async getBatchCostComparison(batchIds: string[], factoryId?: string): Promise<{ success: boolean; data: BatchCostData[] }> {
+    const batchIdsParam = batchIds.join(',');
+    const response = await apiClient.get<{ success: boolean; data: BatchCostData[] }>(`${this.getPath(factoryId)}/cost-comparison`, {
+      params: { batchIds: batchIdsParam }
+    });
+    return response;
+  }
+
   /*
    * 以下功能在MVP阶段暂不实现，后续根据需要逐步添加：
    *

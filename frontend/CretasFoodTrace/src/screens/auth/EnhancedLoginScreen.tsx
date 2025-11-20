@@ -21,6 +21,7 @@ import {
 } from '../../services/serviceFactory';
 import { getPostLoginRoute } from '../../utils/navigationHelper';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
 
 const { width, height } = Dimensions.get('window');
 
@@ -126,7 +127,7 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
       if (success) {
         navigateToMain();
       }
-    } catch (error: any) {
+    } catch (error) {
       Alert.alert('生物识别登录失败', error.message);
     }
   };
@@ -366,7 +367,7 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
 
               <TouchableOpacity
                 style={styles.quickAccessButton}
-                onPress={() => Alert.alert('提示', '请联系系统管理员重置密码')}
+                onPress={() => navigation.navigate('ForgotPassword')}
               >
                 <Ionicons name="help-circle" size={20} color="#4ECDC4" />
                 <Text style={styles.quickAccessText}>忘记密码</Text>

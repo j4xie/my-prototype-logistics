@@ -78,6 +78,14 @@ export default function ManagementScreen() {
       icon: 'shield-account',
       items: [
         {
+          id: 'departments',
+          title: '部门管理',
+          description: '管理组织架构和部门信息',
+          icon: 'office-building',
+          route: 'DepartmentManagement',
+          adminOnly: true,
+        },
+        {
           id: 'users',
           title: '用户管理',
           description: '管理用户、角色和权限',
@@ -117,8 +125,6 @@ export default function ManagementScreen() {
         },
       ],
     },
-    // TODO: Phase 3功能 - 暂时注释
-    /*
     {
       title: '工厂配置',
       icon: 'factory',
@@ -133,7 +139,6 @@ export default function ManagementScreen() {
         },
       ],
     },
-    */
   ];
 
   const handleNavigate = (route: string) => {

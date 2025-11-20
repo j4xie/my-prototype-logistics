@@ -10,27 +10,105 @@ import { DEFAULT_FACTORY_ID } from '../../constants/config';
  * - 路径：/api/mobile/{factoryId}/timeclock
  */
 
+/**
+ * 后端统一响应格式
+ */
+export interface ApiResponse<T> {
+  success: boolean;
+  code: number;
+  message: string;
+  data: T;
+}
+
+/**
+ * 分页响应格式
+ */
+export interface PagedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+/**
+ * 考勤统计响应
+ */
+export interface AttendanceStatistics {
+  totalWorkDays: number;
+  totalWorkHours: number;
+  averageWorkHours: number;
+  overtimeHours: number;
+  lateCount: number;
+  earlyLeaveCount: number;
+  absentCount: number;
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+}
+
+/**
+ * 部门考勤响应
+ */
+export interface DepartmentAttendance {
+  department: string;
+  date: string;
+  totalEmployees: number;
+  clockedIn: number;
+  onBreak: number;
+  clockedOut: number;
+  absent: number;
+  records: ClockRecord[];
+}
+
 export interface ClockInRequest {
   userId: number;
   location?: string;
   device?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface ClockOutRequest {
   userId: number;
 }
 
+/**
+ * 打卡记录（与后端 TimeClockRecord 实体匹配）
+ */
 export interface ClockRecord {
+  // 基本信息
   id?: number;
   userId: number;
-  type: 'clock_in' | 'clock_out' | 'break_start' | 'break_end';
-  clockTime: string;
+  factoryId?: string;
+
+  // 打卡时间
+  clockInTime?: string;      // 上班打卡时间
+  clockOutTime?: string;     // 下班打卡时间
+  breakStartTime?: string;   // 开始休息时间
+  breakEndTime?: string;     // 结束休息时间
+
+  // 位置和设备信息
   location?: string;
   device?: string;
   latitude?: number;
   longitude?: number;
+
+  // 时长统计（后端自动计算）
+  workDuration?: number;     // 工作时长（分钟）
+  breakDuration?: number;    // 休息时长（分钟）
+
+  // 状态
+  status?: 'working' | 'on_break' | 'off_work';
+
+  // 元数据
   createdAt?: string;
   updatedAt?: string;
+  remarks?: string;
 }
 
 export interface ClockStatus {
@@ -50,13 +128,15 @@ class TimeClockApiClient {
    * 1. 上班打卡
    * POST /api/mobile/{factoryId}/timeclock/clock-in
    */
-  async clockIn(params: ClockInRequest, factoryId?: string) {
-    const { userId, location, device } = params;
+  async clockIn(params: ClockInRequest, factoryId?: string): Promise<ApiResponse<ClockRecord>> {
+    const { userId, location, device, latitude, longitude } = params;
     return await apiClient.post(`${this.getPath(factoryId)}/clock-in`, null, {
       params: {
         userId,
         ...(location && { location }),
         ...(device && { device }),
+        ...(latitude !== undefined && { latitude }),
+        ...(longitude !== undefined && { longitude }),
       },
     });
   }
@@ -65,7 +145,7 @@ class TimeClockApiClient {
    * 2. 下班打卡
    * POST /api/mobile/{factoryId}/timeclock/clock-out
    */
-  async clockOut(params: ClockOutRequest, factoryId?: string) {
+  async clockOut(params: ClockOutRequest, factoryId?: string): Promise<ApiResponse<ClockRecord>> {
     const { userId } = params;
     return await apiClient.post(`${this.getPath(factoryId)}/clock-out`, null, {
       params: { userId },
@@ -76,7 +156,7 @@ class TimeClockApiClient {
    * 3. 开始休息
    * POST /api/mobile/{factoryId}/timeclock/break-start
    */
-  async breakStart(userId: number, factoryId?: string) {
+  async breakStart(userId: number, factoryId?: string): Promise<ApiResponse<ClockRecord>> {
     return await apiClient.post(`${this.getPath(factoryId)}/break-start`, null, {
       params: { userId },
     });
@@ -86,7 +166,7 @@ class TimeClockApiClient {
    * 4. 结束休息
    * POST /api/mobile/{factoryId}/timeclock/break-end
    */
-  async breakEnd(userId: number, factoryId?: string) {
+  async breakEnd(userId: number, factoryId?: string): Promise<ApiResponse<ClockRecord>> {
     return await apiClient.post(`${this.getPath(factoryId)}/break-end`, null, {
       params: { userId },
     });
@@ -96,7 +176,7 @@ class TimeClockApiClient {
    * 5. 获取打卡状态
    * GET /api/mobile/{factoryId}/timeclock/status
    */
-  async getClockStatus(userId: number, factoryId?: string): Promise<{ data: ClockStatus }> {
+  async getClockStatus(userId: number, factoryId?: string): Promise<ApiResponse<ClockStatus>> {
     return await apiClient.get(`${this.getPath(factoryId)}/status`, {
       params: { userId },
     });
@@ -105,8 +185,12 @@ class TimeClockApiClient {
   /**
    * 6. 获取今日打卡记录
    * GET /api/mobile/{factoryId}/timeclock/today
+   *
+   * @param userId - 用户ID
+   * @param factoryId - 工厂ID（可选）
+   * @returns 今日打卡记录，如果今日未打卡则 data 为 null
    */
-  async getTodayRecord(userId: number, factoryId?: string): Promise<{ data: ClockRecord }> {
+  async getTodayRecord(userId: number, factoryId?: string): Promise<ApiResponse<ClockRecord | null>> {
     return await apiClient.get(`${this.getPath(factoryId)}/today`, {
       params: { userId },
     });
@@ -125,7 +209,7 @@ class TimeClockApiClient {
       size?: number;
     },
     factoryId?: string
-  ) {
+  ): Promise<ApiResponse<PagedResponse<ClockRecord>>> {
     return await apiClient.get(`${this.getPath(factoryId)}/history`, {
       params: {
         userId,
@@ -148,7 +232,7 @@ class TimeClockApiClient {
       endDate: string; // ISO date string: YYYY-MM-DD
     },
     factoryId?: string
-  ) {
+  ): Promise<ApiResponse<AttendanceStatistics>> {
     return await apiClient.get(`${this.getPath(factoryId)}/statistics`, {
       params: {
         userId,
@@ -166,7 +250,7 @@ class TimeClockApiClient {
     department: string,
     date: string, // ISO date string: YYYY-MM-DD
     factoryId?: string
-  ) {
+  ): Promise<ApiResponse<DepartmentAttendance>> {
     return await apiClient.get(`${this.getPath(factoryId)}/department/${department}`, {
       params: { date },
     });
@@ -184,7 +268,7 @@ class TimeClockApiClient {
       reason: string;
     },
     factoryId?: string
-  ) {
+  ): Promise<ApiResponse<ClockRecord>> {
     return await apiClient.put(
       `${this.getPath(factoryId)}/records/${recordId}`,
       record,
@@ -207,7 +291,7 @@ class TimeClockApiClient {
       endDate: string; // ISO date string: YYYY-MM-DD
     },
     factoryId?: string
-  ) {
+  ): Promise<Blob> {
     return await apiClient.get(`${this.getPath(factoryId)}/export`, {
       params: {
         startDate: params.startDate,
