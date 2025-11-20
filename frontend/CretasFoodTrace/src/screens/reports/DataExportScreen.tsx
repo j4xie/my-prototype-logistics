@@ -18,6 +18,7 @@ import * as Sharing from 'expo-sharing';
 import { useAuthStore } from '../../store/authStore';
 import { API_CONFIG } from '../../constants/config';
 import { getFactoryId } from '../../types/auth';
+import { handleError } from '../../utils/errorHandler';
 
 type ReportType = 'production' | 'cost' | 'attendance';
 type ExportFormat = 'excel' | 'pdf' | 'csv';
@@ -199,7 +200,7 @@ export default function DataExportScreen() {
           [{ text: '确定' }]
         );
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('导出失败:', error);
 
       let errorMessage = '生成报表时出现错误，请重试';

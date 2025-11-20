@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { getFactoryId } from '../../types/auth';
+import { handleError } from '../../utils/errorHandler';
 
 export default function AnomalyReportScreen() {
   const navigation = useNavigation();
@@ -35,7 +36,7 @@ export default function AnomalyReportScreen() {
         console.warn('告警数据加载失败:', error);
         setAlerts([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('加载异常数据失败:', error);
       setAlerts([]);
     } finally {
