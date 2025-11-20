@@ -16,6 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { getFactoryId } from '../../types/auth';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 生产报表页面
@@ -78,11 +79,12 @@ export default function ProductionReportScreen() {
         setRecentBatches([]);
         setProductionStats(null);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to load production data:', error);
-      const errorMessage =
-        error.response?.data?.message || error.message || '加载生产数据失败，请稍后重试';
-      Alert.alert('加载失败', errorMessage);
+      handleError(error, {
+        title: '加载失败',
+        customMessage: '加载生产数据失败，请稍后重试',
+      });
       setRecentBatches([]);
       setProductionStats(null);
     } finally {

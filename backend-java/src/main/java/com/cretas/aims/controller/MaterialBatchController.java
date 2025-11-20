@@ -452,7 +452,7 @@ public class MaterialBatchController {
             @Parameter(description = "工厂ID", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "批次ID", required = true)
-            @PathVariable @NotNull Long batchId,
+            @PathVariable @NotBlank String batchId,
             @Parameter(description = "转换请求参数", required = true)
             @RequestBody @Valid ConvertToFrozenRequest request) {
 

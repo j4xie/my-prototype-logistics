@@ -173,5 +173,5 @@ public interface MaterialBatchService {
      * @return 转换后的批次信息
      * @since 2025-11-20
      */
-    MaterialBatchDTO convertToFrozen(String factoryId, Long batchId, ConvertToFrozenRequest request);
+    MaterialBatchDTO convertToFrozen(String factoryId, String batchId, ConvertToFrozenRequest request);
 }
