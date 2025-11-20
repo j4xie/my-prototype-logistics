@@ -17,6 +17,10 @@ import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建ProductionReport专用logger
+const productionReportLogger = logger.createContextLogger('ProductionReport');
 
 /**
  * 生产报表页面
@@ -53,7 +57,7 @@ export default function ProductionReportScreen() {
         return;
       }
 
-      console.log('📊 Loading production data...', { timeRange, factoryId });
+      productionReportLogger.debug('加载生产报表数据', { timeRange, factoryId });
 
       // 加载最近的批次列表
       const batchesResponse = await processingApiClient.getBatches(
@@ -73,14 +77,25 @@ export default function ProductionReportScreen() {
         const stats = calculateProductionStats(batches);
         setProductionStats(stats);
 
-        console.log('✅ Production data loaded:', { stats, batchCount: batches.length });
+        productionReportLogger.info('生产报表数据加载成功', {
+          batchCount: batches.length,
+          totalOutput: stats.totalOutput,
+          completionRate: stats.completionRate.toFixed(1) + '%',
+          factoryId,
+        });
       } else {
-        console.warn('获取生产数据失败:', batchesResponse.message);
+        productionReportLogger.warn('获取生产数据失败', {
+          message: batchesResponse.message,
+          factoryId,
+        });
         setRecentBatches([]);
         setProductionStats(null);
       }
     } catch (error) {
-      console.error('❌ Failed to load production data:', error);
+      productionReportLogger.error('加载生产报表失败', error as Error, {
+        factoryId: getFactoryId(user),
+        timeRange,
+      });
       handleError(error, {
         title: '加载失败',
         customMessage: '加载生产数据失败，请稍后重试',

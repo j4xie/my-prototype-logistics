@@ -16,6 +16,10 @@ import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建CostReport专用logger
+const costReportLogger = logger.createContextLogger('CostReport');
 
 /**
  * 成本报表页面
@@ -52,7 +56,7 @@ export default function CostReportScreen() {
         return;
       }
 
-      console.log('📊 Loading cost data...', { timeRange, factoryId });
+      costReportLogger.debug('加载成本报表数据', { timeRange, factoryId });
 
       // 加载批次列表（包含成本信息）
       const batchesResponse = await processingApiClient.getBatches(
@@ -71,14 +75,25 @@ export default function CostReportScreen() {
         const stats = calculateCostStats(batches);
         setCostStats(stats);
 
-        console.log('✅ Cost data loaded:', { stats, batchCount: batches.length });
+        costReportLogger.info('成本报表数据加载成功', {
+          batchCount: batches.length,
+          totalCost: stats.totalCost.toFixed(2),
+          avgCostPerBatch: stats.avgCostPerBatch.toFixed(2),
+          factoryId,
+        });
       } else {
-        console.warn('获取成本数据失败:', batchesResponse.message);
+        costReportLogger.warn('获取成本数据失败', {
+          message: batchesResponse.message,
+          factoryId,
+        });
         setBatchCosts([]);
         setCostStats(null);
       }
     } catch (error) {
-      console.error('❌ Failed to load cost data:', error);
+      costReportLogger.error('加载成本报表失败', error as Error, {
+        factoryId: getFactoryId(user),
+        timeRange,
+      });
       const errorMessage =
         error.response?.data?.message || error.message || '加载成本数据失败，请稍后重试';
       Alert.alert('加载失败', errorMessage);
