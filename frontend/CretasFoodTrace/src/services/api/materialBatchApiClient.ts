@@ -36,6 +36,11 @@ export interface ConvertToFrozenRequest {
   notes?: string;
 }
 
+export interface UndoFrozenRequest {
+  operatorId: number;
+  reason: string;
+}
+
 class MaterialBatchApiClient {
   private getPath(factoryId?: string) {
     return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/material-batches`;
@@ -176,6 +181,11 @@ class MaterialBatchApiClient {
   // 23. 转冻品
   async convertToFrozen(batchId: string, request: ConvertToFrozenRequest, factoryId?: string) {
     return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/convert-to-frozen`, request);
+  }
+
+  // 24. 撤销转冻品
+  async undoFrozen(batchId: string, request: UndoFrozenRequest, factoryId?: string) {
+    return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/undo-frozen`, request);
   }
 }
 
