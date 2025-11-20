@@ -19,6 +19,10 @@ import { productTypeApiClient } from '../../services/api/productTypeApiClient';
 import { conversionApiClient } from '../../services/api/conversionApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
+import { logger } from '../../utils/logger';
+
+// 创建ConversionRate专用logger
+const conversionLogger = logger.createContextLogger('ConversionRate');
 
 interface MaterialType {
   id: string;
@@ -74,12 +78,12 @@ export default function ConversionRateScreen() {
       setLoading(true);
 
       if (!factoryId) {
-        console.warn('⚠️ 工厂ID不存在，无法加载转换率数据');
+        conversionLogger.warn('工厂ID不存在，无法加载转换率数据');
         Alert.alert('错误', '无法获取工厂信息，请重新登录');
         return;
       }
 
-      console.log('📡 调用后端API - 获取转换率配置数据');
+      conversionLogger.info('加载转换率配置数据', { factoryId });
 
       // 并行加载三类数据
       const [materialsRes, productsRes, conversionsRes] = await Promise.all([
@@ -100,7 +104,7 @@ export default function ConversionRateScreen() {
           unit: item.unit || 'kg',
         }));
         setMaterials(mappedMaterials);
-        console.log(`✅ 加载原料类型: ${mappedMaterials.length} 个`);
+        conversionLogger.info('加载原料类型成功', { count: mappedMaterials.length });
       }
 
       // 处理产品类型数据
@@ -115,7 +119,7 @@ export default function ConversionRateScreen() {
           category: item.category || undefined,
         }));
         setProducts(mappedProducts);
-        console.log(`✅ 加载产品类型: ${mappedProducts.length} 个`);
+        conversionLogger.info('加载产品类型成功', { count: mappedProducts.length });
       }
 
       // 处理转换率数据
@@ -132,12 +136,16 @@ export default function ConversionRateScreen() {
           notes: item.notes || undefined,
         }));
         setConversions(mappedConversions);
-        console.log(`✅ 加载转换率配置: ${mappedConversions.length} 个`);
+        conversionLogger.info('加载转换率配置成功', { count: mappedConversions.length });
       }
 
-      console.log('✅ 所有数据加载完成');
+      conversionLogger.info('所有数据加载完成', {
+        materials: materials.length,
+        products: products.length,
+        conversions: conversions.length
+      });
     } catch (error: unknown) {
-      console.error('❌ 加载转换率数据失败:', error);
+      conversionLogger.error('加载转换率数据失败', error);
       const errorMessage = error instanceof Error ? error.message : '加载数据失败';
       Alert.alert('错误', errorMessage);
       setMaterials([]);
@@ -206,18 +214,30 @@ export default function ConversionRateScreen() {
       if (existing?.id) {
         // 更新现有转换率
         await conversionApiClient.updateConversionRate(existing.id, conversionData, factoryId);
-        console.log('✅ 转换率更新成功');
+        conversionLogger.info('转换率更新成功', {
+          id: existing.id,
+          materialTypeId: selectedMaterial.id,
+          productTypeId: selectedProduct.id,
+          rate
+        });
       } else {
         // 创建新转换率
         await conversionApiClient.createConversionRate(conversionData, factoryId);
-        console.log('✅ 转换率创建成功');
+        conversionLogger.info('转换率创建成功', {
+          materialTypeId: selectedMaterial.id,
+          productTypeId: selectedProduct.id,
+          rate
+        });
       }
 
       Alert.alert('成功', '转换率保存成功');
       setModalVisible(false);
       loadData();
     } catch (error: unknown) {
-      console.error('❌ 保存转换率失败:', error);
+      conversionLogger.error('保存转换率失败', error, {
+        materialTypeId: selectedMaterial?.id,
+        productTypeId: selectedProduct?.id
+      });
       const errorMessage = error instanceof Error ? error.message : '保存失败';
       Alert.alert('错误', errorMessage);
     }
