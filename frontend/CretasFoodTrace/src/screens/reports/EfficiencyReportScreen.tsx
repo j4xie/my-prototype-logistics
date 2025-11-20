@@ -16,6 +16,10 @@ import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建EfficiencyReport专用logger
+const efficiencyReportLogger = logger.createContextLogger('EfficiencyReport');
 
 /**
  * 效率报表页面
@@ -48,7 +52,7 @@ export default function EfficiencyReportScreen() {
         return;
       }
 
-      console.log('📊 Loading efficiency data...', { timeRange, factoryId });
+      efficiencyReportLogger.debug('加载效率报表数据', { timeRange, factoryId });
 
       // 尝试加载设备统计（可能包含效率数据）
       try {
@@ -56,17 +60,28 @@ export default function EfficiencyReportScreen() {
 
         if (equipmentStatsResponse.success && equipmentStatsResponse.data) {
           const stats = equipmentStatsResponse.data;
-          setEfficiencyStats({
+          const newEfficiencyStats = {
             equipmentOEE: stats.averageOEE || 75, // 示例值
             equipmentUtilization: stats.activeCount && stats.totalCount
               ? (stats.activeCount / stats.totalCount) * 100
               : 80,
             laborEfficiency: 85, // 需要从工时数据计算
             overallEfficiency: 78,
+          };
+          setEfficiencyStats(newEfficiencyStats);
+
+          efficiencyReportLogger.info('效率报表数据加载成功', {
+            equipmentOEE: newEfficiencyStats.equipmentOEE.toFixed(1) + '%',
+            equipmentUtilization: newEfficiencyStats.equipmentUtilization.toFixed(1) + '%',
+            overallEfficiency: newEfficiencyStats.overallEfficiency.toFixed(1) + '%',
+            factoryId,
           });
         }
       } catch (error) {
-        console.warn('设备统计加载失败，使用默认数据');
+        efficiencyReportLogger.warn('设备统计加载失败，使用默认数据', {
+          factoryId,
+          error: (error as Error).message,
+        });
         setEfficiencyStats({
           equipmentOEE: 75,
           equipmentUtilization: 80,
@@ -74,10 +89,11 @@ export default function EfficiencyReportScreen() {
           overallEfficiency: 78,
         });
       }
-
-      console.log('✅ Efficiency data loaded');
     } catch (error) {
-      console.error('❌ Failed to load efficiency data:', error);
+      efficiencyReportLogger.error('加载效率报表失败', error as Error, {
+        factoryId: getFactoryId(user),
+        timeRange,
+      });
       Alert.alert('加载失败', error.response?.data?.message || error.message || '加载效率数据失败');
       setEfficiencyStats(null);
     } finally {
