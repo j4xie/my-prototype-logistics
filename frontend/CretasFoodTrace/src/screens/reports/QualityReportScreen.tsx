@@ -17,6 +17,10 @@ import { useAuthStore } from '../../store/authStore';
 import { qualityInspectionApiClient } from '../../services/api/qualityInspectionApiClient';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建QualityReport专用logger
+const qualityReportLogger = logger.createContextLogger('QualityReport');
 
 /**
  * 质量报表页面
@@ -53,7 +57,7 @@ export default function QualityReportScreen() {
         return;
       }
 
-      console.log('📊 Loading quality data...', { timeRange, factoryId });
+      qualityReportLogger.debug('加载质量报表数据', { timeRange, factoryId });
 
       // 加载质检记录列表
       const inspectionsResponse = await qualityInspectionApiClient.getInspections(
@@ -72,14 +76,24 @@ export default function QualityReportScreen() {
         const stats = calculateQualityStats(inspections);
         setQualityStats(stats);
 
-        console.log('✅ Quality data loaded:', { stats, inspectionCount: inspections.length });
+        qualityReportLogger.info('质量报表数据加载成功', {
+          inspectionCount: inspections.length,
+          passRate: stats.passRate.toFixed(1) + '%',
+          factoryId,
+        });
       } else {
-        console.warn('获取质检数据失败:', inspectionsResponse.message);
+        qualityReportLogger.warn('获取质检数据失败', {
+          message: inspectionsResponse.message,
+          factoryId,
+        });
         setRecentInspections([]);
         setQualityStats(null);
       }
     } catch (error) {
-      console.error('❌ Failed to load quality data:', error);
+      qualityReportLogger.error('加载质量报表失败', error as Error, {
+        factoryId: getFactoryId(user),
+        timeRange,
+      });
       handleError(error, {
         title: '加载失败',
         customMessage: '加载质检数据失败，请稍后重试',
