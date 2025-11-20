@@ -28,6 +28,11 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { ProductTypeSelector } from '../../components/common/ProductTypeSelector';
 import { CustomerSelector } from '../../components/common/CustomerSelector';
 import { MaterialBatchSelector, SelectedBatch, AvailableBatch } from '../../components/common/MaterialBatchSelector';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建ProductionPlanManagement专用logger
+const productionPlanLogger = logger.createContextLogger('ProductionPlanManagement');
 
 type ProductionPlan = ApiProductionPlan;
 type NavigationProp = NativeStackNavigationProp<ProcessingStackParamList>;
@@ -55,7 +60,7 @@ export default function ProductionPlanManagementScreen() {
   const canCreatePlan = ['factory_super_admin', 'department_admin'].includes(roleCode) && !isReadOnly;
 
   // 调试日志
-  console.log('🔍 ProductionPlanManagement权限检查:', {
+  productionPlanLogger.debug('权限检查', {
     userType,
     roleCode,
     isReadOnly,
@@ -136,8 +141,8 @@ export default function ProductionPlanManagementScreen() {
       } else {
         setPlans([]);
       }
-    } catch (error: any) {
-      console.error('加载生产计划失败:', error);
+    } catch (error) {
+      productionPlanLogger.error('加载生产计划失败', error, { filterStatus });
       Alert.alert('错误', error.response?.data?.message || '加载生产计划失败');
       setPlans([]);
     } finally {
@@ -176,14 +181,14 @@ export default function ProductionPlanManagementScreen() {
         setAvailableStock(summaryData);
       }
     } catch (error) {
-      console.error('加载选项失败:', error);
+      productionPlanLogger.error('加载选项失败', error);
     }
   };
 
   // 加载原料库存（当产品类型变化时）
   const loadMaterialStock = async (productTypeId: string) => {
     try {
-      console.log('🔍 Loading material stock for product:', productTypeId);
+      productionPlanLogger.debug('加载产品对应的原料库存', { productTypeId });
 
       const stockRes = await productionPlanApiClient.getAvailableStock({ productTypeId });
 
@@ -219,7 +224,11 @@ export default function ProductionPlanManagementScreen() {
             batchCount: batches.length,
           }]);
 
-          console.log(`✅ Loaded ${batches.length} batches for ${materialType.name}`);
+          productionPlanLogger.info('原料库存加载成功', {
+            materialTypeName: materialType.name,
+            batchCount: batches.length,
+            totalAvailable,
+          });
         } else {
           // 未配置转换率
           setMaterialTypeId('');
@@ -229,8 +238,8 @@ export default function ProductionPlanManagementScreen() {
           Alert.alert('提示', '该产品未配置转换率，请先在转换率管理中配置');
         }
       }
-    } catch (error: any) {
-      console.error('加载原料库存失败:', error);
+    } catch (error) {
+      productionPlanLogger.error('加载原料库存失败', error, { productTypeId });
       Alert.alert('错误', error.response?.data?.message || '加载原料库存失败');
     }
   };
@@ -252,15 +261,18 @@ export default function ProductionPlanManagementScreen() {
         setConversionRate(result.data.conversionRate);
         setWastageRate(result.data.wastageRate);
 
-        console.log('📊 预估计算:', {
-          计划产量: result.data.plannedQuantity,
-          转换率: result.data.conversionRate + '%',
-          损耗率: result.data.wastageRate + '%',
-          预估消耗: result.data.estimatedUsage + 'kg',
+        productionPlanLogger.info('预估计算完成', {
+          plannedQuantity: result.data.plannedQuantity,
+          conversionRate: `${result.data.conversionRate}%`,
+          wastageRate: `${result.data.wastageRate}%`,
+          estimatedUsage: `${result.data.estimatedUsage}kg`,
         });
       }
-    } catch (error: any) {
-      console.error('预估计算失败:', error);
+    } catch (error) {
+      productionPlanLogger.error('预估计算失败', error, {
+        productTypeId: formData.productTypeId,
+        plannedQuantity: formData.plannedQuantity,
+      });
       // 降级：使用简单估算
       const quantity = parseFloat(formData.plannedQuantity);
       const fallbackRate = 0.57;
@@ -335,8 +347,13 @@ export default function ProductionPlanManagementScreen() {
         setModalVisible(false);
         loadPlans();
       }
-    } catch (error: any) {
-      console.error('创建生产计划失败:', error);
+    } catch (error) {
+      productionPlanLogger.error('创建生产计划失败', error, {
+        productTypeId: formData.productTypeId,
+        customerId: formData.customerId,
+        plannedQuantity: formData.plannedQuantity,
+        selectedBatchCount: selectedBatches.length,
+      });
       Alert.alert('错误', error.response?.data?.message || '创建失败');
     }
   };
@@ -356,8 +373,8 @@ export default function ProductionPlanManagementScreen() {
                 Alert.alert('成功', '生产已开始');
                 loadPlans();
               }
-            } catch (error: any) {
-              console.error('开始生产失败:', error);
+            } catch (error) {
+              productionPlanLogger.error('开始生产失败', error, { planId });
               Alert.alert('错误', error.response?.data?.message || '操作失败');
             }
           },
