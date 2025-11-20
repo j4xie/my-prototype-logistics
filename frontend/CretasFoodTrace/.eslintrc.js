@@ -118,6 +118,18 @@ module.exports = {
     'react-native/no-inline-styles': 'warn',
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
+
+    // ==========================================
+    // 日志规范 (2025-11-20添加)
+    // ==========================================
+    // 警告使用console.log，推荐使用统一的logger工具
+    // 详见: src/utils/logger.ts
+    'no-console': [
+      'warn',
+      {
+        allow: ['warn', 'error', 'info'],
+      },
+    ],
   },
   overrides: [
     {
