@@ -5,6 +5,14 @@ import { useNavigation } from '@react-navigation/native';
 import { MainTabParamList } from '../types/navigation';
 import { useAuthStore } from '../store/authStore';
 import { getPostLoginRoute } from '../utils/navigationHelper';
+// ✅ P1-2: 导入类型守卫函数和辅助函数
+import {
+  getUserRole,
+  hasPermission as checkUserPermission,
+  isPlatformUser,
+  isFactoryUser,
+  getDepartment,
+} from '../types/auth';
 
 // 导入页面和导航器
 import HomeScreen from '../screens/main/HomeScreen';
@@ -12,7 +20,7 @@ import ProcessingStackNavigator from './ProcessingStackNavigator';
 import ManagementStackNavigator from './ManagementStackNavigator';
 import PlatformStackNavigator from './PlatformStackNavigator';
 import AttendanceStackNavigator from './AttendanceStackNavigator';
-import ProfileScreen from '../screens/profile/ProfileScreen';
+import ProfileStackNavigator from './ProfileStackNavigator'; // Phase 3 P2 - 使用导航器而非单页
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -27,59 +35,17 @@ export function MainNavigator() {
   // 调试日志
   console.log('🏠 MainNavigator - User:', user ? {
     userType: user.userType,
-    hasPlatformUser: user.userType === 'platform',
-    hasFactoryUser: user.userType === 'factory',
+    hasPlatformUser: isPlatformUser(user),
+    hasFactoryUser: isFactoryUser(user),
   } : 'null');
 
-  // 获取用户权限 - 从 user 的顶级 permissions 获取完整权限对象
-  // 这个对象包含 modules（权限列表）、features（功能列表）等信息
-  const permissions = (user as any)?.permissions || {};
+  // ✅ P1-2: 使用类型安全的辅助函数替代 as any
+  // 获取用户角色
+  const userRole = getUserRole(user);
 
-  // 获取用户角色 - 安全访问（需要在 hasPermission 之前定义）
-  const userRole = user?.userType === 'platform'
-    ? (user as any).platformUser?.role || (user as any).role || 'viewer'
-    : user?.userType === 'factory'
-      ? (user as any).factoryUser?.role || (user as any).role || 'viewer'
-      : 'viewer';
-
-  // 检查是否有某个权限 - 兼容对象和数组格式
-  const hasPermission = (perm: string) => {
-    // 特殊处理：部门管理员根据部门自动授予模块访问权限
-    if (user?.userType === 'factory' && userRole === 'department_admin') {
-      const department = (user as any).factoryUser?.department;
-      
-      // 部门与权限的映射
-      const departmentPermissionMap: Record<string, string> = {
-        'processing': 'processing_access',
-        'farming': 'farming_access',
-        'logistics': 'logistics_access',
-        'quality': 'quality_access',
-      };
-      
-      // 如果请求的权限匹配用户的部门权限，自动授予
-      if (department && departmentPermissionMap[department] === perm) {
-        return true;
-      }
-    }
-
-    // 如果是数组格式
-    if (Array.isArray(permissions)) {
-      return permissions.includes(perm);
-    }
-
-    // 如果是对象格式 (后端返回的格式)
-    if (typeof permissions === 'object' && permissions !== null) {
-      // 检查 modules 对象
-      if ((permissions as any).modules && (permissions as any).modules[perm] === true) {
-        return true;
-      }
-      // 检查 features 数组
-      if (Array.isArray((permissions as any).features) && (permissions as any).features.includes(perm)) {
-        return true;
-      }
-    }
-
-    return false;
+  // 检查权限的便捷函数
+  const hasPermission = (perm: string): boolean => {
+    return checkUserPermission(user, perm);
   };
 
   // ⚠️ 自动导航功能已禁用
@@ -96,7 +62,7 @@ export function MainNavigator() {
 
   // 当用户改变时，重置导航尝试记录
   useEffect(() => {
-    const currentUserId = (user as any)?.id || (user as any)?.username;
+    const currentUserId = user?.id || user?.username;
     if (previousUserIdRef.current !== currentUserId) {
       navigationAttemptedRef.current.clear();
       previousUserIdRef.current = currentUserId;
@@ -130,7 +96,7 @@ export function MainNavigator() {
           targetScreen,
           hasPermission: hasTargetPermission,
           userRole,
-          department: user?.userType === 'factory' ? (user as any).factoryUser?.department : undefined,
+          department: getDepartment(user),
           permissions
         });
 
@@ -150,16 +116,17 @@ export function MainNavigator() {
             // @ts-ignore - React Navigation的嵌套导航
             if (targetParams) {
               // 有嵌套参数，使用完整的导航对象
-              navigation.navigate(targetScreen as any, targetParams);
+              navigation.navigate(targetScreen as keyof MainTabParamList, targetParams);
               console.log(`✅ Navigation successful (attempt ${attempt}):`, targetScreen);
             } else {
               // 没有嵌套参数，直接导航
-              navigation.navigate(targetScreen as any);
+              navigation.navigate(targetScreen as keyof MainTabParamList);
               console.log(`✅ Navigation successful (attempt ${attempt}):`, targetScreen);
             }
-          } catch (error: any) {
+          } catch (error: unknown) {
             // 如果导航失败，可能是目标 Tab 还没注册，稍后重试
-            if ((error?.message?.includes('not handled') || error?.message?.includes('not found')) && attempt < 5) {
+            const errorMessage = error instanceof Error ? error.message : '';
+            if ((errorMessage.includes('not handled') || errorMessage.includes('not found')) && attempt < 5) {
               console.warn(`⚠️ Tab ${targetScreen} not ready yet (attempt ${attempt}/5), retrying...`);
               // 重试多次，每次延迟递增
               setTimeout(() => {
@@ -189,7 +156,6 @@ export function MainNavigator() {
 
   return (
     <Tab.Navigator
-      id="MainTabNavigator"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#2196F3',
@@ -267,7 +233,7 @@ export function MainNavigator() {
       {/* 个人中心 - 所有用户可见 */}
       <Tab.Screen
         name="ProfileTab"
-        component={ProfileScreen}
+        component={ProfileStackNavigator}
         options={{
           title: '我的',
           tabBarIcon: ({ color, size }) => (

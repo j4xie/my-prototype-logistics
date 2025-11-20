@@ -14,8 +14,9 @@ import {
   IconButton,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { platformAPI, FactoryDTO } from '../../services/api/platformApiClient';
 
-// Mock工厂数据
+// Mock工厂数据（备用）
 const MOCK_FACTORIES = [
   {
     id: 'FISH_2025_001',
@@ -88,16 +89,34 @@ export default function FactoryManagementScreen() {
   const loadFactories = async () => {
     setLoading(true);
     try {
-      // TODO: 调用后端API获取工厂列表
-      // const response = await platformAPI.getFactories();
-      // setFactories(response.data);
+      console.log('📡 调用后端API - 获取工厂列表');
+      const response = await platformAPI.getFactories();
 
-      // 当前使用Mock数据
-      console.log('📦 使用Mock数据 - 工厂列表');
+      if (response.success && response.data) {
+        console.log(`✅ 加载成功: ${response.data.length} 个工厂`);
+        // 将后端FactoryDTO映射到前端显示格式
+        const mappedFactories = response.data.map((factory: FactoryDTO) => ({
+          id: factory.id,
+          name: factory.factoryName,
+          industry: '食品加工', // 后端暂无此字段
+          region: factory.address || '未知',
+          status: factory.isActive !== false ? 'active' : 'inactive',
+          aiQuota: 100, // 后端暂无此字段
+          totalUsers: factory.totalUsers || 0,
+          createdAt: factory.createdAt || '',
+          address: factory.address || '',
+        }));
+        setFactories(mappedFactories);
+      } else {
+        console.warn('⚠️ API返回失败，使用Mock数据');
+        setFactories(MOCK_FACTORIES);
+      }
+    } catch (error: unknown) {
+      console.error('❌ 加载工厂列表失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '加载工厂列表失败';
+      Alert.alert('错误', errorMessage);
+      // 失败时使用Mock数据作为备用
       setFactories(MOCK_FACTORIES);
-    } catch (error) {
-      console.error('加载工厂列表失败:', error);
-      Alert.alert('错误', '加载工厂列表失败');
     } finally {
       setLoading(false);
     }

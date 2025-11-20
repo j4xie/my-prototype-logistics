@@ -23,8 +23,18 @@ import {
   USER_ROLES,
   PLATFORM_ROLES,
   FACTORY_ROLES,
-  UserDTO
+  UserDTO,
+  UserPermissions
 } from '../../types/auth';
+import {
+  UnifiedLoginApiResponse,
+  RegisterPhaseOneApiResponse,
+  RegisterApiResponse,
+  LogoutApiResponse,
+  ResetPasswordApiResponse,
+  ChangePasswordApiResponse,
+  ApiErrorResponse
+} from '../../types/apiResponses';
 import { transformBackendUser, getUserRole } from '../../utils/roleMapping';
 
 export class AuthService {
@@ -42,7 +52,7 @@ export class AuthService {
       // 调用新的API端点 - 统一登录接口（支持工厂用户和平台管理员）
       // 注意: unified-login 会自动识别用户类型（平台管理员 or 工厂用户）
       // 所以不需要显式传递 factoryId - 后端会根据username判断
-      const loginPayload: any = {
+      const loginPayload: LoginRequest = {
         username: credentials.username,
         password: credentials.password,
         deviceInfo: credentials.deviceInfo
@@ -54,7 +64,7 @@ export class AuthService {
       console.log('📤 发送登录请求:', JSON.stringify(loginPayload, null, 2));
 
       const rawResponse = await NetworkManager.executeWithRetry(
-        () => apiClient.post<any>('/api/mobile/auth/unified-login', loginPayload),
+        () => apiClient.post<UnifiedLoginApiResponse>('/api/mobile/auth/unified-login', loginPayload),
         { maxRetries: 2, baseDelay: 1000 }
       );
 
@@ -69,11 +79,11 @@ export class AuthService {
 
         // 使用TokenManager保存认证信息
         const tokenData = {
-          accessToken: response.tokens.token || response.tokens.accessToken,
+          accessToken: response.tokens.token ?? response.tokens.accessToken,
           refreshToken: response.tokens.refreshToken,
           tempToken: response.tokens.tempToken,
-          expiresAt: Date.now() + (response.tokens.expiresIn || 86400) * 1000, // 默认24小时
-          tokenType: response.tokens.tokenType || 'Bearer'
+          expiresAt: Date.now() + (response.tokens.expiresIn ?? 86400) * 1000, // 默认24小时
+          tokenType: response.tokens.tokenType ?? 'Bearer'
         };
 
         await TokenManager.storeTokens(tokenData);
@@ -85,7 +95,7 @@ export class AuthService {
           if (canUseBiometric) {
             await BiometricManager.saveBiometricCredentials({
               username: credentials.username,
-              encryptedToken: response.tokens.token || response.tokens.accessToken,
+              encryptedToken: response.tokens.token ?? response.tokens.accessToken,
               deviceInfo: credentials.deviceInfo
             });
           }
@@ -106,7 +116,7 @@ export class AuthService {
   }
 
   // 适配新API响应格式 - 处理后端统一登录返回
-  private static adaptNewApiResponse(rawResponse: any): LoginResponse {
+  private static adaptNewApiResponse(rawResponse: UnifiedLoginApiResponse): LoginResponse {
     try {
       // 后端unified-login实际返回格式:
       // {
@@ -137,7 +147,7 @@ export class AuthService {
 
       // 检查是否有必需字段 (token/accessToken/userId)
       // 后端现在同时返回 token 和 accessToken 两个字段（值相同）
-      const tokenValue = data.token || data.accessToken;
+      const tokenValue = data.token ?? data.accessToken;
       if (!tokenValue || !data.userId) {
         return {
           success: false,
@@ -200,7 +210,7 @@ export class AuthService {
             factoryId: backendUser.factoryId,
             department: backendUser.department as Department,
             position: backendUser.position,
-            permissions: backendUser.permissions?.features || []
+            permissions: backendUser.permissions?.features ?? []
           }
         } as User;
       } else {
@@ -218,19 +228,20 @@ export class AuthService {
           userType: 'platform',
           platformUser: {
             role: backendUser.role as PlatformRole,
-            permissions: backendUser.permissions?.features || []
+            permissions: backendUser.permissions?.features ?? []
           }
         } as User;
       }
 
       // 添加权限信息到user对象顶级属性（用于后续权限检查）
-      const permissionsData = backendUser.permissions || {};
-      (user as any).permissions = {
-        modules: permissionsData.modules || {},
-        features: permissionsData.features || [],
-        role: permissionsData.role || backendUser.roleCode || backendUser.role || '',
+      const permissionsData = backendUser.permissions ?? {};
+      const userWithPermissions = user as User & { permissions: UserPermissions };
+      userWithPermissions.permissions = {
+        modules: permissionsData.modules ?? {},
+        features: permissionsData.features ?? [],
+        role: permissionsData.role ?? backendUser.roleCode ?? backendUser.role ?? '',
         userType: user.userType,
-        level: permissionsData.roleLevel || 0,
+        level: permissionsData.roleLevel ?? 0,
         departments: user.userType === 'factory' ? [(user as FactoryUser).factoryUser.department] : undefined
       };
 
@@ -239,11 +250,11 @@ export class AuthService {
 
       // 构建tokens对象 - 后端返回 token 字段，需要映射为 accessToken
       const tokens: AuthTokens = {
-        accessToken: backendTokens.token || backendTokens.accessToken,
+        accessToken: backendTokens.token ?? backendTokens.accessToken,
         refreshToken: backendTokens.refreshToken,
         tempToken: undefined,
-        expiresIn: backendTokens.expiresIn || 86400,
-        tokenType: backendTokens.tokenType || 'Bearer'
+        expiresIn: backendTokens.expiresIn ?? 86400,
+        tokenType: backendTokens.tokenType ?? 'Bearer'
       };
 
       console.log('✅ API响应适配成功:', {
@@ -320,15 +331,15 @@ export class AuthService {
   static async registerPhaseOne(request: RegisterPhaseOneRequest): Promise<RegisterResponse> {
     try {
       console.log('📤 发送注册第一阶段请求:', request);
-      
+
       // 后端返回格式: ApiResponse<RegisterPhaseOneResponse>
-      const rawResponse = await apiClient.post<any>('/api/mobile/auth/register-phase-one', request);
-      
+      const rawResponse = await apiClient.post<RegisterPhaseOneApiResponse>('/api/mobile/auth/register-phase-one', request);
+
       console.log('📥 注册第一阶段响应:', rawResponse);
-      
+
       // 适配后端响应格式
       let response: RegisterResponse;
-      
+
       // 检查是否是 ApiResponse 格式 (有 code, data, success, message)
       if (rawResponse.success !== undefined && rawResponse.data) {
         const data = rawResponse.data;
@@ -345,18 +356,19 @@ export class AuthService {
         // 直接返回格式
         response = rawResponse as RegisterResponse;
       }
-      
+
       if (response.success && response.tempToken) {
         await StorageService.setSecureItem('temp_token', response.tempToken);
         console.log('✅ 临时Token已保存');
       }
-      
+
       return response;
-    } catch (error: any) {
+    } catch (error) {
       console.error('注册第一阶段失败:', error);
       // 处理错误响应
-      if (error.response?.data) {
-        const errorData = error.response.data;
+      const apiError = error as ApiErrorResponse;
+      if (apiError.response?.data) {
+        const errorData = apiError.response.data;
         throw new Error(errorData.message || errorData.error || '手机验证失败');
       }
       throw this.handleAuthError(error);
@@ -411,7 +423,7 @@ export class AuthService {
 
       // 调用API端点
       const rawResponse = await NetworkManager.executeWithRetry(
-        () => apiClient.post<any>('/api/auth/register', {
+        () => apiClient.post<RegisterApiResponse>('/api/auth/register', {
           tempToken: request.tempToken,
           username: request.username,
           password: request.password,
@@ -438,8 +450,8 @@ export class AuthService {
           accessToken: response.tokens.accessToken,
           refreshToken: response.tokens.refreshToken,
           tempToken: response.tokens.tempToken,
-          expiresAt: Date.now() + (response.tokens.expiresIn || 86400) * 1000, // 默认24小时
-          tokenType: response.tokens.tokenType || 'Bearer'
+          expiresAt: Date.now() + (response.tokens.expiresIn ?? 86400) * 1000, // 默认24小时
+          tokenType: response.tokens.tokenType ?? 'Bearer'
         };
 
         await TokenManager.storeTokens(tokenData);
@@ -463,7 +475,7 @@ export class AuthService {
   }
 
   // 适配用户注册API响应格式
-  private static adaptRegisterResponse(rawResponse: any): LoginResponse {
+  private static adaptRegisterResponse(rawResponse: RegisterApiResponse): LoginResponse {
     try {
       // 实际API返回格式: { code, data, message, success, timestamp }
       // data 包含: { accessToken, refreshToken, tokenType, expiresIn, user, message }
@@ -529,10 +541,11 @@ export class AuthService {
         }
 
         // 添加权限信息到user对象顶级属性（用于后续权限检查）
-        (user as any).permissions = {
+        const userWithPermissions = user as User & { permissions: UserPermissions };
+        userWithPermissions.permissions = {
           modules: {},
           features: [],
-          role: backendUser.roleCode || '',
+          role: backendUser.roleCode ?? '',
           userType: user.userType,
           level: 0,
           departments: user.userType === 'factory' ? [(user as FactoryUser).factoryUser.department] : undefined
@@ -546,8 +559,8 @@ export class AuthService {
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
           tempToken: undefined,
-          expiresIn: data.expiresIn || 86400,
-          tokenType: data.tokenType || 'Bearer'
+          expiresIn: data.expiresIn ?? 86400,
+          tokenType: data.tokenType ?? 'Bearer'
         };
 
         return {
@@ -620,7 +633,7 @@ export class AuthService {
           refreshToken: response.tokens.refreshToken,
           tempToken: response.tokens.tempToken,
           expiresAt: Date.now() + response.tokens.expiresIn * 1000,
-          tokenType: response.tokens.tokenType || 'Bearer'
+          tokenType: response.tokens.tokenType ?? 'Bearer'
         };
         
         await TokenManager.storeTokens(tokenData);
@@ -688,7 +701,7 @@ export class AuthService {
   static async logout(): Promise<void> {
     try {
       // 通知服务器登出 - 调用移动端API端点
-      const response = await apiClient.post<any>('/api/mobile/auth/logout');
+      const response = await apiClient.post<LogoutApiResponse>('/api/mobile/auth/logout');
 
       console.log('服务器登出成功:', {
         code: response.code,
@@ -736,7 +749,7 @@ export class AuthService {
 
       // 调用API
       const response = await NetworkManager.executeWithRetry(
-        () => apiClient.post<any>('/api/mobile/auth/reset-password', {
+        () => apiClient.post<ResetPasswordApiResponse>('/api/mobile/auth/reset-password', {
           tempToken,
           newPassword
         }),
@@ -788,7 +801,7 @@ export class AuthService {
       // 调用API - 注意参数在query string中
       const response = await NetworkManager.executeWithRetry(
         () =>
-          apiClient.post<any>('/api/auth/change-password', null, {
+          apiClient.post<ChangePasswordApiResponse>('/api/auth/change-password', null, {
             params: {
               oldPassword,
               newPassword
@@ -939,12 +952,13 @@ export class AuthService {
   }
 
   // 错误处理
-  private static handleAuthError(error: any): Error {
-    if (error.response?.data?.message) {
-      return new Error(error.response.data.message);
+  private static handleAuthError(error: unknown): Error {
+    const apiError = error as ApiErrorResponse;
+    if (apiError.response?.data?.message) {
+      return new Error(apiError.response.data.message);
     }
-    if (error.message) {
-      return new Error(error.message);
+    if (apiError.message) {
+      return new Error(apiError.message);
     }
     return new Error('认证服务出现未知错误');
   }

@@ -331,12 +331,15 @@ export class NetworkManager {
    * 转换NetInfo状态为内部状态
    */
   private static transformNetInfoState(state: NetInfoState): NetworkState {
+    // state.details 的类型取决于 state.type
+    const details = state.details as Record<string, any> | null;
+
     return {
       isConnected: state.isConnected === true,
       type: state.type,
       isInternetReachable: state.isInternetReachable,
-      strength: (state.details as any)?.strength || null,
-      carrier: (state.details as any)?.cellularGeneration || null,
+      strength: details && 'strength' in details ? (details.strength as number | null) : null,
+      carrier: details && 'cellularGeneration' in details ? (details.cellularGeneration as string | null) : null,
       details: state.details,
     };
   }

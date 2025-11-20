@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../services/api/materialSpecApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 原材料规格配置管理页面
@@ -45,7 +46,7 @@ export default function MaterialSpecManagementScreen() {
       setLoading(true);
       const response = await materialSpecApiClient.getSpecConfig(user?.factoryId);
       setSpecConfig(response.data);
-    } catch (error: any) {
+    } catch (error) {
       console.warn('加载规格配置失败，使用默认配置:', error.message);
       setSpecConfig(DEFAULT_SPEC_CONFIG);
     } finally {

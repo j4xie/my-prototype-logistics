@@ -87,12 +87,12 @@ class SupplierApiClient {
     isActive?: boolean;
   }): Promise<{data: Supplier[]}> {
     const { factoryId, ...queryParams } = params || {};
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    const apiResponse = await apiClient.get<any>(
       `${this.getFactoryPath(factoryId)}/suppliers`,
       { params: queryParams }
     );
     // 兼容旧格式：包装成 {data: [...]}
-    const apiResponse = response.data || response;
     if (apiResponse.content) {
       return { data: apiResponse.content };
     }
@@ -107,12 +107,12 @@ class SupplierApiClient {
     request: CreateSupplierRequest,
     factoryId?: string
   ): Promise<{data: Supplier}> {
-    const response: any = await apiClient.post(
+    // apiClient拦截器已统一返回data
+    const apiData = await apiClient.post<Supplier>(
       `${this.getFactoryPath(factoryId)}/suppliers`,
       request
     );
     // 兼容旧格式：包装成 {data: {...}}
-    const apiData = response.data || response;
     return { data: apiData };
   }
 
@@ -121,10 +121,10 @@ class SupplierApiClient {
    * GET /api/mobile/{factoryId}/suppliers/{supplierId}
    */
   async getSupplierById(supplierId: string, factoryId?: string): Promise<Supplier> {
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<Supplier>(
       `${this.getFactoryPath(factoryId)}/suppliers/${supplierId}`
     );
-    return response.data || response;
   }
 
   /**
@@ -136,11 +136,11 @@ class SupplierApiClient {
     request: Partial<CreateSupplierRequest>,
     factoryId?: string
   ): Promise<Supplier> {
-    const response: any = await apiClient.put(
+    // apiClient拦截器已统一返回data
+    return await apiClient.put<Supplier>(
       `${this.getFactoryPath(factoryId)}/suppliers/${supplierId}`,
       request
     );
-    return response.data || response;
   }
 
   /**
@@ -156,10 +156,10 @@ class SupplierApiClient {
    * GET /api/mobile/{factoryId}/suppliers/active
    */
   async getActiveSuppliers(factoryId?: string): Promise<Supplier[]> {
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<Supplier[]>(
       `${this.getFactoryPath(factoryId)}/suppliers/active`
     );
-    return response.data || response;
   }
 
   /**
@@ -174,11 +174,11 @@ class SupplierApiClient {
     isActive?: boolean;
   }): Promise<Supplier[]> {
     const { factoryId, ...queryParams } = params;
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<Supplier[]>(
       `${this.getFactoryPath(factoryId)}/suppliers/search`,
       { params: queryParams }
     );
-    return response.data || response;
   }
 
   /**
@@ -190,11 +190,11 @@ class SupplierApiClient {
     isActive: boolean,
     factoryId?: string
   ): Promise<Supplier> {
-    const response: any = await apiClient.put(
+    // apiClient拦截器已统一返回data
+    return await apiClient.put<Supplier>(
       `${this.getFactoryPath(factoryId)}/suppliers/${supplierId}/status`,
       { isActive }
     );
-    return response.data || response;
   }
 
   // ===== MVP暂不使用的功能 =====

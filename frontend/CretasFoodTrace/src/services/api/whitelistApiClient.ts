@@ -5,7 +5,7 @@ import { DEFAULT_FACTORY_ID } from '../../constants/config';
  * 白名单管理API客户端 - MVP精简版
  * MVP保留：5个核心API
  * 已移除：15个高级功能API（过期管理、使用统计、导入导出等）
- * 路径：/api/{factoryId}/whitelist/*
+ * 路径：/api/mobile/{factoryId}/whitelist/*
  *
  * 业务场景：管理员批量添加允许注册的手机号，员工注册时自动验证
  */
@@ -58,7 +58,7 @@ export interface PageResponse<T> {
 
 class WhitelistApiClient {
   private getFactoryPath(factoryId?: string) {
-    return `/api/${factoryId || DEFAULT_FACTORY_ID}`;
+    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}`;
   }
 
   /**
@@ -77,11 +77,11 @@ class WhitelistApiClient {
     sortDirection?: 'ASC' | 'DESC';
   }): Promise<PageResponse<WhitelistDTO>> {
     const { factoryId, ...queryParams } = params || {};
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<PageResponse<WhitelistDTO>>(
       `${this.getFactoryPath(factoryId)}/whitelist`,
       { params: queryParams }
     );
-    return response.data || response;
   }
 
   /**
@@ -100,11 +100,11 @@ class WhitelistApiClient {
     request: BatchAddRequest,
     factoryId?: string
   ): Promise<BatchResult> {
-    const response: any = await apiClient.post(
+    // apiClient拦截器已统一返回data
+    return await apiClient.post<BatchResult>(
       `${this.getFactoryPath(factoryId)}/whitelist/batch`,
       request
     );
-    return response.data || response;
   }
 
   /**
@@ -115,11 +115,11 @@ class WhitelistApiClient {
     ids: number[],
     factoryId?: string
   ): Promise<BatchResult> {
-    const response: any = await apiClient.delete(
+    // apiClient拦截器已统一返回data
+    return await apiClient.delete<BatchResult>(
       `${this.getFactoryPath(factoryId)}/whitelist/batch`,
       { data: { ids } }
     );
-    return response.data || response;
   }
 
   /**
@@ -134,11 +134,15 @@ class WhitelistApiClient {
     whitelist?: WhitelistDTO;
     message?: string;
   }> {
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<{
+      isValid: boolean;
+      whitelist?: WhitelistDTO;
+      message?: string;
+    }>(
       `${this.getFactoryPath(factoryId)}/whitelist/check`,
       { params: { phoneNumber } }
     );
-    return response.data || response;
   }
 
   // ===== 以下方法在MVP中暂不使用，已注释保留供后续版本使用 =====

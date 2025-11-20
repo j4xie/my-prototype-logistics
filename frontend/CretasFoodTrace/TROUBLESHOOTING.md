@@ -137,3 +137,5 @@ Metro waiting on exp://172.20.10.11:3010
 - [Expo官方文档 - 开发服务器](https://docs.expo.dev/workflow/development-build/)
 - [端口配置说明](../../docs/technical/PORT-CONFIGURATION.md)
 
+
+

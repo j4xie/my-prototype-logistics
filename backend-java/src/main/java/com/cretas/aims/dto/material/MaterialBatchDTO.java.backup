@@ -1,0 +1,112 @@
+package com.cretas.aims.dto.material;
+
+import com.cretas.aims.entity.enums.MaterialBatchStatus;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+/**
+ * 原材料批次数据传输对象
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2025-01-09
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@ApiModel(description = "原材料批次信息")
+public class MaterialBatchDTO {
+
+    @ApiModelProperty(value = "批次ID")
+    private Integer id;
+
+    @ApiModelProperty(value = "工厂ID")
+    private String factoryId;
+
+    @ApiModelProperty(value = "批次号")
+    private String batchNumber;
+
+    @ApiModelProperty(value = "原材料类型ID")
+    private Integer materialTypeId;
+
+    @ApiModelProperty(value = "原材料名称")
+    private String materialName;
+
+    @ApiModelProperty(value = "原材料代码")
+    private String materialCode;
+
+    @ApiModelProperty(value = "原材料类别")
+    private String materialCategory;
+
+    @ApiModelProperty(value = "供应商ID")
+    private Integer supplierId;
+
+    @ApiModelProperty(value = "供应商名称")
+    private String supplierName;
+
+    @ApiModelProperty(value = "采购日期")
+    private LocalDate purchaseDate;
+
+    @ApiModelProperty(value = "到期日期")
+    private LocalDate expireDate;
+
+    @ApiModelProperty(value = "初始数量")
+    private BigDecimal initialQuantity;
+
+    @ApiModelProperty(value = "当前数量")
+    private BigDecimal currentQuantity;
+
+    @ApiModelProperty(value = "单位")
+    private String unit;
+
+    @ApiModelProperty(value = "单价")
+    private BigDecimal unitPrice;
+
+    @ApiModelProperty(value = "总价")
+    private BigDecimal totalPrice;
+
+    @ApiModelProperty(value = "状态")
+    private MaterialBatchStatus status;
+
+    @ApiModelProperty(value = "状态显示名称")
+    private String statusDisplayName;
+
+    @ApiModelProperty(value = "存储位置")
+    private String storageLocation;
+
+    @ApiModelProperty(value = "质量证书")
+    private String qualityCertificate;
+
+    @ApiModelProperty(value = "备注")
+    private String notes;
+
+    @ApiModelProperty(value = "创建人ID")
+    private Integer createdBy;
+
+    @ApiModelProperty(value = "创建人姓名")
+    private String createdByName;
+
+    @ApiModelProperty(value = "最后使用时间")
+    private LocalDateTime lastUsedAt;
+
+    @ApiModelProperty(value = "创建时间")
+    private LocalDateTime createdAt;
+
+    @ApiModelProperty(value = "更新时间")
+    private LocalDateTime updatedAt;
+
+    @ApiModelProperty(value = "剩余天数")
+    private Integer remainingDays;
+
+    @ApiModelProperty(value = "库存占用率")
+    private BigDecimal usageRate;
+}

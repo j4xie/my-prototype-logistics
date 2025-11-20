@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Text, Appbar, Card, ActivityIndicator, Button, Divider } from 'react-native-paper';
+import { Text, Appbar, Card, ActivityIndicator, Button, Divider, Menu, IconButton } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { BatchStatusBadge, BatchStatus } from '../../components/processing';
 import { processingAPI, BatchResponse } from '../../services/api/processingApiClient';
+import { handleError } from '../../utils/errorHandler';
 
 type BatchDetailScreenProps = ProcessingScreenProps<'BatchDetail'>;
+
+interface ErrorState {
+  message: string;
+  canRetry: boolean;
+}
 
 /**
  * 批次详情页面 - 完整版
@@ -19,6 +25,8 @@ export default function BatchDetailScreen() {
   const [batch, setBatch] = useState<BatchResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [qualityMenuVisible, setQualityMenuVisible] = useState(false);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -29,10 +37,24 @@ export default function BatchDetailScreen() {
   const fetchBatchDetail = async () => {
     try {
       setLoading(true);
+      setError(null); // 清除之前的错误
+
       const result = await processingAPI.getBatchDetail(batchId);
       setBatch(result);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to fetch batch detail:', error);
+
+      // ✅ GOOD: 设置错误状态，不静默失败
+      handleError(error, {
+        showAlert: false, // 使用内联错误UI
+        logError: true,
+      });
+
+      setError({
+        message: error instanceof Error ? error.message : '加载批次详情失败，请稍后重试',
+        canRetry: true,
+      });
+      setBatch(null);
     } finally {
       setLoading(false);
     }
@@ -44,6 +66,7 @@ export default function BatchDetailScreen() {
     setRefreshing(false);
   };
 
+  // ✅ 加载中状态
   if (loading && !batch) {
     return (
       <View style={styles.container}>
@@ -59,6 +82,7 @@ export default function BatchDetailScreen() {
     );
   }
 
+  // ✅ 错误状态或数据为空
   if (!batch) {
     return (
       <View style={styles.container}>
@@ -66,8 +90,29 @@ export default function BatchDetailScreen() {
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="批次详情" />
         </Appbar.Header>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>未找到批次信息</Text>
+        <View style={styles.errorContainer}>
+          {/* ✅ 优先显示错误UI */}
+          {error ? (
+            <>
+              <IconButton icon="alert-circle-outline" size={48} iconColor="#F44336" />
+              <Text style={styles.errorText}>{error.message}</Text>
+              {error.canRetry && (
+                <Button
+                  mode="outlined"
+                  icon="refresh"
+                  onPress={fetchBatchDetail}
+                  style={styles.retryButton}
+                >
+                  重试
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <IconButton icon="package-variant-closed" size={48} iconColor="#9E9E9E" />
+              <Text style={styles.emptyText}>未找到批次信息</Text>
+            </>
+          )}
         </View>
       </View>
     );
@@ -78,7 +123,7 @@ export default function BatchDetailScreen() {
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="批次详情" />
-        {!readonly && <Appbar.Action icon="pencil" onPress={() => {}} />}
+        {!readonly && <Appbar.Action icon="pencil" onPress={() => navigation.navigate('EditBatch', { batchId })} />}
       </Appbar.Header>
 
       <ScrollView
@@ -182,14 +227,54 @@ export default function BatchDetailScreen() {
         <Card style={styles.card} mode="elevated">
           <Card.Title title="快捷操作" />
           <Card.Content>
-            <Button
-              mode="outlined"
-              icon="clipboard-check"
-              onPress={() => {}}
-              style={styles.actionButton}
+            <Menu
+              visible={qualityMenuVisible}
+              onDismiss={() => setQualityMenuVisible(false)}
+              anchor={
+                <Button
+                  mode="outlined"
+                  icon="clipboard-check"
+                  onPress={() => setQualityMenuVisible(true)}
+                  style={styles.actionButton}
+                >
+                  质检记录
+                </Button>
+              }
             >
-              质检记录
-            </Button>
+              <Menu.Item
+                leadingIcon="package-variant"
+                onPress={() => {
+                  setQualityMenuVisible(false);
+                  navigation.navigate('CreateQualityRecord', {
+                    batchId: batch!.id.toString(),
+                    inspectionType: 'raw_material',
+                  });
+                }}
+                title="原材料检验"
+              />
+              <Menu.Item
+                leadingIcon="cogs"
+                onPress={() => {
+                  setQualityMenuVisible(false);
+                  navigation.navigate('CreateQualityRecord', {
+                    batchId: batch!.id.toString(),
+                    inspectionType: 'process',
+                  });
+                }}
+                title="过程检验"
+              />
+              <Menu.Item
+                leadingIcon="check-circle"
+                onPress={() => {
+                  setQualityMenuVisible(false);
+                  navigation.navigate('CreateQualityRecord', {
+                    batchId: batch!.id.toString(),
+                    inspectionType: 'final_product',
+                  });
+                }}
+                title="成品检验"
+              />
+            </Menu>
             <Button
               mode="outlined"
               icon="cash"
@@ -227,9 +312,28 @@ const styles = StyleSheet.create({
     marginTop: 16,
     color: '#757575',
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
   errorText: {
     color: '#F44336',
     fontSize: 16,
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  emptyText: {
+    color: '#9E9E9E',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 12,
+  },
+  retryButton: {
+    borderColor: '#F44336',
+    marginTop: 8,
   },
   content: {
     padding: 16,

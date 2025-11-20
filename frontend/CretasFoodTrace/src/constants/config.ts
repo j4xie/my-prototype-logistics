@@ -30,9 +30,9 @@ const getApiBaseUrl = () => {
 export const API_BASE_URL = getApiBaseUrl();
 
 // 默认工厂ID（用于API调用）
-// 测试工厂: F001 (测试工厂 - 匹配后端数据库)
-// 注意: 后端数据库中使用 F001 作为测试工厂ID
-export const DEFAULT_FACTORY_ID = 'F001';
+// 测试工厂: CRETAS_2024_001 (白垩纪水产加工厂 - 匹配后端数据库)
+// 注意: 后端数据库中使用 CRETAS_2024_001 作为测试工厂ID
+export const DEFAULT_FACTORY_ID = 'CRETAS_2024_001';
 
 // DeepSeek配置
 export const DEEPSEEK_CONFIG = {
@@ -56,4 +56,25 @@ export const PERMISSIONS = {
   LOCATION: 'location',
   STORAGE: 'storage',
   BIOMETRIC: 'biometric',
+};
+
+// API请求配置
+export const API_REQUEST_CONFIG = {
+  // 超时设置（毫秒）
+  TIMEOUT: {
+    DEFAULT: 30000,        // 30秒 - 普通请求
+    LONG: 60000,           // 60秒 - 文件上传等长时间操作
+    SHORT: 10000,          // 10秒 - 快速查询
+  },
+  // 重试配置
+  RETRY: {
+    MAX_RETRIES: 3,        // 最大重试次数
+    RETRY_DELAY: 1000,     // 重试延迟（毫秒）
+    BACKOFF_MULTIPLIER: 2, // 指数退避倍数
+  },
+  // 请求头配置
+  HEADERS: {
+    CONTENT_TYPE: 'application/json',
+    ACCEPT: 'application/json',
+  },
 };

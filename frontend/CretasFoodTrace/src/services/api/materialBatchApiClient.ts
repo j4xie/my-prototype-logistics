@@ -21,12 +21,19 @@ export interface MaterialBatch {
   inboundDate: string;
   expiryDate?: string;
   productionDate?: string;
-  status: 'available' | 'reserved' | 'depleted' | 'expired';
+  status: 'available' | 'reserved' | 'depleted' | 'expired' | 'fresh' | 'frozen';
   qualityGrade?: string;
   storageLocation?: string;
   notes?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface ConvertToFrozenRequest {
+  convertedBy: number;
+  convertedDate: string;
+  storageLocation: string;
+  notes?: string;
 }
 
 class MaterialBatchApiClient {
@@ -94,8 +101,10 @@ class MaterialBatchApiClient {
   }
 
   // 10. 调整批次数量
-  async adjustBatch(batchId: string, adjustment: any, factoryId?: string) {
-    return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/adjust`, adjustment);
+  async adjustBatch(batchId: string, newQuantity: number, reason: string, factoryId?: string) {
+    return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/adjust`, null, {
+      params: { newQuantity, reason }
+    });
   }
 
   // 11. 更新批次状态
@@ -162,6 +171,11 @@ class MaterialBatchApiClient {
       params: query,
       responseType: 'blob'
     });
+  }
+
+  // 23. 转冻品
+  async convertToFrozen(batchId: string, request: ConvertToFrozenRequest, factoryId?: string) {
+    return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/convert-to-frozen`, request);
   }
 }
 

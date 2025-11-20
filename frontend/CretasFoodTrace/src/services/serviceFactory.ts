@@ -58,7 +58,8 @@ export const NetworkManagerInstance = ServiceFactory.getNetworkManager();
 export const TokenManagerInstance = ServiceFactory.getTokenManager();
 
 // 在开发环境中记录服务状态
-if (__DEV__) {
+// 检查 __DEV__ 是否存在，防止在非RN环境中报错
+if (typeof __DEV__ !== 'undefined' && __DEV__) {
   ServiceFactory.logServiceStatus();
 }
 

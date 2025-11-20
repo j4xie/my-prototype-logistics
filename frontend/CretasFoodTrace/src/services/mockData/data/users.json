@@ -1,0 +1,60 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "username": "super_admin",
+      "realName": "张三",
+      "phone": "+8613800138001",
+      "email": "zhangsan@test.com",
+      "role": "factory_super_admin",
+      "department": "management",
+      "position": "工厂总经理",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00Z"
+    },
+    {
+      "id": 2,
+      "username": "dept_admin",
+      "realName": "李四",
+      "phone": "+8613800138002",
+      "role": "department_admin",
+      "department": "processing",
+      "position": "加工部主管",
+      "isActive": true,
+      "createdAt": "2025-01-02T00:00:00Z"
+    },
+    {
+      "id": 3,
+      "username": "operator1",
+      "realName": "王五",
+      "phone": "+8613800138003",
+      "role": "operator",
+      "department": "processing",
+      "position": "加工工",
+      "isActive": true,
+      "createdAt": "2025-01-03T00:00:00Z"
+    },
+    {
+      "id": 4,
+      "username": "operator2",
+      "realName": "赵六",
+      "phone": "+8613800138004",
+      "role": "operator",
+      "department": "processing",
+      "position": "加工工",
+      "isActive": true,
+      "createdAt": "2025-01-04T00:00:00Z"
+    },
+    {
+      "id": 5,
+      "username": "quality_admin",
+      "realName": "孙七",
+      "phone": "+8613800138005",
+      "role": "department_admin",
+      "department": "quality",
+      "position": "质检部主管",
+      "isActive": true,
+      "createdAt": "2025-01-05T00:00:00Z"
+    }
+  ]
+}
