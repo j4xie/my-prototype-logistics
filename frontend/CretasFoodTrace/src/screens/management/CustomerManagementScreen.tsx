@@ -20,6 +20,10 @@ import { useNavigation } from '@react-navigation/native';
 import { customerApiClient, Customer, CreateCustomerRequest } from '../../services/api/customerApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建CustomerManagement专用logger
+const customerLogger = logger.createContextLogger('CustomerManagement');
 
 /**
  * 客户管理页面
@@ -94,11 +98,17 @@ export default function CustomerManagementScreen() {
       });
 
       if (response.data) {
+        customerLogger.info('客户列表加载成功', {
+          customerCount: response.data.length,
+          factoryId: user?.factoryId,
+        });
         setCustomers(response.data);
       }
     } catch (error) {
-      console.error('加载客户列表失败:', error);
-      Alert.alert('错误', error.response?.data?.message || '加载客户列表失败');
+      customerLogger.error('加载客户列表失败', error as Error, {
+        factoryId: user?.factoryId,
+      });
+      Alert.alert('错误', (error as any).response?.data?.message || '加载客户列表失败');
     } finally {
       setLoading(false);
     }
@@ -116,9 +126,16 @@ export default function CustomerManagementScreen() {
         keyword: searchQuery,
         factoryId: user?.factoryId,
       });
+      customerLogger.info('客户搜索完成', {
+        keyword: searchQuery,
+        resultCount: results.length,
+      });
       setCustomers(results);
     } catch (error) {
-      console.error('搜索失败:', error);
+      customerLogger.error('搜索客户失败', error as Error, {
+        keyword: searchQuery,
+        factoryId: user?.factoryId,
+      });
       Alert.alert('错误', '搜索失败');
     } finally {
       setLoading(false);
@@ -186,11 +203,18 @@ export default function CustomerManagementScreen() {
         Alert.alert('成功', '客户创建成功');
       }
 
+      customerLogger.info(editingCustomer ? '客户更新成功' : '客户创建成功', {
+        customerCode: formData.customerCode,
+        customerName: formData.name,
+      });
       setModalVisible(false);
       loadCustomers();
     } catch (error) {
-      console.error('保存客户失败:', error);
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      customerLogger.error('保存客户失败', error as Error, {
+        isEdit: !!editingCustomer,
+        customerCode: formData.customerCode,
+      });
+      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
     }
   };
 
@@ -206,11 +230,18 @@ export default function CustomerManagementScreen() {
           onPress: async () => {
             try {
               await customerApiClient.deleteCustomer(customerId, user?.factoryId);
+              customerLogger.info('客户删除成功', {
+                customerId,
+                customerName,
+              });
               Alert.alert('成功', '客户已删除');
               loadCustomers();
             } catch (error) {
-              console.error('删除客户失败:', error);
-              Alert.alert('错误', error.response?.data?.message || '删除失败');
+              customerLogger.error('删除客户失败', error as Error, {
+                customerId,
+                customerName,
+              });
+              Alert.alert('错误', (error as any).response?.data?.message || '删除失败');
             }
           },
         },
@@ -225,11 +256,18 @@ export default function CustomerManagementScreen() {
         !currentStatus,
         user?.factoryId
       );
+      customerLogger.info('客户状态已切换', {
+        customerId,
+        newStatus: !currentStatus ? '启用' : '停用',
+      });
       Alert.alert('成功', currentStatus ? '客户已停用' : '客户已启用');
       loadCustomers();
     } catch (error) {
-      console.error('切换状态失败:', error);
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      customerLogger.error('切换客户状态失败', error as Error, {
+        customerId,
+        currentStatus,
+      });
+      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
     }
   };
 
