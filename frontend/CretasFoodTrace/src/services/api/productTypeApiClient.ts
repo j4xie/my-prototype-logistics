@@ -27,9 +27,9 @@ class ProductTypeApiClient {
 
   async getProductTypes(params?: { factoryId?: string; isActive?: boolean; limit?: number; page?: number }) {
     const { factoryId, ...query } = params || {};
-    const response: any = await apiClient.get(this.getPath(factoryId), { params: query });
-    // 兼容旧格式
-    const apiResponse = response.data || response;
+    // apiClient拦截器已统一返回data
+    const apiResponse = await apiClient.get<any>(this.getPath(factoryId), { params: query });
+    // 兼容旧格式：包装成 {data: [...]}
     if (apiResponse.content) {
       return { data: apiResponse.content };
     }

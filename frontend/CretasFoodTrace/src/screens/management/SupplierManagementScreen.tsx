@@ -18,6 +18,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { supplierApiClient, Supplier, CreateSupplierRequest } from '../../services/api/supplierApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 供应商管理页面
@@ -85,7 +86,7 @@ export default function SupplierManagementScreen() {
       } else {
         setSuppliers([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('加载供应商列表失败:', error);
       const errorMessage = error.response?.data?.message || error.message || '加载供应商列表失败';
       console.error('错误详情:', error.response?.data);
@@ -109,7 +110,7 @@ export default function SupplierManagementScreen() {
         factoryId: user?.factoryId,
       });
       setSuppliers(results);
-    } catch (error: any) {
+    } catch (error) {
       console.error('搜索失败:', error);
       Alert.alert('错误', '搜索失败');
     } finally {
@@ -184,7 +185,7 @@ export default function SupplierManagementScreen() {
 
       setModalVisible(false);
       loadSuppliers();
-    } catch (error: any) {
+    } catch (error) {
       console.error('保存供应商失败:', error);
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }
@@ -204,7 +205,7 @@ export default function SupplierManagementScreen() {
               await supplierApiClient.deleteSupplier(supplierId, user?.factoryId);
               Alert.alert('成功', '供应商已删除');
               loadSuppliers();
-            } catch (error: any) {
+            } catch (error) {
               console.error('删除供应商失败:', error);
               Alert.alert('错误', error.response?.data?.message || '删除失败');
             }
@@ -223,7 +224,7 @@ export default function SupplierManagementScreen() {
       );
       Alert.alert('成功', currentStatus ? '供应商已停用' : '供应商已启用');
       loadSuppliers();
-    } catch (error: any) {
+    } catch (error) {
       console.error('切换状态失败:', error);
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }

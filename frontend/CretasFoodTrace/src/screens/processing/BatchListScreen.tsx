@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
-import { Text, Appbar, Button, Searchbar, Card, SegmentedButtons } from 'react-native-paper';
+import { Text, Appbar, Button, Searchbar, Card, SegmentedButtons, IconButton } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { BatchStatusBadge, BatchStatus } from '../../components/processing';
 import { processingApiClient as processingAPI, BatchResponse } from '../../services/api/processingApiClient';
+import { handleError } from '../../utils/errorHandler';
 
 type BatchListScreenProps = ProcessingScreenProps<'BatchList'>;
+
+interface ErrorState {
+  message: string;
+  canRetry: boolean;
+}
 
 /**
  * 批次列表页面 - 真实数据展示
@@ -16,13 +22,14 @@ export default function BatchListScreen() {
   const route = useRoute<BatchListScreenProps['route']>();
 
   // 检查是否为成本分析模式
-  const showCostAnalysis = (route.params as any)?.showCostAnalysis || false;
+  const showCostAnalysis = route.params?.showCostAnalysis ?? false;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [batches, setBatches] = useState<BatchResponse[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   // 页面获得焦点时刷新数据
   useFocusEffect(
@@ -34,6 +41,7 @@ export default function BatchListScreen() {
   const fetchBatches = async () => {
     try {
       setLoading(true);
+      setError(null); // 清除之前的错误
 
       const params: any = {};
       if (selectedStatus !== 'all') {
@@ -64,9 +72,20 @@ export default function BatchListScreen() {
       console.log('✅ Batches loaded:', batchList.length);
 
       setBatches(batchList);
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to fetch batches:', error);
-      setBatches([]);
+
+      // ✅ GOOD: 设置错误状态，不静默返回空数组
+      handleError(error, {
+        showAlert: false, // 使用内联错误UI
+        logError: true,
+      });
+
+      setError({
+        message: error instanceof Error ? error.message : '加载批次列表失败，请稍后重试',
+        canRetry: true,
+      });
+      setBatches([]); // 清空列表，配合错误UI显示
     } finally {
       setLoading(false);
     }
@@ -122,7 +141,14 @@ export default function BatchListScreen() {
               <View style={styles.infoRow}>
                 <Text variant="bodyMedium" style={styles.label}>负责人:</Text>
                 <Text variant="bodyMedium" style={styles.value}>
-                  {(item.supervisor as any).fullName || (item.supervisor as any).username || '未指定'}
+                  {typeof item.supervisor === 'string'
+                    ? item.supervisor
+                    : (typeof item.supervisor === 'object' && item.supervisor !== null
+                        ? (item.supervisor as { fullName?: string; username?: string }).fullName
+                          || (item.supervisor as { fullName?: string; username?: string }).username
+                          || '未指定'
+                        : '未指定')
+                  }
                 </Text>
               </View>
             )}
@@ -194,25 +220,47 @@ export default function BatchListScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text variant="bodyLarge" style={styles.emptyText}>
-              {searchQuery ? '未找到匹配的批次' : loading ? '加载中...' : '暂无批次数据'}
-            </Text>
-            {!loading && !searchQuery && (
+            {/* ✅ 优先显示错误UI */}
+            {error ? (
               <>
-                <Text variant="bodySmall" style={styles.emptyHint}>
-                  {showCostAnalysis
-                    ? '当前没有可分析的批次'
-                    : '请先在生产计划管理中创建生产计划，批次将自动生成'}
+                <IconButton icon="alert-circle-outline" size={48} iconColor="#F44336" />
+                <Text variant="bodyLarge" style={styles.errorText}>
+                  {error.message}
                 </Text>
-                {!showCostAnalysis && (
+                {error.canRetry && (
                   <Button
-                    mode="contained"
-                    icon="calendar-check"
-                    onPress={() => navigation.navigate('ProductionPlanManagement')}
-                    style={styles.emptyButton}
+                    mode="outlined"
+                    icon="refresh"
+                    onPress={fetchBatches}
+                    style={styles.retryButton}
                   >
-                    前往生产计划管理
+                    重试
                   </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <Text variant="bodyLarge" style={styles.emptyText}>
+                  {searchQuery ? '未找到匹配的批次' : loading ? '加载中...' : '暂无批次数据'}
+                </Text>
+                {!loading && !searchQuery && (
+                  <>
+                    <Text variant="bodySmall" style={styles.emptyHint}>
+                      {showCostAnalysis
+                        ? '当前没有可分析的批次'
+                        : '请先在生产计划管理中创建生产计划，批次将自动生成'}
+                    </Text>
+                    {!showCostAnalysis && (
+                      <Button
+                        mode="contained"
+                        icon="calendar-check"
+                        onPress={() => navigation.navigate('ProductionPlanManagement')}
+                        style={styles.emptyButton}
+                      >
+                        前往生产计划管理
+                      </Button>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -308,5 +356,15 @@ const styles = StyleSheet.create({
   },
   emptyButton: {
     marginTop: 16,
+  },
+  errorText: {
+    color: '#F44336',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  retryButton: {
+    borderColor: '#F44336',
+    marginTop: 8,
   },
 });

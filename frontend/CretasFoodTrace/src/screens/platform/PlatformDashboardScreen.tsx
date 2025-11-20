@@ -36,7 +36,24 @@ export default function PlatformDashboardScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // TODO: 从后端加载实际数据
+
+    // ⚠️ 待后端实现 - 见 backend/URGENT_API_REQUIREMENTS.md
+    // API: GET /api/platform/dashboard/statistics
+    // 优先级: P0-紧急
+    // 预计后端实现时间: 1小时
+    // 返回数据: { totalFactories, activeFactories, totalUsers, activeUsers, aiUsageThisWeek, aiQuotaTotal }
+    // 完成后删除此注释和setTimeout，调用真实API:
+    // try {
+    //   const response = await platformAPI.getDashboardStatistics();
+    //   if (response.success && response.data) {
+    //     setStatistics(response.data);
+    //   }
+    // } catch (error: unknown) {
+    //   console.error('加载平台统计失败:', error);
+    // }
+
+    // 当前使用Mock数据
+    console.log('📦 使用Mock数据 - 等待后端实现平台统计API');
     setTimeout(() => setRefreshing(false), 1000);
   };
 
@@ -106,7 +123,7 @@ export default function PlatformDashboardScreen() {
     ];
 
     if (implementedRoutes.includes(route)) {
-      navigation.navigate(route as any);
+      navigation.navigate(route);
     } else {
       // 显示开发中提示
       console.log(`功能开发中: ${route}`);
@@ -223,7 +240,7 @@ export default function PlatformDashboardScreen() {
             <View style={styles.quickActionsGrid}>
               <Pressable
                 style={styles.quickAction}
-                onPress={() => navigation.navigate('FactoryManagement' as any)}
+                onPress={() => navigation.navigate('FactoryManagement')}
               >
                 <Avatar.Icon icon="plus-circle" size={40} color="#2196F3" style={styles.quickIcon} />
                 <Text variant="bodySmall" style={styles.quickText}>
@@ -232,7 +249,7 @@ export default function PlatformDashboardScreen() {
               </Pressable>
               <Pressable
                 style={styles.quickAction}
-                onPress={() => navigation.navigate('UserManagement' as any)}
+                onPress={() => navigation.navigate('UserManagement')}
               >
                 <Avatar.Icon icon="account-plus" size={40} color="#4CAF50" style={styles.quickIcon} />
                 <Text variant="bodySmall" style={styles.quickText}>
@@ -241,7 +258,7 @@ export default function PlatformDashboardScreen() {
               </Pressable>
               <Pressable
                 style={styles.quickAction}
-                onPress={() => navigation.navigate('WhitelistManagement' as any)}
+                onPress={() => navigation.navigate('WhitelistManagement')}
               >
                 <Avatar.Icon icon="shield-plus" size={40} color="#607D8B" style={styles.quickIcon} />
                 <Text variant="bodySmall" style={styles.quickText}>
@@ -250,7 +267,7 @@ export default function PlatformDashboardScreen() {
               </Pressable>
               <Pressable
                 style={styles.quickAction}
-                onPress={() => navigation.navigate('AIQuotaManagement' as any)}
+                onPress={() => navigation.navigate('AIQuotaManagement')}
               >
                 <Avatar.Icon icon="robot" size={40} color="#9C27B0" style={styles.quickIcon} />
                 <Text variant="bodySmall" style={styles.quickText}>

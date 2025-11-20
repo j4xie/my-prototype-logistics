@@ -15,6 +15,9 @@ import {
   ActivityIndicator,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { productTypeApiClient } from '../../services/api/productTypeApiClient';
+import { useAuthStore } from '../../store/authStore';
+import { getFactoryId } from '../../types/auth';
 
 interface ProductType {
   id: string;
@@ -31,6 +34,8 @@ interface ProductType {
  */
 export default function ProductTypeManagementScreen() {
   const navigation = useNavigation();
+  const user = useAuthStore((state) => state.user);
+  const factoryId = getFactoryId(user);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -51,24 +56,38 @@ export default function ProductTypeManagementScreen() {
   const loadProductTypes = async () => {
     try {
       setLoading(true);
-      // TODO: 实际API调用
-      // const response = await productTypeApi.getProductTypes();
-      // setProductTypes(response.data);
 
-      // Mock 数据
-      setProductTypes([
-        {
-          id: '1',
-          name: '鱼片',
-          code: 'YP001',
-          category: '主产品',
-          description: '去骨鱼片',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
-    } catch (error) {
-      Alert.alert('错误', '加载产品类型失败');
+      if (!factoryId) {
+        console.warn('⚠️ 工厂ID不存在，无法加载产品类型');
+        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        return;
+      }
+
+      console.log('📡 调用后端API - 获取产品类型列表');
+      const response = await productTypeApiClient.getProductTypes({ factoryId });
+
+      if (response?.data) {
+        console.log(`✅ 加载成功: ${response.data.length} 个产品类型`);
+        // 将后端DTO映射到前端显示格式
+        const mappedTypes: ProductType[] = response.data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          code: item.productCode || item.code || '',
+          category: item.category || undefined,
+          description: item.description || undefined,
+          isActive: item.isActive !== false,
+          createdAt: item.createdAt || new Date().toISOString(),
+        }));
+        setProductTypes(mappedTypes);
+      } else {
+        console.warn('⚠️ API返回数据为空');
+        setProductTypes([]);
+      }
+    } catch (error: unknown) {
+      console.error('❌ 加载产品类型失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '加载产品类型失败';
+      Alert.alert('错误', errorMessage);
+      setProductTypes([]);
     } finally {
       setLoading(false);
     }

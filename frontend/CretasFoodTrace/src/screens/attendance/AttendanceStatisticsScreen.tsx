@@ -14,6 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { timeStatsApiClient, DailyStats, MonthlyStats, EmployeeTimeStats } from '../../services/api/timeStatsApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 工时统计页面
@@ -79,7 +80,7 @@ export default function AttendanceStatisticsScreen() {
         // 全厂统计
         await loadFactoryStats();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('加载统计数据失败:', error);
       Alert.alert('错误', error.response?.data?.message || '加载统计数据失败');
     } finally {

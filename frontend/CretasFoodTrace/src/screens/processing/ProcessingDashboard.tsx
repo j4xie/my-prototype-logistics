@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, Button, Appbar, ActivityIndicator, Dialog, Portal } from 'react-native-paper';
+import { Text, Card, Button, Appbar, ActivityIndicator, Dialog, Portal, IconButton } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
 import { useAuthStore } from '../../store/authStore';
 import { dashboardAPI } from '../../services/api/dashboardApiClient';
+import { handleError } from '../../utils/errorHandler';
 
 type ProcessingDashboardNavigationProp = NativeStackNavigationProp<
   ProcessingStackParamList,
   'ProcessingDashboard'
 >;
+
+interface ErrorState {
+  message: string;
+  canRetry: boolean;
+}
 
 /**
  * 生产仪表板 - 生产模块入口页
@@ -21,6 +27,7 @@ export default function ProcessingDashboard() {
 
   // 状态管理
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<ErrorState | null>(null);
   const [costAnalysisDialogVisible, setCostAnalysisDialogVisible] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     inProgressBatches: 0,
@@ -52,6 +59,7 @@ export default function ProcessingDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
       console.log('🔄 ProcessingDashboard - 开始加载仪表板数据...');
 
       // 使用 Dashboard API 获取今日概览数据
@@ -60,45 +68,40 @@ export default function ProcessingDashboard() {
       console.log('📊 ProcessingDashboard - 仪表板数据响应:', overviewRes);
 
       // 提取数据 - 后端返回格式是 { success: true, data: {...}, message: "..." }
-      const overview = (overviewRes as any).data || overviewRes;
+      const overview = overviewRes.data;
       console.log('📊 ProcessingDashboard - 解析后数据:', overview);
 
       if (overview.summary) {
         const { summary } = overview;
 
         const newDashboardData = {
-          inProgressBatches: summary.activeBatches || 0,
-          totalBatches: summary.totalBatches || 0,
-          completedBatches: summary.completedBatches || 0,
-          pendingInspection: summary.qualityInspections || 0,
-          onDutyWorkers: summary.onDutyWorkers || 0,
-          totalWorkers: summary.totalWorkers || 0,
+          inProgressBatches: summary.activeBatches ?? 0,
+          totalBatches: summary.totalBatches ?? 0,
+          completedBatches: summary.completedBatches ?? 0,
+          pendingInspection: summary.qualityInspections ?? 0,
+          onDutyWorkers: summary.onDutyWorkers ?? 0,
+          totalWorkers: summary.totalWorkers ?? 0,
         };
 
         console.log('📈 ProcessingDashboard - 统计结果:', newDashboardData);
         setDashboardData(newDashboardData);
+        setError(null);
       } else {
         console.warn('⚠️ ProcessingDashboard - 仪表板数据加载失败:', overviewRes);
-        // 即使失败也设置为0
-        setDashboardData({
-          inProgressBatches: 0,
-          totalBatches: 0,
-          completedBatches: 0,
-          pendingInspection: 0,
-          onDutyWorkers: 0,
-          totalWorkers: 0,
+        setError({
+          message: 'API返回数据格式错误，请稍后重试',
+          canRetry: true,
         });
       }
     } catch (error) {
       console.error('❌ ProcessingDashboard - 加载仪表板数据失败:', error);
-      // 即使失败也设置为0
-      setDashboardData({
-        inProgressBatches: 0,
-        totalBatches: 0,
-        completedBatches: 0,
-        pendingInspection: 0,
-        onDutyWorkers: 0,
-        totalWorkers: 0,
+      handleError(error, {
+        showAlert: false,
+        logError: true,
+      });
+      setError({
+        message: error instanceof Error ? error.message : '加载仪表板数据失败，请稍后重试',
+        canRetry: true,
       });
     } finally {
       setLoading(false);
@@ -120,6 +123,23 @@ export default function ProcessingDashboard() {
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" />
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <IconButton icon="alert-circle-outline" size={48} iconColor="#F44336" />
+                <Text variant="bodyMedium" style={styles.errorText}>
+                  {error.message}
+                </Text>
+                {error.canRetry && (
+                  <Button
+                    mode="outlined"
+                    icon="refresh"
+                    onPress={loadDashboardData}
+                    style={styles.retryButton}
+                  >
+                    重试
+                  </Button>
+                )}
               </View>
             ) : (
               <View style={styles.statsGrid}>
@@ -213,17 +233,10 @@ export default function ProcessingDashboard() {
               <Button
                 mode="outlined"
                 icon="monitor-dashboard"
-                onPress={() => {
-                  Alert.alert(
-                    '功能开发中',
-                    '设备监控功能正在开发中，敬请期待',
-                    [{ text: '确定', onPress: () => {} }]
-                  );
-                }}
-                disabled={true}
-                style={[styles.actionButton, styles.disabledButton]}
+                onPress={() => navigation.navigate('EquipmentMonitoring')}
+                style={styles.actionButton}
               >
-                设备监控（开发中）
+                设备监控
               </Button>
               <Button
                 mode="outlined"
@@ -232,6 +245,30 @@ export default function ProcessingDashboard() {
                 style={styles.actionButton}
               >
                 成本分析
+              </Button>
+              <Button
+                mode="outlined"
+                icon="chart-box"
+                onPress={() => navigation.navigate('QualityAnalytics')}
+                style={styles.actionButton}
+              >
+                质检统计
+              </Button>
+              <Button
+                mode="outlined"
+                icon="clipboard-check"
+                onPress={() => navigation.navigate('InventoryCheck')}
+                style={styles.actionButton}
+              >
+                库存盘点
+              </Button>
+              <Button
+                mode="outlined"
+                icon="alert-circle"
+                onPress={() => navigation.navigate('ExceptionAlert')}
+                style={styles.actionButton}
+              >
+                异常预警
               </Button>
             </View>
           </Card.Content>
@@ -258,11 +295,13 @@ export default function ProcessingDashboard() {
               <Button
                 mode="contained"
                 icon="compare"
-                onPress={() => navigation.navigate('BatchComparison')}
+                onPress={() => navigation.navigate('CostComparison', {
+                  batchIds: ['BATCH_001', 'BATCH_002', 'BATCH_003']
+                })}
                 style={styles.actionButton}
                 buttonColor="#FF9800"
               >
-                批次对比分析
+                成本对比
               </Button>
               <Button
                 mode="outlined"
@@ -313,7 +352,7 @@ export default function ProcessingDashboard() {
               icon="calendar-range"
               onPress={() => {
                 setCostAnalysisDialogVisible(false);
-                navigation.navigate('TimeRangeCostAnalysis' as any);
+                navigation.navigate('TimeRangeCostAnalysis');
               }}
               style={styles.dialogButton}
             >
@@ -400,5 +439,19 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+  },
+  errorText: {
+    color: '#F44336',
+    marginTop: 12,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    borderColor: '#F44336',
   },
 });

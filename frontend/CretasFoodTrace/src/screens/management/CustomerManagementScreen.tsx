@@ -19,6 +19,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { customerApiClient, Customer, CreateCustomerRequest } from '../../services/api/customerApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 客户管理页面
@@ -95,7 +96,7 @@ export default function CustomerManagementScreen() {
       if (response.data) {
         setCustomers(response.data);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('加载客户列表失败:', error);
       Alert.alert('错误', error.response?.data?.message || '加载客户列表失败');
     } finally {
@@ -116,7 +117,7 @@ export default function CustomerManagementScreen() {
         factoryId: user?.factoryId,
       });
       setCustomers(results);
-    } catch (error: any) {
+    } catch (error) {
       console.error('搜索失败:', error);
       Alert.alert('错误', '搜索失败');
     } finally {
@@ -187,7 +188,7 @@ export default function CustomerManagementScreen() {
 
       setModalVisible(false);
       loadCustomers();
-    } catch (error: any) {
+    } catch (error) {
       console.error('保存客户失败:', error);
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }
@@ -207,7 +208,7 @@ export default function CustomerManagementScreen() {
               await customerApiClient.deleteCustomer(customerId, user?.factoryId);
               Alert.alert('成功', '客户已删除');
               loadCustomers();
-            } catch (error: any) {
+            } catch (error) {
               console.error('删除客户失败:', error);
               Alert.alert('错误', error.response?.data?.message || '删除失败');
             }
@@ -226,7 +227,7 @@ export default function CustomerManagementScreen() {
       );
       Alert.alert('成功', currentStatus ? '客户已停用' : '客户已启用');
       loadCustomers();
-    } catch (error: any) {
+    } catch (error) {
       console.error('切换状态失败:', error);
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }

@@ -1,0 +1,51 @@
+{
+  "data": [
+    {
+      "id": "1",
+      "planNumber": "PLAN_20250118_001",
+      "factoryId": "TEST_2024_001",
+      "productTypeId": "1",
+      "productType": {
+        "id": 1,
+        "name": "精制鲈鱼片",
+        "code": "PROD001"
+      },
+      "customerId": "1",
+      "customer": {
+        "id": "1",
+        "name": "海鲜餐厅连锁",
+        "code": "CUS001"
+      },
+      "plannedQuantity": 100,
+      "estimatedMaterialUsage": 175.4,
+      "actualQuantity": null,
+      "status": "pending",
+      "notes": "餐厅急单，优先处理",
+      "createdAt": "2025-01-18T09:00:00Z"
+    },
+    {
+      "id": "2",
+      "planNumber": "PLAN_20250117_001",
+      "factoryId": "TEST_2024_001",
+      "productTypeId": "2",
+      "productType": {
+        "id": 2,
+        "name": "三文鱼片",
+        "code": "PROD002"
+      },
+      "customerId": "2",
+      "customer": {
+        "id": "2",
+        "name": "大型超市",
+        "code": "CUS002"
+      },
+      "plannedQuantity": 200,
+      "estimatedMaterialUsage": 323.1,
+      "actualQuantity": 205,
+      "status": "completed",
+      "startTime": "2025-01-17T08:00:00Z",
+      "endTime": "2025-01-17T18:00:00Z",
+      "createdAt": "2025-01-17T07:00:00Z"
+    }
+  ]
+}

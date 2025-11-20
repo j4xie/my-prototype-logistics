@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User, AuthTokens } from '../types/auth';
+import { User, AuthTokens, isPlatformUser, isFactoryUser } from '../types/auth';
 
 interface AuthState {
   // 状态
@@ -48,8 +48,8 @@ export const useAuthStore = create<AuthState>()(
 
       login: (user, tokens) => {
         console.log('🔐 AuthStore.login - User:', JSON.stringify(user, null, 2));
-        console.log('🔐 AuthStore.login - Has platformUser?', !!(user as any).platformUser);
-        console.log('🔐 AuthStore.login - Has factoryUser?', !!(user as any).factoryUser);
+        console.log('🔐 AuthStore.login - Has platformUser?', isPlatformUser(user));
+        console.log('🔐 AuthStore.login - Has factoryUser?', isFactoryUser(user));
 
         set({
           user,
