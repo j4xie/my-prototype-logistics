@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
-import { materialAPI, MaterialType } from '../../services/api/materialApiClient';
+import { materialQuickAPI, MaterialType } from '../../services/api/materialQuickApiClient';
 import { useAuthStore } from '../../store/authStore';
 
 interface MaterialTypeSelectorProps {
@@ -46,7 +46,7 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
   const fetchMaterialTypes = async () => {
     try {
       setLoading(true);
-      const result = await materialAPI.getMaterialTypes(factoryId);
+      const result = await materialQuickAPI.getMaterialTypes(factoryId);
       console.log('✅ Material types loaded:', result.length);
       setMaterials(result);
     } catch (error: any) {
@@ -97,7 +97,7 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
     try {
       setCreating(true);
 
-      await materialAPI.createMaterialType({
+      await materialQuickAPI.createMaterialType({
         name: newMaterialName.trim(),
         category: newMaterialCategory,
         unit: 'kg',

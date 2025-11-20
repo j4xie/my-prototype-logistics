@@ -4,6 +4,782 @@
 
 ---
 
+## 🚨 P1-5: TODO注释清理中发现的后端API需求
+
+**发现时间**: 2025-11-20
+**来源**: P1-5 TODO注释分析
+**总计**: 12处待实现的后端API
+**优先级**: P1（高优先级）- 前端功能已实现，等待后端支持
+
+### 1. QuickStatsPanel - 仪表板统计数据 (4处)
+
+**文件**: `src/screens/main/components/QuickStatsPanel.tsx`
+**行号**: Lines 45, 62, 67, 68
+
+#### 1.1 生产数据API
+
+**端点**: `GET /api/mobile/{factoryId}/dashboard/production`
+**优先级**: P1
+**用途**: 工厂主页快捷面板显示今日生产统计
+
+**请求参数**:
+- `factoryId` (path, required): String - 工厂ID
+- `date` (query, optional): String - 日期 (YYYY-MM-DD)，默认今天
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "todayOutput": 1250.5,
+    "todayOutputUnit": "kg",
+    "completedBatches": 12,
+    "totalBatches": 15,
+    "productionProgress": 80.0
+  }
+}
+```
+
+#### 1.2 设备数据API
+
+**端点**: `GET /api/mobile/{factoryId}/dashboard/equipment`
+**优先级**: P1
+**用途**: 工厂主页快捷面板显示设备运行状态
+
+**请求参数**:
+- `factoryId` (path, required): String - 工厂ID
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "activeEquipment": 18,
+    "totalEquipment": 20,
+    "idleEquipment": 2,
+    "maintenanceEquipment": 0,
+    "utilizationRate": 90.0
+  }
+}
+```
+
+---
+
+### 2. ExceptionAlertScreen - 异常告警系统 (3处)
+
+**文件**: `src/screens/alerts/ExceptionAlertScreen.tsx`
+**行号**: Lines 109, 253, 452
+
+#### 2.1 获取异常告警列表
+
+**端点**: `GET /api/mobile/{factoryId}/alerts/exceptions`
+**优先级**: P1
+**用途**: 异常告警列表页面
+
+**请求参数**:
+- `factoryId` (path, required): String - 工厂ID
+- `page` (query, optional): Integer - 页码，默认0
+- `size` (query, optional): Integer - 每页数量，默认20
+- `severity` (query, optional): String - 严重程度筛选: 'critical' | 'warning' | 'info'
+- `status` (query, optional): String - 状态筛选: 'pending' | 'resolved' | 'ignored'
+- `startDate` (query, optional): String - 开始日期
+- `endDate` (query, optional): String - 结束日期
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "content": [
+      {
+        "id": "ALERT001",
+        "factoryId": "CRETAS_2024_001",
+        "alertType": "temperature_exceeds",
+        "severity": "critical",
+        "title": "冷库温度超标",
+        "description": "1号冷库温度达到15°C，超过安全阈值10°C",
+        "source": "equipment",
+        "sourceId": "EQ001",
+        "status": "pending",
+        "createdAt": "2025-11-20T10:30:00Z",
+        "resolvedAt": null,
+        "resolvedBy": null,
+        "resolutionNotes": null
+      }
+    ],
+    "totalElements": 45,
+    "totalPages": 3,
+    "currentPage": 0,
+    "pageSize": 20
+  }
+}
+```
+
+#### 2.2 解决告警
+
+**端点**: `POST /api/mobile/{factoryId}/alerts/exceptions/{alertId}/resolve`
+**优先级**: P1
+**用途**: 标记告警为已解决
+
+**请求参数**:
+- `factoryId` (path, required): String - 工厂ID
+- `alertId` (path, required): String - 告警ID
+
+**请求体**:
+```json
+{
+  "resolutionNotes": "已检查设备，温度已恢复正常",
+  "resolvedBy": 1
+}
+```
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "告警已解决",
+  "data": {
+    "id": "ALERT001",
+    "status": "resolved",
+    "resolvedAt": "2025-11-20T11:00:00Z",
+    "resolvedBy": 1
+  }
+}
+```
+
+---
+
+### 3. MaterialBatchManagementScreen - 转冻品功能 (1处)
+
+**文件**: `src/screens/processing/MaterialBatchManagementScreen.tsx`
+**行号**: Line 1047
+
+#### 3.1 将原材料批次转为冻品
+
+**端点**: `POST /api/mobile/{factoryId}/materials/batches/{id}/convert-to-frozen`
+**优先级**: P2
+**用途**: 将鲜品批次转换为冻品批次
+
+**请求参数**:
+- `factoryId` (path, required): String - 工厂ID
+- `id` (path, required): Long - 批次ID
+
+**请求体**:
+```json
+{
+  "convertedBy": 1,
+  "convertedDate": "2025-11-20",
+  "storageLocation": "冷库A区",
+  "notes": "转冻品备注"
+}
+```
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "已成功转为冻品",
+  "data": {
+    "id": 123,
+    "batchNumber": "MB20251120001",
+    "materialType": "frozen_chicken",
+    "status": "frozen",
+    "convertedAt": "2025-11-20T14:00:00Z",
+    "storageLocation": "冷库A区"
+  }
+}
+```
+
+---
+
+### 4. PlatformDashboardScreen - 平台级统计数据 (1处)
+
+**文件**: `src/screens/platform/PlatformDashboardScreen.tsx`
+**行号**: Line 39
+
+#### 4.1 平台总览统计
+
+**端点**: `GET /api/platform/dashboard/statistics`
+**优先级**: P2
+**用途**: 平台管理员查看所有工厂的汇总数据
+
+**请求参数**:
+- 无（使用 JWT token 识别平台管理员身份）
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "totalFactories": 15,
+    "activeFactories": 12,
+    "totalUsers": 450,
+    "totalBatches": 1250,
+    "totalProductionToday": 15000.5,
+    "totalAIQuotaUsed": 1200,
+    "totalAIQuotaLimit": 10000,
+    "systemHealth": "healthy"
+  }
+}
+```
+
+---
+
+### 5. FactoryManagementScreen - 工厂列表 (1处)
+
+**文件**: `src/screens/platform/FactoryManagementScreen.tsx`
+**行号**: Line 91
+
+#### 5.1 获取平台所有工厂列表
+
+**端点**: `GET /api/platform/factories`
+**优先级**: P1
+**用途**: 平台管理员查看和管理所有工厂
+
+**请求参数**:
+- `page` (query, optional): Integer - 页码，默认0
+- `size` (query, optional): Integer - 每页数量，默认20
+- `search` (query, optional): String - 搜索关键词（工厂名称/ID）
+- `status` (query, optional): String - 状态筛选: 'active' | 'inactive'
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "content": [
+      {
+        "id": "CRETAS_2024_001",
+        "factoryName": "白垩纪食品加工厂",
+        "address": "上海市浦东新区",
+        "contactPerson": "张经理",
+        "contactPhone": "13800138000",
+        "status": "active",
+        "totalUsers": 50,
+        "totalBatches": 150,
+        "createdAt": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "totalElements": 15,
+    "totalPages": 1,
+    "currentPage": 0,
+    "pageSize": 20
+  }
+}
+```
+
+---
+
+### 6. ConversionRateScreen - 转换率管理 (1处)
+
+**文件**: `src/screens/management/ConversionRateScreen.tsx`
+**行号**: Line 68
+
+#### 6.1 获取转换率配置列表
+
+**端点**: `GET /api/mobile/{factoryId}/conversion-rates`
+**优先级**: P2
+**用途**: 管理原材料到产品的转换率配置
+
+**请求参数**:
+- `factoryId` (path, required): String - 工厂ID
+- `page` (query, optional): Integer - 页码
+- `size` (query, optional): Integer - 每页数量
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "materialTypeName": "鲜鸡胸肉",
+        "productTypeName": "冻鸡胸肉",
+        "conversionRate": 0.85,
+        "unit": "kg",
+        "createdAt": "2025-11-01T00:00:00Z",
+        "updatedAt": "2025-11-15T00:00:00Z"
+      }
+    ],
+    "totalElements": 10,
+    "totalPages": 1,
+    "currentPage": 0,
+    "pageSize": 20
+  }
+}
+```
+
+#### 6.2 创建/更新转换率配置
+
+**端点**: `POST /api/mobile/{factoryId}/conversion-rates`
+**优先级**: P2
+
+**请求体**:
+```json
+{
+  "materialTypeId": 1,
+  "productTypeId": 2,
+  "conversionRate": 0.85
+}
+```
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "保存成功",
+  "data": {
+    "id": 1,
+    "conversionRate": 0.85
+  }
+}
+```
+
+---
+
+### 7. ProductTypeManagementScreen - 产品类型管理 (1处)
+
+**文件**: `src/screens/management/ProductTypeManagementScreen.tsx`
+**行号**: Line 54
+
+#### 7.1 获取产品类型列表（增强版）
+
+**端点**: `GET /api/mobile/{factoryId}/product-types`
+**优先级**: P2
+**用途**: 管理工厂的产品类型
+
+**请求参数**:
+- `factoryId` (path, required): String - 工厂ID
+- `page` (query, optional): Integer - 页码
+- `size` (query, optional): Integer - 每页数量
+- `search` (query, optional): String - 搜索关键词
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "productName": "冻鸡胸肉",
+        "category": "frozen_meat",
+        "unit": "kg",
+        "standardWeight": 1.0,
+        "shelfLife": 365,
+        "storageConditions": "-18°C冷冻保存",
+        "status": "active",
+        "createdAt": "2025-10-01T00:00:00Z"
+      }
+    ],
+    "totalElements": 20,
+    "totalPages": 1,
+    "currentPage": 0,
+    "pageSize": 20
+  }
+}
+```
+
+#### 7.2 创建/更新产品类型
+
+**端点**: `POST /api/mobile/{factoryId}/product-types`
+**优先级**: P2
+
+**请求体**:
+```json
+{
+  "productName": "冻鸡胸肉",
+  "category": "frozen_meat",
+  "unit": "kg",
+  "standardWeight": 1.0,
+  "shelfLife": 365,
+  "storageConditions": "-18°C冷冻保存"
+}
+```
+
+**响应格式**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "保存成功",
+  "data": {
+    "id": 1,
+    "productName": "冻鸡胸肉",
+    "status": "active"
+  }
+}
+```
+
+---
+
+## 📊 P1-5 后端需求总结
+
+| 模块 | 文件 | API数量 | 优先级 | 状态 |
+|------|------|---------|--------|------|
+| 仪表板 | QuickStatsPanel.tsx | 2 | P1 | 待实现 |
+| 异常告警 | ExceptionAlertScreen.tsx | 2 | P1 | 待实现 |
+| 原材料 | MaterialBatchManagementScreen.tsx | 1 | P2 | 待实现 |
+| 平台管理 | PlatformDashboardScreen.tsx | 1 | P2 | 待实现 |
+| 工厂管理 | FactoryManagementScreen.tsx | 1 | P1 | 待实现 |
+| 转换率 | ConversionRateScreen.tsx | 2 | P2 | 待实现 |
+| 产品类型 | ProductTypeManagementScreen.tsx | 2 | P2 | 待实现 |
+| **合计** | **7个文件** | **11个API** | **5个P1, 6个P2** | **0/11 完成** |
+
+**下一步行动**:
+1. P1 优先实现（5个API）: 仪表板统计、异常告警、工厂列表
+2. P2 后续实现（6个API）: 转冻品、平台统计、转换率、产品类型
+
+---
+
+## 🆕 P1 - 人员报表API需求
+
+**前端已完成**: `PersonnelReportScreen.tsx` 已创建
+**需求日期**: 2025-11-19
+**提出原因**: P2-报表模块需要完整的人员统计和分析功能
+
+### 1. 获取人员总览统计
+
+**端点**: `GET /api/mobile/{factoryId}/personnel/statistics`
+**优先级**: P1（高优先级）
+**用途**: 人员报表页面总览数据
+
+#### 功能说明
+返回工厂所有人员的统计数据，包括总人数、在岗人数、缺勤人数、活跃部门数等。
+
+#### 请求参数
+- `factoryId` (path, required): String - 工厂ID
+- `startDate` (query, optional): String - 统计开始日期 (YYYY-MM-DD)
+- `endDate` (query, optional): String - 统计结束日期 (YYYY-MM-DD)
+
+#### 响应格式
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "totalEmployees": 150,
+    "totalPresent": 142,
+    "totalAbsent": 8,
+    "avgAttendanceRate": 94.7,
+    "activeDepartments": 5,
+    "totalWorkHours": 1200.5,
+    "avgWorkHoursPerEmployee": 8.0
+  }
+}
+```
+
+### 2. 获取工时排行榜
+
+**端点**: `GET /api/mobile/{factoryId}/personnel/work-hours-ranking`
+**优先级**: P1
+**用途**: 显示工时最多的员工排行
+
+#### 请求参数
+- `factoryId` (path, required): String - 工厂ID
+- `startDate` (query, required): String - 统计开始日期
+- `endDate` (query, required): String - 统计结束日期
+- `limit` (query, optional): Integer - 返回前N名，默认10
+
+#### 响应格式
+```json
+{
+  "code": 200,
+  "success": true,
+  "data": [
+    {
+      "userId": 1,
+      "userName": "张三",
+      "departmentId": "DEPT001",
+      "departmentName": "加工部",
+      "totalWorkHours": 180.5,
+      "totalOvertimeHours": 20.0,
+      "attendanceDays": 22,
+      "attendanceRate": 100.0
+    }
+  ]
+}
+```
+
+### 3. 获取加班统计
+
+**端点**: `GET /api/mobile/{factoryId}/personnel/overtime-statistics`
+**优先级**: P2
+**用途**: 统计员工加班情况
+
+#### 请求参数
+- `factoryId` (path, required): String - 工厂ID
+- `startDate` (query, required): String
+- `endDate` (query, required): String
+- `departmentId` (query, optional): String - 部门筛选
+
+#### 响应格式
+```json
+{
+  "code": 200,
+  "success": true,
+  "data": {
+    "totalOvertimeHours": 500.0,
+    "totalEmployeesWithOvertime": 45,
+    "avgOvertimeHoursPerEmployee": 11.1,
+    "topOvertimeEmployees": [
+      {
+        "userId": 1,
+        "userName": "张三",
+        "overtimeHours": 30.5
+      }
+    ]
+  }
+}
+```
+
+### 4. 获取人员绩效统计
+
+**端点**: `GET /api/mobile/{factoryId}/personnel/performance`
+**优先级**: P2
+**用途**: 综合人员绩效评估
+
+#### 请求参数
+- `factoryId` (path, required): String - 工厂ID
+- `startDate` (query, required): String
+- `endDate` (query, required): String
+- `userId` (query, optional): Long - 指定用户
+
+#### 响应格式
+```json
+{
+  "code": 200,
+  "success": true,
+  "data": [
+    {
+      "userId": 1,
+      "userName": "张三",
+      "departmentName": "加工部",
+      "workHours": 180.5,
+      "attendanceRate": 100.0,
+      "qualityScore": 95.0,
+      "efficiencyScore": 92.0,
+      "overallScore": 94.0
+    }
+  ]
+}
+```
+
+### 5. 数据库变更需求
+
+#### 新增字段（可选）
+在 `users` 或 `factory_users` 表中考虑添加：
+- `position` VARCHAR(100) - 职位
+- `hire_date` DATE - 入职日期
+- `performance_score` DECIMAL(5,2) - 绩效分数
+
+#### 新增统计视图（建议）
+创建物化视图或定期计算统计数据以提升查询性能：
+```sql
+CREATE VIEW personnel_statistics_view AS
+SELECT
+  u.factory_id,
+  COUNT(DISTINCT u.id) as total_employees,
+  COUNT(DISTINCT CASE WHEN t.clock_in_time IS NOT NULL THEN u.id END) as present_today,
+  AVG(attendance_rate) as avg_attendance_rate
+FROM users u
+LEFT JOIN time_clock_records t ON u.id = t.user_id AND DATE(t.clock_in_time) = CURDATE()
+GROUP BY u.factory_id;
+```
+
+---
+
+## 🔥 P0 - 紧急待实现API
+
+这些API已在Swagger文档中定义，前端已实现调用，但后端尚未实现。
+
+### TimeClock - 获取今日打卡记录
+
+**端点**: `GET /api/mobile/{factoryId}/timeclock/today`
+**优先级**: P0（紧急 - API文档已定义但未实现）
+**需求日期**: 2025-11-15
+**提出原因**: 前端使用降级方案（getClockHistory），用户要求根本解决问题
+
+#### 功能说明
+
+返回指定用户今日的打卡记录，包含上班打卡、下班打卡时间。相比 `/timeclock/history`，此端点专门优化用于查询今日记录。
+
+#### 请求参数
+
+- `factoryId` (path, required): String - 工厂ID
+- `userId` (query, required): Long - 用户ID
+
+#### 响应格式
+
+**成功响应 (200 OK)**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "id": 123,
+    "userId": 1,
+    "factoryId": "F001",
+    "clockInTime": "2025-11-15T08:00:00",
+    "clockOutTime": null,
+    "breakStartTime": null,
+    "breakEndTime": null,
+    "location": "工厂大门",
+    "device": "iPhone 13",
+    "latitude": 31.2304,
+    "longitude": 121.4737,
+    "createdAt": "2025-11-15T08:00:00",
+    "updatedAt": "2025-11-15T08:00:00"
+  }
+}
+```
+
+**今日无打卡记录**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "今日暂无打卡记录",
+  "data": null
+}
+```
+
+**权限错误 (403)**:
+```json
+{
+  "code": 403,
+  "success": false,
+  "message": "只能查询自己的打卡记录"
+}
+```
+
+#### Java实现示例
+
+```java
+// TimeClockController.java
+
+@GetMapping("/timeclock/today")
+public ApiResponse<TimeClockRecord> getTodayRecord(
+    @PathVariable String factoryId,
+    @RequestParam Long userId,
+    HttpServletRequest request) {
+
+    // 1. 验证权限 - 只能查询自己的记录
+    Long currentUserId = getUserIdFromToken(request);
+    if (!currentUserId.equals(userId)) {
+        throw new ForbiddenException("只能查询自己的打卡记录");
+    }
+
+    // 2. 验证用户属于该工厂
+    User user = userService.getUserById(userId);
+    if (!factoryId.equals(user.getFactoryId())) {
+        throw new ForbiddenException("无权访问该工厂数据");
+    }
+
+    // 3. 查询今日记录
+    LocalDate today = LocalDate.now();
+    LocalDateTime startOfDay = today.atStartOfDay();
+    LocalDateTime endOfDay = today.atTime(23, 59, 59);
+
+    // 4. 数据库查询
+    TimeClockRecord record = timeClockRepository
+        .findTopByUserIdAndFactoryIdAndClockInTimeBetweenOrderByClockInTimeDesc(
+            userId,
+            factoryId,
+            startOfDay,
+            endOfDay
+        )
+        .orElse(null);
+
+    // 5. 返回结果
+    if (record == null) {
+        return ApiResponse.success(null, "今日暂无打卡记录");
+    }
+
+    return ApiResponse.success(record, "获取成功");
+}
+```
+
+#### 数据库查询优化
+
+**推荐索引**:
+```sql
+-- 复合索引，优化查询性能
+CREATE INDEX idx_timeclock_user_factory_time
+ON time_clock_record (user_id, factory_id, clock_in_time DESC);
+```
+
+**查询SQL**:
+```sql
+SELECT * FROM time_clock_record
+WHERE user_id = ?
+  AND factory_id = ?
+  AND clock_in_time >= ?  -- 今日00:00:00
+  AND clock_in_time <= ?  -- 今日23:59:59
+ORDER BY clock_in_time DESC
+LIMIT 1;
+```
+
+#### 前端调用示例（实现后）
+
+```typescript
+// TimeClockScreen.tsx
+
+const loadTodayRecords = async () => {
+  const userId = getUserId();
+  const factoryId = getFactoryId();
+
+  // ✅ 简洁的调用方式
+  const response = await timeclockApiClient.getTodayRecord(userId, factoryId);
+
+  if (response.data) {
+    setTodayRecords([response.data]);
+    setLastClockIn(response.data);
+  } else {
+    setTodayRecords([]);
+    setLastClockIn(null);
+  }
+};
+```
+
+#### 与 /timeclock/history 的对比
+
+| 特性 | /timeclock/today | /timeclock/history |
+|------|-----------------|-------------------|
+| **参数数量** | 1个 (userId) | 4个 (userId, startDate, endDate, page, size) |
+| **语义** | ✅ 明确（获取今日） | ⚠️ 通用（查历史） |
+| **性能** | ✅ 优化（单日查询） | ⚠️ 通用查询 |
+| **分页** | ❌ 不需要 | ✅ 支持分页 |
+| **用途** | 今日打卡状态 | 历史记录查询 |
+
+#### 预期工作量
+
+- **开发时间**: 2-4小时
+- **测试时间**: 1小时
+- **难度**: 简单（CRUD操作）
+
+---
+
 ## 原材料规格动态配置功能
 
 **需求日期**: 2025-11-04

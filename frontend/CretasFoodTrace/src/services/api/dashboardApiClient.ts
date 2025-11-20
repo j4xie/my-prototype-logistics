@@ -75,6 +75,72 @@ export interface EquipmentDashboardData {
 }
 
 /**
+ * 质量统计数据
+ */
+export interface QualityDashboardData {
+  period: string;
+  summary: {
+    totalInspections: number;
+    passedInspections: number;
+    failedInspections: number;
+    passRate: number;
+  };
+  trends: Array<{
+    date: string;
+    inspections: number;
+    passed: number;
+    passRate: number;
+  }>;
+  issueDistribution: Array<{
+    issueType: string;
+    count: number;
+  }>;
+}
+
+/**
+ * 告警统计数据
+ */
+export interface AlertsDashboardData {
+  period: string;
+  summary: {
+    totalAlerts: number;
+    activeAlerts: number;
+    resolvedAlerts: number;
+    criticalAlerts: number;
+  };
+  byType: Array<{
+    type: string;
+    count: number;
+    severity: string;
+  }>;
+  recent: Array<{
+    id: string;
+    type: string;
+    message: string;
+    severity: string;
+    timestamp: string;
+  }>;
+}
+
+/**
+ * 趋势分析数据
+ */
+export interface TrendAnalysisData {
+  period: string;
+  metric: string;
+  data: Array<{
+    date: string;
+    value: number;
+    change: number;
+  }>;
+  summary: {
+    average: number;
+    trend: 'up' | 'down' | 'stable';
+    changePercentage: number;
+  };
+}
+
+/**
  * Dashboard API Client
  */
 export const dashboardAPI = {
@@ -91,10 +157,14 @@ export const dashboardAPI = {
     data: DashboardOverviewData;
     message?: string;
   }> => {
-    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/overview`, {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: DashboardOverviewData;
+      message?: string;
+    }>(`/api/mobile/${factoryId}/processing/dashboard/overview`, {
       params: { period },
     });
-    return response.data;
+    return response;
   },
 
   /**
@@ -114,10 +184,14 @@ export const dashboardAPI = {
     data: ProductionStatisticsData;
     message?: string;
   }> => {
-    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/production`, {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: ProductionStatisticsData;
+      message?: string;
+    }>(`/api/mobile/${factoryId}/processing/dashboard/production`, {
       params,
     });
-    return response.data;
+    return response;
   },
 
   /**
@@ -129,8 +203,12 @@ export const dashboardAPI = {
     data: EquipmentDashboardData;
     message?: string;
   }> => {
-    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/equipment`);
-    return response.data;
+    const response = await apiClient.get<{
+      success: boolean;
+      data: EquipmentDashboardData;
+      message?: string;
+    }>(`/api/mobile/${factoryId}/processing/dashboard/equipment`);
+    return response;
   },
 
   /**
@@ -143,13 +221,17 @@ export const dashboardAPI = {
     factoryId: string = DEFAULT_FACTORY_ID
   ): Promise<{
     success: boolean;
-    data: any;
+    data: QualityDashboardData;
     message?: string;
   }> => {
-    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/quality`, {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: QualityDashboardData;
+      message?: string;
+    }>(`/api/mobile/${factoryId}/processing/dashboard/quality`, {
       params: { period },
     });
-    return response.data;
+    return response;
   },
 
   /**
@@ -162,13 +244,17 @@ export const dashboardAPI = {
     factoryId: string = DEFAULT_FACTORY_ID
   ): Promise<{
     success: boolean;
-    data: any;
+    data: AlertsDashboardData;
     message?: string;
   }> => {
-    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/alerts`, {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: AlertsDashboardData;
+      message?: string;
+    }>(`/api/mobile/${factoryId}/processing/dashboard/alerts`, {
       params: { period },
     });
-    return response.data;
+    return response;
   },
 
   /**
@@ -184,13 +270,17 @@ export const dashboardAPI = {
     factoryId: string = DEFAULT_FACTORY_ID
   ): Promise<{
     success: boolean;
-    data: any;
+    data: TrendAnalysisData;
     message?: string;
   }> => {
-    const response = await apiClient.get(`/api/mobile/${factoryId}/processing/dashboard/trends`, {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: TrendAnalysisData;
+      message?: string;
+    }>(`/api/mobile/${factoryId}/processing/dashboard/trends`, {
       params,
     });
-    return response.data;
+    return response;
   },
 };
 

@@ -62,169 +62,130 @@ nohup java -jar cretas-backend-system-1.0.0.jar --server.port=10010 > cretas-bac
 echo "Started with PID: $!"
 ```
 
-## 🎯 Development Strategy (IMPORTANT)
+## 🎯 项目当前状态 (Current Project Status)
 
-### Frontend-Backend Separation Development Approach
+**项目阶段**: Phase 1-2 已完成 ✅ | Phase 3 核心完成 ✅🔨 | Phase 4 优化集成中 🔨
 
-**CRITICAL**: This project follows a **two-phase development strategy** during Phase 1-3:
+**总体完成度**: 约 75-80%
 
-#### Phase 1-3: React Native Frontend Only
-- **Focus**: Develop ONLY React Native frontend application
-- **No Backend Implementation**: Do NOT create/modify any backend logic, functions, or database schema
-- **API Interface Design**: Create complete API client interfaces in React Native
-- **No Mock APIs**: All development is based on real API interface design
-- **Requirement Collection**: Record ALL backend requirements in `/mnt/c/Users/Steve/cretas/backend/rn-update-tableandlogic.md`
+### 当前开发重点
 
-#### Post-Phase 3: Backend Implementation
-- **Backend Development**: Implement all collected backend requirements
-- **Final Integration**: Connect frontend with implemented backend APIs
+**前后端开发状态**：
+- ✅ **前端核心**: 24个页面完成 (Phase 1-2)
+- ✅ **后端核心**: 30+ API控制器，85% 核心功能已实现
+- ✅ **数据同步**: 离线存储基础设施完成 (70%)
+- ✅ **AI分析**: DeepSeek成本分析完整实现 (95%)
+- 🔨 **推送通知**: 后端API完成，前端集成中 (60%)
+- 🔨 **高级功能**: 生物识别、物流追踪等待Phase 4-5
+- ✅ **生产部署**: 服务器运行中 (139.196.165.140:10010)
 
-### Why This Strategy?
-- ✅ **Parallel Development**: Frontend team can develop independently
-- ✅ **Requirement Clarity**: All backend needs are centrally documented
-- ✅ **Reduced Dependencies**: No blocking between frontend and backend teams
-- ✅ **Efficient Integration**: Clear requirements lead to faster final integration
+**待完成功能**: 详见 `PENDING_FEATURES_TODO.md`
 
----
+### 技术栈概览
 
-## 🎯 Current Development Phase: Phase 3 功能完善
+**前端 (React Native)**:
+- Expo 53+ with TypeScript
+- React Navigation 7+ (权限路由)
+- Zustand (状态管理)
+- React Native Paper (UI组件)
 
-**Status**: Phase 1-2 已完成 ✅ | Phase 3 开发中 🔨 | Phase 4-5 计划中 📅
+**后端 (Spring Boot)**:
+- Java 11 + Spring Boot 2.7.15
+- MySQL + Spring Data JPA + Hibernate
+- JWT 多角色认证系统
+- DeepSeek AI 集成
 
-**Current Strategy**: **优先完善已有功能，再添加新功能**
+**部署**:
+- 服务器: 139.196.165.140:10010
+- 宝塔面板: 自动化部署与管理
+- 日志监控: `/www/wwwroot/cretas/cretas-backend.log`
 
-### Phase 3 Development Priority
+### 📚 文档索引
 
-#### P0 (紧急修复 - 2小时)
-- 设备监控集成到导航 (EquipmentMonitoringScreen)
+**主要 PRD 文档**:
+- 📘 **[PRD-白垩纪食品溯源系统-完整版.md](./docs/prd/PRD-白垩纪食品溯源系统-完整版.md)** (v5.0) - 超大完整PRD，包含所有功能模块和业务流程
+- 📊 [PRD-完整业务流程与界面设计.html](./docs/prd/PRD-完整业务流程与界面设计.html) - 可视化业务流程图
+- 🔐 [角色权限和页面访问速查表.md](./docs/prd/角色权限和页面访问速查表.md) - 快速查找权限规则
+- 🧭 [导航架构实现指南.md](./docs/prd/导航架构实现指南.md) - 导航开发代码示例
 
-#### P1 (核心功能 - 3-4天)
-- AI智能分析详情页 (DeepSeekAnalysisScreen)
-- 质检完整流程 (CreateQualityRecordScreen, QualityInspectionDetailScreen)
-- 成本对比分析、设备告警、库存增强
+**后端需求文档**:
+- 🔧 [`backend/rn-update-tableandlogic.md`](./backend/rn-update-tableandlogic.md) - 前端提出的API和数据库需求清单
 
-#### P2 (辅助功能 - 5-7天)
-- 用户注册流程 (RegisterPhaseOne/Two)
-- 数据报表导出 (DataExportScreen)
-- 工厂设置、员工效率、库存盘点、异常预警
-
-**详见**: [`docs/prd/PRD-Phase3-完善计划.md`](./docs/prd/PRD-Phase3-完善计划.md)
-
-### 📱 Already Implemented Pages (24个)
-
-**认证模块**:
-- ✅ EnhancedLoginScreen
-
-**主导航**:
-- ✅ HomeScreen (首页)
-- ✅ ProfileScreen (个人中心)
-
-**考勤模块**:
-- ✅ TimeClockScreen (打卡)
-- ✅ AttendanceStatisticsScreen (工时统计)
-
-**生产模块** (9个页面):
-- ✅ ProcessingDashboard (仪表板)
-- ✅ BatchListScreen, BatchDetailScreen, CreateBatchScreen
-- ✅ QualityInspectionListScreen
-- ✅ CostAnalysisDashboard (成本分析)
-- ✅ ProductionPlanManagementScreen (生产计划)
-- ✅ MaterialReceiptScreen, MaterialBatchManagementScreen (原材料)
-
-**管理模块** (10个页面):
-- ✅ ManagementScreen + ProductType, MaterialType, ConversionRate
-- ✅ WorkType, AISettings, User, Whitelist, Supplier, Customer
-
-**平台管理**:
-- ✅ AIQuotaManagementScreen
-
-### 🔗 Documentation Reference
-
-**PRD Documents**:
-- 📋 [PRD-实现状态总览](./docs/prd/PRD-实现状态总览.md) - 完整的页面实现情况和优先级
-- 📚 [PRD-系统产品需求文档-v4.0](./docs/prd/PRD-系统产品需求文档-v4.0.md) - 分阶段的需求文档
-- 🛠️ [PRD-Phase3-完善计划](./docs/prd/PRD-Phase3-完善计划.md) - Phase 3的详细开发任务
-
-**Backend Requirements**:
-- 🔧 [`backend/rn-update-tableandlogic.md`](./backend/rn-update-tableandlogic.md) - API和数据库需求
+**历史归档文档** (已归档，仅供参考):
+- 📋 [PRD-实现状态总览](./docs/prd/archive/source-docs/PRD-实现状态总览.md) (已归档)
+- 📚 [PRD-系统产品需求文档-v4.0](./docs/prd/archive/source-docs/PRD-系统产品需求文档-v4.0.md) (已归档)
+- 🛠️ [PRD-Phase3-完善计划](./docs/prd/archive/source-docs/PRD-Phase3-完善计划.md) (已归档)
 
 ---
 
 ## Development Commands
 
-### 📱 React Native Development (PRIMARY FOCUS)
+### 📱 React Native Development
 
-**Phase 1-3 Development Commands**:
 ```bash
 cd frontend/CretasFoodTrace
 npm install                   # Install dependencies
-npm start                     # Start Expo development server (port 3010)
-npx expo start               # Alternative start command (port 3010)
-npx expo start --clear       # Start with cache cleared (port 3010)
-npm run android              # Start on Android (port 3010)
-npm run ios                  # Start on iOS (macOS only, port 3010)
-npm run web                  # Start web version (port 3010)
+npm start                     # Start Expo (port 3010)
+npx expo start --clear       # Start with cache cleared
+npm run android              # Run on Android
+npm run ios                  # Run on iOS (macOS only)
 ```
 
-**⚠️ PORT CONFIGURATION**:
-- **React Native Dev Server**: Port `3010` (Expo/Metro bundler)
-- **Backend API Server**: Port `3001` (Express API)
-- **MySQL Database**: Port `3306` (default)
-
-### 🔧 Backend Services (Supporting Services Only)
-
-**Note**: During Phase 1-3, backend is used only as a supporting service. DO NOT modify backend code.
+### 🔧 Backend Development (Spring Boot)
 
 ```bash
-cd backend
-npm install                    # Install dependencies  
-npm run dev                   # Start development server (port 3001)
-npm run check                 # Run health checks
-npm run studio                # Open Prisma Studio (for database inspection)
+cd backend-java
+mvn clean package -DskipTests           # Build JAR
+mvn spring-boot:run                      # Run locally (port 10010)
+
+# Deploy to server
+scp target/*.jar root@139.196.165.140:/www/wwwroot/cretas/
+ssh root@139.196.165.140 "bash /www/wwwroot/cretas/restart.sh"
 ```
 
-### 🚀 Quick Start Scripts (Windows)
+### ⚠️ Port Configuration
 
-**Primary Development Script**:
-- `start-backend-rn.cmd` - **MAIN**: Start MySQL + Backend (3001) + React Native (3010) (one-click setup)
+| Service | Port | Environment |
+|---------|------|-------------|
+| React Native Dev | 3010 | Expo/Metro bundler |
+| Spring Boot API | 10010 | Production server |
+| MySQL Database | 3306 | Default |
 
-**Alternative Scripts**:
-- `SOLUTION-HUB.cmd` - Development menu with PowerShell issue solutions
-- `NO-PROFILE-DEV.cmd` - Bypass PowerShell profile issues completely
+### 🚀 Quick Start
 
-### 📋 Backend Requirements Management
-
-**View/Edit Backend Requirements**:
+**macOS/Linux**:
 ```bash
-# Open the backend requirements document
-code backend/rn-update-tableandlogic.md
-
-# Or use any text editor
-notepad backend/rn-update-tableandlogic.md
+./start-system-macos.sh       # Start all services (macOS)
 ```
 
-**IMPORTANT**: All backend logic, API implementations, and database schema changes should be documented in `backend/rn-update-tableandlogic.md`, NOT implemented during Phase 1-3.
+**Windows**:
+```bash
+# Start services manually (see Manual Setup below)
+# Or use WSL2 with the macOS script
+```
 
 ## Architecture Overview
 
-### Backend Architecture
-- **Framework**: Express.js with ES modules (`"type": "module"`)
-- **Database**: MySQL with Prisma ORM (can migrate to PostgreSQL)
-- **Authentication**: JWT with refresh tokens, complex multi-role system
-- **Mobile Support**: Dedicated `/api/mobile/*` routes for React Native
-- **Key Features**: 
-  - DeepSeek LLM integration for intelligent analysis
+### Backend Architecture (Spring Boot)
+- **Framework**: Spring Boot 2.7.15 with Java 11
+- **Database**: MySQL with Spring Data JPA + Hibernate
+- **Authentication**: JWT with refresh tokens, 8-role permission system
+- **Mobile Support**: Dedicated `/api/mobile/*` REST endpoints for React Native
+- **Key Features**:
+  - DeepSeek LLM integration for intelligent cost analysis
   - File upload with mobile optimization
   - Device binding and activation system
   - Multi-stage registration with phone verification
 - **File Structure**:
-  - `/src/controllers/` - Request handlers (authController.js, platformController.js)
-  - `/src/middleware/` - Authentication, validation, error handling, mobileAuth
-  - `/src/routes/` - API routes (auth.js, mobile.js, platform.js, users.js)
-  - `/src/services/` - Business logic (cronJobs.js, factoryService.js)
-  - `/src/config/` - Configuration (permissions.js, database.js)
-  - `/src/utils/` - Utilities (jwt.js, password.js, logger.js)
-  - `/prisma/schema.prisma` - Database schema with complex user roles
+  - `/backend-java/src/main/java/com/cretas/aims/`
+    - `controller/` - REST controllers (@RestController)
+    - `entity/` - JPA entities (@Entity)
+    - `service/` - Business logic layer
+    - `repository/` - Spring Data JPA repositories
+    - `dto/` - Data Transfer Objects
+    - `config/` - Spring configuration classes
+    - `exception/` - Custom exception handlers
+    - `mapper/` - Entity-DTO mapping
 
 ### React Native Architecture (Primary Focus)
 - **Framework**: Expo 53+ with React Native 0.79+
@@ -240,11 +201,10 @@ notepad backend/rn-update-tableandlogic.md
   - DeepSeek AI analysis integration
   - Offline-first architecture with sync
   - Push notifications
-- **Development Strategy**: 9-week phased approach
-  - **Phase 0** (1 week): Environment setup
-  - **Phase 1** (3 weeks): Complete authentication system migration
-  - **Phase 2** (3 weeks): Processing module + DeepSeek LLM integration
-  - **Phase 3** (2 weeks): App activation system + production release
+- **Development Strategy**: 分阶段开发方法
+  - **Phase 1-2** (已完成 ✅): 认证系统 + 核心业务模块前端 (24个页面)
+  - **Phase 3** (开发中 🔨): Spring Boot 后端 API 实现
+  - **Phase 4-5** (计划中 📅): 集成测试 + 生产部署 + 高级功能
 - **Module Structure**:
   - `/src/components/` - UI components (auth, permissions, forms)
   - `/src/modules/` - Feature modules (auth, processing, farming, logistics, sales)
@@ -253,53 +213,33 @@ notepad backend/rn-update-tableandlogic.md
   - `/src/store/` - Zustand stores (authStore, navigationStore, permissionStore)
   - `/src/screens/` - Screen components organized by feature
 
-## Database Schema (MySQL/PostgreSQL via Prisma)
+## Database Schema
 
-The system supports a complex multi-tenant architecture with sophisticated role management:
+**MySQL + Spring Data JPA + Hibernate**
 
-### Core Models
-- `Factory` - Manufacturing facilities with industry/region coding and factory ID generation
-- `User` - Factory employees with complex role hierarchy and department structure
-- `PlatformAdmin` - Platform-level administrators with system-wide permissions
-- `UserWhitelist` - Phone number pre-approval system with expiration management
-- `Session` - User session management with device tracking
-- `FactorySettings` - Factory-specific configuration
-- `UserRoleHistory` - Role change tracking and audit trail
+核心表：
+- `factories` - 工厂信息
+- `users` - 用户（8角色系统）
+- `departments` - 部门
+- `processing_batches` - 加工批次
+- `quality_inspections` - 质检记录
 
-### User Roles & Permissions (8 Role System)
-**Platform Roles**: 
-- `developer` (system_developer) - Full system access
-- `platform_admin` (platform_super_admin) - Platform management
-- `platform_operator` - Limited platform operations
-
-**Factory Roles**:
-- `factory_super_admin` - Factory-wide admin access
-- `permission_admin` - User permission management
-- `department_admin` - Department-level administration
-- `operator` - Operational access
-- `viewer` - Read-only access
-- `unactivated` - Pending activation
+**详细结构**: 查看 `backend-java/src/main/java/com/cretas/aims/entity/` 实体类
 
 ## Mobile API Architecture
 
-### Mobile-Specific Endpoints (`/api/mobile/*`)
-- **Authentication**: Unified login, device binding, biometric support
-- **Registration**: Two-phase registration with phone verification
-- **File Upload**: Mobile-optimized image upload with compression
-- **DeepSeek Integration**: AI analysis with cost control (target: <¥30/month)
-- **App Activation**: Device-based activation system
-- **Health Check**: Service availability monitoring
+**API 基础路径**: `/api/mobile/*`
 
-### Key Mobile APIs
-```javascript
-POST /api/mobile/auth/unified-login      // Smart login (platform vs factory user)
-POST /api/mobile/auth/register-phase-one // Phone verification stage
-POST /api/mobile/auth/register-phase-two // Complete registration
-POST /api/mobile/auth/bind-device       // Device binding for security
-POST /api/mobile/upload/mobile          // Image upload with optimization
-POST /api/mobile/analysis/deepseek      // AI analysis requests
-POST /api/mobile/activation/activate    // App activation
-```
+**核心功能模块**:
+- 认证与授权 (`/auth/*`) - 登录、注册、密码管理
+- 文件上传 (`/upload`) - 移动端文件上传优化
+- 应用激活 (`/activation/*`) - 设备激活管理
+- 业务数据 (`/{factoryId}/*`) - 工厂相关业务接口
+
+**详细 API 文档**:
+- 📖 **Apifox**: API 设计与测试的唯一真实来源
+- 🔧 **代码位置**: `backend-java/src/main/java/com/cretas/aims/controller/`
+- 📋 **前端需求**: `backend/rn-update-tableandlogic.md` - 前端提出的API需求清单
 
 ## Authentication System (Mobile-Optimized)
 
@@ -310,278 +250,751 @@ POST /api/mobile/activation/activate    // App activation
 4. **Biometric Integration**: Fingerprint/Face ID support via Expo LocalAuthentication
 5. **Token Management**: AccessToken + RefreshToken + TempToken + DeviceToken
 
-### Mobile Registration Flow
-```javascript
-// Phase 1: Phone verification and whitelist check
-POST /api/mobile/auth/register-phase-one
-{
-  phoneNumber: "+8613800000000",
-  verificationType: "registration"
-}
-
-// Phase 2: Complete profile with temporary token
-POST /api/mobile/auth/register-phase-two
-{
-  tempToken: "temp_xxx",
-  username: "user123", 
-  password: "secure_password",
-  fullName: "张三",
-  department: "生产部"
-  // Additional factory user fields
-}
-```
-
-### Smart Login System
-The unified login automatically determines user type:
-- **Platform Users**: Developer, platform admins (priority 1)
-- **Factory Users**: Factory roles within specific factories (priority 2)
-- **Navigation**: Smart post-login redirection based on role and permissions
+### Mobile Registration & Login
+- **Two-Phase Registration**: Phone verification → Complete profile
+- **Smart Login**: Automatic user type detection (platform/factory)
+- **Post-Login**: Role-based navigation and permission routing
 
 ## Development Environment Setup
 
-### React Native + Backend Setup (Windows)
-**Recommended Approach**: Use `start-backend-rn.cmd`
+### React Native + Backend Setup (macOS/Linux)
+**Recommended Approach**: Use `start-system-macos.sh` (macOS) or manual setup
 1. Automatically starts MySQL service
-2. Launches backend server (port 3001)
-3. Starts Expo React Native development server
+2. Launches Spring Boot backend server (port 10010)
+3. Starts Expo React Native development server (port 3010)
 4. Opens new terminal windows for each service
 
 ### Manual Setup
 ```bash
-# 1. Database Setup
-cd backend
-cp .env.example .env
-# Configure DATABASE_URL in .env
-npm run migrate
-npm run seed
+# 1. 启动 MySQL 数据库
+mysql.server start              # macOS
+# OR
+sudo systemctl start mysql      # Linux
 
-# 2. Backend
-npm run dev
+# 2. 启动 Spring Boot 后端
+cd backend-java
+mvn clean package -DskipTests   # 首次运行需要编译
+mvn spring-boot:run             # 启动后端服务 (端口 10010)
 
-# 3. React Native (new terminal)
-cd frontend/CretasFoodTrace  
-npx expo start
+# 3. 启动 React Native (新终端)
+cd frontend/CretasFoodTrace
+npm install                     # 首次运行需要安装依赖
+npm start                       # 启动 Expo (端口 3010)
 ```
-
-### PowerShell Issues (Windows)
-The project includes comprehensive PowerShell profile management:
-- **Primary Solution**: Use `start-backend-rn.cmd` (bypasses PowerShell entirely)
-- **Alternative**: Use `SOLUTION-HUB.cmd` for guided PowerShell fixes
-- **Emergency**: Use `NO-PROFILE-DEV.cmd` for immediate development access
-- **Critical Rule**: Never use `Add-Content` to modify PowerShell profiles (causes corruption)
-
-## React Native Development Strategy (9-Week Plan)
-
-### Phase Overview
-- **Phase 0** (1 week): Environment setup and project initialization
-- **Phase 1** (3 weeks): Complete authentication system migration with 8-role support
-- **Phase 2** (3 weeks): Processing module implementation + DeepSeek LLM integration  
-- **Phase 3** (2 weeks): App activation system + production release preparation
-
-### Key Development Principles
-1. **Mobile-First Design**: Optimize for Android with Material Design 3
-2. **Offline-First Architecture**: Core features work without network connectivity
-3. **Performance Targets**: <3s startup, <500ms page transitions, <200MB memory
-4. **Cost Control**: DeepSeek AI analysis <¥30/month, cache hit rate >60%
 
 ## Key Development Patterns
 
-### Mobile Architecture Patterns
-- **Permission-Based Navigation**: Routes dynamically adapt to user roles
-- **Smart Service Loading**: Services load based on user permissions and network state
-- **Biometric Integration**: Seamless fingerprint/Face ID authentication
-- **Device Management**: Secure device binding with unique identification
+### ⚠️ Code Quality Principles (CRITICAL)
 
-### State Management (Zustand)
+**DO NOT Use Degradation/Fallback Patterns**
+
+降级处理(Degradation/Fallback)是一种**治标不治本**的方法，在本项目中**严格禁止**使用。
+
+**❌ 禁止的降级处理模式**:
 ```javascript
-// Core stores for React Native
-/src/store/
-├── authStore.ts          // Authentication state and user management
-├── navigationStore.ts    // Navigation state and permission-based routing
-├── permissionStore.ts    // Role-based permission management
-└── index.ts              // Store exports and persistence configuration
+// ❌ BAD: 使用降级处理掩盖问题
+try {
+  const result = await apiCall();
+  return result;
+} catch (error) {
+  console.log('API failed, using fallback');
+  return mockData; // 降级到Mock数据
+}
+
+// ❌ BAD: 条件降级
+if (feature.isAvailable()) {
+  return feature.execute();
+} else {
+  return simplifiedVersion(); // 降级到简化版本
+}
 ```
 
-### Modal Layout Pattern (React Native Paper)
+**✅ 正确的问题解决方法**:
+```javascript
+// ✅ GOOD: 找到并修复根本原因
+try {
+  const result = await apiCall();
+  return result;
+} catch (error) {
+  logger.error('API call failed', error);
+  // 1. 记录详细错误信息
+  // 2. 向用户显示明确的错误提示
+  // 3. 在backend/rn-update-tableandlogic.md中记录需要修复的问题
+  throw new UserFacingError('数据加载失败，请稍后重试');
+}
 
-**Standard Modal Layout for Management Screens**
-
-All management screens with create/edit modals MUST follow this standardized layout pattern to ensure:
-- ✅ All form fields visible without scrolling (for forms with up to 8 fields)
-- ✅ Action buttons always visible at bottom of modal
-- ✅ Consistent user experience across all management screens
-- ✅ Proper ScrollView behavior for content overflow
-
-#### Implementation Requirements
-
-**Modal Structure**:
-```typescript
-<Modal
-  visible={modalVisible}
-  onDismiss={() => setModalVisible(false)}
-  contentContainerStyle={styles.modalContent}
->
-  {/* Modal title - OUTSIDE ScrollView */}
-  <Text style={styles.modalTitle}>
-    {editingItem ? '编辑项目' : '添加项目'}
-  </Text>
-
-  {/* Scrollable content area */}
-  <ScrollView
-    style={styles.modalScrollView}
-    contentContainerStyle={{ paddingBottom: 16 }}
-  >
-    {/* All form inputs go here */}
-    <TextInput label="字段1" />
-    <TextInput label="字段2" />
-    {/* ... more inputs ... */}
-  </ScrollView>
-
-  {/* Action buttons - OUTSIDE ScrollView, at bottom */}
-  <View style={styles.modalActions}>
-    <Button mode="outlined" onPress={() => setModalVisible(false)}>
-      取消
-    </Button>
-    <Button mode="contained" onPress={handleSave}>
-      {editingItem ? '更新' : '创建'}
-    </Button>
-  </View>
-</Modal>
+// ✅ GOOD: 实现完整功能或不实现
+if (!feature.isAvailable()) {
+  // 1. 记录为待实现功能
+  // 2. 向用户明确说明功能未开放
+  throw new FeatureNotAvailableError('该功能即将上线');
+}
+return feature.execute();
 ```
 
-**Required StyleSheet Properties**:
+**为什么禁止降级处理**:
+1. **掩盖问题**: 降级处理会隐藏真实的错误和问题
+2. **延迟修复**: 让开发者忽略根本原因，问题永远得不到真正解决
+3. **技术债务**: 积累大量的"临时方案"，最终导致代码难以维护
+4. **用户体验**: 降级功能往往体验不佳，不如明确告知用户
+5. **测试困难**: 增加了测试复杂度，难以发现问题
+
+**正确的开发流程**:
+1. **遇到问题** → **分析根本原因** → **记录问题**
+2. **前端阶段**(Phase 1-2，已完成): 在`backend/rn-update-tableandlogic.md`中记录后端需求
+3. **后端阶段**(Phase 3-4，进行中): 实现完整的后端功能，彻底解决问题
+4. **用户交互**: 向用户明确显示错误信息或功能状态，不要用降级掩盖
+
+**例外情况** (仅在以下场景允许):
+- **离线模式**: App设计就是离线优先，本地存储是核心功能
+- **网络优化**: 预加载、缓存等性能优化手段
+- **优雅降级**: UI组件在旧设备上的渲染优化(如动画简化)
+
+但即使在这些场景，也必须:
+- 在设计文档中明确说明
+- 向用户清晰展示当前状态(如"离线模式")
+- 提供完整的功能切换机制
+
+---
+
+## 🚫 禁止的开发模式 (Anti-Patterns)
+
+基于对项目代码的深入分析，发现了**8大类、67+个"治标不治本"的反模式实例**。以下是完整的禁止规范和正确做法。
+
+### 1. 错误处理规范
+
+#### ❌ 禁止做法
+
+**1.1 捕获错误后静默失败或返回假数据**
 ```typescript
-const styles = StyleSheet.create({
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
-    maxHeight: 800,  // ⚠️ CRITICAL: Use 800px fixed height, NOT percentage
-  },
-  modalScrollView: {
-    flexGrow: 0,      // ⚠️ CRITICAL: Must be 0, not 1
-    flexShrink: 1,    // Allows shrinking if content is small
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    paddingTop: 16,
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
+// ❌ BAD: 错误被吞掉，用户看到假数据
+try {
+  const data = await api.getStatistics();
+  return data;
+} catch (error) {
+  console.error('加载失败:', error);
+  // 返回全0数据，用户以为真的是0，实际是API失败
+  return { todayOutput: 0, completedBatches: 0 };
+}
+
+// ❌ BAD: Promise.allSettled 掩盖关键API失败
+const [r1, r2, r3] = await Promise.allSettled([api1(), api2(), api3()]);
+const data1 = r1.status === 'fulfilled' ? r1.value : null;
+// 只打印日志，用户不知道某些数据加载失败
+if (r1.status === 'rejected') {
+  console.warn('API失败:', r1.reason);
+}
+```
+
+**1.2 泛型错误处理 - 所有错误同样对待**
+```typescript
+// ❌ BAD: 使用 any 类型，失去类型安全
+catch (err: any) {
+  console.error('操作失败:', err);
+  Alert.alert('失败', err.message || '请重试');
+  // 网络错误、认证错误、服务器错误都显示同样消息
+}
+```
+
+**1.3 空catch块或只打印日志**
+```typescript
+// ❌ BAD: 错误被完全忽略
+try {
+  await criticalOperation();
+} catch (error) {
+  // 什么都不做，或只打印
+  console.error(error);
+}
+```
+
+#### ✅ 正确做法
+
+**方案1: 明确显示错误，不返回假数据**
+```typescript
+// ✅ GOOD: 显示错误状态UI
+try {
+  const data = await api.getStatistics();
+  setStatsData(data);
+  setError(null);
+} catch (error) {
+  console.error('加载统计数据失败:', error);
+  // 不返回假数据，设置错误状态
+  setError({
+    message: '无法加载统计数据，请稍后重试',
+    canRetry: true,
+    onRetry: () => loadStatistics(),
+  });
+  setStatsData(null); // 不显示假数据
+}
+```
+
+---
+
+### 2. 数据验证规范
+
+#### ❌ 禁止做法
+
+**2.1 使用 `as any` 绕过类型检查**
+```typescript
+// ❌ BAD: 关闭TypeScript保护
+const data = (response as any).data || response;
+const items = data.items || [];
+
+// ❌ BAD: 参数使用any
+function processData(item: any) {
+  return item.value || 0;
+}
+```
+
+**2.2 过度使用可选链和 `||` 默认值**
+```typescript
+// ❌ BAD: 误判合法的0、false、''
+const count = data?.items?.length || 0;  // 如果length是0，还是返回0，无法区分
+const value = obj?.prop?.subprop?.value || 'default';  // false、0、'' 都会用默认值
+
+// ❌ BAD: 超过2层可选链，表明数据结构不明确
+const deepValue = obj?.a?.b?.c?.d?.e || 'default';
+```
+
+**2.3 未验证API响应直接使用**
+```typescript
+// ❌ BAD: 直接使用，没有验证结构
+const response = await api.getData();
+// 后端返回格式变了，直接crash
+const total = response.data.summary.total;
+```
+
+#### ✅ 正确做法
+
+**方案1: 使用 `??` 替代 `||`**
+```typescript
+// ✅ GOOD: 只有 null/undefined 才用默认值，0是合法的
+const count = data?.items?.length ?? 0;
+const isEnabled = config?.feature?.enabled ?? false;  // false 是合法值
+const username = user?.username ?? 'Guest';
+```
+
+---
+
+### 3. 安全降级规范
+
+#### ❌ 禁止做法
+
+**3.1 SecureStore → AsyncStorage 静默降级**
+```typescript
+// ❌ BAD: 安全性大幅降低但用户不知情
+try {
+  await SecureStore.setItemAsync('access_token', token);
+} catch (error) {
+  console.warn('SecureStore unavailable, falling back to AsyncStorage');
+  // 从硬件加密降级到明文存储，用户完全不知道！
+  await AsyncStorage.setItem('access_token', token);
+}
+```
+
+**3.2 功能降级不通知用户**
+```typescript
+// ❌ BAD: 双重逻辑路径，降级逻辑掩盖问题
+if (record.status) {
+  return getStatusFromField(record.status);
+} else {
+  // 降级：根据时间字段推断状态
+  return inferStatusFromTime(record);
+}
+```
+
+**3.3 API失败时静默使用Mock数据**
+```typescript
+// ❌ BAD: 用户以为API正常，实际用的假数据
+try {
+  const data = await api.getRealData();
+  return data;
+} catch (error) {
+  console.error('API failed, using mock data');
+  return mockData;  // 降级到假数据
+}
+```
+
+#### ✅ 正确做法
+
+**方案1: 不降级，直接抛错**
+```typescript
+// ✅ GOOD: SecureStore不可用时报错
+static async storeTokens(tokens: AuthTokens): Promise<void> {
+  try {
+    await SecureStore.setItemAsync('access_token', tokens.accessToken);
+    await SecureStore.setItemAsync('refresh_token', tokens.refreshToken);
+  } catch (error) {
+    // 不降级，直接抛出错误
+    throw new SecurityError(
+      'SecureStore不可用，无法安全存储令牌。请检查设备设置。',
+      'SECURE_STORAGE_UNAVAILABLE'
+    );
+  }
+}
+```
+
+---
+
+### 4. 配置管理规范
+
+#### ❌ 禁止做法
+
+**4.1 硬编码超时时间、重试次数**
+```typescript
+// ❌ BAD: 魔法数字
+setTimeout(() => retry(), 3000);
+axios.get(url, { timeout: 30000 });
+for (let i = 0; i < 3; i++) { retry(); }
+```
+
+**4.2 硬编码GPS坐标、URL**
+```typescript
+// ❌ BAD: 所有用户都显示在上海打卡
+setGpsLocation({
+  latitude: 31.2304,
+  longitude: 121.4737,
 });
 ```
 
-#### Critical Design Rules
+**4.3 角色字符串直接比较**
+```typescript
+// ❌ BAD: 拼写错误风险
+if (role === 'factory_super_admin' || role === 'department_admin') {
+  // ...
+}
+```
 
-1. **Modal Title Position**: MUST be outside `<ScrollView>` to remain visible at top
-2. **Action Buttons Position**: MUST be outside `<ScrollView>` to remain fixed at bottom
-3. **maxHeight Value**: MUST use `800` (fixed pixels), NOT `'85%'` or percentage values
-   - Reason: Percentage heights cause layout collapse on Android
-   - 800px accommodates forms with 6-8 input fields without scrolling
-4. **ScrollView flexGrow**: MUST be `0`, NOT `1`
-   - Reason: `flex: 1` or `flexGrow: 1` causes content to disappear
-5. **ScrollView flexShrink**: MUST be `1` to allow proper sizing
-6. **Content Padding**: Add `contentContainerStyle={{ paddingBottom: 16 }}` for proper spacing
+#### ✅ 正确做法
 
-#### Screens Implementing This Pattern
+**方案1: 配置集中管理**
+```typescript
+// ✅ GOOD: config/timeouts.ts
+export const TIMEOUTS = {
+  DEFAULT_API: 30_000,
+  LONG_OPERATION: 60_000,
+  FILE_UPLOAD: 120_000,
+  NETWORK_CHECK: 5_000,
+} as const;
 
-**已完成 (Completed)**:
-- ✅ MaterialTypeManagementScreen.tsx (原材料类型管理)
-- ✅ WhitelistManagementScreen.tsx (白名单管理)
-- ✅ SupplierManagementScreen.tsx (供应商管理)
-- ✅ WorkTypeManagementScreen.tsx (工种管理)
-- ✅ CustomerManagementScreen.tsx (客户管理)
-- ✅ UserManagementScreen.tsx (用户管理)
+export const RETRY_CONFIG = {
+  MAX_ATTEMPTS: 3,
+  BASE_DELAY: 1_000,
+  MAX_DELAY: 10_000,
+} as const;
 
-**待应用 (To Be Applied)**:
-- 🔲 ProductTypeManagementScreen.tsx (产品类型管理)
-- 🔲 ConversionRateManagementScreen.tsx (转化率管理)
-- 🔲 Any future management screens with create/edit modals
+// 使用
+axios.get(url, { timeout: TIMEOUTS.DEFAULT_API });
+setTimeout(() => retry(), RETRY_CONFIG.BASE_DELAY);
+```
 
-#### Common Issues Solved
+---
 
-**Issue 1: Modal content not displaying**
-- ❌ Problem: Using `flex: 1` or `flexGrow: 1` on ScrollView
-- ✅ Solution: Use `flexGrow: 0` and `flexShrink: 1`
+### 5. TODO和未实现功能规范
 
-**Issue 2: Buttons hidden below scrollable content**
-- ❌ Problem: Buttons inside ScrollView
-- ✅ Solution: Move buttons outside ScrollView in separate View
+#### ❌ 禁止做法
 
-**Issue 3: Need to scroll to see last field**
-- ❌ Problem: Modal height too small (e.g., `maxHeight: '85%'` or 650px)
-- ✅ Solution: Use `maxHeight: 800` fixed pixels
+**5.1 生产代码包含TODO**
+```typescript
+// ❌ BAD: TODO堆积表明功能未完成
+export class BiometricManager {
+  static async authenticate(): Promise<boolean> {
+    // TODO: 未来实现生物识别
+    return false;  // 假实现
+  }
+}
+```
 
-**Issue 4: Layout collapse on Android**
-- ❌ Problem: Using percentage-based heights (`'85%'`)
-- ✅ Solution: Use fixed pixel values (800)
+**5.2 Mock数据假装API已实现**
+```typescript
+// ❌ BAD: 调用者以为API已经通了
+/**
+ * TODO: 后端API未实现，当前使用Mock数据
+ */
+async getFactories() {
+  return mockFactories;
+}
+```
 
-#### When to Use This Pattern
+#### ✅ 正确做法
 
-- ✅ Create/Edit modals in management screens
-- ✅ Forms with 3-8 input fields
-- ✅ Modals requiring action buttons (Save/Cancel)
-- ✅ Any screen where users need to see all fields at once
+**方案1: 抛出 NotImplementedError**
+```typescript
+// ✅ GOOD: 明确告知功能未实现
+class NotImplementedError extends Error {
+  constructor(
+    message: string,
+    public featureName: string,
+    public metadata?: Record<string, any>
+  ) {
+    super(message);
+    this.name = 'NotImplementedError';
+  }
+}
 
-#### When NOT to Use This Pattern
+export class BiometricManager {
+  static async authenticate(): Promise<boolean> {
+    throw new NotImplementedError(
+      '生物识别功能尚未实现',
+      'BIOMETRIC_AUTH',
+      {
+        plannedPhase: 'Phase 4-5',
+        trackingIssue: '#123',
+        estimatedDate: 'Q1 2026',
+      }
+    );
+  }
+}
+```
 
-- ❌ Full-screen forms (use regular Screen instead)
-- ❌ Forms with >10 fields (consider multi-step form)
-- ❌ Simple confirmation dialogs (use Dialog component)
-- ❌ Bottom sheets or slide-up panels (use different component)
+---
 
-### Error Handling
-- **Backend**: Centralized middleware with mobile-optimized responses
-- **Mobile**: User-friendly error messages with offline fallback
-- **Logging**: Winston logger with mobile request tracking
+### 6. 返回值和状态处理规范
 
-## Testing Strategy (Phase 1-3 Frontend Focus)
+#### ❌ 禁止做法
 
-### 📱 React Native Frontend Testing
+**6.1 返回null掩盖错误原因**
+```typescript
+// ❌ BAD: 调用者无法区分不同失败原因
+function getUserId(): number | null {
+  if (!user) return null;  // 用户未登录？
+  if (isNaN(userId)) return null;  // ID格式错误？
+  return userId;
+}
+```
 
-#### Component Testing
-- **Framework**: React Native Testing Library + Jest
-- **Focus Areas**: 
-  - UI component rendering and behavior
-  - User interaction flows (navigation, forms, buttons)
-  - State management (Zustand stores)
-  - Permission-based UI changes
-- **Command**: `npm test` (in CretasFoodTrace directory)
+**6.2 早期返回null导致静默失败**
+```typescript
+// ❌ BAD: 函数提前返回，没有错误提示
+async function loadData() {
+  if (!userId) {
+    console.warn('用户ID不存在');
+    return;  // 静默失败
+  }
+  // ...
+}
+```
 
-#### API Interface Testing
-- **Mock Data**: Use sample data to test API client interfaces
-- **Network Simulation**: Test offline/online state handling
-- **Error Handling**: Test API error scenarios without backend
-- **Request Formation**: Verify API requests are properly formatted
+#### ✅ 正确做法
 
-#### Authentication Flow Testing
-- **Login/Logout Flows**: Test complete authentication flows
-- **Biometric Integration**: Test biometric authentication flows  
-- **Token Management**: Test token storage and refresh logic
-- **Permission Routing**: Test role-based navigation
+**方案1: 使用Result类型**
+```typescript
+// ✅ GOOD: 明确区分成功和失败
+type Result<T, E = string> =
+  | { ok: true; value: T }
+  | { ok: false; error: E };
 
-#### Integration Testing
-- **Screen Navigation**: Test navigation between screens
-- **Form Validation**: Test input validation and error handling
-- **Offline Functionality**: Test offline storage and sync
-- **Device Features**: Test camera, GPS, notifications
+type UserIdError = 'NO_USER' | 'INVALID_ID' | 'PARSE_ERROR';
 
-### 🔧 Backend Requirements Validation
+function getUserId(): Result<number, UserIdError> {
+  if (!user) {
+    return { ok: false, error: 'NO_USER' };
+  }
 
-#### Requirements Documentation Testing
-- **Completeness Check**: Ensure all frontend needs are documented
-- **API Specification**: Verify API interfaces are fully specified
-- **Data Model Validation**: Check database schema requirements
-- **Integration Points**: Validate frontend-backend integration points
+  const userId = typeof user.id === 'string'
+    ? parseInt(user.id, 10)
+    : user.id;
 
-#### Post-Development Validation (Phase 4+)
-- **Backend Implementation Testing**: Validate implemented backends match requirements
-- **API Contract Testing**: Ensure API responses match frontend expectations
-- **End-to-End Testing**: Complete system integration testing
+  if (isNaN(userId)) {
+    return { ok: false, error: 'INVALID_ID' };
+  }
+
+  return { ok: true, value: userId };
+}
+
+// 使用时可以针对性处理
+const result = getUserId();
+if (!result.ok) {
+  switch (result.error) {
+    case 'NO_USER':
+      showError('请先登录');
+      navigate('Login');
+      break;
+    case 'INVALID_ID':
+      showError('用户ID格式错误');
+      reportBug('INVALID_USER_ID', { user });
+      break;
+    case 'PARSE_ERROR':
+      showError('数据解析失败');
+      break;
+  }
+  return;
+}
+
+const userId = result.value;  // 类型安全的number
+```
+
+---
+
+### 7. 代码质量强制要求
+
+#### 强制规范
+
+1. **TypeScript严格模式**
+   - 所有生产代码必须通过 `strict: true`
+   - 启用 `noImplicitAny`, `strictNullChecks`, `strictFunctionTypes`
+
+2. **禁止使用 `any`**
+   ```typescript
+   // ❌ BAD
+   function process(data: any) { }
+   const result = response as any;
+
+   // ✅ GOOD
+   function process(data: unknown) {
+     const validated = schema.parse(data);
+     // ...
+   }
+   ```
+
+   **例外情况**（必须注释说明）:
+   ```typescript
+   // ✅ ACCEPTABLE: 第三方库类型不完整
+   // @ts-expect-error - react-native-paper类型定义缺失
+   const theme = useTheme() as any;
+   ```
+
+3. **所有API调用必须有错误处理**
+   ```typescript
+   // ❌ BAD: 没有错误处理
+   const data = await api.getData();
+
+   // ✅ GOOD: 有错误处理
+   try {
+     const data = await api.getData();
+     setData(data);
+   } catch (error) {
+     handleError(error);
+   }
+   ```
+
+4. **关键功能必须有单元测试**
+   - 认证相关函数
+   - 数据验证函数
+   - 业务逻辑计算
+   - 覆盖率目标: >70%
+
+---
+
+## 📝 Code Review检查清单
+
+### 错误处理 (Error Handling)
+- [ ] 所有try-catch使用具体错误类型（不是 `any`）
+- [ ] 错误有明确的用户提示（不只是console.log）
+- [ ] 关键操作失败时通知用户
+- [ ] 没有空的catch块或只打印日志的catch
+- [ ] Promise.allSettled仅用于非关键数据，失败有提示
+
+### 数据验证 (Data Validation)
+- [ ] API响应有运行时验证（Zod/Yup）
+- [ ] 没有 `as any` 类型断言（或有充分理由并注释）
+- [ ] 可选链不超过2层
+- [ ] 使用 `??` 而非 `||` 作为默认值
+- [ ] TypeScript strict模式通过
+
+### 降级处理 (Degradation)
+- [ ] 降级时有用户通知（Alert/Toast）
+- [ ] 降级事件被记录到Analytics
+- [ ] 没有SecureStore静默降级到AsyncStorage
+- [ ] Promise.allSettled失败有用户提示
+- [ ] 区分开发/生产环境（Mock数据）
+
+### 配置管理 (Configuration)
+- [ ] 没有硬编码的超时/重试次数
+- [ ] 没有硬编码的GPS/URL
+- [ ] 角色判断使用枚举
+- [ ] 没有魔法数字（使用常量）
+
+### TODO和未实现功能
+- [ ] 生产代码没有TODO/FIXME/HACK
+- [ ] 未实现功能抛出NotImplementedError
+- [ ] Mock数据仅在开发环境
+- [ ] TODO关联Issue编号
+
+### 安全性 (Security)
+- [ ] 敏感数据使用SecureStore
+- [ ] Token不存储在AsyncStorage
+- [ ] 降级时有安全警告
+
+### 类型安全 (Type Safety)
+- [ ] TypeScript严格模式通过
+- [ ] 没有滥用可选链
+- [ ] API类型有明确定义
+- [ ] 没有 `any` 类型（或有注释说明）
+- [ ] 函数返回类型明确
+- [ ] 使用Result类型或抛出错误（不返回null）
+
+---
+
+## ⚙️ ESLint自动化规则
+
+创建 `.eslintrc.js` 自动检测反模式：
+
+```javascript
+module.exports = {
+  extends: [
+    '@react-native-community',
+    'plugin:@typescript-eslint/recommended',
+  ],
+  rules: {
+    // 禁止使用any
+    '@typescript-eslint/no-explicit-any': 'error',
+
+    // 禁止空catch块
+    'no-empty': ['error', { allowEmptyCatch: false }],
+
+    // 限制console.log (生产环境)
+    'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
+
+    // 禁止TODO注释 (生产环境)
+    'no-warning-comments': process.env.NODE_ENV === 'production' ? ['error', {
+      terms: ['TODO', 'FIXME', 'HACK', 'XXX'],
+      location: 'anywhere'
+    }] : 'warn',
+
+    // 要求使用const
+    'prefer-const': 'error',
+
+    // 禁止魔法数字
+    '@typescript-eslint/no-magic-numbers': ['warn', {
+      ignore: [0, 1, -1],
+      ignoreArrayIndexes: true,
+      ignoreEnums: true,
+      enforceConst: true,
+    }],
+
+    // 要求Promise有错误处理
+    '@typescript-eslint/no-floating-promises': 'error',
+
+    // 禁止未使用的变量
+    '@typescript-eslint/no-unused-vars': ['error', {
+      argsIgnorePattern: '^_',
+    }],
+
+    // 要求明确的函数返回类型
+    '@typescript-eslint/explicit-function-return-type': ['warn', {
+      allowExpressions: true,
+      allowTypedFunctionExpressions: true,
+    }],
+  },
+};
+```
+
+### 自定义ESLint插件检测项目特定反模式
+
+```javascript
+// eslint-plugin-cretas/rules/no-silent-degradation.js
+module.exports = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description: '禁止静默降级处理',
+      category: 'Best Practices',
+    },
+  },
+  create(context) {
+    return {
+      // 检测SecureStore → AsyncStorage降级
+      CatchClause(node) {
+        const sourceCode = context.getSourceCode();
+        const catchBody = node.body.body;
+
+        const hasSecureStoreError = node.param &&
+          node.param.name.toLowerCase().includes('securestore');
+        const hasAsyncStorage = catchBody.some(stmt => {
+          const code = sourceCode.getText(stmt);
+          return code.includes('AsyncStorage');
+        });
+        const hasAlert = catchBody.some(stmt => {
+          const code = sourceCode.getText(stmt);
+          return code.includes('Alert') || code.includes('showToast');
+        });
+
+        if (hasSecureStoreError && hasAsyncStorage && !hasAlert) {
+          context.report({
+            node,
+            message: '降级到AsyncStorage时必须通知用户（使用Alert或Toast）',
+          });
+        }
+      },
+
+      // 检测Promise.allSettled后的错误处理
+      CallExpression(node) {
+        if (
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object.name === 'Promise' &&
+          node.callee.property.name === 'allSettled'
+        ) {
+          context.report({
+            node,
+            message: '使用Promise.allSettled时请确保失败情况有用户提示',
+          });
+        }
+      },
+    };
+  },
+};
+```
+
+### CI/CD集成
+
+**GitHub Actions 工作流**（`.github/workflows/code-quality.yml`）:
+- ESLint 检查：`npm run lint`
+- TypeScript 严格模式：`npx tsc --noEmit --strict`
+- 生产分支检测：禁止 TODO/FIXME/HACK 注释
+- 代码审查：检测硬编码配置（GPS坐标等）
+
+**参考**: 查看项目中的 `.github/workflows/` 目录获取完整配置
+
+---
+
+## Testing Strategy
+
+### 📱 Frontend Testing (React Native)
+
+**Framework**: React Native Testing Library + Jest
+
+**Test Coverage**:
+- ✅ Component rendering and UI behavior
+- ✅ User interaction flows (navigation, forms, buttons)
+- ✅ State management (Zustand stores)
+- ✅ Permission-based routing
+- ✅ Offline functionality and data sync
+
+**命令**:
+```bash
+cd frontend/CretasFoodTrace
+npm test                     # Run all tests
+npm test -- --coverage       # With coverage report
+```
+
+### 🔧 Backend Testing (Spring Boot)
+
+**Framework**: JUnit 5 + Spring Boot Test + Mockito
+
+**Test Coverage**:
+- ✅ Controller layer (API endpoints)
+- ✅ Service layer (business logic)
+- ✅ Repository layer (database operations)
+- ✅ Integration tests (full request-response cycle)
+- ✅ Security tests (authentication & authorization)
+
+**命令**:
+```bash
+cd backend-java
+mvn test                     # Run all tests
+mvn test -Dtest=ClassName   # Run specific test class
+```
+
+### 🔗 Integration Testing
+
+**End-to-End Testing**:
+- API contract validation (frontend ↔ backend)
+- User flow testing (login → operation → logout)
+- Cross-platform testing (Android/iOS)
+- Performance testing (load, stress)
+
+**测试脚本**: See `/tests` directory for automated test scripts
 
 ## Security Considerations
 
@@ -620,199 +1033,100 @@ const styles = StyleSheet.create({
 - **Enterprise**: APK distribution with activation codes
 
 ### Backend Deployment
-- **Development**: Local MySQL with backend on port 3001
-- **Production**: PostgreSQL on cloud platforms (Neon, Supabase)
+- **Development**: Local MySQL with Spring Boot on port 10010
+- **Production**: MySQL on Alibaba Cloud (139.196.165.140:10010)
+- **Deployment**: Automated deployment via 宝塔面板 (BT-Panel)
 - **API Versioning**: Mobile API versioning for backward compatibility
 
-## Common Issues & Solutions (Phase 1-3 Focus)
+## Common Issues & Solutions
 
-### 📱 React Native Development Issues
+### 📱 React Native Issues
 
-#### Expo/Metro Cache Issues
-- **Clear cache**: `npx expo start --clear`
-- **Reset Metro**: `npx react-native start --reset-cache`
-- **Reinstall dependencies**: `rm -rf node_modules && npm install`
-- **Clear Expo cache**: `expo r -c` or `expo start --clear`
-
-#### Device/Emulator Issues
-- **Android Emulator**: Ensure Android Studio and AVD properly configured
-- **Network Connection**: Use `10.0.2.2:3001` for Android emulator → backend
-- **Permissions**: Manually grant camera, location, storage permissions in emulator settings
-- **Hot Reload Issues**: Restart Expo development server if hot reload stops working
-
-#### API Interface Development Issues
-- **Backend Not Available**: Use mock data to continue frontend development
-- **API Design Questions**: Document questions in `backend/rn-update-tableandlogic.md`
-- **Response Format Uncertainty**: Create sample response format and document it
-- **Network Error Handling**: Implement offline fallback UI for all API calls
-
-#### State Management Issues  
-- **Zustand Store Issues**: Verify store persistence configuration
-- **Permission State**: Ensure permission state updates trigger UI re-renders
-- **Navigation State**: Check navigation state persistence across app restarts
-
-### 🔧 Backend Service Issues (Supporting Only)
-
-#### Backend Health Check
-- **Service Status**: Run `npm run check` in backend directory
-- **Database Connection**: Verify MySQL service: `sc query MySQL80` (Windows)
-- **Port Conflicts**: 
-  - Backend API: Ensure port 3001 is available
-  - React Native Dev Server: Ensure port 3010 is available
-  - MySQL: Ensure port 3306 is available
-- **Health Endpoint**: Test `curl http://localhost:3001/api/mobile/health`
-- **Port Check Commands (Windows)**:
-  ```cmd
-  netstat -ano | findstr :3001  # Backend API
-  netstat -ano | findstr :3010  # React Native
-  netstat -ano | findstr :3306  # MySQL
-  ```
-
-**IMPORTANT**: During Phase 1-3, do NOT attempt to fix backend issues by modifying code. Instead:
-1. Document the issue in `backend/rn-update-tableandlogic.md`
-2. Create workarounds in frontend if possible
-3. Continue with frontend development
-
-### 📋 Requirements Documentation Issues
-
-#### Missing Backend Requirements
-- **Symptom**: Frontend needs API that doesn't exist
-- **Solution**: 
-  1. Document exact requirement in `backend/rn-update-tableandlogic.md`
-  2. Include API endpoint specification
-  3. Create mock data for frontend development
-  4. Continue frontend development
-
-#### Unclear API Specifications
-- **Symptom**: Unsure about request/response format
-- **Solution**:
-  1. Research similar patterns in existing codebase
-  2. Define proposed API format
-  3. Document in requirements file
-  4. Implement frontend assuming proposed format
-
-### 💻 Development Environment Issues
-
-#### PowerShell Issues (Windows)
-- **Primary Solution**: Use `start-backend-rn.cmd` (bypasses PowerShell entirely)
-- **Alternative**: Use `SOLUTION-HUB.cmd` → appropriate fix option
-- **Emergency**: Use `NO-PROFILE-DEV.cmd` for immediate access
-- **CRITICAL**: Never use `Add-Content` to modify PowerShell profiles
-
-#### Git Workflow Issues
-- **Branch Naming**: Use format `feature/rn-phase-X-[feature-name]`
-- **Requirements Documentation**: Always commit requirement changes with feature code
-- **Code Review**: Focus on API interface design and requirement documentation completeness
-
-## Development Workflow (Phase 1-3)
-
-### 📱 React Native Frontend Development Workflow
-
-#### Daily Development Routine
-1. **Start Environment**: Run `start-backend-rn.cmd` (starts MySQL + Backend + React Native)
-2. **Check Services**: Verify Expo development server is running
-3. **Frontend Focus**: Develop React Native components, screens, and logic
-4. **API Interface Design**: Create API client calls (without backend implementation)
-5. **Requirements Documentation**: Record any needed backend changes in requirements document
-6. **Code Quality**: Follow TypeScript strict mode, no `any` types
-7. **Testing**: Test React Native components and user flows
-
-#### Backend Requirements Management Workflow
-1. **Identify Backend Need**: When frontend needs backend functionality
-2. **Document Requirement**: Add detailed requirement to `backend/rn-update-tableandlogic.md`
-3. **Design API Interface**: Create frontend API client interface
-4. **Mock Response**: Use sample data for frontend development
-5. **Continue Frontend**: Don't wait for backend implementation
-
-#### Requirement Documentation Template
-When adding backend requirements, include:
-```markdown
-### [Feature Name] - [Date]
-**Frontend Context**: What frontend feature needs this
-**API Endpoint**: POST/GET /api/mobile/[endpoint]
-**Request Format**: JSON structure
-**Response Format**: Expected response structure
-**Database Changes**: New tables/fields needed
-**Business Logic**: Backend logic requirements
-**Priority**: High/Medium/Low
+**Cache Problems**:
+```bash
+npx expo start --clear        # Clear Expo cache
+rm -rf node_modules && npm install  # Reinstall dependencies
 ```
 
-### Git Workflow
-- **Feature Branches**: `feature/rn-phase-X-[feature-name]`
-- **Commit Messages**: Use Chinese for feature descriptions
-- **Code Review Focus**: 
-  - React Native component quality
-  - API interface design
-  - Requirements documentation completeness
-  - Mobile performance and UX
+**Device/Emulator**:
+- Android Emulator: Ensure Android Studio and AVD configured
+- Network: Use `10.0.2.2:10010` for Android emulator → backend
+- Hot Reload: Restart Expo dev server if not working
 
-### Testing Accounts & Data
-- **Username**: `admin`
-- **Password**: `Admin@123456`
-- **Test Device ID**: `test-device-123`
-- **Activation Codes**: `DEV_TEST_2024`, `CRETAS_MOBILE_2024`
-- **Test Factory ID**: `FAC001`
-- **Test Phone**: `+86138000000000`
+**State Management**:
+- Verify Zustand store persistence configuration
+- Check permission/navigation state updates trigger re-renders
 
-## Project Focus Areas (Phase 1-3: Frontend Only)
+### 🔧 Backend Issues
 
-### 📱 Current Development Priority: React Native Frontend
+**Service Health Check**:
+```bash
+# Spring Boot health endpoint
+curl http://localhost:10010/api/mobile/health
 
-#### Phase 1 (3 weeks): Authentication System
-- **Focus**: Complete React Native authentication UI and flows
-- **Key Deliverables**:
-  - Login/register screens with 8-role support
-  - Biometric authentication integration
-  - Permission-based navigation system
-  - Token management and secure storage
-- **Backend Requirements**: Document all auth-related backend needs in requirements file
+# MySQL connection
+mysql -u root cretas_db -e "SHOW TABLES"
 
-#### Phase 2 (3 weeks): Processing Module + Smart Features
-- **Focus**: React Native processing module with DeepSeek integration
-- **Key Deliverables**:
-  - Processing data input forms
-  - AI analysis interface (with mock responses)
-  - Camera integration for QR scanning
-  - GPS location tracking
-  - Offline data storage and sync
-- **Backend Requirements**: Document processing APIs and DeepSeek integration needs
+# Check running processes
+lsof -i :10010              # Mac/Linux
+netstat -ano | findstr :10010  # Windows
+```
 
-#### Phase 3 (2 weeks): App Activation & Completion
-- **Focus**: App activation system and production readiness
-- **Key Deliverables**:
-  - Device activation flow
-  - Production build optimization
-  - Complete testing and QA
-  - Requirements documentation review
-- **Backend Requirements**: Finalize all backend requirement specifications
+**Port Conflicts**:
+```bash
+# Check port availability
+lsof -i :10010    # Backend API
+lsof -i :3010     # React Native Dev
+lsof -i :3306     # MySQL
+```
 
-### 🎯 Frontend-Only Success Metrics
+### 🚨 Quick Diagnostics
 
-#### Technical Performance
-- **App Startup**: <3s cold start (measured in frontend)
-- **Page Transitions**: <500ms navigation (React Navigation)
-- **Bundle Size**: <50MB APK (Expo build)
-- **Memory Usage**: <200MB steady state (React Native profiling)
+**All Services Status**:
+```bash
+# React Native
+npx expo doctor
 
-#### Functional Completeness
-- **UI Components**: 100% of planned screens implemented
-- **User Flows**: Complete authentication, processing, navigation flows
-- **API Interfaces**: All frontend API clients implemented
-- **Offline Functionality**: Local storage and sync mechanisms
+# Backend (Java)
+cd backend-java && mvn --version
 
-#### Requirements Documentation Quality
-- **Backend APIs**: Complete API specifications documented
-- **Database Schema**: All needed table/field changes documented
-- **Business Logic**: All backend logic requirements documented
-- **Integration Points**: Clear frontend-backend integration specifications
+# Database
+mysql -u root -p -e "SELECT VERSION()"
+```
 
-### 🔄 Post-Phase 3: Backend Development
 
-After Phase 1-3 completion:
-1. **Backend Implementation**: Implement all documented requirements
-2. **API Development**: Create all specified endpoints
-3. **Database Updates**: Apply all schema changes
-4. **Integration Testing**: Connect frontend with implemented backend
-5. **Production Deployment**: Deploy complete system
+---
 
-This frontend-first approach ensures rapid React Native development while maintaining clear backend requirements for future implementation.
+## 🚀 Quick Reference
+
+### Test Account
+- **Admin**: `admin` / `Admin@123456` (Full system access)
+
+### Port Configuration
+| Service | Port | URL |
+|---------|------|-----|
+| React Native Dev | 3010 | `http://localhost:3010` |
+| Spring Boot API | 10010 | `http://139.196.165.140:10010` |
+| MySQL | 3306 | `localhost:3306` |
+
+### Development Commands
+
+**Frontend**:
+```bash
+cd frontend/CretasFoodTrace
+npm start                    # Start Expo dev server
+npx expo start --clear      # Clear cache and start
+```
+
+**Backend**:
+```bash
+cd backend-java
+mvn clean package -DskipTests    # Build JAR
+mvn spring-boot:run              # Run locally
+```
+
+**Deploy to Server**:
+```bash
+scp target/*.jar root@139.196.165.140:/www/wwwroot/cretas/
+ssh root@139.196.165.140 "bash /www/wwwroot/cretas/restart.sh"
+```

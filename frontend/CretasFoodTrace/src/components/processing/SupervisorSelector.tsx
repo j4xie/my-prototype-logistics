@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity } from 'react-native';
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator } from 'react-native-paper';
-import { employeeAPI, Employee } from '../../services/api/employeeApiClient';
+import { userApiClient, type User } from '../../services/api/userApiClient';
 
 interface SupervisorSelectorProps {
   value: string;
@@ -24,7 +24,7 @@ export const SupervisorSelector: React.FC<SupervisorSelectorProps> = ({
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -36,11 +36,15 @@ export const SupervisorSelector: React.FC<SupervisorSelectorProps> = ({
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const result = await employeeAPI.getEmployees({ department: 'processing' });
-      console.log('✅ Employees loaded:', result.length);
+      // 使用userApiClient替代employeeAPI，查询部门为processing的用户
+      const result = await userApiClient.getUsers({
+        department: 'processing',
+        role: 'operator' // 假设生产负责人角色为operator
+      });
+      console.log('✅ Users loaded:', result.length);
       setEmployees(result);
     } catch (error) {
-      console.error('❌ Failed to fetch employees:', error);
+      console.error('❌ Failed to fetch users:', error);
       setEmployees([]);
     } finally {
       setLoading(false);
@@ -52,7 +56,7 @@ export const SupervisorSelector: React.FC<SupervisorSelectorProps> = ({
     emp.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSelect = (employee: Employee) => {
+  const handleSelect = (employee: User) => {
     onSelect(employee.fullName, employee.id);
     setModalVisible(false);
     setSearchQuery('');

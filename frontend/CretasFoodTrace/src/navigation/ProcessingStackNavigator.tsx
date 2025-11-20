@@ -20,6 +20,37 @@ import AIAnalysisDetailScreen from '../screens/processing/AIAnalysisDetailScreen
 import BatchComparisonScreen from '../screens/processing/BatchComparisonScreen';
 import AIConversationHistoryScreen from '../screens/processing/AIConversationHistoryScreen';
 
+// 设备监控页面 - Phase 3 P0-001
+import EquipmentMonitoringScreen from '../screens/processing/EquipmentMonitoringScreen';
+
+// 设备管理页面 - Phase 3 P3-设备: CRUD、搜索、状态
+import EquipmentManagementScreen from '../screens/processing/EquipmentManagementScreen';
+
+// DeepSeek AI分析详情页 - Phase 3 P1-001
+import DeepSeekAnalysisScreen from '../screens/processing/DeepSeekAnalysisScreen';
+
+// 质检记录页面 - Phase 3 P1-002
+import CreateQualityRecordScreen from '../screens/processing/CreateQualityRecordScreen';
+import QualityInspectionDetailScreen from '../screens/processing/QualityInspectionDetailScreen';
+
+// 成本对比分析 - Phase 3 P1-003
+import CostComparisonScreen from '../screens/processing/CostComparisonScreen';
+
+// 设备告警系统 - Phase 3 P1-004
+import EquipmentAlertsScreen from '../screens/processing/EquipmentAlertsScreen';
+
+// 设备详情页 - Phase 3 P1-005
+import EquipmentDetailScreen from '../screens/processing/EquipmentDetailScreen';
+
+// Phase 3 P2 - 质检统计分析
+import QualityAnalyticsScreen from '../screens/processing/QualityAnalyticsScreen';
+
+// Phase 3 P2 - 库存盘点
+import InventoryCheckScreen from '../screens/processing/InventoryCheckScreen';
+
+// Phase 3 P2 - 异常预警
+import ExceptionAlertScreen from '../screens/alerts/ExceptionAlertScreen';
+
 const Stack = createNativeStackNavigator<ProcessingStackParamList>();
 
 /**
@@ -29,7 +60,6 @@ const Stack = createNativeStackNavigator<ProcessingStackParamList>();
 export function ProcessingStackNavigator() {
   return (
     <Stack.Navigator
-      id="ProcessingStackNavigator"
       screenOptions={{
         headerShown: false, // 使用自定义Appbar
       }}
@@ -53,11 +83,24 @@ export function ProcessingStackNavigator() {
         name="CreateBatch"
         component={CreateBatchScreen}
       />
+      <Stack.Screen
+        name="EditBatch"
+        component={CreateBatchScreen}
+        options={{ title: '编辑批次' }}
+      />
 
       {/* 质检管理 */}
       <Stack.Screen
         name="QualityInspectionList"
         component={QualityInspectionListScreen}
+      />
+      <Stack.Screen
+        name="CreateQualityRecord"
+        component={CreateQualityRecordScreen}
+      />
+      <Stack.Screen
+        name="QualityInspectionDetail"
+        component={QualityInspectionDetailScreen}
       />
 
       {/* 成本分析 */}
@@ -68,6 +111,10 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="TimeRangeCostAnalysis"
         component={TimeRangeCostAnalysisScreen}
+      />
+      <Stack.Screen
+        name="CostComparison"
+        component={CostComparisonScreen}
       />
 
       {/* 生产计划管理 */}
@@ -104,18 +151,47 @@ export function ProcessingStackNavigator() {
         component={AIConversationHistoryScreen}
       />
 
-      {/*
-        Phase 3+ 计划的页面:
-        - CreateQualityRecord (质检记录)
-        - QualityInspectionDetail (质检详情)
-        - EquipmentDetail (设备详情)
-        - EquipmentAlerts (设备告警)
-        - CostComparison (成本对比)
-        - DeepSeekAnalysis (AI分析详情)
-        - DataExport (数据导出)
+      {/* 设备监控 - Phase 3 P0-001 */}
+      <Stack.Screen
+        name="EquipmentMonitoring"
+        component={EquipmentMonitoringScreen}
+      />
+      <Stack.Screen
+        name="EquipmentManagement"
+        component={EquipmentManagementScreen}
+      />
+      <Stack.Screen
+        name="EquipmentAlerts"
+        component={EquipmentAlertsScreen}
+      />
+      <Stack.Screen
+        name="EquipmentDetail"
+        component={EquipmentDetailScreen}
+      />
 
-        详见: docs/prd/PRD-Phase3-完善计划.md
-      */}
+      {/* DeepSeek AI分析详情 - Phase 3 P1-001 */}
+      <Stack.Screen
+        name="DeepSeekAnalysis"
+        component={DeepSeekAnalysisScreen}
+      />
+
+      {/* Phase 3 P2 - 质检统计分析 */}
+      <Stack.Screen
+        name="QualityAnalytics"
+        component={QualityAnalyticsScreen}
+      />
+
+      {/* Phase 3 P2 - 库存盘点 */}
+      <Stack.Screen
+        name="InventoryCheck"
+        component={InventoryCheckScreen}
+      />
+
+      {/* Phase 3 P2 - 异常预警系统 */}
+      <Stack.Screen
+        name="ExceptionAlert"
+        component={ExceptionAlertScreen}
+      />
     </Stack.Navigator>
   );
 }

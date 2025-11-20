@@ -1,7 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { apiClient } from './api/apiClient';
+import { SecureStorageUnavailableError, TokenStorageError } from '../errors';
 
 export interface AuthTokens {
   accessToken: string;
@@ -50,18 +51,12 @@ export class TokenManager {
           await SecureStore.setItemAsync(this.TEMP_TOKEN_KEY, tokens.tempToken);
         }
       } catch (secureStoreError) {
-        console.warn('SecureStore unavailable, falling back to AsyncStorage:', secureStoreError);
-        // 降级到AsyncStorage
-        await AsyncStorage.multiSet([
-          [this.ACCESS_TOKEN_KEY, tokens.accessToken],
-          [this.REFRESH_TOKEN_KEY, tokens.refreshToken],
-          [this.TOKEN_EXPIRY_KEY, expiryTime.toString()],
-          [this.TOKEN_TYPE_KEY, tokens.tokenType || 'Bearer'],
-        ]);
+        console.error('⚠️ SecureStore not available:', secureStoreError);
 
-        if (tokens.tempToken) {
-          await AsyncStorage.setItem(this.TEMP_TOKEN_KEY, tokens.tempToken);
-        }
+        // 抛出安全错误，不允许静默降级
+        throw new SecureStorageUnavailableError(
+          '您的设备不支持安全存储功能。为保护您的登录凭证安全，请使用支持安全存储的设备登录。'
+        );
       }
 
       console.log('✅ Tokens stored successfully');
@@ -212,14 +207,11 @@ export class TokenManager {
    */
   private static async getAccessToken(): Promise<string | null> {
     try {
-      // 优先使用SecureStore，失败时降级到AsyncStorage
-      try {
-        return await SecureStore.getItemAsync(this.ACCESS_TOKEN_KEY);
-      } catch (secureStoreError) {
-        return await AsyncStorage.getItem(this.ACCESS_TOKEN_KEY);
-      }
+      // 只使用SecureStore，不允许降级
+      return await SecureStore.getItemAsync(this.ACCESS_TOKEN_KEY);
     } catch (error) {
       console.error('Error getting access token:', error);
+      // 如果SecureStore不可用，返回null让上层处理
       return null;
     }
   }
@@ -229,14 +221,11 @@ export class TokenManager {
    */
   private static async getRefreshToken(): Promise<string | null> {
     try {
-      // 优先使用SecureStore，失败时降级到AsyncStorage
-      try {
-        return await SecureStore.getItemAsync(this.REFRESH_TOKEN_KEY);
-      } catch (secureStoreError) {
-        return await AsyncStorage.getItem(this.REFRESH_TOKEN_KEY);
-      }
+      // 只使用SecureStore，不允许降级
+      return await SecureStore.getItemAsync(this.REFRESH_TOKEN_KEY);
     } catch (error) {
       console.error('Error getting refresh token:', error);
+      // 如果SecureStore不可用，返回null让上层处理
       return null;
     }
   }
@@ -246,14 +235,11 @@ export class TokenManager {
    */
   static async getTempToken(): Promise<string | null> {
     try {
-      // 优先使用SecureStore，失败时降级到AsyncStorage
-      try {
-        return await SecureStore.getItemAsync(this.TEMP_TOKEN_KEY);
-      } catch (secureStoreError) {
-        return await AsyncStorage.getItem(this.TEMP_TOKEN_KEY);
-      }
+      // 只使用SecureStore，不允许降级
+      return await SecureStore.getItemAsync(this.TEMP_TOKEN_KEY);
     } catch (error) {
       console.error('Error getting temp token:', error);
+      // 如果SecureStore不可用，返回null让上层处理
       return null;
     }
   }
@@ -263,15 +249,12 @@ export class TokenManager {
    */
   static async storeTempToken(tempToken: string): Promise<void> {
     try {
-      // 优先使用SecureStore，失败时降级到AsyncStorage
-      try {
-        await SecureStore.setItemAsync(this.TEMP_TOKEN_KEY, tempToken);
-      } catch (secureStoreError) {
-        await AsyncStorage.setItem(this.TEMP_TOKEN_KEY, tempToken);
-      }
+      // 只使用SecureStore，不允许降级
+      await SecureStore.setItemAsync(this.TEMP_TOKEN_KEY, tempToken);
     } catch (error) {
       console.error('Error storing temp token:', error);
-      throw error;
+      // 抛出安全错误
+      throw new TokenStorageError('临时令牌存储失败', error as Error);
     }
   }
 

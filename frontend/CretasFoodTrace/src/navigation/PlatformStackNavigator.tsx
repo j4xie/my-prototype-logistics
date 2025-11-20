@@ -25,7 +25,6 @@ const Stack = createNativeStackNavigator<PlatformStackParamList>();
 export function PlatformStackNavigator() {
   return (
     <Stack.Navigator
-      id="PlatformStackNavigator"
       initialRouteName="PlatformDashboard"
       screenOptions={{
         headerShown: false,

@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "phoneNumber": "+8613900139001",
+      "realName": "待注册用户1",
+      "role": "operator",
+      "department": "processing",
+      "status": "PENDING",
+      "maxUsageCount": 1,
+      "usedCount": 0,
+      "createdBy": "super_admin",
+      "createdAt": "2025-01-10T00:00:00Z"
+    },
+    {
+      "id": 2,
+      "phoneNumber": "+8613900139002",
+      "realName": "已注册用户",
+      "role": "operator",
+      "department": "processing",
+      "status": "ACTIVE",
+      "maxUsageCount": 1,
+      "usedCount": 1,
+      "createdBy": "super_admin",
+      "createdAt": "2025-01-09T00:00:00Z"
+    }
+  ]
+}

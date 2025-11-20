@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StorageService } from '../storage/storageService';
 import { API_BASE_URL } from '../../constants/config';
 import { useAuthStore } from '../../store/authStore';
@@ -24,20 +23,13 @@ class ApiClient {
     // 请求拦截器 - 智能token管理
     this.client.interceptors.request.use(
       async (config) => {
-        // 优先使用安全存储的访问token (使用正确的key)
+        // 只使用安全存储的访问token，不允许降级
         const accessToken = await StorageService.getSecureItem('secure_access_token');
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
           console.log('🔑 Using token from SecureStore');
         } else {
-          // 降级到普通存储
-          const token = await AsyncStorage.getItem('auth_token');
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-            console.log('🔑 Using token from AsyncStorage');
-          } else {
-            console.warn('⚠️ No token found in storage');
-          }
+          console.warn('⚠️ No token found in SecureStore');
         }
         return config;
       },
@@ -46,7 +38,11 @@ class ApiClient {
 
     // 响应拦截器 - 智能token刷新和错误处理
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // 统一解包response.data，所有API客户端直接使用数据
+        // 这样避免了response.data || response的兼容性问题
+        return response.data;
+      },
       async (error) => {
         const originalRequest = error.config;
 
@@ -95,9 +91,7 @@ class ApiClient {
     await Promise.all([
       StorageService.removeSecureItem('secure_access_token'),
       StorageService.removeSecureItem('secure_refresh_token'),
-      StorageService.removeSecureItem('secure_temp_token'),
-      AsyncStorage.removeItem('auth_token'),
-      AsyncStorage.removeItem('user_info')
+      StorageService.removeSecureItem('secure_temp_token')
     ]);
 
     // 同步清除authStore状态，强制返回登录页
@@ -113,23 +107,23 @@ class ApiClient {
   public onAuthenticationFailed?: () => void;
 
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.get(url, config);
-    return response.data;
+    // 拦截器已统一返回response.data，直接返回即可
+    return await this.client.get(url, config);
   }
 
   async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.post(url, data, config);
-    return response.data;
+    // 拦截器已统一返回response.data，直接返回即可
+    return await this.client.post(url, data, config);
   }
 
   async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.put(url, data, config);
-    return response.data;
+    // 拦截器已统一返回response.data，直接返回即可
+    return await this.client.put(url, data, config);
   }
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.delete(url, config);
-    return response.data;
+    // 拦截器已统一返回response.data，直接返回即可
+    return await this.client.delete(url, config);
   }
 }
 

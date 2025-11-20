@@ -1,6 +1,12 @@
 module.exports = {
-  preset: 'ts-jest',
+  preset: 'react-native',
   testEnvironment: 'node',
+
+  // 全局变量定义 - 修复 __DEV__ 未定义错误
+  globals: {
+    __DEV__: true,
+  },
+
   setupFilesAfterEnv: [
     '<rootDir>/src/__tests__/setup.ts'
   ],

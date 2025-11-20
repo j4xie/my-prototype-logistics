@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { ManagementStackParamList } from '../types/navigation';
 import {
   ManagementScreen,
   ProductTypeManagementScreen,
@@ -10,27 +11,15 @@ import {
   CustomerManagementScreen,
   MaterialTypeManagementScreen,
   WorkTypeManagementScreen,
+  DepartmentManagementScreen,
 } from '../screens/management';
 import AISettingsScreen from '../screens/management/AISettingsScreen';
+
+// Phase 3 P2 - 工厂设置
+import FactorySettingsScreen from '../screens/management/FactorySettingsScreen';
+
 // Phase 4启用：规格配置管理
 // import MaterialSpecManagementScreen from '../screens/management/MaterialSpecManagementScreen';
-
-export type ManagementStackParamList = {
-  ManagementHome: undefined;
-  ProductTypeManagement: undefined;
-  MaterialTypeManagement: undefined; // ✅ Phase 2新增
-  ConversionRate: undefined;
-  WorkTypeManagement: undefined; // ✅ Phase 2新增
-  AISettings: undefined;
-  UserManagement: undefined; // ✅ Phase 1
-  WhitelistManagement: undefined; // ✅ Phase 1
-  SupplierManagement: undefined; // ✅ Phase 2
-  CustomerManagement: undefined; // ✅ Phase 2
-  // MaterialSpecManagement: undefined; // 🔜 Phase 4启用：规格配置管理
-  // ProductionPlanManagement 已移动到 Processing 模块
-  // TODO: 以下页面待后续实现
-  // FactorySettings: undefined;
-};
 
 const Stack = createNativeStackNavigator<ManagementStackParamList>();
 
@@ -40,7 +29,6 @@ const Stack = createNativeStackNavigator<ManagementStackParamList>();
 export function ManagementStackNavigator() {
   return (
     <Stack.Navigator
-      id="ManagementStackNavigator"
       screenOptions={{
         headerShown: false,
       }}
@@ -73,6 +61,11 @@ export function ManagementStackNavigator() {
         options={{ title: 'AI分析设置' }}
       />
       <Stack.Screen
+        name="DepartmentManagement"
+        component={DepartmentManagementScreen}
+        options={{ title: '部门管理' }}
+      />
+      <Stack.Screen
         name="UserManagement"
         component={UserManagementScreen}
         options={{ title: '用户管理' }}
@@ -93,19 +86,19 @@ export function ManagementStackNavigator() {
         options={{ title: '客户管理' }}
       />
 
+      {/* Phase 3 P2 - 工厂设置 */}
+      <Stack.Screen
+        name="FactorySettings"
+        component={FactorySettingsScreen}
+        options={{ title: '工厂设置' }}
+      />
+
       {/* Phase 4启用：规格配置管理
       <Stack.Screen
         name="MaterialSpecManagement"
         component={MaterialSpecManagementScreen}
         options={{ title: '规格配置管理' }}
       />
-      */}
-
-      {/*
-        Phase 3+ 计划的页面:
-        - FactorySettings (工厂设置)
-        - MaterialSpecManagement (规格配置管理 - Phase 4启用)
-        详见: docs/prd/PRD-Phase3-完善计划.md
       */}
     </Stack.Navigator>
   );

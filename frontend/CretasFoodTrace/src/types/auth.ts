@@ -274,3 +274,134 @@ export interface AuthError {
   details?: any;
   timestamp: string;
 }
+
+// ==================== 类型守卫函数 ====================
+// ✅ P1-2: 添加类型守卫函数，避免使用 as any
+
+/**
+ * 检查用户是否为平台用户
+ */
+export function isPlatformUser(user: User | null | undefined): user is PlatformUser {
+  return user?.userType === 'platform' && !!user.platformUser;
+}
+
+/**
+ * 检查用户是否为工厂用户
+ */
+export function isFactoryUser(user: User | null | undefined): user is FactoryUser {
+  return user?.userType === 'factory' && !!user.factoryUser;
+}
+
+/**
+ * 安全获取用户角色
+ */
+export function getUserRole(user: User | null | undefined): string {
+  if (!user) return 'viewer';
+
+  if (isPlatformUser(user)) {
+    return user.platformUser.role || 'viewer';
+  }
+
+  if (isFactoryUser(user)) {
+    return user.factoryUser.role || 'viewer';
+  }
+
+  return 'viewer';
+}
+
+/**
+ * 安全获取工厂ID
+ */
+export function getFactoryId(user: User | null | undefined): string {
+  if (!user) return '';
+
+  if (isPlatformUser(user)) {
+    // 平台用户可能没有factoryId
+    return '';
+  }
+
+  if (isFactoryUser(user)) {
+    return user.factoryUser.factoryId || '';
+  }
+
+  return '';
+}
+
+/**
+ * 安全获取部门
+ */
+export function getDepartment(user: User | null | undefined): Department | undefined {
+  if (!user) return undefined;
+
+  if (isFactoryUser(user)) {
+    return user.factoryUser.department;
+  }
+
+  return undefined;
+}
+
+/**
+ * 安全获取用户权限数组
+ */
+export function getUserPermissions(user: User | null | undefined): string[] {
+  if (!user) return [];
+
+  if (isPlatformUser(user)) {
+    return user.platformUser.permissions || [];
+  }
+
+  if (isFactoryUser(user)) {
+    return user.factoryUser.permissions || [];
+  }
+
+  return [];
+}
+
+/**
+ * 检查用户是否有某个权限
+ * @param user 用户对象
+ * @param permission 权限字符串
+ */
+export function hasPermission(
+  user: User | null | undefined,
+  permission: string
+): boolean {
+  if (!user) return false;
+
+  const permissions = getUserPermissions(user);
+
+  // 部门管理员特殊处理：自动授予所在部门的访问权限
+  if (isFactoryUser(user) && user.factoryUser.role === 'department_admin') {
+    const department = user.factoryUser.department;
+    const departmentPermissionMap: Record<string, string> = {
+      'processing': 'processing_access',
+      'farming': 'farming_access',
+      'logistics': 'logistics_access',
+      'quality': 'quality_access',
+    };
+
+    if (department && departmentPermissionMap[department] === permission) {
+      return true;
+    }
+  }
+
+  // 检查权限数组
+  return permissions.includes(permission);
+}
+
+/**
+ * 安全获取角色代码 (roleCode)
+ */
+export function getRoleCode(user: User | null | undefined): string | undefined {
+  if (!user) return undefined;
+
+  if (isPlatformUser(user)) {
+    return user.platformUser.role;
+  }
+
+  if (isFactoryUser(user)) {
+    return user.factoryUser.role;
+  }
+
+  return undefined;
+}

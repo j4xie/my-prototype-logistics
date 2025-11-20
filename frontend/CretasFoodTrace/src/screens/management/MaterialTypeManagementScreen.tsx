@@ -21,6 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { materialTypeApiClient, MaterialType, CreateMaterialTypeRequest } from '../../services/api/materialTypeApiClient';
 import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../services/api/materialSpecApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 原材料类型管理页面
@@ -109,7 +110,7 @@ export default function MaterialTypeManagementScreen() {
       const response = await materialSpecApiClient.getSpecConfig(user?.factoryId);
       console.log('✅ 规格配置加载成功:', response.data);
       setSpecConfig(response.data);
-    } catch (error: any) {
+    } catch (error) {
       console.warn('⚠️ 规格配置加载失败，使用默认配置:', error.message);
       // 使用前端默认配置作为fallback
       setSpecConfig(DEFAULT_SPEC_CONFIG);
@@ -139,7 +140,7 @@ export default function MaterialTypeManagementScreen() {
         console.warn('⚠️ 响应格式异常:', response);
         setMaterialTypes([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ 加载原材料类型失败:', error);
       console.error('错误详情:', {
         message: error.message,
@@ -174,7 +175,7 @@ export default function MaterialTypeManagementScreen() {
       } else {
         setMaterialTypes([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('搜索失败:', error);
       Alert.alert('错误', error.response?.data?.message || '搜索失败');
       setMaterialTypes([]);
@@ -246,7 +247,7 @@ export default function MaterialTypeManagementScreen() {
       }
       setModalVisible(false);
       loadMaterialTypes();
-    } catch (error: any) {
+    } catch (error) {
       console.error('保存失败:', error);
       Alert.alert('错误', error.response?.data?.message || (editingItem ? '更新失败' : '创建失败'));
     }
@@ -266,7 +267,7 @@ export default function MaterialTypeManagementScreen() {
               await materialTypeApiClient.deleteMaterialType(item.id, user?.factoryId);
               Alert.alert('成功', '原材料类型删除成功');
               loadMaterialTypes();
-            } catch (error: any) {
+            } catch (error) {
               console.error('删除失败:', error);
               Alert.alert('错误', error.response?.data?.message || '删除失败');
             }
@@ -296,7 +297,7 @@ export default function MaterialTypeManagementScreen() {
       );
       Alert.alert('成功', item.isActive ? '已停用' : '已启用');
       loadMaterialTypes();
-    } catch (error: any) {
+    } catch (error) {
       console.error('切换状态失败:', error);
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }

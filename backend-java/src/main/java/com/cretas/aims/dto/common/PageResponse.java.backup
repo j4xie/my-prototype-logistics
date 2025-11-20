@@ -1,0 +1,56 @@
+package com.cretas.aims.dto.common;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+/**
+ * 分页响应对象
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2025-01-09
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@ApiModel(description = "分页响应对象")
+public class PageResponse<T> {
+
+    @ApiModelProperty(value = "数据列表")
+    private List<T> content;
+
+    @ApiModelProperty(value = "当前页码", example = "1")
+    private Integer page;
+
+    @ApiModelProperty(value = "每页大小", example = "20")
+    private Integer size;
+
+    @ApiModelProperty(value = "总记录数", example = "100")
+    private Long totalElements;
+
+    @ApiModelProperty(value = "总页数", example = "5")
+    private Integer totalPages;
+
+    @ApiModelProperty(value = "是否第一页", example = "true")
+    private Boolean first;
+
+    @ApiModelProperty(value = "是否最后一页", example = "false")
+    private Boolean last;
+
+    public static <T> PageResponse<T> of(List<T> content, Integer page, Integer size, Long totalElements) {
+        PageResponse<T> response = new PageResponse<>();
+        response.setContent(content);
+        response.setPage(page);
+        response.setSize(size);
+        response.setTotalElements(totalElements);
+        response.setTotalPages((int) Math.ceil((double) totalElements / size));
+        response.setFirst(page == 1);
+        response.setLast(page >= response.getTotalPages());
+        return response;
+    }
+}
