@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 98 个 ✅
-- **待迁移**: 238 个
-- **完成度**: 29%
+- **已迁移**: 113 个 ✅
+- **待迁移**: 223 个
+- **完成度**: 34%
 
 ### 迁移优先级
 
@@ -431,10 +431,12 @@ logger.configure({
 - [x] ProcessingDashboard.tsx (7个) - ✅ 已迁移
 - [x] CostAnalysisDashboard.tsx (2个) - ✅ 已迁移
 - [x] MaterialBatchManagementScreen.tsx (38个) - ✅ 已迁移
-- [ ] MaterialTypeManagementScreen.tsx (15个)
+- [x] MaterialTypeManagementScreen.tsx (15个) - ✅ 已迁移
 - [ ] CreateQualityRecordScreen.tsx (12个)
 - [ ] EntityDataExportScreen.tsx (12个)
-- [ ] 其他Screen组件 (~87个)
+- [ ] ConversionRateScreen.tsx (10个)
+- [ ] ProductionPlanManagementScreen.tsx (10个)
+- [ ] 其他Screen组件 (~72个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -451,8 +453,9 @@ logger.configure({
 | `EnhancedLoginScreen.tsx` | 2 | loginLogger | 3bc81c11 | ✅ |
 | `ProcessingDashboard.tsx` | 7 | dashboardLogger | 3bc81c11 | ✅ |
 | `CostAnalysisDashboard.tsx` | 2 | costAnalysisLogger | 3bc81c11 | ✅ |
-| `MaterialBatchManagementScreen.tsx` | 38 | materialBatchLogger | - | ✅ |
-| **总计** | **98** | - | - | **29%** |
+| `MaterialBatchManagementScreen.tsx` | 38 | materialBatchLogger | 08ae36e6 | ✅ |
+| `MaterialTypeManagementScreen.tsx` | 15 | materialTypeLogger | - | ✅ |
+| **总计** | **113** | - | - | **34%** |
 
 ---
 
