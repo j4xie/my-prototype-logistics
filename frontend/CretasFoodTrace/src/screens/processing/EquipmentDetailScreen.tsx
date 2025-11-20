@@ -23,6 +23,11 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { equipmentApiClient, type Equipment, type MaintenanceRecord as APIMaintenanceRecord } from '../../services/api/equipmentApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { Alert } from 'react-native';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建EquipmentDetail专用logger
+const equipmentDetailLogger = logger.createContextLogger('EquipmentDetail');
 
 // Types
 type EquipmentDetailScreenNavigationProp = NativeStackNavigationProp<
@@ -112,7 +117,7 @@ export default function EquipmentDetailScreen() {
     setLoading(true);
     try {
       // API integration - GET /equipment/{equipmentId}
-      console.log('🔍 Fetching equipment detail...', { factoryId, equipmentId });
+      equipmentDetailLogger.debug('获取设备详情', { factoryId, equipmentId });
 
       // Calculate date range for performance metrics (last 30 days)
       const endDate = new Date().toISOString().split('T')[0];
@@ -138,7 +143,11 @@ export default function EquipmentDetailScreen() {
         equipmentApiClient.getEquipmentStatistics(Number(equipmentId), factoryId).catch(() => ({ data: null })),
       ]);
 
-      console.log('✅ Equipment detail loaded:', equipmentResponse.data);
+      equipmentDetailLogger.info('设备详情加载成功', {
+        equipmentId,
+        name: equipmentResponse.data.name,
+        status: equipmentResponse.data.status,
+      });
 
       const eq: Equipment = equipmentResponse.data;
 
@@ -173,14 +182,10 @@ export default function EquipmentDetailScreen() {
 
       setEquipment(equipmentInfo);
 
-      // Note: Backend doesn't provide real-time parameters
-      // Set mock parameters for now (can be integrated with IoT system later)
-      setParameters({
-        temperature: -18.5,
-        pressure: 2.5,
-        speed: 1450,
-        power: 85,
-      });
+      // ✅ Note: Real-time IoT parameters are not yet implemented
+      // TODO: Integrate with IoT system in Phase 4
+      // For now, set empty parameters to indicate feature is pending
+      setParameters({});
 
       // Transform maintenance history
       const history: APIMaintenanceRecord[] = maintenanceHistoryResponse.data || [];
@@ -198,17 +203,23 @@ export default function EquipmentDetailScreen() {
       // Set performance metrics
       if (oeeResponse.data) {
         setOeeData(oeeResponse.data);
-        console.log('✅ OEE data loaded:', oeeResponse.data);
+        equipmentDetailLogger.info('OEE数据加载成功', {
+          oee: (oeeResponse.data.oee * 100).toFixed(1) + '%',
+        });
       }
 
       if (depreciatedValueResponse.data) {
         setDepreciatedValue(depreciatedValueResponse.data.depreciatedValue || depreciatedValueResponse.data);
-        console.log('✅ Depreciated value loaded:', depreciatedValueResponse.data);
+        equipmentDetailLogger.info('折旧价值加载成功', {
+          value: depreciatedValueResponse.data.depreciatedValue || depreciatedValueResponse.data,
+        });
       }
 
       if (usageStatsResponse.data) {
         setUsageStats(usageStatsResponse.data);
-        console.log('✅ Usage statistics loaded:', usageStatsResponse.data);
+        equipmentDetailLogger.info('使用统计加载成功', {
+          utilizationRate: usageStatsResponse.data.utilizationRate,
+        });
       }
 
       // Calculate uptime from efficiency report or OEE data
@@ -233,41 +244,21 @@ export default function EquipmentDetailScreen() {
 
         setActiveAlertsCount(totalAlerts);
       } catch (alertError) {
-        console.warn('Failed to fetch alerts count:', alertError);
+        equipmentDetailLogger.warn('获取告警数量失败', alertError);
         setActiveAlertsCount(0);
       }
 
-    } catch (error: any) {
-      console.error('❌ Failed to fetch equipment detail:', error);
-      Alert.alert('加载失败', error.response?.data?.message || '无法加载设备详情，请稍后重试');
+    } catch (error) {
+      equipmentDetailLogger.error('加载设备详情失败', error, { equipmentId });
 
-      // Fallback to mock data
-      const mockEquipment: EquipmentInfo = {
-        id: equipmentId,
-        name: '冷冻机组A',
-        model: 'CF-5000X',
-        manufacturer: '某某制冷设备有限公司',
-        status: 'running',
-        location: '冷冻车间 A区',
-        installDate: '2023-03-15',
-        lastMaintenanceDate: '2025-10-20',
-        nextMaintenanceDate: '2026-01-20',
-      };
+      // ✅ GOOD: 不返回假数据，使用统一错误处理
+      handleError(error, {
+        title: '加载失败',
+        customMessage: '无法加载设备详情，请稍后重试',
+      });
 
-      setEquipment(mockEquipment);
-      setParameters({ temperature: -18.5, pressure: 2.5, speed: 1450, power: 85 });
-      setMaintenanceRecords([
-        {
-          id: 'MR_001',
-          date: '2025-10-20',
-          type: '定期保养',
-          technician: '王师傅',
-          description: '更换制冷剂，清洁冷凝器',
-          cost: 1200,
-        },
-      ]);
-      setUptime(92.5);
-      setActiveAlertsCount(2);
+      // 设置为null，让UI显示错误状态
+      setEquipment(null);
     } finally {
       setLoading(false);
     }
