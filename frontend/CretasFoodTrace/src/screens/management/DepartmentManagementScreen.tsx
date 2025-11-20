@@ -21,6 +21,10 @@ import { useNavigation } from '@react-navigation/native';
 import { departmentApiClient, DepartmentDTO, ApiResponse, PagedResponse } from '../../services/api/departmentApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getUserRole, getFactoryId } from '../../types/auth';
+import { logger } from '../../utils/logger';
+
+// 创建DepartmentManagement专用logger
+const departmentLogger = logger.createContextLogger('DepartmentManagement');
 
 /**
  * 部门管理页面
@@ -87,10 +91,15 @@ export default function DepartmentManagementScreen() {
       });
 
       if (response.success && response.data) {
+        const departmentCount = response.data.content?.length || 0;
         setDepartments(response.data.content || []);
+        departmentLogger.info('部门列表加载成功', {
+          departmentCount,
+          factoryId: getFactoryId(user),
+        });
       }
     } catch (error: unknown) {
-      console.error('加载部门失败:', error);
+      departmentLogger.error('加载部门失败', error, { factoryId: getFactoryId(user) });
       const errorMessage = error instanceof Error ? error.message : '加载部门失败';
       Alert.alert('错误', errorMessage);
     } finally {
@@ -109,10 +118,11 @@ export default function DepartmentManagementScreen() {
           onPress: async () => {
             try {
               await departmentApiClient.initializeDefaultDepartments(getFactoryId(user));
+              departmentLogger.info('默认部门初始化成功', { factoryId: getFactoryId(user) });
               Alert.alert('成功', '默认部门初始化成功');
               loadDepartments();
             } catch (error: unknown) {
-              console.error('初始化失败:', error);
+              departmentLogger.error('初始化失败', error, { factoryId: getFactoryId(user) });
               const errorMessage = error instanceof Error ? error.message : '初始化失败';
               Alert.alert('错误', errorMessage);
             }
@@ -138,10 +148,12 @@ export default function DepartmentManagementScreen() {
       });
 
       if (response.success && response.data) {
+        const resultCount = response.data.content?.length || 0;
         setDepartments(response.data.content || []);
+        departmentLogger.info('搜索完成', { resultCount, keyword: searchQuery });
       }
     } catch (error: unknown) {
-      console.error('搜索失败:', error);
+      departmentLogger.error('搜索失败', error, { keyword: searchQuery });
       const errorMessage = error instanceof Error ? error.message : '搜索失败';
       Alert.alert('错误', errorMessage);
     } finally {
@@ -195,6 +207,10 @@ export default function DepartmentManagementScreen() {
           formData as DepartmentDTO,
           getFactoryId(user)
         );
+        departmentLogger.info('部门更新成功', {
+          departmentId: editingItem.id,
+          departmentName: formData.name,
+        });
         Alert.alert('成功', '部门更新成功');
       } else {
         // 创建
@@ -202,12 +218,19 @@ export default function DepartmentManagementScreen() {
           formData as DepartmentDTO,
           getFactoryId(user)
         );
+        departmentLogger.info('部门创建成功', {
+          departmentName: formData.name,
+          departmentCode: formData.code,
+        });
         Alert.alert('成功', '部门创建成功');
       }
       setModalVisible(false);
       loadDepartments();
     } catch (error: unknown) {
-      console.error('保存失败:', error);
+      departmentLogger.error('保存部门失败', error, {
+        isEdit: !!editingItem,
+        departmentName: formData.name,
+      });
       const errorMessage = error instanceof Error ? error.message : (editingItem ? '更新失败' : '创建失败');
       Alert.alert('错误', errorMessage);
     }
@@ -226,11 +249,18 @@ export default function DepartmentManagementScreen() {
             try {
               if (item.id) {
                 await departmentApiClient.deleteDepartment(item.id, getFactoryId(user));
+                departmentLogger.info('部门删除成功', {
+                  departmentId: item.id,
+                  departmentName: item.name,
+                });
                 Alert.alert('成功', '部门删除成功');
                 loadDepartments();
               }
             } catch (error: unknown) {
-              console.error('删除失败:', error);
+              departmentLogger.error('删除部门失败', error, {
+                departmentId: item.id,
+                departmentName: item.name,
+              });
               const errorMessage = error instanceof Error ? error.message : '删除失败';
               Alert.alert('错误', errorMessage);
             }

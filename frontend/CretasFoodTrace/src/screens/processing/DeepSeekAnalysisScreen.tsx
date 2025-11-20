@@ -6,6 +6,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
 import { aiApiClient, type AICostAnalysisResponse } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建DeepSeekAnalysis专用logger
+const deepSeekLogger = logger.createContextLogger('DeepSeekAnalysis');
 
 type DeepSeekAnalysisScreenRouteProp = RouteProp<ProcessingStackParamList, 'DeepSeekAnalysis'>;
 type DeepSeekAnalysisScreenNavigationProp = NativeStackNavigationProp<
@@ -50,7 +55,7 @@ export default function DeepSeekAnalysisScreen() {
     try {
       setLoading(true);
 
-      console.log('🔍 Loading AI analysis for batch:', batchId);
+      deepSeekLogger.debug('加载AI批次分析', { batchId, factoryId });
 
       // API integration - POST /ai/analysis/cost/batch
       const response = await aiApiClient.analyzeBatchCost(
@@ -61,12 +66,21 @@ export default function DeepSeekAnalysisScreen() {
         factoryId
       );
 
-      console.log('✅ AI analysis loaded:', response);
+      deepSeekLogger.info('AI分析加载成功', {
+        batchId,
+        sessionId: response.session_id,
+        hasAnalysis: !!response.analysis,
+        quotaRemaining: response.quota?.remaining,
+      });
 
       setAnalysisResponse(response);
       setSessionId(response.session_id || '');
-    } catch (error: any) {
-      console.error('❌ Failed to load AI analysis:', error);
+    } catch (error) {
+      deepSeekLogger.error('加载AI分析失败', error, {
+        batchId,
+        factoryId,
+        errorStatus: error.response?.status,
+      });
 
       // Handle specific errors
       if (error.response?.status === 429) {
@@ -99,7 +113,7 @@ export default function DeepSeekAnalysisScreen() {
     try {
       setAiLoading(true);
 
-      console.log('🔍 Asking follow-up question:', question);
+      deepSeekLogger.debug('AI追问', { batchId, sessionId, questionLength: question.length });
 
       // API integration - POST /ai/analysis/cost/batch (with sessionId + question)
       const response = await aiApiClient.analyzeBatchCost(
@@ -112,13 +126,17 @@ export default function DeepSeekAnalysisScreen() {
         factoryId
       );
 
-      console.log('✅ Follow-up answer received:', response);
+      deepSeekLogger.info('AI追问回答成功', {
+        batchId,
+        sessionId,
+        hasAnalysis: !!response.analysis,
+      });
 
       setAnalysisResponse(response);
       setQuestion('');
       setShowQuestionInput(false);
-    } catch (error: any) {
-      console.error('❌ Failed to ask question:', error);
+    } catch (error) {
+      deepSeekLogger.error('AI追问失败', error, { batchId, sessionId });
       const errorMessage = error.response?.data?.message || error.message || '追问失败，请稍后重试';
       Alert.alert('追问失败', errorMessage);
     } finally {
