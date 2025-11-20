@@ -17,6 +17,11 @@ import {
   type QualityTrendPoint,
 } from '../../services/api/qualityInspectionApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建QualityAnalytics专用logger
+const qualityAnalyticsLogger = logger.createContextLogger('QualityAnalytics');
 
 const { width } = Dimensions.get('window');
 
@@ -92,11 +97,12 @@ export default function QualityAnalyticsScreen() {
       const { startDate, endDate } = getDateRange();
       const trendDays = getTrendDays();
 
-      console.log('🔍 Loading quality analytics...', {
+      qualityAnalyticsLogger.debug('加载质检统计分析', {
         factoryId,
         startDate,
         endDate,
         trendDays,
+        timeRange,
       });
 
       // 并行加载统计和趋势数据
@@ -110,8 +116,12 @@ export default function QualityAnalyticsScreen() {
         qualityInspectionApiClient.getTrends(trendDays, factoryId),
       ]);
 
-      console.log('✅ Quality statistics loaded:', statsResponse);
-      console.log('✅ Quality trends loaded:', trendsResponse);
+      qualityAnalyticsLogger.info('质检统计数据加载成功', {
+        hasStatistics: !!statsResponse.data,
+        hasTrends: !!trendsResponse.data,
+        trendPoints: trendsResponse.data?.length || 0,
+        factoryId,
+      });
 
       // 更新状态
       if (statsResponse.success && statsResponse.data) {
@@ -121,8 +131,11 @@ export default function QualityAnalyticsScreen() {
       if (trendsResponse.success && trendsResponse.data) {
         setTrends(trendsResponse.data);
       }
-    } catch (error: any) {
-      console.error('❌ Failed to load quality analytics:', error);
+    } catch (error) {
+      qualityAnalyticsLogger.error('加载质检统计分析失败', error as Error, {
+        factoryId,
+        timeRange,
+      });
       const errorMessage = error.response?.data?.message || error.message || '无法加载质检统计，请稍后重试';
       Alert.alert('加载失败', errorMessage);
 
