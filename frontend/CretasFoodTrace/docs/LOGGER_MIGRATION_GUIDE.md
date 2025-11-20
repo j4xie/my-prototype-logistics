@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 263 个 ✅
-- **待迁移**: 73 个
-- **完成度**: 78%
+- **已迁移**: 277 个 ✅
+- **待迁移**: 59 个
+- **完成度**: 82%
 
 ### 迁移优先级
 
@@ -453,7 +453,10 @@ logger.configure({
 - [x] WorkTypeManagementScreen.tsx (5个) - ✅ 已迁移 (Batch 20)
 - [x] UserManagementScreen.tsx (5个) - ✅ 已迁移 (Batch 20)
 - [x] ProductTypeManagementScreen.tsx (5个) - ✅ 已迁移 (Batch 20)
-- [ ] 其他Screen组件 (~15个)
+- [x] CustomerManagementScreen.tsx (5个) - ✅ 已迁移 (Batch 21)
+- [x] AISettingsScreen.tsx (5个) - ✅ 已迁移 (Batch 21)
+- [x] QualityReportScreen.tsx (4个) - ✅ 已迁移 (Batch 21)
+- [ ] 其他Screen组件 (~10个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -487,7 +490,16 @@ logger.configure({
 | `FactorySettingsScreen.tsx` | 6 | factorySettingsLogger | 7b61d43d | ✅ |
 | `DepartmentManagementScreen.tsx` | 6 | departmentLogger | 7b61d43d | ✅ |
 | `DeepSeekAnalysisScreen.tsx` | 6 | deepSeekLogger | 7b61d43d | ✅ |
-| **总计** | **232** | - | - | **69%** |
+| `DataExportScreen.tsx` | 6 | dataExportLogger | 1cc833a8 | ✅ |
+| `AIAnalysisDetailScreen.tsx` | 5 | aiAnalysisLogger | 1cc833a8 | ✅ |
+| `PlatformDashboardScreen.tsx` | 5 | platformDashboardLogger | 1cc833a8 | ✅ |
+| `WorkTypeManagementScreen.tsx` | 5 | workTypeLogger | 7b9a33e6 | ✅ |
+| `UserManagementScreen.tsx` | 5 | userMgmtLogger | 7b9a33e6 | ✅ |
+| `ProductTypeManagementScreen.tsx` | 5 | productTypeLogger | 7b9a33e6 | ✅ |
+| `CustomerManagementScreen.tsx` | 5 | customerLogger | 2a5a20a3 | ✅ |
+| `AISettingsScreen.tsx` | 5 | aiSettingsLogger | 2a5a20a3 | ✅ |
+| `QualityReportScreen.tsx` | 4 | qualityReportLogger | 2a5a20a3 | ✅ |
+| **总计** | **277** | - | - | **82%** |
 
 ---
 
