@@ -7,6 +7,10 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { useAuthStore } from '../../store/authStore';
 import { dashboardAPI } from '../../services/api/dashboardApiClient';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建ProcessingDashboard专用logger
+const dashboardLogger = logger.createContextLogger('ProcessingDashboard');
 
 type ProcessingDashboardNavigationProp = NativeStackNavigationProp<
   ProcessingStackParamList,
@@ -43,8 +47,8 @@ export default function ProcessingDashboard() {
   const isPlatformAdmin = userType === 'platform';
   const canOperate = !isPlatformAdmin;  // 只要不是平台管理员就能操作
 
-  // 调试日志
-  console.log('🔍 ProcessingDashboard权限检查:', {
+  // 权限检查日志
+  dashboardLogger.debug('权限检查', {
     userType,
     isPlatformAdmin,
     canOperate,
@@ -60,16 +64,16 @@ export default function ProcessingDashboard() {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔄 ProcessingDashboard - 开始加载仪表板数据...');
+      dashboardLogger.debug('开始加载仪表板数据');
 
       // 使用 Dashboard API 获取今日概览数据
       const overviewRes = await dashboardAPI.getDashboardOverview('today');
 
-      console.log('📊 ProcessingDashboard - 仪表板数据响应:', overviewRes);
+      dashboardLogger.debug('仪表板数据响应', { success: overviewRes.success });
 
       // 提取数据 - 后端返回格式是 { success: true, data: {...}, message: "..." }
       const overview = overviewRes.data;
-      console.log('📊 ProcessingDashboard - 解析后数据:', overview);
+      dashboardLogger.debug('解析后数据', { hasSummary: !!overview?.summary });
 
       if (overview.summary) {
         const { summary } = overview;
@@ -83,18 +87,18 @@ export default function ProcessingDashboard() {
           totalWorkers: summary.totalWorkers ?? 0,
         };
 
-        console.log('📈 ProcessingDashboard - 统计结果:', newDashboardData);
+        dashboardLogger.info('统计结果', newDashboardData);
         setDashboardData(newDashboardData);
         setError(null);
       } else {
-        console.warn('⚠️ ProcessingDashboard - 仪表板数据加载失败:', overviewRes);
+        dashboardLogger.warn('仪表板数据格式错误', { response: overviewRes });
         setError({
           message: 'API返回数据格式错误，请稍后重试',
           canRetry: true,
         });
       }
     } catch (error) {
-      console.error('❌ ProcessingDashboard - 加载仪表板数据失败:', error);
+      dashboardLogger.error('加载仪表板数据失败', error);
       handleError(error, {
         showAlert: false,
         logError: true,
