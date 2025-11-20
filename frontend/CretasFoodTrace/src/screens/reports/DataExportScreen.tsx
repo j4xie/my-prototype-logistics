@@ -19,6 +19,10 @@ import { useAuthStore } from '../../store/authStore';
 import { API_CONFIG } from '../../constants/config';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建DataExport专用logger
+const dataExportLogger = logger.createContextLogger('DataExport');
 
 type ReportType = 'production' | 'cost' | 'attendance';
 type ExportFormat = 'excel' | 'pdf' | 'csv';
@@ -142,7 +146,13 @@ export default function DataExportScreen() {
       const exportType = exportFormat === 'excel' ? 'excel' : exportFormat === 'pdf' ? 'pdf' : 'excel';
       const apiUrl = `${API_CONFIG.BASE_URL}/api/mobile/${factoryId}/reports/export/${exportType}?reportType=${reportType}&startDate=${startDateStr}&endDate=${endDateStr}`;
 
-      console.log('导出报表 - API URL:', apiUrl);
+      dataExportLogger.debug('开始导出报表', {
+        reportType,
+        exportFormat,
+        dateRange: `${startDateStr} ~ ${endDateStr}`,
+        daysDiff,
+        factoryId,
+      });
 
       // 生成文件名
       const timestamp = new Date().getTime();
@@ -151,18 +161,22 @@ export default function DataExportScreen() {
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
       // 下载文件
-      console.log('开始下载文件到:', fileUri);
       const downloadResult = await FileSystem.downloadAsync(apiUrl, fileUri);
 
       if (downloadResult.status !== 200) {
         throw new Error(`下载失败，HTTP状态码: ${downloadResult.status}`);
       }
 
-      console.log('文件下载成功:', downloadResult.uri);
-
       // 获取文件信息
       const fileInfo = await FileSystem.getInfoAsync(downloadResult.uri);
-      console.log('文件信息:', fileInfo);
+
+      dataExportLogger.info('报表导出成功', {
+        reportType,
+        exportFormat,
+        fileName,
+        fileSizeKB: ((fileInfo.size || 0) / 1024).toFixed(2),
+        fileUri: downloadResult.uri,
+      });
 
       // 检查分享功能是否可用
       const isAvailable = await Sharing.isAvailableAsync();
@@ -185,8 +199,9 @@ export default function DataExportScreen() {
               onPress: async () => {
                 try {
                   await Sharing.shareAsync(downloadResult.uri);
+                  dataExportLogger.info('报表已分享', { fileName });
                 } catch (shareError) {
-                  console.error('分享文件失败:', shareError);
+                  dataExportLogger.error('分享报表失败', shareError as Error, { fileName });
                   Alert.alert('分享失败', '无法分享文件，请稍后重试');
                 }
               },
@@ -201,7 +216,12 @@ export default function DataExportScreen() {
         );
       }
     } catch (error) {
-      console.error('导出失败:', error);
+      dataExportLogger.error('导出报表失败', error as Error, {
+        reportType,
+        exportFormat,
+        dateRange: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
+        errorType: error.message?.includes('Network') ? 'NETWORK' : error.message?.includes('401') || error.message?.includes('403') ? 'AUTH' : 'UNKNOWN',
+      });
 
       let errorMessage = '生成报表时出现错误，请重试';
 

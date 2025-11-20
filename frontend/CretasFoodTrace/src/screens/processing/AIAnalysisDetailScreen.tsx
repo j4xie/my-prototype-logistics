@@ -21,6 +21,11 @@ import * as Clipboard from 'expo-clipboard';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, AICostAnalysisResponse } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建AIAnalysisDetail专用logger
+const aiAnalysisLogger = logger.createContextLogger('AIAnalysisDetail');
 
 type AIAnalysisDetailScreenProps = ProcessingScreenProps<'AIAnalysisDetail'>;
 
@@ -67,16 +72,27 @@ export default function AIAnalysisDetailScreen() {
         return;
       }
 
-      console.log(`📋 Fetching AI report detail: ${reportId}`);
+      aiAnalysisLogger.debug('获取AI报表详情', { reportId, reportType, factoryId });
 
       const response = await aiApiClient.getReportDetail(reportId, factoryId);
 
       if (response) {
-        console.log('✅ AI report detail loaded');
+        aiAnalysisLogger.info('AI报表详情加载成功', {
+          reportId,
+          reportType,
+          hasAnalysis: !!response.analysis,
+          hasSessionId: !!response.session_id,
+          messageCount: response.messageCount,
+        });
         setReport(response);
       }
-    } catch (error: any) {
-      console.error('❌ Failed to fetch AI report detail:', error);
+    } catch (error) {
+      aiAnalysisLogger.error('获取AI报表详情失败', error as Error, {
+        reportId,
+        reportType,
+        factoryId,
+        errorStatus: (error as any).response?.status,
+      });
       Alert.alert('加载失败', error.response?.data?.message || error.message || '请稍后重试');
     } finally {
       setLoading(false);
@@ -110,9 +126,10 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
         title: '白垩纪食品溯源系统 - AI分析报告',
       });
 
+      aiAnalysisLogger.info('AI报表已分享', { reportId, reportType });
       setMenuVisible(false);
     } catch (error) {
-      console.error('❌ 分享失败:', error);
+      aiAnalysisLogger.error('分享AI报表失败', error as Error, { reportId, reportType });
     }
   };
 
@@ -300,7 +317,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                         Alert.alert('提示', '已复制到剪贴板');
                       }
                     } catch (error) {
-                      console.error('复制失败:', error);
+                      aiAnalysisLogger.error('复制AI分析内容失败', error as Error, { reportId });
                       Alert.alert('错误', '复制失败，请重试');
                     }
                   }}

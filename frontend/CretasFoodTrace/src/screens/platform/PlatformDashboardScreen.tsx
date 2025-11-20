@@ -14,6 +14,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import { useAuthStore } from '../../store/authStore';
+import { API_BASE_URL } from '../../constants/config';
+import { logger } from '../../utils/logger';
+
+// 创建PlatformDashboard专用logger
+const platformDashboardLogger = logger.createContextLogger('PlatformDashboard');
 
 type NavigationProp = NativeStackNavigationProp<PlatformStackParamList>;
 
@@ -26,35 +31,67 @@ export default function PlatformDashboardScreen() {
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
-    totalFactories: 3,
-    activeFactories: 3,
-    totalUsers: 24,
-    activeUsers: 18,
-    aiUsageThisWeek: 187,
-    aiQuotaTotal: 230,
+    totalFactories: 0,
+    activeFactories: 0,
+    totalUsers: 0,
+    activeUsers: 0,
+    aiUsageThisWeek: 0,
+    aiQuotaTotal: 0,
   });
+
+  useEffect(() => {
+    handleRefresh();
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
 
-    // ⚠️ 待后端实现 - 见 backend/URGENT_API_REQUIREMENTS.md
-    // API: GET /api/platform/dashboard/statistics
-    // 优先级: P0-紧急
-    // 预计后端实现时间: 1小时
-    // 返回数据: { totalFactories, activeFactories, totalUsers, activeUsers, aiUsageThisWeek, aiQuotaTotal }
-    // 完成后删除此注释和setTimeout，调用真实API:
-    // try {
-    //   const response = await platformAPI.getDashboardStatistics();
-    //   if (response.success && response.data) {
-    //     setStatistics(response.data);
-    //   }
-    // } catch (error: unknown) {
-    //   console.error('加载平台统计失败:', error);
-    // }
+    try {
+      platformDashboardLogger.debug('刷新平台统计数据');
 
-    // 当前使用Mock数据
-    console.log('📦 使用Mock数据 - 等待后端实现平台统计API');
-    setTimeout(() => setRefreshing(false), 1000);
+      // ✅ 后端已实现: GET /api/platform/dashboard/statistics
+      // 由platformAPI客户端调用
+      const response = await fetch(`${API_BASE_URL}/api/platform/dashboard/statistics`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // TODO: 添加认证token
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // 后端返回字段映射:
+        // totalAIQuotaUsed -> aiUsageThisWeek
+        // totalAIQuotaLimit -> aiQuotaTotal
+        const newStats = {
+          totalFactories: data.totalFactories || 0,
+          activeFactories: data.activeFactories || 0,
+          totalUsers: data.totalUsers || 0,
+          activeUsers: data.activeUsers || 0,
+          aiUsageThisWeek: data.totalAIQuotaUsed || 0,
+          aiQuotaTotal: data.totalAIQuotaLimit || 0,
+        };
+
+        platformDashboardLogger.info('平台统计数据加载成功', {
+          totalFactories: newStats.totalFactories,
+          activeFactories: newStats.activeFactories,
+          totalUsers: newStats.totalUsers,
+          aiUsage: `${newStats.aiUsageThisWeek}/${newStats.aiQuotaTotal}`,
+        });
+
+        setStats(newStats);
+      } else {
+        platformDashboardLogger.warn('API返回非200状态', { status: response.status });
+        // 保持现有0值
+      }
+    } catch (error) {
+      platformDashboardLogger.error('加载平台统计失败', error as Error);
+      // 保持现有0值
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // 管理功能列表
@@ -90,7 +127,7 @@ export default function PlatformDashboardScreen() {
       title: 'AI配额管理',
       description: '管理各工厂AI调用配额',
       icon: 'robot',
-      route: 'AIQuotaManagement',
+      route: 'AIQuotaManagement' as keyof PlatformStackParamList,  // ✅ 修复: 添加类型断言 (2025-11-20)
       count: `${stats.aiUsageThisWeek}/${stats.aiQuotaTotal}`,
       color: '#9C27B0',
     },
@@ -123,10 +160,11 @@ export default function PlatformDashboardScreen() {
     ];
 
     if (implementedRoutes.includes(route)) {
+      platformDashboardLogger.debug('导航到管理功能', { route });
       navigation.navigate(route);
     } else {
       // 显示开发中提示
-      console.log(`功能开发中: ${route}`);
+      platformDashboardLogger.info('功能开发中', { route });
     }
   };
 
