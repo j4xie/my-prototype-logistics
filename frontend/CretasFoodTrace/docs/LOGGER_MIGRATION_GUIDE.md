@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 277 个 ✅
-- **待迁移**: 59 个
-- **完成度**: 82%
+- **已迁移**: 289 个 ✅
+- **待迁移**: 47 个
+- **完成度**: 86%
 
 ### 迁移优先级
 
@@ -456,7 +456,10 @@ logger.configure({
 - [x] CustomerManagementScreen.tsx (5个) - ✅ 已迁移 (Batch 21)
 - [x] AISettingsScreen.tsx (5个) - ✅ 已迁移 (Batch 21)
 - [x] QualityReportScreen.tsx (4个) - ✅ 已迁移 (Batch 21)
-- [ ] 其他Screen组件 (~10个)
+- [x] ProductionReportScreen.tsx (4个) - ✅ 已迁移 (Batch 22)
+- [x] EfficiencyReportScreen.tsx (4个) - ✅ 已迁移 (Batch 22)
+- [x] CostReportScreen.tsx (4个) - ✅ 已迁移 (Batch 22)
+- [ ] 其他Screen组件 (~7个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -499,7 +502,10 @@ logger.configure({
 | `CustomerManagementScreen.tsx` | 5 | customerLogger | 2a5a20a3 | ✅ |
 | `AISettingsScreen.tsx` | 5 | aiSettingsLogger | 2a5a20a3 | ✅ |
 | `QualityReportScreen.tsx` | 4 | qualityReportLogger | 2a5a20a3 | ✅ |
-| **总计** | **277** | - | - | **82%** |
+| `ProductionReportScreen.tsx` | 4 | productionReportLogger | 2d7bcf13 | ✅ |
+| `EfficiencyReportScreen.tsx` | 4 | efficiencyReportLogger | 2d7bcf13 | ✅ |
+| `CostReportScreen.tsx` | 4 | costReportLogger | 2d7bcf13 | ✅ |
+| **总计** | **289** | - | - | **86%** |
 
 ---
 
