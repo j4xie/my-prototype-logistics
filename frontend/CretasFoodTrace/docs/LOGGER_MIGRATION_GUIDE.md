@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 248 个 ✅
-- **待迁移**: 88 个
-- **完成度**: 74%
+- **已迁移**: 263 个 ✅
+- **待迁移**: 73 个
+- **完成度**: 78%
 
 ### 迁移优先级
 
@@ -450,6 +450,9 @@ logger.configure({
 - [x] DataExportScreen.tsx (6个) - ✅ 已迁移 (Batch 19)
 - [x] AIAnalysisDetailScreen.tsx (5个) - ✅ 已迁移 (Batch 19)
 - [x] PlatformDashboardScreen.tsx (5个) - ✅ 已迁移 (Batch 19)
+- [x] WorkTypeManagementScreen.tsx (5个) - ✅ 已迁移 (Batch 20)
+- [x] UserManagementScreen.tsx (5个) - ✅ 已迁移 (Batch 20)
+- [x] ProductTypeManagementScreen.tsx (5个) - ✅ 已迁移 (Batch 20)
 - [ ] 其他Screen组件 (~15个)
 - [ ] 其他ApiClient (~80个)
 
