@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import {
-  Text,
-  TextInput,
-  Button,
-  Card,
-  HelperText,
-  ActivityIndicator,
-  Appbar,
-  ProgressBar,
-} from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity, StatusBar } from 'react-native';
+import { Text, ProgressBar, ActivityIndicator } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { forgotPasswordAPI } from '../../services/api/forgotPasswordApiClient';
-import { handleError } from '../../utils/errorHandler';
+import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
+import { theme } from '../../theme';
 
 type Step = 'phone' | 'verify' | 'reset';
 
@@ -22,40 +15,31 @@ interface PasswordStrength {
   color: string;
 }
 
-/**
- * 忘记密码页面
- * 功能：
- * - 手机号验证
- * - 验证码发送和验证
- * - 重置密码（新密码 + 确认密码）
- * - 密码强度指示
- */
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
 
-  // 步骤控制
+  // Step control
   const [currentStep, setCurrentStep] = useState<Step>('phone');
 
-  // 表单数据
+  // Form data
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetToken, setResetToken] = useState(''); // 存储重置令牌
+  const [resetToken, setResetToken] = useState('');
 
-  // UI状态
+  // UI State
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // 错误状态
+  // Error State
   const [phoneError, setPhoneError] = useState('');
   const [codeError, setCodeError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
-  // 倒计时效果
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (countdown > 0) {
@@ -64,9 +48,6 @@ export default function ForgotPasswordScreen() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  /**
-   * 验证手机号
-   */
   const validatePhoneNumber = (phone: string): boolean => {
     const phoneRegex = /^1[3-9]\d{9}$/;
     if (!phone) {
@@ -81,9 +62,6 @@ export default function ForgotPasswordScreen() {
     return true;
   };
 
-  /**
-   * 发送验证码
-   */
   const handleSendCode = async () => {
     if (!validatePhoneNumber(phoneNumber)) return;
 
@@ -97,26 +75,20 @@ export default function ForgotPasswordScreen() {
       if (response.success && response.data.success) {
         setCountdown(response.data.retryAfter || 60);
         setCurrentStep('verify');
-        Alert.alert('验证码已发送', response.data.message || '请查收短信验证码');
       } else {
-        // 发送过于频繁
         setPhoneError(response.data.message || '发送验证码失败');
         if (response.data.retryAfter > 0) {
           setCountdown(response.data.retryAfter);
         }
       }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || '发送验证码失败，请稍后重试';
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || '发送验证码失败';
       setPhoneError(errorMessage);
-      Alert.alert('发送失败', errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * 验证验证码
-   */
   const handleVerifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
       setCodeError('请输入6位验证码');
@@ -132,27 +104,21 @@ export default function ForgotPasswordScreen() {
       });
 
       if (response.success && response.data.success) {
-        // 保存重置令牌，用于后续密码重置
         setResetToken(response.data.resetToken);
         setCurrentStep('reset');
       } else {
         setCodeError(response.data.message || '验证码错误');
       }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || '验证码错误，请重试';
-      setCodeError(errorMessage);
+    } catch (error: any) {
+      setCodeError(error.response?.data?.message || '验证码错误');
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * 计算密码强度
-   */
   const calculatePasswordStrength = (pwd: string): PasswordStrength => {
     let score = 0;
     if (!pwd) return { score: 0, label: '无', color: '#E0E0E0' };
-
     if (pwd.length >= 8) score++;
     if (pwd.length >= 12) score++;
     if (/\d/.test(pwd)) score++;
@@ -162,10 +128,10 @@ export default function ForgotPasswordScreen() {
 
     const normalizedScore = Math.min(Math.floor(score / 1.5), 4);
     const strengthMap = [
-      { score: 0, label: '弱', color: '#F44336' },
+      { score: 0, label: '弱', color: theme.colors.error },
       { score: 1, label: '较弱', color: '#FF9800' },
       { score: 2, label: '中等', color: '#FFC107' },
-      { score: 3, label: '强', color: '#4CAF50' },
+      { score: 3, label: '强', color: theme.colors.success },
       { score: 4, label: '很强', color: '#2E7D32' },
     ];
     return strengthMap[normalizedScore];
@@ -173,35 +139,20 @@ export default function ForgotPasswordScreen() {
 
   const passwordStrength = calculatePasswordStrength(newPassword);
 
-  /**
-   * 重置密码
-   */
   const handleResetPassword = async () => {
-    // 验证新密码
-    if (!newPassword) {
-      setPasswordError('请输入新密码');
-      return;
-    }
-    if (newPassword.length < 8) {
-      setPasswordError('密码至少8个字符');
-      return;
-    }
-    if (!/\d/.test(newPassword) || !/[a-zA-Z]/.test(newPassword)) {
-      setPasswordError('密码必须包含字母和数字');
+    if (!newPassword || newPassword.length < 8 || !/\d/.test(newPassword) || !/[a-zA-Z]/.test(newPassword)) {
+      setPasswordError('密码至少8个字符，且包含字母和数字');
       return;
     }
     setPasswordError('');
 
-    // 验证确认密码
     if (newPassword !== confirmPassword) {
       setConfirmPasswordError('两次密码输入不一致');
       return;
     }
     setConfirmPasswordError('');
 
-    // 验证重置令牌
     if (!resetToken) {
-      Alert.alert('错误', '重置令牌无效，请重新验证');
       setCurrentStep('phone');
       return;
     }
@@ -215,333 +166,239 @@ export default function ForgotPasswordScreen() {
       });
 
       if (response.success && response.data.success) {
-        Alert.alert(
-          '密码重置成功',
-          response.data.message || '请使用新密码登录',
-          [
-            {
-              text: '前往登录',
-              onPress: () => navigation.navigate('EnhancedLogin' as never),
-            },
-          ]
-        );
+        Alert.alert('成功', '密码重置成功，请登录', [
+          { text: '确定', onPress: () => navigation.navigate('EnhancedLogin' as never) }
+        ]);
       } else {
-        Alert.alert('重置失败', response.data.message || '密码重置失败，请重试');
+        Alert.alert('失败', response.data.message || '重置失败');
       }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || '密码重置失败，请重试';
-      Alert.alert('重置失败', errorMessage);
+    } catch (error: any) {
+      Alert.alert('失败', error.response?.data?.message || '重置失败');
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * 获取步骤进度
-   */
   const getStepProgress = (): number => {
-    const stepMap = { phone: 0, verify: 0.5, reset: 1 };
+    const stepMap = { phone: 0.33, verify: 0.66, reset: 1 };
     return stepMap[currentStep];
   };
 
+  const renderInput = (
+    placeholder: string,
+    value: string,
+    onChange: (text: string) => void,
+    icon: any,
+    error?: string,
+    keyboardType: 'default' | 'number-pad' | 'phone-pad' = 'default',
+    secure = false,
+    showSecure = false,
+    toggleSecure?: () => void,
+    maxLength?: number,
+  ) => (
+    <View style={styles.inputGroup}>
+      <View style={[styles.inputContainer, error ? { borderColor: theme.colors.error } : {}]}>
+        <Ionicons name={icon} size={20} color={theme.colors.onSurfaceVariant} style={styles.inputIcon} />
+        <TextInput
+          style={styles.input}
+          placeholder={placeholder}
+          placeholderTextColor={theme.colors.onSurfaceVariant}
+          value={value}
+          onChangeText={onChange}
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+          secureTextEntry={secure && !showSecure}
+          autoCapitalize="none"
+          editable={!loading}
+        />
+        {toggleSecure && (
+          <TouchableOpacity style={styles.eyeIcon} onPress={toggleSecure}>
+            <Ionicons
+              name={showSecure ? "eye-off-outline" : "eye-outline"}
+              size={20}
+              color={theme.colors.onSurfaceVariant}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    </View>
+  );
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <Appbar.Header elevated>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="忘记密码" />
-      </Appbar.Header>
+    <ScreenWrapper edges={['top', 'bottom']} backgroundColor={theme.colors.background}>
+       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>忘记密码</Text>
+        <View style={{ width: 44 }} />
+      </View>
 
-      {/* 进度条 */}
-      <ProgressBar progress={getStepProgress()} color="#2196F3" />
+      <ProgressBar progress={getStepProgress()} color={theme.colors.primary} style={styles.progressBar} />
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        <Card style={styles.card} mode="elevated">
-          <Card.Content>
-            {/* 步骤1: 手机号验证 */}
-            {currentStep === 'phone' && (
-              <>
-                <Text variant="headlineSmall" style={styles.title}>
-                  验证手机号
-                </Text>
-                <Text variant="bodyMedium" style={styles.subtitle}>
-                  请输入注册时使用的手机号
-                </Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <NeoCard style={styles.card}>
+          {currentStep === 'phone' && (
+            <>
+              <View style={styles.stepHeader}>
+                <Text variant="headlineSmall" style={styles.title}>验证手机号</Text>
+                <Text variant="bodyMedium" style={styles.subtitle}>请输入注册时使用的手机号</Text>
+              </View>
+              {renderInput("手机号", phoneNumber, (t) => { setPhoneNumber(t); setPhoneError(''); }, "phone-portrait-outline", phoneError, "phone-pad", false, false, undefined, 11)}
+              <NeoButton
+                variant="primary"
+                onPress={handleSendCode}
+                loading={loading}
+                disabled={loading || phoneNumber.length !== 11}
+                style={styles.button}
+              >
+                发送验证码
+              </NeoButton>
+            </>
+          )}
 
-                <TextInput
-                  label="手机号"
-                  value={phoneNumber}
-                  onChangeText={(text) => {
-                    setPhoneNumber(text);
-                    setPhoneError('');
-                  }}
-                  keyboardType="phone-pad"
-                  maxLength={11}
-                  mode="outlined"
-                  left={<TextInput.Affix text="+86" />}
-                  error={!!phoneError}
-                  style={styles.input}
-                />
-                <HelperText type="error" visible={!!phoneError}>
-                  {phoneError}
-                </HelperText>
-
-                <Button
-                  mode="contained"
-                  onPress={handleSendCode}
-                  loading={loading}
-                  disabled={loading || phoneNumber.length !== 11}
-                  style={styles.button}
-                >
-                  发送验证码
-                </Button>
-              </>
-            )}
-
-            {/* 步骤2: 验证码验证 */}
-            {currentStep === 'verify' && (
-              <>
-                <Text variant="headlineSmall" style={styles.title}>
-                  输入验证码
-                </Text>
-                <Text variant="bodyMedium" style={styles.subtitle}>
-                  验证码已发送至 {phoneNumber}
-                </Text>
-
-                <TextInput
-                  label="验证码"
-                  value={verificationCode}
-                  onChangeText={(text) => {
-                    setVerificationCode(text);
-                    setCodeError('');
-                  }}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  mode="outlined"
-                  error={!!codeError}
-                  style={styles.input}
-                />
-                <HelperText type="error" visible={!!codeError}>
-                  {codeError}
-                </HelperText>
-
-                {/* 重新发送 */}
-                <View style={styles.resendRow}>
-                  <Text variant="bodySmall">未收到验证码？</Text>
-                  {countdown > 0 ? (
-                    <Text variant="bodySmall" style={styles.countdownText}>
-                      {countdown}秒后重新发送
-                    </Text>
-                  ) : (
-                    <Button
-                      mode="text"
-                      compact
-                      onPress={handleSendCode}
-                      disabled={loading}
-                    >
-                      重新发送
-                    </Button>
-                  )}
-                </View>
-
-                <Button
-                  mode="contained"
-                  onPress={handleVerifyCode}
-                  loading={loading}
-                  disabled={loading || verificationCode.length !== 6}
-                  style={styles.button}
-                >
-                  验证并继续
-                </Button>
-              </>
-            )}
-
-            {/* 步骤3: 重置密码 */}
-            {currentStep === 'reset' && (
-              <>
-                <Text variant="headlineSmall" style={styles.title}>
-                  设置新密码
-                </Text>
-                <Text variant="bodyMedium" style={styles.subtitle}>
-                  请设置新的登录密码
-                </Text>
-
-                <TextInput
-                  label="新密码"
-                  value={newPassword}
-                  onChangeText={(text) => {
-                    setNewPassword(text);
-                    setPasswordError('');
-                  }}
-                  secureTextEntry={!showPassword}
-                  mode="outlined"
-                  right={
-                    <TextInput.Icon
-                      icon={showPassword ? 'eye-off' : 'eye'}
-                      onPress={() => setShowPassword(!showPassword)}
-                    />
-                  }
-                  error={!!passwordError}
-                  autoCapitalize="none"
-                  style={styles.input}
-                />
-                <HelperText type="error" visible={!!passwordError}>
-                  {passwordError}
-                </HelperText>
-
-                {/* 密码强度指示 */}
-                {newPassword.length > 0 && (
-                  <View style={styles.strengthContainer}>
-                    <Text variant="bodySmall" style={styles.strengthLabel}>
-                      密码强度：
-                      <Text style={{ color: passwordStrength.color, fontWeight: 'bold' }}>
-                        {passwordStrength.label}
-                      </Text>
-                    </Text>
-                    <ProgressBar
-                      progress={(passwordStrength.score + 1) / 5}
-                      color={passwordStrength.color}
-                      style={styles.strengthBar}
-                    />
-                  </View>
+          {currentStep === 'verify' && (
+            <>
+              <View style={styles.stepHeader}>
+                <Text variant="headlineSmall" style={styles.title}>输入验证码</Text>
+                <Text variant="bodyMedium" style={styles.subtitle}>验证码已发送至 {phoneNumber}</Text>
+              </View>
+              {renderInput("验证码", verificationCode, (t) => { setVerificationCode(t); setCodeError(''); }, "keypad-outline", codeError, "number-pad", false, false, undefined, 6)}
+              
+              <View style={styles.resendRow}>
+                <Text style={styles.resendLabel}>未收到验证码？</Text>
+                {countdown > 0 ? (
+                  <Text style={styles.countdownText}>{countdown}秒后重新发送</Text>
+                ) : (
+                  <TouchableOpacity onPress={handleSendCode} disabled={loading}>
+                    <Text style={styles.resendButtonText}>重新发送</Text>
+                  </TouchableOpacity>
                 )}
+              </View>
 
-                <TextInput
-                  label="确认新密码"
-                  value={confirmPassword}
-                  onChangeText={(text) => {
-                    setConfirmPassword(text);
-                    setConfirmPasswordError('');
-                  }}
-                  secureTextEntry={!showConfirmPassword}
-                  mode="outlined"
-                  right={
-                    <TextInput.Icon
-                      icon={showConfirmPassword ? 'eye-off' : 'eye'}
-                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    />
-                  }
-                  error={!!confirmPasswordError}
-                  autoCapitalize="none"
-                  style={styles.input}
-                />
-                <HelperText type="error" visible={!!confirmPasswordError}>
-                  {confirmPasswordError}
-                </HelperText>
+              <NeoButton
+                variant="primary"
+                onPress={handleVerifyCode}
+                loading={loading}
+                disabled={loading || verificationCode.length !== 6}
+                style={styles.button}
+              >
+                验证并继续
+              </NeoButton>
+            </>
+          )}
 
-                <Button
-                  mode="contained"
-                  onPress={handleResetPassword}
-                  loading={loading}
-                  disabled={loading || !newPassword || !confirmPassword}
-                  style={styles.button}
-                >
-                  {loading ? '重置中...' : '重置密码'}
-                </Button>
-              </>
-            )}
-          </Card.Content>
-        </Card>
+          {currentStep === 'reset' && (
+            <>
+              <View style={styles.stepHeader}>
+                <Text variant="headlineSmall" style={styles.title}>设置新密码</Text>
+                <Text variant="bodyMedium" style={styles.subtitle}>请设置新的登录密码</Text>
+              </View>
 
-        {/* 提示信息 */}
-        <Card style={styles.helpCard} mode="outlined">
-          <Card.Content>
-            <Text variant="bodySmall" style={styles.helpTitle}>
-              温馨提示
-            </Text>
-            <Text variant="bodySmall" style={styles.helpText}>
-              • 密码至少8个字符
-            </Text>
-            <Text variant="bodySmall" style={styles.helpText}>
-              • 必须包含字母和数字
-            </Text>
-            <Text variant="bodySmall" style={styles.helpText}>
-              • 建议包含大小写字母和特殊字符
-            </Text>
-          </Card.Content>
-        </Card>
+              {renderInput("新密码", newPassword, (t) => { setNewPassword(t); setPasswordError(''); }, "lock-closed-outline", passwordError, "default", true, showPassword, () => setShowPassword(!showPassword))}
+              
+              {newPassword.length > 0 && (
+                <View style={styles.strengthContainer}>
+                  <Text style={styles.strengthLabel}>
+                    密码强度：<Text style={{ color: passwordStrength.color, fontWeight: 'bold' }}>{passwordStrength.label}</Text>
+                  </Text>
+                  <View style={styles.strengthBarBg}>
+                    <View style={[styles.strengthBarFill, { width: `${(passwordStrength.score + 1) * 20}%`, backgroundColor: passwordStrength.color }]} />
+                  </View>
+                </View>
+              )}
+
+              {renderInput("确认新密码", confirmPassword, (t) => { setConfirmPassword(t); setConfirmPasswordError(''); }, "lock-closed-outline", confirmPasswordError, "default", true, showConfirmPassword, () => setShowConfirmPassword(!showConfirmPassword))}
+
+              <NeoButton
+                variant="primary"
+                onPress={handleResetPassword}
+                loading={loading}
+                disabled={loading || !newPassword || !confirmPassword}
+                style={styles.button}
+              >
+                重置密码
+              </NeoButton>
+            </>
+          )}
+        </NeoCard>
+
+        <NeoCard style={styles.helpCard} padding="m">
+          <Text style={styles.helpTitle}>温馨提示</Text>
+          <View style={styles.bulletPoint}><Text style={styles.helpText}>• 密码至少8个字符</Text></View>
+          <View style={styles.bulletPoint}><Text style={styles.helpText}>• 必须包含字母和数字</Text></View>
+          <View style={styles.bulletPoint}><Text style={styles.helpText}>• 建议包含大小写字母和特殊字符</Text></View>
+        </NeoCard>
+
       </ScrollView>
-
+      
       {loading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       )}
-    </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.background,
   },
-  content: {
-    flex: 1,
+  backButton: { padding: 8 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: theme.colors.text },
+  progressBar: { height: 2 },
+  scrollContent: { padding: 24 },
+  card: { marginBottom: 24 },
+  stepHeader: { marginBottom: 24 },
+  title: { fontWeight: '700', color: theme.colors.text, marginBottom: 8 },
+  subtitle: { color: theme.colors.textSecondary },
+  inputGroup: { marginBottom: 16 },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: theme.custom.borderRadius.s,
+    paddingHorizontal: 16,
+    height: 50,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  scrollContent: {
-    padding: 16,
-  },
-  card: {
-    marginBottom: 16,
-  },
-  title: {
-    marginBottom: 8,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    marginBottom: 24,
-    color: '#666',
-  },
-  input: {
-    marginBottom: 8,
-  },
-  button: {
-    marginTop: 16,
-  },
+  inputIcon: { marginRight: 12 },
+  input: { flex: 1, fontSize: 15, color: theme.colors.text, height: '100%' },
+  eyeIcon: { padding: 8 },
+  errorText: { color: theme.colors.error, fontSize: 12, marginTop: 4, marginLeft: 4 },
+  button: { marginTop: 8 },
   resendRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  countdownText: {
-    color: '#2196F3',
-  },
-  strengthContainer: {
     marginBottom: 16,
   },
-  strengthLabel: {
-    marginBottom: 8,
-    color: '#666',
-  },
-  strengthBar: {
-    height: 6,
-    borderRadius: 3,
-  },
-  helpCard: {
-    borderColor: '#E0E0E0',
-  },
-  helpTitle: {
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  helpText: {
-    color: '#666',
-    marginBottom: 4,
-  },
+  resendLabel: { fontSize: 13, color: theme.colors.textSecondary },
+  countdownText: { fontSize: 13, color: theme.colors.textTertiary },
+  resendButtonText: { fontSize: 13, color: theme.colors.primary, fontWeight: '600' },
+  strengthContainer: { marginBottom: 16 },
+  strengthLabel: { fontSize: 12, color: theme.colors.textSecondary, marginBottom: 4 },
+  strengthBarBg: { height: 4, backgroundColor: theme.colors.surfaceVariant, borderRadius: 2, overflow: 'hidden' },
+  strengthBarFill: { height: '100%' },
+  helpCard: { backgroundColor: theme.colors.surfaceVariant, borderWidth: 0 },
+  helpTitle: { fontSize: 14, fontWeight: '600', color: theme.colors.text, marginBottom: 8 },
+  bulletPoint: { marginBottom: 4 },
+  helpText: { fontSize: 12, color: theme.colors.textSecondary },
   loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 999,
   },
 });

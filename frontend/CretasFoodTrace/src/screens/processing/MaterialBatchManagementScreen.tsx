@@ -61,6 +61,9 @@ export default function MaterialBatchManagementScreen() {
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
   const [batchOpsLoading, setBatchOpsLoading] = useState(false);
   const [convertingToFrozen, setConvertingToFrozen] = useState(false);
+  const [undoingFrozen, setUndoingFrozen] = useState(false);
+  const [showUndoDialog, setShowUndoDialog] = useState(false);
+  const [undoReason, setUndoReason] = useState('');
 
   // 批次表单状态
   const [formData, setFormData] = useState({
@@ -633,6 +636,44 @@ export default function MaterialBatchManagementScreen() {
       );
     } finally {
       setConvertingToFrozen(false);
+    }
+  };
+
+  // 撤销转冻品功能
+  const handleUndoFrozen = async (batch: MaterialBatch) => {
+    try {
+      setUndoingFrozen(true);
+      console.log('⏪ Undoing frozen:', batch.id, 'reason:', undoReason);
+
+      // 调用API
+      await materialBatchApiClient.undoFrozen(
+        batch.id,
+        {
+          operatorId: user?.id ?? 0,
+          reason: undoReason || '误操作撤销',
+        },
+        user?.factoryId
+      );
+
+      console.log('✅ Successfully undone frozen conversion');
+      Alert.alert(
+        '撤销成功',
+        `批次 ${batch.batchNumber} 已恢复为鲜品状态`
+      );
+
+      // 关闭弹窗并重置
+      setShowUndoDialog(false);
+      setUndoReason('');
+      setSelectedBatch(null);
+
+      // 刷新列表
+      await loadBatches();
+    } catch (error: any) {
+      console.error('❌ Failed to undo frozen:', error);
+      const errorMsg = error.response?.data?.message || error.message || '撤销失败';
+      Alert.alert('撤销失败', errorMsg);
+    } finally {
+      setUndoingFrozen(false);
     }
   };
 
