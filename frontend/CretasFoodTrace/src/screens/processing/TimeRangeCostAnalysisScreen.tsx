@@ -9,6 +9,11 @@ import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { aiApiClient } from '../../services/api/aiApiClient';
 import { AIQuota } from '../../types/processing';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建TimeRangeCostAnalysis专用logger
+const timeRangeLogger = logger.createContextLogger('TimeRangeCostAnalysis');
 
 type TimeRangeCostAnalysisNavigationProp = NativeStackNavigationProp<
   ProcessingStackParamList,
@@ -112,7 +117,7 @@ export default function TimeRangeCostAnalysisScreen() {
         setAiQuota(response.data);
       }
     } catch (error) {
-      console.error('❌ 加载AI配额失败:', error);
+      timeRangeLogger.error('加载AI配额失败', error, { factoryId: user?.factoryUser?.factoryId });
     }
   };
 
@@ -120,9 +125,10 @@ export default function TimeRangeCostAnalysisScreen() {
   const loadCostData = async (start: Date, end: Date) => {
     try {
       setLoading(true);
-      console.log('📊 加载时间范围成本数据:', {
+      timeRangeLogger.debug('加载时间范围成本数据', {
         startDate: start.toISOString(),
         endDate: end.toISOString(),
+        factoryId: user?.factoryUser?.factoryId,
       });
 
       // 调用后端API
@@ -132,7 +138,10 @@ export default function TimeRangeCostAnalysisScreen() {
         factoryId: user?.factoryUser?.factoryId,
       });
 
-      console.log('✅ 成本数据加载成功:', response.data);
+      timeRangeLogger.info('成本数据加载成功', {
+        totalCost: response.data?.totalCost,
+        materialCost: response.data?.materialCost,
+      });
 
       // 转换后端数据格式为前端期望的格式
       if (response.data) {
@@ -151,49 +160,21 @@ export default function TimeRangeCostAnalysisScreen() {
         };
         setCostSummary(transformedData);
       } else {
-        // 暂时使用模拟数据（后端API实现前）
-        const mockData = {
-          totalCost: 156800,
-          totalBatches: 12,
-          avgCostPerBatch: 13066.67,
-          costBreakdown: {
-            rawMaterials: 98000,
-            labor: 35000,
-            equipment: 18800,
-            overhead: 5000,
-          },
-          batches: [
-            { id: 'BATCH001', cost: 12500, date: '2025-11-01' },
-            { id: 'BATCH002', cost: 15800, date: '2025-11-02' },
-          ],
-        };
-        setCostSummary(mockData);
+        // ✅ GOOD: 不返回假数据，设置为null让UI显示空状态
+        setCostSummary(null);
       }
-    } catch (error: any) {
-      console.error('❌ 加载成本数据失败:', error);
+    } catch (error) {
+      timeRangeLogger.error('加载成本数据失败', error, {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      });
 
-      // 如果是API未实现的错误，使用模拟数据
-      if (error?.response?.status === 404 || error?.code === 'ECONNREFUSED') {
-        console.warn('⚠️ 后端API未实现，使用模拟数据');
-        const mockData = {
-          totalCost: 156800,
-          totalBatches: 12,
-          avgCostPerBatch: 13066.67,
-          costBreakdown: {
-            rawMaterials: 98000,
-            labor: 35000,
-            equipment: 18800,
-            overhead: 5000,
-          },
-          batches: [
-            { id: 'BATCH001', cost: 12500, date: '2025-11-01' },
-            { id: 'BATCH002', cost: 15800, date: '2025-11-02' },
-          ],
-        };
-        setCostSummary(mockData);
-      } else {
-        Alert.alert('错误', '加载成本数据失败，请重试');
-      }
+      // ✅ GOOD: 不返回假数据，显示错误提示
+      handleError(error, {
+        title: '加载失败',
+        customMessage: '无法加载成本数据，请稍后重试',
+      });
+      setCostSummary(null); // 不显示假数据
     } finally {
       setLoading(false);
     }
@@ -219,11 +200,11 @@ export default function TimeRangeCostAnalysisScreen() {
       setAiLoading(true);
       setShowAISection(true);
 
-      console.log('🤖 开始AI时间范围分析:', {
+      timeRangeLogger.debug('开始AI时间范围分析', {
         factoryId,
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
-        question,
+        startDate: dateRange.startDate.toISOString().split('T')[0],
+        endDate: dateRange.endDate.toISOString().split('T')[0],
+        hasQuestion: !!question,
       });
 
       // 调用AI时间范围分析API
@@ -236,7 +217,11 @@ export default function TimeRangeCostAnalysisScreen() {
         question: question || undefined,
       });
 
-      console.log('✅ AI分析完成:', response);
+      timeRangeLogger.info('AI分析完成', {
+        hasAnalysis: !!response.data?.analysis,
+        sessionId: response.data?.session_id,
+        quotaRemaining: response.data?.quota?.remaining,
+      });
 
       if (response.success && response.data) {
         setAiAnalysis(response.data.analysis || '');
@@ -253,8 +238,11 @@ export default function TimeRangeCostAnalysisScreen() {
       } else {
         throw new Error(response.data?.errorMessage || 'AI分析失败');
       }
-    } catch (error: any) {
-      console.error('❌ AI分析失败:', error);
+    } catch (error) {
+      timeRangeLogger.error('AI分析失败', error, {
+        factoryId: user?.factoryUser?.factoryId,
+        hasQuestion: !!question,
+      });
       Alert.alert(
         'AI分析失败',
         error.response?.data?.message || error.message || '请稍后重试'
