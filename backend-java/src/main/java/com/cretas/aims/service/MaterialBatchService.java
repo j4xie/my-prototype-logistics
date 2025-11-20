@@ -3,6 +3,7 @@ package com.cretas.aims.service;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.ConvertToFrozenRequest;
+import com.cretas.aims.dto.material.UndoFrozenRequest;
 import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
@@ -174,4 +175,20 @@ public interface MaterialBatchService {
      * @since 2025-11-20
      */
     MaterialBatchDTO convertToFrozen(String factoryId, String batchId, ConvertToFrozenRequest request);
+
+    /**
+     * 撤销转冻品操作
+     *
+     * 业务规则：
+     * 1. 批次当前状态必须是FROZEN
+     * 2. 转换时间必须在10分钟内
+     * 3. 操作人必须是原转换操作人或管理员
+     *
+     * @param factoryId 工厂ID
+     * @param batchId 批次ID
+     * @param request 撤销请求参数
+     * @return 撤销后的批次信息
+     * @since 2025-11-20
+     */
+    MaterialBatchDTO undoFrozen(String factoryId, String batchId, UndoFrozenRequest request);
 }

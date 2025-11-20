@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Appbar, Avatar } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { Text, Avatar, Icon } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../../store/authStore';
@@ -9,22 +9,23 @@ import { ModuleCard } from './components/ModuleCard';
 import { QuickStatsPanel } from './components/QuickStatsPanel';
 import { MainTabParamList } from '../../types/navigation';
 import { UserPermissions } from '../../types/auth';
+import { ScreenWrapper } from '../../components/ui';
+import { theme } from '../../theme';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'HomeTab'>;
 
 /**
- * 主页 - 模块入口中心
+ * Home Screen (Neo Minimal Style)
+ * 
+ * Main dashboard with clean layout and standard components.
  */
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuthStore();
 
-  // 模块配置
+  // Module Configuration
   const modules: ModuleConfig[] = useMemo(() => {
     if (!user) return [];
-
-    // 从 user 的顶级 permissions 获取权限对象
-    // 这个对象包含 modules, features, role 等完整权限信息
     const userPermissions = user?.permissions || {};
 
     const allModules: ModuleConfig[] = [
@@ -37,7 +38,7 @@ export default function HomeScreen() {
         progress: 27,
         requiredPermissions: ['processing_access'],
         route: 'ProcessingTab',
-        color: '#2196F3',
+        color: '#1890FF', // Neo Blue
       },
       {
         id: 'farming',
@@ -46,7 +47,7 @@ export default function HomeScreen() {
         description: '养殖管理、饲料投喂',
         status: 'coming_soon',
         requiredPermissions: ['farming_access'],
-        color: '#4CAF50',
+        color: '#52C41A', // Neo Green
       },
       {
         id: 'logistics',
@@ -55,7 +56,7 @@ export default function HomeScreen() {
         description: '运输管理、配送追踪',
         status: 'coming_soon',
         requiredPermissions: ['logistics_access'],
-        color: '#FF9800',
+        color: '#FAAD14', // Neo Orange
       },
       {
         id: 'trace',
@@ -64,7 +65,7 @@ export default function HomeScreen() {
         description: '产品追溯、信息查询',
         status: 'coming_soon',
         requiredPermissions: ['trace_access'],
-        color: '#9C27B0',
+        color: '#722ED1', // Neo Purple
       },
       {
         id: 'admin',
@@ -74,7 +75,7 @@ export default function HomeScreen() {
         status: 'available',
         requiredPermissions: ['admin_access'],
         route: 'AdminTab',
-        color: '#607D8B',
+        color: '#13C2C2', // Neo Cyan
       },
       {
         id: 'settings',
@@ -83,40 +84,27 @@ export default function HomeScreen() {
         description: '个人设置、系统配置',
         status: 'available',
         requiredPermissions: [],
-        color: '#795548',
+        color: '#595959', // Neo Gray
       },
     ];
 
-    // 根据用户权限筛选可见模块
+    // Filter modules based on permissions
     return allModules.filter(module => {
       if (module.requiredPermissions.length === 0) return true;
-
-      // 检查权限 - 兼容对象和数组格式
       return module.requiredPermissions.some(perm => {
-        // 如果是数组格式
         if (Array.isArray(userPermissions)) {
           return userPermissions.includes(perm);
         }
-
-        // 如果是对象格式 (后端返回的格式)
         if (typeof userPermissions === 'object' && userPermissions !== null && !Array.isArray(userPermissions)) {
           const permsObj = userPermissions as Partial<UserPermissions>;
-          // 检查 modules 对象
-          if (permsObj.modules && permsObj.modules[perm as keyof typeof permsObj.modules] === true) {
-            return true;
-          }
-          // 检查 features 数组
-          if (Array.isArray(permsObj.features) && permsObj.features.includes(perm)) {
-            return true;
-          }
+          if (permsObj.modules && permsObj.modules[perm as keyof typeof permsObj.modules] === true) return true;
+          if (Array.isArray(permsObj.features) && permsObj.features.includes(perm)) return true;
         }
-
         return false;
       });
     });
   }, [user]);
 
-  // 处理模块点击
   const handleModulePress = (module: ModuleConfig) => {
     if (module.status === 'coming_soon') {
       Alert.alert('即将上线', `${module.name}正在开发中,敬请期待!`);
@@ -128,17 +116,15 @@ export default function HomeScreen() {
       return;
     }
 
-    // 跳转到对应模块
     if (module.route) {
-      // @ts-ignore - 动态路由
+      // @ts-ignore - Dynamic routing
       navigation.navigate(module.route as keyof MainTabParamList);
     } else if (module.id === 'settings') {
-      // 系统设置暂时显示提示
       Alert.alert('系统设置', '此功能正在完善中');
     }
   };
 
-  // 用户显示名
+  // User Display Info
   const displayName = user?.fullName || user?.username || 'User';
   const roleText = user?.userType === 'platform'
     ? '平台管理员'
@@ -147,42 +133,43 @@ export default function HomeScreen() {
       : 'User';
 
   return (
-    <View style={styles.container}>
-      {/* 顶部栏 */}
-      <Appbar.Header elevated>
-        <View style={styles.headerContent}>
-          <View style={styles.userInfo}>
-            <Avatar.Text size={40} label={displayName.charAt(0)} />
-            <View style={styles.userText}>
-              <Text variant="titleMedium" style={styles.userName}>{displayName}</Text>
-              <Text variant="bodySmall" style={styles.userRole}>{roleText}</Text>
-            </View>
-          </View>
-          <Appbar.Action icon="bell-outline" onPress={() => {
-            Alert.alert('通知', '暂无新通知');
-          }} />
-        </View>
-      </Appbar.Header>
-
+    <ScreenWrapper backgroundColor={theme.colors.background} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
-        {/* 欢迎信息 */}
-        <View style={styles.welcomeSection}>
-          <Text variant="headlineMedium" style={styles.welcomeTitle}>
-            您好,{displayName}
-          </Text>
-          <Text variant="bodyMedium" style={styles.welcomeSubtitle}>
-            欢迎使用白垩纪食品溯源系统
-          </Text>
+        {/* Custom Header */}
+        <View style={styles.header}>
+          <View style={styles.userInfo}>
+            <Avatar.Text 
+              size={48} 
+              label={displayName.charAt(0).toUpperCase()} 
+              style={{ backgroundColor: theme.colors.primaryContainer }}
+              color={theme.colors.onPrimaryContainer}
+            />
+            <View style={styles.userText}>
+              <Text variant="titleMedium" style={styles.greeting}>你好, {displayName}</Text>
+              <Text variant="bodySmall" style={styles.role}>{roleText}</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            onPress={() => Alert.alert('通知', '暂无新通知')}
+            style={styles.notificationButton}
+          >
+            <Icon source="bell-outline" size={24} color={theme.colors.onSurface} />
+          </TouchableOpacity>
         </View>
 
-        {/* 快捷信息面板 */}
-        {user && <QuickStatsPanel user={user} />}
+        {/* Quick Stats */}
+        {user && (
+          <View style={styles.section}>
+            <QuickStatsPanel user={user} />
+          </View>
+        )}
 
-        {/* 模块网格 */}
-        <View style={styles.modulesSection}>
+        {/* Modules Grid */}
+        <View style={styles.section}>
           <Text variant="titleLarge" style={styles.sectionTitle}>功能模块</Text>
           <View style={styles.modulesGrid}>
             {modules.map(module => (
@@ -195,14 +182,12 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 底部留白 */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
-// 角色显示名称映射
 function getRoleDisplayName(role: string): string {
   const roleMap: Record<string, string> = {
     factory_super_admin: '工厂超级管理员',
@@ -216,16 +201,18 @@ function getRoleDisplayName(role: string): string {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
-  headerContent: {
-    flex: 1,
+  contentContainer: {
+    padding: 16,
+    paddingTop: 24, // Extra padding for top
+  },
+  header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    alignItems: 'center',
+    marginBottom: 32,
   },
   userInfo: {
     flexDirection: 'row',
@@ -235,36 +222,29 @@ const styles = StyleSheet.create({
   userText: {
     justifyContent: 'center',
   },
-  userName: {
-    fontWeight: '600',
+  greeting: {
+    fontWeight: '700',
+    color: theme.colors.text,
+    fontSize: 20,
   },
-  userRole: {
-    color: '#757575',
+  role: {
+    color: theme.colors.onSurfaceVariant,
+    marginTop: 2,
   },
-  scrollView: {
-    flex: 1,
+  notificationButton: {
+    padding: 8,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.custom.borderRadius.round,
+    ...theme.custom.shadows.small,
   },
-  contentContainer: {
-    padding: 16,
-  },
-  welcomeSection: {
+  section: {
     marginBottom: 24,
   },
-  welcomeTitle: {
-    fontWeight: '700',
-    color: '#212121',
-  },
-  welcomeSubtitle: {
-    color: '#757575',
-    marginTop: 4,
-  },
-  modulesSection: {
-    marginTop: 8,
-  },
   sectionTitle: {
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 16,
-    color: '#212121',
+    color: theme.colors.text,
+    fontSize: 18,
   },
   modulesGrid: {
     flexDirection: 'row',
@@ -272,6 +252,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   bottomSpacer: {
-    height: 32,
+    height: 40,
   },
 });

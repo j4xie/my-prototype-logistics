@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.ConvertToFrozenRequest;
+import com.cretas.aims.dto.material.UndoFrozenRequest;
 import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
 import com.cretas.aims.entity.MaterialBatch;
@@ -785,6 +786,92 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 7. 转换为DTO返回
         return materialBatchMapper.toDTO(savedBatch);
+    }
+
+    @Override
+    @Transactional
+    public MaterialBatchDTO undoFrozen(String factoryId, String batchId, UndoFrozenRequest request) {
+        log.info("开始撤销转冻品: factoryId={}, batchId={}", factoryId, batchId);
+
+        // 1. 查询原材料批次
+        MaterialBatch batch = materialBatchRepository.findById(batchId)
+                .orElseThrow(() -> new ResourceNotFoundException("批次不存在: " + batchId));
+
+        // 2. 验证工厂ID
+        if (!factoryId.equals(batch.getFactoryId())) {
+            throw new BusinessException("批次不属于该工厂");
+        }
+
+        // 3. 验证批次状态（只有冻品可以撤销）
+        if (batch.getStatus() != MaterialBatchStatus.FROZEN) {
+            throw new BusinessException("只有冻品批次可以撤销，当前状态: " + batch.getStatus());
+        }
+
+        // 4. 从notes中解析最后转换时间并验证时间窗口
+        String notes = batch.getNotes() != null ? batch.getNotes() : "";
+        LocalDateTime convertedTime = extractLastConvertTime(notes);
+
+        if (convertedTime == null) {
+            throw new BusinessException("无法找到转换时间记录，无法撤销");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        long minutesPassed = java.time.Duration.between(convertedTime, now).toMinutes();
+
+        if (minutesPassed > 10) {
+            throw new BusinessException(
+                String.format("转换已超过10分钟（已过%d分钟），无法撤销", minutesPassed)
+            );
+        }
+
+        log.info("转换时间: {}, 当前时间: {}, 已过: {}分钟", convertedTime, now, minutesPassed);
+
+        // 5. 恢复为FRESH状态
+        batch.setStatus(MaterialBatchStatus.FRESH);
+
+        // 6. 在notes中记录撤销信息
+        String undoNote = String.format("\n[%s] 撤销转冻品操作 - 操作人ID:%d, 原因: %s",
+                LocalDateTime.now().toString(),
+                request.getOperatorId(),
+                request.getReason());
+        batch.setNotes(notes + undoNote);
+
+        // 7. 保存批次
+        MaterialBatch savedBatch = materialBatchRepository.save(batch);
+        log.info("撤销转冻品成功: batchId={}, newStatus={}", batchId, savedBatch.getStatus());
+
+        // 8. 转换为DTO返回
+        return materialBatchMapper.toDTO(savedBatch);
+    }
+
+    /**
+     * 从notes中提取最后一次转冻品的时间
+     */
+    private LocalDateTime extractLastConvertTime(String notes) {
+        if (notes == null || notes.isEmpty()) {
+            return null;
+        }
+
+        try {
+            // 查找最后一个转冻品记录的时间戳
+            // 格式: [2025-11-20T16:53:39.766951] 转冻品操作 - ...
+            String[] lines = notes.split("\n");
+            for (int i = lines.length - 1; i >= 0; i--) {
+                String line = lines[i];
+                if (line.contains("转冻品操作")) {
+                    int start = line.indexOf('[');
+                    int end = line.indexOf(']');
+                    if (start >= 0 && end > start) {
+                        String timeStr = line.substring(start + 1, end);
+                        return LocalDateTime.parse(timeStr);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析转换时间失败: {}", e.getMessage());
+        }
+
+        return null;
     }
 
     /**

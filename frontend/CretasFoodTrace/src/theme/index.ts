@@ -1,23 +1,32 @@
-import { MD3LightTheme as DefaultTheme, configureFonts } from 'react-native-paper';
+import { MD3LightTheme as DefaultTheme } from 'react-native-paper';
+import { Platform } from 'react-native';
 
-// 定义品牌色
+// Neo Minimal iOS-Style Design Tokens
 const brandColors = {
-  primary: '#4ECDC4',      // 品牌主色 (Teal)
-  secondary: '#667eea',    // 辅助色 (Blue-Purple)
-  accent: '#FF6B6B',       // 强调色 (Red/Coral)
-  background: '#F5F7FA',   // 背景色 (Light Grey)
-  surface: '#FFFFFF',      // 卡片/表面色 (White)
-  text: '#2D3436',         // 主要文本色 (Dark Grey)
-  textSecondary: '#636E72',// 次要文本色 (Grey)
-  success: '#00B894',      // 成功色 (Green)
-  warning: '#FD79A8',      // 警告色 (Pinkish)
-  error: '#D63031',        // 错误色 (Red)
-  info: '#0984E3',         // 信息色 (Blue)
-};
-
-// 自定义字体配置 (如果需要)
-const fontConfig = {
-  fontFamily: 'System',
+  primary: '#1890FF',      // iOS Blue
+  secondary: '#5856D6',    // iOS Indigo
+  accent: '#FF2D55',       // iOS Pink
+  
+  // Neutral Colors
+  background: '#F5F5F5',   // Light Gray Background
+  surface: '#FFFFFF',      // White Surface
+  surfaceVariant: '#F9FAFB', // Very Light Gray for sections
+  
+  // Text Colors
+  text: '#1F2937',         // Gray-900 (Primary Text)
+  textSecondary: '#6B7280',// Gray-500 (Secondary Text)
+  textTertiary: '#9CA3AF', // Gray-400 (Disabled/Hint)
+  
+  // Semantic Colors
+  success: '#34C759',      // iOS Green
+  warning: '#FFCC00',      // iOS Yellow
+  error: '#FF3B30',        // iOS Red
+  info: '#007AFF',         // iOS Blue
+  
+  // UI Colors
+  border: '#E5E7EB',       // Gray-200
+  divider: '#F3F4F6',      // Gray-100
+  backdrop: 'rgba(0, 0, 0, 0.4)',
 };
 
 export const theme = {
@@ -26,31 +35,36 @@ export const theme = {
     ...DefaultTheme.colors,
     primary: brandColors.primary,
     onPrimary: '#FFFFFF',
-    primaryContainer: '#E0F2F1',
-    onPrimaryContainer: '#004D40',
+    primaryContainer: '#E6F7FF', // Light Blue Background
+    onPrimaryContainer: '#0050B3', // Dark Blue Text
     
     secondary: brandColors.secondary,
     onSecondary: '#FFFFFF',
-    secondaryContainer: '#E8EAF6',
-    onSecondaryContainer: '#1A237E',
+    secondaryContainer: '#F0F5FF',
+    onSecondaryContainer: '#2F54EB',
     
     tertiary: brandColors.accent,
     onTertiary: '#FFFFFF',
-    tertiaryContainer: '#FFEBEE',
-    onTertiaryContainer: '#B71C1C',
+    tertiaryContainer: '#FFF0F6',
+    onTertiaryContainer: '#C41D7F',
     
     background: brandColors.background,
     onBackground: brandColors.text,
     
     surface: brandColors.surface,
     onSurface: brandColors.text,
-    surfaceVariant: '#F0F2F5',
+    surfaceVariant: brandColors.surfaceVariant,
     onSurfaceVariant: brandColors.textSecondary,
     
     error: brandColors.error,
     onError: '#FFFFFF',
+    errorContainer: '#FFF1F0',
+    onErrorContainer: '#CF1322',
     
-    outline: '#DFE6E9',
+    outline: brandColors.border,
+    outlineVariant: brandColors.divider,
+    
+    backdrop: brandColors.backdrop,
   },
   // 自定义属性 (非Paper标准属性, 但可在应用中使用)
   custom: {
@@ -58,39 +72,60 @@ export const theme = {
     spacing: {
       xs: 4,
       s: 8,
-      m: 16,
-      l: 24,
-      xl: 32,
-      xxl: 48,
+      m: 12, // Adjusted for tighter layout
+      l: 16, // Standard padding
+      xl: 24,
+      xxl: 32,
+      section: 40,
     },
     borderRadius: {
-      s: 4,
-      m: 8,
-      l: 12,
-      xl: 20,
+      xs: 4,
+      s: 8,  // Buttons
+      m: 12, // Cards
+      l: 16, // Large Cards
+      xl: 24,
       round: 999,
     },
     shadows: {
+      // Soft, diffused shadows (iOS Style)
       small: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        ...Platform.select({
+          ios: {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+          },
+          android: {
+            elevation: 2,
+          },
+        }),
       },
       medium: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 4,
+        ...Platform.select({
+          ios: {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 12,
+          },
+          android: {
+            elevation: 4,
+          },
+        }),
       },
       large: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 20,
-        elevation: 10,
+        ...Platform.select({
+          ios: {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.12,
+            shadowRadius: 24,
+          },
+          android: {
+            elevation: 8,
+          },
+        }),
       },
     },
   },
