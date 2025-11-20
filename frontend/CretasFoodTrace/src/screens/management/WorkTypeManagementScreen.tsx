@@ -21,6 +21,10 @@ import { useNavigation } from '@react-navigation/native';
 import { workTypeApiClient, WorkType, CreateWorkTypeRequest } from '../../services/api/workTypeApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建WorkTypeManagement专用logger
+const workTypeLogger = logger.createContextLogger('WorkTypeManagement');
 
 /**
  * 工作类型/工种管理页面
@@ -72,11 +76,17 @@ export default function WorkTypeManagementScreen() {
       });
 
       if (response.data) {
+        workTypeLogger.info('工种类型列表加载成功', {
+          workTypeCount: response.data.length,
+          factoryId: user?.factoryId,
+        });
         setWorkTypes(response.data);
       }
     } catch (error) {
-      console.error('加载工种类型失败:', error);
-      Alert.alert('错误', error.response?.data?.message || '加载工种类型失败');
+      workTypeLogger.error('加载工种类型失败', error as Error, {
+        factoryId: user?.factoryId,
+      });
+      Alert.alert('错误', (error as any).response?.data?.message || '加载工种类型失败');
     } finally {
       setLoading(false);
     }
@@ -94,9 +104,16 @@ export default function WorkTypeManagementScreen() {
         keyword: searchQuery,
         factoryId: user?.factoryId,
       });
+      workTypeLogger.info('工种搜索完成', {
+        keyword: searchQuery,
+        resultCount: results.length,
+      });
       setWorkTypes(results);
     } catch (error) {
-      console.error('搜索失败:', error);
+      workTypeLogger.error('搜索工种失败', error as Error, {
+        keyword: searchQuery,
+        factoryId: user?.factoryId,
+      });
       Alert.alert('错误', '搜索失败');
     } finally {
       setLoading(false);
@@ -154,11 +171,18 @@ export default function WorkTypeManagementScreen() {
         );
         Alert.alert('成功', '工种创建成功');
       }
+      workTypeLogger.info(editingItem ? '工种更新成功' : '工种创建成功', {
+        workTypeCode: formData.code,
+        workTypeName: formData.name,
+      });
       setModalVisible(false);
       loadWorkTypes();
     } catch (error) {
-      console.error('保存失败:', error);
-      Alert.alert('错误', error.response?.data?.message || (editingItem ? '更新失败' : '创建失败'));
+      workTypeLogger.error('保存工种失败', error as Error, {
+        isEdit: !!editingItem,
+        workTypeCode: formData.code,
+      });
+      Alert.alert('错误', (error as any).response?.data?.message || (editingItem ? '更新失败' : '创建失败'));
     }
   };
 
@@ -174,11 +198,18 @@ export default function WorkTypeManagementScreen() {
           onPress: async () => {
             try {
               await workTypeApiClient.deleteWorkType(item.id, user?.factoryId);
+              workTypeLogger.info('工种删除成功', {
+                workTypeId: item.id,
+                workTypeName: item.name,
+              });
               Alert.alert('成功', '工种删除成功');
               loadWorkTypes();
             } catch (error) {
-              console.error('删除失败:', error);
-              Alert.alert('错误', error.response?.data?.message || '删除失败');
+              workTypeLogger.error('删除工种失败', error as Error, {
+                workTypeId: item.id,
+                workTypeName: item.name,
+              });
+              Alert.alert('错误', (error as any).response?.data?.message || '删除失败');
             }
           },
         },
@@ -193,11 +224,19 @@ export default function WorkTypeManagementScreen() {
         { isActive: !item.isActive },
         user?.factoryId
       );
+      workTypeLogger.info('工种状态已切换', {
+        workTypeId: item.id,
+        workTypeName: item.name,
+        newStatus: !item.isActive ? '启用' : '停用',
+      });
       Alert.alert('成功', item.isActive ? '已停用' : '已启用');
       loadWorkTypes();
     } catch (error) {
-      console.error('切换状态失败:', error);
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      workTypeLogger.error('切换工种状态失败', error as Error, {
+        workTypeId: item.id,
+        workTypeName: item.name,
+      });
+      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
     }
   };
 
