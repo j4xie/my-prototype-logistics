@@ -4,6 +4,10 @@ import { Card, Text, Chip, Icon, ActivityIndicator, Button } from 'react-native-
 import { User, getFactoryId } from '../../../types/auth';
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
 import { handleError } from '../../../utils/errorHandler';
+import { logger } from '../../../utils/logger';
+
+// 创建QuickStatsPanel专用logger
+const quickStatsLogger = logger.createContextLogger('QuickStatsPanel');
 
 interface QuickStatsPanelProps {
   user: User;
@@ -40,7 +44,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
       ? user.platformUser?.role || 'viewer'
       : user.factoryUser?.role || 'viewer';
 
-    console.log('🏠 QuickStatsPanel - 开始加载数据, 角色:', role);
+    quickStatsLogger.debug('开始加载统计数据', { role, userType: user.userType });
 
     try {
       setLoading(true);
@@ -51,7 +55,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
         const factoryId = getFactoryId(user);
 
         if (!factoryId) {
-          console.warn('⚠️ 工厂ID不存在，无法加载统计数据');
+          quickStatsLogger.warn('工厂ID不存在，无法加载统计数据', { userId: user.id });
           setError({
             message: '工厂信息不完整，无法加载统计数据',
             canRetry: false,
@@ -59,16 +63,19 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
           return;
         }
 
-        console.log('📡 QuickStatsPanel - 调用 Dashboard API, factoryId:', factoryId);
+        quickStatsLogger.debug('调用Dashboard API', { factoryId });
 
         // ✅ 使用已实现的dashboard API
         const overviewRes = await dashboardAPI.getDashboardOverview('today', factoryId);
 
-        console.log('📊 QuickStatsPanel - API响应:', overviewRes);
+        quickStatsLogger.debug('Dashboard API响应', { success: overviewRes.success });
 
         if (overviewRes.success && overviewRes.data) {
           const overview = overviewRes.data;
-          console.log('📊 QuickStatsPanel - 解析后概览:', overview);
+          quickStatsLogger.debug('解析概览数据', {
+            hasSummary: !!overview.summary,
+            hasTodayStats: !!overview.todayStats,
+          });
 
           // 从概览数据中提取统计信息
           const newStatsData = {
@@ -78,22 +85,22 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
             onDutyWorkers: overview.summary?.onDutyWorkers ?? 0,
             totalWorkers: overview.summary?.totalWorkers ?? 0,
 
-            // ⚠️ 以下字段待后端补充 - 见 backend/URGENT_API_REQUIREMENTS.md
-            // 等待后端在 DashboardOverviewData.summary 中添加以下字段：
-            // - todayOutputKg: number (今日产量kg)
-            // - activeEquipment: number (活跃设备数)
-            // - totalEquipment: number (总设备数)
-            // 预计后端实现时间: 30分钟
-            todayOutput: 0, // TODO: 待补充 summary.todayOutputKg
-            activeEquipment: 0, // TODO: 待补充 summary.activeEquipment
-            totalEquipment: 0,  // TODO: 待补充 summary.totalEquipment
+            // ✅ 后端已实现字段 (DashboardOverviewData.todayStats) - 2025-11-20
+            // 从 todayStats 对象中读取
+            todayOutput: overview.todayStats?.todayOutputKg ?? 0,
+            activeEquipment: overview.todayStats?.activeEquipment ?? 0,
+            totalEquipment: overview.todayStats?.totalEquipment ?? 0,
           };
 
-          console.log('✅ QuickStatsPanel - 最终数据:', newStatsData);
+          quickStatsLogger.info('统计数据加载成功', {
+            todayOutput: newStatsData.todayOutput,
+            completedBatches: newStatsData.completedBatches,
+            onDutyWorkers: newStatsData.onDutyWorkers,
+          });
           setStatsData(newStatsData);
           setError(null); // 成功后清除错误
         } else {
-          console.warn('⚠️ Dashboard API返回失败');
+          quickStatsLogger.warn('Dashboard API返回失败', { success: overviewRes.success });
           setError({
             message: 'API返回失败，请稍后重试',
             canRetry: true,
@@ -101,7 +108,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
         }
       }
     } catch (error) {
-      console.error('❌ QuickStatsPanel - 加载统计数据失败:', error);
+      quickStatsLogger.error('加载统计数据失败', error, { role });
 
       // ✅ GOOD: 不返回假数据，设置错误状态
       handleError(error, {
