@@ -57,3 +57,6 @@ export const isValidPhone = (phone: string): boolean => {
 export const isValidEmail = (email: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
+
+// 错误处理工具
+export * from './errorHandler';

@@ -8,3 +8,5 @@ export { default as SupplierManagementScreen } from './SupplierManagementScreen'
 export { default as CustomerManagementScreen } from './CustomerManagementScreen';
 export { default as MaterialTypeManagementScreen } from './MaterialTypeManagementScreen';
 export { default as WorkTypeManagementScreen } from './WorkTypeManagementScreen';
+export { default as DepartmentManagementScreen } from './DepartmentManagementScreen';
+export { default as EntityDataExportScreen } from './EntityDataExportScreen';

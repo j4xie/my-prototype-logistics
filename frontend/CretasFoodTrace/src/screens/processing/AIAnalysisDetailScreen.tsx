@@ -17,6 +17,7 @@ import {
   Menu,
 } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, AICostAnalysisResponse } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -292,9 +293,16 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                 <IconButton
                   icon="content-copy"
                   size={20}
-                  onPress={() => {
-                    // TODO: 复制到剪贴板
-                    Alert.alert('提示', '已复制到剪贴板');
+                  onPress={async () => {
+                    try {
+                      if (report?.analysis) {
+                        await Clipboard.setStringAsync(report.analysis);
+                        Alert.alert('提示', '已复制到剪贴板');
+                      }
+                    } catch (error) {
+                      console.error('复制失败:', error);
+                      Alert.alert('错误', '复制失败，请重试');
+                    }
                   }}
                 />
               </View>

@@ -11,8 +11,11 @@ import {
   Divider,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import * as Location from 'expo-location';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { getFactoryId } from '../../types/auth';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 考勤打卡页面
@@ -42,7 +45,7 @@ export default function TimeClockScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  // 获取用户ID（转换为number）和factoryId
+  // 获取用户ID（转换为number）
   const getUserId = (): number | null => {
     if (!user?.id) return null;
     // user.id 可能是 string 或 number，需要转换
@@ -50,83 +53,38 @@ export default function TimeClockScreen() {
     return isNaN(userId) ? null : userId;
   };
 
-  const getFactoryId = (): string | undefined => {
-    if (user?.userType === 'factory') {
-      return (user as any).factoryUser?.factoryId;
-    }
-    return undefined;
-  };
-
   const loadTodayRecords = async () => {
     try {
       setLoadingRecords(true);
-      
+
       const userId = getUserId();
-      const factoryId = getFactoryId();
+      const factoryId = getFactoryId(user);
       
       if (!userId) {
         console.warn('用户ID不存在，无法加载打卡记录');
         return;
       }
 
-      // 直接获取今日的历史记录（包含所有打卡点）
-      const today = new Date().toISOString().split('T')[0];
-      
+      // 使用 /timeclock/today 端点获取今日打卡记录
       try {
-        const historyResponse = await timeclockApiClient.getClockHistory(
-          userId,
-          {
-            startDate: today,
-            endDate: today,
-            page: 1,
-            size: 50,
-          },
-          factoryId
-        ) as any;
-        
-        // 处理历史记录数据
-        const records = Array.isArray(historyResponse.data?.content) 
-          ? historyResponse.data.content 
-          : Array.isArray(historyResponse.data) 
-            ? historyResponse.data 
-            : [];
-        
-        setTodayRecords(records);
-        
-        // 找到最后一次打卡记录
-        // 后端返回的是单条记录（TimeClockRecord），包含今日的所有打卡信息
-        if (records.length > 0) {
-          // 如果有记录，取第一条（因为getTodayRecord返回的是单条记录）
-          // 或者找到有clockInTime的记录
-          const todayRecord = records.find((r: any) => r.clockInTime) || records[0];
-          setLastClockIn(todayRecord);
+        const todayResponse = await timeclockApiClient.getTodayRecord(userId, factoryId);
+
+        if (todayResponse.data) {
+          // 后端返回今日打卡记录
+          setTodayRecords([todayResponse.data]);
+          setLastClockIn(todayResponse.data);
         } else {
+          // 今日未打卡
+          setTodayRecords([]);
           setLastClockIn(null);
         }
-      } catch (historyError: any) {
-        // 如果历史记录获取失败，尝试获取今日记录
-        console.warn('获取历史记录失败，尝试获取今日记录:', historyError);
-        
-        try {
-          const todayResponse = await timeclockApiClient.getTodayRecord(userId, factoryId) as any;
-          if (todayResponse.data) {
-            setTodayRecords([todayResponse.data]);
-            setLastClockIn(todayResponse.data);
-          } else {
-            setTodayRecords([]);
-            setLastClockIn(null);
-          }
-        } catch (todayError: any) {
-          // 如果今日记录也获取失败（可能是404），清空记录
-          if (todayError.response?.status === 404) {
-            setTodayRecords([]);
-            setLastClockIn(null);
-          } else {
-            throw todayError;
-          }
-        }
+      } catch (error) {
+        // 如果获取失败，设置空数据
+        console.error('❌ 获取今日打卡记录失败:', error);
+        setTodayRecords([]);
+        setLastClockIn(null);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('加载打卡记录失败:', error);
       setTodayRecords([]);
       setLastClockIn(null);
@@ -137,20 +95,43 @@ export default function TimeClockScreen() {
 
   const loadGpsLocation = async () => {
     try {
-      // 模拟GPS定位（实际应使用expo-location）
-      // TODO: 集成expo-location获取真实GPS坐标
-      // 立即设置GPS位置，避免按钮被禁用
-      setGpsLocation({
-        latitude: 31.2304,
-        longitude: 121.4737,
+      console.log('📍 Requesting location permissions...');
+
+      // 1. 请求前台位置权限
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        console.warn('❌ Location permission denied');
+        Alert.alert(
+          '位置权限被拒绝',
+          '打卡需要获取您的位置信息，请在设置中允许位置权限。',
+          [{ text: '确定' }]
+        );
+        // 权限被拒绝时设置为null，禁用打卡按钮
+        setGpsLocation(null);
+        return;
+      }
+
+      console.log('✅ Location permission granted, getting current location...');
+
+      // 2. 获取当前位置
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High, // 高精度定位
       });
-    } catch (error: any) {
-      console.error('获取GPS位置失败:', error);
-      // 即使失败也设置一个默认位置，避免按钮被禁用
-      setGpsLocation({
-        latitude: 31.2304,
-        longitude: 121.4737,
-      });
+
+      const { latitude, longitude } = location.coords;
+      console.log('✅ GPS location obtained:', { latitude, longitude });
+
+      setGpsLocation({ latitude, longitude });
+    } catch (error) {
+      console.error('❌ Failed to get GPS location:', error);
+      Alert.alert(
+        'GPS定位失败',
+        '无法获取您的位置信息，请检查GPS是否开启。',
+        [{ text: '确定' }]
+      );
+      // 定位失败时设置为null，禁用打卡按钮
+      setGpsLocation(null);
     }
   };
 
@@ -182,7 +163,7 @@ export default function TimeClockScreen() {
 
               // 使用新的 timeclock API 客户端
               const userId = getUserId();
-              const factoryId = getFactoryId();
+              const factoryId = getFactoryId(user);
               
               if (!userId) {
                 Alert.alert('错误', '用户ID无效');
@@ -196,13 +177,15 @@ export default function TimeClockScreen() {
                   userId,
                   location,
                   device: 'Mobile App', // 可以后续从设备信息获取
+                  latitude: gpsLocation.latitude,
+                  longitude: gpsLocation.longitude,
                 },
                 factoryId
               );
 
               Alert.alert('成功', '上班打卡成功！');
               loadTodayRecords();
-            } catch (error: any) {
+            } catch (error) {
               console.error('打卡失败:', error);
               Alert.alert('错误', error.response?.data?.message || '打卡失败');
             } finally {
@@ -242,7 +225,7 @@ export default function TimeClockScreen() {
 
               // 使用新的 timeclock API 客户端
               const userId = getUserId();
-              const factoryId = getFactoryId();
+              const factoryId = getFactoryId(user);
               
               if (!userId) {
                 Alert.alert('错误', '用户ID无效');
@@ -258,7 +241,7 @@ export default function TimeClockScreen() {
 
               Alert.alert('成功', '下班打卡成功！');
               loadTodayRecords();
-            } catch (error: any) {
+            } catch (error) {
               console.error('打卡失败:', error);
               Alert.alert('错误', error.response?.data?.message || '打卡失败');
             } finally {
@@ -399,6 +382,10 @@ export default function TimeClockScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="考勤打卡" />
+        <Appbar.Action
+          icon="history"
+          onPress={() => navigation.navigate('AttendanceHistory')}
+        />
         <Appbar.Action icon="refresh" onPress={loadTodayRecords} />
       </Appbar.Header>
 
@@ -630,6 +617,50 @@ export default function TimeClockScreen() {
           </Card.Content>
         </Card>
 
+        {/* Quick Access to Statistics */}
+        <Card style={styles.recordsCard}>
+          <Card.Content>
+            <Text style={styles.recordsTitle}>统计与查询</Text>
+            <Divider style={styles.divider} />
+
+            <Button
+              mode="outlined"
+              icon="history"
+              onPress={() => navigation.navigate('ClockHistory')}
+              style={styles.quickActionButton}
+            >
+              打卡历史
+            </Button>
+
+            <Button
+              mode="outlined"
+              icon="chart-bar"
+              onPress={() => navigation.navigate('TimeStatistics')}
+              style={styles.quickActionButton}
+            >
+              工时统计
+            </Button>
+
+            <Button
+              mode="outlined"
+              icon="notebook"
+              onPress={() => navigation.navigate('WorkRecords')}
+              style={styles.quickActionButton}
+            >
+              工作记录
+            </Button>
+
+            <Button
+              mode="outlined"
+              icon="account-group"
+              onPress={() => navigation.navigate('DepartmentAttendance')}
+              style={styles.quickActionButton}
+            >
+              部门考勤
+            </Button>
+          </Card.Content>
+        </Card>
+
         <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
@@ -796,6 +827,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 4,
+  },
+  quickActionButton: {
+    marginBottom: 8,
   },
   bottomPadding: {
     height: 80,

@@ -19,6 +19,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { whitelistApiClient, WhitelistDTO, CreateWhitelistRequest } from '../../services/api/whitelistApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 白名单管理页面
@@ -82,7 +83,7 @@ export default function WhitelistManagementScreen() {
       if (response.content) {
         setWhitelist(response.content);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('加载白名单失败:', error);
       Alert.alert('错误', error.response?.data?.message || '加载白名单失败');
     } finally {
@@ -140,7 +141,7 @@ export default function WhitelistManagementScreen() {
 
       setModalVisible(false);
       loadWhitelist();
-    } catch (error: any) {
+    } catch (error) {
       console.error('批量添加失败:', error);
       Alert.alert('错误', error.response?.data?.message || '批量添加失败');
     }
@@ -160,7 +161,7 @@ export default function WhitelistManagementScreen() {
               await whitelistApiClient.deleteWhitelist(id, user?.factoryId);
               Alert.alert('成功', '白名单已删除');
               loadWhitelist();
-            } catch (error: any) {
+            } catch (error) {
               console.error('删除失败:', error);
               Alert.alert('错误', error.response?.data?.message || '删除失败');
             }

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useAuthStore } from '../store';
 import { AuthServiceInstance as AuthService } from '../services/serviceFactory';
+import { NotImplementedError } from '../errors';
 
 interface LoginParams {
   username: string;
@@ -111,18 +112,55 @@ export function useLogin(options?: UseLoginOptions): UseLoginReturn {
     }
   };
 
+  /**
+   * 生物识别登录
+   * @throws {NotImplementedError} 功能尚未实现
+   */
   const biometricLogin = async (): Promise<boolean> => {
-    Alert.alert('提示', '生物识别登录功能暂未实现');
-    return false;
+    throw new NotImplementedError(
+      '生物识别登录',
+      'Phase 4',
+      '生物识别登录功能尚未实现，敬请期待',
+      {
+        trackingIssue: 'backend/URGENT_API_REQUIREMENTS.md',
+        priority: 'P1',
+        estimatedTime: '2周',
+      }
+    );
   };
 
+  /**
+   * 自动登录
+   * @throws {NotImplementedError} 功能尚未实现
+   */
   const autoLogin = async (): Promise<boolean> => {
-    console.log('自动登录功能暂未实现');
-    return false;
+    throw new NotImplementedError(
+      '自动登录',
+      'Phase 4',
+      '自动登录功能尚未实现，敬请期待',
+      {
+        trackingIssue: 'backend/URGENT_API_REQUIREMENTS.md',
+        priority: 'P2',
+        estimatedTime: '1周',
+      }
+    );
   };
 
-  const enableBiometricLogin = async (username: string, password: string) => {
-    Alert.alert('提示', '生物识别功能暂未实现');
+  /**
+   * 启用生物识别登录
+   * @throws {NotImplementedError} 功能尚未实现
+   */
+  const enableBiometricLogin = async (username: string, password: string): Promise<void> => {
+    throw new NotImplementedError(
+      '启用生物识别',
+      'Phase 4',
+      '生物识别配置功能尚未实现，敬请期待',
+      {
+        trackingIssue: 'backend/URGENT_API_REQUIREMENTS.md',
+        priority: 'P1',
+        estimatedTime: '2周',
+      }
+    );
   };
 
   const clearError = () => {

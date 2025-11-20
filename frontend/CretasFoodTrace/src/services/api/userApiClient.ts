@@ -1,12 +1,16 @@
 import { apiClient } from './apiClient';
 import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { User } from '../../types/auth';
 
 /**
  * 用户管理API客户端
- * 总计14个API - 路径：/api/{factoryId}/users/*
+ * 总计14个API - 路径：/api/mobile/{factoryId}/users/*
  */
 
 // ========== 类型定义 ==========
+
+// 导出User类型供其他组件使用
+export type { User };
 
 export interface UserDTO {
   id: number;
@@ -45,6 +49,11 @@ export interface UpdateUserRoleRequest {
   roleCode: string;
 }
 
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export interface PageResponse<T> {
   content: T[];
   totalElements: number;
@@ -57,7 +66,7 @@ export interface PageResponse<T> {
 
 class UserApiClient {
   private getFactoryPath(factoryId?: string) {
-    return `/api/${factoryId || DEFAULT_FACTORY_ID}`;
+    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}`;
   }
 
   /**
@@ -73,11 +82,11 @@ class UserApiClient {
     keyword?: string;
   }): Promise<PageResponse<UserDTO>> {
     const { factoryId, ...queryParams } = params || {};
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<PageResponse<UserDTO>>(
       `${this.getFactoryPath(factoryId)}/users`,
       { params: queryParams }
     );
-    return response.data || response;
   }
 
   /**
@@ -85,11 +94,11 @@ class UserApiClient {
    * POST /api/{factoryId}/users
    */
   async createUser(request: CreateUserRequest, factoryId?: string): Promise<UserDTO> {
-    const response: any = await apiClient.post(
+    // apiClient拦截器已统一返回data
+    return await apiClient.post<UserDTO>(
       `${this.getFactoryPath(factoryId)}/users`,
       request
     );
-    return response.data || response;
   }
 
   /**
@@ -97,10 +106,10 @@ class UserApiClient {
    * GET /api/{factoryId}/users/{userId}
    */
   async getUserById(userId: number, factoryId?: string): Promise<UserDTO> {
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<UserDTO>(
       `${this.getFactoryPath(factoryId)}/users/${userId}`
     );
-    return response.data || response;
   }
 
   /**
@@ -112,11 +121,11 @@ class UserApiClient {
     request: UpdateUserRequest,
     factoryId?: string
   ): Promise<UserDTO> {
-    const response: any = await apiClient.put(
+    // apiClient拦截器已统一返回data
+    return await apiClient.put<UserDTO>(
       `${this.getFactoryPath(factoryId)}/users/${userId}`,
       request
     );
-    return response.data || response;
   }
 
   /**
@@ -132,10 +141,10 @@ class UserApiClient {
    * POST /api/{factoryId}/users/{userId}/activate
    */
   async activateUser(userId: number, factoryId?: string): Promise<UserDTO> {
-    const response: any = await apiClient.post(
+    // apiClient拦截器已统一返回data
+    return await apiClient.post<UserDTO>(
       `${this.getFactoryPath(factoryId)}/users/${userId}/activate`
     );
-    return response.data || response;
   }
 
   /**
@@ -143,10 +152,10 @@ class UserApiClient {
    * POST /api/{factoryId}/users/{userId}/deactivate
    */
   async deactivateUser(userId: number, factoryId?: string): Promise<UserDTO> {
-    const response: any = await apiClient.post(
+    // apiClient拦截器已统一返回data
+    return await apiClient.post<UserDTO>(
       `${this.getFactoryPath(factoryId)}/users/${userId}/deactivate`
     );
-    return response.data || response;
   }
 
   /**
@@ -158,11 +167,11 @@ class UserApiClient {
     request: UpdateUserRoleRequest,
     factoryId?: string
   ): Promise<UserDTO> {
-    const response: any = await apiClient.put(
+    // apiClient拦截器已统一返回data
+    return await apiClient.put<UserDTO>(
       `${this.getFactoryPath(factoryId)}/users/${userId}/role`,
       request
     );
-    return response.data || response;
   }
 
   /**
@@ -170,10 +179,10 @@ class UserApiClient {
    * GET /api/{factoryId}/users/role/{roleCode}
    */
   async getUsersByRole(roleCode: string, factoryId?: string): Promise<UserDTO[]> {
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<UserDTO[]>(
       `${this.getFactoryPath(factoryId)}/users/role/${roleCode}`
     );
-    return response.data || response;
   }
 
   /**
@@ -188,11 +197,11 @@ class UserApiClient {
     isActive?: boolean;
   }): Promise<UserDTO[]> {
     const { factoryId, ...queryParams } = params;
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<UserDTO[]>(
       `${this.getFactoryPath(factoryId)}/users/search`,
       { params: queryParams }
     );
-    return response.data || response;
   }
 
   /**
@@ -200,11 +209,11 @@ class UserApiClient {
    * GET /api/{factoryId}/users/check/username
    */
   async checkUsernameExists(username: string, factoryId?: string): Promise<boolean> {
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<boolean>(
       `${this.getFactoryPath(factoryId)}/users/check/username`,
       { params: { username } }
     );
-    return response.data !== undefined ? response.data : response;
   }
 
   /**
@@ -212,11 +221,11 @@ class UserApiClient {
    * GET /api/{factoryId}/users/check/email
    */
   async checkEmailExists(email: string, factoryId?: string): Promise<boolean> {
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<boolean>(
       `${this.getFactoryPath(factoryId)}/users/check/email`,
       { params: { email } }
     );
-    return response.data !== undefined ? response.data : response;
   }
 
   /**
@@ -230,11 +239,11 @@ class UserApiClient {
     isActive?: boolean;
   }): Promise<Blob> {
     const { factoryId, ...queryParams } = params || {};
-    const response: any = await apiClient.get(
+    // apiClient拦截器已统一返回data
+    return await apiClient.get<Blob>(
       `${this.getFactoryPath(factoryId)}/users/export`,
       { params: queryParams, responseType: 'blob' }
     );
-    return response.data || response;
   }
 
   /**
@@ -249,7 +258,12 @@ class UserApiClient {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response: any = await apiClient.post(
+    // apiClient拦截器已统一返回data
+    return await apiClient.post<{
+      success: number;
+      failed: number;
+      errors?: string[];
+    }>(
       `${this.getFactoryPath(factoryId)}/users/import`,
       formData,
       {
@@ -258,7 +272,28 @@ class UserApiClient {
         },
       }
     );
-    return response.data || response;
+  }
+
+  /**
+   * 15. 修改密码
+   * PUT /api/{factoryId}/users/{userId}/password
+   *
+   * 注意：
+   * - 需要提供旧密码验证
+   * - 新密码需要满足安全强度要求（后端验证）
+   */
+  async changePassword(
+    userId: number,
+    request: ChangePasswordRequest,
+    factoryId?: string
+  ): Promise<{ message: string }> {
+    console.log('📤 Changing password for user:', userId);
+
+    // apiClient拦截器已统一返回data
+    return await apiClient.put<{ message: string }>(
+      `${this.getFactoryPath(factoryId)}/users/${userId}/password`,
+      request
+    );
   }
 }
 

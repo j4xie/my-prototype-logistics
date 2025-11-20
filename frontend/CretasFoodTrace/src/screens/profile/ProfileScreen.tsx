@@ -1,8 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, List, Divider, Button, Avatar, Chip, Appbar } from 'react-native-paper';
+import {
+  Text,
+  Card,
+  List,
+  Divider,
+  Button,
+  Avatar,
+  Chip,
+  Appbar,
+  Dialog,
+  Portal,
+  TextInput,
+  HelperText,
+  ActivityIndicator,
+} from 'react-native-paper';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigation } from '@react-navigation/native';
+import { userApiClient } from '../../services/api/userApiClient';
 
 /**
  * 个人中心页面
@@ -10,6 +25,114 @@ import { useNavigation } from '@react-navigation/native';
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
   const navigation = useNavigation();
+
+  // Password change state
+  const [passwordDialogVisible, setPasswordDialogVisible] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [oldPasswordVisible, setOldPasswordVisible] = useState(false);
+  const [newPasswordVisible, setNewPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+
+  // Password validation
+  const validatePassword = (): { valid: boolean; message?: string } => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return { valid: false, message: '请填写所有密码字段' };
+    }
+
+    if (newPassword.length < 6) {
+      return { valid: false, message: '新密码长度至少为6位' };
+    }
+
+    if (newPassword === oldPassword) {
+      return { valid: false, message: '新密码不能与旧密码相同' };
+    }
+
+    if (newPassword !== confirmPassword) {
+      return { valid: false, message: '两次输入的新密码不一致' };
+    }
+
+    // 密码强度验证（可选）
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+
+    if (!(hasUpperCase || hasLowerCase) || !hasNumber) {
+      return {
+        valid: false,
+        message: '新密码必须包含字母和数字'
+      };
+    }
+
+    return { valid: true };
+  };
+
+  const handleChangePassword = async () => {
+    const validation = validatePassword();
+    if (!validation.valid) {
+      Alert.alert('验证失败', validation.message);
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      console.log('📤 Submitting password change request...');
+
+      // Get user ID
+      const userId = user?.id;
+      if (!userId) {
+        throw new Error('用户ID不存在');
+      }
+
+      // Call API
+      await userApiClient.changePassword(
+        typeof userId === 'string' ? parseInt(userId, 10) : userId,
+        {
+          oldPassword,
+          newPassword,
+        }
+      );
+
+      console.log('✅ Password changed successfully');
+
+      // Reset form
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordDialogVisible(false);
+
+      // Show success message
+      Alert.alert(
+        '修改成功',
+        '密码已成功修改，下次登录请使用新密码。',
+        [{ text: '确定' }]
+      );
+    } catch (error: any) {
+      console.error('❌ Failed to change password:', error);
+
+      const errorMessage = error.response?.data?.message || error.message || '修改密码失败，请检查旧密码是否正确';
+
+      Alert.alert('修改失败', errorMessage);
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const openPasswordDialog = () => {
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordDialogVisible(true);
+  };
+
+  const closePasswordDialog = () => {
+    if (changingPassword) {
+      return; // 正在提交时不允许关闭
+    }
+    setPasswordDialogVisible(false);
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -204,6 +327,46 @@ export default function ProfileScreen() {
           </Card.Content>
         </Card>
 
+        {/* 更多功能 - Phase 3 P2 */}
+        <Card style={styles.card}>
+          <Card.Title title="更多功能" />
+          <Card.Content>
+            <List.Item
+              title="修改密码"
+              description="修改您的登录密码"
+              left={props => <List.Icon {...props} icon="lock-reset" />}
+              right={props => <List.Icon {...props} icon="chevron-right" />}
+              onPress={openPasswordDialog}
+            />
+            <Divider />
+            <List.Item
+              title="数据导出"
+              description="导出生产、成本、工时报表"
+              left={props => <List.Icon {...props} icon="file-download" />}
+              right={props => <List.Icon {...props} icon="chevron-right" />}
+              onPress={() => navigation.navigate('DataExport', { reportType: 'production' })}
+            />
+            <Divider />
+            <List.Item
+              title="工厂设置"
+              description="工厂信息、工作时间等设置"
+              left={props => <List.Icon {...props} icon="cog" />}
+              right={props => <List.Icon {...props} icon="chevron-right" />}
+              onPress={() => navigation.navigate('ManagementTab', {
+                screen: 'FactorySettings'
+              })}
+            />
+            <Divider />
+            <List.Item
+              title="意见反馈"
+              description="提交问题反馈或功能建议"
+              left={props => <List.Icon {...props} icon="message-alert" />}
+              right={props => <List.Icon {...props} icon="chevron-right" />}
+              onPress={() => navigation.navigate('Feedback')}
+            />
+          </Card.Content>
+        </Card>
+
         {/* 退出登录 */}
         <Card style={styles.card}>
           <Card.Content>
@@ -221,6 +384,111 @@ export default function ProfileScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Password Change Dialog */}
+      <Portal>
+        <Dialog
+          visible={passwordDialogVisible}
+          onDismiss={closePasswordDialog}
+          style={styles.dialog}
+        >
+          <Dialog.Title>修改密码</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={styles.dialogDescription}>
+              请输入旧密码和新密码，新密码长度至少6位，且必须包含字母和数字。
+            </Text>
+
+            {/* Old Password */}
+            <TextInput
+              label="旧密码"
+              value={oldPassword}
+              onChangeText={setOldPassword}
+              secureTextEntry={!oldPasswordVisible}
+              right={
+                <TextInput.Icon
+                  icon={oldPasswordVisible ? 'eye-off' : 'eye'}
+                  onPress={() => setOldPasswordVisible(!oldPasswordVisible)}
+                />
+              }
+              mode="outlined"
+              style={styles.passwordInput}
+              disabled={changingPassword}
+              autoCapitalize="none"
+            />
+
+            {/* New Password */}
+            <TextInput
+              label="新密码"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry={!newPasswordVisible}
+              right={
+                <TextInput.Icon
+                  icon={newPasswordVisible ? 'eye-off' : 'eye'}
+                  onPress={() => setNewPasswordVisible(!newPasswordVisible)}
+                />
+              }
+              mode="outlined"
+              style={styles.passwordInput}
+              disabled={changingPassword}
+              autoCapitalize="none"
+            />
+            <HelperText type="info" visible={newPassword.length > 0}>
+              密码强度: {newPassword.length < 6
+                ? '弱'
+                : /[A-Za-z]/.test(newPassword) && /[0-9]/.test(newPassword)
+                ? '强'
+                : '中'}
+            </HelperText>
+
+            {/* Confirm Password */}
+            <TextInput
+              label="确认新密码"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!confirmPasswordVisible}
+              right={
+                <TextInput.Icon
+                  icon={confirmPasswordVisible ? 'eye-off' : 'eye'}
+                  onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                />
+              }
+              mode="outlined"
+              style={styles.passwordInput}
+              disabled={changingPassword}
+              autoCapitalize="none"
+            />
+            {confirmPassword.length > 0 && (
+              <HelperText
+                type={newPassword === confirmPassword ? 'info' : 'error'}
+                visible={true}
+              >
+                {newPassword === confirmPassword ? '✓ 密码一致' : '✗ 密码不一致'}
+              </HelperText>
+            )}
+
+            {changingPassword && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" />
+                <Text style={styles.loadingText}>正在修改密码...</Text>
+              </View>
+            )}
+          </Dialog.Content>
+
+          <Dialog.Actions>
+            <Button onPress={closePasswordDialog} disabled={changingPassword}>
+              取消
+            </Button>
+            <Button
+              onPress={handleChangePassword}
+              disabled={changingPassword || !oldPassword || !newPassword || !confirmPassword}
+              mode="contained"
+            >
+              确认修改
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
@@ -287,5 +555,31 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 32,
+  },
+  dialog: {
+    maxWidth: 500,
+    alignSelf: 'center',
+    width: '90%',
+  },
+  dialogDescription: {
+    marginBottom: 16,
+    color: '#666',
+    lineHeight: 20,
+  },
+  passwordInput: {
+    marginTop: 8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+  },
+  loadingText: {
+    marginLeft: 12,
+    color: '#666',
   },
 });

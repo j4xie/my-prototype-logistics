@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Card, Text, Chip, Icon, ActivityIndicator } from 'react-native-paper';
-import { User } from '../../../types/auth';
+import { Card, Text, Chip, Icon, ActivityIndicator, Button } from 'react-native-paper';
+import { User, getFactoryId } from '../../../types/auth';
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
+import { handleError } from '../../../utils/errorHandler';
 
 interface QuickStatsPanelProps {
   user: User;
+}
+
+interface StatsError {
+  message: string;
+  canRetry: boolean;
 }
 
 /**
@@ -14,15 +20,16 @@ interface QuickStatsPanelProps {
  */
 export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
   const [loading, setLoading] = useState(false);
-  const [statsData, setStatsData] = useState({
-    todayOutput: 0, // 今日产量 (kg)
-    completedBatches: 0,
-    totalBatches: 0,
-    onDutyWorkers: 0,
-    totalWorkers: 0,
-    activeEquipment: 0,
-    totalEquipment: 0,
-  });
+  const [error, setError] = useState<StatsError | null>(null);
+  const [statsData, setStatsData] = useState<{
+    todayOutput: number;
+    completedBatches: number;
+    totalBatches: number;
+    onDutyWorkers: number;
+    totalWorkers: number;
+    activeEquipment: number;
+    totalEquipment: number;
+  } | null>(null);
 
   useEffect(() => {
     loadStatsData();
@@ -37,83 +44,119 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
 
     try {
       setLoading(true);
+      setError(null); // 清除之前的错误
 
       // 工厂用户加载仪表板数据
       if (role === 'factory_super_admin' || role === 'department_admin' || role === 'operator') {
-        console.log('📡 QuickStatsPanel - 调用 Dashboard API...');
+        const factoryId = getFactoryId(user);
 
-        // 并行获取概览数据和生产统计
-        const [overviewRes, productionRes, equipmentRes] = await Promise.all([
-          dashboardAPI.getDashboardOverview('today'),
-          dashboardAPI.getProductionStatistics({
-            startDate: new Date().toISOString().split('T')[0],
-            endDate: new Date().toISOString().split('T')[0],
-          }),
-          dashboardAPI.getEquipmentDashboard(),
-        ]);
-
-        console.log('📊 QuickStatsPanel - 概览数据:', overviewRes);
-        console.log('📊 QuickStatsPanel - 生产统计:', productionRes);
-        console.log('📊 QuickStatsPanel - 设备数据:', equipmentRes);
-
-        // 提取概览数据 - 后端返回格式是 { success: true, data: {...}, message: "..." }
-        const overview = (overviewRes as any).data || overviewRes;
-        const production = (productionRes as any).data || productionRes;
-        const equipment = (equipmentRes as any).data || equipmentRes;
-
-        console.log('📊 QuickStatsPanel - 解析后概览:', overview);
-        console.log('📊 QuickStatsPanel - 解析后生产:', production);
-        console.log('📊 QuickStatsPanel - 解析后设备:', equipment);
-
-        // 计算今日产量
-        let todayOutput = 0;
-        if (production.batchStatusDistribution) {
-          todayOutput = production.batchStatusDistribution.reduce(
-            (sum: number, stat: any) => sum + (stat.totalQuantity || 0),
-            0
-          );
-          console.log('📈 QuickStatsPanel - 今日产量:', todayOutput);
+        if (!factoryId) {
+          console.warn('⚠️ 工厂ID不存在，无法加载统计数据');
+          setError({
+            message: '工厂信息不完整，无法加载统计数据',
+            canRetry: false,
+          });
+          return;
         }
 
-        const newStatsData = {
-          todayOutput,
-          completedBatches: overview.summary?.completedBatches || 0,
-          totalBatches: overview.summary?.totalBatches || 0,
-          onDutyWorkers: overview.summary?.onDutyWorkers || 0,
-          totalWorkers: overview.summary?.totalWorkers || 0,
-          activeEquipment: equipment.summary?.activeEquipment || 0,
-          totalEquipment: equipment.summary?.totalEquipment || 0,
-        };
+        console.log('📡 QuickStatsPanel - 调用 Dashboard API, factoryId:', factoryId);
 
-        console.log('✅ QuickStatsPanel - 最终数据:', newStatsData);
-        setStatsData(newStatsData);
+        // ✅ 使用已实现的dashboard API
+        const overviewRes = await dashboardAPI.getDashboardOverview('today', factoryId);
+
+        console.log('📊 QuickStatsPanel - API响应:', overviewRes);
+
+        if (overviewRes.success && overviewRes.data) {
+          const overview = overviewRes.data;
+          console.log('📊 QuickStatsPanel - 解析后概览:', overview);
+
+          // 从概览数据中提取统计信息
+          const newStatsData = {
+            // ✅ 后端已有字段 (DashboardOverviewData.summary)
+            completedBatches: overview.summary?.completedBatches ?? 0,
+            totalBatches: overview.summary?.totalBatches ?? 0,
+            onDutyWorkers: overview.summary?.onDutyWorkers ?? 0,
+            totalWorkers: overview.summary?.totalWorkers ?? 0,
+
+            // ⚠️ 以下字段待后端补充 - 见 backend/URGENT_API_REQUIREMENTS.md
+            // 等待后端在 DashboardOverviewData.summary 中添加以下字段：
+            // - todayOutputKg: number (今日产量kg)
+            // - activeEquipment: number (活跃设备数)
+            // - totalEquipment: number (总设备数)
+            // 预计后端实现时间: 30分钟
+            todayOutput: 0, // TODO: 待补充 summary.todayOutputKg
+            activeEquipment: 0, // TODO: 待补充 summary.activeEquipment
+            totalEquipment: 0,  // TODO: 待补充 summary.totalEquipment
+          };
+
+          console.log('✅ QuickStatsPanel - 最终数据:', newStatsData);
+          setStatsData(newStatsData);
+          setError(null); // 成功后清除错误
+        } else {
+          console.warn('⚠️ Dashboard API返回失败');
+          setError({
+            message: 'API返回失败，请稍后重试',
+            canRetry: true,
+          });
+        }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ QuickStatsPanel - 加载统计数据失败:', error);
-      console.error('❌ 错误详情:', {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-        url: error?.config?.url,
+
+      // ✅ GOOD: 不返回假数据，设置错误状态
+      handleError(error, {
+        showAlert: false, // 不显示Alert，使用内联错误UI
+        logError: true,
       });
-      // 即使失败也设置为0，而不是保持默认的--
-      setStatsData({
-        todayOutput: 0,
-        completedBatches: 0,
-        totalBatches: 0,
-        onDutyWorkers: 0,
-        totalWorkers: 0,
-        activeEquipment: 0,
-        totalEquipment: 0,
+
+      setError({
+        message: error instanceof Error ? error.message : '加载统计数据失败，请稍后重试',
+        canRetry: true,
       });
+      setStatsData(null); // 不显示假数据
     } finally {
       setLoading(false);
     }
   };
+  // ✅ 新增：渲染错误UI
+  const renderError = () => (
+    <View style={styles.errorContainer}>
+      <Icon source="alert-circle-outline" size={32} color="#F44336" />
+      <Text variant="bodyMedium" style={styles.errorText}>
+        {error?.message || '加载失败'}
+      </Text>
+      {error?.canRetry && (
+        <Button
+          mode="outlined"
+          onPress={loadStatsData}
+          style={styles.retryButton}
+          compact
+        >
+          重试
+        </Button>
+      )}
+    </View>
+  );
+
   const renderStatsContent = () => {
     const role = user.userType === 'platform'
-      ? user.platformUser?.role || 'viewer'
-      : user.factoryUser?.role || 'viewer';
+      ? user.platformUser?.role ?? 'viewer'
+      : user.factoryUser?.role ?? 'viewer';
+
+    // ✅ 显示加载状态
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" />
+          <Text variant="bodySmall" style={styles.loadingText}>加载中...</Text>
+        </View>
+      );
+    }
+
+    // ✅ 显示错误状态
+    if (error) {
+      return renderError();
+    }
 
     switch (role) {
       case 'operator':
@@ -137,12 +180,9 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
 
       case 'department_admin':
         // 部门管理员:显示部门今日生产数据
-        if (loading) {
-          return (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" />
-            </View>
-          );
+        // ✅ statsData可能为null，需要判断
+        if (!statsData) {
+          return null;
         }
         return (
           <View style={styles.statsGrid}>
@@ -166,12 +206,9 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
 
       case 'factory_super_admin':
         // 工厂超级管理员:显示工厂概览
-        if (loading) {
-          return (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" />
-            </View>
-          );
+        // ✅ statsData可能为null，需要判断
+        if (!statsData) {
+          return null;
         }
         return (
           <View style={styles.statsGrid}>
@@ -208,15 +245,6 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
 
       case 'platform_admin':
         // 平台管理员:显示平台级数据
-        if (loading) {
-          return (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" />
-              <Text variant="bodySmall" style={styles.loadingText}>加载中...</Text>
-            </View>
-          );
-        }
-
         return (
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
@@ -347,5 +375,19 @@ const styles = StyleSheet.create({
   loadingText: {
     color: '#757575',
     marginTop: 12,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+  },
+  errorText: {
+    color: '#F44336',
+    marginTop: 12,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    borderColor: '#F44336',
   },
 });

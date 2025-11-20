@@ -20,6 +20,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { userApiClient, UserDTO, CreateUserRequest } from '../../services/api/userApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { NotImplementedError } from '../../errors';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 用户管理页面
@@ -93,7 +95,7 @@ export default function UserManagementScreen() {
       if (response.content) {
         setUsers(response.content);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('加载用户列表失败:', error);
       Alert.alert('错误', error.response?.data?.message || '加载用户列表失败');
     } finally {
@@ -114,7 +116,7 @@ export default function UserManagementScreen() {
         factoryId: user?.factoryId,
       });
       setUsers(results);
-    } catch (error: any) {
+    } catch (error) {
       console.error('搜索失败:', error);
       Alert.alert('错误', '搜索失败');
     } finally {
@@ -190,7 +192,7 @@ export default function UserManagementScreen() {
 
       setModalVisible(false);
       loadUsers();
-    } catch (error: any) {
+    } catch (error) {
       console.error('保存用户失败:', error);
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }
@@ -210,7 +212,7 @@ export default function UserManagementScreen() {
               await userApiClient.deleteUser(userId, user?.factoryId);
               Alert.alert('成功', '用户已删除');
               loadUsers();
-            } catch (error: any) {
+            } catch (error) {
               console.error('删除用户失败:', error);
               Alert.alert('错误', error.response?.data?.message || '删除失败');
             }
@@ -230,15 +232,18 @@ export default function UserManagementScreen() {
         Alert.alert('成功', '用户已激活');
       }
       loadUsers();
-    } catch (error: any) {
+    } catch (error) {
       console.error('切换状态失败:', error);
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }
   };
 
   const handleChangeRole = async (userId: number, currentRole: string) => {
-    // TODO: 显示角色选择器
-    Alert.alert('提示', '角色修改功能');
+    throw new NotImplementedError(
+      '用户角色修改',
+      'Phase 4',
+      '用户角色修改功能尚未实现，请联系系统管理员进行角色调整。'
+    );
   };
 
   const getRoleName = (role: string) => {

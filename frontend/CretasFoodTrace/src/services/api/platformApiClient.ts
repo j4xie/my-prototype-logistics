@@ -4,75 +4,95 @@
  */
 
 import { apiClient } from './apiClient';
+import { NotImplementedError } from '../../errors';
 import type {
   FactoryAIQuota,
   PlatformAIUsageStats,
   AIQuotaUpdate
 } from '../../types/processing';
 
-// Mock数据 - 临时使用，待后端API实现后删除
-const MOCK_FACTORY_QUOTAS: FactoryAIQuota[] = [
-  {
-    id: 'FISH_2025_001',
-    name: '白垩纪鱼肉加工厂',
-    aiWeeklyQuota: 100,
-    _count: {
-      aiUsageLogs: 245
-    }
-  },
-  {
-    id: 'MEAT_2025_001',
-    name: '白垩纪肉类加工厂',
-    aiWeeklyQuota: 80,
-    _count: {
-      aiUsageLogs: 156
-    }
-  },
-  {
-    id: 'VEG_2025_001',
-    name: '白垩纪蔬菜加工厂',
-    aiWeeklyQuota: 50,
-    _count: {
-      aiUsageLogs: 89
-    }
-  }
-];
+// Factory类型定义
+export interface FactoryDTO {
+  id: string;
+  factoryName: string;
+  name?: string;  // 支持name和factoryName两种字段名
+  address?: string;
+  contactPerson?: string;
+  contactPhone?: string;
+  status: 'active' | 'inactive';
+  totalUsers?: number;
+  totalBatches?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+  industry?: string;
+  employeeCount?: number;
+  subscriptionPlan?: string;
+  contactName?: string;
+  contactEmail?: string;
+}
 
-const MOCK_USAGE_STATS: PlatformAIUsageStats = {
-  currentWeek: '2025-W44',
-  totalUsed: 187,
-  factories: [
-    {
-      factoryId: 'FISH_2025_001',
-      factoryName: '白垩纪鱼肉加工厂',
-      weeklyQuota: 100,
-      used: 78,
-      remaining: 22,
-      utilization: '78.00'
-    },
-    {
-      factoryId: 'MEAT_2025_001',
-      factoryName: '白垩纪肉类加工厂',
-      weeklyQuota: 80,
-      used: 65,
-      remaining: 15,
-      utilization: '81.25'
-    },
-    {
-      factoryId: 'VEG_2025_001',
-      factoryName: '白垩纪蔬菜加工厂',
-      weeklyQuota: 50,
-      used: 44,
-      remaining: 6,
-      utilization: '88.00'
-    }
-  ]
-};
+// 创建工厂请求
+export interface CreateFactoryRequest {
+  name: string;
+  industry?: string;
+  address?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  employeeCount?: number;
+  subscriptionPlan?: string;
+}
+
+// 更新工厂请求
+export interface UpdateFactoryRequest {
+  name?: string;
+  industry?: string;
+  address?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  employeeCount?: number;
+  subscriptionPlan?: string;
+  isActive?: boolean;
+}
+
+// 平台统计数据
+export interface PlatformStatistics {
+  totalFactories: number;
+  activeFactories: number;
+  totalUsers: number;
+  totalBatches: number;
+  totalAIRequests: number;
+  totalAICost: number;
+  factoriesByPlan?: Record<string, number>;
+  factoriesByIndustry?: Record<string, number>;
+  recentActivity?: Array<{
+    factoryId: string;
+    factoryName: string;
+    activity: string;
+    timestamp: string;
+  }>;
+}
 
 export const platformAPI = {
   /**
+   * 获取所有工厂列表
+   * 后端API: GET /api/platform/factories
+   * ✅ P1-5: 后端已实现
+   */
+  getFactories: async (): Promise<{
+    success: boolean;
+    code: number;
+    data: FactoryDTO[];
+    message?: string;
+  }> => {
+    const response = await apiClient.get('/api/platform/factories');
+    return response.data;
+  },
+
+  /**
    * 获取所有工厂的AI配额设置
-   * TODO: 后端API未实现，当前使用Mock数据
    * 后端API: GET /api/platform/ai-quota
    */
   getFactoryAIQuotas: async (): Promise<{
@@ -80,24 +100,12 @@ export const platformAPI = {
     data: FactoryAIQuota[];
     message?: string;
   }> => {
-    // 尝试调用真实API
-    try {
-      const response = await apiClient.get('/api/platform/ai-quota');
-      return response.data;
-    } catch (error: any) {
-      // 如果404或其他错误，返回Mock数据
-      console.log('📦 后端API未实现，使用Mock数据 - getFactoryAIQuotas');
-      return {
-        success: true,
-        data: MOCK_FACTORY_QUOTAS,
-        message: '使用模拟数据（后端API未实现）'
-      };
-    }
+    const response = await apiClient.get('/api/platform/ai-quota');
+    return response.data;
   },
 
   /**
    * 更新工厂AI配额
-   * TODO: 后端API未实现，当前使用Mock响应
    * 后端API: PUT /api/platform/ai-quota/:factoryId
    */
   updateFactoryAIQuota: async (params: AIQuotaUpdate): Promise<{
@@ -105,30 +113,15 @@ export const platformAPI = {
     data: { factoryId: string; weeklyQuota: number };
     message?: string;
   }> => {
-    try {
-      const response = await apiClient.put(
-        `/api/platform/ai-quota/${params.factoryId}`,
-        { weeklyQuota: params.weeklyQuota }
-      );
-      return response.data;
-    } catch (error: any) {
-      console.log('📦 后端API未实现，使用Mock响应 - updateFactoryAIQuota');
-      // 更新Mock数据
-      const factory = MOCK_FACTORY_QUOTAS.find(f => f.id === params.factoryId);
-      if (factory) {
-        factory.aiWeeklyQuota = params.weeklyQuota;
-      }
-      return {
-        success: true,
-        data: { factoryId: params.factoryId, weeklyQuota: params.weeklyQuota },
-        message: '配额已更新（模拟数据）'
-      };
-    }
+    const response = await apiClient.put(
+      `/api/platform/ai-quota/${params.factoryId}`,
+      { weeklyQuota: params.weeklyQuota }
+    );
+    return response.data;
   },
 
   /**
    * 获取平台AI使用统计
-   * TODO: 后端API未实现，当前使用Mock数据
    * 后端API: GET /api/platform/ai-usage-stats
    */
   getPlatformAIUsageStats: async (): Promise<{
@@ -136,17 +129,112 @@ export const platformAPI = {
     data: PlatformAIUsageStats;
     message?: string;
   }> => {
-    try {
-      const response = await apiClient.get('/api/platform/ai-usage-stats');
-      return response.data;
-    } catch (error: any) {
-      console.log('📦 后端API未实现，使用Mock数据 - getPlatformAIUsageStats');
-      return {
-        success: true,
-        data: MOCK_USAGE_STATS,
-        message: '使用模拟数据（后端API未实现）'
-      };
-    }
+    const response = await apiClient.get('/api/platform/ai-usage-stats');
+    return response.data;
+  },
+
+  // ==================== 工厂管理 CRUD ====================
+
+  /**
+   * 创建工厂
+   * 后端API: POST /api/platform/factories
+   */
+  createFactory: async (factoryData: CreateFactoryRequest): Promise<{
+    success: boolean;
+    code: number;
+    data: FactoryDTO;
+    message?: string;
+  }> => {
+    const response = await apiClient.post('/api/platform/factories', factoryData);
+    return response.data;
+  },
+
+  /**
+   * 获取工厂详情
+   * 后端API: GET /api/platform/factories/:factoryId
+   */
+  getFactoryById: async (factoryId: string): Promise<{
+    success: boolean;
+    code: number;
+    data: FactoryDTO;
+    message?: string;
+  }> => {
+    const response = await apiClient.get(`/api/platform/factories/${factoryId}`);
+    return response.data;
+  },
+
+  /**
+   * 更新工厂信息
+   * 后端API: PUT /api/platform/factories/:factoryId
+   */
+  updateFactory: async (
+    factoryId: string,
+    updateData: UpdateFactoryRequest
+  ): Promise<{
+    success: boolean;
+    code: number;
+    data: FactoryDTO;
+    message?: string;
+  }> => {
+    const response = await apiClient.put(`/api/platform/factories/${factoryId}`, updateData);
+    return response.data;
+  },
+
+  /**
+   * 删除工厂
+   * 后端API: DELETE /api/platform/factories/:factoryId
+   */
+  deleteFactory: async (factoryId: string): Promise<{
+    success: boolean;
+    code: number;
+    message: string;
+  }> => {
+    const response = await apiClient.delete(`/api/platform/factories/${factoryId}`);
+    return response.data;
+  },
+
+  /**
+   * 激活工厂
+   * 后端API: POST /api/platform/factories/:factoryId/activate
+   */
+  activateFactory: async (factoryId: string): Promise<{
+    success: boolean;
+    code: number;
+    data: FactoryDTO;
+    message: string;
+  }> => {
+    const response = await apiClient.post(`/api/platform/factories/${factoryId}/activate`);
+    return response.data;
+  },
+
+  /**
+   * 停用工厂
+   * 后端API: POST /api/platform/factories/:factoryId/deactivate
+   */
+  deactivateFactory: async (factoryId: string): Promise<{
+    success: boolean;
+    code: number;
+    data: FactoryDTO;
+    message: string;
+  }> => {
+    const response = await apiClient.post(`/api/platform/factories/${factoryId}/deactivate`);
+    return response.data;
+  },
+
+  // ==================== 平台统计 ====================
+
+  /**
+   * 获取平台统计数据
+   * 后端API: GET /api/platform/dashboard/statistics
+   */
+  getPlatformStatistics: async (): Promise<{
+    success: boolean;
+    code: number;
+    data: PlatformStatistics;
+    message?: string;
+  }> => {
+    const response = await apiClient.get('/api/platform/dashboard/statistics');
+    return response.data;
   },
 };
 
