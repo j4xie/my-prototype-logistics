@@ -5,30 +5,28 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
   ScrollView,
   Dimensions,
   StatusBar,
-  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRegister } from '../../hooks/useRegister';
 import { RegisterRequest } from '../../types/auth';
+import { NeoCard, NeoButton, ScreenWrapper } from '../../components/ui';
+import { theme } from '../../theme';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface RegisterScreenProps {
   navigation: any;
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
-  // 第一步：手机验证相关状态
+  // Step 1: Phone Verification
   const [phoneNumber, setPhoneNumber] = useState('');
 
-  // 第二步：信息填写相关状态
+  // Step 2: Info Form
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -38,11 +36,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const [position, setPosition] = useState('');
   const [email, setEmail] = useState('');
 
-  // UI状态
+  // UI State
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // 使用注册hook
   const {
     verifyPhoneNumber,
     register,
@@ -54,44 +51,20 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     resetForm
   } = useRegister();
 
-  /**
-   * 处理验证手机号码 - 直接提交手机号，不需要验证码
-   */
   const handleVerifyPhone = async () => {
     if (!phoneNumber.trim()) {
       Alert.alert('提示', '请输入手机号码');
       return;
     }
-
     const result = await verifyPhoneNumber(phoneNumber);
     if (result.success && result.tempToken) {
-      // 自动切换到第二步
       clearError();
     }
   };
 
-  /**
-   * 处理完成注册
-   */
   const handleRegister = async () => {
-    // 验证所有必需字段
-    if (!username.trim()) {
-      Alert.alert('提示', '请输入用户名');
-      return;
-    }
-
-    if (!password.trim()) {
-      Alert.alert('提示', '请输入密码');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('提示', '密码长度必须至少6个字符');
-      return;
-    }
-
-    if (!confirmPassword.trim()) {
-      Alert.alert('提示', '请确认密码');
+    if (!username.trim() || !password.trim() || !realName.trim() || !factoryId.trim()) {
+      Alert.alert('提示', '请填写所有必填项');
       return;
     }
 
@@ -100,26 +73,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
       return;
     }
 
-    if (!realName.trim()) {
-      Alert.alert('提示', '请输入真实姓名');
-      return;
-    }
-
-    if (!factoryId.trim()) {
-      Alert.alert('提示', '请输入工厂ID');
-      return;
-    }
-
     if (!tempToken) {
-      Alert.alert('错误', '手机验证信息已过期，请重新验证');
+      Alert.alert('错误', '验证信息过期');
       return;
     }
 
-    clearError();
-
-    // 构建注册请求
     const registerRequest: RegisterRequest = {
-      tempToken: tempToken,
+      tempToken,
       username: username.trim(),
       password: password.trim(),
       realName: realName.trim(),
@@ -132,389 +92,228 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     try {
       const success = await register(registerRequest);
       if (success) {
-        // 注册成功，导航到登录页面
         navigation.navigate('LoginScreen');
       }
     } catch (err) {
-      console.error('注册过程中出错:', err);
+      console.error(err);
     }
   };
 
-  /**
-   * 返回登录页面
-   */
   const handleBack = () => {
     if (currentStep === 'info') {
-      // 在第二步时，返回第一步
       resetForm();
     } else {
-      // 在第一步时，返回登录页面
       navigation.goBack();
     }
   };
 
-  /**
-   * 渲染第一步：手机验证
-   */
-  const renderPhoneVerification = () => {
-    return (
-      <View style={styles.stepContainer}>
-        <View style={styles.stepHeader}>
-          <Text style={styles.stepTitle}>步骤 1/2</Text>
-          <Text style={styles.stepDescription}>手机验证</Text>
-        </View>
-
-        {/* 手机号输入 */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="phone-portrait" size={20} color="#666" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="请输入手机号码"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
-            autoComplete="tel"
-            editable={!isLoading}
-            onSubmitEditing={handleVerifyPhone}
-            returnKeyType="done"
+  const renderInput = (
+    placeholder: string,
+    value: string,
+    onChange: (text: string) => void,
+    icon: any,
+    secure = false,
+    showSecure = false,
+    toggleSecure?: () => void,
+    keyboardType: 'default' | 'email-address' | 'phone-pad' = 'default'
+  ) => (
+    <View style={styles.inputContainer}>
+      <Ionicons name={icon} size={20} color={theme.colors.onSurfaceVariant} style={styles.inputIcon} />
+      <TextInput
+        style={styles.input}
+        placeholder={placeholder}
+        placeholderTextColor={theme.colors.onSurfaceVariant}
+        value={value}
+        onChangeText={onChange}
+        secureTextEntry={secure && !showSecure}
+        keyboardType={keyboardType}
+        autoCapitalize="none"
+        editable={!isLoading}
+      />
+      {toggleSecure && (
+        <TouchableOpacity style={styles.eyeIcon} onPress={toggleSecure}>
+          <Ionicons
+            name={showSecure ? "eye-off-outline" : "eye-outline"}
+            size={20}
+            color={theme.colors.onSurfaceVariant}
           />
-        </View>
-
-        {/* 提示信息 */}
-        <View style={styles.hintContainer}>
-          <Ionicons name="information-circle" size={16} color="#666" />
-          <Text style={styles.hintText}>系统将自动验证手机号是否在白名单中</Text>
-        </View>
-
-        {/* 错误信息 */}
-        {error && (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle" size={20} color="#FF6B6B" />
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
-        {/* 验证按钮 */}
-        <TouchableOpacity
-          style={[styles.nextButton, isLoading && styles.nextButtonDisabled]}
-          onPress={handleVerifyPhone}
-          disabled={isLoading || !phoneNumber.trim()}
-        >
-          {isLoading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.nextButtonText}>验证手机</Text>
-          )}
         </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  const renderPhoneVerification = () => (
+    <View>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>步骤 1/2</Text>
+        <Text style={styles.stepDescription}>手机验证</Text>
       </View>
-    );
-  };
 
-  /**
-   * 渲染第二步：完整信息
-   */
-  const renderInfoForm = () => {
-    return (
-      <View style={styles.stepContainer}>
-        <View style={styles.stepHeader}>
-          <Text style={styles.stepTitle}>步骤 2/2</Text>
-          <Text style={styles.stepDescription}>填写完整信息</Text>
-        </View>
+      {renderInput("请输入手机号码", phoneNumber, setPhoneNumber, "phone-portrait-outline", false, false, undefined, "phone-pad")}
 
-        {/* 用户名 */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="person" size={20} color="#666" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="用户名"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!isLoading}
-          />
-        </View>
-
-        {/* 真实姓名 */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="card" size={20} color="#666" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="真实姓名"
-            value={realName}
-            onChangeText={setRealName}
-            editable={!isLoading}
-          />
-        </View>
-
-        {/* 工厂ID */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="factory" size={20} color="#666" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="工厂ID (必需)"
-            value={factoryId}
-            onChangeText={setFactoryId}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            editable={!isLoading}
-          />
-        </View>
-
-        {/* 部门 */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="briefcase" size={20} color="#666" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="部门 (可选)"
-            value={department}
-            onChangeText={setDepartment}
-            editable={!isLoading}
-          />
-        </View>
-
-        {/* 职位 */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="shield" size={20} color="#666" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="职位 (可选)"
-            value={position}
-            onChangeText={setPosition}
-            editable={!isLoading}
-          />
-        </View>
-
-        {/* 邮箱 */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="mail" size={20} color="#666" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="邮箱 (可选)"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoComplete="email"
-            editable={!isLoading}
-          />
-        </View>
-
-        {/* 密码 */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed" size={20} color="#666" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="密码"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            autoComplete="password"
-            editable={!isLoading}
-          />
-          <TouchableOpacity
-            style={styles.eyeIcon}
-            onPress={() => setShowPassword(!showPassword)}
-          >
-            <Ionicons
-              name={showPassword ? "eye-off" : "eye"}
-              size={20}
-              color="#666"
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* 确认密码 */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed" size={20} color="#666" style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="确认密码"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={!showConfirmPassword}
-            autoComplete="password"
-            editable={!isLoading}
-          />
-          <TouchableOpacity
-            style={styles.eyeIcon}
-            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-          >
-            <Ionicons
-              name={showConfirmPassword ? "eye-off" : "eye"}
-              size={20}
-              color="#666"
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* 错误信息 */}
-        {error && (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle" size={20} color="#FF6B6B" />
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
-        {/* 注册按钮 */}
-        <TouchableOpacity
-          style={[styles.nextButton, isLoading && styles.nextButtonDisabled]}
-          onPress={handleRegister}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.nextButtonText}>完成注册</Text>
-          )}
-        </TouchableOpacity>
+      <View style={styles.hintContainer}>
+        <Ionicons name="information-circle-outline" size={16} color={theme.colors.primary} />
+        <Text style={styles.hintText}>系统将自动验证手机号是否在白名单中</Text>
       </View>
-    );
-  };
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={20} color={theme.colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      <NeoButton
+        variant="primary"
+        onPress={handleVerifyPhone}
+        loading={isLoading}
+        disabled={isLoading || !phoneNumber.trim()}
+        style={styles.nextButton}
+      >
+        验证手机
+      </NeoButton>
+    </View>
+  );
+
+  const renderInfoForm = () => (
+    <View>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>步骤 2/2</Text>
+        <Text style={styles.stepDescription}>填写完整信息</Text>
+      </View>
+
+      {renderInput("用户名 (必填)", username, setUsername, "person-outline")}
+      {renderInput("真实姓名 (必填)", realName, setRealName, "card-outline")}
+      {renderInput("工厂ID (必填)", factoryId, setFactoryId, "business-outline")}
+      {renderInput("部门 (可选)", department, setDepartment, "briefcase-outline")}
+      {renderInput("职位 (可选)", position, setPosition, "shield-checkmark-outline")}
+      {renderInput("邮箱 (可选)", email, setEmail, "mail-outline", false, false, undefined, "email-address")}
+      
+      {renderInput("密码 (必填)", password, setPassword, "lock-closed-outline", true, showPassword, () => setShowPassword(!showPassword))}
+      {renderInput("确认密码 (必填)", confirmPassword, setConfirmPassword, "lock-closed-outline", true, showConfirmPassword, () => setShowConfirmPassword(!showConfirmPassword))}
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={20} color={theme.colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      <NeoButton
+        variant="primary"
+        onPress={handleRegister}
+        loading={isLoading}
+        disabled={isLoading}
+        style={styles.nextButton}
+      >
+        完成注册
+      </NeoButton>
+    </View>
+  );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+    <ScreenWrapper edges={['top', 'bottom']} backgroundColor={theme.colors.background}>
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>用户注册</Text>
+        <View style={{ width: 44 }} />
+      </View>
 
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* 返回按钮和标题 */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={handleBack}
-            >
-              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>用户注册</Text>
-            <View style={{ width: 44 }} />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoCircle}>
+            <Ionicons name="person-add-outline" size={40} color={theme.colors.primary} />
           </View>
+          <Text style={styles.title}>创建账户</Text>
+          <Text style={styles.subtitle}>加入白垩纪食品溯源系统</Text>
+        </View>
 
-          {/* Logo和标题 */}
-          <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Ionicons name="person-add" size={40} color="#FFFFFF" />
-            </View>
-            <Text style={styles.title}>创建账户</Text>
-            <Text style={styles.subtitle}>加入白垩纪食品溯源系统</Text>
-          </View>
-
-          {/* 表单容器 */}
-          <View style={styles.formContainer}>
-            {currentStep === 'phone' ? renderPhoneVerification() : renderInfoForm()}
-          </View>
-        </ScrollView>
-      </LinearGradient>
-    </KeyboardAvoidingView>
+        <NeoCard style={styles.formCard}>
+          {currentStep === 'phone' ? renderPhoneVerification() : renderInfoForm()}
+        </NeoCard>
+      </ScrollView>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
-    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.background,
   },
   backButton: {
     padding: 8,
-    width: 44,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.text,
+  },
+  scrollContent: {
+    padding: 24,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 32,
   },
   logoCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
+    ...theme.custom.shadows.medium,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 6,
-    textAlign: 'center',
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
+    color: theme.colors.textSecondary,
   },
-  formContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  stepContainer: {
-    width: '100%',
+  formCard: {
+    padding: 24,
   },
   stepHeader: {
     marginBottom: 24,
-    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
+    borderBottomColor: theme.colors.outline,
+    paddingBottom: 16,
   },
   stepTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4ECDC4',
+    color: theme.colors.primary,
     marginBottom: 4,
   },
   stepDescription: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '700',
+    color: theme.colors.text,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: theme.custom.borderRadius.s,
+    paddingHorizontal: 16,
+    height: 50,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: 'transparent',
   },
   inputIcon: {
     marginRight: 12,
@@ -522,63 +321,42 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#333',
+    color: theme.colors.text,
+    height: '100%',
   },
   eyeIcon: {
-    padding: 4,
+    padding: 8,
   },
   hintContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F8FF',
-    borderRadius: 8,
+    backgroundColor: theme.colors.surfaceVariant, // Lighter shade
+    borderRadius: theme.custom.borderRadius.s,
     padding: 12,
     marginBottom: 16,
   },
   hintText: {
-    color: '#666',
-    fontSize: 13,
     marginLeft: 8,
+    color: theme.colors.textSecondary,
+    fontSize: 13,
     flex: 1,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    borderRadius: 8,
+    backgroundColor: theme.colors.errorContainer,
+    borderRadius: theme.custom.borderRadius.s,
     padding: 12,
     marginBottom: 16,
   },
   errorText: {
-    color: '#FF6B6B',
-    fontSize: 13,
     marginLeft: 8,
+    color: theme.colors.error,
+    fontSize: 13,
     flex: 1,
   },
   nextButton: {
-    backgroundColor: '#4ECDC4',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#4ECDC4',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  nextButtonDisabled: {
-    backgroundColor: '#CCC',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  nextButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
   },
 });
 
