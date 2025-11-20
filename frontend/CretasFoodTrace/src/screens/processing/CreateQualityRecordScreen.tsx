@@ -35,6 +35,11 @@ import {
 } from '../../services/api/qualityInspectionApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { NotImplementedError } from '../../errors';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建CreateQualityRecord专用logger
+const qualityRecordLogger = logger.createContextLogger('CreateQualityRecord');
 
 // Types
 type CreateQualityRecordScreenNavigationProp = NativeStackNavigationProp<
@@ -113,13 +118,13 @@ export default function CreateQualityRecordScreen() {
   const loadGpsLocation = async () => {
     try {
       setLoadingGps(true);
-      console.log('📍 Requesting location permissions for quality inspection...');
+      qualityRecordLogger.debug('请求位置权限');
 
       // 1. 请求前台位置权限
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== 'granted') {
-        console.warn('❌ Location permission denied');
+        qualityRecordLogger.warn('位置权限被拒绝', { status });
         Alert.alert(
           '位置权限被拒绝',
           '质检需要获取您的位置信息，建议允许位置权限以确保记录完整性。',
@@ -131,7 +136,7 @@ export default function CreateQualityRecordScreen() {
         return;
       }
 
-      console.log('✅ Location permission granted, getting current location...');
+      qualityRecordLogger.debug('位置权限已授予，获取当前位置');
 
       // 2. 获取当前位置
       const location = await Location.getCurrentPositionAsync({
@@ -139,11 +144,11 @@ export default function CreateQualityRecordScreen() {
       });
 
       const { latitude, longitude } = location.coords;
-      console.log('✅ GPS location obtained:', { latitude, longitude });
+      qualityRecordLogger.info('GPS定位成功', { latitude, longitude });
 
       setGpsLocation({ latitude, longitude });
-    } catch (error: any) {
-      console.error('❌ Failed to get GPS location:', error);
+    } catch (error) {
+      qualityRecordLogger.error('GPS定位失败', error);
       // 定位失败时设置为null（不强制要求GPS，但记录错误）
       setGpsLocation(null);
     } finally {
@@ -173,7 +178,7 @@ export default function CreateQualityRecordScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const newPhotoUri = result.assets[0].uri;
-        console.log('✅ Image selected:', newPhotoUri);
+        qualityRecordLogger.info('图片选择成功', { uri: newPhotoUri.substring(0, 50) + '...' });
 
         // 限制最多6张图片
         if (photos.length >= 6) {
@@ -183,8 +188,8 @@ export default function CreateQualityRecordScreen() {
 
         setPhotos([...photos, newPhotoUri]);
       }
-    } catch (error: any) {
-      console.error('❌ Failed to pick image:', error);
+    } catch (error) {
+      qualityRecordLogger.error('选择图片失败', error);
       Alert.alert('选择图片失败', error.message || '无法选择图片，请重试');
     }
   };
@@ -208,7 +213,7 @@ export default function CreateQualityRecordScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const newPhotoUri = result.assets[0].uri;
-        console.log('✅ Photo taken:', newPhotoUri);
+        qualityRecordLogger.info('拍照成功', { uri: newPhotoUri.substring(0, 50) + '...' });
 
         // 限制最多6张图片
         if (photos.length >= 6) {
@@ -218,8 +223,8 @@ export default function CreateQualityRecordScreen() {
 
         setPhotos([...photos, newPhotoUri]);
       }
-    } catch (error: any) {
-      console.error('❌ Failed to take photo:', error);
+    } catch (error) {
+      qualityRecordLogger.error('拍照失败', error);
       Alert.alert('拍照失败', error.message || '无法拍照，请重试');
     }
   };
@@ -306,10 +311,12 @@ export default function CreateQualityRecordScreen() {
               notes: finalNotes || undefined,
             };
 
-            console.log('📤 Submitting quality inspection...', {
+            qualityRecordLogger.info('提交质检记录', {
               batchId,
-              inspectionData,
-              factoryId,
+              inspectorId: currentUserId,
+              sampleSize: sampleSizeNum,
+              passCount: passCountNum,
+              result,
               hasGps: !!gpsLocation,
             });
 
@@ -320,13 +327,13 @@ export default function CreateQualityRecordScreen() {
               factoryId
             );
 
-            console.log('✅ Quality inspection submitted successfully:', response);
+            qualityRecordLogger.info('质检记录提交成功', { batchId, inspectionId: response.id });
 
             Alert.alert('成功', '质检记录已提交', [
               { text: '确定', onPress: () => navigation.goBack() },
             ]);
-          } catch (error: any) {
-            console.error('❌ Failed to submit quality inspection:', error);
+          } catch (error) {
+            qualityRecordLogger.error('提交质检记录失败', error, { batchId });
             const errorMessage = error.response?.data?.message || error.message || '提交失败，请重试';
             Alert.alert('提交失败', errorMessage);
           } finally {
