@@ -60,6 +60,7 @@ export default function MaterialBatchManagementScreen() {
   const [showConsumeDialog, setShowConsumeDialog] = useState(false);
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
   const [batchOpsLoading, setBatchOpsLoading] = useState(false);
+  const [convertingToFrozen, setConvertingToFrozen] = useState(false);
 
   // 批次表单状态
   const [formData, setFormData] = useState({
@@ -595,6 +596,46 @@ export default function MaterialBatchManagementScreen() {
     }
   };
 
+  // P1-006: 转冻品功能
+  const handleConvertToFrozen = async (batch: MaterialBatch) => {
+    try {
+      setConvertingToFrozen(true);
+      console.log('❄️ Converting to frozen:', batch.id);
+
+      // 获取当前日期
+      const today = new Date().toISOString().split('T')[0];
+
+      // 调用API
+      await materialBatchApiClient.convertToFrozen(
+        batch.id,
+        {
+          convertedBy: user?.id ?? 0,
+          convertedDate: today,
+          storageLocation: batch.storageLocation || '冷冻库',
+          notes: `批次 ${batch.batchNumber} 转为冻品`,
+        },
+        user?.factoryId
+      );
+
+      console.log('✅ Successfully converted to frozen');
+      Alert.alert(
+        '转换成功',
+        `批次 ${batch.batchNumber} 已成功转为冻品\n保质期已延长，存储位置已更新`
+      );
+
+      // 刷新列表
+      await loadBatches();
+    } catch (error: any) {
+      console.error('❌ Failed to convert to frozen:', error);
+      Alert.alert(
+        '转换失败',
+        error.response?.data?.message || error.message || '转冻品失败，请重试'
+      );
+    } finally {
+      setConvertingToFrozen(false);
+    }
+  };
+
   /**
    * 打开批量操作对话框
    */
@@ -1052,17 +1093,7 @@ export default function MaterialBatchManagementScreen() {
                               {
                                 text: '确认转换',
                                 onPress: async () => {
-                                  // ⚠️ 待后端实现 - 见 backend/URGENT_API_REQUIREMENTS.md
-                                  // API: POST /api/mobile/{factoryId}/materials/batches/{id}/convert-to-frozen
-                                  // 优先级: P0-紧急
-                                  // 预计后端实现时间: 1小时
-                                  // 功能说明: 将鲜品批次转换为冻品，更新批次状态和存储条件
-                                  // 完成后删除此注释，调用真实API
-                                  Alert.alert(
-                                    '功能开发中',
-                                    '转冻品功能正在开发中，预计今天/明天完成。\n详见 backend/URGENT_API_REQUIREMENTS.md'
-                                  );
-                                  // await loadBatches(); // 待API实现后启用
+                                  await handleConvertToFrozen(batch);
                                 }
                               }
                             ]

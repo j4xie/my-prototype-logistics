@@ -15,6 +15,7 @@ import { useAuthStore } from '../../store/authStore';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
 import { getFactoryId } from '../../types/auth';
+import { handleError } from '../../utils/errorHandler';
 
 /**
  * 效率报表页面
@@ -64,7 +65,7 @@ export default function EfficiencyReportScreen() {
             overallEfficiency: 78,
           });
         }
-      } catch (error: any) {
+      } catch (error) {
         console.warn('设备统计加载失败，使用默认数据');
         setEfficiencyStats({
           equipmentOEE: 75,
@@ -75,7 +76,7 @@ export default function EfficiencyReportScreen() {
       }
 
       console.log('✅ Efficiency data loaded');
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to load efficiency data:', error);
       Alert.alert('加载失败', error.response?.data?.message || error.message || '加载效率数据失败');
       setEfficiencyStats(null);

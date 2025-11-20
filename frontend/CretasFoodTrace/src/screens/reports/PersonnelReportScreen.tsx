@@ -14,6 +14,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { personnelApiClient } from '../../services/api/personnelApiClient';
+import { handleError } from '../../utils/errorHandler';
 import type {
   PersonnelStatistics,
   WorkHoursRankingItem,
@@ -112,7 +113,7 @@ export default function PersonnelReportScreen() {
         setWorkHoursRanking([]);
       }
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to load personnel data:', error);
       const errorMessage =
         error.response?.data?.message || error.message || '加载人员数据失败，请稍后重试';

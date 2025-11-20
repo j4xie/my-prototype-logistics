@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { feedbackApiClient } from '../../services/api/feedbackApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
 
 type FeedbackType = 'bug' | 'feature' | 'other';
 
@@ -213,7 +214,7 @@ export default function FeedbackScreen() {
           ]
         );
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ 提交反馈失败:', error);
       Alert.alert(
         '提交失败',
