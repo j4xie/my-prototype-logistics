@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 137 个 ✅
-- **待迁移**: 199 个
-- **完成度**: 41%
+- **已迁移**: 147 个 ✅
+- **待迁移**: 189 个
+- **完成度**: 44%
 
 ### 迁移优先级
 
@@ -434,9 +434,9 @@ logger.configure({
 - [x] MaterialTypeManagementScreen.tsx (15个) - ✅ 已迁移
 - [x] CreateQualityRecordScreen.tsx (12个) - ✅ 已迁移
 - [x] EntityDataExportScreen.tsx (12个) - ✅ 已迁移
-- [ ] ConversionRateScreen.tsx (10个)
+- [x] ConversionRateScreen.tsx (10个) - ✅ 已迁移
 - [ ] ProductionPlanManagementScreen.tsx (10个)
-- [ ] 其他Screen组件 (~48个)
+- [ ] 其他Screen组件 (~38个)
 - [ ] 其他ApiClient (~80个)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -456,8 +456,9 @@ logger.configure({
 | `MaterialBatchManagementScreen.tsx` | 38 | materialBatchLogger | 08ae36e6 | ✅ |
 | `MaterialTypeManagementScreen.tsx` | 15 | materialTypeLogger | ccd4a6d7 | ✅ |
 | `CreateQualityRecordScreen.tsx` | 12 | qualityRecordLogger | 19ade454 | ✅ |
-| `EntityDataExportScreen.tsx` | 12 | entityExportLogger | - | ✅ |
-| **总计** | **137** | - | - | **41%** |
+| `EntityDataExportScreen.tsx` | 12 | entityExportLogger | 769d75ac | ✅ |
+| `ConversionRateScreen.tsx` | 10 | conversionLogger | - | ✅ |
+| **总计** | **147** | - | - | **44%** |
 
 ---
 
