@@ -17,6 +17,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { factoryApiClient } from '../../services/api/factoryApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建FactorySettings专用logger
+const factorySettingsLogger = logger.createContextLogger('FactorySettings');
 
 interface WorkingHours {
   startTime: string; // "08:00"
@@ -96,18 +100,21 @@ export default function FactorySettingsScreen() {
   const loadFactorySettings = async () => {
     setLoading(true);
     try {
-      console.log('📥 加载工厂设置: factoryId=', factoryId);
+      factorySettingsLogger.debug('加载工厂设置', { factoryId });
 
       const response = await factoryApiClient.getFactorySettings(factoryId);
 
       if (response.success && response.data) {
-        console.log('✅ 工厂设置加载成功:', response.data);
+        factorySettingsLogger.info('工厂设置加载成功', {
+          factoryName: response.data.factoryName,
+          hasWorkingHours: !!response.data.workingHours,
+        });
         setSettings(response.data);
       } else {
         throw new Error(response.message || '加载失败');
       }
     } catch (error) {
-      console.error('❌ 加载工厂设置失败:', error);
+      factorySettingsLogger.error('加载工厂设置失败', error, { factoryId });
       Alert.alert('加载失败', error.response?.data?.message || error.message || '无法加载工厂设置，请重试');
     } finally {
       setLoading(false);
@@ -159,12 +166,19 @@ export default function FactorySettingsScreen() {
     setSaving(true);
 
     try {
-      console.log('💾 保存工厂设置:', settings);
+      factorySettingsLogger.debug('保存工厂设置', {
+        factoryId,
+        factoryName: settings.factoryName,
+        hasChanges,
+      });
 
       const response = await factoryApiClient.updateFactorySettings(settings, factoryId);
 
       if (response.success) {
-        console.log('✅ 工厂设置保存成功');
+        factorySettingsLogger.info('工厂设置保存成功', {
+          factoryId,
+          factoryName: settings.factoryName,
+        });
         Alert.alert('保存成功', response.message || '工厂设置已更新');
         setHasChanges(false);
         // 重新加载设置以获取最新数据
@@ -173,7 +187,7 @@ export default function FactorySettingsScreen() {
         throw new Error(response.message || '保存失败');
       }
     } catch (error) {
-      console.error('❌ 保存工厂设置失败:', error);
+      factorySettingsLogger.error('保存工厂设置失败', error, { factoryId });
       Alert.alert('保存失败', error.response?.data?.message || error.message || '保存设置时出现错误，请重试');
     } finally {
       setSaving(false);
