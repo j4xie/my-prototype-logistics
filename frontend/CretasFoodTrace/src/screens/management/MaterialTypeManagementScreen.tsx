@@ -22,6 +22,10 @@ import { materialTypeApiClient, MaterialType, CreateMaterialTypeRequest } from '
 import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../services/api/materialSpecApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建MaterialTypeManagement专用logger
+const materialTypeLogger = logger.createContextLogger('MaterialTypeManagement');
 
 /**
  * 原材料类型管理页面
@@ -67,8 +71,8 @@ export default function MaterialTypeManagementScreen() {
   const isDepartmentAdmin = roleCode === 'department_admin';
   const canManage = isPlatformAdmin || isSuperAdmin || isDepartmentAdmin;
 
-  // 调试日志：检查用户角色和权限
-  console.log('🔍 MaterialTypeManagementScreen - 权限检查:', {
+  // 权限检查日志
+  materialTypeLogger.debug('权限检查', {
     userType,
     rawRole,
     position,
@@ -77,8 +81,6 @@ export default function MaterialTypeManagementScreen() {
     isSuperAdmin,
     isDepartmentAdmin,
     canManage,
-    user: user,
-    factoryUser: user?.factoryUser,
   });
 
   // 常用选项
@@ -106,12 +108,12 @@ export default function MaterialTypeManagementScreen() {
 
   const loadSpecConfig = async () => {
     try {
-      console.log('📡 加载规格配置，factoryId:', user?.factoryId);
+      materialTypeLogger.debug('加载规格配置', { factoryId: user?.factoryId });
       const response = await materialSpecApiClient.getSpecConfig(user?.factoryId);
-      console.log('✅ 规格配置加载成功:', response.data);
+      materialTypeLogger.info('规格配置加载成功', { hasData: !!response.data });
       setSpecConfig(response.data);
     } catch (error) {
-      console.warn('⚠️ 规格配置加载失败，使用默认配置:', error.message);
+      materialTypeLogger.warn('规格配置加载失败，使用默认配置', error);
       // 使用前端默认配置作为fallback
       setSpecConfig(DEFAULT_SPEC_CONFIG);
     }
@@ -120,31 +122,28 @@ export default function MaterialTypeManagementScreen() {
   const loadMaterialTypes = async () => {
     try {
       setLoading(true);
-      console.log('📡 开始加载原材料类型，factoryId:', user?.factoryId);
-      
+      materialTypeLogger.debug('开始加载原材料类型', { factoryId: user?.factoryId });
+
       // 使用 getActiveMaterialTypes 获取激活的原材料类型列表（返回 List，不需要分页）
       const response = await materialTypeApiClient.getActiveMaterialTypes(user?.factoryId);
 
-      console.log('📥 原材料类型API响应:', response);
+      materialTypeLogger.debug('API响应接收', { hasData: !!response.data });
 
       // 后端返回格式: ApiResponse<List<RawMaterialTypeDTO>>
       // response.data 直接是数组
       if (response && response.data && Array.isArray(response.data)) {
-        console.log('✅ 成功获取原材料类型，数量:', response.data.length);
+        materialTypeLogger.info('原材料类型加载成功', { count: response.data.length });
         setMaterialTypes(response.data);
       } else if (Array.isArray(response)) {
         // 兼容旧格式（直接返回数组）
-        console.log('✅ 兼容格式：直接返回数组，数量:', response.length);
+        materialTypeLogger.info('原材料类型加载成功(兼容格式)', { count: response.length });
         setMaterialTypes(response);
       } else {
-        console.warn('⚠️ 响应格式异常:', response);
+        materialTypeLogger.warn('响应格式异常', { response });
         setMaterialTypes([]);
       }
     } catch (error) {
-      console.error('❌ 加载原材料类型失败:', error);
-      console.error('错误详情:', {
-        message: error.message,
-        response: error.response?.data,
+      materialTypeLogger.error('加载原材料类型失败', error, {
         status: error.response?.status,
       });
       Alert.alert('错误', error.response?.data?.message || '加载原材料类型失败');
@@ -176,7 +175,7 @@ export default function MaterialTypeManagementScreen() {
         setMaterialTypes([]);
       }
     } catch (error) {
-      console.error('搜索失败:', error);
+      materialTypeLogger.error('搜索失败', error, { query: searchQuery });
       Alert.alert('错误', error.response?.data?.message || '搜索失败');
       setMaterialTypes([]);
     } finally {
@@ -248,7 +247,7 @@ export default function MaterialTypeManagementScreen() {
       setModalVisible(false);
       loadMaterialTypes();
     } catch (error) {
-      console.error('保存失败:', error);
+      materialTypeLogger.error(editingItem ? '更新失败' : '创建失败', error);
       Alert.alert('错误', error.response?.data?.message || (editingItem ? '更新失败' : '创建失败'));
     }
   };
@@ -268,7 +267,7 @@ export default function MaterialTypeManagementScreen() {
               Alert.alert('成功', '原材料类型删除成功');
               loadMaterialTypes();
             } catch (error) {
-              console.error('删除失败:', error);
+              materialTypeLogger.error('删除失败', error, { itemId: item.id });
               Alert.alert('错误', error.response?.data?.message || '删除失败');
             }
           },
@@ -298,7 +297,7 @@ export default function MaterialTypeManagementScreen() {
       Alert.alert('成功', item.isActive ? '已停用' : '已启用');
       loadMaterialTypes();
     } catch (error) {
-      console.error('切换状态失败:', error);
+      materialTypeLogger.error('切换状态失败', error, { itemId: item.id });
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }
   };
