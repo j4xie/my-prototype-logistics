@@ -70,7 +70,7 @@ export default function InventoryStatisticsScreen() {
         factoryId,
         hasStatistics: !!statsResponse.data,
         hasValuation: !!valuationResponse.data,
-        lowStockCount: (Array.isArray(lowStockResponse.data) ? lowStockResponse.data : []).length,
+        lowStockCount: Array.isArray(lowStockResponse.data) ? lowStockResponse.data.length : 0,
       });
     } catch (error) {
       inventoryStatsLogger.error('加载库存统计数据失败', error as Error, {
