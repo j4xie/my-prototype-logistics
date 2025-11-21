@@ -45,7 +45,8 @@
       "Bash(chmod:*)",
       "Bash(mysql:*)",
       "Bash(bash:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(paste - -)"
     ],
     "deny": [],
     "ask": []

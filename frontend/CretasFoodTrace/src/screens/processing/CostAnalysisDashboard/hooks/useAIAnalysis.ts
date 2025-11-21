@@ -5,6 +5,10 @@ import { AIQuota } from '../../../../types/processing';
 import { CACHE_CONFIG } from '../constants';
 import { useAISession } from './useAISession';
 import { handleError } from '../../../../utils/errorHandler';  // ✅ 修复: 正确的相对路径 (2025-11-20)
+import { logger } from '../../../../utils/logger';
+
+// 创建AIAnalysis专用logger
+const aiAnalysisLogger = logger.createContextLogger('AIAnalysis');
 
 // ==================== 类型定义 ====================
 
@@ -119,7 +123,10 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
       if (cached) {
         const now = Date.now();
         if (now - cached.timestamp < CACHE_CONFIG.AI_ANALYSIS_DURATION) {
-          console.log(`[useAIAnalysis] 使用AI分析缓存 (批次: ${batchId}, 问题: ${question || '默认'})`);
+          aiAnalysisLogger.debug('使用AI分析缓存', {
+            batchId,
+            question: question || '默认',
+          });
 
           // 直接使用缓存结果
           setAnalysis(cached.analysis);
@@ -135,7 +142,7 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
           return;
         } else {
           // 缓存过期，删除
-          console.log(`[useAIAnalysis] AI分析缓存已过期 (批次: ${batchId})`);
+          aiAnalysisLogger.debug('AI分析缓存已过期', { batchId });
           aiAnalysisCache.delete(cacheKey);
         }
       }
@@ -148,9 +155,11 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
       setAnalysis('AI正在分析您的成本数据，这可能需要几秒钟...');
 
       try {
-        console.log(
-          `[useAIAnalysis] 发起AI分析 (批次: ${batchId}, 问题: ${question || '默认'}, session: ${sessionId || '新建'})`
-        );
+        aiAnalysisLogger.debug('发起AI分析', {
+          batchId,
+          question: question || '默认',
+          sessionId: sessionId || '新建',
+        });
 
         const response = await aiApiClient.analyzeBatchCost(
           {
@@ -190,9 +199,13 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
             timestamp: Date.now(),
           });
 
-          console.log(
-            `[useAIAnalysis] AI分析成功 (批次: ${batchId}, session: ${session_id}, 配额: ${responseQuota?.remainingQuota}/${responseQuota?.weeklyQuota})`
-          );
+          aiAnalysisLogger.info('AI分析成功', {
+            batchId,
+            sessionId: session_id,
+            quotaUsed: responseQuota?.usedQuota,
+            quotaRemaining: responseQuota?.remainingQuota,
+            quotaLimit: responseQuota?.weeklyQuota,
+          });
 
           // 如果有自定义问题，清空输入
           if (question) {
@@ -205,7 +218,11 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
       } catch (err: unknown) {
         // ✅ 修复: 使用unknown类型代替any (2025-11-20)
         const error = err as any;
-        console.error('[useAIAnalysis] AI分析失败:', error);
+        aiAnalysisLogger.error('AI分析失败', error as Error, {
+          batchId,
+          question: question || '默认',
+          statusCode: error.response?.status,
+        });
 
         // 清除乐观UI的占位文本
         setAnalysis('');
@@ -313,7 +330,7 @@ export const clearAIAnalysisCache = (batchId: string | number, question?: string
   if (question) {
     const cacheKey = `${batchId}_${question}`;
     aiAnalysisCache.delete(cacheKey);
-    console.log(`[useAIAnalysis] 已清除缓存 (批次: ${batchId}, 问题: ${question})`);
+    aiAnalysisLogger.debug('已清除缓存', { batchId, question });
   } else {
     // 清除该批次所有相关缓存
     const keysToDelete: string[] = [];
@@ -324,7 +341,10 @@ export const clearAIAnalysisCache = (batchId: string | number, question?: string
     });
 
     keysToDelete.forEach(key => aiAnalysisCache.delete(key));
-    console.log(`[useAIAnalysis] 已清除批次所有缓存 (批次: ${batchId}, 共 ${keysToDelete.length} 个)`);
+    aiAnalysisLogger.debug('已清除批次所有缓存', {
+      batchId,
+      count: keysToDelete.length,
+    });
   }
 };
 
@@ -332,6 +352,7 @@ export const clearAIAnalysisCache = (batchId: string | number, question?: string
  * 清除所有AI分析缓存
  */
 export const clearAllAIAnalysisCache = () => {
+  const count = aiAnalysisCache.size;
   aiAnalysisCache.clear();
-  console.log('[useAIAnalysis] 已清除所有AI分析缓存');
+  aiAnalysisLogger.info('已清除所有AI分析缓存', { count });
 };
