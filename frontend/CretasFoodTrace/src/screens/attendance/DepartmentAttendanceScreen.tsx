@@ -17,6 +17,10 @@ import { useAuthStore } from '../../store/authStore';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建DepartmentAttendance专用logger
+const deptAttendanceLogger = logger.createContextLogger('DepartmentAttendance');
 
 /**
  * 格式化日期为 ISO 字符串 (YYYY-MM-DD)
@@ -79,7 +83,7 @@ export default function DepartmentAttendanceScreen() {
         return;
       }
 
-      console.log('📊 Loading department attendance...', {
+      deptAttendanceLogger.debug('加载部门考勤数据', {
         department: selectedDepartment,
         date: formatDate(selectedDate),
         factoryId,
@@ -92,21 +96,35 @@ export default function DepartmentAttendanceScreen() {
         factoryId
       );
 
-      console.log('✅ Department attendance loaded:', response);
-
       if (response.success && response.data) {
         setAttendanceData(response.data);
 
         // 提取员工记录列表
         const records = response.data.records || response.data.employees || [];
         setAttendanceRecords(Array.isArray(records) ? records : []);
+
+        deptAttendanceLogger.info('部门考勤数据加载成功', {
+          department: selectedDepartment,
+          date: formatDate(selectedDate),
+          recordCount: records.length,
+          factoryId,
+        });
       } else {
-        console.warn('获取部门考勤失败:', response.message);
+        deptAttendanceLogger.warn('获取部门考勤失败', {
+          message: response.message,
+          department: selectedDepartment,
+          date: formatDate(selectedDate),
+          factoryId,
+        });
         setAttendanceData(null);
         setAttendanceRecords([]);
       }
     } catch (error) {
-      console.error('❌ Failed to load department attendance:', error);
+      deptAttendanceLogger.error('加载部门考勤失败', error as Error, {
+        department: selectedDepartment,
+        date: formatDate(selectedDate),
+        factoryId: getFactoryId(user),
+      });
       const errorMessage =
         error.response?.data?.message || error.message || '加载部门考勤失败，请稍后重试';
       Alert.alert('加载失败', errorMessage);
