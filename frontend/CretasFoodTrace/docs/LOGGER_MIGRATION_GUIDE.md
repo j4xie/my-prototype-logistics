@@ -412,9 +412,9 @@ logger.configure({
 ### 当前状态（2025-11-20）
 
 - **总计**: 336 个 `console.log()` 调用
-- **已迁移**: 301 个 ✅
-- **待迁移**: 35 个
-- **完成度**: 90%
+- **已迁移**: 315 个 ✅
+- **待迁移**: 21 个
+- **完成度**: 94%
 
 ### 迁移优先级
 
@@ -462,8 +462,11 @@ logger.configure({
 - [x] FeedbackScreen.tsx (4个) - ✅ 已迁移 (Batch 23)
 - [x] QualityAnalyticsScreen.tsx (4个) - ✅ 已迁移 (Batch 23)
 - [x] EquipmentManagementScreen.tsx (4个) - ✅ 已迁移 (Batch 23)
-- [ ] 其他Screen组件 (~4个)
-- [ ] 其他ApiClient (~80个)
+- [x] BatchComparisonScreen.tsx (4个) - ✅ 已迁移 (Batch 24)
+- [x] AIConversationHistoryScreen.tsx (4个) - ✅ 已迁移 (Batch 24)
+- [x] FactoryManagementScreen.tsx (4个) - ✅ 已迁移 (Batch 24)
+- [ ] 其他Screen组件 (剩余~21个console调用)
+- [ ] 其他ApiClient (~80个，延后迁移)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
 - [ ] 工具函数和辅助类 (~57个)
@@ -511,7 +514,10 @@ logger.configure({
 | `FeedbackScreen.tsx` | 4 | feedbackLogger | 200d4179 | ✅ |
 | `QualityAnalyticsScreen.tsx` | 4 | qualityAnalyticsLogger | 200d4179 | ✅ |
 | `EquipmentManagementScreen.tsx` | 4 | equipmentMgmtLogger | 200d4179 | ✅ |
-| **总计** | **301** | - | - | **90%** |
+| `BatchComparisonScreen.tsx` | 4 | batchComparisonLogger | eae8d727 | ✅ |
+| `AIConversationHistoryScreen.tsx` | 4 | conversationLogger | eae8d727 | ✅ |
+| `FactoryManagementScreen.tsx` | 4 | factoryMgmtLogger | eae8d727 | ✅ |
+| **总计** | **315** | - | - | **94%** |
 
 ---
 
