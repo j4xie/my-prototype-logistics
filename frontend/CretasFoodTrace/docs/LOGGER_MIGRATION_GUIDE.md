@@ -465,7 +465,10 @@ logger.configure({
 - [x] BatchComparisonScreen.tsx (4个) - ✅ 已迁移 (Batch 24)
 - [x] AIConversationHistoryScreen.tsx (4个) - ✅ 已迁移 (Batch 24)
 - [x] FactoryManagementScreen.tsx (4个) - ✅ 已迁移 (Batch 24)
-- [ ] 其他Screen组件 (剩余~21个console调用)
+- [x] DepartmentAttendanceScreen.tsx (4个) - ✅ 已迁移 (Batch 25)
+- [x] AttendanceStatisticsScreen.tsx (4个) - ✅ 已迁移 (Batch 25)
+- [x] RealtimeReportScreen.tsx (3个) - ✅ 已迁移 (Batch 25)
+- [ ] 其他Screen组件 (剩余~10个console调用)
 - [ ] 其他ApiClient (~80个，延后迁移)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -517,7 +520,10 @@ logger.configure({
 | `BatchComparisonScreen.tsx` | 4 | batchComparisonLogger | eae8d727 | ✅ |
 | `AIConversationHistoryScreen.tsx` | 4 | conversationLogger | eae8d727 | ✅ |
 | `FactoryManagementScreen.tsx` | 4 | factoryMgmtLogger | eae8d727 | ✅ |
-| **总计** | **315** | - | - | **94%** |
+| `DepartmentAttendanceScreen.tsx` | 4 | deptAttendanceLogger | 829fca23 | ✅ |
+| `AttendanceStatisticsScreen.tsx` | 4 | attendanceStatsLogger | 829fca23 | ✅ |
+| `RealtimeReportScreen.tsx` | 3 | realtimeReportLogger | 829fca23 | ✅ |
+| **总计** | **326** | - | - | **97%** |
 
 ---
 
