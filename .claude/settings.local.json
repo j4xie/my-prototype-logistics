@@ -69,7 +69,17 @@
       "Bash(JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home mvn clean install:*)",
       "Bash(unzip:*)",
       "Bash(timeout 10 java:*)",
-      "Bash(java:*)"
+      "Bash(java:*)",
+      "Bash(md5:*)",
+      "Bash(ACCESS_TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiZmFjdG9yeV9zdXBlcl9hZG1pbiIsInVzZXJJZCI6IjEiLCJzdWIiOiIxIiwiaWF0IjoxNzYzNjczOTA5LCJleHAiOjE3NjM3NjAzMDl9.sCuUPcwGA4QFwPecdrOUw5ewQUADffoRSFmmhOmcZgc\")",
+      "Bash(npm start)",
+      "Bash(npx expo start --clear --port 3010)",
+      "Bash(mysql.server restart:*)",
+      "Bash(npm install react-native-chart-kit react-native-svg)",
+      "Bash(npm install react-native-get-random-values uuid)",
+      "Bash(npm install react-native-get-random-values@1.11.0 uuid)",
+      "Bash(npm install expo-document-picker expo-file-system expo-sharing)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
