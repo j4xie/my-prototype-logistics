@@ -30,8 +30,9 @@ export default function CostAnalysisDashboard() {
   const { batchId } = route.params || {};
 
   // 使用自定义Hooks管理数据和状态
-  const { costData, loading, refreshing, handleRefresh } = useCostData(batchId);
-  const aiAnalysis = useAIAnalysis(batchId);
+  // ✅ 修复: 提供默认值防止undefined (2025-11-20)
+  const { costData, loading, refreshing, handleRefresh } = useCostData(batchId || '');
+  const aiAnalysis = useAIAnalysis(batchId || '');
 
   // 使用useMemo缓存解构结果，避免不必要的re-render
   const costBreakdownData = useMemo(() => {
@@ -130,7 +131,7 @@ export default function CostAnalysisDashboard() {
 
         {/* AI分析区域 */}
         <AIAnalysisSection
-          batchId={batchId}
+          batchId={batchId || ''}
           {...aiAnalysis}
         />
 

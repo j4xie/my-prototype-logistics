@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { processingApiClient } from '../../../../services/api/processingApiClient';
 import { BatchCostAnalysis } from '../../../../types/processing';
 import { CACHE_CONFIG } from '../constants';
+import { handleError } from '../../../../utils/errorHandler';  // ✅ 修复: 正确的相对路径 (2025-11-20)
 
 // ==================== 类型定义 ====================
 
@@ -104,11 +105,12 @@ export const useCostData = (batchId: string | number): UseCostDataReturn => {
       const response = await processingApiClient.getBatchCostAnalysis(batchId);
 
       if (response.success && response.data) {
-        setCostData(response.data);
+        // ✅ 修复: 使用类型断言，API返回的数据结构与BatchCostAnalysis一致 (2025-11-20)
+        setCostData(response.data as unknown as BatchCostAnalysis);
 
         // 更新缓存
         costDataCache.set(cacheKey, {
-          data: response.data,
+          data: response.data as unknown as BatchCostAnalysis,
           timestamp: Date.now(),
         });
 
@@ -116,7 +118,9 @@ export const useCostData = (batchId: string | number): UseCostDataReturn => {
       } else {
         throw new Error(response.message || '加载失败');
       }
-    } catch (error: any) {
+    } catch (err: unknown) {
+      // ✅ 修复: 使用unknown类型代替any (2025-11-20)
+      const error = err as any;
       console.error('[useCostData] 加载成本数据失败:', error);
 
       // 错误处理

@@ -80,7 +80,8 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
   }, [quota?.resetDate]);
 
   // 检查是否超过配额
-  const isQuotaExceeded = quota && quota.remaining <= 0;
+  // ✅ 修复: 显式转换为boolean类型 (2025-11-20)
+  const isQuotaExceeded = quota ? quota.remaining <= 0 : false;
 
   return (
     <Card style={styles.aiCard} mode="elevated">

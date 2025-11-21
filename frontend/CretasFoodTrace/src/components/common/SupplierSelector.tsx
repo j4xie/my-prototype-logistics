@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { supplierApiClient, Supplier } from '../../services/api/supplierApiClient';
+import { handleError } from '../../utils/errorHandler';
 
 interface SupplierSelectorProps {
   value: string;
@@ -118,7 +119,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
 
       // 关闭弹窗（使用统一函数）
       handleModalClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to create supplier:', error);
       Alert.alert('创建失败', error.response?.data?.message || error.message || '请重试');
     } finally {

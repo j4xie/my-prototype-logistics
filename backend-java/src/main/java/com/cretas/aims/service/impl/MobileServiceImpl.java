@@ -1407,6 +1407,7 @@ public class MobileServiceImpl implements MobileService {
         response.setTotalPages(page.getTotalPages());
         response.setFirst(page.isFirst());
         response.setLast(page.isLast());
+        response.setCurrentPage(pageRequest.getPage()); // ✅ P3-1修复: 添加currentPage字段
 
         log.info("获取设备告警列表成功: 共{}条记录", page.getTotalElements());
         return response;

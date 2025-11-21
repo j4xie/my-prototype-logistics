@@ -17,13 +17,13 @@ export const EquipmentStatsCard = React.memo<EquipmentStatsCardProps>(({ equipme
     <Card style={styles.card} mode="elevated">
       <Card.Title
         title="⚙️ 设备详情"
-        subtitle={`${equipmentStats.totalEquipment}台设备 • 运行${Math.floor(equipmentStats.totalRuntime / 60)}h`}
+        subtitle={`${equipmentStats.totalUsages}次使用 • 运行${Math.floor(equipmentStats.totalDuration / 60)}h`}
       />
       <Card.Content>
         <View style={styles.detailRow}>
-          <Text variant="bodyMedium">设备数量</Text>
+          <Text variant="bodyMedium">设备使用次数</Text>
           <Text variant="bodyMedium" style={styles.detailValue}>
-            {equipmentStats.totalEquipment}台
+            {equipmentStats.totalUsages}次
           </Text>
         </View>
         <Divider />
@@ -31,7 +31,7 @@ export const EquipmentStatsCard = React.memo<EquipmentStatsCardProps>(({ equipme
         <View style={styles.detailRow}>
           <Text variant="bodyMedium">运行时长</Text>
           <Text variant="bodyMedium" style={styles.detailValue}>
-            {Math.floor(equipmentStats.totalRuntime / 60)}小时 {equipmentStats.totalRuntime % 60}分钟
+            {Math.floor(equipmentStats.totalDuration / 60)}小时 {equipmentStats.totalDuration % 60}分钟
           </Text>
         </View>
         <Divider />
@@ -39,7 +39,7 @@ export const EquipmentStatsCard = React.memo<EquipmentStatsCardProps>(({ equipme
         <View style={styles.detailRow}>
           <Text variant="bodyMedium">设备成本</Text>
           <Text variant="titleMedium" style={[styles.detailValue, { color: '#7B1FA2' }]}>
-            ¥{equipmentStats.totalCost.toFixed(2)}
+            ¥{equipmentStats.totalEquipmentCost.toFixed(2)}
           </Text>
         </View>
 
@@ -53,7 +53,7 @@ export const EquipmentStatsCard = React.memo<EquipmentStatsCardProps>(({ equipme
               <View key={index} style={styles.detailRow}>
                 <Text variant="bodySmall">{detail.equipmentName}</Text>
                 <Text variant="bodySmall" style={styles.detailValue}>
-                  {Math.floor(detail.runtime / 60)}h • ¥{detail.cost.toFixed(2)}
+                  {detail.usageDuration ? `${Math.floor(detail.usageDuration / 60)}h` : '-'} • ¥{detail.equipmentCost?.toFixed(2) || '0.00'}
                 </Text>
               </View>
             ))}

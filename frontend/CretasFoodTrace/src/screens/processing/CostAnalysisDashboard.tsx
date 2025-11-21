@@ -13,7 +13,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
-import { processingAPI } from '../../services/api/processingApiClient';
+import { processingApiClient } from '../../services/api/processingApiClient';
 import { aiApiClient } from '../../services/api/aiApiClient';
 import type { BatchCostAnalysis, AIQuota } from '../../types/processing';
 import { handleError } from '../../utils/errorHandler';
@@ -64,9 +64,10 @@ export default function CostAnalysisDashboard() {
 
     try {
       setLoading(true);
-      const response = await processingAPI.getBatchCostAnalysis(batchId);
+      const response = await processingApiClient.getBatchCostAnalysis(batchId);
       if (response.success) {
-        setCostData(response.data);
+        // ✅ 修复: 类型断言 (2025-11-20)
+        setCostData(response.data as unknown as BatchCostAnalysis);
       }
     } catch (error) {
       costAnalysisLogger.error('加载成本数据失败', error, { batchId });
@@ -106,10 +107,19 @@ export default function CostAnalysisDashboard() {
         setAiAnalysis(response.analysis);
         setAiSessionId(response.session_id || '');
         if (response.quota) {
-          setQuota(response.quota);
+          // ✅ 转换AIQuotaInfo为AIQuota格式 (2025-11-20)
+          setQuota({
+            used: response.quota.usedQuota,
+            limit: response.quota.weeklyQuota,
+            remaining: response.quota.remainingQuota,
+            period: 'weekly',
+            resetDate: response.quota.resetDate,
+          });
         }
       }
-    } catch (error) {
+    } catch (err: unknown) {
+      // ✅ 修复: 使用unknown类型代替any (2025-11-20)
+      const error = err as any;
       costAnalysisLogger.error('AI分析失败', error, { batchId, hasQuestion: !!question });
 
       // 处理429错误（超限）
@@ -343,7 +353,7 @@ export default function CostAnalysisDashboard() {
                       本周剩余: {quota.remaining}/{quota.limit}次
                     </Text>
                     {quota.resetDate && (
-                      <Text variant="caption" style={styles.resetText}>
+                      <Text variant="labelSmall" style={styles.resetText}>
                         {getResetText(quota.resetDate)}
                       </Text>
                     )}

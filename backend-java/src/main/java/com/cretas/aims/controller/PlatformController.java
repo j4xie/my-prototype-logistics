@@ -20,6 +20,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,10 +99,24 @@ public class PlatformController {
     @GetMapping("/factories")
     @Operation(summary = "获取所有工厂列表", description = "获取所有工厂的详细信息（仅平台管理员）")
     @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
-    public ApiResponse<List<FactoryDTO>> getAllFactories() {
-        log.info("API调用: 获取所有工厂列表");
+    public ApiResponse<List<FactoryDTO>> getAllFactories(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        log.info("API调用: 获取所有工厂列表, page={}, size={}", page, size);
 
         List<FactoryDTO> factories = factoryService.getAllFactories();
+
+        // 如果提供了分页参数，进行分页处理
+        if (page != null && size != null && size > 0) {
+            int start = page * size;
+            int end = Math.min(start + size, factories.size());
+            if (start < factories.size()) {
+                factories = factories.subList(start, end);
+            } else {
+                factories = new ArrayList<>();
+            }
+        }
+
         return ApiResponse.success(factories);
     }
 

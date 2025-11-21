@@ -8,6 +8,7 @@
  */
 
 import { Alert } from 'react-native';
+import Toast from 'react-native-toast-message';
 import {
   ApiError,
   ApiErrorType,
@@ -246,26 +247,41 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<any>>(
 }
 
 /**
- * Toast提示（需要集成toast库，这里使用Alert替代）
+ * Toast提示 - ✅ 已集成 react-native-toast-message (2025-11-20)
  */
 export function showToast(message: string, duration: 'short' | 'long' = 'short'): void {
-  // TODO: 集成react-native-toast-message或类似库
-  // 目前使用Alert作为临时方案
-  Alert.alert('提示', message);
+  Toast.show({
+    type: 'info',
+    text1: message,
+    visibilityTime: duration === 'short' ? 2000 : 4000,
+    position: 'bottom',
+  });
 }
 
 /**
- * 显示成功提示
+ * 显示成功提示 - ✅ 使用Toast (2025-11-20)
  */
 export function showSuccess(message: string): void {
-  Alert.alert('成功', message, [{ text: '确定', style: 'default' }]);
+  Toast.show({
+    type: 'success',
+    text1: '成功',
+    text2: message,
+    visibilityTime: 3000,
+    position: 'top',
+  });
 }
 
 /**
- * 显示警告提示
+ * 显示警告提示 - ✅ 使用Toast (2025-11-20)
  */
 export function showWarning(message: string): void {
-  Alert.alert('警告', message, [{ text: '确定', style: 'default' }]);
+  Toast.show({
+    type: 'error',
+    text1: '警告',
+    text2: message,
+    visibilityTime: 3000,
+    position: 'top',
+  });
 }
 
 /**

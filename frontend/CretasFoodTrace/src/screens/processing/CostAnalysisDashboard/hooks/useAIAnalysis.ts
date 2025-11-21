@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { processingApiClient } from '../../../../services/api/processingApiClient';
+import { aiApiClient } from '../../../../services/api/aiApiClient';
 import { AIQuota } from '../../../../types/processing';
 import { CACHE_CONFIG } from '../constants';
 import { useAISession } from './useAISession';
+import { handleError } from '../../../../utils/errorHandler';  // ✅ 修复: 正确的相对路径 (2025-11-20)
 
 // ==================== 类型定义 ====================
 
@@ -151,26 +152,37 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
           `[useAIAnalysis] 发起AI分析 (批次: ${batchId}, 问题: ${question || '默认'}, session: ${sessionId || '新建'})`
         );
 
-        const response = await processingApiClient.aiCostAnalysis(
+        const response = await aiApiClient.analyzeBatchCost(
           {
-            batchId: batchId.toString(),
+            batchId: typeof batchId === 'string' ? parseInt(batchId, 10) : batchId,  // ✅ 修复: 转换为number (2025-11-20)
             question: question || undefined,
-            session_id: sessionId || undefined,
+            sessionId: sessionId || undefined,
+            analysisType: 'default',
           }
         );
 
-        if (response.success && response.data) {
-          const { analysis: aiAnalysis, session_id, quota: responseQuota } = response.data;
+        // ✅ 修复: response本身就包含数据，没有.data属性 (2025-11-20)
+        if (response.success) {
+          const { analysis: aiAnalysis, session_id, quota: responseQuota } = response;
 
           // 更新状态
           setAnalysis(aiAnalysis);
 
           if (responseQuota) {
-            setQuota(responseQuota);
+            // ✅ 修复: 转换AIQuotaInfo为AIQuota格式 (2025-11-20)
+            setQuota({
+              used: responseQuota.usedQuota,
+              limit: responseQuota.weeklyQuota,
+              remaining: responseQuota.remainingQuota,
+              period: 'weekly',
+              resetDate: responseQuota.resetDate,
+            });
           }
 
           // 保存Session
-          await saveSession(session_id, aiAnalysis);
+          if (session_id) {
+            await saveSession(session_id, aiAnalysis);
+          }
 
           // 更新缓存
           aiAnalysisCache.set(cacheKey, {
@@ -179,7 +191,7 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
           });
 
           console.log(
-            `[useAIAnalysis] AI分析成功 (批次: ${batchId}, session: ${session_id}, 配额: ${responseQuota?.remaining}/${responseQuota?.limit})`
+            `[useAIAnalysis] AI分析成功 (批次: ${batchId}, session: ${session_id}, 配额: ${responseQuota?.remainingQuota}/${responseQuota?.weeklyQuota})`
           );
 
           // 如果有自定义问题，清空输入
@@ -188,9 +200,11 @@ export const useAIAnalysis = (batchId: string | number): UseAIAnalysisReturn => 
             setShowQuestionInput(false);
           }
         } else {
-          throw new Error(response.message || 'AI分析失败');
+          throw new Error(response.errorMessage || 'AI分析失败');
         }
-      } catch (error: any) {
+      } catch (err: unknown) {
+        // ✅ 修复: 使用unknown类型代替any (2025-11-20)
+        const error = err as any;
         console.error('[useAIAnalysis] AI分析失败:', error);
 
         // 清除乐观UI的占位文本

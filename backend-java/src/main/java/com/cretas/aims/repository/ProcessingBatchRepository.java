@@ -108,6 +108,23 @@ public interface ProcessingBatchRepository extends JpaRepository<ProcessingBatch
     List<ProcessingBatch> findByFactoryIdAndCreatedAtBetween(String factoryId, LocalDateTime startTime, LocalDateTime endTime);
 
     /**
+     * 统计指定工厂、指定时间后创建的批次数量
+     * @param factoryId 工厂ID
+     * @param createdAt 创建时间起点
+     * @return 批次数量
+     */
+    long countByFactoryIdAndCreatedAtAfter(String factoryId, LocalDateTime createdAt);
+
+    /**
+     * 统计指定工厂、指定状态、指定时间后创建的批次数量
+     * @param factoryId 工厂ID
+     * @param status 批次状态
+     * @param createdAt 创建时间起点
+     * @return 批次数量
+     */
+    long countByFactoryIdAndStatusAndCreatedAtAfter(String factoryId, String status, LocalDateTime createdAt);
+
+    /**
      * 按创建时间范围查询（跨所有工厂，用于平台统计）
      *
      * @param startTime 开始时间
@@ -147,6 +164,35 @@ public interface ProcessingBatchRepository extends JpaRepository<ProcessingBatch
      */
     @Query("SELECT SUM(b.totalCost) FROM ProcessingBatch b WHERE b.factoryId = :factoryId AND b.status = :status AND b.totalCost IS NOT NULL")
     Double getTotalCostSum(@Param("factoryId") String factoryId, @Param("status") ProcessingBatch.BatchStatus status);
+
+    /**
+     * 计算指定时间后的总产出
+     * @param factoryId 工厂ID
+     * @param createdAt 创建时间起点
+     * @return 总产出
+     */
+    @Query("SELECT SUM(b.outputQuantity) FROM ProcessingBatch b WHERE b.factoryId = :factoryId AND b.createdAt >= :createdAt AND b.outputQuantity IS NOT NULL")
+    java.math.BigDecimal calculateTotalOutputAfter(@Param("factoryId") String factoryId, @Param("createdAt") LocalDateTime createdAt);
+
+    /**
+     * 计算指定时间后的总成本
+     * @param factoryId 工厂ID
+     * @param createdAt 创建时间起点
+     * @return 总成本
+     */
+    @Query("SELECT SUM(b.totalCost) FROM ProcessingBatch b WHERE b.factoryId = :factoryId AND b.createdAt >= :createdAt AND b.totalCost IS NOT NULL")
+    java.math.BigDecimal calculateTotalCostAfter(@Param("factoryId") String factoryId, @Param("createdAt") LocalDateTime createdAt);
+
+    /**
+     * 计算平均效率
+     * @param factoryId 工厂ID
+     * @param createdAt 创建时间起点
+     * @return 平均效率
+     *
+     * TODO: ProcessingBatch实体中没有productionEfficiency字段，暂时注释
+     */
+    // @Query("SELECT AVG(b.productionEfficiency) FROM ProcessingBatch b WHERE b.factoryId = :factoryId AND b.createdAt >= :createdAt AND b.productionEfficiency IS NOT NULL")
+    // java.math.BigDecimal calculateAverageEfficiency(@Param("factoryId") String factoryId, @Param("createdAt") LocalDateTime createdAt);
 
     /**
      * 获取时间范围内的批次（用于成本分析）（修复：startDate -> startTime）

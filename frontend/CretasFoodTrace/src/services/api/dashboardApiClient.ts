@@ -20,6 +20,20 @@ export interface DashboardOverviewData {
     onDutyWorkers: number;
     totalWorkers: number;
   };
+  // ✅ 后端已实现的今日统计字段 (2025-11-20)
+  todayStats?: {
+    productionCount: number;
+    qualityCheckCount: number;
+    materialReceived: number;
+    ordersCompleted: number;
+    productionEfficiency: number;
+    activeWorkers: number;
+    todayOutputKg: number;        // 今日产量kg
+    totalBatches: number;
+    totalWorkers: number;
+    activeEquipment: number;      // 活跃设备数
+    totalEquipment: number;       // 总设备数
+  };
   kpi: {
     productionEfficiency: number;
     qualityPassRate: number;

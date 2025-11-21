@@ -226,6 +226,7 @@ export const platformAPI = {
   /**
    * 获取平台统计数据
    * 后端API: GET /api/platform/dashboard/statistics
+   * ✅ 已验证: 2025-11-20
    */
   getPlatformStatistics: async (): Promise<{
     success: boolean;

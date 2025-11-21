@@ -762,16 +762,20 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             throw new BusinessException("只有鲜品批次可以转为冻品，当前状态: " + batch.getStatus());
         }
 
-        // 4. 更新批次状态和存储位置
+        // 4. 保存原始存储位置（用于撤销时恢复）
+        String originalStorageLocation = batch.getStorageLocation();
+
+        // 5. 更新批次状态和存储位置
         batch.setStatus(MaterialBatchStatus.FROZEN);
         batch.setStorageLocation(request.getStorageLocation());
 
-        // 5. 在notes中记录转换信息
+        // 6. 在notes中记录转换信息（包括原始存储位置）
         String existingNotes = batch.getNotes() != null ? batch.getNotes() : "";
-        String convertNote = String.format("\n[%s] 转冻品操作 - 操作人ID:%d, 转换日期:%s",
+        String convertNote = String.format("\n[%s] 转冻品操作 - 操作人ID:%d, 转换日期:%s, 原存储位置:%s",
                 LocalDateTime.now().toString(),
                 request.getConvertedBy(),
-                request.getConvertedDate().toString());
+                request.getConvertedDate().toString(),
+                originalStorageLocation != null ? originalStorageLocation : "未知");
 
         if (request.getNotes() != null && !request.getNotes().isEmpty()) {
             convertNote += ", 备注: " + request.getNotes();
@@ -818,6 +822,13 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         LocalDateTime now = LocalDateTime.now();
         long minutesPassed = java.time.Duration.between(convertedTime, now).toMinutes();
 
+        // 防御性检查：如果时间为负数（转换时间在未来），也视为超时
+        if (minutesPassed < 0) {
+            throw new BusinessException(
+                "转换时间异常（时间戳在未来），无法撤销。请检查系统时间设置。"
+            );
+        }
+
         if (minutesPassed > 10) {
             throw new BusinessException(
                 String.format("转换已超过10分钟（已过%d分钟），无法撤销", minutesPassed)
@@ -829,7 +840,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         // 5. 恢复为FRESH状态
         batch.setStatus(MaterialBatchStatus.FRESH);
 
-        // 6. 在notes中记录撤销信息
+        // 6. 从notes中提取并恢复原始存储位置
+        String originalStorageLocation = extractOriginalStorageLocation(notes);
+        if (originalStorageLocation != null && !originalStorageLocation.equals("未知")) {
+            batch.setStorageLocation(originalStorageLocation);
+            log.info("恢复原始存储位置: {}", originalStorageLocation);
+        }
+
+        // 7. 在notes中记录撤销信息
         String undoNote = String.format("\n[%s] 撤销转冻品操作 - 操作人ID:%d, 原因: %s",
                 LocalDateTime.now().toString(),
                 request.getOperatorId(),
@@ -869,6 +887,37 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             }
         } catch (Exception e) {
             log.warn("解析转换时间失败: {}", e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * 从notes中提取原始存储位置
+     */
+    private String extractOriginalStorageLocation(String notes) {
+        if (notes == null || notes.isEmpty()) {
+            return null;
+        }
+
+        try {
+            // 查找最后一个转冻品记录中的原存储位置
+            // 格式: [2025-11-20T16:53:39.766951] 转冻品操作 - 操作人ID:1, 转换日期:2025-11-20, 原存储位置:A区-01货架
+            String[] lines = notes.split("\n");
+            for (int i = lines.length - 1; i >= 0; i--) {
+                String line = lines[i];
+                if (line.contains("转冻品操作") && line.contains("原存储位置:")) {
+                    int start = line.indexOf("原存储位置:") + 6;  // "原存储位置:".length() = 6
+                    // 查找下一个逗号或行尾
+                    int comma = line.indexOf(",", start);
+                    int end = comma > 0 ? comma : line.length();
+                    String location = line.substring(start, end).trim();
+                    log.info("从notes中提取到原存储位置: {}", location);
+                    return location;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析原存储位置失败: {}", e.getMessage());
         }
 
         return null;
