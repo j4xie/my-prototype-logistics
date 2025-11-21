@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
-import { Text, Avatar, List, Divider, Portal, Dialog, TextInput, HelperText, ActivityIndicator } from 'react-native-paper';
+import { Text, Avatar, List, Divider, Portal, Dialog, TextInput, HelperText, ActivityIndicator, Chip, Card } from 'react-native-paper';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigation } from '@react-navigation/native';
 import { userApiClient } from '../../services/api/userApiClient';
+import { platformAPI } from '../../services/api/platformApiClient';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
+import { logger } from '../../utils/logger';
+import { handleError } from '../../utils/errorHandler';
+
+// 创建ProfileScreen专用logger
+const profileLogger = logger.createContextLogger('ProfileScreen');
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
@@ -17,6 +23,52 @@ export default function ProfileScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
   const [showPasswords, setShowPasswords] = useState({ old: false, new: false, confirm: false });
+
+  // 统计数据状态
+  const [stats, setStats] = useState({
+    totalFactories: 0,
+    totalUsers: 0,
+    totalBatches: 0,
+    completedBatches: 0,
+    aiUsageThisWeek: 0,
+    todayProduction: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  const isPlatformAdmin = user?.userType === 'platform';
+
+  // 加载统计数据
+  useEffect(() => {
+    loadStatistics();
+  }, []);
+
+  const loadStatistics = async () => {
+    if (!isPlatformAdmin) return; // 目前仅为平台管理员加载统计
+
+    setLoadingStats(true);
+    try {
+      profileLogger.debug('加载个人中心统计数据');
+      const response = await platformAPI.getPlatformStatistics();
+
+      if (response.success && response.data) {
+        const data = response.data;
+        setStats({
+          totalFactories: data.totalFactories || 0,
+          totalUsers: data.totalUsers || 0,
+          totalBatches: data.totalBatches || 0,
+          completedBatches: data.completedBatches || 0,
+          aiUsageThisWeek: data.totalAIRequests || data.totalAIQuotaUsed || 0,
+          todayProduction: data.totalProductionToday || 0,
+        });
+        profileLogger.info('个人中心统计数据加载成功', { stats });
+      }
+    } catch (error) {
+      profileLogger.error('加载统计数据失败', error as Error);
+      // 静默失败，不影响个人中心其他功能
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const validatePassword = () => {
     if (!oldPassword || !newPassword || !confirmPassword) return { valid: false, message: '请填写所有字段' };
@@ -60,7 +112,6 @@ export default function ProfileScreen() {
 
   const displayName = user?.fullName || user?.username || '未知用户';
   const roleCode = user?.userType === 'platform' ? user?.platformUser?.role : (user?.factoryUser?.roleCode || user?.roleCode);
-  const isPlatformAdmin = user?.userType === 'platform';
 
   const getRoleName = (role: string | undefined) => {
     const roleMap: Record<string, string> = {
@@ -91,6 +142,49 @@ export default function ProfileScreen() {
                 </View>
             </View>
         </NeoCard>
+
+        {/* 统计数据卡片（仅平台管理员） */}
+        {isPlatformAdmin && (
+          <NeoCard style={styles.card} padding="m">
+            <View style={styles.statsHeader}>
+              <Text style={styles.sectionTitle}>数据概览</Text>
+              {loadingStats && <ActivityIndicator size="small" color={theme.colors.primary} />}
+            </View>
+            <View style={styles.statsGrid}>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: '#2196F3' }]}>{stats.totalFactories}</Text>
+                <Text style={styles.statLabel}>工厂数</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: '#4CAF50' }]}>{stats.totalUsers}</Text>
+                <Text style={styles.statLabel}>用户数</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: '#FF9800' }]}>{stats.totalBatches}</Text>
+                <Text style={styles.statLabel}>总批次</Text>
+              </View>
+            </View>
+            <Divider style={styles.divider} />
+            <View style={styles.statsGrid}>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: '#9C27B0' }]}>{stats.aiUsageThisWeek}</Text>
+                <Text style={styles.statLabel}>AI调用</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: '#FF6B35' }]}>{stats.todayProduction.toFixed(1)}t</Text>
+                <Text style={styles.statLabel}>今日产量</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: '#00BCD4' }]}>
+                  {stats.totalBatches > 0
+                    ? ((stats.completedBatches / stats.totalBatches) * 100).toFixed(0)
+                    : '0'}%
+                </Text>
+                <Text style={styles.statLabel}>完成率</Text>
+              </View>
+            </View>
+          </NeoCard>
+        )}
 
         {/* Info Sections */}
         <NeoCard style={styles.card} padding="m">
@@ -123,6 +217,8 @@ export default function ProfileScreen() {
         {/* Settings */}
         <NeoCard style={styles.card} padding="m">
             <Text style={styles.sectionTitle}>更多功能</Text>
+
+            {/* 修改密码 */}
             <TouchableOpacity style={styles.settingItem} onPress={() => setPasswordDialogVisible(true)}>
                 <View style={styles.settingLeft}>
                     <List.Icon icon="lock-reset" color={theme.colors.primary} />
@@ -131,10 +227,96 @@ export default function ProfileScreen() {
                 <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
             </TouchableOpacity>
             <Divider style={styles.divider} />
+
+            {/* 通知设置 */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => {
+                profileLogger.info('打开通知设置');
+                Alert.alert('通知设置', '推送通知功能即将上线');
+              }}
+            >
+                <View style={styles.settingLeft}>
+                    <List.Icon icon="bell-outline" color="#FF9800" />
+                    <Text style={styles.settingText}>通知设置</Text>
+                </View>
+                <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
+            </TouchableOpacity>
+            <Divider style={styles.divider} />
+
+            {/* 数据导出 */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => {
+                profileLogger.info('数据导出');
+                Alert.alert('数据导出', '可导出个人数据和操作记录');
+              }}
+            >
+                <View style={styles.settingLeft}>
+                    <List.Icon icon="download-outline" color="#4CAF50" />
+                    <Text style={styles.settingText}>数据导出</Text>
+                </View>
+                <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
+            </TouchableOpacity>
+            <Divider style={styles.divider} />
+
+            {/* 帮助文档 */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => {
+                profileLogger.info('查看帮助文档');
+                Alert.alert('帮助文档', '查看使用手册和常见问题解答');
+              }}
+            >
+                <View style={styles.settingLeft}>
+                    <List.Icon icon="help-circle-outline" color="#2196F3" />
+                    <Text style={styles.settingText}>帮助文档</Text>
+                </View>
+                <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
+            </TouchableOpacity>
+            <Divider style={styles.divider} />
+
+            {/* 隐私设置 */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => {
+                profileLogger.info('隐私设置');
+                Alert.alert('隐私设置', '管理数据使用和隐私权限');
+              }}
+            >
+                <View style={styles.settingLeft}>
+                    <List.Icon icon="shield-lock-outline" color="#9C27B0" />
+                    <Text style={styles.settingText}>隐私设置</Text>
+                </View>
+                <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
+            </TouchableOpacity>
+            <Divider style={styles.divider} />
+
+            {/* 意见反馈 */}
             <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('Feedback')}>
                 <View style={styles.settingLeft}>
-                    <List.Icon icon="message-alert-outline" color={theme.colors.primary} />
+                    <List.Icon icon="message-alert-outline" color="#00BCD4" />
                     <Text style={styles.settingText}>意见反馈</Text>
+                </View>
+                <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
+            </TouchableOpacity>
+            <Divider style={styles.divider} />
+
+            {/* 关于应用 */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => {
+                profileLogger.info('查看关于应用');
+                Alert.alert(
+                  '白垩纪食品溯源系统',
+                  '版本: 1.0.0\n\n© 2025 白垩纪科技\n\n为食品安全保驾护航',
+                  [{ text: '确定' }]
+                );
+              }}
+            >
+                <View style={styles.settingLeft}>
+                    <List.Icon icon="information-outline" color="#607D8B" />
+                    <Text style={styles.settingText}>关于应用</Text>
                 </View>
                 <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
             </TouchableOpacity>
@@ -194,4 +376,32 @@ const styles = StyleSheet.create({
   logoutButton: { marginTop: 16 },
   dialog: { backgroundColor: 'white', borderRadius: 12 },
   input: { marginBottom: 12, backgroundColor: 'white' },
+  // 统计数据样式
+  statsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+  },
 });

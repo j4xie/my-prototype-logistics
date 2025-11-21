@@ -290,7 +290,7 @@ public class ProcessingServiceImpl implements ProcessingService {
             materialBatch.setLastUsedAt(LocalDateTime.now());
             // 创建消耗记录
             MaterialConsumption consumptionRecord = new MaterialConsumption();
-            consumptionRecord.setId(java.util.UUID.randomUUID().toString());  // 设置ID (数据库不自动生成)
+            // ID使用自动生成策略，不需要手动设置
             consumptionRecord.setFactoryId(factoryId);  // 设置工厂ID (必填字段)
             consumptionRecord.setBatch(materialBatch);
             consumptionRecord.setBatchId(materialBatchId);  // 设置原料批次ID
@@ -882,9 +882,10 @@ public class ProcessingServiceImpl implements ProcessingService {
         long totalBatches = productionBatchRepository.countByFactoryIdAndCreatedAtAfter(factoryId, startDate);
         statistics.put("totalBatches", totalBatches);
         // 已完成批次统计
-        // TODO: Repository方法不存在，需要修复
-        // long completedBatches = productionBatchRepository.countByFactoryIdAndStatusAndCreatedAtAfter(factoryId, "已完成", startDate);
-        long completedBatches = 0;
+        long completedBatches = productionBatchRepository.countByFactoryIdAndStatusAndCreatedAtAfter(
+                factoryId,
+                ProductionBatchStatus.COMPLETED,
+                startDate);
         statistics.put("completedBatches", completedBatches);
         // 产量统计
         BigDecimal totalOutput = productionBatchRepository.calculateTotalOutputAfter(factoryId, startDate);
@@ -893,10 +894,8 @@ public class ProcessingServiceImpl implements ProcessingService {
         BigDecimal totalCost = productionBatchRepository.calculateTotalCostAfter(factoryId, startDate);
         statistics.put("totalCost", totalCost != null ? totalCost : BigDecimal.ZERO);
         // 效率统计
-        // TODO: Repository方法已注释，暂时使用默认值
-        // BigDecimal avgEfficiency = productionBatchRepository.calculateAverageEfficiency(factoryId, startDate);
-        BigDecimal avgEfficiency = BigDecimal.ZERO;
-        statistics.put("averageEfficiency", avgEfficiency);
+        BigDecimal avgEfficiency = productionBatchRepository.calculateAverageEfficiency(factoryId, startDate);
+        statistics.put("averageEfficiency", avgEfficiency != null ? avgEfficiency : BigDecimal.ZERO);
         return statistics;
     }
     public Map<String, Object> getQualityDashboard(String factoryId) {
@@ -1222,6 +1221,57 @@ public class ProcessingServiceImpl implements ProcessingService {
         log.info("成功获取{}个批次的对比数据", comparativeBatchesData.size());
 
         return comparativeBatchesData;
+    }
+
+    /**
+     * 获取指定时间范围内的批次成本摘要数据（用于周报告/月报告）
+     * 返回轻量级的批次成本摘要，不包含详细的业务链数据
+     */
+    @Override
+    public List<Map<String, Object>> getWeeklyBatchesCost(
+            String factoryId,
+            java.time.LocalDateTime startDate,
+            java.time.LocalDateTime endDate) {
+
+        log.info("获取周报告批次成本数据: factoryId={}, startDate={}, endDate={}",
+                 factoryId, startDate, endDate);
+
+        // 1. 查询时间范围内的所有批次
+        List<ProductionBatch> batches = productionBatchRepository
+                .findByFactoryIdAndCreatedAtBetween(factoryId, startDate, endDate);
+
+        log.info("查询到{}个批次", batches.size());
+
+        // 2. 为每个批次构建成本摘要（轻量级，不包含详细业务链数据）
+        return batches.stream()
+                .map(batch -> {
+                    Map<String, Object> batchCostSummary = new HashMap<>();
+
+                    // 基本信息
+                    batchCostSummary.put("batchId", batch.getId());
+                    batchCostSummary.put("batchNumber", batch.getBatchNumber());
+                    batchCostSummary.put("productName", batch.getProductName());
+                    batchCostSummary.put("status", batch.getStatus());
+                    batchCostSummary.put("createdAt", batch.getCreatedAt());
+
+                    // 成本汇总
+                    Map<String, Object> costSummary = new HashMap<>();
+                    costSummary.put("materialCost", batch.getMaterialCost() != null ? batch.getMaterialCost() : BigDecimal.ZERO);
+                    costSummary.put("laborCost", batch.getLaborCost() != null ? batch.getLaborCost() : BigDecimal.ZERO);
+                    costSummary.put("equipmentCost", batch.getEquipmentCost() != null ? batch.getEquipmentCost() : BigDecimal.ZERO);
+                    costSummary.put("otherCost", batch.getOtherCost() != null ? batch.getOtherCost() : BigDecimal.ZERO);
+                    costSummary.put("totalCost", batch.getTotalCost() != null ? batch.getTotalCost() : BigDecimal.ZERO);
+                    costSummary.put("unitCost", batch.getUnitCost() != null ? batch.getUnitCost() : BigDecimal.ZERO);
+                    batchCostSummary.put("costSummary", costSummary);
+
+                    // 生产指标
+                    batchCostSummary.put("actualQuantity", batch.getActualQuantity() != null ? batch.getActualQuantity() : BigDecimal.ZERO);
+                    batchCostSummary.put("yieldRate", batch.getYieldRate() != null ? batch.getYieldRate() : BigDecimal.ZERO);
+                    batchCostSummary.put("efficiency", batch.getEfficiency() != null ? batch.getEfficiency() : BigDecimal.ZERO);
+
+                    return batchCostSummary;
+                })
+                .collect(java.util.stream.Collectors.toList());
     }
 
     /**

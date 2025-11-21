@@ -236,6 +236,20 @@ public class PlatformServiceImpl implements PlatformService {
     }
 
     /**
+     * 获取平台报表
+     *
+     * @param reportType 报表类型
+     * @param period 统计周期
+     * @return 平台报表数据
+     */
+    @Override
+    public Object getPlatformReport(String reportType, String period) {
+        log.info("获取平台报表: reportType={}, period={}", reportType, period);
+        // 返回平台统计数据
+        return getDashboardStatistics();
+    }
+
+    /**
      * 判断系统健康状态
      *
      * @param activeFactories 活跃工厂数

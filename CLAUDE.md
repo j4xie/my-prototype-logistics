@@ -66,13 +66,13 @@ echo "Started with PID: $!"
 
 **项目阶段**: Phase 1-2 已完成 ✅ | Phase 3 核心完成 ✅🔨 | Phase 4 优化集成中 🔨
 
-**总体完成度**: 约 75-80%
+**总体完成度**: 约 **82-85%** (更新自 75-80%)
 
 ### 当前开发重点
 
 **前后端开发状态**：
-- ✅ **前端核心**: 24个页面完成 (Phase 1-2)
-- ✅ **后端核心**: 30+ API控制器，85% 核心功能已实现
+- ✅ **前端核心**: 75个页面完成 (Phase 1-2)
+- ✅ **后端核心**: 25个 Controllers，**397个已实现 API端点**（99%完成）
 - ✅ **数据同步**: 离线存储基础设施完成 (70%)
 - ✅ **AI分析**: DeepSeek成本分析完整实现 (95%)
 - 🔨 **推送通知**: 后端API完成，前端集成中 (60%)
@@ -102,13 +102,22 @@ echo "Started with PID: $!"
 
 ### 📚 文档索引
 
-**主要 PRD 文档**:
-- 📘 **[PRD-白垩纪食品溯源系统-完整版.md](./docs/prd/PRD-白垩纪食品溯源系统-完整版.md)** (v5.0) - 超大完整PRD，包含所有功能模块和业务流程
-- 📊 [PRD-完整业务流程与界面设计.html](./docs/prd/PRD-完整业务流程与界面设计.html) - 可视化业务流程图
+**核心 PRD 文档** (v3.0 & v5.0 - 2025-11-21 更新):
+- 📋 **[PRD-功能与文件映射-v3.0.md](./docs/prd/PRD-功能与文件映射-v3.0.md)** - 完整API端点映射 (397已实现 + 180规划)
+- 📋 **[PRD-功能与文件映射-v3.0.html](./docs/prd/PRD-功能与文件映射-v3.0.html)** - 交互式HTML版本（推荐使用）
+- 📘 **[PRD-完整业务流程与界面设计-v5.0.md](./docs/prd/PRD-完整业务流程与界面设计-v5.0.md)** - 业务流程、数据模型、权限体系
+- 📘 **[PRD-完整业务流程与界面设计-v5.0.html](./docs/prd/PRD-完整业务流程与界面设计-v5.0.html)** - 交互式HTML版本（推荐使用）
+- 📋 **[PENDING_FEATURES_TODO.md](./docs/prd/PENDING_FEATURES_TODO.md)** - Phase 3-5 待实现功能清单
+
+**项目快速入门指南**:
+- 🚀 [QUICK_START.md](./QUICK_START.md) - 5分钟快速上手
+- 🧭 [INTEGRATION_TEST_GUIDE.md](./INTEGRATION_TEST_GUIDE.md) - 理解系统架构
+- 📊 [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - 深入技术细节
+- ✅ [COMPLETION_REPORT.md](./COMPLETION_REPORT.md) - 全面了解项目
+
+**其他参考文档**:
 - 🔐 [角色权限和页面访问速查表.md](./docs/prd/角色权限和页面访问速查表.md) - 快速查找权限规则
 - 🧭 [导航架构实现指南.md](./docs/prd/导航架构实现指南.md) - 导航开发代码示例
-
-**后端需求文档**:
 - 🔧 [`backend/rn-update-tableandlogic.md`](./backend/rn-update-tableandlogic.md) - 前端提出的API和数据库需求清单
 
 **历史归档文档** (已归档，仅供参考):

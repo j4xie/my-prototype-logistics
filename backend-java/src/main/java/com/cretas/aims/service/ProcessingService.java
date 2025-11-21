@@ -147,6 +147,20 @@ public interface ProcessingService {
     // ========== 时间范围分析 ==========
 
     /**
+     * 获取指定时间范围内的批次成本摘要数据（用于周报告/月报告）
+     * 返回轻量级的批次成本摘要，不包含详细的业务链数据
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始时间
+     * @param endDate 结束时间
+     * @return 批次成本摘要数据列表（包含基本信息、成本、指标等）
+     */
+    List<Map<String, Object>> getWeeklyBatchesCost(
+            String factoryId,
+            java.time.LocalDateTime startDate,
+            java.time.LocalDateTime endDate);
+
+    /**
      * 获取时间范围内的批次成本分析数据
      *
      * @param factoryId 工厂ID

@@ -69,6 +69,42 @@ export default function AttendanceStatisticsScreen() {
     loadStats();
   }, [timePeriod, viewDimension]);
 
+  // 根据时间周期生成日期范围
+  const getDateRange = (): { startDate: string; endDate: string } => {
+    const today = new Date();
+    let startDate: Date;
+    let endDate: Date = today;
+
+    switch (timePeriod) {
+      case 'today':
+        startDate = today;
+        break;
+      case 'week':
+        // 本周（周一到今天）
+        const dayOfWeek = today.getDay();
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 周日是0，调整为从周一开始
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - diff);
+        break;
+      case 'month':
+        // 本月
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        break;
+      case 'custom':
+        // 自定义，默认最近30天
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 30);
+        break;
+      default:
+        startDate = today;
+    }
+
+    return {
+      startDate: startDate.toISOString().split('T')[0], // YYYY-MM-DD格式
+      endDate: endDate.toISOString().split('T')[0],
+    };
+  };
+
   const loadStats = async () => {
     try {
       setLoading(true);
@@ -100,11 +136,20 @@ export default function AttendanceStatisticsScreen() {
   const loadPersonalStats = async () => {
     try {
       // 获取个人工时统计
-      const response = await timeStatsApiClient.getEmployeeTimeStats({
-        userId: user?.id,
-        factoryId: user?.factoryId,
-        period: timePeriod,
-      });
+      const userId = user?.id;
+      if (!userId) {
+        throw new Error('用户ID不存在');
+      }
+
+      const dateRange = getDateRange();
+      const response = await timeStatsApiClient.getEmployeeTimeStats(
+        Number(userId),
+        {
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
+        },
+        user?.factoryId
+      );
 
       if (response.data) {
         const data = response.data;
@@ -145,11 +190,16 @@ export default function AttendanceStatisticsScreen() {
   const loadDepartmentStats = async () => {
     try {
       // 获取部门工时统计
-      const response = await timeStatsApiClient.getDepartmentTimeStats({
-        department: user?.factoryUser?.department || 'processing',
-        factoryId: user?.factoryId,
-        period: timePeriod,
-      });
+      const department = user?.factoryUser?.department || 'processing';
+      const dateRange = getDateRange();
+      const response = await timeStatsApiClient.getDepartmentTimeStats(
+        department,
+        {
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
+        },
+        user?.factoryId
+      );
 
       if (response.data) {
         const data = response.data;
