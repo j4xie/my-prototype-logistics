@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>白垩纪食品溯源系统 - 功能与文件映射 v1.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 50px 40px;
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin: 40px 0 25px 0;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.6em;
+            margin: 35px 0 20px 0;
+            padding-left: 15px;
+            border-left: 5px solid #764ba2;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.3em;
+            margin: 25px 0 15px 0;
+        }
+
+        p {
+            margin: 15px 0;
+            text-align: justify;
+        }
+
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: "Courier New", monospace;
+            color: #e83e8c;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: "Courier New", monospace;
+            line-height: 1.6;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:hover {
+            background: #e9ecef;
+        }
+
+        .footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+
+            h2 {
+                font-size: 1.6em;
+            }
+
+            h3 {
+                font-size: 1.3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗂️ 白垩纪食品溯源系统</h1>
+            <div class="subtitle">功能与文件映射文档 v1.0</div>
+            <div style="margin-top: 20px; font-size: 0.95em; opacity: 0.85;">
+                完整的功能点到实现文件的映射关系
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- 第9章：功能与文件映射 -->
+            <section id="chapter9" style="margin-bottom: 60px;">
+                <h2 style="font-size: 2.5em; color: #667eea; border-bottom: 3px solid #667eea; padding-bottom: 15px; margin-bottom: 40px;">
+                    第9章：功能与文件映射
+                </h2>
+
+                <div class="info-box" style="margin-bottom: 40px;">
+                    <p style="font-size: 1.1em; line-height: 2;">
+                        <strong>章节目的</strong>：本章从功能视角出发，详细梳理系统中每个核心功能所涉及的前端和后端文件、API接口及数据库表，为开发人员提供清晰的技术参考。<br><br>
+
+                        <strong>阅读说明</strong>：<br>
+                        • 文件路径采用项目相对路径格式<br>
+                        • 核心功能列出完整文件，辅助功能列出核心文件<br>
+                        • API端点格式：<code>HTTP方法 /路径</code><br>
+                        • 数据库表名对应实际MySQL表名<br>
+                        • 重要参数：列出关键API请求/响应参数
+                    </p>
+                </div>
+
+                <!-- 章节目录 -->
+                <div id="chapter9-toc" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 30px; border-radius: 12px; margin-bottom: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <h3 style="border: none; padding: 0; margin-bottom: 25px; color: #2c3e50; text-align: center; font-size: 1.8em;">
+                        📑 章节目录
+                    </h3>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <!-- 第一列 -->
+                        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <h4 style="color: #667eea; margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #667eea;">
+                                9.1 认证与权限模块
+                            </h4>
+                            <ul style="list-style: none; padding-left: 0; line-height: 2.2;">
+                                <li>• <a href="#section-9-1-1" style="color: #555; text-decoration: none;">9.1.1 统一登录</a></li>
+                                <li>• <a href="#section-9-1-2" style="color: #555; text-decoration: none;">9.1.2 用户注册</a></li>
+                                <li>• <a href="#section-9-1-3" style="color: #555; text-decoration: none;">9.1.3 白名单管理</a></li>
+                                <li>• <a href="#section-9-1-4" style="color: #555; text-decoration: none;">9.1.4 权限验证</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- 第二列 -->
+                        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <h4 style="color: #667eea; margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #667eea;">
+                                9.2 考勤管理模块
+                            </h4>
+                            <ul style="list-style: none; padding-left: 0; line-height: 2.2;">
+                                <li>• <a href="#section-9-2-1" style="color: #555; text-decoration: none;">9.2.1 员工打卡</a></li>
+                                <li>• <a href="#section-9-2-2" style="color: #555; text-decoration: none;">9.2.2 工时统计</a></li>
+                            </ul>
+
+                            <h4 style="color: #667eea; margin-top: 20px; padding-bottom: 10px; border-bottom: 2px solid #667eea;">
+                                9.5 平台管理模块
+                            </h4>
+                            <ul style="list-style: none; padding-left: 0; line-height: 2.2;">
+                                <li>• <a href="#section-9-5-1" style="color: #555; text-decoration: none;">9.5.1 工厂管理</a></li>
+                                <li>• <a href="#section-9-5-2" style="color: #555; text-decoration: none;">9.5.2 AI配额管理</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- 第三列 -->
+                        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <h4 style="color: #667eea; margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #667eea;">
+                                9.3 生产加工模块
+                            </h4>
+                            <ul style="list-style: none; padding-left: 0; line-height: 2.2;">
+                                <li><strong>9.3.1 批次管理</strong></li>
+                                <li style="padding-left: 15px;">• <a href="#section-9-3-1-1" style="color: #555; text-decoration: none;">批次列表</a></li>
+                                <li style="padding-left: 15px;">• <a href="#section-9-3-1-2" style="color: #555; text-decoration: none;">批次创建</a></li>
+                                <li style="padding-left: 15px;">• <a href="#section-9-3-1-3" style="color: #555; text-decoration: none;">批次详情</a></li>
+                                <li><strong>9.3.2 原材料管理</strong></li>
+                                <li style="padding-left: 15px;">• <a href="#section-9-3-2-1" style="color: #555; text-decoration: none;">原材料入库</a></li>
+                                <li style="padding-left: 15px;">• <a href="#section-9-3-2-2" style="color: #555; text-decoration: none;">原材料批次管理</a></li>
+                                <li>• <a href="#section-9-3-3" style="color: #555; text-decoration: none;">9.3.3 生产计划</a></li>
+                                <li>• <a href="#section-9-3-4" style="color: #555; text-decoration: none;">9.3.4 质检管理</a></li>
+                                <li>• <a href="#section-9-3-5" style="color: #555; text-decoration: none;">9.3.5 成本分析</a></li>
+                                <li>• <a href="#section-9-3-6" style="color: #555; text-decoration: none;">9.3.6 AI智能分析</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- 第四列 -->
+                        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                            <h4 style="color: #667eea; margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #667eea;">
+                                9.4 基础数据管理模块
+                            </h4>
+                            <ul style="list-style: none; padding-left: 0; line-height: 2.2;">
+                                <li>• <a href="#section-9-4-1" style="color: #555; text-decoration: none;">9.4.1 产品类型管理</a></li>
+                                <li>• <a href="#section-9-4-2" style="color: #555; text-decoration: none;">9.4.2 原材料类型管理</a></li>
+                                <li>• <a href="#section-9-4-3" style="color: #555; text-decoration: none;">9.4.3 工种管理</a></li>
+                                <li>• <a href="#section-9-4-4" style="color: #555; text-decoration: none;">9.4.4 供应商管理</a></li>
+                                <li>• <a href="#section-9-4-5" style="color: #555; text-decoration: none;">9.4.5 客户管理</a></li>
+                                <li>• <a href="#section-9-4-6" style="color: #555; text-decoration: none;">9.4.6 用户管理</a></li>
+                                <li>• <a href="#section-9-4-7" style="color: #555; text-decoration: none;">9.4.7 原材料规格配置 ✨</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 25px; padding: 15px; background: rgba(255,255,255,0.7); border-radius: 6px; text-align: center;">
+                        <p style="margin: 0; color: #666; font-size: 0.95em;">
+                            💡 <strong>提示</strong>：点击目录项可快速跳转到对应章节 | 本章共包含 <strong>26个功能点</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <h3>9.1 认证与权限模块（Authentication & Authorization）</h3>
+
+                <h4 id="section-9-1-1">9.1.1 统一登录（Unified Login） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：支持平台管理员和工厂用户的统一登录入口，系统自动识别用户类型并路由到对应界面。支持JWT双token机制、设备绑定验证。
+                    </p>
+
+                    <div class="highlight-box" style="background: #f0f7ff; border-left: 4px solid #3b82f6; margin: 15px 0;">
+                        <p style="margin: 0; padding: 15px; line-height: 2;">
+                            <strong>🔑 重要参数</strong>：<br>
+                            <strong>请求参数</strong>（POST /api/mobile/auth/unified-login）：<br>
+                            • <code>username</code>: string - 用户名（必填）<br>
+                            • <code>password</code>: string - 密码（必填）<br>
+                            • <code>deviceId</code>: string - 设备唯一标识（必填，用于设备绑定）<br>
+                            • <code>deviceInfo</code>: object - 设备信息（型号、OS版本等，选填）<br><br>
+
+                            <strong>响应参数</strong>：<br>
+                            • <code>accessToken</code>: string - 访问令牌（有效期2小时）<br>
+                            • <code>refreshToken</code>: string - 刷新令牌（有效期7天）<br>
+                            • <code>userType</code>: "platform_admin" | "factory_user" - 用户类型<br>
+                            • <code>userId</code>: string - 用户ID<br>
+                            • <code>factoryId</code>: string - 工厂ID（工厂用户专有）<br>
+                            • <code>role</code>: string - 角色（8级RBAC角色之一）<br>
+                            • <code>permissions</code>: string[] - 权限列表
+                        </p>
+                    </div>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/auth/EnhancedLoginScreen.tsx</code> - 登录界面主组件</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/auth/authService.ts</code> - 认证服务（登录、登出、token管理）</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/mobileApiClient.ts</code> - 移动端API客户端</li>
+                        <li><code>frontend/CretasFoodTrace/src/store/authStore.ts</code> - 认证状态管理（Zustand）</li>
+                        <li><code>frontend/CretasFoodTrace/src/store/permissionStore.ts</code> - 权限状态管理</li>
+                        <li><code>frontend/CretasFoodTrace/src/navigation/MainNavigator.tsx</code> - 登录后导航路由</li>
+                        <li><code>frontend/CretasFoodTrace/src/types/auth.ts</code> - 认证相关类型定义</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/SystemController.java</code> - 移动端认证控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/AuthService.java</code> - 认证业务逻辑</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/UserService.java</code> - 用户服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/PlatformAdminService.java</code> - 平台管理员服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/UserRepository.java</code> - 用户数据仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/PlatformAdminRepository.java</code> - 平台管理员仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/SessionRepository.java</code> - 会话仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/User.java</code> - 用户实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/PlatformAdmin.java</code> - 平台管理员实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/Session.java</code> - 会话实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/security/JwtUtil.java</code> - JWT工具类</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/security/JwtAuthenticationFilter.java</code> - JWT认证过滤器</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>POST /api/mobile/auth/unified-login</code> - 统一登录接口</li>
+                        <li><code>POST /api/mobile/auth/refresh-token</code> - 刷新token接口</li>
+                        <li><code>POST /api/mobile/auth/logout</code> - 登出接口</li>
+                        <li><code>GET /api/mobile/auth/verify-token</code> - 验证token有效性</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>user</code> - 工厂用户表（存储8级角色）</li>
+                        <li><code>platform_admin</code> - 平台管理员表</li>
+                        <li><code>session</code> - 会话管理表（记录设备信息、登录时间）</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-1-2">9.1.2 用户注册（User Registration） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：两阶段注册流程，第一阶段手机号验证和白名单检查，第二阶段完成用户信息填写和账号创建。
+                    </p>
+
+                    <div class="highlight-box" style="background: #f0f7ff; border-left: 4px solid #3b82f6; margin: 15px 0;">
+                        <p style="margin: 0; padding: 15px; line-height: 2;">
+                            <strong>🔑 重要参数</strong>：<br>
+                            <strong>阶段一请求</strong>（POST /api/mobile/auth/register-phase-one）：<br>
+                            • <code>phoneNumber</code>: string - 手机号（必填，格式：+8613800000000）<br>
+                            • <code>verificationType</code>: "registration" - 验证类型（必填）<br><br>
+
+                            <strong>阶段一响应</strong>：<br>
+                            • <code>tempToken</code>: string - 临时令牌（有效期15分钟）<br>
+                            • <code>whitelistStatus</code>: boolean - 是否在白名单中<br>
+                            • <code>factoryId</code>: string - 所属工厂ID<br><br>
+
+                            <strong>阶段二请求</strong>（POST /api/mobile/auth/register-phase-two）：<br>
+                            • <code>tempToken</code>: string - 阶段一获取的临时令牌（必填）<br>
+                            • <code>username</code>: string - 用户名（必填，3-20字符）<br>
+                            • <code>password</code>: string - 密码（必填，8位以上含大小写+数字）<br>
+                            • <code>fullName</code>: string - 真实姓名（必填）<br>
+                            • <code>department</code>: string - 部门（必填）<br>
+                            • <code>workType</code>: string - 工种（选填）<br><br>
+
+                            <strong>阶段二响应</strong>：<br>
+                            • <code>userId</code>: string - 新创建的用户ID<br>
+                            • <code>accessToken</code>: string - 访问令牌<br>
+                            • <code>refreshToken</code>: string - 刷新令牌
+                        </p>
+                    </div>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/auth/RegisterScreen.tsx</code> - 注册界面主组件</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/auth/authService.ts</code> - 注册服务</li>
+                        <li><code>frontend/CretasFoodTrace/src/hooks/useRegister.ts</code> - 注册逻辑Hook</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/SystemController.java</code> - 注册控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/RegistrationService.java</code> - 注册业务逻辑</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/WhitelistService.java</code> - 白名单验证服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/UserWhitelist.java</code> - 白名单实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>POST /api/mobile/auth/register-phase-one</code> - 第一阶段：手机号验证</li>
+                        <li><code>POST /api/mobile/auth/register-phase-two</code> - 第二阶段：完成注册</li>
+                        <li><code>POST /api/mobile/auth/verify-phone</code> - 验证码验证</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>user_whitelist</code> - 用户白名单表</li>
+                        <li><code>user</code> - 新用户记录</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-1-3">9.1.3 白名单管理（Whitelist Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：工厂管理员管理用户注册白名单，包括添加、编辑、删除、查询白名单记录，支持有效期设置。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/management/WhitelistManagementScreen.tsx</code> - 白名单管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/whitelistApiClient.ts</code> - 白名单API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/WhitelistController.java</code> - 白名单控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/WhitelistService.java</code> - 白名单服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/WhitelistRepository.java</code> - 白名单仓库</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/whitelist</code> - 获取白名单列表</li>
+                        <li><code>POST /api/mobile/{factoryId}/whitelist</code> - 添加白名单</li>
+                        <li><code>PUT /api/mobile/{factoryId}/whitelist/{id}</code> - 更新白名单</li>
+                        <li><code>DELETE /api/mobile/{factoryId}/whitelist/{id}</code> - 删除白名单</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>user_whitelist</code> - 白名单表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-1-4">9.1.4 权限验证（Permission Validation） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：基于8级RBAC角色系统的权限验证，前端路由守卫和后端接口拦截。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/navigation/PermissionGuard.tsx</code> - 权限路由守卫</li>
+                        <li><code>frontend/CretasFoodTrace/src/store/permissionStore.ts</code> - 权限状态管理</li>
+                        <li><code>frontend/CretasFoodTrace/src/utils/permissions.ts</code> - 权限工具函数</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/security/PermissionInterceptor.java</code> - 权限拦截器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/security/annotation/RequirePermission.java</code> - 权限注解</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/PermissionService.java</code> - 权限服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/UserRoleHistory.java</code> - 角色变更历史</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/auth/permissions</code> - 获取当前用户权限</li>
+                        <li><code>GET /api/mobile/auth/role-hierarchy</code> - 获取角色层级</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>user</code> - 用户角色字段（role）</li>
+                        <li><code>user_role_history</code> - 角色变更历史</li>
+                    </ul>
+                </div>
+
+                <h3>9.2 考勤管理模块（Attendance Management）</h3>
+
+                <h4 id="section-9-2-1">9.2.1 员工打卡（Time Clock） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：员工上下班打卡功能，支持GPS定位验证、拍照打卡、自动计算工时。
+                    </p>
+
+                    <div class="highlight-box" style="background: #f0f7ff; border-left: 4px solid #3b82f6; margin: 15px 0;">
+                        <p style="margin: 0; padding: 15px; line-height: 2;">
+                            <strong>🔑 重要参数</strong>：<br>
+                            <strong>上班打卡请求</strong>（POST /api/mobile/{factoryId}/timeclock/clock-in）：<br>
+                            • <code>workTypeId</code>: string - 工种ID（必填）<br>
+                            • <code>location</code>: object - GPS坐标（必填）<br>
+                            &nbsp;&nbsp;├─ <code>latitude</code>: number - 纬度<br>
+                            &nbsp;&nbsp;└─ <code>longitude</code>: number - 经度<br>
+                            • <code>photo</code>: string - 打卡照片URL（选填）<br>
+                            • <code>notes</code>: string - 备注（选填）<br><br>
+
+                            <strong>上班打卡响应</strong>：<br>
+                            • <code>sessionId</code>: string - 工作会话ID<br>
+                            • <code>clockInTime</code>: string - 打卡时间（ISO 8601格式）<br>
+                            • <code>isWithinGeofence</code>: boolean - 是否在地理围栏内<br>
+                            • <code>distanceFromFactory</code>: number - 距工厂距离（米）<br><br>
+
+                            <strong>下班打卡请求</strong>（POST /api/mobile/{factoryId}/timeclock/clock-out）：<br>
+                            • <code>sessionId</code>: string - 工作会话ID（必填）<br>
+                            • <code>location</code>: object - GPS坐标（必填）<br>
+                            • <code>photo</code>: string - 下班照片URL（选填）<br><br>
+
+                            <strong>下班打卡响应</strong>：<br>
+                            • <code>sessionId</code>: string - 工作会话ID<br>
+                            • <code>clockOutTime</code>: string - 下班时间<br>
+                            • <code>totalHours</code>: number - 总工时（小时）<br>
+                            • <code>wages</code>: number - 计算工资（元）
+                        </p>
+                    </div>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/attendance/TimeClockScreen.tsx</code> - 打卡界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/timeclockApiClient.ts</code> - 打卡API客户端</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/attendanceApiClient.ts</code> - 考勤API客户端</li>
+                        <li><code>frontend/CretasFoodTrace/src/hooks/useLocation.ts</code> - GPS定位Hook</li>
+                        <li><code>frontend/CretasFoodTrace/src/hooks/useCamera.ts</code> - 相机Hook</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/TimeClockController.java</code> - 打卡控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/TimeClockService.java</code> - 打卡业务逻辑</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/WorkSessionService.java</code> - 工作会话服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/EmployeeWorkSessionRepository.java</code> - 工作会话仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/EmployeeWorkSession.java</code> - 工作会话实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/util/GeoLocationUtil.java</code> - 地理位置工具</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>POST /api/mobile/{factoryId}/timeclock/clock-in</code> - 上班打卡</li>
+                        <li><code>POST /api/mobile/{factoryId}/timeclock/clock-out</code> - 下班打卡</li>
+                        <li><code>GET /api/mobile/{factoryId}/timeclock/status</code> - 获取打卡状态</li>
+                        <li><code>GET /api/mobile/{factoryId}/timeclock/today</code> - 今日打卡记录</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>employee_work_session</code> - 工作会话表（记录打卡时间、GPS坐标）</li>
+                        <li><code>work_type</code> - 工种表（关联打卡记录）</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-2-2">9.2.2 工时统计（Attendance Statistics） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：查询员工工时统计，支持按日/周/月查询，自动计算总工时、加班工时、出勤率。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/attendance/AttendanceStatisticsScreen.tsx</code> - 工时统计界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/timeStatsApiClient.ts</code> - 统计API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/TimeStatsController.java</code> - 统计控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/AttendanceStatsService.java</code> - 统计服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/EmployeeWorkSessionRepository.java</code> - 查询仓库</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/attendance/stats/daily</code> - 日统计</li>
+                        <li><code>GET /api/mobile/{factoryId}/attendance/stats/weekly</code> - 周统计</li>
+                        <li><code>GET /api/mobile/{factoryId}/attendance/stats/monthly</code> - 月统计</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>employee_work_session</code> - 基础数据源</li>
+                    </ul>
+                </div>
+
+                <h3>9.3 生产加工模块（Processing Module）</h3>
+
+                <h4>9.3.1 批次管理（Batch Management）</h4>
+
+                <h5 id="section-9-3-1-1">9.3.1.1 批次列表（Batch List） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h5>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：查询和展示生产批次列表，支持筛选（状态、日期）和搜索（批次号、产品名）。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/BatchListScreen.tsx</code> - 批次列表界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/processingApiClient.ts</code> - 加工API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/ProcessingController.java</code> - 批次控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/ProcessingBatchService.java</code> - 批次服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/ProcessingBatchRepository.java</code> - 批次仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/ProcessingBatch.java</code> - 批次实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/processing/batches</code> - 获取批次列表</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/batches/search</code> - 搜索批次</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>processing_batch</code> - 生产批次表</li>
+                        <li><code>product_type</code> - 产品类型表（关联查询）</li>
+                    </ul>
+                </div>
+
+                <h5 id="section-9-3-1-2">9.3.1.2 批次创建（Create Batch） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h5>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：创建新的生产批次，自动生成批次号（格式：FISH_YYYY_NNN），关联生产计划，记录负责人和预期产量。
+                    </p>
+
+                    <div class="highlight-box" style="background: #f0f7ff; border-left: 4px solid #3b82f6; margin: 15px 0;">
+                        <p style="margin: 0; padding: 15px; line-height: 2;">
+                            <strong>🔑 重要参数</strong>：<br>
+                            <strong>请求参数</strong>（POST /api/mobile/{factoryId}/processing/batches）：<br>
+                            • <code>productTypeId</code>: string - 产品类型ID（必填）<br>
+                            • <code>productionPlanId</code>: string - 生产计划ID（选填，关联计划）<br>
+                            • <code>plannedQuantity</code>: number - 计划产量（必填，单位：kg）<br>
+                            • <code>responsibleUserId</code>: string - 负责人用户ID（必填）<br>
+                            • <code>expectedStartDate</code>: string - 预计开始日期（必填，ISO 8601格式）<br>
+                            • <code>expectedEndDate</code>: string - 预计结束日期（选填）<br>
+                            • <code>notes</code>: string - 备注（选填，最多500字符）<br><br>
+
+                            <strong>响应参数</strong>：<br>
+                            • <code>batchId</code>: string - 新创建的批次ID<br>
+                            • <code>batchNumber</code>: string - 自动生成的批次号（如：FISH_2025_001）<br>
+                            • <code>status</code>: "pending" - 初始状态<br>
+                            • <code>createdAt</code>: string - 创建时间<br>
+                            • <code>traceabilityCode</code>: string - 溯源码（用于二维码生成）
+                        </p>
+                    </div>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/CreateBatchScreen.tsx</code> - 批次创建界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/components/processing/ProductTypeSelector.tsx</code> - 产品类型选择器</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/processingApiClient.ts</code> - API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/ProcessingController.java</code> - 批次控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/ProcessingBatchService.java</code> - 批次创建服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/BatchNumberGeneratorService.java</code> - 批次号生成服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/ProductionPlanRepository.java</code> - 生产计划仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/ProductionPlan.java</code> - 生产计划实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>POST /api/mobile/{factoryId}/processing/batches</code> - 创建批次</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/generate-batch-number</code> - 生成批次号</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>processing_batch</code> - 新批次记录</li>
+                        <li><code>production_plan</code> - 关联生产计划</li>
+                    </ul>
+                </div>
+
+                <h5 id="section-9-3-1-3">9.3.1.3 批次详情（Batch Detail） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h5>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：查看批次完整信息，包括基本信息、原材料消耗、质检记录、成本分析、操作日志。支持批次状态更新（开始生产、完成生产）。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/BatchDetailScreen.tsx</code> - 批次详情界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/components/processing/MaterialConsumptionList.tsx</code> - 原材料消耗列表</li>
+                        <li><code>frontend/CretasFoodTrace/src/components/processing/QualityRecordList.tsx</code> - 质检记录列表</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/ProcessingController.java</code> - 批次控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/ProcessingBatchService.java</code> - 批次详情服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/MaterialBatch.java</code> - 原材料批次实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/QualityInspection.java</code> - 质检记录实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/processing/batches/{batchId}</code> - 获取批次详情</li>
+                        <li><code>PUT /api/mobile/{factoryId}/processing/batches/{batchId}/start</code> - 开始生产</li>
+                        <li><code>PUT /api/mobile/{factoryId}/processing/batches/{batchId}/complete</code> - 完成生产</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong> <span style="color: #667eea; font-weight: 600;">✨ 更新于 2025-11-05</span>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>processing_batches</code> - 批次主表 ✅ 优化版
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>核心字段</strong>: batch_number, product_name, quantity, unit, start_time, end_time, status</li>
+                                <li>💰 <strong>成本字段</strong>: material_cost, labor_cost, equipment_cost, other_cost, total_cost</li>
+                                <li>🔗 <strong>关联关系</strong>: Factory, User (supervisor), BatchWorkSession, BatchEquipmentUsage</li>
+                                <li>📝 <strong>状态管理</strong>: pending, processing, completed, cancelled</li>
+                            </ul>
+                        </li>
+                        <li><code>production_batches</code> - 生产批次表 ✅ 企业版（更新于 2025-11-05 13:30）
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>生产字段</strong>: batch_number, production_plan_id, product_type_id, planned_quantity, actual_quantity, good_quantity, defect_quantity</li>
+                                <li>🏭 <strong>生产线字段</strong>: equipment_id, equipment_name, supervisor_id, supervisor_name, worker_count, work_duration_minutes</li>
+                                <li>💰 <strong>成本字段</strong>: material_cost, labor_cost, equipment_cost, other_cost, total_cost, unit_cost</li>
+                                <li>📈 <strong>指标字段</strong>: yield_rate (良品率), efficiency (效率)</li>
+                                <li>🎯 <strong>质量状态</strong>: PENDING_INSPECTION, PASSED, FAILED, PARTIAL_PASS</li>
+                                <li>🔧 <strong>自动计算</strong>: calculateMetrics() 方法自动计算总成本、单位成本、良品率、效率</li>
+                                <li>📈 <strong>数据库索引</strong>: factory_id, batch_number, status, production_plan_id</li>
+                            </ul>
+                        </li>
+                        <li><code>batch_work_sessions</code> - 批次工作会话关联 ✅ 优化版（更新于 2025-11-05 13:40）
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>核心字段</strong>: batch_id (Long), work_session_id, employee_id, work_minutes, labor_cost</li>
+                                <li>🔗 <strong>关联关系</strong>: ProcessingBatch, EmployeeWorkSession, User</li>
+                                <li>📈 <strong>索引</strong>: batch_id, work_session_id</li>
+                            </ul>
+                        </li>
+                        <li><code>batch_equipment_usage</code> - 批次设备使用记录 ✅ 优化版（更新于 2025-11-05 13:40）
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>核心字段</strong>: batch_id (Long), equipment_id, start_time, end_time, usage_hours, power_consumption, equipment_cost</li>
+                                <li>🔗 <strong>关联关系</strong>: ProcessingBatch, FactoryEquipment</li>
+                                <li>📈 <strong>索引</strong>: batch_id, equipment_id</li>
+                            </ul>
+                        </li>
+                        <li><code>material_batches</code> - 原材料批次（消耗记录）</li>
+                        <li><code>quality_inspection</code> - 质检记录</li>
+                    </ul>
+                </div>
+
+                <h4>9.3.2 原材料管理（Material Management）</h4>
+
+                <h5 id="section-9-3-2-1">9.3.2.1 原材料入库（Material Receipt） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h5>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：记录原材料入库信息，扫描供应商二维码获取供应商信息，记录原材料类型、数量、单价、照片，自动生成原材料批次号。
+                    </p>
+
+                    <div class="highlight-box" style="background: #f0f7ff; border-left: 4px solid #3b82f6; margin: 15px 0;">
+                        <p style="margin: 0; padding: 15px; line-height: 2;">
+                            <strong>🔑 重要参数</strong>：<br>
+                            <strong>请求参数</strong>（POST /api/mobile/{factoryId}/processing/material-receipt）：<br>
+                            • <code>supplierId</code>: string - 供应商ID（必填，可扫码获取）<br>
+                            • <code>materialTypeId</code>: string - 原材料类型ID（必填）<br>
+                            • <code>quantity</code>: number - 入库数量（必填，单位：kg）<br>
+                            • <code>unitPrice</code>: number - 单价（必填，单位：元/kg）<br>
+                            • <code>receiptDate</code>: string - 入库日期（必填，ISO 8601格式）<br>
+                            • <code>expiryDate</code>: string - 保质期（选填）<br>
+                            • <code>qualityCertificate</code>: string - 质检证书URL（选填）<br>
+                            • <code>photos</code>: string[] - 原材料照片URLs（选填，最多5张）<br>
+                            • <code>notes</code>: string - 备注（选填）<br><br>
+
+                            <strong>响应参数</strong>：<br>
+                            • <code>materialBatchId</code>: string - 原材料批次ID<br>
+                            • <code>batchNumber</code>: string - 批次号（自动生成）<br>
+                            • <code>totalCost</code>: number - 总成本（quantity × unitPrice）<br>
+                            • <code>remainingQuantity</code>: number - 剩余数量（初始等于quantity）<br>
+                            • <code>status</code>: "in_stock" - 初始状态
+                        </p>
+                    </div>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/MaterialReceiptScreen.tsx</code> - 入库界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/components/processing/MaterialTypeSelector.tsx</code> - 原材料类型选择器</li>
+                        <li><code>frontend/CretasFoodTrace/src/components/processing/SupplierScanner.tsx</code> - 供应商扫码组件</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/materialApiClient.ts</code> - 原材料API客户端</li>
+                        <li><code>frontend/CretasFoodTrace/src/hooks/useCamera.ts</code> - 相机Hook（拍照）</li>
+                        <li><code>frontend/CretasFoodTrace/src/hooks/useQRScanner.ts</code> - 二维码扫描Hook</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/MaterialBatchController.java</code> - 原材料批次控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/MaterialBatchService.java</code> - 原材料批次服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/MaterialReceiptService.java</code> - 入库服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/SupplierService.java</code> - 供应商服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/MaterialBatchRepository.java</code> - 原材料批次仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/SupplierRepository.java</code> - 供应商仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/MaterialBatch.java</code> - 原材料批次实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/Supplier.java</code> - 供应商实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>POST /api/mobile/{factoryId}/processing/material-receipt</code> - 原材料入库</li>
+                        <li><code>GET /api/mobile/{factoryId}/suppliers/{supplierId}</code> - 获取供应商信息（扫码）</li>
+                        <li><code>POST /api/mobile/upload/mobile</code> - 上传原材料照片</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>material_batch</code> - 原材料批次表（入库记录）</li>
+                        <li><code>supplier</code> - 供应商表</li>
+                        <li><code>raw_material_type</code> - 原材料类型表</li>
+                    </ul>
+                </div>
+
+                <h5 id="section-9-3-2-2">9.3.2.2 原材料批次管理（Material Batch Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h5>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：查看和管理原材料批次，包括库存查询、消耗记录、批次详情、库存预警。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/MaterialBatchManagementScreen.tsx</code> - 批次管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/materialApiClient.ts</code> - API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/MaterialBatchController.java</code> - 批次控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/MaterialBatchService.java</code> - 批次服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/MaterialBatchRepository.java</code> - 批次仓库</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/processing/material-batches</code> - 获取批次列表</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/material-batches/{id}</code> - 获取批次详情</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/material-inventory</code> - 库存查询</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong> <span style="color: #667eea; font-weight: 600;">✨ 更新于 2025-11-05</span>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>material_batches</code> - 原材料批次表 ✅ 优化版
+                            <ul style="margin-top: 8px; color: #555;">
+                                <li>📊 <strong>核心字段</strong>: receipt_quantity, used_quantity, reserved_quantity, unit_price</li>
+                                <li>🔢 <strong>计算属性</strong> (@Transient): getCurrentQuantity(), getTotalPrice(), getTotalWeight()</li>
+                                <li>📈 <strong>数据库索引</strong>: factory_id, status, expire_date, material_type_id</li>
+                                <li>🔗 <strong>关联关系</strong>: Factory, RawMaterialType, Supplier, MaterialConsumption, MaterialBatchAdjustment, ProductionPlanBatchUsage</li>
+                                <li>📝 <strong>状态管理</strong>: AVAILABLE, IN_USE, EXPIRED, DEPLETED (MaterialBatchStatus枚举)</li>
+                            </ul>
+                        </li>
+                        <li><code>raw_material_type</code> - 原材料类型表</li>
+                        <li><code>material_consumption</code> - 原材料消耗记录（新增关联）</li>
+                        <li><code>material_batch_adjustment</code> - 批次调整记录（新增关联）</li>
+                        <li><code>production_plan_batch_usage</code> - 生产计划批次使用（新增关联）</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-3-3">9.3.3 生产计划（Production Planning） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：创建和管理生产计划，包括计划名称、产品类型、计划数量、开始/结束日期、负责人指派。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/ProductionPlanManagementScreen.tsx</code> - 生产计划管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/processingApiClient.ts</code> - API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/ProductionPlanController.java</code> - 生产计划控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/ProductionPlanService.java</code> - 生产计划服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/ProductionPlanRepository.java</code> - 生产计划仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/ProductionPlan.java</code> - 生产计划实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/processing/production-plans</code> - 获取计划列表</li>
+                        <li><code>POST /api/mobile/{factoryId}/processing/production-plans</code> - 创建计划</li>
+                        <li><code>PUT /api/mobile/{factoryId}/processing/production-plans/{id}</code> - 更新计划</li>
+                        <li><code>DELETE /api/mobile/{factoryId}/processing/production-plans/{id}</code> - 删除计划</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>production_plan</code> - 生产计划表</li>
+                        <li><code>product_type</code> - 产品类型表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-3-4">9.3.4 质检管理（Quality Inspection） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：记录和管理产品质检信息，包括质检项目、检测结果、质检照片、不合格原因。支持批次质检历史查询。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/QualityInspectionListScreen.tsx</code> - 质检列表界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/components/processing/QualityInspectionForm.tsx</code> - 质检表单组件</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/processingApiClient.ts</code> - API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/ProcessingController.java</code> - 质检控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/QualityInspectionService.java</code> - 质检服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/QualityInspectionRepository.java</code> - 质检仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/QualityInspection.java</code> - 质检实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/processing/quality-inspections</code> - 获取质检列表</li>
+                        <li><code>POST /api/mobile/{factoryId}/processing/quality-inspections</code> - 创建质检记录</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/batches/{batchId}/quality-inspections</code> - 批次质检历史</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>quality_inspection</code> - 质检记录表</li>
+                        <li><code>processing_batch</code> - 关联批次表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-3-5">9.3.5 成本分析（Cost Analysis） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：生产成本分析与综合仪表板。包括生产概览（批次统计、在岗人数、质检数据）、生产统计（多维度：today/week/month）、质量仪表盘（合格率、趋势）、设备仪表盘（设备状态）、批次成本分析、成本重算等功能。<span style="color: #667eea; font-weight: 600;"> ✨ 新增Dashboard端点于 2025-11-04</span>
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/CostAnalysisDashboard/index.tsx</code> - 成本分析主界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/CostAnalysisDashboard/CostOverviewCard.tsx</code> - 成本总览卡片</li>
+                        <li><code>frontend/CretasFoodTrace/src/screens/processing/CostAnalysisDashboard/CostTrendChart.tsx</code> - 成本趋势图</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/processingApiClient.ts</code> - API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/ProcessingController.java</code> - 成本分析控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/CostAnalysisService.java</code> - 成本分析服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/MaterialCostCalculator.java</code> - 原材料成本计算</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/LaborCostCalculator.java</code> - 人工成本计算</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/AICostAnalysis.java</code> - AI成本分析实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>（更新于 2025-11-04）：</p>
+                    <ul style="line-height: 2;">
+                        <li><strong>Dashboard仪表板接口</strong> ✨ 新增:</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/dashboard/overview</code> - 生产概览（总批次、进行中、完成、质检、告警、在岗人数）</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/dashboard/production</code> - 生产统计（支持today/week/month维度）</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/dashboard/quality</code> - 质量仪表盘（质量统计和趋势）</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/dashboard/equipment</code> - 设备仪表盘（设备状态统计）</li>
+                        <li><strong>批次成本接口</strong>:</li>
+                        <li><code>GET /api/mobile/{factoryId}/processing/batches/{batchId}/cost-analysis</code> - 批次成本分析</li>
+                        <li><code>POST /api/mobile/{factoryId}/processing/batches/{batchId}/recalculate-cost</code> - 重新计算成本</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>processing_batch</code> - 批次表（成本数据）</li>
+                        <li><code>material_batch</code> - 原材料批次（原料成本）</li>
+                        <li><code>employee_work_session</code> - 工作会话（人工成本）</li>
+                        <li><code>ai_cost_analysis</code> - AI成本分析表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-3-6">9.3.6 AI智能分析（DeepSeek Integration） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：集成DeepSeek大模型进行智能成本分析、生产建议、异常检测。包括批次成本分析、时间范围分析、对比分析、配额管理、对话历史、报告生成等企业级AI功能。✨ <strong style="color: #667eea;">v2.0.0 升级于 2025-11-04</strong>
+                    </p>
+
+                    <div class="highlight-box" style="background: #f0f7ff; border-left: 4px solid #3b82f6; margin: 15px 0;">
+                        <p style="margin: 0; padding: 15px; line-height: 2;">
+                            <strong>🔑 重要参数</strong>（v2.0.0）：<br>
+                            <strong>批次成本分析请求</strong>（POST /api/mobile/{factoryId}/ai/analysis/cost/batch）：<br>
+                            • <code>batchId</code>: string - 批次ID（必填）<br>
+                            • <code>question</code>: string - 用户追问（选填，用于follow-up对话）<br>
+                            • <code>sessionId</code>: string - 会话ID（选填，用于继续对话）<br>
+                            • <code>analysisType</code>: "default" | "followup" | "comprehensive" - 分析类型<br>
+                            &nbsp;&nbsp;├─ <strong>default</strong>: 首次分析，消耗配额<br>
+                            &nbsp;&nbsp;├─ <strong>followup</strong>: 追问对话，少量消耗配额<br>
+                            &nbsp;&nbsp;└─ <strong>comprehensive</strong>: 历史综合报告，较多消耗配额<br><br>
+
+                            <strong>响应参数</strong>：<br>
+                            • <code>reportId</code>: Long - 报告ID<br>
+                            • <code>sessionId</code>: String - 会话ID（用于后续追问）<br>
+                            • <code>analysis</code>: String - AI分析结果（中文，结构化Markdown）<br>
+                            • <code>success</code>: Boolean - 分析是否成功<br>
+                            • <code>quotaInfo</code>: object - 配额信息<br>
+                            &nbsp;&nbsp;├─ <code>remaining</code>: BigDecimal - 剩余配额（元）<br>
+                            &nbsp;&nbsp;├─ <code>used</code>: BigDecimal - 已使用配额（元）<br>
+                            &nbsp;&nbsp;└─ <code>limit</code>: BigDecimal - 配额上限（元）<br>
+                            • <code>tokensUsed</code>: Integer - 本次消耗token数<br>
+                            • <code>cost</code>: BigDecimal - 本次调用成本（元）<br>
+                            • <code>generatedAt</code>: LocalDateTime - 生成时间<br>
+                            • <code>fromCache</code>: Boolean - 是否来自缓存<br><br>
+
+                            <strong>⚠️ 配额限制与成本控制</strong>：<br>
+                            • 目标成本：<strong>&lt;¥30/月/工厂</strong>（周配额制度）<br>
+                            • 智能缓存：相似查询5分钟内缓存命中率>60%<br>
+                            • 配额不足：自动阻止调用，提示用户<br>
+                            • 审计追踪：所有AI操作完整记录到ai_audit_log表
+                        </p>
+                    </div>
+
+                    <div class="highlight-box" style="background: #f0fff4; border-left: 4px solid #22c55e; margin: 15px 0;">
+                        <p style="margin: 0; padding: 15px; line-height: 2;">
+                            <strong>🔑 时间范围分析参数</strong>（v2.0.0 新增）：<br>
+                            <strong>请求</strong>（POST /api/mobile/{factoryId}/ai/analysis/cost/time-range）：<br>
+                            • <code>startDate</code>: LocalDate - 开始日期（必填）<br>
+                            • <code>endDate</code>: LocalDate - 结束日期（必填）<br>
+                            • <code>dimension</code>: String - 分析维度（选填："daily"/"weekly"/"monthly"）<br>
+                            • <code>question</code>: String - 自定义问题（选填，用于针对性分析）<br><br>
+
+                            <strong>特性</strong>：<br>
+                            • 消耗配额：<strong>2次</strong>（分析多批次聚合数据）<br>
+                            • 缓存策略：<strong>7天</strong>（基于时间范围+维度）<br>
+                            • 数据来源：时间段内所有批次成本数据<br>
+                            • AI输出：结构化Markdown，包含趋势分析、异常检测、优化建议
+                        </p>
+                    </div>
+
+                    <div class="highlight-box" style="background: #fef3c7; border-left: 4px solid #f59e0b; margin: 15px 0;">
+                        <p style="margin: 0; padding: 15px; line-height: 2;">
+                            <strong>🔑 批次对比分析参数</strong>（v2.0.0 新增）：<br>
+                            <strong>请求</strong>（POST /api/mobile/{factoryId}/ai/analysis/cost/compare）：<br>
+                            • <code>batchIds</code>: List&lt;Long&gt; - 批次ID列表（必填，2-5个批次）<br>
+                            • <code>question</code>: String - 对比重点（选填，如"哪个批次成本最低"）<br><br>
+
+                            <strong>特性</strong>：<br>
+                            • 消耗配额：<strong>3次</strong>（对比分析复杂度高）<br>
+                            • 缓存策略：<strong>7天</strong>（基于批次ID组合）<br>
+                            • 数据格式：表格对比（成本、效率、质量等多维度）<br>
+                            • 参数验证：最少2个批次，最多5个批次<br>
+                            • AI输出：对比表格 + 差异分析 + 最优批次推荐
+                        </p>
+                    </div>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/main/HomeScreen.tsx</code> - 首页AI分析入口</li>
+                        <li><code>frontend/CretasFoodTrace/src/components/dashboard/AIAnalysisCard.tsx</code> - AI分析卡片</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/processingApiClient.ts</code> - API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/AIController.java</code> - AI统一接口控制器（v2.0.0，最新更新于2025-11-05）</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/AIEnterpriseService.java</code> - 企业级AI服务（配额管理、缓存、审计）</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/AIAnalysisService.java</code> - 基础AI分析服务（DeepSeek调用）</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/FactoryAIService.java</code> - 工厂级AI服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/AIReportScheduler.java</code> - AI报告定时生成器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/AIAuditLog.java</code> - AI审计日志实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/AIQuotaUsage.java</code> - AI配额使用实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/AIUsageLog.java</code> - AI使用日志实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/AIAnalysisResult.java</code> - AI分析结果实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/AIQuotaUsageRepository.java</code> - AI配额使用仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/AIAuditLogRepository.java</code> - AI审计日志仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/AIUsageLogRepository.java</code> - AI使用日志仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/AIAnalysisResultRepository.java</code> - AI分析结果仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/dto/AIRequestDTO.java</code> - AI请求DTO</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/dto/AIResponseDTO.java</code> - AI响应DTO</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>（v2.0.0 统一路径结构）：</p>
+                    <ul style="line-height: 2;">
+                        <li><strong>成本分析接口</strong>：</li>
+                        <li><code>POST /api/mobile/{factoryId}/ai/analysis/cost/batch</code> - AI批次成本分析（支持默认分析、follow-up对话、历史综合报告）</li>
+                        <li><code>POST /api/mobile/{factoryId}/ai/analysis/cost/time-range</code> - AI时间范围成本分析（支持日/周/月维度，缓存7天，消耗2次配额）✅ 已实现</li>
+                        <li><code>POST /api/mobile/{factoryId}/ai/analysis/cost/compare</code> - AI批次对比分析（2-5个批次，表格对比，消耗3次配额）✅ 已实现</li>
+                        <li><strong>配额管理接口</strong>：</li>
+                        <li><code>GET /api/mobile/{factoryId}/ai/quota</code> - 查询AI配额信息</li>
+                        <li><code>PUT /api/mobile/{factoryId}/ai/quota</code> - 更新AI配额（平台管理员）</li>
+                        <li><strong>对话管理接口</strong>：</li>
+                        <li><code>GET /api/mobile/{factoryId}/ai/conversations/{sessionId}</code> - 获取AI对话历史</li>
+                        <li><code>DELETE /api/mobile/{factoryId}/ai/conversations/{sessionId}</code> - 关闭AI对话会话</li>
+                        <li><strong>报告管理接口</strong>：</li>
+                        <li><code>GET /api/mobile/{factoryId}/ai/reports</code> - 获取AI报告列表（支持类型和时间筛选）</li>
+                        <li><code>GET /api/mobile/{factoryId}/ai/reports/{reportId}</code> - 获取AI报告详情</li>
+                        <li><code>POST /api/mobile/{factoryId}/ai/reports/generate</code> - 生成AI报告（手动触发）</li>
+                        <li><strong>健康检查接口</strong>：</li>
+                        <li><code>GET /api/mobile/{factoryId}/ai/health</code> - AI服务健康检查</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>（v2.0.0 企业级架构）：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>ai_analysis_result</code> - AI分析结果表（存储分析内容、sessionId、reportId）</li>
+                        <li><code>ai_quota_usage</code> - AI配额使用表（工厂级配额管理、剩余额度追踪）</li>
+                        <li><code>ai_usage_log</code> - AI使用日志表（记录每次API调用、token消耗、成本）</li>
+                        <li><code>ai_audit_log</code> - AI审计日志表（完整审计跟踪、用户操作记录）</li>
+                        <li><code>factory_settings</code> - 工厂设置表（AI配额配置、启用状态）</li>
+                    </ul>
+
+                    <p><strong>外部服务与集成</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><strong>DeepSeek API</strong> - 直接从Spring Boot后端调用，无需独立Python服务</li>
+                        <li><strong>Redis缓存</strong> - AI分析结果智能缓存（5分钟，相似查询缓存命中率>60%）</li>
+                        <li><strong>定时任务</strong> - 周报/月报自动生成（AIReportScheduler）</li>
+                        <li><strong>审计日志</strong> - 所有AI操作完整审计跟踪（符合企业合规要求）</li>
+                    </ul>
+
+                    <p><strong>核心特性</strong>（v2.0.0 企业级升级）：</p>
+                    <ul style="line-height: 2;">
+                        <li>✅ <strong>配额管理</strong>：工厂级AI配额分配、使用追踪、超额告警</li>
+                        <li>✅ <strong>智能缓存</strong>：相似查询缓存，显著降低API调用成本（目标：月成本<¥30）</li>
+                        <li>✅ <strong>对话历史</strong>：支持follow-up追问，无需重复发送批次数据</li>
+                        <li>✅ <strong>报告系统</strong>：自动生成周报/月报，手动触发综合分析报告</li>
+                        <li>✅ <strong>审计追踪</strong>：完整的AI使用审计日志，记录用户、时间、成本、token消耗</li>
+                        <li>✅ <strong>健康监控</strong>：实时监控DeepSeek API可用性和响应时间</li>
+                    </ul>
+
+                    <p><strong>配额消耗规则</strong>（v2.0.0）：</p>
+                    <ul style="line-height: 2;">
+                        <li>🔹 <strong>批次成本分析</strong>：消耗 <code>1次配额</code> (follow-up追问消耗更少)</li>
+                        <li>🔹 <strong>时间范围分析</strong>：消耗 <code>2次配额</code> (分析多个批次的聚合数据)</li>
+                        <li>🔹 <strong>批次对比分析</strong>：消耗 <code>3次配额</code> (对比2-5个批次，复杂度较高)</li>
+                        <li>🔹 <strong>缓存命中</strong>：<code>0次配额</code> (7天缓存有效期，同样查询免费)</li>
+                        <li>🔹 <strong>周报/月报</strong>：自动生成，不消耗配额（定时任务）</li>
+                    </ul>
+
+                    <p><strong>实现状态</strong>（更新于 2025-11-05）：</p>
+                    <ul style="line-height: 2;">
+                        <li>✅ <strong>批次成本分析</strong>：完整实现（含缓存、配额管理、follow-up对话）</li>
+                        <li>✅ <strong>时间范围成本分析</strong>：完整实现（支持自定义时间段、维度分析、智能缓存）</li>
+                        <li>✅ <strong>批次对比分析</strong>：完整实现（2-5批次对比、表格格式、缓存优化）</li>
+                        <li>✅ <strong>配额管理</strong>：完整实现（工厂级配额、使用追踪、平台管理）</li>
+                        <li>✅ <strong>对话历史</strong>：完整实现（会话管理、历史查询、会话关闭）</li>
+                        <li>✅ <strong>报告管理</strong>：完整实现（列表查询、详情查看、手动生成）</li>
+                        <li>✅ <strong>健康检查</strong>：完整实现（DeepSeek API可用性监控）</li>
+                        <li>⏳ <strong>周报/月报自动生成</strong>：定时任务已配置（AIReportScheduler）</li>
+                    </ul>
+                </div>
+
+                <h3>9.4 基础数据管理模块（Master Data Management）</h3>
+
+                <h4 id="section-9-4-1">9.4.1 产品类型管理（Product Type Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：管理产品类型基础数据，包括产品名称、编码、描述、启用状态。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/management/ManagementScreen.tsx</code> - 管理主界面（包含产品类型）</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/systemApiClient.ts</code> - 系统API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/ProductTypeController.java</code> - 产品类型控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/ProductTypeService.java</code> - 产品类型服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/ProductTypeRepository.java</code> - 产品类型仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/ProductType.java</code> - 产品类型实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/product-types</code> - 获取产品类型列表</li>
+                        <li><code>POST /api/mobile/{factoryId}/product-types</code> - 创建产品类型</li>
+                        <li><code>PUT /api/mobile/{factoryId}/product-types/{id}</code> - 更新产品类型</li>
+                        <li><code>DELETE /api/mobile/{factoryId}/product-types/{id}</code> - 删除产品类型</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>product_type</code> - 产品类型表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-4-2">9.4.2 原材料类型管理（Material Type Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：管理原材料类型基础数据，包括原材料名称、单位、规格、安全库存阈值。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/management/MaterialTypeManagementScreen.tsx</code> - 原材料类型管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/materialTypeApiClient.ts</code> - 原材料类型API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/RawMaterialTypeController.java</code> - 原材料类型控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/MaterialTypeService.java</code> - 原材料类型服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/RawMaterialTypeRepository.java</code> - 原材料类型仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/RawMaterialType.java</code> - 原材料类型实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/material-types</code> - 获取原材料类型列表</li>
+                        <li><code>POST /api/mobile/{factoryId}/material-types</code> - 创建原材料类型</li>
+                        <li><code>PUT /api/mobile/{factoryId}/material-types/{id}</code> - 更新原材料类型</li>
+                        <li><code>DELETE /api/mobile/{factoryId}/material-types/{id}</code> - 删除原材料类型</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>raw_material_type</code> - 原材料类型表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-4-3">9.4.3 工种管理（Work Type Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：管理工种基础数据，包括工种名称、描述、小时工资、计件工资。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/management/WorkTypeManagementScreen.tsx</code> - 工种管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/workTypeApiClient.ts</code> - 工种API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/WorkTypeController.java</code> - 工种控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/WorkTypeService.java</code> - 工种服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/WorkTypeRepository.java</code> - 工种仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/WorkType.java</code> - 工种实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/work-types</code> - 获取工种列表</li>
+                        <li><code>POST /api/mobile/{factoryId}/work-types</code> - 创建工种</li>
+                        <li><code>PUT /api/mobile/{factoryId}/work-types/{id}</code> - 更新工种</li>
+                        <li><code>DELETE /api/mobile/{factoryId}/work-types/{id}</code> - 删除工种</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>work_type</code> - 工种表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-4-4">9.4.4 供应商管理（Supplier Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：管理供应商信息，包括供应商名称、联系人、电话、地址、二维码生成。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/management/SupplierManagementScreen.tsx</code> - 供应商管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/systemApiClient.ts</code> - 系统API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/SupplierController.java</code> - 供应商控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/SupplierService.java</code> - 供应商服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/SupplierRepository.java</code> - 供应商仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/Supplier.java</code> - 供应商实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/suppliers</code> - 获取供应商列表</li>
+                        <li><code>POST /api/mobile/{factoryId}/suppliers</code> - 创建供应商</li>
+                        <li><code>PUT /api/mobile/{factoryId}/suppliers/{id}</code> - 更新供应商</li>
+                        <li><code>DELETE /api/mobile/{factoryId}/suppliers/{id}</code> - 删除供应商</li>
+                        <li><code>GET /api/mobile/{factoryId}/suppliers/{id}/qrcode</code> - 生成供应商二维码</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>supplier</code> - 供应商表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-4-5">9.4.5 客户管理（Customer Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：管理客户信息，包括客户名称、联系人、电话、地址、客户类型。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/management/CustomerManagementScreen.tsx</code> - 客户管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/systemApiClient.ts</code> - 系统API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/CustomerController.java</code> - 客户控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/CustomerService.java</code> - 客户服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/CustomerRepository.java</code> - 客户仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/Customer.java</code> - 客户实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/customers</code> - 获取客户列表</li>
+                        <li><code>POST /api/mobile/{factoryId}/customers</code> - 创建客户</li>
+                        <li><code>PUT /api/mobile/{factoryId}/customers/{id}</code> - 更新客户</li>
+                        <li><code>DELETE /api/mobile/{factoryId}/customers/{id}</code> - 删除客户</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>customer</code> - 客户表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-4-6">9.4.6 用户管理（User Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：管理工厂用户，包括用户信息编辑、角色分配（8级RBAC）、部门管理、账号启用/禁用。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/management/UserManagementScreen.tsx</code> - 用户管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/userApiClient.ts</code> - 用户API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/UserController.java</code> - 用户控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/UserService.java</code> - 用户服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/UserRoleService.java</code> - 角色管理服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/UserRepository.java</code> - 用户仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/User.java</code> - 用户实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/UserRoleHistory.java</code> - 角色变更历史实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/users</code> - 获取用户列表</li>
+                        <li><code>GET /api/mobile/{factoryId}/users/{id}</code> - 获取用户详情</li>
+                        <li><code>PUT /api/mobile/{factoryId}/users/{id}</code> - 更新用户信息</li>
+                        <li><code>PUT /api/mobile/{factoryId}/users/{id}/role</code> - 修改用户角色</li>
+                        <li><code>PUT /api/mobile/{factoryId}/users/{id}/status</code> - 启用/禁用用户</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>user</code> - 用户表</li>
+                        <li><code>user_role_history</code> - 角色变更历史表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-4-7">9.4.7 原材料规格配置管理（Material Spec Configuration） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：动态配置不同工厂的原材料规格选项，支持多维度规格（等级、重量、来源地、加工方式等）、工厂级别个性化配置、默认规格重置功能。✨ <strong style="color: #667eea;">新增于 2025-11-04</strong>
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/management/MaterialSpecManagementScreen.tsx</code> - 规格配置管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/materialSpecApiClient.ts</code> - 规格配置API客户端</li>
+                        <li><code>frontend/CretasFoodTrace/src/components/processing/MaterialTypeSelector.tsx</code> - 规格选择组件</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/MaterialSpecConfigController.java</code> - 规格配置控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/MaterialSpecConfigService.java</code> - 规格配置服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/MaterialSpecConfigRepository.java</code> - 规格配置仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/MaterialSpecConfig.java</code> - 规格配置实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/mobile/{factoryId}/material-spec-config</code> - 获取工厂规格配置（含所有类别）</li>
+                        <li><code>GET /api/mobile/{factoryId}/material-spec-config/{category}</code> - 获取特定类别规格配置</li>
+                        <li><code>PUT /api/mobile/{factoryId}/material-spec-config/{category}</code> - 更新特定类别规格配置</li>
+                        <li><code>DELETE /api/mobile/{factoryId}/material-spec-config/{category}</code> - 重置为默认规格</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>material_spec_config</code> - 原材料规格配置表（字段：id, factory_id, category, spec_options, is_default, created_at, updated_at）</li>
+                    </ul>
+
+                    <div class="highlight-box" style="background: #f0f7ff; border-left: 4px solid #3b82f6; margin: 15px 0;">
+                        <p style="margin: 0; padding: 15px; line-height: 2;">
+                            <strong>🔑 规格类别（Category）</strong>：<br>
+                            • <code>grade</code> - 等级（如：特级、一级、二级）<br>
+                            • <code>weight_range</code> - 重量范围（如：3两以下、3-4两、4两以上）<br>
+                            • <code>origin</code> - 来源地（如：本地、进口、有机）<br>
+                            • <code>processing_method</code> - 加工方式（如：鲜活、冷冻、加工）<br>
+                            • <code>packaging</code> - 包装方式（如：散装、袋装、盒装）<br><br>
+
+                            <strong>💡 使用场景</strong>：<br>
+                            1. 不同工厂可根据实际情况自定义规格选项<br>
+                            2. 原材料入库时可选择适合的规格<br>
+                            3. 支持后续按规格分类统计和分析<br>
+                            4. 可随时重置为系统默认规格配置
+                        </p>
+                    </div>
+                </div>
+
+                <h3>9.5 平台管理模块（Platform Management）</h3>
+
+                <h4 id="section-9-5-1">9.5.1 工厂管理（Factory Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：平台管理员管理工厂信息，包括工厂创建、编辑、工厂ID生成（基于行业+地区编码）、工厂状态管理。
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/platform/FactoryManagementScreen.tsx</code> - 工厂管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/systemApiClient.ts</code> - 系统API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/platform/PlatformFactoryController.java</code> - 工厂管理控制器</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/FactoryService.java</code> - 工厂服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/FactoryIdGeneratorService.java</code> - 工厂ID生成服务</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/FactoryRepository.java</code> - 工厂仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/Factory.java</code> - 工厂实体</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>GET /api/platform/factories</code> - 获取工厂列表（平台管理员）</li>
+                        <li><code>POST /api/platform/factories</code> - 创建工厂</li>
+                        <li><code>PUT /api/platform/factories/{factoryId}</code> - 更新工厂信息</li>
+                        <li><code>PUT /api/platform/factories/{factoryId}/status</code> - 修改工厂状态</li>
+                        <li><code>GET /api/platform/factories/generate-id</code> - 生成工厂ID</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>factory</code> - 工厂表</li>
+                        <li><code>factory_settings</code> - 工厂设置表</li>
+                    </ul>
+                </div>
+
+                <h4 id="section-9-5-2">9.5.2 AI配额管理（AI Quota Management） <a href="#chapter9-toc" style="float: right; font-size: 0.75em; color: #667eea; text-decoration: none; padding: 5px 12px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; background: white;">↑ 回到目录</a></h4>
+                <div class="feature-item">
+                    <p style="color: #333; font-size: 1.05em; line-height: 2;">
+                        <strong>功能描述</strong>：平台管理员管理各工厂的AI分析配额，包括配额设置、使用量监控、平台级统计、工厂配额查询。<span style="color: #667eea; font-weight: 600;"> v2.0.0 升级于 2025-11-04</span>
+                    </p>
+
+                    <p><strong>前端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>frontend/CretasFoodTrace/src/screens/platform/AIQuotaManagementScreen.tsx</code> - AI配额管理界面</li>
+                        <li><code>frontend/CretasFoodTrace/src/services/api/systemApiClient.ts</code> - 系统API客户端</li>
+                    </ul>
+
+                    <p><strong>后端文件</strong>：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/PlatformController.java</code> - 平台管理控制器（包含AI配额管理，v2.0.0）</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/controller/AIController.java</code> - AI统一接口控制器（工厂级配额查询）</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/PlatformService.java</code> - 平台服务（配额管理业务逻辑）</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/service/AIEnterpriseService.java</code> - 企业级AI服务（配额验证和扣减）</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/AIQuotaUsage.java</code> - AI配额使用实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/AIUsageLog.java</code> - AI使用日志实体</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/entity/FactorySettings.java</code> - 工厂设置实体（AI配额字段）</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/AIQuotaUsageRepository.java</code> - AI配额使用仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/repository/AIUsageLogRepository.java</code> - AI使用日志仓库</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/dto/platform/FactoryAIQuotaDTO.java</code> - 工厂AI配额DTO</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/dto/platform/UpdateAIQuotaRequest.java</code> - 更新配额请求DTO</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/dto/platform/PlatformAIUsageStatsDTO.java</code> - 平台AI使用统计DTO</li>
+                        <li><code>backend/src/main/java/com/cretas/aims/dto/factory/FactoryAIUsageDTO.java</code> - 工厂AI使用DTO</li>
+                    </ul>
+
+                    <p><strong>API端点</strong>（v2.0.0 平台级与工厂级分离）：</p>
+                    <ul style="line-height: 2;">
+                        <li><strong>平台管理员接口</strong>（/api/platform）：</li>
+                        <li><code>GET /api/platform/ai-quota</code> - 获取所有工厂AI配额设置和历史调用统计</li>
+                        <li><code>PUT /api/platform/ai-quota/{factoryId}</code> - 更新指定工厂的AI配额（周配额）</li>
+                        <li><code>GET /api/platform/ai-usage-stats</code> - 获取平台级别AI使用统计数据</li>
+                        <li><strong>工厂用户接口</strong>（/api/mobile/{factoryId}/ai）：</li>
+                        <li><code>GET /api/mobile/{factoryId}/ai/quota</code> - 工厂用户查询自己工厂的配额信息（使用情况、剩余额度、使用记录）</li>
+                    </ul>
+
+                    <p><strong>数据库表</strong>（v2.0.0 与9.3.6共享）：</p>
+                    <ul style="line-height: 2;">
+                        <li><code>factory_settings</code> - 工厂设置表（ai_quota_limit字段、ai_enabled启用状态）</li>
+                        <li><code>ai_quota_usage</code> - AI配额使用表（工厂级周配额管理、剩余额度追踪）</li>
+                        <li><code>ai_usage_log</code> - AI使用日志表（每次调用记录、token消耗、成本统计）</li>
+                        <li><code>ai_audit_log</code> - AI审计日志表（完整审计跟踪、平台级监控）</li>
+                    </ul>
+
+                    <p><strong>配额管理特性</strong>（v2.0.0）：</p>
+                    <ul style="line-height: 2;">
+                        <li>✅ <strong>周配额制度</strong>：每周重置，灵活的配额分配策略</li>
+                        <li>✅ <strong>实时监控</strong>：平台管理员可查看所有工厂的配额使用情况</li>
+                        <li>✅ <strong>使用统计</strong>：详细的平台级和工厂级AI使用统计</li>
+                        <li>✅ <strong>权限分离</strong>：平台管理员设置配额，工厂用户查询自己工厂的配额</li>
+                        <li>✅ <strong>超额控制</strong>：配额不足时自动阻止AI调用，提示用户</li>
+                    </ul>
+                </div>
+
+                <h3>9.6 文件命名规范总结</h3>
+
+                <div class="info-box">
+                    <h4>前端文件命名规范（React Native + TypeScript）</h4>
+                    <ul style="line-height: 2;">
+                        <li><strong>Screen组件</strong>：PascalCase + "Screen"后缀
+                            <br>示例：<code>EnhancedLoginScreen.tsx</code>, <code>BatchDetailScreen.tsx</code>
+                        </li>
+                        <li><strong>UI组件</strong>：PascalCase命名
+                            <br>示例：<code>MaterialTypeSelector.tsx</code>, <code>QualityRecordList.tsx</code>
+                        </li>
+                        <li><strong>API客户端</strong>：camelCase + "ApiClient"后缀
+                            <br>示例：<code>processingApiClient.ts</code>, <code>authService.ts</code>
+                        </li>
+                        <li><strong>Store状态管理</strong>：camelCase + "Store"后缀
+                            <br>示例：<code>authStore.ts</code>, <code>permissionStore.ts</code>
+                        </li>
+                        <li><strong>Hooks</strong>：camelCase + "use"前缀
+                            <br>示例：<code>useRegister.ts</code>, <code>useCamera.ts</code>
+                        </li>
+                        <li><strong>类型定义</strong>：camelCase命名
+                            <br>示例：<code>auth.ts</code>, <code>processing.ts</code>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="info-box" style="margin-top: 20px;">
+                    <h4>后端文件命名规范（Spring Boot + Java）</h4>
+                    <ul style="line-height: 2;">
+                        <li><strong>Controller控制器</strong>：PascalCase + "Controller"后缀
+                            <br>示例：<code>SystemController.java</code>, <code>ProcessingController.java</code>
+                        </li>
+                        <li><strong>Service服务</strong>：PascalCase + "Service"后缀
+                            <br>示例：<code>AuthService.java</code>, <code>ProcessingBatchService.java</code>
+                        </li>
+                        <li><strong>Repository仓库</strong>：PascalCase + "Repository"后缀
+                            <br>示例：<code>UserRepository.java</code>, <code>ProcessingBatchRepository.java</code>
+                        </li>
+                        <li><strong>Entity实体</strong>：PascalCase命名（对应数据库表）
+                            <br>示例：<code>User.java</code>, <code>ProcessingBatch.java</code>, <code>MaterialBatch.java</code>
+                        </li>
+                        <li><strong>工具类</strong>：PascalCase + "Util"后缀
+                            <br>示例：<code>JwtUtil.java</code>, <code>GeoLocationUtil.java</code>
+                        </li>
+                        <li><strong>配置类</strong>：PascalCase + "Config"后缀
+                            <br>示例：<code>SecurityConfig.java</code>, <code>RedisConfig.java</code>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="warning-box" style="margin-top: 20px;">
+                    <h4>⚠️ 重要说明</h4>
+                    <p style="line-height: 2;">
+                        1. <strong>多租户隔离</strong>：所有工厂相关API端点必须包含 <code>{factoryId}</code> 路径参数，确保数据隔离。<br>
+                        2. <strong>权限验证</strong>：所有API接口都需要JWT Token验证，Controller方法需要添加 <code>@RequirePermission</code> 注解。<br>
+                        3. <strong>API版本管理</strong>：移动端API统一使用 <code>/api/mobile/*</code> 前缀，平台管理API使用 <code>/api/platform/*</code> 前缀。<br>
+                        4. <strong>文件路径约定</strong>：
+                        <ul>
+                            <li>前端：<code>frontend/CretasFoodTrace/src/</code> 为根目录</li>
+                            <li>后端：<code>backend/src/main/java/com/cretas/aims/</code> 为根目录（Spring Boot + Java 11 + JPA）</li>
+                            <li>后端实际位置：<code>/Users/jietaoxie/Downloads/cretas-backend-system-main/</code></li>
+                        </ul>
+                        5. <strong>数据库表命名</strong>：采用snake_case（小写+下划线），如 <code>processing_batch</code>, <code>employee_work_session</code>。<br>
+                        6. <strong>批次号格式</strong>：生产批次号格式为 <code>FISH_YYYY_NNN</code>（如：FISH_2025_001），由后端自动生成。
+                    </p>
+                </div>
+            </section>
+
+
+            <!-- 文档导航 -->
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 8px; text-align: center; margin-top: 50px;">
+                <h3 style="border: none; padding: 0; margin-bottom: 20px;">📚 完整PRD文档导航</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <a href="./MRD-白垩纪食品溯源系统-市场需求文档-v4.0.html" style="background: white; border: 2px solid #667eea; color: #667eea; padding: 20px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s; display: block;">
+                        第1-2章：市场需求文档（MRD）
+                    </a>
+                    <a href="./PRD-技术架构与系统设计-v1.0.html" style="background: white; border: 2px solid #667eea; color: #667eea; padding: 20px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s; display: block;">
+                        第3-8章：技术架构与系统设计
+                    </a>
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        第9章：功能与文件映射（当前）
+                    </div>
+                    <a href="./PRD-白垩纪食品溯源系统-完整版.md" style="background: white; border: 2px solid #667eea; color: #667eea; padding: 20px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.3s; display: block;">
+                        完整版PRD（Markdown）
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 白垩纪食品溯源系统 | 功能与文件映射文档 v1.0</p>
+            <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">本文档由技术架构文档第9章独立而来</p>
+        </div>
+    </div>
+</body>
+</html>
