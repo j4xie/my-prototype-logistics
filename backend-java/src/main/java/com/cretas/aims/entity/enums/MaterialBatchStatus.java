@@ -25,7 +25,9 @@ public enum MaterialBatchStatus {
     /** 质检中 */
     INSPECTING("质检中", "批次正在质量检验"),
     /** 已报废 */
-    SCRAPPED("已报废", "批次已报废处理");
+    SCRAPPED("已报废", "批次已报废处理"),
+    /** 已预留 */
+    RESERVED("已预留", "批次已被预留，等待使用");
 
     private final String displayName;
     private final String description;

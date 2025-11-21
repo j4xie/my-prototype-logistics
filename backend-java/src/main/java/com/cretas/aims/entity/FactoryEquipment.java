@@ -38,8 +38,8 @@ public class FactoryEquipment extends BaseEntity {
     private String code;
     @Column(name = "equipment_code", nullable = false, length = 50)
     private String equipmentCode;
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "equipment_name", nullable = false, length = 191)
+    private String equipmentName;
     @Column(name = "type", length = 50)
     private String type;
     @Column(name = "model", length = 100)
