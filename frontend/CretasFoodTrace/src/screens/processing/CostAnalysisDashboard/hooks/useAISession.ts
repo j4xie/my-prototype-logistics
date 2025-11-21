@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CACHE_CONFIG, STORAGE_KEYS } from '../constants';
+import { logger } from '../../../../utils/logger';
+
+// 创建AISession专用logger
+const aiSessionLogger = logger.createContextLogger('AISession');
 
 // ==================== 类型定义 ====================
 
@@ -61,9 +65,13 @@ export const useAISession = (batchId: string | number): UseAISessionReturn => {
         setSessionId(newSessionId);
         setLastAnalysis(analysis);
 
-        console.log(`[useAISession] Session已保存 (批次: ${batchId}, session: ${newSessionId})`);
+        aiSessionLogger.debug('Session已保存', {
+          batchId,
+          sessionId: newSessionId,
+          messageCount,
+        });
       } catch (error) {
-        console.error('[useAISession] 保存Session失败:', error);
+        aiSessionLogger.error('保存Session失败', error as Error, { batchId });
         // 保存失败不影响功能，只是无法恢复
       }
     },
@@ -81,9 +89,9 @@ export const useAISession = (batchId: string | number): UseAISessionReturn => {
       setSessionId('');
       setLastAnalysis('');
 
-      console.log(`[useAISession] Session已清除 (批次: ${batchId})`);
+      aiSessionLogger.debug('Session已清除', { batchId });
     } catch (error) {
-      console.error('[useAISession] 清除Session失败:', error);
+      aiSessionLogger.error('清除Session失败', error as Error, { batchId });
     }
   }, [batchId, getStorageKey]);
 
@@ -96,7 +104,7 @@ export const useAISession = (batchId: string | number): UseAISessionReturn => {
       const saved = await AsyncStorage.getItem(storageKey);
 
       if (!saved) {
-        console.log(`[useAISession] 无保存的Session (批次: ${batchId})`);
+        aiSessionLogger.debug('无保存的Session', { batchId });
         setIsRestored(true);
         return;
       }
@@ -106,7 +114,7 @@ export const useAISession = (batchId: string | number): UseAISessionReturn => {
 
       // 检查Session是否过期（24小时）
       if (now - sessionData.timestamp > CACHE_CONFIG.SESSION_DURATION) {
-        console.log(`[useAISession] Session已过期 (批次: ${batchId})`);
+        aiSessionLogger.debug('Session已过期', { batchId });
         // 过期则删除
         await AsyncStorage.removeItem(storageKey);
         setIsRestored(true);
@@ -118,11 +126,13 @@ export const useAISession = (batchId: string | number): UseAISessionReturn => {
       setLastAnalysis(sessionData.lastAnalysis);
       setIsRestored(true);
 
-      console.log(
-        `[useAISession] Session已恢复 (批次: ${batchId}, session: ${sessionData.sessionId})`
-      );
+      aiSessionLogger.info('Session已恢复', {
+        batchId,
+        sessionId: sessionData.sessionId,
+        messageCount: sessionData.messageCount,
+      });
     } catch (error) {
-      console.error('[useAISession] 恢复Session失败:', error);
+      aiSessionLogger.error('恢复Session失败', error as Error, { batchId });
       setIsRestored(true);
     }
   }, [batchId, getStorageKey]);
@@ -170,15 +180,15 @@ export const cleanExpiredSessions = async () => {
           }
         }
       } catch (error) {
-        console.error(`[useAISession] 清理Session失败 (key: ${key}):`, error);
+        aiSessionLogger.error('清理单个Session失败', error as Error, { key });
       }
     }
 
     if (cleanedCount > 0) {
-      console.log(`[useAISession] 已清理 ${cleanedCount} 个过期Session`);
+      aiSessionLogger.info('清理过期Session完成', { cleanedCount });
     }
   } catch (error) {
-    console.error('[useAISession] 清理过期Session失败:', error);
+    aiSessionLogger.error('清理过期Session失败', error as Error);
   }
 };
 
@@ -192,8 +202,8 @@ export const clearAllSessions = async () => {
 
     await AsyncStorage.multiRemove(sessionKeys);
 
-    console.log(`[useAISession] 已清除所有Session (共 ${sessionKeys.length} 个)`);
+    aiSessionLogger.info('清除所有Session完成', { count: sessionKeys.length });
   } catch (error) {
-    console.error('[useAISession] 清除所有Session失败:', error);
+    aiSessionLogger.error('清除所有Session失败', error as Error);
   }
 };
