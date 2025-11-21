@@ -19,17 +19,17 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "material_batch_adjustments",
        indexes = {
-           @Index(name = "idx_adjustment_batch", columnList = "batch_id"),
+           @Index(name = "idx_adjustment_batch", columnList = "material_batch_id"),
            @Index(name = "idx_adjustment_time", columnList = "adjustment_time")
        }
 )
 public class MaterialBatchAdjustment extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Integer id;
-    @Column(name = "batch_id", nullable = false)
-    private String batchId;
+    @Column(name = "id", nullable = false, length = 191)
+    private String id;
+
+    @Column(name = "material_batch_id", nullable = false, length = 191)
+    private String materialBatchId;
     @Column(name = "adjustment_type", nullable = false, length = 50)
     private String adjustmentType; // loss, damage, correction, return
     @Column(name = "quantity_before", nullable = false, precision = 10, scale = 2)
@@ -48,7 +48,7 @@ public class MaterialBatchAdjustment extends BaseEntity {
     private String notes;
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "batch_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn(name = "material_batch_id", referencedColumnName = "id", insertable = false, updatable = false)
     private MaterialBatch batch;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "adjusted_by", referencedColumnName = "id", insertable = false, updatable = false)

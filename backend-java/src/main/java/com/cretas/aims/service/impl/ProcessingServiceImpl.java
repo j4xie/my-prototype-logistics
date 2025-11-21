@@ -427,7 +427,7 @@ public class ProcessingServiceImpl implements ProcessingService {
         return equipments.stream().map(equipment -> {
             Map<String, Object> monitoring = new HashMap<>();
             monitoring.put("equipmentId", equipment.getId());
-            monitoring.put("name", equipment.getName());
+            monitoring.put("name", equipment.getEquipmentName());
             monitoring.put("status", equipment.getStatus());
             monitoring.put("totalOperatingHours", equipment.getTotalRunningHours());
             monitoring.put("lastMaintenanceDate", equipment.getLastMaintenanceDate());
@@ -629,7 +629,7 @@ public class ProcessingServiceImpl implements ProcessingService {
             String equipmentIdStr = String.valueOf(usage.getEquipmentId());
             equipmentRepository.findById(equipmentIdStr).ifPresent(equipment -> {
                 equipmentDetail.put("equipmentId", equipment.getId());
-                equipmentDetail.put("equipmentName", equipment.getName());
+                equipmentDetail.put("equipmentName", equipment.getEquipmentName());
                 equipmentDetail.put("equipmentCode", equipment.getEquipmentCode());
                 equipmentDetail.put("model", equipment.getModel());
                 equipmentDetail.put("status", equipment.getStatus());
@@ -962,7 +962,7 @@ public class ProcessingServiceImpl implements ProcessingService {
             Map<String, Object> alert = new HashMap<>();
             alert.put("type", "MAINTENANCE");
             alert.put("level", "INFO");
-            alert.put("message", "设备需要维护: " + equipment.getName());
+            alert.put("message", "设备需要维护: " + equipment.getEquipmentName());
             alert.put("data", equipment);
             alert.put("lastMaintenance", equipment.getLastMaintenanceDate());
             alertList.add(alert);

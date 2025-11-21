@@ -20,12 +20,21 @@ import java.time.LocalDate;
 @Schema(description = "创建设备请求")
 public class CreateEquipmentRequest {
 
+    @Schema(description = "设备编码(可选，不填则自动生成)")
+    private String code;
+
     @Schema(description = "设备名称", required = true)
     @NotBlank(message = "设备名称不能为空")
     private String name;
 
+    @Schema(description = "设备类别(CUTTING/PACKAGING/FREEZING等)")
+    private String category;
+
     @Schema(description = "设备类型")
     private String type;
+
+    @Schema(description = "设备状态(IDLE/RUNNING/MAINTENANCE/MALFUNCTION/SCRAPPED)")
+    private String status;
 
     @Schema(description = "设备型号")
     private String model;
@@ -61,6 +70,10 @@ public class CreateEquipmentRequest {
     @Schema(description = "维护间隔(小时)")
     @Positive(message = "维护间隔必须大于0")
     private Integer maintenanceIntervalHours;
+
+    @Schema(description = "维护间隔(天)")
+    @Positive(message = "维护间隔必须大于0")
+    private Integer maintenanceIntervalDays;
 
     @Schema(description = "保修到期日")
     private LocalDate warrantyExpiryDate;

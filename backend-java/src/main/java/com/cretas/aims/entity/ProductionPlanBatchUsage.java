@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "production_plan_batch_usage",
+@Table(name = "production_plan_batch_usages",
        indexes = {
            @Index(name = "idx_planbatch_plan", columnList = "production_plan_id"),
            @Index(name = "idx_planbatch_batch", columnList = "material_batch_id")
@@ -24,15 +24,14 @@ import java.math.BigDecimal;
 )
 public class ProductionPlanBatchUsage extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Integer id;
+    @Column(name = "id", nullable = false, length = 191)
+    private String id;
+
     @Column(name = "production_plan_id", nullable = false, length = 191)
     private String productionPlanId;
-    @Column(name = "material_batch_id", nullable = false)
+
+    @Column(name = "material_batch_id", nullable = false, length = 191)
     private String materialBatchId;
-    @Column(name = "batch_id", nullable = false)
-    private String batchId;
     @Column(name = "planned_quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal plannedQuantity;
     @Column(name = "actual_quantity", precision = 10, scale = 2)
