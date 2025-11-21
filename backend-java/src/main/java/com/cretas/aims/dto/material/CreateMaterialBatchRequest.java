@@ -18,6 +18,10 @@ import java.time.LocalDate;
 @Schema(description = "创建原材料批次请求")
 public class CreateMaterialBatchRequest {
 
+    @Schema(description = "批次号(可选，不填则自动生成，格式: MAT-YYYYMMDD-HHMMSS)")
+    @Size(max = 100, message = "批次号不能超过100个字符")
+    private String batchNumber;
+
     @Schema(description = "原材料类型ID", required = true)
     @NotNull(message = "原材料类型不能为空")
     private String materialTypeId;
@@ -59,6 +63,9 @@ public class CreateMaterialBatchRequest {
 
     @Schema(description = "到期日期（可选，不填则根据保质期天数自动计算）")
     private LocalDate expireDate;
+
+    @Schema(description = "生产日期（可选）")
+    private LocalDate productionDate;
 
     @Schema(description = "存储位置")
     @Size(max = 100, message = "存储位置不能超过100个字符")

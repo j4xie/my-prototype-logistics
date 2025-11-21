@@ -242,7 +242,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 记录调整
         MaterialBatchAdjustment adjustment = new MaterialBatchAdjustment();
-        adjustment.setBatchId(batchId);
+        adjustment.setId(java.util.UUID.randomUUID().toString());
+        adjustment.setMaterialBatchId(batchId);
         adjustment.setAdjustmentType(adjustmentQuantity.compareTo(BigDecimal.ZERO) > 0 ? "increase" : "decrease");
         adjustment.setQuantityBefore(batch.getCurrentQuantity());
         adjustment.setAdjustmentQuantity(adjustmentQuantity.abs());
@@ -524,7 +525,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 记录调整
         MaterialBatchAdjustment adjustmentRecord = new MaterialBatchAdjustment();
-        adjustmentRecord.setBatchId(batchId);
+        adjustmentRecord.setId(java.util.UUID.randomUUID().toString());
+        adjustmentRecord.setMaterialBatchId(batchId);
         adjustmentRecord.setAdjustmentType(adjustment.compareTo(BigDecimal.ZERO) > 0 ? "INCREASE" : "DECREASE");
         adjustmentRecord.setQuantityBefore(oldQuantity);
         adjustmentRecord.setQuantityAfter(newQuantity);
@@ -584,10 +586,12 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 记录批次使用关联
         ProductionPlanBatchUsage usage = new ProductionPlanBatchUsage();
+        usage.setId(java.util.UUID.randomUUID().toString());
         usage.setProductionPlanId(productionPlanId);
-        usage.setBatchId(batchId);
+        usage.setMaterialBatchId(batchId);
         usage.setReservedQuantity(quantity);
         usage.setUsedQuantity(BigDecimal.ZERO);
+        usage.setPlannedQuantity(quantity); // 设置计划数量
         productionPlanBatchUsageRepository.save(usage);
     }
 
@@ -623,7 +627,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 更新批次使用关联
         ProductionPlanBatchUsage usage = productionPlanBatchUsageRepository
-                .findByProductionPlanIdAndBatchId(productionPlanId, batchId)
+                .findByProductionPlanIdAndMaterialBatchId(productionPlanId, batchId)
                 .orElse(null);
 
         if (usage != null) {
@@ -678,7 +682,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 更新批次使用关联
         ProductionPlanBatchUsage usage = productionPlanBatchUsageRepository
-                .findByProductionPlanIdAndBatchId(productionPlanId, batchId)
+                .findByProductionPlanIdAndMaterialBatchId(productionPlanId, batchId)
                 .orElse(null);
 
         if (usage != null) {

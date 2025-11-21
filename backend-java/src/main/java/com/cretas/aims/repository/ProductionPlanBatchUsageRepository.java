@@ -15,7 +15,7 @@ import java.util.List;
  * @since 2025-01-09
  */
 @Repository
-public interface ProductionPlanBatchUsageRepository extends JpaRepository<ProductionPlanBatchUsage, Integer> {
+public interface ProductionPlanBatchUsageRepository extends JpaRepository<ProductionPlanBatchUsage, String> {
     /**
      * 根据生产计划查找批次使用记录
      */
@@ -45,5 +45,5 @@ public interface ProductionPlanBatchUsageRepository extends JpaRepository<Produc
      /**
      * 根据生产计划ID和批次ID查找使用记录
       */
-    java.util.Optional<ProductionPlanBatchUsage> findByProductionPlanIdAndBatchId(String productionPlanId, String batchId);
+    java.util.Optional<ProductionPlanBatchUsage> findByProductionPlanIdAndMaterialBatchId(String productionPlanId, String materialBatchId);
 }
