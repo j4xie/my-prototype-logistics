@@ -20,6 +20,10 @@ import { useNavigation } from '@react-navigation/native';
 import { whitelistApiClient, WhitelistDTO, CreateWhitelistRequest } from '../../services/api/whitelistApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建WhitelistManagement专用logger
+const whitelistLogger = logger.createContextLogger('WhitelistManagement');
 
 /**
  * 白名单管理页面
@@ -82,9 +86,15 @@ export default function WhitelistManagementScreen() {
 
       if (response.content) {
         setWhitelist(response.content);
+        whitelistLogger.info('白名单列表加载成功', {
+          factoryId: user?.factoryId,
+          count: response.content.length,
+        });
       }
     } catch (error) {
-      console.error('加载白名单失败:', error);
+      whitelistLogger.error('加载白名单失败', error as Error, {
+        factoryId: user?.factoryId,
+      });
       Alert.alert('错误', error.response?.data?.message || '加载白名单失败');
     } finally {
       setLoading(false);
@@ -141,8 +151,18 @@ export default function WhitelistManagementScreen() {
 
       setModalVisible(false);
       loadWhitelist();
+
+      whitelistLogger.info('批量添加白名单成功', {
+        factoryId: user?.factoryId,
+        successCount: result.success,
+        failedCount: result.failed,
+        totalCount: phoneLines.length,
+      });
     } catch (error) {
-      console.error('批量添加失败:', error);
+      whitelistLogger.error('批量添加白名单失败', error as Error, {
+        factoryId: user?.factoryId,
+        phoneCount: phoneLines.length,
+      });
       Alert.alert('错误', error.response?.data?.message || '批量添加失败');
     }
   };
@@ -161,8 +181,17 @@ export default function WhitelistManagementScreen() {
               await whitelistApiClient.deleteWhitelist(id, user?.factoryId);
               Alert.alert('成功', '白名单已删除');
               loadWhitelist();
+              whitelistLogger.info('删除白名单成功', {
+                factoryId: user?.factoryId,
+                whitelistId: id,
+                phoneNumber,
+              });
             } catch (error) {
-              console.error('删除失败:', error);
+              whitelistLogger.error('删除白名单失败', error as Error, {
+                factoryId: user?.factoryId,
+                whitelistId: id,
+                phoneNumber,
+              });
               Alert.alert('错误', error.response?.data?.message || '删除失败');
             }
           },
