@@ -84,18 +84,31 @@ export default function WhitelistManagementScreen() {
         size: 100,
       });
 
-      if (response.content) {
-        setWhitelist(response.content);
+      // 📊 调试日志：查看API响应结构
+      whitelistLogger.debug('API响应结构', {
+        hasData: !!response.data,
+        dataType: typeof response.data,
+        hasContent: !!(response.data && response.data.content),
+        isContentArray: response.data && Array.isArray(response.data.content),
+        contentLength: response.data && response.data.content ? response.data.content.length : 0,
+      });
+
+      // ✅ 正确的数据访问：response.data.content
+      if (response.data && response.data.content) {
+        setWhitelist(response.data.content);
         whitelistLogger.info('白名单列表加载成功', {
           factoryId: user?.factoryId,
-          count: response.content.length,
+          count: response.data.content.length,
         });
+      } else {
+        whitelistLogger.warn('API返回空数据', { response });
+        setWhitelist([]);
       }
     } catch (error) {
       whitelistLogger.error('加载白名单失败', error as Error, {
         factoryId: user?.factoryId,
       });
-      Alert.alert('错误', error.response?.data?.message || '加载白名单失败');
+      Alert.alert('错误', (error as any).response?.data?.message || '加载白名单失败');
     } finally {
       setLoading(false);
     }

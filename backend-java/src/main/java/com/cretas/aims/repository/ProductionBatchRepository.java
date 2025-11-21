@@ -69,11 +69,11 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
     /**
      * 统计指定工厂、指定状态、指定时间后创建的批次数量
      * @param factoryId 工厂ID
-     * @param status 批次状态（字符串）
+     * @param status 批次状态（枚举）
      * @param createdAt 创建时间起点
      * @return 批次数量
      */
-    long countByFactoryIdAndStatusAndCreatedAtAfter(String factoryId, String status, LocalDateTime createdAt);
+    long countByFactoryIdAndStatusAndCreatedAtAfter(String factoryId, ProductionBatchStatus status, LocalDateTime createdAt);
 
     /**
      * 计算某月产量

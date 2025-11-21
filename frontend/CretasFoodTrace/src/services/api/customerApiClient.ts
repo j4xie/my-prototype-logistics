@@ -76,11 +76,26 @@ class CustomerApiClient {
       `${this.getFactoryPath(factoryId)}/customers`,
       { params: queryParams }
     );
-    // 兼容旧格式：包装成 {data: [...]}
-    if (apiResponse.content) {
+
+    // 处理后端返回的多层嵌套结构
+    // 后端返回: { code: 200, data: { content: [...], totalElements, ... }, success: true, message: ... }
+    if (apiResponse.data && apiResponse.data.content) {
+      // 标准格式：response.data.content 是分页数据
+      return { data: apiResponse.data.content };
+    } else if (apiResponse.content) {
+      // 兼容格式1：response.content 直接是数组
       return { data: apiResponse.content };
+    } else if (Array.isArray(apiResponse.data)) {
+      // 兼容格式2：response.data 直接是数组
+      return { data: apiResponse.data };
+    } else if (Array.isArray(apiResponse)) {
+      // 兼容格式3：response 直接是数组
+      return { data: apiResponse };
     }
-    return { data: apiResponse };
+
+    // 如果都不匹配，返回空数组
+    console.warn('[CustomerApiClient] 未知的响应格式:', apiResponse);
+    return { data: [] };
   }
 
   /**

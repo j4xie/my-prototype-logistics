@@ -109,14 +109,18 @@
         }
 
         .sidebar-nav-section {
-            padding: 12px 20px 8px;
-            font-size: 11px;
+            padding: 14px 20px 10px;
+            font-size: 12px;
             font-weight: 700;
-            text-transform: uppercase;
-            color: #888;
+            color: #4a90e2;
             letter-spacing: 0.5px;
-            border-bottom: 1px solid #f0f0f0;
-            margin-top: 10px;
+            border-left: 3px solid #4a90e2;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            background: #f5f7fa;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         /* Main Content */
@@ -125,6 +129,26 @@
             padding: 40px 50px;
             background: white;
             flex: 1;
+        }
+
+        .content p {
+            line-height: 1.8;
+            margin: 15px 0;
+            color: #444;
+            font-size: 15px;
+        }
+
+        .content p:first-of-type {
+            margin-top: 0;
+        }
+
+        /* Sections */
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
         }
 
         /* Header */
@@ -169,53 +193,134 @@
         .badge-info { background: #d1ecf1; color: #0c5460; }
 
         /* Headings */
-        h1 { font-size: 28px; margin-top: 40px; margin-bottom: 20px; color: #2c3e50; font-weight: 700; padding-top: 10px; border-top: 2px solid #e0e0e0; }
-        h2 { font-size: 22px; margin-top: 35px; margin-bottom: 15px; color: #34495e; font-weight: 600; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0; }
-        h3 { font-size: 18px; margin-top: 25px; margin-bottom: 12px; color: #555; font-weight: 600; }
-        h4 { font-size: 15px; margin-top: 18px; margin-bottom: 10px; color: #666; font-weight: 600; }
-        h5 { font-size: 14px; margin-top: 15px; margin-bottom: 8px; color: #777; font-weight: 600; }
+        h1 {
+            font-size: 28px;
+            margin-top: 50px;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            font-weight: 700;
+            padding: 20px 0 15px 0;
+            border-top: 3px solid #667eea;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        h2 {
+            font-size: 22px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #34495e;
+            font-weight: 600;
+            padding: 15px 0 10px 0;
+            border-bottom: 2px solid #667eea;
+            position: relative;
+            padding-left: 15px;
+        }
+        h2::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: #667eea;
+            border-radius: 2px;
+        }
+        h3 {
+            font-size: 18px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #555;
+            font-weight: 600;
+            padding-left: 12px;
+            border-left: 3px solid #764ba2;
+        }
+        h4 {
+            font-size: 15px;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            color: #666;
+            font-weight: 600;
+            padding-left: 10px;
+            border-left: 2px solid #ddd;
+        }
+        h5 {
+            font-size: 14px;
+            margin-top: 18px;
+            margin-bottom: 10px;
+            color: #777;
+            font-weight: 600;
+        }
 
         /* Tables */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 25px 0;
             background: white;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-radius: 6px;
+            overflow: hidden;
         }
 
         th {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 12px 15px;
+            padding: 15px 18px;
             text-align: left;
             font-weight: 600;
-            font-size: 13px;
+            font-size: 14px;
+            letter-spacing: 0.3px;
         }
 
         td {
-            padding: 12px 15px;
+            padding: 14px 18px;
             border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            line-height: 1.6;
         }
 
-        tr:hover {
-            background: #f9f9f9;
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background: #f5f7fa;
+            transition: background 0.2s;
+        }
+
+        /* 表格响应式 */
+        @media (max-width: 768px) {
+            table {
+                font-size: 12px;
+            }
+            th, td {
+                padding: 10px 12px;
+            }
         }
 
         /* Code Blocks */
         pre {
             background: #282c34;
             color: #abb2bf;
-            padding: 15px;
+            padding: 20px;
             border-radius: 6px;
             overflow-x: auto;
-            margin: 15px 0;
+            margin: 20px 0;
             font-size: 13px;
-            line-height: 1.5;
+            line-height: 1.6;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            border-left: 4px solid #667eea;
         }
 
         code {
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            border: none;
         }
 
         inline {
@@ -227,27 +332,44 @@
 
         /* Lists */
         ul, ol {
-            margin: 15px 0;
-            padding-left: 30px;
+            margin: 20px 0;
+            padding-left: 40px;
+            line-height: 1.8;
         }
 
         li {
-            margin: 8px 0;
+            margin: 10px 0;
+            color: #444;
+        }
+
+        li strong {
+            color: #2c3e50;
         }
 
         /* Blockquotes */
         blockquote {
-            border-left: 4px solid #667eea;
-            padding: 12px 20px;
-            background: #f5f7fa;
-            margin: 20px 0;
+            border-left: 5px solid #667eea;
+            padding: 18px 20px;
+            background: linear-gradient(90deg, #f5f7fa 0%, #ffffff 100%);
+            margin: 25px 0;
             border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+            font-style: italic;
         }
 
         blockquote p {
-            margin: 0;
-            font-size: 14px;
-            color: #666;
+            margin: 8px 0;
+            font-size: 15px;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        blockquote p:first-child {
+            margin-top: 0;
+        }
+
+        blockquote p:last-child {
+            margin-bottom: 0;
         }
 
         /* Status Indicators */
@@ -271,15 +393,84 @@
             margin-bottom: 20px;
             font-size: 13px;
             color: #888;
+            flex-wrap: wrap;
         }
 
         .breadcrumb a {
             color: #4a90e2;
             text-decoration: none;
+            transition: all 0.2s;
         }
 
         .breadcrumb a:hover {
+            color: #667eea;
             text-decoration: underline;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 250px;
+            }
+            .content {
+                margin-left: 250px;
+                padding: 35px 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                width: 280px;
+                z-index: 1001;
+                transition: left 0.3s;
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 30px 25px;
+            }
+
+            .doc-header h1 {
+                font-size: 24px;
+            }
+
+            h1 { font-size: 24px; }
+            h2 { font-size: 20px; }
+            h3 { font-size: 16px; }
+            h4 { font-size: 14px; }
+
+            table {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .content {
+                padding: 20px 15px;
+            }
+
+            .doc-header h1 {
+                font-size: 20px;
+            }
+
+            .doc-meta {
+                gap: 15px;
+                flex-direction: column;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px 10px !important;
+            }
         }
 
         /* Back to Top */
@@ -380,30 +571,37 @@
                 <input type="text" id="searchInput" placeholder="搜索...">
             </div>
             <nav class="sidebar-nav" id="sidebarNav">
-                <div class="sidebar-nav-section">核心文档</div>
-                <a href="#核对结果与统计" class="sidebar-nav-item" data-section="核对结果与统计">核对结果与统计</a>
-                <a href="#1-认证与权限模块" class="sidebar-nav-item" data-section="1-认证与权限模块">认证与权限模块</a>
-                <a href="#2-考勤管理模块" class="sidebar-nav-item" data-section="2-考勤管理模块">考勤管理模块</a>
-                <a href="#3-生产加工模块" class="sidebar-nav-item" data-section="3-生产加工模块">生产加工模块</a>
-                <a href="#4-ai智能分析模块" class="sidebar-nav-item" data-section="4-ai智能分析模块">AI智能分析模块</a>
-                <a href="#5-设备管理模块" class="sidebar-nav-item" data-section="5-设备管理模块">设备管理模块</a>
-                <a href="#6-库存管理模块" class="sidebar-nav-item" data-section="6-库存管理模块">库存管理模块</a>
-                <a href="#7-质量检验模块" class="sidebar-nav-item" data-section="7-质量检验模块">质量检验模块</a>
-                <a href="#8-基础数据管理模块" class="sidebar-nav-item" data-section="8-基础数据管理模块">基础数据管理模块</a>
-                <a href="#9-平台管理模块" class="sidebar-nav-item" data-section="9-平台管理模块">平台管理模块</a>
-                <a href="#10-报表分析模块" class="sidebar-nav-item" data-section="10-报表分析模块">报表分析模块</a>
-                <a href="#已知问题与限制" class="sidebar-nav-item" data-section="已知问题与限制">已知问题与限制</a>
-                <a href="#待完成功能清单" class="sidebar-nav-item" data-section="待完成功能清单">待完成功能清单</a>
+                <!-- 核心模块 -->
+                <div class="sidebar-nav-section">📊 核心模块 (10个)</div>
+                <a href="#1-认证与权限模块" class="sidebar-nav-item" data-section="1-认证与权限模块">🔐 认证与权限</a>
+                <a href="#2-考勤管理模块" class="sidebar-nav-item" data-section="2-考勤管理模块">⏰ 考勤管理</a>
+                <a href="#3-生产加工模块" class="sidebar-nav-item" data-section="3-生产加工模块">🏭 生产加工</a>
+                <a href="#4-ai智能分析模块" class="sidebar-nav-item" data-section="4-ai智能分析模块">🤖 AI智能分析</a>
+                <a href="#5-设备管理模块" class="sidebar-nav-item" data-section="5-设备管理模块">⚙️ 设备管理</a>
+                <a href="#6-库存管理模块" class="sidebar-nav-item" data-section="6-库存管理模块">📦 库存管理</a>
+                <a href="#7-质量检验模块" class="sidebar-nav-item" data-section="7-质量检验模块">✅ 质量检验</a>
+                <a href="#8-基础数据管理模块" class="sidebar-nav-item" data-section="8-基础数据管理模块">📋 基础数据</a>
+                <a href="#9-平台管理模块" class="sidebar-nav-item" data-section="9-平台管理模块">👥 平台管理</a>
+                <a href="#10-报表分析模块" class="sidebar-nav-item" data-section="10-报表分析模块">📈 报表分析</a>
 
-                <div class="sidebar-nav-section">推荐阅读</div>
-                <a href="#推荐阅读" class="sidebar-nav-item" data-section="推荐阅读">推荐文档</a>
-                <a href="../QUICK_START.md" class="sidebar-nav-item" style="opacity: 0.7;">→ QUICK_START</a>
-                <a href="../INTEGRATION_TEST_GUIDE.md" class="sidebar-nav-item" style="opacity: 0.7;">→ 集成测试指南</a>
-                <a href="../IMPLEMENTATION_SUMMARY.md" class="sidebar-nav-item" style="opacity: 0.7;">→ 实现总结</a>
-                <a href="../COMPLETION_REPORT.md" class="sidebar-nav-item" style="opacity: 0.7;">→ 完成报告</a>
+                <!-- 总结章节 -->
+                <div class="sidebar-nav-section">📄 总结与规划</div>
+                <a href="#核对结果与统计" class="sidebar-nav-item" data-section="核对结果与统计">✓ 核对与统计</a>
+                <a href="#已知问题与限制" class="sidebar-nav-item" data-section="已知问题与限制">⚠️ 已知问题</a>
+                <a href="#待完成功能清单" class="sidebar-nav-item" data-section="待完成功能清单">📌 待完成清单</a>
 
-                <div class="sidebar-nav-section">附录</div>
-                <a href="#更新日志" class="sidebar-nav-item" data-section="更新日志">更新日志</a>
+                <!-- 推荐阅读 -->
+                <div class="sidebar-nav-section">📚 相关文档</div>
+                <a href="#推荐阅读" class="sidebar-nav-item" data-section="推荐阅读">💡 推荐文档</a>
+                <a href="../QUICK_START.md" class="sidebar-nav-item" style="opacity: 0.7;">⚡ QUICK_START</a>
+                <a href="../INTEGRATION_TEST_GUIDE.md" class="sidebar-nav-item" style="opacity: 0.7;">🧪 集成测试</a>
+                <a href="../IMPLEMENTATION_SUMMARY.md" class="sidebar-nav-item" style="opacity: 0.7;">💻 实现总结</a>
+                <a href="../COMPLETION_REPORT.md" class="sidebar-nav-item" style="opacity: 0.7;">🎉 完成报告</a>
+                <a href="AI-Integration-Complete-Guide.html" class="sidebar-nav-item" style="opacity: 0.7;">🤖 AI集成指南</a>
+
+                <!-- 附录 -->
+                <div class="sidebar-nav-section">📖 附录</div>
+                <a href="#更新日志" class="sidebar-nav-item" data-section="更新日志">📝 更新日志</a>
             </nav>
         </aside>
 
