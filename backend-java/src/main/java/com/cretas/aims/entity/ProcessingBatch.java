@@ -36,6 +36,10 @@ public class ProcessingBatch extends BaseEntity {
     private String batchNumber;
     @Column(name = "product_name", nullable = false)
     private String productName;
+
+    @Column(name = "product_type", length = 191)
+    private String productType;
+
     @Column(name = "quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity;
 

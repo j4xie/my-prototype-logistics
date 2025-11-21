@@ -72,6 +72,11 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
         log.info("创建质量检验记录: factoryId={}, productionBatchId={}",
                 factoryId, inspection.getProductionBatchId());
 
+        // 生成UUID作为ID
+        if (inspection.getId() == null || inspection.getId().trim().isEmpty()) {
+            inspection.setId(java.util.UUID.randomUUID().toString());
+        }
+
         inspection.setFactoryId(factoryId);
         QualityInspection saved = qualityInspectionRepository.save(inspection);
 
