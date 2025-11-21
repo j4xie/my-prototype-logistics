@@ -28,6 +28,10 @@ import {
 } from '../../services/api/qualityInspectionApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建QualityInspectionList专用logger
+const qualityInspectionLogger = logger.createContextLogger('QualityInspectionList');
 
 type QualityInspectionListScreenProps = ProcessingScreenProps<'QualityInspectionList'>;
 
@@ -82,7 +86,7 @@ export default function QualityInspectionListScreen() {
 
     try {
       // API integration - GET /api/mobile/{factoryId}/processing/quality/inspections
-      console.log('🔍 Fetching quality inspections...', { factoryId, batchId, resultFilter });
+      qualityInspectionLogger.debug('获取质检记录列表', { factoryId, batchId, resultFilter, page: currentPage });
 
       const response = await qualityInspectionApiClient.getInspections(
         {
@@ -93,19 +97,29 @@ export default function QualityInspectionListScreen() {
         factoryId
       );
 
-      console.log('✅ Quality inspections loaded:', response);
-
       // Extract data from paginated response
       if (response.success && response.data) {
         const pageData = response.data;
         setInspections(pageData.content ?? []);
         setTotalPages(pageData.totalPages ?? 0);
+
+        qualityInspectionLogger.info('质检记录列表加载成功', {
+          factoryId,
+          batchId,
+          recordCount: (pageData.content ?? []).length,
+          totalPages: pageData.totalPages ?? 0,
+        });
       } else {
         setInspections([]);
       }
 
     } catch (error) {
-      console.error('❌ Failed to fetch quality inspections:', error);
+      qualityInspectionLogger.error('获取质检记录列表失败', error as Error, {
+        factoryId,
+        batchId,
+        resultFilter,
+        page: currentPage,
+      });
 
       // ✅ GOOD: 设置错误状态，不只是Alert
       handleError(error, {
