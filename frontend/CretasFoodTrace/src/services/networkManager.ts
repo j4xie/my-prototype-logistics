@@ -1,5 +1,6 @@
 import NetInfo, { NetInfoState, NetInfoStateType } from '@react-native-community/netinfo';
 import { Platform } from 'react-native';
+import { handleError } from '../utils/errorHandler';
 
 export interface NetworkState {
   isConnected: boolean;
@@ -251,7 +252,7 @@ export class NetworkManager {
         console.log(`✅ Network operation succeeded on attempt ${attempt + 1}`);
         return result;
 
-      } catch (error: any) {
+      } catch (error) {
         lastError = error;
         
         if (attempt === opts.maxRetries) {
@@ -315,7 +316,7 @@ export class NetworkManager {
         responseTime,
         error,
       };
-    } catch (error: any) {
+    } catch (error) {
       return {
         isConnected: false,
         isInternetReachable: false,

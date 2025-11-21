@@ -1,329 +1,190 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, List, Divider, useTheme } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, List, Divider, useTheme, Avatar } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../../store/authStore';
+import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
+import { theme } from '../../theme';
 
 type ManagementNavigationProp = NativeStackNavigationProp<any>;
 
-/**
- * 管理主页 - 工厂配置和管理功能入口
- */
 export default function ManagementScreen() {
   const navigation = useNavigation<ManagementNavigationProp>();
-  const theme = useTheme();
   const { user } = useAuthStore();
-
-  const isAdmin = user?.factoryUser?.roleCode === 'factory_super_admin' ||
-                  user?.factoryUser?.roleCode === 'permission_admin';
-
-  // 调试日志：检查用户角色
-  console.log('ManagementScreen - User:', user);
-  console.log('ManagementScreen - isAdmin:', isAdmin);
-  console.log('ManagementScreen - roleCode:', user?.factoryUser?.roleCode);
+  const isAdmin = user?.factoryUser?.roleCode === 'factory_super_admin' || user?.factoryUser?.roleCode === 'permission_admin';
 
   const managementSections = [
     {
       title: '生产配置',
       icon: 'cog-outline',
       items: [
-        {
-          id: 'product-types',
-          title: '产品类型管理',
-          description: '配置产品类型(鱼片、鱼头、鱼骨等)',
-          icon: 'fish',
-          route: 'ProductTypeManagement',
-        },
-        {
-          id: 'material-types',
-          title: '原材料类型管理',
-          description: '配置原材料类型(鲈鱼、带鱼、三文鱼等)',
-          icon: 'food-drumstick',
-          route: 'MaterialTypeManagement',
-        },
-        {
-          id: 'conversion-rates',
-          title: '转换率配置',
-          description: '设置原料到产品的转换率和损耗率',
-          icon: 'swap-horizontal',
-          route: 'ConversionRate',
-        },
-        {
-          id: 'work-types',
-          title: '工作类型管理',
-          description: '配置工种类型和时薪标准(加工工、质检员等)',
-          icon: 'account-hard-hat',
-          route: 'WorkTypeManagement',
-          adminOnly: true,
-        },
-      ],
-    },
-    {
-      title: '高级功能',
-      icon: 'brain',
-      items: [
-        {
-          id: 'ai-settings',
-          title: 'AI分析设置',
-          description: '配置AI成本分析的语气、目标和行业标准',
-          icon: 'robot',
-          route: 'AISettings',
-          adminOnly: false,
-        },
+        { id: 'product-types', title: '产品类型', desc: '配置鱼片、鱼头等类型', icon: 'fish', route: 'ProductTypeManagement' },
+        { id: 'material-types', title: '原材料类型', desc: '配置鲈鱼、带鱼等原料', icon: 'food-drumstick', route: 'MaterialTypeManagement' },
+        { id: 'conversion-rates', title: '转换率', desc: '配置原料到产品转换率', icon: 'swap-horizontal', route: 'ConversionRate' },
+        { id: 'work-types', title: '工作类型', desc: '配置工种和时薪', icon: 'account-hard-hat', route: 'WorkTypeManagement', adminOnly: true },
       ],
     },
     {
       title: '系统管理',
-      icon: 'shield-account',
+      icon: 'shield-account-outline',
       items: [
-        {
-          id: 'departments',
-          title: '部门管理',
-          description: '管理组织架构和部门信息',
-          icon: 'office-building',
-          route: 'DepartmentManagement',
-          adminOnly: true,
-        },
-        {
-          id: 'users',
-          title: '用户管理',
-          description: '管理用户、角色和权限',
-          icon: 'account-cog',
-          route: 'UserManagement',
-          adminOnly: true,
-        },
-        {
-          id: 'whitelist',
-          title: '白名单管理',
-          description: '管理允许注册的手机号白名单',
-          icon: 'shield-check',
-          route: 'WhitelistManagement',
-          adminOnly: true,
-        },
+        { id: 'departments', title: '部门管理', desc: '组织架构和部门信息', icon: 'office-building', route: 'DepartmentManagement', adminOnly: true },
+        { id: 'users', title: '用户管理', desc: '用户、角色和权限', icon: 'account-cog', route: 'UserManagement', adminOnly: true },
+        { id: 'whitelist', title: '白名单', desc: '管理注册手机号', icon: 'shield-check', route: 'WhitelistManagement', adminOnly: true },
       ],
     },
     {
-      title: '业务伙伴管理',
-      icon: 'handshake',
-      items: [
-        {
-          id: 'suppliers',
-          title: '供应商管理',
-          description: '管理供应商信息和采购历史',
-          icon: 'truck-delivery',
-          route: 'SupplierManagement',
-          adminOnly: false, // 所有角色可查看，但只有管理员可编辑
-        },
-        {
-          id: 'customers',
-          title: '客户管理',
-          description: '管理客户信息和销售历史',
-          icon: 'store',
-          route: 'CustomerManagement',
-          adminOnly: false, // 所有角色可查看，但只有管理员可编辑
-        },
-      ],
+        title: '业务伙伴',
+        icon: 'handshake-outline',
+        items: [
+            { id: 'suppliers', title: '供应商管理', desc: '管理供应商信息', icon: 'truck-delivery', route: 'SupplierManagement' },
+            { id: 'customers', title: '客户管理', desc: '管理客户信息', icon: 'store', route: 'CustomerManagement' },
+        ]
     },
     {
-      title: '工厂配置',
-      icon: 'factory',
-      items: [
-        {
-          id: 'factory-settings',
-          title: '工厂设置',
-          description: '工厂基本信息和配置',
-          icon: 'cog',
-          route: 'FactorySettings',
-          adminOnly: true,
-        },
-      ],
-    },
+        title: '工厂配置',
+        icon: 'factory',
+        items: [
+             { id: 'factory-settings', title: '工厂设置', desc: '工厂基本信息配置', icon: 'cog', route: 'FactorySettings', adminOnly: true },
+        ]
+    }
   ];
 
-  const handleNavigate = (route: string) => {
-    if (route) {
-      navigation.navigate(route);
-    }
-  };
+  const handleNavigate = (route: string) => route && navigation.navigate(route);
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
-        <Text style={styles.headerTitle}>管理中心</Text>
-        <Text style={styles.headerSubtitle}>
-          工厂配置和系统管理
-        </Text>
+    <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>
+      <View style={styles.header}>
+          <Text style={styles.headerTitle}>管理中心</Text>
+          <Text style={styles.headerSubtitle}>工厂配置与系统管理</Text>
       </View>
 
-      <ScrollView style={styles.scrollView}>
-        {managementSections.map((section, sectionIndex) => {
-          // 过滤出当前用户可见的items
-          const visibleItems = section.items.filter(item => {
-            if (item.adminOnly && !isAdmin) {
-              return false;
-            }
-            return true;
-          });
-
-          // 如果没有可见items，不渲染整个section
-          if (visibleItems.length === 0) {
-            return null;
-          }
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {managementSections.map((section, index) => {
+          const visibleItems = section.items.filter(item => !item.adminOnly || isAdmin);
+          if (visibleItems.length === 0) return null;
 
           return (
-            <Card key={sectionIndex} style={styles.sectionCard}>
-              <Card.Content>
-                {/* Section Header */}
-                <View style={styles.sectionHeader}>
-                  <List.Icon icon={section.icon} color={theme.colors.primary} />
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
-                </View>
-
-                <Divider style={styles.divider} />
-
-                {/* Section Items */}
-                {visibleItems.map((item, itemIndex) => (
-                  <React.Fragment key={item.id}>
-                    <List.Item
-                      title={item.title}
-                      description={item.description}
-                      left={props => <List.Icon {...props} icon={item.icon} />}
-                      right={props => (
-                        <View style={styles.rightContent}>
-                          {item.badge && (
-                            <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
-                              <Text style={styles.badgeText}>{item.badge}</Text>
-                            </View>
-                          )}
-                          <List.Icon {...props} icon="chevron-right" />
-                        </View>
-                      )}
-                      onPress={() => handleNavigate(item.route)}
-                      style={styles.listItem}
-                    />
-                    {itemIndex < visibleItems.length - 1 && (
-                      <Divider style={styles.itemDivider} />
-                    )}
-                  </React.Fragment>
-                ))}
-              </Card.Content>
-            </Card>
+            <NeoCard key={index} style={styles.sectionCard} padding="m">
+              <View style={styles.sectionHeader}>
+                <Avatar.Icon size={32} icon={section.icon} style={styles.sectionIcon} color={theme.colors.primary} />
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+              </View>
+              
+              <View style={styles.grid}>
+                  {visibleItems.map((item) => (
+                      <TouchableOpacity key={item.id} style={styles.gridItem} onPress={() => handleNavigate(item.route)}>
+                          <View style={styles.itemIconContainer}>
+                              <Avatar.Icon size={40} icon={item.icon} style={styles.itemIcon} color={theme.colors.primary} />
+                          </View>
+                          <Text style={styles.itemTitle}>{item.title}</Text>
+                          <Text style={styles.itemDesc} numberOfLines={1}>{item.desc}</Text>
+                      </TouchableOpacity>
+                  ))}
+              </View>
+            </NeoCard>
           );
         })}
 
-        {/* Info Card */}
-        <Card style={styles.infoCard}>
-          <Card.Content>
+        <NeoCard style={styles.infoCard} padding="m" variant="flat">
             <View style={styles.infoHeader}>
-              <List.Icon icon="information" color={theme.colors.primary} />
-              <Text style={styles.infoTitle}>提示</Text>
+                <Avatar.Icon size={24} icon="information" style={{ backgroundColor: 'transparent' }} color={theme.colors.primary} />
+                <Text style={styles.infoTitle}>提示</Text>
             </View>
-            <Text style={styles.infoText}>
-              • 产品类型和原料类型需要先配置,才能设置转换率
-            </Text>
-            <Text style={styles.infoText}>
-              • 转换率用于自动计算生产计划所需的原料用量
-            </Text>
-            <Text style={styles.infoText}>
-              • 商家信息用于记录成品出库和供货历史
-            </Text>
-            <Text style={styles.infoText}>
-              • 部分功能需要管理员权限才能访问
-            </Text>
-          </Card.Content>
-        </Card>
-
-        <View style={styles.bottomPadding} />
+            <Text style={styles.infoText}>• 产品类型和原料类型需先配置，才能设置转换率</Text>
+            <Text style={styles.infoText}>• 部分功能需要管理员权限</Text>
+        </NeoCard>
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
   header: {
-    padding: 20,
-    paddingTop: 50,
-    paddingBottom: 30,
+    padding: 24,
+    paddingBottom: 16,
+    backgroundColor: theme.colors.background,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    color: theme.colors.textSecondary,
   },
-  scrollView: {
-    flex: 1,
+  scrollContent: {
+    padding: 16,
+    paddingTop: 0,
+    paddingBottom: 40,
   },
   sectionCard: {
-    margin: 16,
-    marginBottom: 8,
-    elevation: 2,
+    marginBottom: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
+  },
+  sectionIcon: {
+    backgroundColor: theme.colors.surfaceVariant,
+    marginRight: 12,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: -8,
+    fontWeight: '600',
+    color: theme.colors.text,
   },
-  divider: {
-    marginVertical: 8,
+  grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
   },
-  listItem: {
-    paddingVertical: 4,
+  gridItem: {
+      width: '48%', // slightly less than 50% to account for gap
+      backgroundColor: theme.colors.surfaceVariant,
+      padding: 16,
+      borderRadius: 12,
+      alignItems: 'center',
   },
-  itemDivider: {
-    marginLeft: 56,
+  itemIconContainer: {
+      marginBottom: 12,
   },
-  rightContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  itemIcon: {
+      backgroundColor: 'white',
   },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+  itemTitle: {
+      fontWeight: '600',
+      fontSize: 14,
+      marginBottom: 4,
+      textAlign: 'center',
+      color: theme.colors.text,
   },
-  badgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
+  itemDesc: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
   },
   infoCard: {
-    margin: 16,
-    backgroundColor: '#E3F2FD',
+      backgroundColor: theme.colors.surfaceVariant,
   },
   infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
   },
   infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: -8,
+      fontWeight: '600',
+      marginLeft: 8,
+      color: theme.colors.text,
   },
   infoText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#666',
-    marginBottom: 4,
-  },
-  bottomPadding: {
-    height: 20,
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      marginBottom: 4,
+      marginLeft: 32,
   },
 });

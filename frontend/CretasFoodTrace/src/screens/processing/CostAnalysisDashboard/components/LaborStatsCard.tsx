@@ -39,21 +39,21 @@ export const LaborStatsCard = React.memo<LaborStatsCardProps>(({ laborStats }) =
         <View style={styles.detailRow}>
           <Text variant="bodyMedium">人工成本</Text>
           <Text variant="titleMedium" style={[styles.detailValue, { color: '#1976D2' }]}>
-            ¥{laborStats.totalCost.toFixed(2)}
+            ¥{laborStats.totalLaborCost.toFixed(2)}
           </Text>
         </View>
 
-        {laborStats.laborDetails && laborStats.laborDetails.length > 0 && (
+        {laborStats.workerDetails && laborStats.workerDetails.length > 0 && (
           <>
             <Divider style={{ marginVertical: 8 }} />
             <Text variant="bodySmall" style={{ color: '#757575', marginBottom: 8 }}>
-              工种明细
+              工人明细
             </Text>
-            {laborStats.laborDetails.map((detail, index) => (
+            {laborStats.workerDetails.map((detail, index) => (
               <View key={index} style={styles.detailRow}>
-                <Text variant="bodySmall">{detail.workType}</Text>
+                <Text variant="bodySmall">{detail.workerName}{detail.workType ? ` (${detail.workType})` : ''}</Text>
                 <Text variant="bodySmall" style={styles.detailValue}>
-                  {detail.workerCount}人 • ¥{detail.cost.toFixed(2)}
+                  {detail.totalMinutes ? `${Math.floor(detail.totalMinutes / 60)}h` : '-'} • ¥{detail.laborCost?.toFixed(2) || '0.00'}
                 </Text>
               </View>
             ))}

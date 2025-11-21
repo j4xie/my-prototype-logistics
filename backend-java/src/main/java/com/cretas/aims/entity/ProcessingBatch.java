@@ -38,6 +38,10 @@ public class ProcessingBatch extends BaseEntity {
     private String productName;
     @Column(name = "quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity;
+
+    @Column(name = "actual_quantity", precision = 10, scale = 2)
+    private BigDecimal outputQuantity;  // 映射到actual_quantity字段
+
     @Column(name = "unit", nullable = false, length = 20)
     private String unit;
     @Column(name = "start_time")
@@ -61,6 +65,15 @@ public class ProcessingBatch extends BaseEntity {
     private BigDecimal totalCost;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    /**
+     * 生产效率（百分比）
+     * 用于Dashboard KPI计算
+     * ✅ 修复: 添加缺失字段 (2025-11-20)
+     */
+    @Column(name = "production_efficiency", precision = 5, scale = 2)
+    private BigDecimal productionEfficiency;
+
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)

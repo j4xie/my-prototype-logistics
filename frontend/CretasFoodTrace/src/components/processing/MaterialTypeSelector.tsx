@@ -3,6 +3,7 @@ import { View, StyleSheet, Modal, FlatList, TouchableOpacity, Alert } from 'reac
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { materialQuickAPI, MaterialType } from '../../services/api/materialQuickApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
 
 interface MaterialTypeSelectorProps {
   value: string;
@@ -49,7 +50,7 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
       const result = await materialQuickAPI.getMaterialTypes(factoryId);
       console.log('✅ Material types loaded:', result.length);
       setMaterials(result);
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to fetch material types:', error);
       Alert.alert('错误', error.response?.data?.message || '加载原材料类型失败');
       setMaterials([]);
@@ -113,7 +114,7 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
 
       // 关闭弹窗（使用统一函数）
       handleModalClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to create material:', error);
       Alert.alert('创建失败', error.response?.data?.message || error.message || '请重试');
     } finally {
