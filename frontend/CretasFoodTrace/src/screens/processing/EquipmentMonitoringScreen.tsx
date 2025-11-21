@@ -23,6 +23,11 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { equipmentApiClient, type EquipmentStatistics } from '../../services/api/equipmentApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { Alert } from 'react-native';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建EquipmentMonitoring专用logger
+const equipmentMonitoringLogger = logger.createContextLogger('EquipmentMonitoring');
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -65,16 +70,23 @@ export default function EquipmentMonitoringScreen() {
     setLoading(true);
     try {
       // API integration - GET /equipment/overall-statistics
-      console.log('🔍 Fetching equipment statistics...', { factoryId });
+      equipmentMonitoringLogger.debug('获取设备统计数据', { factoryId });
 
       const response = await equipmentApiClient.getOverallStatistics(factoryId);
 
-      console.log('✅ Equipment statistics loaded:', response.data);
+      equipmentMonitoringLogger.info('设备统计数据加载成功', {
+        factoryId,
+        totalCount: response.data.totalCount,
+        activeCount: response.data.activeCount,
+        maintenanceCount: response.data.maintenanceCount,
+      });
 
       setStatistics(response.data);
 
-    } catch (error: any) {
-      console.error('❌ Failed to fetch equipment statistics:', error);
+    } catch (error) {
+      equipmentMonitoringLogger.error('获取设备统计失败', error as Error, {
+        factoryId,
+      });
 
       const errorMessage = error.response?.data?.message || error.message || '无法加载设备统计，请稍后重试';
       Alert.alert('加载失败', errorMessage);
