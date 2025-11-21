@@ -39,7 +39,7 @@ export default function RealtimeReportScreen() {
       ]);
 
       const activeBatches = batchesResponse.success && batchesResponse.data
-        ? (batchesResponse.data.content || batchesResponse.data || []).length
+        ? (batchesResponse.data.content ?? batchesResponse.data ?? []).length
         : 0;
 
       const activeEquipment = equipmentResponse.success && equipmentResponse.data
