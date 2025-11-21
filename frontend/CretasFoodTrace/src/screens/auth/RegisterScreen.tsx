@@ -15,6 +15,10 @@ import { useRegister } from '../../hooks/useRegister';
 import { RegisterRequest } from '../../types/auth';
 import { NeoCard, NeoButton, ScreenWrapper } from '../../components/ui';
 import { theme } from '../../theme';
+import { logger } from '../../utils/logger';
+
+// 创建Register专用logger
+const registerLogger = logger.createContextLogger('Register');
 
 const { width } = Dimensions.get('window');
 
@@ -92,10 +96,17 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     try {
       const success = await register(registerRequest);
       if (success) {
+        registerLogger.info('用户注册成功', {
+          username: registerRequest.username,
+          factoryId: registerRequest.factoryId,
+        });
         navigation.navigate('LoginScreen');
       }
     } catch (err) {
-      console.error(err);
+      registerLogger.error('用户注册失败', err as Error, {
+        username: registerRequest.username,
+        factoryId: registerRequest.factoryId,
+      });
     }
   };
 
