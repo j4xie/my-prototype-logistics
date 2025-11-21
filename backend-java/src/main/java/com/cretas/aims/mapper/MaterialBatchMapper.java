@@ -94,13 +94,28 @@ public class MaterialBatchMapper {
         }
         MaterialBatch batch = new MaterialBatch();
         batch.setFactoryId(factoryId);
-        batch.setBatchNumber(generateBatchNumber());
+        // 使用用户提供的批次号，如果没有则自动生成
+        String batchNumber = (request.getBatchNumber() != null && !request.getBatchNumber().trim().isEmpty())
+                ? request.getBatchNumber()
+                : generateBatchNumber();
+        batch.setBatchNumber(batchNumber);
         batch.setMaterialTypeId(request.getMaterialTypeId());
         batch.setSupplierId(request.getSupplierId());
         batch.setReceiptDate(request.getReceiptDate());
         batch.setReceiptQuantity(request.getReceiptQuantity());
         batch.setQuantityUnit(request.getQuantityUnit());
-        batch.setWeightPerUnit(request.getWeightPerUnit());
+        // 处理weightPerUnit: 如果用户未提供，则从totalWeight反算
+        if (request.getWeightPerUnit() != null) {
+            batch.setWeightPerUnit(request.getWeightPerUnit());
+        } else if (request.getTotalWeight() != null && request.getReceiptQuantity() != null) {
+            // 从totalWeight反算weightPerUnit
+            BigDecimal calculatedWeightPerUnit = request.getTotalWeight()
+                .divide(request.getReceiptQuantity(), 3, RoundingMode.HALF_UP);
+            batch.setWeightPerUnit(calculatedWeightPerUnit);
+            log.info("自动计算每单位重量: totalWeight={}, receiptQuantity={}, weightPerUnit={}",
+                request.getTotalWeight(), request.getReceiptQuantity(), calculatedWeightPerUnit);
+        }
+
         // 注意: totalWeight, currentQuantity, totalQuantity, remainingQuantity, totalValue
         // 现在都是计算属性，不再需要手动设置
 
@@ -146,6 +161,11 @@ public class MaterialBatchMapper {
         if (request.getExpireDate() != null) {
             batch.setExpireDate(request.getExpireDate());
         }
+
+        // TODO: productionDate字段等待数据库schema添加后支持
+        // if (request.getProductionDate() != null) {
+        //     batch.setProductionDate(request.getProductionDate());
+        // }
 
         return batch;
     }

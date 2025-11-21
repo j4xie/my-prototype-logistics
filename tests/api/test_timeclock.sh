@@ -47,7 +47,7 @@ echo ""
 echo "=== Test 1: 获取今日打卡记录 ==="
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-TODAY_RECORD=$(curl -s -X GET "${API_URL}/timeclock/today" \
+TODAY_RECORD=$(curl -s -X GET "${API_URL}/${FACTORY_ID}/timeclock/today?userId=${USER_ID}" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}")
 
 # 检查响应状态 (可能返回null如果今天没打卡)
@@ -80,10 +80,8 @@ echo ""
 echo "=== Test 2: 上班打卡 ==="
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-CLOCK_IN=$(curl -s -X POST "${API_URL}/timeclock/clock-in" \
-  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d "{\"latitude\":31.2304,\"longitude\":121.4737,\"notes\":\"API测试打卡\"}")
+CLOCK_IN=$(curl -s -X POST "${API_URL}/${FACTORY_ID}/timeclock/clock-in?userId=${USER_ID}&location=Office&device=TestScript" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}")
 
 SUCCESS=$(echo "$CLOCK_IN" | python3 -c "import sys, json; print(json.load(sys.stdin).get('success', False))" 2>/dev/null)
 
@@ -116,7 +114,11 @@ echo ""
 echo "=== Test 3: 打卡历史查询 ==="
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-HISTORY=$(curl -s -X GET "${API_URL}/timeclock/history?page=1&size=5" \
+# 获取最近30天的历史
+START_DATE=$(date -v-30d +%Y-%m-%d 2>/dev/null || date -d '30 days ago' +%Y-%m-%d)
+END_DATE=$(date +%Y-%m-%d)
+
+HISTORY=$(curl -s -X GET "${API_URL}/${FACTORY_ID}/timeclock/history?userId=${USER_ID}&startDate=${START_DATE}&endDate=${END_DATE}&page=1&size=5" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}")
 
 SUCCESS=$(echo "$HISTORY" | python3 -c "import sys, json; print(json.load(sys.stdin).get('success', False))" 2>/dev/null)
@@ -139,7 +141,7 @@ echo ""
 echo "=== Test 4: 考勤统计查询 ==="
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
-STATS=$(curl -s -X GET "${API_URL}/timeclock/stats?month=$(date +%Y-%m)" \
+STATS=$(curl -s -X GET "${API_URL}/${FACTORY_ID}/timeclock/statistics?userId=${USER_ID}&month=$(date +%Y-%m)" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}")
 
 if echo "$STATS" | python3 -c "import sys, json; json.load(sys.stdin); sys.exit(0)" 2>/dev/null; then
