@@ -24,6 +24,11 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建CostComparison专用logger
+const costComparisonLogger = logger.createContextLogger('CostComparison');
 
 // Types
 type CostComparisonScreenNavigationProp = NativeStackNavigationProp<
@@ -85,19 +90,27 @@ export default function CostComparisonScreen() {
       const { user } = useAuthStore.getState();
       const factoryId = user?.factoryId || user?.platformUser?.factoryId || 'CRETAS_2024_001';
 
-      console.log('📊 Fetching cost comparison data...', { batchIds, factoryId });
+      costComparisonLogger.debug('获取成本对比数据', { batchIds, factoryId, batchCount: batchIds.length });
 
       const response = await processingApiClient.getBatchCostComparison(batchIds, factoryId);
 
       if (response.success && response.data) {
         setBatchesData(response.data);
-        console.log('✅ Cost comparison data loaded:', response.data.length, 'batches');
+        costComparisonLogger.info('成本对比数据加载成功', {
+          factoryId,
+          batchIds,
+          batchCount: response.data.length,
+          avgTotalCost: response.data.reduce((sum, b) => sum + b.totalCost, 0) / response.data.length,
+        });
       } else {
         setBatchesData([]);
         Alert.alert('提示', '未找到批次成本数据');
       }
-    } catch (error: any) {
-      console.error('❌ Failed to fetch comparison data:', error);
+    } catch (error) {
+      costComparisonLogger.error('获取成本对比数据失败', error as Error, {
+        factoryId: useAuthStore.getState().user?.factoryId,
+        batchIds,
+      });
       const errorMessage = error.response?.data?.message || error.message || '加载成本对比数据失败';
       Alert.alert('加载失败', errorMessage);
       setBatchesData([]);
