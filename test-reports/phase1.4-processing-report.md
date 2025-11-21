@@ -1,6 +1,6 @@
 # Phase 1.4 生产模块核心API测试报告
 
-**生成时间**: 2025-11-20 20:18:49
+**生成时间**: 2025-11-21 01:09:23
 **Backend**: http://localhost:10010
 **测试账号**: proc_admin (department_admin/processing)
 

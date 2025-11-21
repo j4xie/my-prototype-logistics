@@ -290,10 +290,22 @@ public class ProcessingServiceImpl implements ProcessingService {
             materialBatch.setLastUsedAt(LocalDateTime.now());
             // 创建消耗记录
             MaterialConsumption consumptionRecord = new MaterialConsumption();
+            consumptionRecord.setId(java.util.UUID.randomUUID().toString());  // 设置ID (数据库不自动生成)
+            consumptionRecord.setFactoryId(factoryId);  // 设置工厂ID (必填字段)
             consumptionRecord.setBatch(materialBatch);
+            consumptionRecord.setBatchId(materialBatchId);  // 设置原料批次ID
+            // 设置生产计划ID (从生产批次获取，如果没有则使用productionBatchId作为planId)
+            String planId = productionBatch.getProductionPlanId() != null
+                ? productionBatch.getProductionPlanId().toString()
+                : "PLAN-" + productionBatchId;  // 如果没有计划ID，生成一个临时ID
+            consumptionRecord.setProductionPlanId(planId);  // 设置生产计划ID (必填字段)
             consumptionRecord.setProductionBatchId(productionBatchId);
             consumptionRecord.setQuantity(quantity);
+            consumptionRecord.setUnitPrice(materialBatch.getUnitPrice());  // 从原料批次获取单价 (必填字段)
+            consumptionRecord.setTotalCost(quantity.multiply(materialBatch.getUnitPrice()));  // 计算总成本 (必填字段)
+            consumptionRecord.setConsumptionTime(LocalDateTime.now());  // 设置消耗时间 (必填字段)
             consumptionRecord.setConsumedAt(LocalDateTime.now());
+            consumptionRecord.setRecordedBy(productionBatch.getSupervisorId() != null ? productionBatch.getSupervisorId() : 1);  // 设置记录人 (必填字段，默认使用督导或系统用户)
             materialBatchRepository.save(materialBatch);
             materialConsumptionRepository.save(consumptionRecord);
         }

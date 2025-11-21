@@ -12,7 +12,12 @@ type ManagementNavigationProp = NativeStackNavigationProp<any>;
 export default function ManagementScreen() {
   const navigation = useNavigation<ManagementNavigationProp>();
   const { user } = useAuthStore();
-  const isAdmin = user?.factoryUser?.roleCode === 'factory_super_admin' || user?.factoryUser?.roleCode === 'permission_admin';
+
+  // ✅ 修复: 支持平台管理员和工厂管理员
+  const isAdmin =
+    user?.userType === 'platform' || // 平台管理员有所有权限
+    user?.factoryUser?.role === 'factory_super_admin' ||
+    user?.factoryUser?.role === 'permission_admin';
 
   const managementSections = [
     {
