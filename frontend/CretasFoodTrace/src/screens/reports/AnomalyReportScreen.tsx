@@ -6,6 +6,10 @@ import { useAuthStore } from '../../store/authStore';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建AnomalyReport专用logger
+const anomalyReportLogger = logger.createContextLogger('AnomalyReport');
 
 export default function AnomalyReportScreen() {
   const navigation = useNavigation();
@@ -33,11 +37,16 @@ export default function AnomalyReportScreen() {
           setAlerts(alertData.slice(0, 10));
         }
       } catch (error) {
-        console.warn('告警数据加载失败:', error);
+        anomalyReportLogger.warn('告警数据加载失败', {
+          factoryId,
+          error: (error as Error).message,
+        });
         setAlerts([]);
       }
     } catch (error) {
-      console.error('加载异常数据失败:', error);
+      anomalyReportLogger.error('加载异常数据失败', error as Error, {
+        factoryId: getFactoryId(user),
+      });
       setAlerts([]);
     } finally {
       setLoading(false);
