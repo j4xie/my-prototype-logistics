@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { customerApiClient, Customer } from '../../services/api/customerApiClient';
+import { handleError } from '../../utils/errorHandler';
 
 interface CustomerSelectorProps {
   value: string;
@@ -118,7 +119,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
 
       // 关闭弹窗（使用统一函数）
       handleModalClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Failed to create customer:', error);
       Alert.alert('创建失败', error.response?.data?.message || error.message || '请重试');
     } finally {

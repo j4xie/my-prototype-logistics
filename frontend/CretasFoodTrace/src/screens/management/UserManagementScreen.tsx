@@ -258,14 +258,26 @@ export default function UserManagementScreen() {
     try {
       if (currentStatus) {
         await userApiClient.deactivateUser(userId, user?.factoryId);
+        userManagementLogger.info('用户停用成功', {
+          userId,
+          factoryId: user?.factoryId,
+        });
         Alert.alert('成功', '用户已停用');
       } else {
         await userApiClient.activateUser(userId, user?.factoryId);
+        userManagementLogger.info('用户激活成功', {
+          userId,
+          factoryId: user?.factoryId,
+        });
         Alert.alert('成功', '用户已激活');
       }
       loadUsers();
     } catch (error) {
-      console.error('切换状态失败:', error);
+      userManagementLogger.error('切换用户状态失败', error as Error, {
+        userId,
+        currentStatus,
+        factoryId: user?.factoryId,
+      });
       Alert.alert('错误', error.response?.data?.message || '操作失败');
     }
   };

@@ -21,7 +21,7 @@ import java.util.Optional;
  * @since 2025-01-09
  */
 @Repository
-public interface ProductionBatchRepository extends JpaRepository<ProductionBatch, String> {
+public interface ProductionBatchRepository extends JpaRepository<ProductionBatch, Long> {
 
     /**
      * 根据工厂ID和批次号查找
@@ -31,7 +31,7 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
     /**
      * 根据ID和工厂ID查找
      */
-    Optional<ProductionBatch> findByIdAndFactoryId(String id, String factoryId);
+    Optional<ProductionBatch> findByIdAndFactoryId(Long id, String factoryId);
 
     /**
      * 检查批次号是否存在
@@ -65,6 +65,15 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
      * 统计某状态的批次数
      */
     long countByFactoryIdAndStatus(String factoryId, ProductionBatchStatus status);
+
+    /**
+     * 统计指定工厂、指定状态、指定时间后创建的批次数量
+     * @param factoryId 工厂ID
+     * @param status 批次状态（字符串）
+     * @param createdAt 创建时间起点
+     * @return 批次数量
+     */
+    long countByFactoryIdAndStatusAndCreatedAtAfter(String factoryId, String status, LocalDateTime createdAt);
 
     /**
      * 计算某月产量

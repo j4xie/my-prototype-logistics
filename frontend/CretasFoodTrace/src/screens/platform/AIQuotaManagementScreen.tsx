@@ -15,6 +15,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { platformAPI } from '../../services/api/platformApiClient';
 import type { FactoryAIQuota, PlatformAIUsageStats } from '../../types/processing';
+import { logger } from '../../utils/logger';
+
+// 创建AIQuotaManagement专用logger
+const aiQuotaLogger = logger.createContextLogger('AIQuotaManagement');
 
 /**
  * AI配额管理界面
@@ -45,8 +49,14 @@ export default function AIQuotaManagementScreen() {
 
       if (factoriesRes.success) setFactories(factoriesRes.data);
       if (statsRes.success) setStats(statsRes.data);
+
+      aiQuotaLogger.info('AI配额数据加载成功', {
+        factoryCount: factoriesRes.success ? factoriesRes.data.length : 0,
+        totalUsed: statsRes.success ? statsRes.data.totalUsed : 0,
+        currentWeek: statsRes.success ? statsRes.data.currentWeek : '',
+      });
     } catch (error) {
-      console.error('加载数据失败:', error);
+      aiQuotaLogger.error('加载数据失败', error as Error);
       Alert.alert('错误', '加载数据失败');
     } finally {
       setLoading(false);
@@ -79,12 +89,20 @@ export default function AIQuotaManagementScreen() {
       });
 
       if (response.success) {
+        aiQuotaLogger.info('AI配额更新成功', {
+          factoryId,
+          oldQuota: factories.find(f => f.id === factoryId)?.aiWeeklyQuota,
+          newQuota,
+        });
         Alert.alert('成功', '配额已更新');
         setEditingFactory(null);
         loadData(); // 重新加载数据
       }
     } catch (error) {
-      console.error('保存失败:', error);
+      aiQuotaLogger.error('保存配额失败', error as Error, {
+        factoryId,
+        newQuota,
+      });
       Alert.alert('错误', '保存失败');
     }
   };

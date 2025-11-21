@@ -165,17 +165,18 @@ export default function ExceptionAlertScreen() {
         });
 
         // 将后端AlertDTO映射到前端ExceptionAlert
+        // ✅ 修复: 使用AlertDTO实际存在的字段 (2025-11-20)
         const mappedAlerts: ExceptionAlert[] = response.data.content.map((dto: AlertDTO) => ({
-          id: dto.id,
+          id: String(dto.id),  // ✅ 确保ID为string类型
           type: mapAlertTypeFromBackend(dto.alertType),
-          level: mapSeverityToLevel(dto.severity),
+          level: mapSeverityToLevel(dto.level),  // ✅ 使用level代替severity
           status: mapStatusFromBackend(dto.status),
-          title: dto.title,
-          message: dto.description,
-          details: dto.resolutionNotes || dto.description,
-          triggeredAt: new Date(dto.createdAt),
+          title: dto.equipmentName || dto.alertType || '未知告警',  // ✅ 使用equipmentName作为标题
+          message: dto.message,  // ✅ 使用message
+          details: dto.details || dto.message,  // ✅ 使用details
+          triggeredAt: new Date(dto.triggeredAt),  // ✅ 使用triggeredAt代替createdAt
           resolvedAt: dto.resolvedAt ? new Date(dto.resolvedAt) : undefined,
-          relatedId: dto.sourceId,
+          relatedId: dto.equipmentId,  // ✅ 使用equipmentId代替sourceId
         }));
 
         setAlerts(mappedAlerts);
@@ -281,7 +282,7 @@ export default function ExceptionAlertScreen() {
       });
       const response = await alertApiClient.resolveAlert({
         factoryId,
-        alertId,
+        alertId: String(alertId),  // ✅ 确保alertId为string类型 (2025-11-20)
         resolvedBy: userId,
         resolutionNotes: '已处理',
       });

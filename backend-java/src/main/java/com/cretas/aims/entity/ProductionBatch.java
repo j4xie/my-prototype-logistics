@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 /**
  * 生产批次实体
@@ -34,8 +35,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ProductionBatch extends BaseEntity {
     @Id
-    @Column(name = "id", nullable = false, length = 191)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Long id;
     /**
      * 工厂ID
      */
@@ -49,13 +51,13 @@ public class ProductionBatch extends BaseEntity {
      /**
       * 生产计划ID
       */
-    @Column(name = "production_plan_id", length = 191)
-    private String productionPlanId;
+    @Column(name = "production_plan_id")
+    private Integer productionPlanId;
      /**
       * 产品类型ID
       */
-    @Column(name = "product_type_id", nullable = false)
-    private Integer productTypeId;
+    @Column(name = "product_type", length = 191)
+    private String productTypeId;
      /**
       * 产品名称
       */
@@ -66,6 +68,16 @@ public class ProductionBatch extends BaseEntity {
       */
     @Column(name = "planned_quantity", precision = 12, scale = 2)
     private BigDecimal plannedQuantity;
+     /**
+      * 数量 (数据库NOT NULL字段)
+      */
+    @Column(name = "quantity", nullable = false, precision = 10, scale = 2)
+    private BigDecimal quantity;
+     /**
+      * 单位 (数据库NOT NULL字段)
+      */
+    @Column(name = "unit", nullable = false, length = 20)
+    private String unit;
      /**
       * 实际产量
       */
