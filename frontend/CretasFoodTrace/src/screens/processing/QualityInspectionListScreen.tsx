@@ -106,7 +106,7 @@ export default function QualityInspectionListScreen() {
         qualityInspectionLogger.info('质检记录列表加载成功', {
           factoryId,
           batchId,
-          recordCount: (pageData.content ?? []).length,
+          recordCount: pageData.content?.length ?? 0,
           totalPages: pageData.totalPages ?? 0,
         });
       } else {
