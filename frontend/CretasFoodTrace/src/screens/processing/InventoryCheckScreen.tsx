@@ -17,6 +17,11 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { materialBatchApiClient, MaterialBatch as MaterialBatchType } from '../../services/api/materialBatchApiClient';
 import { getFactoryId } from '../../types/auth';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建InventoryCheck专用logger
+const inventoryCheckLogger = logger.createContextLogger('InventoryCheck');
 
 interface MaterialBatch {
   id: string;
@@ -104,12 +109,22 @@ export default function InventoryCheckScreen() {
         }));
 
         setBatches(frontendBatches);
+
+        inventoryCheckLogger.info('可用批次列表加载成功', {
+          factoryId,
+          batchCount: frontendBatches.length,
+        });
       } else {
-        console.warn('获取批次失败:', response.message);
+        inventoryCheckLogger.warn('获取批次失败', {
+          message: response.message,
+          factoryId,
+        });
         setBatches([]);
       }
     } catch (error) {
-      console.error('加载批次失败:', error);
+      inventoryCheckLogger.error('加载批次失败', error as Error, {
+        factoryId: getCurrentFactoryId(),
+      });
       Alert.alert('加载失败', '无法加载批次数据，请稍后重试');
       setBatches([]);
     } finally {
@@ -248,9 +263,19 @@ export default function InventoryCheckScreen() {
             },
           ]
         );
+
+        inventoryCheckLogger.info('盘点结果保存成功', {
+          factoryId,
+          recordCount: checkRecords.length,
+          successCount: results.length - failedCount,
+          failedCount,
+        });
       }
-    } catch (error: any) {
-      console.error('保存盘点记录失败:', error);
+    } catch (error) {
+      inventoryCheckLogger.error('保存盘点记录失败', error as Error, {
+        factoryId: getCurrentFactoryId(),
+        recordCount: checkRecords.length,
+      });
       Alert.alert('保存失败', error.message || '保存盘点记录时出现错误');
     } finally {
       setSaving(false);

@@ -14,6 +14,11 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { materialBatchApiClient } from '../../services/api/materialBatchApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建InventoryStatistics专用logger
+const inventoryStatsLogger = logger.createContextLogger('InventoryStatistics');
 
 /**
  * 库存统计分析页面
@@ -44,7 +49,7 @@ export default function InventoryStatisticsScreen() {
   const loadData = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Loading inventory data...', { factoryId });
+      inventoryStatsLogger.debug('加载库存统计数据', { factoryId });
 
       // 并行加载3个API
       const [statsResponse, valuationResponse, lowStockResponse] = await Promise.all([
@@ -56,18 +61,21 @@ export default function InventoryStatisticsScreen() {
         materialBatchApiClient.getLowStockBatches(factoryId).catch(() => ({ data: [] })),
       ]);
 
-      console.log('✅ Inventory data loaded:', {
-        statistics: statsResponse.data,
-        valuation: valuationResponse.data,
-        lowStock: lowStockResponse.data,
-      });
-
       // 更新状态
       setStatistics(statsResponse.data);
       setValuation(valuationResponse.data);
       setLowStockBatches(Array.isArray(lowStockResponse.data) ? lowStockResponse.data : []);
-    } catch (error: any) {
-      console.error('❌ Failed to load inventory data:', error);
+
+      inventoryStatsLogger.info('库存统计数据加载成功', {
+        factoryId,
+        hasStatistics: !!statsResponse.data,
+        hasValuation: !!valuationResponse.data,
+        lowStockCount: (Array.isArray(lowStockResponse.data) ? lowStockResponse.data : []).length,
+      });
+    } catch (error) {
+      inventoryStatsLogger.error('加载库存统计数据失败', error as Error, {
+        factoryId,
+      });
       const errorMessage = error.response?.data?.message || error.message || '无法加载库存数据，请稍后重试';
       Alert.alert('加载失败', errorMessage);
 
