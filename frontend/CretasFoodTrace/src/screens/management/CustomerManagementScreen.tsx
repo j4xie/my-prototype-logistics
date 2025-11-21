@@ -97,12 +97,19 @@ export default function CustomerManagementScreen() {
         size: 100,
       });
 
-      if (response.data) {
+      if (response.data && Array.isArray(response.data)) {
         customerLogger.info('客户列表加载成功', {
           customerCount: response.data.length,
           factoryId: user?.factoryId,
         });
         setCustomers(response.data);
+      } else {
+        customerLogger.warn('客户列表数据格式异常', {
+          responseData: response.data,
+          isArray: Array.isArray(response.data),
+        });
+        setCustomers([]);
+        Alert.alert('提示', '客户列表数据格式异常，请联系技术支持');
       }
     } catch (error) {
       customerLogger.error('加载客户列表失败', error as Error, {
@@ -126,11 +133,20 @@ export default function CustomerManagementScreen() {
         keyword: searchQuery,
         factoryId: user?.factoryId,
       });
-      customerLogger.info('客户搜索完成', {
-        keyword: searchQuery,
-        resultCount: results.length,
-      });
-      setCustomers(results);
+      if (Array.isArray(results)) {
+        customerLogger.info('客户搜索完成', {
+          keyword: searchQuery,
+          resultCount: results.length,
+        });
+        setCustomers(results);
+      } else {
+        customerLogger.warn('搜索结果数据格式异常', {
+          results,
+          isArray: Array.isArray(results),
+        });
+        setCustomers([]);
+        Alert.alert('提示', '搜索结果数据格式异常');
+      }
     } catch (error) {
       customerLogger.error('搜索客户失败', error as Error, {
         keyword: searchQuery,

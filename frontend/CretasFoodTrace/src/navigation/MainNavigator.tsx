@@ -203,7 +203,10 @@ export function MainNavigator() {
       )}
 
       {/* 管理模块 - 管理员可见 */}
-      {(userRole === 'factory_super_admin' || userRole === 'permission_admin' || userRole === 'department_admin') && (
+      {(userRole === 'factory_super_admin' ||
+        userRole === 'permission_admin' ||
+        userRole === 'department_admin' ||
+        userRole === 'platform_admin') && (
         <Tab.Screen
           name="ManagementTab"
           component={ManagementStackNavigator}

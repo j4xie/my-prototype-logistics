@@ -358,13 +358,13 @@ export default function EntityDataExportScreen() {
         throw new Error(responseData.message || '导入失败');
       }
 
-      const result: ImportResult = responseData.data;
-      setImportResult(result);
+      const importResultData: ImportResult = responseData.data;
+      setImportResult(importResultData);
 
-      if (result.isFullSuccess) {
+      if (importResultData.isFullSuccess) {
         Alert.alert(
           '导入成功',
-          `成功导入${result.successCount}条${currentEntity.label}记录`,
+          `成功导入${importResultData.successCount}条${currentEntity.label}记录`,
           [{ text: '确定' }]
         );
       } else {
