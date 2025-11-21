@@ -7,6 +7,10 @@ import { processingApiClient } from '../../services/api/processingApiClient';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建RealtimeReport专用logger
+const realtimeReportLogger = logger.createContextLogger('RealtimeReport');
 
 export default function RealtimeReportScreen() {
   const navigation = useNavigation();
@@ -24,7 +28,7 @@ export default function RealtimeReportScreen() {
         return;
       }
 
-      console.log('📊 Loading realtime data...', { factoryId });
+      realtimeReportLogger.debug('加载实时报表数据', { factoryId });
 
       // 并行加载多个实时数据
       const [batchesResponse, equipmentResponse] = await Promise.all([
@@ -48,9 +52,15 @@ export default function RealtimeReportScreen() {
         timestamp: new Date(),
       });
 
-      console.log('✅ Realtime data loaded');
+      realtimeReportLogger.info('实时报表数据加载成功', {
+        activeBatches,
+        activeEquipment,
+        factoryId,
+      });
     } catch (error) {
-      console.error('❌ Failed to load realtime data:', error);
+      realtimeReportLogger.error('加载实时报表失败', error as Error, {
+        factoryId: getFactoryId(user),
+      });
       handleError(error, {
         showAlert: false,
         logError: true,
