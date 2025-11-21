@@ -16,6 +16,10 @@ import { timeStatsApiClient } from '../../services/api/timeStatsApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建TimeStats专用logger
+const timeStatsLogger = logger.createContextLogger('TimeStats');
 
 const { width } = Dimensions.get('window');
 
@@ -75,7 +79,7 @@ export default function TimeStatsScreen() {
     try {
       const { today, weekStart, year, month } = getDateParams();
 
-      console.log('🔍 Loading time stats...', {
+      timeStatsLogger.debug('加载工时统计数据', {
         factoryId,
         timeRange,
         today,
@@ -99,12 +103,14 @@ export default function TimeStatsScreen() {
           timeStatsApiClient.getEfficiencyReport(undefined, factoryId).catch(() => ({ data: null })),
         ]);
 
-      console.log('✅ Time stats loaded:', {
-        daily: dailyResponse.data,
-        weekly: weeklyResponse.data,
-        monthly: monthlyResponse.data,
-        performers: performersResponse.data,
-        efficiency: efficiencyResponse.data,
+      timeStatsLogger.info('工时统计数据加载成功', {
+        factoryId,
+        timeRange,
+        hasDaily: !!dailyResponse.data,
+        hasWeekly: !!weeklyResponse.data,
+        hasMonthly: !!monthlyResponse.data,
+        performersCount: performersResponse.data?.length ?? 0,
+        hasEfficiency: !!efficiencyResponse.data,
       });
 
       // 更新状态
@@ -114,7 +120,10 @@ export default function TimeStatsScreen() {
       setTopPerformers(performersResponse.data || []);
       setEfficiencyReport(efficiencyResponse.data);
     } catch (error) {
-      console.error('❌ Failed to load time stats:', error);
+      timeStatsLogger.error('加载工时统计失败', error as Error, {
+        factoryId,
+        timeRange,
+      });
       const errorMessage = error.response?.data?.message || error.message || '无法加载工时统计，请稍后重试';
       Alert.alert('加载失败', errorMessage);
 
