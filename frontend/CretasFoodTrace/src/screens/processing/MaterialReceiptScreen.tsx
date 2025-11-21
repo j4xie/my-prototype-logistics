@@ -15,6 +15,11 @@ import { Picker } from '@react-native-picker/picker';
 import { materialBatchApiClient } from '../../services/api/materialBatchApiClient';
 import { supplierApiClient } from '../../services/api/supplierApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建MaterialReceipt专用logger
+const materialReceiptLogger = logger.createContextLogger('MaterialReceipt');
 
 /**
  * 原材料入库页面（15字段表单）
@@ -93,9 +98,15 @@ export default function MaterialReceiptScreen() {
     try {
       setLoadingSuppliers(true);
       const response = await supplierApiClient.getActiveSuppliers(user?.factoryId);
+      materialReceiptLogger.info('供应商列表加载成功', {
+        factoryId: user?.factoryId,
+        supplierCount: response.length,
+      });
       setSuppliers(response);
-    } catch (error: any) {
-      console.error('加载供应商失败:', error);
+    } catch (error) {
+      materialReceiptLogger.error('加载供应商失败', error as Error, {
+        factoryId: user?.factoryId,
+      });
       Alert.alert('错误', '加载供应商列表失败');
     } finally {
       setLoadingSuppliers(false);
@@ -152,6 +163,14 @@ export default function MaterialReceiptScreen() {
 
       await materialBatchApiClient.createBatch(batchData, user?.factoryId);
 
+      materialReceiptLogger.info('原材料入库成功', {
+        factoryId: user?.factoryId,
+        supplierId: batchData.supplierId,
+        materialType: batchData.materialTypeId,
+        quantity: batchData.inboundQuantity,
+        totalCost: batchData.totalCost,
+      });
+
       Alert.alert('成功', '原材料入库成功', [
         {
           text: '确定',
@@ -178,8 +197,12 @@ export default function MaterialReceiptScreen() {
           },
         },
       ]);
-    } catch (error: any) {
-      console.error('入库失败:', error);
+    } catch (error) {
+      materialReceiptLogger.error('入库失败', error as Error, {
+        factoryId: user?.factoryId,
+        supplierId: formData.supplierId,
+        materialType: formData.materialTypeId,
+      });
       Alert.alert('错误', error.response?.data?.message || '入库操作失败');
     } finally {
       setLoading(false);

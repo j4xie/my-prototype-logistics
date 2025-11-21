@@ -80,11 +80,11 @@ function getFactoryUserRoute(user: User): NavigationRoute {
       return getDepartmentAdminRoute(department);
 
     case 'operator':
-      // 操作员 → 主页(显示快捷打卡)
-      // TODO: 未来可直接跳转到打卡页面
+      // 操作员 → ✅ 优化：直接跳转到打卡页面 (2025-11-20)
+      // 操作员主要工作是打卡和查看工作任务，直接进入打卡页更高效
       return {
-        screen: 'Main',
-        params: { screen: 'HomeTab' },
+        screen: 'Attendance',
+        params: { screen: 'TimeClock' },
       };
 
     case 'viewer':

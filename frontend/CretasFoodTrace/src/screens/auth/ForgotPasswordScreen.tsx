@@ -81,7 +81,7 @@ export default function ForgotPasswordScreen() {
           setCountdown(response.data.retryAfter);
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || '发送验证码失败';
       setPhoneError(errorMessage);
     } finally {
@@ -109,7 +109,7 @@ export default function ForgotPasswordScreen() {
       } else {
         setCodeError(response.data.message || '验证码错误');
       }
-    } catch (error: any) {
+    } catch (error) {
       setCodeError(error.response?.data?.message || '验证码错误');
     } finally {
       setLoading(false);
@@ -172,7 +172,7 @@ export default function ForgotPasswordScreen() {
       } else {
         Alert.alert('失败', response.data.message || '重置失败');
       }
-    } catch (error: any) {
+    } catch (error) {
       Alert.alert('失败', error.response?.data?.message || '重置失败');
     } finally {
       setLoading(false);
