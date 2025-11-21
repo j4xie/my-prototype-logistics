@@ -201,12 +201,25 @@ class TimeStatsApiClient {
     return await apiClient.delete(`${this.getPath(factoryId)}/${id}`);
   }
 
+  /**
+   * 获取员工个人时间统计
+   * 后端路径: GET /api/mobile/{factoryId}/time-stats/workers/{workerId}
+   * 必需参数: startDate, endDate
+   */
   async getEmployeeTimeStats(employeeId: number, params?: TimeStatsQueryParams, factoryId?: string): Promise<ApiResponse<EmployeeTimeStats>> {
-    return await apiClient.get(`${this.getPath(factoryId)}/employee/${employeeId}`, { params });
+    return await apiClient.get(`${this.getPath(factoryId)}/workers/${employeeId}`, { params });
   }
 
+  /**
+   * 按部门统计
+   * 后端路径: GET /api/mobile/{factoryId}/time-stats/by-department
+   * 必需参数: startDate, endDate
+   * 注意: department 参数需要在 params 中传递，不在URL路径中
+   */
   async getDepartmentTimeStats(department: string, params?: TimeStatsQueryParams, factoryId?: string): Promise<ApiResponse<DepartmentTimeStats>> {
-    return await apiClient.get(`${this.getPath(factoryId)}/department/${department}`, { params });
+    // 将 department 添加到查询参数中，而不是作为路径参数
+    const queryParams = { ...params, department };
+    return await apiClient.get(`${this.getPath(factoryId)}/by-department`, { params: queryParams });
   }
 
   async getWorkTypeTimeStats(workTypeId: string, params?: TimeStatsQueryParams, factoryId?: string): Promise<ApiResponse<WorkTypeTimeStats>> {

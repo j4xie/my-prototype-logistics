@@ -96,12 +96,25 @@ export default function UserManagementScreen() {
         size: 100,
       });
 
-      if (response.content) {
+      // 📊 调试日志：查看API响应结构
+      userManagementLogger.debug('API响应结构', {
+        hasData: !!response.data,
+        dataType: typeof response.data,
+        hasContent: !!(response.data && response.data.content),
+        isContentArray: response.data && Array.isArray(response.data.content),
+        contentLength: response.data && response.data.content ? response.data.content.length : 0,
+      });
+
+      // ✅ 正确的数据访问：response.data.content
+      if (response.data && response.data.content) {
         userManagementLogger.info('用户列表加载成功', {
-          userCount: response.content.length,
+          userCount: response.data.content.length,
           factoryId: user?.factoryId,
         });
-        setUsers(response.content);
+        setUsers(response.data.content);
+      } else {
+        userManagementLogger.warn('API返回空数据', { response });
+        setUsers([]);
       }
     } catch (error) {
       userManagementLogger.error('加载用户列表失败', error as Error, {

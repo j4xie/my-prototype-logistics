@@ -12,9 +12,13 @@ import {
   ActivityIndicator,
   Divider,
   IconButton,
+  Dialog,
+  Portal,
+  Button,
+  TextInput,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import { platformAPI, FactoryDTO } from '../../services/api/platformApiClient';
+import { platformAPI, FactoryDTO, CreateFactoryRequest } from '../../services/api/platformApiClient';
 import { handleError } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
@@ -32,6 +36,20 @@ export default function FactoryManagementScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // 添加/编辑工厂对话框状态
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [editMode, setEditMode] = useState(false); // true=编辑, false=添加
+  const [editingFactoryId, setEditingFactoryId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    industry: '',
+    address: '',
+    contactName: '',
+    contactPhone: '',
+    contactEmail: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadFactories();
@@ -60,26 +78,45 @@ export default function FactoryManagementScreen() {
       factoryMgmtLogger.debug('加载工厂列表');
       const response = await platformAPI.getFactories();
 
+      // 📊 调试日志：查看API响应结构
+      factoryMgmtLogger.debug('API响应结构', {
+        hasSuccess: !!response.success,
+        hasData: !!response.data,
+        dataType: typeof response.data,
+        isArray: Array.isArray(response.data),
+        dataLength: Array.isArray(response.data) ? response.data.length : 0,
+        firstItem: Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : null,
+      });
+
       if (response.success && response.data) {
         factoryMgmtLogger.info('工厂列表加载成功', {
           factoryCount: response.data.length,
         });
         // 将后端FactoryDTO映射到前端显示格式
-        const mappedFactories = response.data.map((factory: FactoryDTO) => ({
-          id: factory.id,
-          name: factory.factoryName,
-          industry: '食品加工', // 后端暂无此字段
-          region: factory.address || '未知',
-          status: factory.isActive !== false ? 'active' : 'inactive',
-          aiQuota: 100, // 后端暂无此字段
-          totalUsers: factory.totalUsers || 0,
-          createdAt: factory.createdAt || '',
-          address: factory.address || '',
-        }));
+        const mappedFactories = response.data.map((factory: FactoryDTO) => {
+          const mapped = {
+            id: factory.id,
+            name: factory.name || factory.factoryName, // ✅ API返回name字段，factoryName作为后备
+            industry: '食品加工', // 后端暂无此字段
+            region: factory.address || '未知',
+            status: factory.isActive !== false ? 'active' : 'inactive',
+            aiQuota: 100, // 后端暂无此字段
+            totalUsers: factory.totalUsers || 0,
+            createdAt: factory.createdAt || '',
+            address: factory.address || '',
+          };
+          // 📊 调试日志：查看每个工厂的映射
+          factoryMgmtLogger.debug('工厂映射', {
+            原始: { id: factory.id, name: factory.name, factoryName: factory.factoryName },
+            映射后: { id: mapped.id, name: mapped.name },
+          });
+          return mapped;
+        });
+        factoryMgmtLogger.info('映射后的工厂列表', { count: mappedFactories.length, factories: mappedFactories });
         setFactories(mappedFactories);
       } else {
         // ✅ GOOD: API返回空数据时，设置为空数组
-        factoryMgmtLogger.warn('API返回空数据');
+        factoryMgmtLogger.warn('API返回空数据', { response });
         setFactories([]);
       }
     } catch (error) {
@@ -115,7 +152,17 @@ export default function FactoryManagementScreen() {
   };
 
   const handleEditFactory = (factory: any) => {
-    Alert.alert('编辑工厂', `编辑功能开发中\n工厂: ${factory.name}`);
+    setEditMode(true);
+    setEditingFactoryId(factory.id);
+    setFormData({
+      name: factory.name || '',
+      industry: factory.industry || '',
+      address: factory.address || '',
+      contactName: factory.contactName || '',
+      contactPhone: factory.contactPhone || '',
+      contactEmail: factory.contactEmail || '',
+    });
+    setDialogVisible(true);
   };
 
   const handleViewDetails = (factory: any) => {
@@ -123,7 +170,63 @@ export default function FactoryManagementScreen() {
   };
 
   const handleAddFactory = () => {
-    Alert.alert('添加工厂', '添加工厂功能开发中');
+    setEditMode(false);
+    setEditingFactoryId(null);
+    setFormData({
+      name: '',
+      industry: '',
+      address: '',
+      contactName: '',
+      contactPhone: '',
+      contactEmail: '',
+    });
+    setDialogVisible(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogVisible(false);
+    setFormData({
+      name: '',
+      industry: '',
+      address: '',
+      contactName: '',
+      contactPhone: '',
+      contactEmail: '',
+    });
+  };
+
+  const handleSubmitFactory = async () => {
+    // 验证必填字段
+    if (!formData.name.trim()) {
+      Alert.alert('验证失败', '请输入工厂名称');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      if (editMode && editingFactoryId) {
+        // 编辑模式
+        factoryMgmtLogger.info('更新工厂', { factoryId: editingFactoryId, data: formData });
+        await platformAPI.updateFactory(editingFactoryId, formData);
+        Alert.alert('成功', '工厂信息已更新');
+      } else {
+        // 添加模式
+        factoryMgmtLogger.info('创建工厂', { data: formData });
+        await platformAPI.createFactory(formData as CreateFactoryRequest);
+        Alert.alert('成功', '工厂已创建');
+      }
+
+      handleCloseDialog();
+      await loadFactories(); // 重新加载列表
+    } catch (error) {
+      factoryMgmtLogger.error(editMode ? '更新工厂失败' : '创建工厂失败', error as Error);
+      handleError(error, {
+        title: editMode ? '更新失败' : '创建失败',
+        customMessage: editMode ? '无法更新工厂信息，请重试' : '无法创建工厂，请重试',
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -331,6 +434,69 @@ export default function FactoryManagementScreen() {
 
       {/* 添加工厂按钮 */}
       <FAB icon="plus" style={styles.fab} onPress={handleAddFactory} label="添加工厂" />
+
+      {/* 添加/编辑工厂对话框 */}
+      <Portal>
+        <Dialog visible={dialogVisible} onDismiss={handleCloseDialog} style={styles.dialog}>
+          <Dialog.Title>{editMode ? '编辑工厂' : '添加工厂'}</Dialog.Title>
+          <Dialog.ScrollArea style={styles.dialogScroll}>
+            <ScrollView>
+              <TextInput
+                label="工厂名称 *"
+                value={formData.name}
+                onChangeText={(text) => setFormData({ ...formData, name: text })}
+                mode="outlined"
+                style={styles.input}
+              />
+              <TextInput
+                label="行业类型"
+                value={formData.industry}
+                onChangeText={(text) => setFormData({ ...formData, industry: text })}
+                mode="outlined"
+                style={styles.input}
+              />
+              <TextInput
+                label="地址"
+                value={formData.address}
+                onChangeText={(text) => setFormData({ ...formData, address: text })}
+                mode="outlined"
+                style={styles.input}
+              />
+              <TextInput
+                label="联系人"
+                value={formData.contactName}
+                onChangeText={(text) => setFormData({ ...formData, contactName: text })}
+                mode="outlined"
+                style={styles.input}
+              />
+              <TextInput
+                label="联系电话"
+                value={formData.contactPhone}
+                onChangeText={(text) => setFormData({ ...formData, contactPhone: text })}
+                mode="outlined"
+                keyboardType="phone-pad"
+                style={styles.input}
+              />
+              <TextInput
+                label="联系邮箱"
+                value={formData.contactEmail}
+                onChangeText={(text) => setFormData({ ...formData, contactEmail: text })}
+                mode="outlined"
+                keyboardType="email-address"
+                style={styles.input}
+              />
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={handleCloseDialog} disabled={submitting}>
+              取消
+            </Button>
+            <Button onPress={handleSubmitFactory} loading={submitting} disabled={submitting}>
+              {editMode ? '更新' : '创建'}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
@@ -458,5 +624,15 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 80,
+  },
+  dialog: {
+    maxHeight: '80%',
+  },
+  dialogScroll: {
+    maxHeight: 400,
+    paddingHorizontal: 0,
+  },
+  input: {
+    marginBottom: 12,
   },
 });

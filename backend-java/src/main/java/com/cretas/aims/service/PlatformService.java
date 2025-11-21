@@ -53,4 +53,13 @@ public interface PlatformService {
      * @since 2025-11-20
      */
     PlatformStatisticsDTO getDashboardStatistics();
+
+    /**
+     * 获取平台报表
+     *
+     * @param reportType 报表类型
+     * @param period 统计周期
+     * @return 平台报表数据
+     */
+    Object getPlatformReport(String reportType, String period);
 }
