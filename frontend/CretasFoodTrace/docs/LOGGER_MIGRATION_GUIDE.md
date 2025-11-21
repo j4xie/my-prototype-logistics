@@ -468,7 +468,10 @@ logger.configure({
 - [x] DepartmentAttendanceScreen.tsx (4个) - ✅ 已迁移 (Batch 25)
 - [x] AttendanceStatisticsScreen.tsx (4个) - ✅ 已迁移 (Batch 25)
 - [x] RealtimeReportScreen.tsx (3个) - ✅ 已迁移 (Batch 25)
-- [ ] 其他Screen组件 (剩余~10个console调用)
+- [x] QualityInspectionListScreen.tsx (3个) - ✅ 已迁移 (Batch 26)
+- [x] InventoryStatisticsScreen.tsx (3个) - ✅ 已迁移 (Batch 26)
+- [x] InventoryCheckScreen.tsx (3个) - ✅ 已迁移 (Batch 26)
+- [ ] 其他Screen组件 (剩余~1个console调用) - 接近完成！
 - [ ] 其他ApiClient (~80个，延后迁移)
 
 **P3 - 低优先级**（工具类）⏳ **待迁移**:
@@ -523,7 +526,10 @@ logger.configure({
 | `DepartmentAttendanceScreen.tsx` | 4 | deptAttendanceLogger | 829fca23 | ✅ |
 | `AttendanceStatisticsScreen.tsx` | 4 | attendanceStatsLogger | 829fca23 | ✅ |
 | `RealtimeReportScreen.tsx` | 3 | realtimeReportLogger | 829fca23 | ✅ |
-| **总计** | **326** | - | - | **97%** |
+| `QualityInspectionListScreen.tsx` | 3 | qualityInspectionLogger | 8a5c48cd | ✅ |
+| `InventoryStatisticsScreen.tsx` | 3 | inventoryStatsLogger | 8a5c48cd | ✅ |
+| `InventoryCheckScreen.tsx` | 3 | inventoryCheckLogger | 8a5c48cd | ✅ |
+| **总计** | **335** | - | - | **100%** |
 
 ---
 
