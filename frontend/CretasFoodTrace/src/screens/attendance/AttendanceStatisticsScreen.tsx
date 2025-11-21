@@ -15,6 +15,10 @@ import { useNavigation } from '@react-navigation/native';
 import { timeStatsApiClient, DailyStats, MonthlyStats, EmployeeTimeStats } from '../../services/api/timeStatsApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建AttendanceStatistics专用logger
+const attendanceStatsLogger = logger.createContextLogger('AttendanceStatistics');
 
 /**
  * 工时统计页面
@@ -81,7 +85,12 @@ export default function AttendanceStatisticsScreen() {
         await loadFactoryStats();
       }
     } catch (error) {
-      console.error('加载统计数据失败:', error);
+      attendanceStatsLogger.error('加载统计数据失败', error as Error, {
+        timePeriod,
+        viewDimension,
+        userId: user?.id,
+        factoryId: user?.factoryId,
+      });
       Alert.alert('错误', error.response?.data?.message || '加载统计数据失败');
     } finally {
       setLoading(false);
@@ -107,9 +116,20 @@ export default function AttendanceStatisticsScreen() {
           period: timePeriod,
         });
         setEmployeeRecords([]);
+
+        attendanceStatsLogger.info('个人工时统计加载成功', {
+          userId: user?.id,
+          timePeriod,
+          totalHours: data.totalHours || 0,
+          overtimeHours: data.overtimeHours || 0,
+        });
       }
     } catch (error) {
-      console.error('加载个人统计失败:', error);
+      attendanceStatsLogger.warn('加载个人统计失败，使用默认数据', {
+        userId: user?.id,
+        timePeriod,
+        error: (error as Error).message,
+      });
       // 使用模拟数据
       setStats({
         totalHours: 176,
@@ -141,9 +161,20 @@ export default function AttendanceStatisticsScreen() {
           period: timePeriod,
         });
         setEmployeeRecords(data.employeeRecords || []);
+
+        attendanceStatsLogger.info('部门工时统计加载成功', {
+          department: user?.factoryUser?.department,
+          timePeriod,
+          totalHours: data.totalHours || 0,
+          employeeCount: (data.employeeRecords || []).length,
+        });
       }
     } catch (error) {
-      console.error('加载部门统计失败:', error);
+      attendanceStatsLogger.warn('加载部门统计失败，使用默认数据', {
+        department: user?.factoryUser?.department,
+        timePeriod,
+        error: (error as Error).message,
+      });
       // 使用模拟数据
       setStats({
         totalHours: 880,
@@ -187,9 +218,20 @@ export default function AttendanceStatisticsScreen() {
           period: timePeriod,
         });
         setEmployeeRecords(data.employeeRecords || []);
+
+        attendanceStatsLogger.info('全厂工时统计加载成功', {
+          factoryId: user?.factoryId,
+          timePeriod,
+          totalHours: data.totalHours || 0,
+          employeeCount: (data.employeeRecords || []).length,
+        });
       }
     } catch (error) {
-      console.error('加载全厂统计失败:', error);
+      attendanceStatsLogger.warn('加载全厂统计失败，使用默认数据', {
+        factoryId: user?.factoryId,
+        timePeriod,
+        error: (error as Error).message,
+      });
       // 使用模拟数据
       setStats({
         totalHours: 3520,
