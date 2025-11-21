@@ -15,11 +15,11 @@ import java.util.List;
  * @since 2025-01-09
  */
 @Repository
-public interface MaterialBatchAdjustmentRepository extends JpaRepository<MaterialBatchAdjustment, Integer> {
+public interface MaterialBatchAdjustmentRepository extends JpaRepository<MaterialBatchAdjustment, String> {
     /**
      * 根据批次ID查找调整记录
      */
-    List<MaterialBatchAdjustment> findByBatchId(Integer batchId);
+    List<MaterialBatchAdjustment> findByMaterialBatchId(String materialBatchId);
      /**
      * 根据调整类型查找记录
       */
@@ -37,14 +37,14 @@ public interface MaterialBatchAdjustmentRepository extends JpaRepository<Materia
      /**
      * 获取批次的调整历史（按时间倒序）
       */
-    List<MaterialBatchAdjustment> findByBatchIdOrderByAdjustmentTimeDesc(Integer batchId);
+    List<MaterialBatchAdjustment> findByMaterialBatchIdOrderByAdjustmentTimeDesc(String materialBatchId);
      /**
      * 统计批次的调整次数
       */
-    @Query("SELECT COUNT(a) FROM MaterialBatchAdjustment a WHERE a.batchId = :batchId")
-    Long countAdjustmentsByBatch(@Param("batchId") Integer batchId);
+    @Query("SELECT COUNT(a) FROM MaterialBatchAdjustment a WHERE a.materialBatchId = :materialBatchId")
+    Long countAdjustmentsByBatch(@Param("materialBatchId") String materialBatchId);
      /**
      * 获取指定批次和类型的调整记录
       */
-    List<MaterialBatchAdjustment> findByBatchIdAndAdjustmentType(Integer batchId, String adjustmentType);
+    List<MaterialBatchAdjustment> findByMaterialBatchIdAndAdjustmentType(String materialBatchId, String adjustmentType);
 }

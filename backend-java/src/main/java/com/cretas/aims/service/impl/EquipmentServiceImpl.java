@@ -48,10 +48,21 @@ public class EquipmentServiceImpl implements EquipmentService {
         FactoryEquipment equipment = new FactoryEquipment();
         equipment.setId(java.util.UUID.randomUUID().toString());
         equipment.setFactoryId(factoryId);
-        equipment.setCode(generateEquipmentCode());
-        equipment.setEquipmentCode(generateEquipmentCode());
-        equipment.setName(request.getName());
-        equipment.setType(request.getType());
+
+        // 使用用户提供的code，如果没有则自动生成
+        String code = (request.getCode() != null && !request.getCode().trim().isEmpty())
+                ? request.getCode()
+                : generateEquipmentCode();
+        equipment.setCode(code);
+        equipment.setEquipmentCode(code);
+        equipment.setEquipmentName(request.getName());
+
+        // 如果提供了category，使用category作为type；否则使用type
+        String type = (request.getCategory() != null && !request.getCategory().trim().isEmpty())
+                ? request.getCategory()
+                : request.getType();
+        equipment.setType(type);
+
         equipment.setModel(request.getModel());
         equipment.setManufacturer(request.getManufacturer());
         equipment.setSerialNumber(request.getSerialNumber());
@@ -63,7 +74,14 @@ public class EquipmentServiceImpl implements EquipmentService {
         equipment.setLocation(request.getLocation());
         equipment.setMaintenanceIntervalHours(request.getMaintenanceIntervalHours());
         equipment.setWarrantyExpiryDate(request.getWarrantyExpiryDate());
-        equipment.setStatus("idle");
+
+        // 使用用户提供的status，如果没有则默认为active
+        // 注意: 数据库status字段是ENUM('active','maintenance','inactive')
+        String status = (request.getStatus() != null && !request.getStatus().trim().isEmpty())
+                ? request.getStatus().toLowerCase()
+                : "active";
+        equipment.setStatus(status);
+
         equipment.setTotalRunningHours(0);
         equipment.setNotes(request.getNotes());
         equipment.setCreatedBy(userId);
@@ -87,7 +105,7 @@ public class EquipmentServiceImpl implements EquipmentService {
         FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
-        if (request.getName() != null) equipment.setName(request.getName());
+        if (request.getName() != null) equipment.setEquipmentName(request.getName());
         if (request.getType() != null) equipment.setType(request.getType());
         if (request.getModel() != null) equipment.setModel(request.getModel());
         if (request.getManufacturer() != null) equipment.setManufacturer(request.getManufacturer());
@@ -205,17 +223,15 @@ public class EquipmentServiceImpl implements EquipmentService {
         FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
-        if ("running".equals(equipment.getStatus())) {
-            throw new BusinessException("设备已在运行中");
+        if ("active".equals(equipment.getStatus())) {
+            // 设备已处于active状态，可以理解为已经在运行或可运行，允许重复启动
+            log.warn("设备已处于active状态: id={}", equipment.getId());
         }
         if ("maintenance".equals(equipment.getStatus())) {
             throw new BusinessException("设备正在维护中，无法启动");
         }
-        if ("scrapped".equals(equipment.getStatus())) {
-            throw new BusinessException("设备已报废，无法启动");
-        }
 
-        equipment.setStatus("running");
+        equipment.setStatus("active");  // 启动设备，设置为active
         equipment.setUpdatedAt(LocalDateTime.now());
         equipment = equipmentRepository.save(equipment);
 
@@ -231,11 +247,11 @@ public class EquipmentServiceImpl implements EquipmentService {
         FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
-        if (!"running".equals(equipment.getStatus())) {
-            throw new BusinessException("设备未在运行中");
+        if (!"active".equals(equipment.getStatus())) {
+            log.warn("设备当前状态不是active，仍允许停止: status={}", equipment.getStatus());
         }
 
-        equipment.setStatus("idle");
+        equipment.setStatus("inactive");  // 停止设备，设置为inactive
         if (runningHours != null) {
             equipment.setTotalRunningHours(equipment.getTotalRunningHours() + runningHours);
         }
@@ -318,7 +334,7 @@ public class EquipmentServiceImpl implements EquipmentService {
 
         Map<String, Object> statistics = new HashMap<>();
         statistics.put("equipmentId", equipment.getId());
-        statistics.put("equipmentName", equipment.getName());
+        statistics.put("equipmentName", equipment.getEquipmentName());
         statistics.put("status", equipment.getStatus());
         statistics.put("totalRunningHours", equipment.getTotalRunningHours());
         statistics.put("purchasePrice", equipment.getPurchasePrice());
@@ -403,7 +419,7 @@ public class EquipmentServiceImpl implements EquipmentService {
 
         Map<String, Object> report = new HashMap<>();
         report.put("equipmentId", equipment.getId());
-        report.put("equipmentName", equipment.getName());
+        report.put("equipmentName", equipment.getEquipmentName());
         report.put("startDate", startDate);
         report.put("endDate", endDate);
 
@@ -554,7 +570,7 @@ public class EquipmentServiceImpl implements EquipmentService {
         equipment.setFactoryId(factoryId);
         equipment.setEquipmentCode(dto.getEquipmentCode() != null ? dto.getEquipmentCode() : generateEquipmentCode());
         equipment.setCode(equipment.getEquipmentCode()); // code字段使用equipmentCode
-        equipment.setName(dto.getName());
+        equipment.setEquipmentName(dto.getName());
         equipment.setType(dto.getType());
         equipment.setModel(dto.getModel());
         equipment.setManufacturer(dto.getManufacturer());
@@ -571,7 +587,7 @@ public class EquipmentServiceImpl implements EquipmentService {
 
         equipment.setPurchasePrice(dto.getPurchasePrice());
         equipment.setHourlyCost(dto.getHourlyCost());
-        equipment.setStatus(dto.getStatus() != null ? dto.getStatus().toLowerCase() : "idle");
+        equipment.setStatus(dto.getStatus() != null ? dto.getStatus().toLowerCase() : "inactive");
         equipment.setLocation(dto.getLocation());
         equipment.setTotalRunningHours(dto.getTotalRunningHours() != null ? dto.getTotalRunningHours() : 0);
         equipment.setMaintenanceIntervalHours(dto.getMaintenanceIntervalHours());
@@ -610,7 +626,7 @@ public class EquipmentServiceImpl implements EquipmentService {
         FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
-        equipment.setStatus("scrapped");
+        equipment.setStatus("inactive");  // 报废设备标记为inactive
         equipment.setNotes(equipment.getNotes() != null ?
                 equipment.getNotes() + "\n报废原因: " + reason : "报废原因: " + reason);
         equipment.setUpdatedAt(LocalDateTime.now());
@@ -638,7 +654,7 @@ public class EquipmentServiceImpl implements EquipmentService {
                 .id(equipment.getId())
                 .factoryId(equipment.getFactoryId())
                 .equipmentCode(equipment.getEquipmentCode())
-                .name(equipment.getName())
+                .name(equipment.getEquipmentName())
                 .type(equipment.getType())
                 .model(equipment.getModel())
                 .manufacturer(equipment.getManufacturer())

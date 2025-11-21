@@ -47,7 +47,7 @@ public interface EquipmentRepository extends JpaRepository<FactoryEquipment, Str
      * 根据名称搜索设备
      */
     @Query("SELECT e FROM FactoryEquipment e WHERE e.factoryId = :factoryId " +
-           "AND (e.name LIKE %:keyword% OR e.equipmentCode LIKE %:keyword% OR e.model LIKE %:keyword%)")
+           "AND (e.equipmentName LIKE %:keyword% OR e.equipmentCode LIKE %:keyword% OR e.model LIKE %:keyword%)")
     List<FactoryEquipment> searchByKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
 
     /**

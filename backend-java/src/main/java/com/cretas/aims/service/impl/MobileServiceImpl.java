@@ -1619,7 +1619,7 @@ public class MobileServiceImpl implements MobileService {
     private MobileDTO.AlertResponse convertToAlertResponse(EquipmentAlert alert) {
         // 获取设备名称
         String equipmentName = equipmentRepository.findById(alert.getEquipmentId())
-                .map(eq -> eq.getName())
+                .map(eq -> eq.getEquipmentName())
                 .orElse("未知设备");
 
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
