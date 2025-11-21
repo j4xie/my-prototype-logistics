@@ -278,11 +278,19 @@ export default function DepartmentManagementScreen() {
           { isActive: !item.isActive } as DepartmentDTO,
           getFactoryId(user)
         );
+        departmentLogger.info('部门状态切换成功', {
+          departmentId: item.id,
+          departmentName: item.name,
+          newStatus: !item.isActive,
+        });
         Alert.alert('成功', item.isActive ? '已停用' : '已启用');
         loadDepartments();
       }
     } catch (error: unknown) {
-      console.error('切换状态失败:', error);
+      departmentLogger.error('切换部门状态失败', error, {
+        departmentId: item.id,
+        departmentName: item.name,
+      });
       const errorMessage = error instanceof Error ? error.message : '操作失败';
       Alert.alert('错误', errorMessage);
     }
