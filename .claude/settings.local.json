@@ -90,7 +90,9 @@
       "Bash(wc:*)",
       "Bash(git commit:*)",
       "Bash(mkdir:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(ssh root@139.196.165.140 \"tail -50 /www/wwwroot/cretas/cretas-backend.log 2>/dev/null || echo ''无法读取日志''\")",
+      "Bash(mvn:*)"
     ],
     "deny": [],
     "ask": []
