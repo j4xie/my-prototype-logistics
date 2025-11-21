@@ -5,6 +5,10 @@ import { processingApiClient } from '../../../../services/api/processingApiClien
 import { BatchCostAnalysis } from '../../../../types/processing';
 import { CACHE_CONFIG } from '../constants';
 import { handleError } from '../../../../utils/errorHandler';  // ✅ 修复: 正确的相对路径 (2025-11-20)
+import { logger } from '../../../../utils/logger';
+
+// 创建CostData专用logger
+const costDataLogger = logger.createContextLogger('CostData');
 
 // ==================== 类型定义 ====================
 
@@ -85,12 +89,12 @@ export const useCostData = (batchId: string | number): UseCostDataReturn => {
         const now = Date.now();
         // 缓存未过期，直接使用
         if (now - cached.timestamp < CACHE_CONFIG.COST_DATA_DURATION) {
-          console.log(`[useCostData] 使用缓存数据 (批次: ${batchId})`);
+          costDataLogger.debug('使用缓存数据', { batchId });
           setCostData(cached.data);
           setLoading(false);
           return;
         } else {
-          console.log(`[useCostData] 缓存已过期 (批次: ${batchId})`);
+          costDataLogger.debug('缓存已过期', { batchId });
           // 缓存过期，删除旧缓存
           costDataCache.delete(cacheKey);
         }
@@ -100,7 +104,10 @@ export const useCostData = (batchId: string | number): UseCostDataReturn => {
     // 发起网络请求
     try {
       setLoading(true);
-      console.log(`[useCostData] 加载成本数据 (批次: ${batchId}, 强制刷新: ${forceRefresh})`);
+      costDataLogger.debug('加载成本数据', {
+        batchId,
+        forceRefresh,
+      });
 
       const response = await processingApiClient.getBatchCostAnalysis(batchId);
 
@@ -114,14 +121,20 @@ export const useCostData = (batchId: string | number): UseCostDataReturn => {
           timestamp: Date.now(),
         });
 
-        console.log(`[useCostData] 成本数据加载成功并缓存 (批次: ${batchId})`);
+        costDataLogger.info('成本数据加载成功并缓存', {
+          batchId,
+          totalCost: (response.data as any).totalCost,
+        });
       } else {
         throw new Error(response.message || '加载失败');
       }
     } catch (err: unknown) {
       // ✅ 修复: 使用unknown类型代替any (2025-11-20)
       const error = err as any;
-      console.error('[useCostData] 加载成本数据失败:', error);
+      costDataLogger.error('加载成本数据失败', error as Error, {
+        batchId,
+        statusCode: error.response?.status,
+      });
 
       // 错误处理
       if (error.response?.status === 404) {
@@ -179,13 +192,14 @@ export const useCostData = (batchId: string | number): UseCostDataReturn => {
 export const clearCostDataCache = (batchId: string | number) => {
   const cacheKey = `batch_${batchId}`;
   costDataCache.delete(cacheKey);
-  console.log(`[useCostData] 已清除缓存 (批次: ${batchId})`);
+  costDataLogger.debug('已清除缓存', { batchId });
 };
 
 /**
  * 清除所有成本数据缓存
  */
 export const clearAllCostDataCache = () => {
+  const count = costDataCache.size;
   costDataCache.clear();
-  console.log('[useCostData] 已清除所有缓存');
+  costDataLogger.info('已清除所有缓存', { count });
 };
