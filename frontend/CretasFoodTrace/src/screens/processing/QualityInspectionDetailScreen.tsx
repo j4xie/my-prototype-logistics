@@ -23,6 +23,11 @@ import { useAuthStore } from '../../store/authStore';
 import { NotImplementedError } from '../../errors';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建QualityInspectionDetail专用logger
+const qualityDetailLogger = logger.createContextLogger('QualityInspectionDetail');
 
 // Types (unchanged)
 type QualityInspectionDetailScreenNavigationProp = NativeStackNavigationProp<
@@ -94,27 +99,13 @@ export default function QualityInspectionDetailScreen() {
     try {
       const response = await qualityInspectionApiClient.getInspectionById(inspectionId, factoryId);
       setInspection(response.data);
-    } catch (error: any) {
-      // Fallback mock data
-      const mockInspection: QualityInspection = {
-        id: inspectionId,
-        batchId: 'BATCH_20251118_001',
-        inspectionType: 'final_product',
-        inspector: '张三',
-        inspectionDate: '2025-11-18',
-        inspectionTime: '14:30',
-        scores: { freshness: 92, appearance: 88, smell: 95, other: 90 },
-        conclusion: 'pass',
-        notes: '产品质量良好，符合出厂标准。外观稍有瑕疵但不影响食用。',
-        photos: [
-          { id: '1', uri: 'https://via.placeholder.com/300x200', timestamp: new Date() },
-          { id: '2', uri: 'https://via.placeholder.com/300x200', timestamp: new Date() },
-        ],
-        status: 'submitted',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setInspection(mockInspection);
+    } catch (error) {
+      // ✅ GOOD: 不返回假数据，使用统一错误处理
+      handleError(error, {
+        title: '加载失败',
+        customMessage: '无法加载质检详情，请稍后重试',
+      });
+      setInspection(null); // 不显示假数据
     } finally {
       setLoading(false);
     }
@@ -142,9 +133,10 @@ export default function QualityInspectionDetailScreen() {
         onPress: async () => {
             try {
                 await qualityInspectionApiClient.deleteInspection(inspectionId, factoryId);
+                qualityDetailLogger.info('质检记录删除成功', { inspectionId, factoryId });
                 navigation.goBack();
             } catch (e) {
-                console.error(e);
+                qualityDetailLogger.error('删除质检记录失败', e as Error, { inspectionId, factoryId });
             }
         }
       },
@@ -161,9 +153,10 @@ export default function QualityInspectionDetailScreen() {
             reviewNotes: '审核通过'
         }, factoryId);
         Alert.alert('成功', '已审核通过');
+        qualityDetailLogger.info('质检审核通过', { inspectionId, factoryId, reviewer: user?.fullName });
         fetchInspectionDetail();
       } catch (e) {
-          console.error(e);
+          qualityDetailLogger.error('质检审核失败', e as Error, { inspectionId, factoryId });
       }
   };
 
