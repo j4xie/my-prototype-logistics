@@ -21,6 +21,11 @@ import { useNavigation } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, ReportSummary } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建AIReportList专用logger
+const aiReportListLogger = logger.createContextLogger('AIReportList');
 
 type AIReportListScreenProps = ProcessingScreenProps<'AIReportList'>;
 
@@ -71,18 +76,25 @@ export default function AIReportListScreen() {
         params.reportType = selectedType;
       }
 
-      console.log('📋 Fetching AI reports with params:', params);
+      aiReportListLogger.debug('获取AI报告列表', { factoryId, params, selectedType });
 
       const response = await aiApiClient.getReports(params, factoryId);
 
       if (response && response.reports) {
-        console.log(`✅ Loaded ${response.reports.length} AI reports`);
+        aiReportListLogger.info('AI报告列表加载成功', {
+          factoryId,
+          reportCount: response.reports.length,
+          reportType: selectedType,
+        });
         setReports(response.reports);
       } else {
         setReports([]);
       }
-    } catch (error: any) {
-      console.error('❌ Failed to fetch AI reports:', error);
+    } catch (error) {
+      aiReportListLogger.error('获取AI报告列表失败', error as Error, {
+        factoryId,
+        selectedType,
+      });
       Alert.alert('加载失败', error.response?.data?.message || error.message || '请稍后重试');
       setReports([]);
     } finally {
