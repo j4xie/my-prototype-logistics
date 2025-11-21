@@ -4,7 +4,7 @@
 
 ### API连接信息
 - **面板地址**: `https://139.196.165.140:16435` (使用HTTPS，不是HTTP)
-- **API密钥**: `9mdaFAgzNgSgOiyQr0UdrvZRIhCn2BI7`
+- **API密钥**: `Fw3rqkRqAashK9uNDsFxvst31YSbBmUb`
 - **管理的服务器**: 139.196.165.140 (应用服务器)
 
 ### 重要注意事项
@@ -29,7 +29,7 @@ request_token = md5(request_time + md5_api_sk)
 import hashlib
 import time
 
-api_sk = "9mdaFAgzNgSgOiyQr0UdrvZRIhCn2BI7"
+api_sk = "Fw3rqkRqAashK9uNDsFxvst31YSbBmUb"
 request_time = str(int(time.time()))
 md5_api_sk = hashlib.md5(api_sk.encode()).hexdigest()
 request_token = hashlib.md5((request_time + md5_api_sk).encode()).hexdigest()
@@ -40,7 +40,7 @@ request_token = hashlib.md5((request_time + md5_api_sk).encode()).hexdigest()
 TIME_TOKEN=$(python3 << 'PYTHON_EOF'
 import hashlib
 import time
-api_sk = "9mdaFAgzNgSgOiyQr0UdrvZRIhCn2BI7"
+api_sk = "Fw3rqkRqAashK9uNDsFxvst31YSbBmUb"
 request_time = str(int(time.time()))
 md5_api_sk = hashlib.md5(api_sk.encode()).hexdigest()
 request_token = hashlib.md5((request_time + md5_api_sk).encode()).hexdigest()
@@ -228,7 +228,7 @@ EOF
 ```bash
 TIME_TOKEN=$(python3 << 'PYTHON_EOF'
 import hashlib, time
-api_sk = "9mdaFAgzNgSgOiyQr0UdrvZRIhCn2BI7"
+api_sk = "Fw3rqkRqAashK9uNDsFxvst31YSbBmUb"
 request_time = str(int(time.time()))
 request_token = hashlib.md5((request_time + hashlib.md5(api_sk.encode()).hexdigest()).encode()).hexdigest()
 print(f"{request_time}|{request_token}")
