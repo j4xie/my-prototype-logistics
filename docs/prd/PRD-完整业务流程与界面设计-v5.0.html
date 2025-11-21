@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>白垩纪食品溯源系统 - 完整业务流程与界面设计 v5.0</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prism@1.29.0/themes/prism-tomorrow.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 20px 0;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .sidebar-search {
+            padding: 0 15px 15px;
+            margin-bottom: 15px;
+        }
+
+        .sidebar-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        .sidebar-search input:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .sidebar-nav {
+            padding: 0;
+        }
+
+        .sidebar-nav-item {
+            display: block;
+            padding: 10px 20px;
+            color: #555;
+            text-decoration: none;
+            font-size: 13px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .sidebar-nav-item:hover {
+            background: #f5f5f5;
+            color: #2c3e50;
+        }
+
+        .sidebar-nav-item.active {
+            background: #ecf0f6;
+            color: #4a90e2;
+            border-left-color: #4a90e2;
+            font-weight: 600;
+        }
+
+        .sidebar-nav-item.level-2 {
+            padding-left: 40px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* Main Content */
+        .content {
+            margin-left: 280px;
+            padding: 40px 50px;
+            background: white;
+            flex: 1;
+        }
+
+        /* Header */
+        .doc-header {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .doc-header h1 {
+            font-size: 32px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .doc-meta {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .doc-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+
+        /* Headings */
+        h1 { font-size: 28px; margin-top: 40px; margin-bottom: 20px; color: #2c3e50; font-weight: 700; padding-top: 10px; border-top: 2px solid #e0e0e0; }
+        h2 { font-size: 22px; margin-top: 35px; margin-bottom: 15px; color: #34495e; font-weight: 600; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0; }
+        h3 { font-size: 18px; margin-top: 25px; margin-bottom: 12px; color: #555; font-weight: 600; }
+        h4 { font-size: 15px; margin-top: 18px; margin-bottom: 10px; color: #666; font-weight: 600; }
+        h5 { font-size: 14px; margin-top: 15px; margin-bottom: 8px; color: #777; font-weight: 600; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        /* Code Blocks */
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid #667eea;
+            padding: 12px 20px;
+            background: #f5f7fa;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        blockquote p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Status Indicators */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 0 3px;
+        }
+
+        .status-complete { background: #d4edda; color: #155724; }
+        .status-inprogress { background: #fff3cd; color: #856404; }
+        .status-planned { background: #d1ecf1; color: #0c5460; }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .breadcrumb a {
+            color: #4a90e2;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        /* Back to Top */
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 40px;
+            height: 40px;
+            background: #4a90e2;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 999;
+        }
+
+        .back-to-top.show {
+            opacity: 1;
+        }
+
+        .back-to-top:hover {
+            background: #2970d4;
+        }
+
+        /* ASCII Art */
+        .ascii-art {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 15px 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+
+            .content {
+                margin-left: 240px;
+                padding: 30px 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .doc-header h1 {
+                font-size: 24px;
+            }
+
+            h1 { font-size: 20px; }
+            h2 { font-size: 18px; }
+            h3 { font-size: 16px; }
+        }
+
+        /* Print Styles */
+        @media print {
+            .sidebar, .back-to-top {
+                display: none;
+            }
+
+            .content {
+                margin-left: 0;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mt-2 { margin-top: 15px; }
+        .mb-2 { margin-bottom: 15px; }
+        .p-2 { padding: 15px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>📑 文档导航</h1>
+                <p>v5.0 完整业务流程</p>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="searchInput" placeholder="搜索...">
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav">
+                <div class="sidebar-nav-section">主要内容</div>
+                <a href="#第1章-产品概述" class="sidebar-nav-item" data-section="第1章-产品概述">产品概述</a>
+                <a href="#第2章-系统架构总览" class="sidebar-nav-item" data-section="第2章-系统架构总览">系统架构总览</a>
+                <a href="#第3章-核心业务流程" class="sidebar-nav-item" data-section="第3章-核心业务流程">核心业务流程</a>
+                <a href="#第4章-数据模型与关系" class="sidebar-nav-item" data-section="第4章-数据模型与关系">数据模型与关系</a>
+                <a href="#第5章-权限管理体系" class="sidebar-nav-item" data-section="第5章-权限管理体系">权限管理体系</a>
+                <a href="#第6章-核心页面界面设计" class="sidebar-nav-item" data-section="第6章-核心页面界面设计">核心页面设计</a>
+                <a href="#第7章-api规范与集成" class="sidebar-nav-item" data-section="第7章-api规范与集成">API规范与集成</a>
+                <a href="#第8章-实现状态总览" class="sidebar-nav-item" data-section="第8章-实现状态总览">实现状态总览</a>
+
+                <div class="sidebar-nav-section">推荐阅读</div>
+                <a href="#推荐阅读" class="sidebar-nav-item" data-section="推荐阅读">推荐文档</a>
+                <a href="../QUICK_START.md" class="sidebar-nav-item" style="opacity: 0.7;">→ QUICK_START</a>
+                <a href="../INTEGRATION_TEST_GUIDE.md" class="sidebar-nav-item" style="opacity: 0.7;">→ 集成测试指南</a>
+                <a href="../IMPLEMENTATION_SUMMARY.md" class="sidebar-nav-item" style="opacity: 0.7;">→ 实现总结</a>
+                <a href="../COMPLETION_REPORT.md" class="sidebar-nav-item" style="opacity: 0.7;">→ 完成报告</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="doc-header">
+                <h1>白垩纪食品溯源系统 - 完整业务流程与界面设计</h1>
+                <div class="doc-meta">
+                    <div class="doc-meta-item">
+                        <strong>版本:</strong> <span class="badge badge-info">v5.0</span>
+                    </div>
+                    <div class="doc-meta-item">
+                        <strong>类型:</strong> <span class="badge badge-success">业务流程完整版</span>
+                    </div>
+                    <div class="doc-meta-item">
+                        <strong>更新时间:</strong> 2025-11-21
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: 推荐阅读 -->
+            <section id="推荐阅读" style="background: #f0f7ff; padding: 20px; border-left: 4px solid #4a90e2; margin-bottom: 30px; border-radius: 4px;">
+                <h2 style="margin-top: 0;">📚 推荐阅读</h2>
+                <p style="margin-bottom: 15px; color: #555;">本文是完整业务流程和界面设计文档。如果您是新人加入项目，建议按以下顺序阅读：</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
+                        <h4 style="margin-top: 0; color: #4a90e2;">1️⃣ QUICK_START.md</h4>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">5分钟快速启动指南，了解如何启动所有服务</p>
+                        <a href="../QUICK_START.md" style="color: #4a90e2; text-decoration: none; font-weight: 500;">查看文档 →</a>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
+                        <h4 style="margin-top: 0; color: #4a90e2;">2️⃣ INTEGRATION_TEST_GUIDE.md</h4>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">完整集成测试指南，验证系统各模块工作状态</p>
+                        <a href="../INTEGRATION_TEST_GUIDE.md" style="color: #4a90e2; text-decoration: none; font-weight: 500;">查看文档 →</a>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
+                        <h4 style="margin-top: 0; color: #4a90e2;">3️⃣ IMPLEMENTATION_SUMMARY.md</h4>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">详细技术总结，了解后端实现细节和架构</p>
+                        <a href="../IMPLEMENTATION_SUMMARY.md" style="color: #4a90e2; text-decoration: none; font-weight: 500;">查看文档 →</a>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
+                        <h4 style="margin-top: 0; color: #4a90e2;">4️⃣ COMPLETION_REPORT.md</h4>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">项目完成报告，了解系统整体现状和质量指标</p>
+                        <a href="../COMPLETION_REPORT.md" style="color: #4a90e2; text-decoration: none; font-weight: 500;">查看文档 →</a>
+                    </div>
+                </div>
+                <p style="margin-top: 15px; font-size: 13px; color: #888; border-top: 1px solid #e0e0e0; padding-top: 15px;">
+                    💡 提示：如需快速查找API端点和文件映射，请参考 <strong>PRD-功能与文件映射-v3.0-技术速查.md</strong>
+                </p>
+            </section>
+
+            <!-- Section: 产品概述 -->
+            <section id="第1章-产品概述">
+                <h2>第1章 产品概述</h2>
+
+                <h3>1.1 产品定位</h3>
+                <p>白垩纪食品溯源系统是一个<strong>AI驱动的智能生产管理系统</strong>，专为中小食品企业设计。核心价值是通过<strong>移动优先的设计</strong> + <strong>DeepSeek AI智能分析</strong> + <strong>全链路数据追溯</strong>，帮助工厂实现<strong>降本增效</strong>和<strong>溯源透明</strong>。</p>
+
+                <h3>1.2 核心特色</h3>
+
+                <h4>🤖 AI替代数据分析师</h4>
+                <ul>
+                    <li><strong>DeepSeek大语言模型</strong> 集成</li>
+                    <li><strong>5维深度成本分析</strong>：原料、人工、设备、效率、预测</li>
+                    <li><strong>智能优化建议</strong>：直接给出降本方案</li>
+                    <li><strong>年省成本</strong>：12-36万（替代分析师）</li>
+                </ul>
+
+                <h4>📱 极简移动端设计</h4>
+                <ul>
+                    <li><strong>小学学历也能用</strong> - 大按钮、图标化、少文字</li>
+                    <li><strong>随时随地操作</strong> - 打卡、记录、拍照、扫码</li>
+                    <li><strong>10分钟上手</strong> - 培训成本接近零</li>
+                </ul>
+
+                <h4>💰 低成本SaaS模式</h4>
+                <ul>
+                    <li><strong>快速上线</strong>：1-2周（vs传统系统6-12个月）</li>
+                    <li><strong>按需付费</strong>：月/年订阅制</li>
+                    <li><strong>降低90%初始投入</strong>：无需硬件、定制开发</li>
+                </ul>
+
+                <h4>🔍 全链路数据追溯</h4>
+                <ul>
+                    <li><strong>从原料到成品</strong> 的完整溯源链条</li>
+                    <li><strong>秒级追溯</strong>：输入批次号 → 完整信息</li>
+                    <li><strong>可视化链路图</strong> - 涉及人员、设备、工序、质检</li>
+                </ul>
+
+                <h3>1.3 目标用户</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用户</th>
+                            <th>定位</th>
+                            <th>核心任务</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>平台管理员</strong></td>
+                            <td>平台运营（2-5人）</td>
+                            <td>管理所有工厂、配置系统</td>
+                        </tr>
+                        <tr>
+                            <td><strong>工厂超级管理员</strong></td>
+                            <td>厂长（每厂1-2人）</td>
+                            <td>生产计划、成本控制</td>
+                        </tr>
+                        <tr>
+                            <td><strong>部门管理员</strong></td>
+                            <td>部门主管（每厂3-5人）</td>
+                            <td>部门生产、员工管理</td>
+                        </tr>
+                        <tr>
+                            <td><strong>一线操作员</strong></td>
+                            <td>员工（每厂10-50人）</td>
+                            <td>打卡、拍照、记录、质检</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Section: 系统架构 -->
+            <section id="第2章-系统架构总览">
+                <h2>第2章 系统架构总览</h2>
+
+                <h3>2.1 系统架构图</h3>
+                <div class="ascii-art">┌─────────────────────────────────────────────────────────────┐
+│                   React Native App (Expo 53+)               │
+│         Android / iOS (移动优先，跨平台)                    │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                    HTTPS (10010)
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│               Spring Boot API Gateway (10010)               │
+│         Java 11 + Spring Boot 2.7.15 + Spring Security      │
+│                     JWT 认证中间件                          │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│   业务层     │  │   AI服务     │  │  文件服务    │
+│ (Service)   │  │ (DeepSeek)   │  │  (图片处理)  │
+└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
+       │                 │                  │
+       ▼                 ▼                  ▼
+┌──────────────────────────────────────────────────┐
+│              MySQL 数据库 (43个实体表)           │
+│       Spring Data JPA + Hibernate ORM           │
+└──────────────────────────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────────────────┐
+│              Redis 缓存 (Token + AI)              │
+│          Token存储、AI分析缓存 (5分钟TTL)        │
+└──────────────────────────────────────────────────┘</div>
+
+                <h3>2.2 技术栈</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>层级</th>
+                            <th>前端 (React Native)</th>
+                            <th>后端 (Spring Boot)</th>
+                            <th>数据层</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>框架</strong></td>
+                            <td>Expo 53+</td>
+                            <td>Spring Boot 2.7.15</td>
+                            <td>MySQL 8+</td>
+                        </tr>
+                        <tr>
+                            <td><strong>语言</strong></td>
+                            <td>TypeScript</td>
+                            <td>Java 11</td>
+                            <td>SQL</td>
+                        </tr>
+                        <tr>
+                            <td><strong>路由</strong></td>
+                            <td>React Navigation 7+</td>
+                            <td>Spring MVC</td>
+                            <td>Spring Data JPA</td>
+                        </tr>
+                        <tr>
+                            <td><strong>状态管理</strong></td>
+                            <td>Zustand</td>
+                            <td>Spring Session</td>
+                            <td>Hibernate ORM</td>
+                        </tr>
+                        <tr>
+                            <td><strong>认证</strong></td>
+                            <td>JWT (本地存储)</td>
+                            <td>Spring Security + JWT</td>
+                            <td>Redis</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>2.3 系统部署架构</h3>
+                <div class="ascii-art">用户（工厂/平台）
+    │
+    ▼
+Expo应用 (Android APK / iOS IPA)
+    │ (HTTPS 139.196.165.140:10010)
+    ▼
+宝塔面板 (BT-Panel) - 服务器管理
+    │
+    ├─ Spring Boot JAR (10010)
+    │  └─ /www/wwwroot/cretas/cretas-backend-system-1.0.0.jar
+    │
+    ├─ MySQL 数据库 (3306)
+    │  └─ cretas_db
+    │
+    └─ Redis 缓存
+       └─ 本地或云服务</div>
+            </section>
+
+            <!-- Section: 核心业务流程 -->
+            <section id="第3章-核心业务流程">
+                <h2>第3章 核心业务流程</h2>
+
+                <h3>3.1 统一登录与权限路由流程</h3>
+
+                <h4>序列图</h4>
+                <div class="ascii-art">用户                    App                  API              DB
+ │                      │                    │               │
+ ├─输入用户名密码────────>│                    │               │
+ │                      ├─POST /unified-login─>               │
+ │                      │                    ├─查询User/PlatformAdmin
+ │                      │                    │               <─
+ │                      │                    ├─BCrypt验证密码
+ │                      │                    │
+ │                      │<─生成JWT Token────┤
+ │                      │                    │
+ │<─显示登录成功────────┤                    │
+ │                      ├─存储Token到SecureStore
+ │                      ├─更新authStore (Zustand)
+ │                      │
+ │                      ├─根据userType跳转
+ │                      │  platform_admin → PlatformDashboard
+ │                      │  factory_user → HomeScreen</div>
+
+                <h4>Token管理策略</h4>
+                <pre><code class="language-plaintext">AccessToken (24小时)
+  ├─ 存储位置：SecureStore (硬件加密)
+  └─ 使用场景：所有API请求
+
+RefreshToken (7天)
+  ├─ 存储位置：SecureStore
+  └─ 使用场景：accessToken过期时刷新
+
+TempToken (10分钟)
+  ├─ 存储位置：内存
+  └─ 使用场景：注册流程中临时身份验证
+
+DeviceToken (设备标识)
+  ├─ 存储位置：数据库
+  └─ 使用场景：设备绑定、激活</code></pre>
+
+                <h3>3.2 员工打卡与工时计算流程</h3>
+
+                <h4>打卡状态机</h4>
+                <div class="ascii-art">      未打卡
+        │
+        ├─[上班打卡]──▶ 已上班
+        │              │
+        │              ├─[开始休息]──▶ 休息中
+        │              │               │
+        │              │               └─[结束休息]──▶ 已上班
+        │              │
+        │              └─[下班打卡]──▶ 已下班
+        │                              │
+        │                              └─[系统计算]──▶ 已结算
+        │
+        └─[再次上班]────▶ 已上班 (加班)</div>
+
+                <h4>工时计算公式</h4>
+                <pre><code class="language-plaintext">工作时长 = 下班时间 - 上班时间 - 午休时间(1小时)
+
+例如：
+  上班：08:30
+  休息：12:00-13:00 (1小时)
+  下班：17:30
+
+  工作时长 = 17:30 - 08:30 - 1:00 = 8小时
+
+加班计算：
+  if (工作时长 > 8小时) {
+    加班时长 = 工作时长 - 8小时
+  }
+
+周工时 = 本周所有日工时之和
+月工时 = 本月所有日工时之和</code></pre>
+
+                <h3>3.3 生产批次全生命周期流程</h3>
+
+                <h4>批次状态流转</h4>
+                <div class="ascii-art">创建批次 (planning)
+  │
+  ├─ 系统自动：
+  │  ├─ 检查原料库存 (FIFO推荐)
+  │  ├─ 预估产出量 (转换率)
+  │  └─ 预估成本 (历史数据)
+  │
+  ├─[开始生产]
+  │  │
+  │  ▼
+  │ 进行中 (in_progress)
+  │  │
+  │  ├─ 每日添加产量记录
+  │  │  ├─ 当日产量
+  │  │  ├─ 消耗原料
+  │  │  ├─ 设备运行状态
+  │  │  └─ 员工工时
+  │  │
+  │  ├─ 持续7-30天（取决于产品）
+  │  │
+  │  ├─[完成生产]
+  │  │  │
+  │  │  ▼
+  │  │ 质检中 (quality_check)
+  │  │  │
+  │  │  ├─ 质检员提交质检结果
+  │  │  │  ├─ 新鲜度评分
+  │  │  │  ├─ 外观评分
+  │  │  │  ├─ 气味评分
+  │  │  │  └─ 综合评分
+  │  │  │
+  │  │  ├─[质检通过]
+  │  │  │  │
+  │  │  │  ▼
+  │  │  │ 已完成 (completed)
+  │  │  │  │
+  │  │  │  └─ 系统自动：
+  │  │  │     ├─ 计算最终成本
+  │  │  │     ├─ 更新库存
+  │  │  │     ├─ 生成成本报告
+  │  │  │     └─ 可触发AI分析
+  │  │  │
+  │  │  └─[质检不合格]
+  │  │     │
+  │  │     ▼
+  │  │    失败 (failed)
+  │  │
+  │  └─[暂停生产]
+  │     │
+  │     ▼
+  │    暂停 (paused)
+  │
+  └─[取消生产]
+     │
+     ▼
+    已取消 (cancelled)</div>
+
+                <h4>成本自动计算</h4>
+                <pre><code class="language-plaintext">batch完成时自动执行：
+
+1️⃣ 原材料成本
+   materialCost = Σ(消耗数量 × 单价)
+
+2️⃣ 人工成本
+   laborCost = Σ(员工工时 × 时薪)
+   时薪 = 月薪 / 工作时数 × 60
+
+3️⃣ 设备成本
+   equipmentCost = Σ(使用时长 × 折旧率)
+
+4️⃣ 总成本
+   totalCost = materialCost + laborCost + equipmentCost
+   unitCost = totalCost / 实际产量</code></pre>
+
+                <h3>3.4 FIFO原材料管理流程</h3>
+
+                <h4>FIFO算法</h4>
+                <pre><code class="language-plaintext">场景：需要2000g 猪肉，当前库存：
+
+批次1: 2000g, 入库2025-10-01, 到期2025-10-08 (新鲜)
+批次2: 1500g, 入库2025-10-03, 到期2025-10-10 (新鲜)
+批次3: 3000g, 入库2025-10-05, 到期2026-01-05 (冷冻)
+
+FIFO推荐过程：
+  1. 按入库时间排序：批次1 < 批次2 < 批次3
+  2. 检查到期日期：批次1最早到期(10-08)
+  3. 推荐：使用批次1 (2000g，足量)
+
+如果全部使用完：
+  使用批次3 (冷冻猪肉)</code></pre>
+
+                <h4>库存预警机制</h4>
+                <pre><code class="language-plaintext">入库时记录到期日期
+  │
+  ▼
+系统每小时扫描一次
+  │
+  ├─ 3天内到期 → 黄色预警
+  ├─ 1天内到期 → 橙色预警
+  └─ 当天到期 → 红色警报
+
+      │
+      ▼
+  显示在库存管理页面
+  提醒采购和生产
+
+      │
+      ▼
+  支持操作：
+  ├─ 新鲜→冷冻 (延长保质期)
+  ├─ 优先使用 (立即消耗)
+  └─ 报废处理 (成本计入)</code></pre>
+
+                <h3>3.5 AI成本分析与优化建议流程</h3>
+
+                <h4>AI分析流程</h4>
+                <div class="ascii-art">用户点击"AI分析"按钮
+  │
+  ▼
+生成Cache Key (MD5(batchId + question))
+  │
+  ├─ 缓存命中？
+  │  └─ 是 → 直接返回缓存结果（不消耗配额）
+  │
+  ├─ 缓存未命中
+  │  │
+  │  ├─ 检查本周AI配额
+  │  │  └─ 剩余配额 > 0？
+  │  │     └─ 否 → 提示"配额已用完"
+  │  │
+  │  ├─ 查询批次完整数据
+  │  │
+  │  ├─ 构造AI Prompt
+  │  │
+  │  ├─ 调用 DeepSeek API
+  │  │
+  │  ├─ 消耗配额 -1
+  │  │
+  │  ├─ 保存分析结果到数据库
+  │  │
+  │  ├─ 缓存结果 (Redis, TTL 5分钟)
+  │  │
+  │  └─ 返回给前端
+  │
+  ▼
+前端展示 AI 分析报告</div>
+            </section>
+
+            <!-- Section: 数据模型 -->
+            <section id="第4章-数据模型与关系">
+                <h2>第4章 数据模型与关系</h2>
+
+                <h3>4.1 核心实体关系图</h3>
+                <div class="ascii-art">Factory (工厂)
+  ├─ 1:N → User (员工)
+  ├─ 1:N → Department (部门)
+  ├─ 1:N → ProcessingBatch (生产批次)
+  ├─ 1:N → MaterialBatch (原材料批次)
+  └─ 1:N → Equipment (设备)
+
+User (员工)
+  ├─ 1:N → TimeClockRecord (打卡记录)
+  ├─ 1:N → BatchWorkSession (生产工时)
+  └─ 1:N → QualityInspection (质检)
+
+ProcessingBatch (生产批次)
+  ├─ N:1 → MaterialType (原料类型)
+  ├─ 1:N → MaterialConsumption (原料消耗)
+  ├─ 1:N → BatchWorkSession (工时记录)
+  ├─ 1:N → BatchEquipmentUsage (设备使用)
+  ├─ 1:N → QualityInspection (质检)
+  └─ 1:N → AIAnalysisResult (AI分析)
+
+Equipment (设备)
+  ├─ 1:N → BatchEquipmentUsage (使用记录)
+  ├─ 1:N → EquipmentAlert (告警)
+  └─ 1:N → EquipmentMaintenance (维护记录)</div>
+
+                <h3>4.2 关键数据实体</h3>
+
+                <h4>ProcessingBatch (生产批次)</h4>
+                <pre><code class="language-sql">CREATE TABLE processing_batches (
+  id VARCHAR(50) PRIMARY KEY,
+  batch_number VARCHAR(50) UNIQUE NOT NULL,
+  product_name VARCHAR(100),
+  quantity DECIMAL(10,2),
+  status VARCHAR(30),
+
+  -- 成本字段
+  material_cost DECIMAL(12,2),
+  labor_cost DECIMAL(12,2),
+  equipment_cost DECIMAL(12,2),
+  total_cost DECIMAL(12,2),
+
+  start_time TIMESTAMP,
+  end_time TIMESTAMP,
+  created_at TIMESTAMP,
+  FOREIGN KEY (supervisor_id) REFERENCES users(id)
+);</code></pre>
+
+                <h4>MaterialBatch (原材料批次)</h4>
+                <pre><code class="language-sql">CREATE TABLE material_batches (
+  id VARCHAR(50) PRIMARY KEY,
+  batch_number VARCHAR(50) UNIQUE NOT NULL,
+  quantity DECIMAL(10,2),
+  expiry_date DATE,
+  storage_type VARCHAR(30),
+  status VARCHAR(30),
+  FOREIGN KEY (material_type_id) REFERENCES material_types(id),
+  FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+);</code></pre>
+
+                <h4>TimeClockRecord (打卡记录)</h4>
+                <pre><code class="language-sql">CREATE TABLE time_clock_records (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  clock_in_time TIMESTAMP,
+  clock_out_time TIMESTAMP,
+  work_minutes INT,
+  location VARCHAR(100),
+  status VARCHAR(30),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);</code></pre>
+            </section>
+
+            <!-- Section: 权限管理 -->
+            <section id="第5章-权限管理体系">
+                <h2>第5章 权限管理体系</h2>
+
+                <h3>5.1 7角色权限矩阵</h3>
+                <table style="font-size: 12px;">
+                    <thead>
+                        <tr>
+                            <th>权限类别</th>
+                            <th>super_admin</th>
+                            <th>platform_admin</th>
+                            <th>factory_super</th>
+                            <th>factory_admin</th>
+                            <th>dept_admin</th>
+                            <th>supervisor</th>
+                            <th>operator</th>
+                            <th>viewer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>平台管理</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                        </tr>
+                        <tr>
+                            <td><strong>用户管理</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                        </tr>
+                        <tr>
+                            <td><strong>生产管理</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>❌</td>
+                        </tr>
+                        <tr>
+                            <td><strong>质量检验</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><strong>库存管理</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AI分析</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                        </tr>
+                        <tr>
+                            <td><strong>打卡</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><strong>报表导出</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Section: 核心页面设计 -->
+            <section id="第6章-核心页面界面设计">
+                <h2>第6章 核心页面界面设计</h2>
+
+                <h3>6.1 登录页面 (EnhancedLoginScreen)</h3>
+
+                <p><strong>页面功能</strong>:</p>
+                <ul>
+                    <li>用户名/密码输入</li>
+                    <li>生物识别登录（可选）</li>
+                    <li>记住密码选项</li>
+                    <li>忘记密码链接</li>
+                </ul>
+
+                <h3>6.2 生产仪表板 (ProcessingDashboard)</h3>
+
+                <p><strong>核心内容</strong>:</p>
+                <ul>
+                    <li>📊 今日数据卡片：进行中批次、完成批次、待质检、设备告警</li>
+                    <li>🚨 最近告警：红色标题，支持快速操作</li>
+                    <li>📋 进行中的批次：显示进度和消耗情况</li>
+                    <li>快捷操作按钮：创建批次、查看批次、成本分析、AI助手</li>
+                </ul>
+
+                <h3>6.3 打卡页面 (TimeClockScreen)</h3>
+
+                <p><strong>核心内容</strong>:</p>
+                <ul>
+                    <li>当前状态显示</li>
+                    <li>大按钮：上班/下班打卡</li>
+                    <li>📍 位置验证（距离工厂）</li>
+                    <li>📸 拍摄打卡照片</li>
+                    <li>👤 生物识别验证</li>
+                    <li>📊 今日/周/月工时统计</li>
+                    <li>📋 打卡记录列表</li>
+                </ul>
+
+                <h3>6.4 批次详情页 (BatchDetailScreen)</h3>
+
+                <p><strong>核心内容</strong>:</p>
+                <ul>
+                    <li>📦 基本信息：批次号、产品、数量、状态、进度</li>
+                    <li>💰 成本分析：原料/人工/设备成本占比</li>
+                    <li>📈 产量记录：最近几天的产量</li>
+                    <li>👥 参与人员：列表及工时</li>
+                    <li>🔧 设备使用：设备及使用时长</li>
+                    <li>✅ 质检记录：质检状态</li>
+                </ul>
+
+                <h3>6.5 成本分析页 (CostAnalysisDashboard)</h3>
+
+                <p><strong>核心内容</strong>:</p>
+                <ul>
+                    <li>📊 4维成本占比（饼图）</li>
+                    <li>💡 AI智能警告和建议</li>
+                    <li>详细成本分解表</li>
+                    <li>单位成本 vs 目标成本对比</li>
+                    <li>AI分析按钮</li>
+                </ul>
+            </section>
+
+            <!-- Section: API规范 -->
+            <section id="第7章-api规范与集成">
+                <h2>第7章 API规范与集成</h2>
+
+                <h3>7.1 统一API响应格式</h3>
+                <pre><code class="language-json">{
+  "code": 200,
+  "message": "成功",
+  "data": {
+    // 实际业务数据
+  },
+  "timestamp": 1637467200000
+}</code></pre>
+
+                <p><strong>状态码</strong>:</p>
+                <ul>
+                    <li><code>200</code> - 成功</li>
+                    <li><code>400</code> - 参数错误</li>
+                    <li><code>401</code> - 未认证</li>
+                    <li><code>403</code> - 权限不足</li>
+                    <li><code>404</code> - 资源不存在</li>
+                    <li><code>500</code> - 服务器错误</li>
+                </ul>
+
+                <h3>7.2 认证规范</h3>
+                <p><strong>请求头</strong>:</p>
+                <pre><code class="language-plaintext">Authorization: Bearer &lt;accessToken&gt;
+X-Device-Id: &lt;deviceId&gt;
+X-Factory-Id: &lt;factoryId&gt;</code></pre>
+
+                <h3>7.3 分页查询规范</h3>
+                <p><strong>请求参数</strong>:</p>
+                <pre><code class="language-json">{
+  "page": 0,
+  "pageSize": 20,
+  "sort": "createdAt,desc"
+}</code></pre>
+            </section>
+
+            <!-- Section: 实现状态 -->
+            <section id="第8章-实现状态总览">
+                <h2>第8章 实现状态总览</h2>
+
+                <h3>8.1 模块完成度统计</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模块</th>
+                            <th>前端页面</th>
+                            <th>后端API</th>
+                            <th>完成度</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>认证与授权</td>
+                            <td>3</td>
+                            <td>37</td>
+                            <td><span class="status-badge status-complete">✅ 95%</span></td>
+                            <td>基本完成，两阶段注册待完成</td>
+                        </tr>
+                        <tr>
+                            <td>考勤打卡</td>
+                            <td>5</td>
+                            <td>30</td>
+                            <td><span class="status-badge status-complete">✅ 90%</span></td>
+                            <td>基本完成，历史查询待完成</td>
+                        </tr>
+                        <tr>
+                            <td>生产加工</td>
+                            <td>25</td>
+                            <td>50</td>
+                            <td><span class="status-badge status-inprogress">🔨 85%</span></td>
+                            <td>AI详情页待完善，设备集成待完成</td>
+                        </tr>
+                        <tr>
+                            <td>AI成本分析</td>
+                            <td>5</td>
+                            <td>12</td>
+                            <td><span class="status-badge status-complete">✅ 95%</span></td>
+                            <td>基本完成，只需UI优化</td>
+                        </tr>
+                        <tr>
+                            <td>设备管理</td>
+                            <td>4</td>
+                            <td>26</td>
+                            <td><span class="status-badge status-complete">✅ 90%</span></td>
+                            <td>基本完成，告警逻辑待完成</td>
+                        </tr>
+                        <tr>
+                            <td>质量检验</td>
+                            <td>3</td>
+                            <td>5</td>
+                            <td><span class="status-badge status-inprogress">🔨 70%</span></td>
+                            <td>创建质检、详情页待完成</td>
+                        </tr>
+                        <tr>
+                            <td>基础数据管理</td>
+                            <td>14</td>
+                            <td>多个</td>
+                            <td><span class="status-badge status-complete">✅ 90%</span></td>
+                            <td>CRUD已完成，导入导出待完成</td>
+                        </tr>
+                        <tr>
+                            <td>平台管理</td>
+                            <td>3</td>
+                            <td>12</td>
+                            <td><span class="status-badge status-complete">✅ 85%</span></td>
+                            <td>基本完成，仪表板待完善</td>
+                        </tr>
+                        <tr>
+                            <td>报表分析</td>
+                            <td>12</td>
+                            <td>20</td>
+                            <td><span class="status-badge status-inprogress">🔨 80%</span></td>
+                            <td>5个报表完成，效率报表待完成</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>8.2 Phase 3待完成（2-3周）</h3>
+
+                <h4>P0级（紧急，2小时）</h4>
+                <ul>
+                    <li>[ ] 设备监控集成到导航</li>
+                </ul>
+
+                <h4>P1级（核心，3-4天）</h4>
+                <ul>
+                    <li>[ ] AI智能分析详情页完善</li>
+                    <li>[ ] 质检完整流程</li>
+                    <li>[ ] 成本对比分析页面</li>
+                    <li>[ ] 设备告警系统</li>
+                    <li>[ ] 库存FIFO推荐API</li>
+                </ul>
+
+                <h4>P2级（辅助，5-7天）</h4>
+                <ul>
+                    <li>[ ] 两阶段用户注册</li>
+                    <li>[ ] 数据报表导出</li>
+                    <li>[ ] 打卡历史查询</li>
+                    <li>[ ] 工厂设置页面</li>
+                </ul>
+
+                <h3>8.3 Phase 4-5规划路线图</h3>
+
+                <h4>Phase 4 (2025 Q2-Q3): 横向扩展</h4>
+                <ul>
+                    <li>养殖模块</li>
+                    <li>物流模块</li>
+                    <li>溯源模块</li>
+                    <li>销售模块</li>
+                </ul>
+
+                <h4>Phase 5 (2025下半年): 平台化生态</h4>
+                <ul>
+                    <li>Web管理后台</li>
+                    <li>高级AI功能</li>
+                    <li>产业互联网平台</li>
+                </ul>
+            </section>
+
+            <!-- Footer -->
+            <footer style="margin-top: 60px; padding-top: 30px; border-top: 1px solid #e0e0e0; color: #888; font-size: 13px;">
+                <p><strong>文档维护:</strong></p>
+                <ul style="margin-top: 10px;">
+                    <li>版本: v5.0</li>
+                    <li>最后更新: 2025-11-21</li>
+                    <li>更新频率: 功能发布后或月度更新</li>
+                    <li>维护团队: 架构 + 产品</li>
+                </ul>
+                <p style="margin-top: 20px;"><strong>相关文档:</strong></p>
+                <ul>
+                    <li><a href="./PRD-功能与文件映射-v3.0.html">功能与文件映射-v3.0</a></li>
+                    <li><a href="./BUSINESS_LOGIC_OVERVIEW.md">业务逻辑总览</a></li>
+                    <li><a href="./PENDING_FEATURES_TODO.md">待实现功能清单</a></li>
+                </ul>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Back to Top Button -->
+    <div class="back-to-top" id="backToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/prism@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prism@1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prism@1.29.0/components/prism-json.min.js"></script>
+    <script>
+        // Sidebar Navigation Active State
+        const navItems = document.querySelectorAll('.sidebar-nav-item');
+        const sections = document.querySelectorAll('section');
+
+        function updateActiveNav() {
+            const scrollPosition = window.scrollY + 100;
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionBottom = sectionTop + section.offsetHeight;
+
+                if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+                    navItems.forEach(item => item.classList.remove('active'));
+                    const activeItem = document.querySelector(`[data-section="${section.id}"]`);
+                    if (activeItem) {
+                        activeItem.classList.add('active');
+                    }
+                }
+            });
+        }
+
+        // Back to Top Button
+        const backToTopBtn = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+            updateActiveNav();
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.add('show');
+            } else {
+                backToTopBtn.classList.remove('show');
+            }
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('keyup', () => {
+            const query = searchInput.value.toLowerCase();
+            navItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        });
+
+        // Initial active state
+        updateActiveNav();
+    </script>
+</body>
+</html>
