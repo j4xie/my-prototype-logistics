@@ -65,18 +65,65 @@
 
 ---
 
-## 📋 详细目录
+## 🚀 快速开始
 
-1. [产品概述](#1-产品概述)
-2. [业务背景与案例](#2-业务背景与案例)
-3. [用户角色体系](#3-用户角色体系)
-4. [核心功能模块](#4-核心功能模块)
-5. [界面设计与交互流程](#5-界面设计与交互流程)
-6. [业务流程图](#6-业务流程图)
-7. [异常场景处理](#7-异常场景处理)
-8. [数据流转逻辑](#8-数据流转逻辑)
-9. [非功能性需求](#9-非功能性需求)
-10. [验收标准](#10-验收标准)
+### 环境要求
+
+| 组件 | 版本 |
+|------|------|
+| Node.js | 18.0+ LTS |
+| Java | 11+ |
+| MySQL | 8.0+ |
+| Python | 3.10+ (仅AI) |
+| iOS | 13.0+ |
+| Android | 8.0+ (API 26+) |
+
+### 启动系统
+
+```bash
+# 方式1: 一键启动 (推荐)
+bash scripts/start-complete-system.sh
+
+# 方式2: macOS启动
+bash scripts/start-system-macos.sh
+
+# 方式3: 手动启动各组件
+# Terminal 1: 后端
+cd backend-java && ./run-local.sh
+
+# Terminal 2: 前端
+cd frontend/CretasFoodTrace && npm start
+
+# Terminal 3: AI服务 (可选)
+cd backend-java/backend-ai-chat && python main.py
+```
+
+### 默认端口
+
+- **前端**: 3010 (Expo)
+- **后端**: 10010 (Spring Boot)
+- **MySQL**: 3306
+- **AI服务**: 8000 (Python)
+
+### 测试账号
+
+| 字段 | 值 |
+|------|-----|
+| 用户名 | admin |
+| 密码 | Admin@123456 |
+| 角色 | platform_admin |
+
+---
+
+## 📚 详细文档
+
+> ⭐ 详细的产品需求、业务流程、API文档等请查看以下文件：
+
+- 📖 **[业务流程 v5.0](./docs/prd/PRD-完整业务流程与界面设计-v5.0.md)** - 完整业务流程 + 界面设计
+- 📖 **[功能与文件映射 v3.0](./docs/prd/PRD-功能与文件映射-v3.0.md)** - 功能实现 + API端点映射
+- 📖 **[权限速查表](./docs/prd/角色权限和页面访问速查表.md)** - 角色权限对照表
+- 📖 **[导航架构](./docs/prd/导航架构实现指南.md)** - 页面导航实现
+- 📖 **[AI功能指南](./docs/prd/AI-DETAILED-FUNCTIONALITY-GUIDE.md)** - AI分析深度功能说明
 
 ---
 
