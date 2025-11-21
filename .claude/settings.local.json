@@ -92,7 +92,9 @@
       "Bash(mkdir:*)",
       "Bash(echo:*)",
       "Bash(ssh root@139.196.165.140 \"tail -50 /www/wwwroot/cretas/cretas-backend.log 2>/dev/null || echo ''无法读取日志''\")",
-      "Bash(mvn:*)"
+      "Bash(mvn:*)",
+      "Bash(timeout 10 mvn spring-boot:run:*)",
+      "Bash(mysqldump:*)"
     ],
     "deny": [],
     "ask": []

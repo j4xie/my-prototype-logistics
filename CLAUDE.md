@@ -27,7 +27,7 @@ This is 白垩纪食品溯源系统 (Cretas Food Traceability System), focusing 
 # 1. 生成API签名
 python3 << 'EOF'
 import hashlib, time
-api_sk = "YOUR_API_KEY"
+api_sk = "Fw3rqkRqAashK9uNDsFxvst31YSbBmUb"
 request_time = str(int(time.time()))
 md5_api_sk = hashlib.md5(api_sk.encode()).hexdigest()
 request_token = hashlib.md5((request_time + md5_api_sk).encode()).hexdigest()
