@@ -86,6 +86,15 @@ export default function CreateQualityRecordScreen() {
   const [result, setResult] = useState<InspectionResult>(InspectionResult.PASS);
   const [notes, setNotes] = useState('');
 
+  // ========== 5星评分系统 (PRD要求) ==========
+  const [freshnessScore, setFreshnessScore] = useState(5); // 新鲜度评分 (1-5)
+  const [appearanceScore, setAppearanceScore] = useState(5); // 外观评分 (1-5)
+  const [smellScore, setSmellScore] = useState(5); // 气味评分 (1-5)
+  const [otherScore, setOtherScore] = useState(5); // 其他评分 (1-5)
+
+  // 计算综合评分 (平均值)
+  const compositeScore = ((freshnessScore + appearanceScore + smellScore + otherScore) / 4).toFixed(1);
+
   // GPS location state
   const [gpsLocation, setGpsLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [loadingGps, setLoadingGps] = useState(true);
@@ -538,6 +547,157 @@ export default function CreateQualityRecordScreen() {
           </View>
         </Surface>
 
+        {/* ========== 5星评分系统 (PRD要求) ========== */}
+        <Surface style={styles.section} elevation={1}>
+          <View style={styles.sectionHeader}>
+            <List.Icon icon="star" color="#FF9800" style={{ margin: 0 }} />
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              质量评分
+            </Text>
+            <Chip
+              mode="flat"
+              compact
+              icon="check-decagram"
+              style={{ backgroundColor: '#FFF3E0' }}
+              textStyle={{ color: '#FF9800', fontSize: 11, fontWeight: '600' }}
+            >
+              综合 {compositeScore} 分
+            </Chip>
+          </View>
+
+          {/* 新鲜度评分 */}
+          <View style={styles.ratingRow}>
+            <Text style={styles.ratingLabel}>新鲜度</Text>
+            <View style={styles.ratingStars}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setFreshnessScore(star)}
+                  style={styles.starButton}
+                >
+                  <IconButton
+                    icon={star <= freshnessScore ? 'star' : 'star-outline'}
+                    iconColor={star <= freshnessScore ? '#FF9800' : '#BDBDBD'}
+                    size={32}
+                    style={{ margin: 0 }}
+                  />
+                </TouchableOpacity>
+              ))}
+              <Text style={styles.ratingValue}>{freshnessScore}/5</Text>
+            </View>
+          </View>
+
+          <Divider style={styles.ratingDivider} />
+
+          {/* 外观评分 */}
+          <View style={styles.ratingRow}>
+            <Text style={styles.ratingLabel}>外观</Text>
+            <View style={styles.ratingStars}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setAppearanceScore(star)}
+                  style={styles.starButton}
+                >
+                  <IconButton
+                    icon={star <= appearanceScore ? 'star' : 'star-outline'}
+                    iconColor={star <= appearanceScore ? '#FF9800' : '#BDBDBD'}
+                    size={32}
+                    style={{ margin: 0 }}
+                  />
+                </TouchableOpacity>
+              ))}
+              <Text style={styles.ratingValue}>{appearanceScore}/5</Text>
+            </View>
+          </View>
+
+          <Divider style={styles.ratingDivider} />
+
+          {/* 气味评分 */}
+          <View style={styles.ratingRow}>
+            <Text style={styles.ratingLabel}>气味</Text>
+            <View style={styles.ratingStars}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setSmellScore(star)}
+                  style={styles.starButton}
+                >
+                  <IconButton
+                    icon={star <= smellScore ? 'star' : 'star-outline'}
+                    iconColor={star <= smellScore ? '#FF9800' : '#BDBDBD'}
+                    size={32}
+                    style={{ margin: 0 }}
+                  />
+                </TouchableOpacity>
+              ))}
+              <Text style={styles.ratingValue}>{smellScore}/5</Text>
+            </View>
+          </View>
+
+          <Divider style={styles.ratingDivider} />
+
+          {/* 其他评分 */}
+          <View style={styles.ratingRow}>
+            <Text style={styles.ratingLabel}>其他</Text>
+            <View style={styles.ratingStars}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setOtherScore(star)}
+                  style={styles.starButton}
+                >
+                  <IconButton
+                    icon={star <= otherScore ? 'star' : 'star-outline'}
+                    iconColor={star <= otherScore ? '#FF9800' : '#BDBDBD'}
+                    size={32}
+                    style={{ margin: 0 }}
+                  />
+                </TouchableOpacity>
+              ))}
+              <Text style={styles.ratingValue}>{otherScore}/5</Text>
+            </View>
+          </View>
+
+          {/* 综合评分展示 */}
+          <Divider style={styles.divider} />
+          <View style={styles.compositeScoreRow}>
+            <View style={styles.compositeScoreLeft}>
+              <IconButton icon="check-decagram" iconColor="#FF9800" size={28} style={{ margin: 0 }} />
+              <Text variant="titleMedium" style={styles.compositeScoreLabel}>
+                综合评分
+              </Text>
+            </View>
+            <View style={styles.compositeScoreRight}>
+              <Text
+                variant="headlineMedium"
+                style={[
+                  styles.compositeScoreValue,
+                  {
+                    color:
+                      parseFloat(compositeScore) >= 4.5
+                        ? '#4CAF50'
+                        : parseFloat(compositeScore) >= 3.5
+                        ? '#FF9800'
+                        : '#F44336',
+                  },
+                ]}
+              >
+                {compositeScore}
+              </Text>
+              <Text style={styles.compositeScoreMax}>/5.0</Text>
+            </View>
+          </View>
+
+          {/* 评分说明 */}
+          <View style={styles.ratingHint}>
+            <IconButton icon="information" size={16} iconColor="#757575" style={{ margin: 0, marginRight: 4 }} />
+            <Text variant="bodySmall" style={styles.ratingHintText}>
+              综合评分 = (新鲜度 + 外观 + 气味 + 其他) ÷ 4
+            </Text>
+          </View>
+        </Surface>
+
         {/* Photos */}
         <Surface style={styles.section} elevation={1}>
           <View style={styles.sectionHeader}>
@@ -972,5 +1132,92 @@ const styles = StyleSheet.create({
   },
   gpsRetryButton: {
     marginTop: 4,
+  },
+  // ========== 5星评分系统样式 ==========
+  ratingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  ratingLabel: {
+    fontSize: 14,
+    color: '#666',
+    flex: 1,
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  starButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+  },
+  ratingValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF9800',
+    marginLeft: 8,
+    minWidth: 30,
+    textAlign: 'right',
+  },
+  ratingDivider: {
+    marginVertical: 16,
+    backgroundColor: '#E0E0E0',
+  },
+  compositeScoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  compositeScoreLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  compositeScoreRight: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  compositeScoreLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#212121',
+  },
+  compositeScoreValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  compositeScoreMax: {
+    fontSize: 14,
+    color: '#999',
+    marginLeft: 2,
+  },
+  ratingHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 6,
+    marginTop: 12,
+  },
+  ratingHintText: {
+    fontSize: 12,
+    color: '#1976D2',
+    flex: 1,
+    marginLeft: 8,
   },
 });

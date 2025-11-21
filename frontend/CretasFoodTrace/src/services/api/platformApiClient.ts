@@ -87,8 +87,9 @@ export const platformAPI = {
     data: FactoryDTO[];
     message?: string;
   }> => {
+    // apiClient拦截器已经解包了response.data，不要再次解包
     const response = await apiClient.get('/api/platform/factories');
-    return response.data;
+    return response;
   },
 
   /**
@@ -101,7 +102,7 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.get('/api/platform/ai-quota');
-    return response.data;
+    return response;
   },
 
   /**
@@ -117,7 +118,7 @@ export const platformAPI = {
       `/api/platform/ai-quota/${params.factoryId}`,
       { weeklyQuota: params.weeklyQuota }
     );
-    return response.data;
+    return response;
   },
 
   /**
@@ -130,7 +131,7 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.get('/api/platform/ai-usage-stats');
-    return response.data;
+    return response;
   },
 
   // ==================== 工厂管理 CRUD ====================
@@ -146,7 +147,7 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.post('/api/platform/factories', factoryData);
-    return response.data;
+    return response;
   },
 
   /**
@@ -160,7 +161,7 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.get(`/api/platform/factories/${factoryId}`);
-    return response.data;
+    return response;
   },
 
   /**
@@ -177,7 +178,7 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.put(`/api/platform/factories/${factoryId}`, updateData);
-    return response.data;
+    return response;
   },
 
   /**
@@ -190,7 +191,7 @@ export const platformAPI = {
     message: string;
   }> => {
     const response = await apiClient.delete(`/api/platform/factories/${factoryId}`);
-    return response.data;
+    return response;
   },
 
   /**
@@ -204,7 +205,7 @@ export const platformAPI = {
     message: string;
   }> => {
     const response = await apiClient.post(`/api/platform/factories/${factoryId}/activate`);
-    return response.data;
+    return response;
   },
 
   /**
@@ -218,7 +219,7 @@ export const platformAPI = {
     message: string;
   }> => {
     const response = await apiClient.post(`/api/platform/factories/${factoryId}/deactivate`);
-    return response.data;
+    return response;
   },
 
   // ==================== 平台统计 ====================
@@ -235,7 +236,7 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.get('/api/platform/dashboard/statistics');
-    return response.data;
+    return response;
   },
 };
 

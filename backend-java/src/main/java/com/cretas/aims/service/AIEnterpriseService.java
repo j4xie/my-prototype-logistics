@@ -14,10 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -173,9 +176,10 @@ public class AIEnterpriseService {
                     factoryId, weekStart, weekEnd);
 
             // 1. 获取本周所有批次的成本数据
-            // TODO: 实现 ProcessingService.getWeeklyBatchesCost() 方法
-            List<Map<String, Object>> weeklyBatches = new java.util.ArrayList<>();
-            // processingService.getWeeklyBatchesCost(factoryId, weekStart.atStartOfDay(), weekEnd.atTime(23, 59, 59));
+            List<Map<String, Object>> weeklyBatches = processingService.getWeeklyBatchesCost(
+                    factoryId,
+                    weekStart.atStartOfDay(),
+                    weekEnd.atTime(23, 59, 59));
 
             // 2. 调用AI生成周报告
             String weeklyAnalysis = callAIForWeeklyReport(factoryId, weeklyBatches, weekStart, weekEnd);
@@ -209,9 +213,10 @@ public class AIEnterpriseService {
                     factoryId, monthStart, monthEnd);
 
             // 1. 获取本月所有批次的成本数据
-            // TODO: 实现 ProcessingService.getWeeklyBatchesCost() 方法
-            List<Map<String, Object>> monthlyBatches = new java.util.ArrayList<>();
-            // processingService.getWeeklyBatchesCost(factoryId, monthStart.atStartOfDay(), monthEnd.atTime(23, 59, 59));
+            List<Map<String, Object>> monthlyBatches = processingService.getWeeklyBatchesCost(
+                    factoryId,
+                    monthStart.atStartOfDay(),
+                    monthEnd.atTime(23, 59, 59));
 
             // 2. 调用AI生成月报告
             String monthlyAnalysis = callAIForMonthlyReport(factoryId, monthlyBatches, monthStart, monthEnd);
@@ -736,29 +741,127 @@ public class AIEnterpriseService {
     /**
      * 生成历史综合报告
      */
+    @SuppressWarnings("unchecked")
     private String generateHistoricalReport(String factoryId, LocalDateTime startDate, LocalDateTime endDate) {
-        // TODO: 实现历史综合报告生成逻辑
-        return "历史综合报告功能开发中...";
+        try {
+            log.info("生成历史综合报告: factoryId={}, startDate={}, endDate={}",
+                     factoryId, startDate, endDate);
+
+            // 1. 获取历史批次数据
+            List<Map<String, Object>> historicalBatches = processingService.getWeeklyBatchesCost(
+                    factoryId, startDate, endDate
+            );
+
+            if (historicalBatches == null || historicalBatches.isEmpty()) {
+                log.warn("没有历史批次数据: factoryId={}, startDate={}, endDate={}",
+                         factoryId, startDate, endDate);
+                return "该时间段内暂无生产数据";
+            }
+
+            // 2. 格式化为AI Prompt
+            String promptMessage = formatHistoricalReportPrompt(historicalBatches, startDate, endDate);
+
+            // 3. 构建数据
+            Map<String, Object> historicalData = new HashMap<>();
+            historicalData.put("reportType", "historical");
+            historicalData.put("batches", historicalBatches);
+            historicalData.put("periodStart", startDate);
+            historicalData.put("periodEnd", endDate);
+
+            // 4. 调用AI分析
+            Map<String, Object> aiResult = basicAIService.analyzeCost(
+                    factoryId, null, historicalData, null, promptMessage
+            );
+
+            // 5. 返回AI分析
+            if (aiResult != null && Boolean.TRUE.equals(aiResult.get("success"))) {
+                return (String) aiResult.get("aiAnalysis");
+            } else {
+                log.error("历史报告AI分析失败: {}", aiResult);
+                throw new RuntimeException("历史报告生成失败");
+            }
+        } catch (Exception e) {
+            log.error("生成历史综合报告失败: {}", e.getMessage(), e);
+            throw new RuntimeException("历史报告生成失败: " + e.getMessage(), e);
+        }
     }
 
     /**
      * 调用AI生成周报告
      */
+    @SuppressWarnings("unchecked")
     private String callAIForWeeklyReport(String factoryId, List<Map<String, Object>> batches,
                                         LocalDate weekStart, LocalDate weekEnd) {
-        // TODO: 格式化周数据并调用basicAIService
-        return String.format("【本周成本分析】%s 至 %s\n批次数: %d",
-                weekStart, weekEnd, batches.size());
+        try {
+            // 1. 格式化周数据为AI Prompt
+            String promptMessage = formatWeeklyReportPrompt(batches, weekStart, weekEnd);
+
+            // 2. 构建虚拟costData
+            Map<String, Object> weeklyData = new HashMap<>();
+            weeklyData.put("reportType", "weekly");
+            weeklyData.put("batches", batches);
+            weeklyData.put("periodStart", weekStart.atStartOfDay());
+            weeklyData.put("periodEnd", weekEnd.atTime(23, 59, 59));
+
+            // 3. 调用AI分析
+            Map<String, Object> aiResult = basicAIService.analyzeCost(
+                    factoryId,
+                    null,  // 周报告没有单一batchId
+                    weeklyData,
+                    null,  // 新会话
+                    promptMessage
+            );
+
+            // 4. 返回AI分析文本
+            if (aiResult != null && Boolean.TRUE.equals(aiResult.get("success"))) {
+                return (String) aiResult.get("aiAnalysis");
+            } else {
+                log.error("AI周报告生成失败: {}", aiResult);
+                throw new RuntimeException("AI周报告生成失败");
+            }
+        } catch (Exception e) {
+            log.error("调用AI生成周报告失败: {}", e.getMessage(), e);
+            throw new RuntimeException("周报告生成失败: " + e.getMessage(), e);
+        }
     }
 
     /**
      * 调用AI生成月报告
      */
+    @SuppressWarnings("unchecked")
     private String callAIForMonthlyReport(String factoryId, List<Map<String, Object>> batches,
                                          LocalDate monthStart, LocalDate monthEnd) {
-        // TODO: 格式化月数据并调用basicAIService
-        return String.format("【本月成本分析】%s 至 %s\n批次数: %d",
-                monthStart, monthEnd, batches.size());
+        try {
+            // 1. 格式化月数据为AI Prompt
+            String promptMessage = formatMonthlyReportPrompt(batches, monthStart, monthEnd);
+
+            // 2. 构建虚拟costData
+            Map<String, Object> monthlyData = new HashMap<>();
+            monthlyData.put("reportType", "monthly");
+            monthlyData.put("batches", batches);
+            monthlyData.put("periodStart", monthStart.atStartOfDay());
+            monthlyData.put("periodEnd", monthEnd.atTime(23, 59, 59));
+
+            // 3. 调用AI分析
+            Map<String, Object> aiResult = basicAIService.analyzeCost(
+                    factoryId,
+                    null,  // 月报告没有单一batchId
+                    monthlyData,
+                    null,  // 新会话
+                    promptMessage
+            );
+
+            // 4. 返回AI分析文本
+            if (aiResult != null && Boolean.TRUE.equals(aiResult.get("success"))) {
+                return (String) aiResult.get("aiAnalysis");
+            } else {
+                log.error("AI月报告生成失败: {}", aiResult);
+                throw new RuntimeException("AI月报告生成失败");
+            }
+        } catch (Exception e) {
+            log.error("调用AI生成月报告失败: {}", e.getMessage(), e);
+            throw new RuntimeException("月报告生成失败: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -931,6 +1034,239 @@ public class AIEnterpriseService {
             ip = request.getRemoteAddr();
         }
         return ip;
+    }
+
+    /**
+     * 格式化周报告Prompt
+     */
+    @SuppressWarnings("unchecked")
+    private String formatWeeklyReportPrompt(List<Map<String, Object>> batches,
+                                           LocalDate weekStart, LocalDate weekEnd) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("【本周成本分析报告】\n\n");
+        sb.append("时间范围: ").append(weekStart).append(" 至 ").append(weekEnd).append("\n");
+        sb.append("批次总数: ").append(batches.size()).append("\n\n");
+
+        if (batches.isEmpty()) {
+            sb.append("本周暂无生产数据\n");
+            return sb.toString();
+        }
+
+        // 汇总统计
+        BigDecimal totalCost = BigDecimal.ZERO;
+        BigDecimal totalQuantity = BigDecimal.ZERO;
+        BigDecimal avgYieldRate = BigDecimal.ZERO;
+        int completedCount = 0;
+
+        for (Map<String, Object> batch : batches) {
+            Map<String, Object> costSummary = (Map<String, Object>) batch.get("costSummary");
+            if (costSummary != null) {
+                Object totalCostObj = costSummary.get("totalCost");
+                if (totalCostObj != null) {
+                    totalCost = totalCost.add((BigDecimal) totalCostObj);
+                }
+            }
+
+            Object quantityObj = batch.get("actualQuantity");
+            if (quantityObj != null) {
+                totalQuantity = totalQuantity.add((BigDecimal) quantityObj);
+            }
+
+            Object yieldObj = batch.get("yieldRate");
+            if (yieldObj != null) {
+                avgYieldRate = avgYieldRate.add((BigDecimal) yieldObj);
+                completedCount++;
+            }
+        }
+
+        sb.append("【汇总数据】\n");
+        sb.append("总成本: ¥").append(String.format("%.2f", totalCost)).append("\n");
+        sb.append("平均批次成本: ¥").append(String.format("%.2f",
+                totalCost.divide(BigDecimal.valueOf(batches.size()), 2, java.math.RoundingMode.HALF_UP))).append("\n");
+        sb.append("总产量: ").append(String.format("%.2f", totalQuantity)).append(" kg\n");
+        if (completedCount > 0) {
+            sb.append("平均良品率: ").append(String.format("%.2f",
+                    avgYieldRate.divide(BigDecimal.valueOf(completedCount), 2, java.math.RoundingMode.HALF_UP)))
+                    .append("%\n");
+        }
+
+        // 批次列表（显示前10个）
+        sb.append("\n【批次详情】\n");
+        int displayCount = Math.min(batches.size(), 10);
+        for (int i = 0; i < displayCount; i++) {
+            Map<String, Object> batch = batches.get(i);
+            Map<String, Object> costSummary = (Map<String, Object>) batch.get("costSummary");
+
+            sb.append((i + 1)).append(". ")
+              .append(batch.get("batchNumber")).append(" - ")
+              .append(batch.get("productName")).append("\n")
+              .append("   状态: ").append(batch.get("status"))
+              .append(", 成本: ¥").append(costSummary.get("totalCost"))
+              .append(", 良品率: ").append(batch.get("yieldRate")).append("%\n");
+        }
+
+        if (batches.size() > 10) {
+            sb.append("... 还有 ").append(batches.size() - 10).append(" 个批次\n");
+        }
+
+        sb.append("\n请基于以上数据，提供本周的成本分析和优化建议。");
+
+        return sb.toString();
+    }
+
+    /**
+     * 格式化月报告Prompt
+     */
+    @SuppressWarnings("unchecked")
+    private String formatMonthlyReportPrompt(List<Map<String, Object>> batches,
+                                            LocalDate monthStart, LocalDate monthEnd) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("【本月成本分析报告】\n\n");
+        sb.append("时间范围: ").append(monthStart).append(" 至 ").append(monthEnd).append("\n");
+        sb.append("批次总数: ").append(batches.size()).append("\n\n");
+
+        if (batches.isEmpty()) {
+            sb.append("本月暂无生产数据\n");
+            return sb.toString();
+        }
+
+        // 汇总统计（与周报告相同逻辑）
+        BigDecimal totalCost = BigDecimal.ZERO;
+        BigDecimal totalQuantity = BigDecimal.ZERO;
+        BigDecimal avgYieldRate = BigDecimal.ZERO;
+        int completedCount = 0;
+
+        for (Map<String, Object> batch : batches) {
+            Map<String, Object> costSummary = (Map<String, Object>) batch.get("costSummary");
+            if (costSummary != null) {
+                Object totalCostObj = costSummary.get("totalCost");
+                if (totalCostObj != null) {
+                    totalCost = totalCost.add((BigDecimal) totalCostObj);
+                }
+            }
+
+            Object quantityObj = batch.get("actualQuantity");
+            if (quantityObj != null) {
+                totalQuantity = totalQuantity.add((BigDecimal) quantityObj);
+            }
+
+            Object yieldObj = batch.get("yieldRate");
+            if (yieldObj != null) {
+                avgYieldRate = avgYieldRate.add((BigDecimal) yieldObj);
+                completedCount++;
+            }
+        }
+
+        sb.append("【汇总数据】\n");
+        sb.append("总成本: ¥").append(String.format("%.2f", totalCost)).append("\n");
+        sb.append("平均批次成本: ¥").append(String.format("%.2f",
+                totalCost.divide(BigDecimal.valueOf(batches.size()), 2, java.math.RoundingMode.HALF_UP))).append("\n");
+        sb.append("总产量: ").append(String.format("%.2f", totalQuantity)).append(" kg\n");
+        if (completedCount > 0) {
+            sb.append("平均良品率: ").append(String.format("%.2f",
+                    avgYieldRate.divide(BigDecimal.valueOf(completedCount), 2, java.math.RoundingMode.HALF_UP)))
+                    .append("%\n");
+        }
+
+        // 批次列表
+        sb.append("\n【批次详情】(显示前15个)\n");
+        int displayCount = Math.min(batches.size(), 15);
+        for (int i = 0; i < displayCount; i++) {
+            Map<String, Object> batch = batches.get(i);
+            Map<String, Object> costSummary = (Map<String, Object>) batch.get("costSummary");
+
+            sb.append((i + 1)).append(". ")
+              .append(batch.get("batchNumber")).append(" - ")
+              .append(batch.get("productName")).append("\n")
+              .append("   状态: ").append(batch.get("status"))
+              .append(", 成本: ¥").append(costSummary.get("totalCost"))
+              .append(", 良品率: ").append(batch.get("yieldRate")).append("%\n");
+        }
+
+        if (batches.size() > 15) {
+            sb.append("... 还有 ").append(batches.size() - 15).append(" 个批次\n");
+        }
+
+        sb.append("\n请基于以上数据，提供本月的深度成本分析和战略性优化建议。");
+
+        return sb.toString();
+    }
+
+    /**
+     * 格式化历史报告Prompt
+     */
+    @SuppressWarnings("unchecked")
+    private String formatHistoricalReportPrompt(List<Map<String, Object>> batches,
+                                               LocalDateTime startDate, LocalDateTime endDate) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("【历史综合成本分析报告】\n\n");
+        sb.append("时间范围: ").append(startDate.toLocalDate())
+          .append(" 至 ").append(endDate.toLocalDate()).append("\n");
+        sb.append("批次总数: ").append(batches.size()).append("\n\n");
+
+        if (batches.isEmpty()) {
+            sb.append("该时间段内暂无生产数据\n");
+            return sb.toString();
+        }
+
+        // 统计和趋势分析
+        BigDecimal totalCost = BigDecimal.ZERO;
+        BigDecimal totalQuantity = BigDecimal.ZERO;
+        BigDecimal maxCost = BigDecimal.ZERO;
+        BigDecimal minCost = null;
+        BigDecimal avgYieldRate = BigDecimal.ZERO;
+        int completedCount = 0;
+
+        for (Map<String, Object> batch : batches) {
+            Map<String, Object> costSummary = (Map<String, Object>) batch.get("costSummary");
+            if (costSummary != null) {
+                BigDecimal batchTotalCost = (BigDecimal) costSummary.get("totalCost");
+                if (batchTotalCost != null) {
+                    totalCost = totalCost.add(batchTotalCost);
+                    if (batchTotalCost.compareTo(maxCost) > 0) {
+                        maxCost = batchTotalCost;
+                    }
+                    if (minCost == null || batchTotalCost.compareTo(minCost) < 0) {
+                        minCost = batchTotalCost;
+                    }
+                }
+            }
+
+            Object quantityObj = batch.get("actualQuantity");
+            if (quantityObj != null) {
+                totalQuantity = totalQuantity.add((BigDecimal) quantityObj);
+            }
+
+            Object yieldObj = batch.get("yieldRate");
+            if (yieldObj != null) {
+                avgYieldRate = avgYieldRate.add((BigDecimal) yieldObj);
+                completedCount++;
+            }
+        }
+
+        sb.append("【汇总统计】\n");
+        sb.append("总批次数: ").append(batches.size()).append("\n");
+        sb.append("总成本: ¥").append(String.format("%.2f", totalCost)).append("\n");
+        sb.append("平均批次成本: ¥").append(String.format("%.2f",
+                totalCost.divide(BigDecimal.valueOf(batches.size()), 2, java.math.RoundingMode.HALF_UP))).append("\n");
+        sb.append("最高成本: ¥").append(String.format("%.2f", maxCost)).append("\n");
+        if (minCost != null) {
+            sb.append("最低成本: ¥").append(String.format("%.2f", minCost)).append("\n");
+        }
+        sb.append("总产量: ").append(String.format("%.2f", totalQuantity)).append(" kg\n");
+        if (completedCount > 0) {
+            sb.append("平均良品率: ").append(String.format("%.2f",
+                    avgYieldRate.divide(BigDecimal.valueOf(completedCount), 2, java.math.RoundingMode.HALF_UP)))
+                    .append("%\n");
+        }
+
+        sb.append("\n请基于历史数据进行深度分析，提供战略性的优化建议，包括：\n");
+        sb.append("1. 成本变化趋势\n");
+        sb.append("2. 主要成本驱动因素\n");
+        sb.append("3. 成本优化的关键领域\n");
+        sb.append("4. 长期改进计划\n");
+
+        return sb.toString();
     }
 
     /**

@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, List, Divider, useTheme, Avatar } from 'react-native-paper';
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Text, List, Divider, useTheme, Avatar, IconButton, Menu, ActivityIndicator } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../../store/authStore';
@@ -12,6 +12,8 @@ type ManagementNavigationProp = NativeStackNavigationProp<any>;
 export default function ManagementScreen() {
   const navigation = useNavigation<ManagementNavigationProp>();
   const { user } = useAuthStore();
+  const [exportMenuVisible, setExportMenuVisible] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // ✅ 修复: 支持平台管理员和工厂管理员
   const isAdmin =
@@ -58,11 +60,98 @@ export default function ManagementScreen() {
 
   const handleNavigate = (route: string) => route && navigation.navigate(route);
 
+  // 数据导出处理
+  const handleExport = async (exportType: string) => {
+    setExportMenuVisible(false);
+    setExporting(true);
+
+    try {
+      // TODO: 实现真实的导出API调用
+      // 目前显示提示信息
+      Alert.alert(
+        '导出数据',
+        `正在准备导出 ${getExportTypeName(exportType)} 数据...\n\n此功能将在后端API实现后可用。`,
+        [{ text: '确定' }]
+      );
+
+      // 模拟导出延迟
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log(`导出 ${exportType} 数据`);
+    } catch (error) {
+      console.error('导出失败:', error);
+      Alert.alert('导出失败', '无法导出数据，请稍后重试');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const getExportTypeName = (type: string): string => {
+    const names: Record<string, string> = {
+      'all': '全部配置',
+      'products': '产品类型',
+      'materials': '原材料类型',
+      'users': '用户列表',
+      'departments': '部门信息',
+    };
+    return names[type] || type;
+  };
+
   return (
     <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>
       <View style={styles.header}>
-          <Text style={styles.headerTitle}>管理中心</Text>
-          <Text style={styles.headerSubtitle}>工厂配置与系统管理</Text>
+        <View style={styles.headerContent}>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>管理中心</Text>
+            <Text style={styles.headerSubtitle}>工厂配置与系统管理</Text>
+          </View>
+
+          {/* 数据导出按钮 */}
+          {isAdmin && (
+            <Menu
+              visible={exportMenuVisible}
+              onDismiss={() => setExportMenuVisible(false)}
+              anchor={
+                <IconButton
+                  icon={exporting ? 'loading' : 'download'}
+                  size={24}
+                  iconColor={theme.colors.primary}
+                  onPress={() => setExportMenuVisible(true)}
+                  disabled={exporting}
+                  style={styles.exportButton}
+                />
+              }
+            >
+              <Menu.Item
+                leadingIcon="file-excel"
+                onPress={() => handleExport('all')}
+                title="导出全部配置"
+              />
+              <Divider />
+              <Menu.Item
+                leadingIcon="food"
+                onPress={() => handleExport('products')}
+                title="导出产品类型"
+              />
+              <Menu.Item
+                leadingIcon="food-drumstick"
+                onPress={() => handleExport('materials')}
+                title="导出原材料类型"
+              />
+              <Divider />
+              <Menu.Item
+                leadingIcon="account-group"
+                onPress={() => handleExport('users')}
+                title="导出用户列表"
+              />
+              <Menu.Item
+                leadingIcon="office-building"
+                onPress={() => handleExport('departments')}
+                title="导出部门信息"
+              />
+            </Menu>
+          )}
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -111,6 +200,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: theme.colors.background,
   },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
@@ -120,6 +217,10 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 16,
     color: theme.colors.textSecondary,
+  },
+  exportButton: {
+    margin: 0,
+    marginTop: -8,
   },
   scrollContent: {
     padding: 16,

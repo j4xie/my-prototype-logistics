@@ -236,6 +236,14 @@ export default function ProcessingDashboard() {
               </Button>
               <Button
                 mode="outlined"
+                icon="package-variant"
+                onPress={() => navigation.navigate('MaterialBatchManagement')}
+                style={styles.actionButton}
+              >
+                原材料管理
+              </Button>
+              <Button
+                mode="outlined"
                 icon="monitor-dashboard"
                 onPress={() => navigation.navigate('EquipmentMonitoring')}
                 style={styles.actionButton}

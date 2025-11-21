@@ -27,7 +27,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/{factoryId}/whitelist")
+@RequestMapping("/api/mobile/{factoryId}/whitelist")
 @Tag(name = "白名单管理", description = "白名单管理相关接口")
 @RequiredArgsConstructor
 public class WhitelistController {

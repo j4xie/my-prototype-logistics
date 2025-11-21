@@ -2,6 +2,8 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import PlatformDashboardScreen from '../screens/platform/PlatformDashboardScreen';
 import FactoryManagementScreen from '../screens/platform/FactoryManagementScreen';
+import SystemMonitoringScreen from '../screens/platform/SystemMonitoringScreen';
+import PlatformReportsScreen from '../screens/platform/PlatformReportsScreen';
 import { AIQuotaManagementScreen } from '../screens/platform';
 import UserManagementScreen from '../screens/management/UserManagementScreen';
 import WhitelistManagementScreen from '../screens/management/WhitelistManagementScreen';
@@ -12,8 +14,8 @@ export type PlatformStackParamList = {
   AIQuotaManagement: undefined;
   UserManagement: undefined;
   WhitelistManagement: undefined;
-  SystemMonitoring?: undefined;      // 暂不需要
-  PlatformReports?: undefined;       // 暂不需要
+  SystemMonitoring: undefined;
+  PlatformReports: undefined;
 };
 
 const Stack = createNativeStackNavigator<PlatformStackParamList>();
@@ -60,11 +62,17 @@ export function PlatformStackNavigator() {
         component={AIQuotaManagementScreen}
       />
 
-      {/*
-        暂不需要的页面:
-        - SystemMonitoring (系统监控)
-        - PlatformReports (平台报表)
-      */}
+      {/* 系统监控 - 监控平台运行状态 */}
+      <Stack.Screen
+        name="SystemMonitoring"
+        component={SystemMonitoringScreen}
+      />
+
+      {/* 平台报表 - 数据统计报表 */}
+      <Stack.Screen
+        name="PlatformReports"
+        component={PlatformReportsScreen}
+      />
     </Stack.Navigator>
   );
 }

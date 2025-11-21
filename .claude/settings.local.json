@@ -79,7 +79,16 @@
       "Bash(npm install react-native-get-random-values uuid)",
       "Bash(npm install react-native-get-random-values@1.11.0 uuid)",
       "Bash(npm install expo-document-picker expo-file-system expo-sharing)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(kill -9 25996 26120)",
+      "Bash(cp:*)",
+      "Bash(mvn clean compile:*)",
+      "Bash(timeout 30 npx tsc --noEmit)",
+      "Bash(ls:*)",
+      "Bash(sleep 3 echo \"=== 测试1: 获取成本分析报表 (ReportController) ===\" curl -s \"http://localhost:10010/api/mobile/CRETAS_2024_001/reports/cost-analysis?startDate=2024-11-15&endDate=2024-11-21\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiZmFjdG9yeV9zdXBlcl9hZG1pbiIsInVzZXJJZCI6IjEiLCJzdWIiOiIxIiwiaWF0IjoxNzYzNjczOTA5LCJleHAiOjE3NjM3NjAzMDl9.sCuUPcwGA4QFwPecdrOUw5ewQUADffoRSFmmhOmcZgc\" -H \"Content-Type: application/json\")",
+      "Bash(__NEW_LINE__ mysql -u root cretas_db -e \"\nSELECT \n    COUNT(*) as total_completed,\n    AVG(efficiency) as avg_efficiency,\n    SUM(actual_quantity) as total_production\nFROM production_batches \nWHERE factory_id = ''CRETAS_2024_001'' \nAND status = ''COMPLETED''\nAND created_at >= ''2024-11-15'';\")",
+      "Bash(wc:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
