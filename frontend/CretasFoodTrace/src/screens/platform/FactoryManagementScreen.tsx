@@ -15,43 +15,11 @@ import {
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { platformAPI, FactoryDTO } from '../../services/api/platformApiClient';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
 
-// Mock工厂数据（备用）
-const MOCK_FACTORIES = [
-  {
-    id: 'FISH_2025_001',
-    name: '白垩纪鱼肉加工厂',
-    industry: '水产加工',
-    region: '华东',
-    status: 'active',
-    aiQuota: 100,
-    totalUsers: 12,
-    createdAt: '2025-01-15',
-    address: '江苏省南京市',
-  },
-  {
-    id: 'MEAT_2025_001',
-    name: '白垩纪肉类加工厂',
-    industry: '肉制品',
-    region: '华北',
-    status: 'active',
-    aiQuota: 80,
-    totalUsers: 8,
-    createdAt: '2025-02-01',
-    address: '北京市朝阳区',
-  },
-  {
-    id: 'VEG_2025_001',
-    name: '白垩纪蔬菜加工厂',
-    industry: '蔬菜加工',
-    region: '华南',
-    status: 'active',
-    aiQuota: 50,
-    totalUsers: 6,
-    createdAt: '2025-02-20',
-    address: '广东省广州市',
-  },
-];
+// 创建FactoryManagement专用logger
+const factoryMgmtLogger = logger.createContextLogger('FactoryManagement');
 
 /**
  * 工厂管理页面
@@ -59,8 +27,8 @@ const MOCK_FACTORIES = [
  */
 export default function FactoryManagementScreen() {
   const navigation = useNavigation();
-  const [factories, setFactories] = useState(MOCK_FACTORIES);
-  const [filteredFactories, setFilteredFactories] = useState(MOCK_FACTORIES);
+  const [factories, setFactories] = useState<any[]>([]);
+  const [filteredFactories, setFilteredFactories] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -89,11 +57,13 @@ export default function FactoryManagementScreen() {
   const loadFactories = async () => {
     setLoading(true);
     try {
-      console.log('📡 调用后端API - 获取工厂列表');
+      factoryMgmtLogger.debug('加载工厂列表');
       const response = await platformAPI.getFactories();
 
       if (response.success && response.data) {
-        console.log(`✅ 加载成功: ${response.data.length} 个工厂`);
+        factoryMgmtLogger.info('工厂列表加载成功', {
+          factoryCount: response.data.length,
+        });
         // 将后端FactoryDTO映射到前端显示格式
         const mappedFactories = response.data.map((factory: FactoryDTO) => ({
           id: factory.id,
@@ -108,15 +78,19 @@ export default function FactoryManagementScreen() {
         }));
         setFactories(mappedFactories);
       } else {
-        console.warn('⚠️ API返回失败，使用Mock数据');
-        setFactories(MOCK_FACTORIES);
+        // ✅ GOOD: API返回空数据时，设置为空数组
+        factoryMgmtLogger.warn('API返回空数据');
+        setFactories([]);
       }
-    } catch (error: unknown) {
-      console.error('❌ 加载工厂列表失败:', error);
-      const errorMessage = error instanceof Error ? error.message : '加载工厂列表失败';
-      Alert.alert('错误', errorMessage);
-      // 失败时使用Mock数据作为备用
-      setFactories(MOCK_FACTORIES);
+    } catch (error) {
+      factoryMgmtLogger.error('加载工厂列表失败', error as Error);
+
+      // ✅ GOOD: 不返回假数据，使用统一错误处理
+      handleError(error, {
+        title: '加载失败',
+        customMessage: '无法加载工厂列表，请稍后重试',
+      });
+      setFactories([]); // 不显示假数据
     } finally {
       setLoading(false);
     }
@@ -128,7 +102,7 @@ export default function FactoryManagementScreen() {
     setRefreshing(false);
   };
 
-  const handleFactoryPress = (factory: typeof MOCK_FACTORIES[0]) => {
+  const handleFactoryPress = (factory: any) => {
     Alert.alert(
       factory.name,
       `ID: ${factory.id}\n行业: ${factory.industry}\n地区: ${factory.region}\n用户数: ${factory.totalUsers}\nAI配额: ${factory.aiQuota}次/周`,
@@ -140,11 +114,11 @@ export default function FactoryManagementScreen() {
     );
   };
 
-  const handleEditFactory = (factory: typeof MOCK_FACTORIES[0]) => {
+  const handleEditFactory = (factory: any) => {
     Alert.alert('编辑工厂', `编辑功能开发中\n工厂: ${factory.name}`);
   };
 
-  const handleViewDetails = (factory: typeof MOCK_FACTORIES[0]) => {
+  const handleViewDetails = (factory: any) => {
     Alert.alert('工厂详情', `详情页面开发中\n工厂: ${factory.name}`);
   };
 
@@ -178,7 +152,7 @@ export default function FactoryManagementScreen() {
     }
   };
 
-  const renderFactoryCard = (factory: typeof MOCK_FACTORIES[0]) => {
+  const renderFactoryCard = (factory: any) => {
     return (
       <Card key={factory.id} style={styles.factoryCard} mode="elevated">
         <Pressable onPress={() => handleFactoryPress(factory)}>
