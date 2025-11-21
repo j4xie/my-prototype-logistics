@@ -24,6 +24,11 @@ import { processingApiClient, BatchResponse } from '../../services/api/processin
 import { aiApiClient } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { AIQuota } from '../../types/processing';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建BatchComparison专用logger
+const batchComparisonLogger = logger.createContextLogger('BatchComparison');
 
 type BatchComparisonScreenProps = ProcessingScreenProps<'BatchComparison'>;
 
@@ -95,10 +100,15 @@ export default function BatchComparisonScreen() {
         batchList = result;
       }
 
-      console.log(`✅ Loaded ${batchList.length} completed batches for comparison`);
+      batchComparisonLogger.info('已完成批次列表加载成功', {
+        batchCount: batchList.length,
+        factoryId: user?.factoryUser?.factoryId,
+      });
       setBatches(batchList);
-    } catch (error: any) {
-      console.error('❌ Failed to fetch batches:', error);
+    } catch (error) {
+      batchComparisonLogger.error('获取批次列表失败', error as Error, {
+        factoryId: user?.factoryUser?.factoryId,
+      });
       Alert.alert('加载失败', error.response?.data?.message || error.message || '请稍后重试');
       setBatches([]);
     } finally {
@@ -119,7 +129,10 @@ export default function BatchComparisonScreen() {
         setAiQuota(response.data);
       }
     } catch (error) {
-      console.error('❌ 加载AI配额失败:', error);
+      batchComparisonLogger.warn('加载AI配额失败', {
+        factoryId: user?.factoryUser?.factoryId,
+        error: (error as Error).message,
+      });
     }
   };
 
@@ -186,9 +199,21 @@ export default function BatchComparisonScreen() {
         // 清空自定义问题输入
         setCustomQuestion('');
         setShowQuestionInput(false);
+
+        batchComparisonLogger.info('AI批次对比分析成功', {
+          batchCount: selectedBatches.size,
+          dimension,
+          hasQuestion: !!question,
+          sessionId: response.data.session_id,
+          factoryId,
+        });
       }
-    } catch (error: any) {
-      console.error('❌ AI对比分析失败:', error);
+    } catch (error) {
+      batchComparisonLogger.error('AI批次对比分析失败', error as Error, {
+        batchCount: selectedBatches.size,
+        dimension,
+        factoryId: user?.factoryUser?.factoryId,
+      });
       Alert.alert('AI分析失败', error.response?.data?.message || error.message || '请稍后重试');
       setAiAnalysis('');
     } finally {

@@ -19,6 +19,11 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, ConversationMessage } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
+import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建AIConversationHistory专用logger
+const conversationLogger = logger.createContextLogger('AIConversationHistory');
 
 type AIConversationHistoryScreenProps = ProcessingScreenProps<'AIConversationHistory'>;
 
@@ -71,12 +76,17 @@ export default function AIConversationHistoryScreen() {
         return;
       }
 
-      console.log(`📋 Fetching conversation history: ${sessionId}`);
+      conversationLogger.debug('获取AI对话历史', { sessionId, factoryId });
 
       const response = await aiApiClient.getConversation(sessionId, factoryId);
 
       if (response) {
-        console.log(`✅ Loaded ${response.messages?.length || 0} messages`);
+        conversationLogger.info('AI对话历史加载成功', {
+          sessionId,
+          messageCount: response.messages?.length || 0,
+          status: response.status,
+          factoryId,
+        });
         setSessionInfo({
           sessionId: response.sessionId,
           createdAt: response.createdAt,
@@ -86,8 +96,11 @@ export default function AIConversationHistoryScreen() {
         });
         setMessages(response.messages || []);
       }
-    } catch (error: any) {
-      console.error('❌ Failed to fetch conversation history:', error);
+    } catch (error) {
+      conversationLogger.error('获取AI对话历史失败', error as Error, {
+        sessionId,
+        factoryId: user?.factoryUser?.factoryId,
+      });
       Alert.alert('加载失败', error.response?.data?.message || error.message || '请稍后重试');
       setMessages([]);
     } finally {
@@ -124,6 +137,7 @@ export default function AIConversationHistoryScreen() {
               if (!factoryId) return;
 
               await aiApiClient.closeConversation(sessionId, factoryId);
+              conversationLogger.info('AI会话已关闭', { sessionId, factoryId });
               Alert.alert('成功', '会话已关闭', [
                 { text: '确定', onPress: () => navigation.goBack() },
               ]);
@@ -131,8 +145,11 @@ export default function AIConversationHistoryScreen() {
           },
         ]
       );
-    } catch (error: any) {
-      console.error('❌ Failed to close conversation:', error);
+    } catch (error) {
+      conversationLogger.error('关闭AI会话失败', error as Error, {
+        sessionId,
+        factoryId: user?.factoryUser?.factoryId,
+      });
       Alert.alert('关闭失败', error.response?.data?.message || error.message || '请稍后重试');
     }
   };
