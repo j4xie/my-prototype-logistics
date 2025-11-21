@@ -1,4 +1,5 @@
 import React from 'react';
+import Toast from 'react-native-toast-message';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
 /**
@@ -11,7 +12,13 @@ import { AppNavigator } from './src/navigation/AppNavigator';
  * - 自动登录
  * - 离线支持
  * - Token管理
+ * - Toast消息提示 (react-native-toast-message)
  */
 export default function App() {
-  return <AppNavigator />;
+  return (
+    <>
+      <AppNavigator />
+      <Toast />
+    </>
+  );
 }

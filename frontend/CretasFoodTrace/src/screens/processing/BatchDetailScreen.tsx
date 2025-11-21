@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Text, Appbar, Card, ActivityIndicator, Button, Divider, Menu, IconButton } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { Text, Appbar, Divider, ActivityIndicator, IconButton, Menu } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { BatchStatusBadge, BatchStatus } from '../../components/processing';
 import { processingAPI, BatchResponse } from '../../services/api/processingApiClient';
 import { handleError } from '../../utils/errorHandler';
+import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
+import { theme } from '../../theme';
 
 type BatchDetailScreenProps = ProcessingScreenProps<'BatchDetail'>;
 
@@ -14,9 +16,6 @@ interface ErrorState {
   canRetry: boolean;
 }
 
-/**
- * 批次详情页面 - 完整版
- */
 export default function BatchDetailScreen() {
   const navigation = useNavigation<BatchDetailScreenProps['navigation']>();
   const route = useRoute<BatchDetailScreenProps['route']>();
@@ -37,21 +36,13 @@ export default function BatchDetailScreen() {
   const fetchBatchDetail = async () => {
     try {
       setLoading(true);
-      setError(null); // 清除之前的错误
-
+      setError(null);
       const result = await processingAPI.getBatchDetail(batchId);
       setBatch(result);
     } catch (error) {
-      console.error('Failed to fetch batch detail:', error);
-
-      // ✅ GOOD: 设置错误状态，不静默失败
-      handleError(error, {
-        showAlert: false, // 使用内联错误UI
-        logError: true,
-      });
-
+      handleError(error, { showAlert: false, logError: true });
       setError({
-        message: error instanceof Error ? error.message : '加载批次详情失败，请稍后重试',
+        message: error instanceof Error ? error.message : '加载批次详情失败',
         canRetry: true,
       });
       setBatch(null);
@@ -66,328 +57,223 @@ export default function BatchDetailScreen() {
     setRefreshing(false);
   };
 
-  // ✅ 加载中状态
   if (loading && !batch) {
     return (
-      <View style={styles.container}>
-        <Appbar.Header elevated>
+      <ScreenWrapper>
+        <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="批次详情" />
         </Appbar.Header>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载中...</Text>
-        </View>
-      </View>
+        <View style={styles.centerContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>
+      </ScreenWrapper>
     );
   }
 
-  // ✅ 错误状态或数据为空
   if (!batch) {
     return (
-      <View style={styles.container}>
-        <Appbar.Header elevated>
+      <ScreenWrapper>
+        <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="批次详情" />
         </Appbar.Header>
-        <View style={styles.errorContainer}>
-          {/* ✅ 优先显示错误UI */}
+        <View style={styles.centerContainer}>
           {error ? (
             <>
-              <IconButton icon="alert-circle-outline" size={48} iconColor="#F44336" />
               <Text style={styles.errorText}>{error.message}</Text>
-              {error.canRetry && (
-                <Button
-                  mode="outlined"
-                  icon="refresh"
-                  onPress={fetchBatchDetail}
-                  style={styles.retryButton}
-                >
-                  重试
-                </Button>
-              )}
+              {error.canRetry && <NeoButton onPress={fetchBatchDetail}>重试</NeoButton>}
             </>
           ) : (
-            <>
-              <IconButton icon="package-variant-closed" size={48} iconColor="#9E9E9E" />
-              <Text style={styles.emptyText}>未找到批次信息</Text>
-            </>
+            <Text>未找到批次信息</Text>
           )}
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Appbar.Header elevated>
+    <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>
+      <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="批次详情" />
+        <Appbar.Content title="批次详情" titleStyle={{ fontWeight: '600' }} />
         {!readonly && <Appbar.Action icon="pencil" onPress={() => navigation.navigate('EditBatch', { batchId })} />}
       </Appbar.Header>
 
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        {/* 批次号和状态 */}
-        <Card style={styles.card} mode="elevated">
-          <Card.Content>
-            <View style={styles.headerRow}>
-              <View style={styles.headerLeft}>
-                <Text variant="titleSmall" style={styles.label}>批次号</Text>
-                <Text variant="headlineSmall" style={styles.batchNumber}>
-                  {batch.batchNumber}
-                </Text>
-              </View>
-              <BatchStatusBadge status={batch.status as BatchStatus} size="medium" />
+        {/* Header Card */}
+        <NeoCard style={styles.card} padding="m">
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.label}>批次号</Text>
+              <Text variant="headlineSmall" style={styles.batchNumber}>{batch.batchNumber}</Text>
             </View>
-          </Card.Content>
-        </Card>
+            <BatchStatusBadge status={batch.status as BatchStatus} size="medium" />
+          </View>
+        </NeoCard>
 
-        {/* 基本信息 */}
-        <Card style={styles.card} mode="elevated">
-          <Card.Title title="基本信息" />
-          <Card.Content>
-            <View style={styles.infoRow}>
-              <Text variant="bodyMedium" style={styles.label}>产品类型:</Text>
-              <Text variant="bodyMedium" style={styles.value}>{batch.productType}</Text>
-            </View>
-            <Divider style={styles.divider} />
+        {/* Basic Info */}
+        <NeoCard style={styles.card} padding="m">
+          <Text variant="titleMedium" style={styles.sectionTitle}>基本信息</Text>
+          
+          <View style={styles.infoGrid}>
+             <View style={styles.infoItem}>
+                <Text style={styles.label}>产品类型</Text>
+                <Text style={styles.value}>{batch.productType}</Text>
+             </View>
+             <View style={styles.infoItem}>
+                <Text style={styles.label}>负责人</Text>
+                <Text style={styles.value}>{batch.supervisor?.fullName || batch.supervisor?.username || '未指定'}</Text>
+             </View>
+             <View style={styles.infoItem}>
+                <Text style={styles.label}>目标产量</Text>
+                <Text style={styles.value}>{batch.targetQuantity} kg</Text>
+             </View>
+             <View style={styles.infoItem}>
+                <Text style={styles.label}>实际产量</Text>
+                <Text style={[styles.value, batch.actualQuantity ? styles.highlight : {}]}>{batch.actualQuantity || '-'} kg</Text>
+             </View>
+          </View>
 
-            {batch.supervisor && (
-              <>
-                <View style={styles.infoRow}>
-                  <Text variant="bodyMedium" style={styles.label}>负责人:</Text>
-                  <Text variant="bodyMedium" style={styles.value}>{batch.supervisor.fullName || batch.supervisor.username || '未指定'}</Text>
-                </View>
-                <Divider style={styles.divider} />
-              </>
-            )}
+          <Divider style={styles.divider} />
+          
+          <View style={styles.rowBetween}>
+             <Text style={styles.label}>创建时间</Text>
+             <Text style={styles.valueSmall}>{new Date(batch.createdAt).toLocaleString('zh-CN')}</Text>
+          </View>
+          {batch.completedAt && (
+             <View style={[styles.rowBetween, { marginTop: 8 }]}>
+                <Text style={styles.label}>完成时间</Text>
+                <Text style={styles.valueSmall}>{new Date(batch.completedAt).toLocaleString('zh-CN')}</Text>
+             </View>
+          )}
+        </NeoCard>
 
-            <View style={styles.infoRow}>
-              <Text variant="bodyMedium" style={styles.label}>目标产量:</Text>
-              <Text variant="bodyMedium" style={styles.value}>{batch.targetQuantity} kg</Text>
-            </View>
-
-            {batch.actualQuantity !== undefined && batch.actualQuantity > 0 && (
-              <>
-                <Divider style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <Text variant="bodyMedium" style={styles.label}>实际产量:</Text>
-                  <Text variant="bodyMedium" style={[styles.value, styles.highlight]}>
-                    {batch.actualQuantity} kg
-                  </Text>
-                </View>
-              </>
-            )}
-
-            <Divider style={styles.divider} />
-            <View style={styles.infoRow}>
-              <Text variant="bodyMedium" style={styles.label}>创建时间:</Text>
-              <Text variant="bodySmall" style={styles.value}>
-                {new Date(batch.createdAt).toLocaleString('zh-CN')}
-              </Text>
-            </View>
-
-            {batch.completedAt && (
-              <>
-                <Divider style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <Text variant="bodyMedium" style={styles.label}>完成时间:</Text>
-                  <Text variant="bodySmall" style={styles.value}>
-                    {new Date(batch.completedAt).toLocaleString('zh-CN')}
-                  </Text>
-                </View>
-              </>
-            )}
-          </Card.Content>
-        </Card>
-
-        {/* 原料信息 */}
+        {/* Materials */}
         {batch.rawMaterials && batch.rawMaterials.length > 0 && (
-          <Card style={styles.card} mode="elevated">
-            <Card.Title title="原料信息" />
-            <Card.Content>
-              {batch.rawMaterials.map((material: any, index: number) => (
-                <View key={index} style={styles.materialRow}>
-                  <Text variant="bodyMedium">{material.materialType || material.type}</Text>
-                  <Text variant="bodyMedium" style={styles.materialQuantity}>
-                    {material.quantity} {material.unit || 'kg'}
-                  </Text>
-                </View>
-              ))}
-            </Card.Content>
-          </Card>
+          <NeoCard style={styles.card} padding="m">
+            <Text variant="titleMedium" style={styles.sectionTitle}>原料信息</Text>
+            {batch.rawMaterials.map((material: any, index: number) => (
+              <View key={index} style={styles.materialRow}>
+                <Text style={styles.value}>{material.materialType || material.type}</Text>
+                <StatusBadge status={`${material.quantity} ${material.unit || 'kg'}`} variant="info" />
+              </View>
+            ))}
+          </NeoCard>
         )}
 
-        {/* 快捷操作 */}
-        <Card style={styles.card} mode="elevated">
-          <Card.Title title="快捷操作" />
-          <Card.Content>
+        {/* Actions */}
+        <NeoCard style={styles.card} padding="m">
+          <Text variant="titleMedium" style={styles.sectionTitle}>快捷操作</Text>
+          <View style={styles.actionGrid}>
             <Menu
               visible={qualityMenuVisible}
               onDismiss={() => setQualityMenuVisible(false)}
               anchor={
-                <Button
-                  mode="outlined"
-                  icon="clipboard-check"
-                  onPress={() => setQualityMenuVisible(true)}
-                  style={styles.actionButton}
-                >
+                <NeoButton variant="outline" style={styles.actionButton} onPress={() => setQualityMenuVisible(true)} icon="clipboard-check">
                   质检记录
-                </Button>
+                </NeoButton>
               }
             >
-              <Menu.Item
-                leadingIcon="package-variant"
-                onPress={() => {
-                  setQualityMenuVisible(false);
-                  navigation.navigate('CreateQualityRecord', {
-                    batchId: batch!.id.toString(),
-                    inspectionType: 'raw_material',
-                  });
-                }}
-                title="原材料检验"
-              />
-              <Menu.Item
-                leadingIcon="cogs"
-                onPress={() => {
-                  setQualityMenuVisible(false);
-                  navigation.navigate('CreateQualityRecord', {
-                    batchId: batch!.id.toString(),
-                    inspectionType: 'process',
-                  });
-                }}
-                title="过程检验"
-              />
-              <Menu.Item
-                leadingIcon="check-circle"
-                onPress={() => {
-                  setQualityMenuVisible(false);
-                  navigation.navigate('CreateQualityRecord', {
-                    batchId: batch!.id.toString(),
-                    inspectionType: 'final_product',
-                  });
-                }}
-                title="成品检验"
-              />
+              <Menu.Item onPress={() => { setQualityMenuVisible(false); navigation.navigate('CreateQualityRecord', { batchId: batch!.id.toString(), inspectionType: 'raw_material' }); }} title="原材料检验" />
+              <Menu.Item onPress={() => { setQualityMenuVisible(false); navigation.navigate('CreateQualityRecord', { batchId: batch!.id.toString(), inspectionType: 'process' }); }} title="过程检验" />
+              <Menu.Item onPress={() => { setQualityMenuVisible(false); navigation.navigate('CreateQualityRecord', { batchId: batch!.id.toString(), inspectionType: 'final_product' }); }} title="成品检验" />
             </Menu>
-            <Button
-              mode="outlined"
-              icon="cash"
-              onPress={() => navigation.navigate('CostAnalysisDashboard', { batchId: batch.id.toString() })}
-              style={styles.actionButton}
+            
+            <NeoButton 
+                variant="outline" 
+                style={styles.actionButton} 
+                onPress={() => navigation.navigate('CostAnalysisDashboard', { batchId: batch.id.toString() })} 
+                icon="cash"
             >
-              成本分析
-            </Button>
-            <Button
-              mode="outlined"
-              icon="timeline"
-              onPress={() => {}}
-              style={styles.actionButton}
-            >
-              批次时间线
-            </Button>
-          </Card.Content>
-        </Card>
+                成本分析
+            </NeoButton>
+          </View>
+        </NeoCard>
+
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    color: '#757575',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  errorText: {
-    color: '#F44336',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  emptyText: {
-    color: '#9E9E9E',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 12,
-  },
-  retryButton: {
-    borderColor: '#F44336',
-    marginTop: 8,
+  centerContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
   },
   content: {
-    padding: 16,
+      padding: 16,
+      paddingBottom: 40,
   },
   card: {
-    marginBottom: 16,
+      marginBottom: 16,
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  headerLeft: {
-    flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
   },
   batchNumber: {
-    fontWeight: '700',
-    color: '#212121',
-    marginTop: 4,
+      fontWeight: '700',
+      color: theme.colors.text,
   },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
+  sectionTitle: {
+      fontWeight: '600',
+      marginBottom: 16,
+      color: theme.colors.text,
+  },
+  infoGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+  },
+  infoItem: {
+      width: '50%',
+      marginBottom: 16,
   },
   label: {
-    color: '#757575',
-    width: 90,
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginBottom: 2,
   },
   value: {
-    color: '#212121',
-    flex: 1,
+      fontSize: 14,
+      color: theme.colors.text,
+      fontWeight: '500',
+  },
+  valueSmall: {
+      fontSize: 13,
+      color: theme.colors.text,
   },
   highlight: {
-    color: '#2196F3',
-    fontWeight: '600',
+      color: theme.colors.primary,
+      fontWeight: '700',
   },
   divider: {
-    marginVertical: 4,
+      marginVertical: 12,
+  },
+  rowBetween: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
   },
   materialRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outlineVariant,
   },
-  materialQuantity: {
-    color: '#2196F3',
-    fontWeight: '600',
+  actionGrid: {
+      gap: 12,
   },
   actionButton: {
-    marginBottom: 8,
+      width: '100%',
   },
-  placeholder: {
-    color: '#9E9E9E',
-    paddingVertical: 8,
+  errorText: {
+      color: theme.colors.error,
+      marginBottom: 16,
   },
 });

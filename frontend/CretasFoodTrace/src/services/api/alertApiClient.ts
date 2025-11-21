@@ -8,19 +8,24 @@ import { apiClient } from './apiClient';
 import { DEFAULT_FACTORY_ID } from '../../constants/config';
 
 export interface AlertDTO {
-  id: string;
+  id: number | string;
   factoryId: string;
+  equipmentId: string;
+  equipmentName?: string;
   alertType: string;
-  severity: 'critical' | 'warning' | 'info';
-  title: string;
-  description: string;
-  source: string;
-  sourceId?: string;
-  status: 'pending' | 'resolved' | 'ignored';
-  createdAt: string;
+  level: 'CRITICAL' | 'WARNING' | 'INFO';
+  status: 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED';
+  message: string;
+  details?: string;
+  triggeredAt: string;
+  acknowledgedAt?: string;
+  acknowledgedBy?: number;
   resolvedAt?: string;
   resolvedBy?: number;
   resolutionNotes?: string;
+  ignoredAt?: string;
+  ignoredBy?: number;
+  ignoreReason?: string;
 }
 
 export interface PageResponse<T> {
@@ -40,13 +45,13 @@ class AlertApiClient {
    * 获取设备告警列表
    * 端点: GET /api/mobile/{factoryId}/equipment-alerts
    * ✅ P1-5: 后端已实现
+   * ⚠️ 注意: 后端页码从1开始，不是0
    */
   async getEquipmentAlerts(params: {
     factoryId?: string;
     page?: number;
     size?: number;
-    status?: 'pending' | 'resolved' | 'ignored';
-    severity?: 'critical' | 'warning' | 'info';
+    status?: 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED';
     startDate?: string;
     endDate?: string;
   }): Promise<{

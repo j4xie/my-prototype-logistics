@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
-import { Text, Appbar, Button, Searchbar, Card, SegmentedButtons, IconButton } from 'react-native-paper';
+import { Text, Appbar, Searchbar, IconButton, SegmentedButtons } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { BatchStatusBadge, BatchStatus } from '../../components/processing';
 import { processingApiClient as processingAPI, BatchResponse } from '../../services/api/processingApiClient';
 import { handleError } from '../../utils/errorHandler';
+import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
+import { theme } from '../../theme';
 
 type BatchListScreenProps = ProcessingScreenProps<'BatchList'>;
 
@@ -14,14 +16,25 @@ interface ErrorState {
   canRetry: boolean;
 }
 
-/**
- * 批次列表页面 - 真实数据展示
- */
+// Supervisor类型定义：后端返回的supervisor可能是string或对象
+interface SupervisorUser {
+  fullName?: string;
+  username?: string;
+  id?: number;
+}
+
+type SupervisorData = string | SupervisorUser;
+
+// 辅助函数：获取supervisor显示名称
+const getSupervisorName = (supervisor: SupervisorData | undefined): string => {
+  if (!supervisor) return '未指定';
+  if (typeof supervisor === 'string') return supervisor;
+  return supervisor.fullName || supervisor.username || '未指定';
+};
+
 export default function BatchListScreen() {
   const navigation = useNavigation<BatchListScreenProps['navigation']>();
   const route = useRoute<BatchListScreenProps['route']>();
-
-  // 检查是否为成本分析模式
   const showCostAnalysis = route.params?.showCostAnalysis ?? false;
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,7 +44,6 @@ export default function BatchListScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ErrorState | null>(null);
 
-  // 页面获得焦点时刷新数据
   useFocusEffect(
     React.useCallback(() => {
       fetchBatches();
@@ -41,51 +53,27 @@ export default function BatchListScreen() {
   const fetchBatches = async () => {
     try {
       setLoading(true);
-      setError(null); // 清除之前的错误
+      setError(null);
 
       const params: any = {};
-      if (selectedStatus !== 'all') {
-        params.status = selectedStatus;
-      }
-      if (searchQuery) {
-        params.search = searchQuery;
-      }
-
-      console.log('📋 Fetching batches with params:', params);
+      if (selectedStatus !== 'all') params.status = selectedStatus;
+      if (searchQuery) params.search = searchQuery;
 
       const result = await processingAPI.getBatches(params);
-
-      console.log('📦 API Response:', JSON.stringify(result, null, 2));
-
-      // 兼容不同的响应格式
       let batchList: BatchResponse[] = [];
-      if (result.data?.batches) {
-        batchList = result.data.batches;
-      } else if (result.batches) {
-        batchList = result.batches;
-      } else if (result.data) {
-        batchList = result.data;
-      } else if (Array.isArray(result)) {
-        batchList = result;
-      }
-
-      console.log('✅ Batches loaded:', batchList.length);
+      if (result.data?.batches) batchList = result.data.batches;
+      else if (result.batches) batchList = result.batches;
+      else if (result.data) batchList = result.data;
+      else if (Array.isArray(result)) batchList = result;
 
       setBatches(batchList);
     } catch (error) {
-      console.error('❌ Failed to fetch batches:', error);
-
-      // ✅ GOOD: 设置错误状态，不静默返回空数组
-      handleError(error, {
-        showAlert: false, // 使用内联错误UI
-        logError: true,
-      });
-
+      handleError(error, { showAlert: false, logError: true });
       setError({
-        message: error instanceof Error ? error.message : '加载批次列表失败，请稍后重试',
+        message: error instanceof Error ? error.message : '加载批次列表失败',
         canRetry: true,
       });
-      setBatches([]); // 清空列表，配合错误UI显示
+      setBatches([]);
     } finally {
       setLoading(false);
     }
@@ -97,7 +85,6 @@ export default function BatchListScreen() {
     setRefreshing(false);
   };
 
-  // 筛选批次
   const filteredBatches = batches.filter(batch => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -113,7 +100,6 @@ export default function BatchListScreen() {
   const renderBatchCard = ({ item }: { item: BatchResponse }) => (
     <TouchableOpacity
       onPress={() => {
-        // 根据模式导航到不同页面
         if (showCostAnalysis) {
           navigation.navigate('CostAnalysisDashboard', { batchId: item.id.toString() });
         } else {
@@ -122,81 +108,70 @@ export default function BatchListScreen() {
       }}
       activeOpacity={0.7}
     >
-      <Card style={styles.batchCard} mode="elevated">
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <Text variant="titleMedium" style={styles.batchNumber}>
-              {item.batchNumber}
-            </Text>
-            <BatchStatusBadge status={item.status as BatchStatus} size="small" />
+      <NeoCard style={styles.batchCard} padding="m">
+        <View style={styles.cardHeader}>
+          <View>
+            <Text variant="titleMedium" style={styles.batchNumber}>{item.batchNumber}</Text>
+            <Text variant="bodySmall" style={styles.timestamp}>{new Date(item.createdAt).toLocaleDateString('zh-CN')}</Text>
           </View>
+          <BatchStatusBadge status={item.status as BatchStatus} size="small" />
+        </View>
 
-          <View style={styles.cardBody}>
-            <View style={styles.infoRow}>
-              <Text variant="bodyMedium" style={styles.label}>产品:</Text>
-              <Text variant="bodyMedium" style={styles.value}>{item.productType || '待定'}</Text>
+        <View style={styles.cardBody}>
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.label}>产品</Text>
+              <Text style={styles.value}>{item.productType || '待定'}</Text>
             </View>
-
-            {item.supervisor && (
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>负责人:</Text>
-                <Text variant="bodyMedium" style={styles.value}>
-                  {typeof item.supervisor === 'string'
-                    ? item.supervisor
-                    : (typeof item.supervisor === 'object' && item.supervisor !== null
-                        ? (item.supervisor as { fullName?: string; username?: string }).fullName
-                          || (item.supervisor as { fullName?: string; username?: string }).username
-                          || '未指定'
-                        : '未指定')
-                  }
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.infoRow}>
-              <Text variant="bodyMedium" style={styles.label}>目标:</Text>
-              <Text variant="bodyMedium" style={styles.value}>{item.targetQuantity} kg</Text>
-            </View>
-
-            {item.actualQuantity !== undefined && item.actualQuantity > 0 && (
-              <View style={styles.infoRow}>
-                <Text variant="bodyMedium" style={styles.label}>实际:</Text>
-                <Text variant="bodyMedium" style={[styles.value, styles.highlight]}>
-                  {item.actualQuantity} kg
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.cardFooter}>
-              <Text variant="bodySmall" style={styles.timestamp}>
-                {new Date(item.createdAt).toLocaleString('zh-CN')}
+            <View style={styles.col}>
+              <Text style={styles.label}>负责人</Text>
+              <Text style={styles.value}>
+                {getSupervisorName(item.supervisor as SupervisorData)}
               </Text>
-              {showCostAnalysis && (
-                <Text variant="bodySmall" style={styles.costAnalysisHint}>
-                  💰 点击查看成本分析
-                </Text>
-              )}
             </View>
           </View>
-        </Card.Content>
-      </Card>
+
+          <View style={styles.progressRow}>
+             <View style={styles.col}>
+                <Text style={styles.label}>目标产量</Text>
+                <Text style={styles.value}>{item.targetQuantity} kg</Text>
+             </View>
+             <View style={styles.col}>
+                <Text style={styles.label}>实际产量</Text>
+                <Text style={[styles.value, item.actualQuantity ? styles.highlight : {}]}>
+                    {item.actualQuantity || 0} kg
+                </Text>
+             </View>
+          </View>
+        </View>
+        
+        {showCostAnalysis && (
+            <View style={styles.footer}>
+                <StatusBadge status="点击分析成本" variant="success" />
+            </View>
+        )}
+      </NeoCard>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      <Appbar.Header elevated>
+    <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>
+      <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title={showCostAnalysis ? "选择批次进行成本分析" : "批次列表"} />
+        <Appbar.Content title={showCostAnalysis ? "选择批次" : "批次列表"} titleStyle={{ fontWeight: '600' }} />
       </Appbar.Header>
 
-      <Searchbar
-        placeholder="搜索批次号、产品类型、负责人..."
-        onChangeText={setSearchQuery}
-        value={searchQuery}
-        style={styles.searchBar}
-        onSubmitEditing={fetchBatches}
-      />
+      <View style={styles.searchContainer}>
+        <Searchbar
+          placeholder="搜索批次..."
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={styles.searchBar}
+          inputStyle={styles.searchInput}
+          onSubmitEditing={fetchBatches}
+          elevation={0}
+        />
+      </View>
 
       <SegmentedButtons
         value={selectedStatus}
@@ -204,10 +179,10 @@ export default function BatchListScreen() {
         buttons={[
           { value: 'all', label: '全部' },
           { value: 'in_progress', label: '进行中' },
-          { value: 'quality_check', label: '质检中' },
           { value: 'completed', label: '已完成' },
         ]}
         style={styles.segmentedButtons}
+        density="small"
       />
 
       <FlatList
@@ -215,80 +190,61 @@ export default function BatchListScreen() {
         renderItem={renderBatchCard}
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            {/* ✅ 优先显示错误UI */}
             {error ? (
               <>
-                <IconButton icon="alert-circle-outline" size={48} iconColor="#F44336" />
-                <Text variant="bodyLarge" style={styles.errorText}>
-                  {error.message}
-                </Text>
+                <IconButton icon="alert-circle-outline" size={48} iconColor={theme.colors.error} />
+                <Text style={styles.errorText}>{error.message}</Text>
                 {error.canRetry && (
-                  <Button
-                    mode="outlined"
-                    icon="refresh"
-                    onPress={fetchBatches}
-                    style={styles.retryButton}
-                  >
-                    重试
-                  </Button>
+                  <NeoButton variant="outline" onPress={fetchBatches} style={styles.retryButton}>重试</NeoButton>
                 )}
               </>
             ) : (
               <>
-                <Text variant="bodyLarge" style={styles.emptyText}>
+                <Text style={styles.emptyText}>
                   {searchQuery ? '未找到匹配的批次' : loading ? '加载中...' : '暂无批次数据'}
                 </Text>
-                {!loading && !searchQuery && (
-                  <>
-                    <Text variant="bodySmall" style={styles.emptyHint}>
-                      {showCostAnalysis
-                        ? '当前没有可分析的批次'
-                        : '请先在生产计划管理中创建生产计划，批次将自动生成'}
-                    </Text>
-                    {!showCostAnalysis && (
-                      <Button
-                        mode="contained"
-                        icon="calendar-check"
-                        onPress={() => navigation.navigate('ProductionPlanManagement')}
-                        style={styles.emptyButton}
-                      >
-                        前往生产计划管理
-                      </Button>
-                    )}
-                  </>
+                {!loading && !searchQuery && !showCostAnalysis && (
+                  <NeoButton 
+                    variant="primary" 
+                    onPress={() => navigation.navigate('ProductionPlanManagement')}
+                    style={styles.emptyButton}
+                  >
+                    前往生产计划
+                  </NeoButton>
                 )}
               </>
             )}
           </View>
         }
       />
-
-      {/* FAB按钮已移除：批次应由生产计划自动创建，不应直接创建 */}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
+  searchContainer: {
+    padding: 16,
+    backgroundColor: theme.colors.surface,
+    paddingBottom: 8,
   },
   searchBar: {
-    margin: 16,
-    marginBottom: 8,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: theme.custom.borderRadius.m,
+    height: 44,
+  },
+  searchInput: {
+    minHeight: 0,
   },
   segmentedButtons: {
-    marginHorizontal: 16,
-    marginBottom: 12,
+    margin: 16,
+    marginTop: 0,
   },
   listContent: {
     padding: 16,
-    paddingBottom: 80,
+    paddingTop: 0,
   },
   batchCard: {
     marginBottom: 12,
@@ -296,75 +252,75 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.outlineVariant,
+    paddingBottom: 12,
   },
   batchNumber: {
     fontWeight: '700',
-    color: '#212121',
-    flex: 1,
-  },
-  cardBody: {
-    gap: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  label: {
-    color: '#757575',
-    width: 70,
-  },
-  value: {
-    color: '#212121',
-    flex: 1,
-  },
-  highlight: {
-    color: '#2196F3',
-    fontWeight: '600',
-  },
-  cardFooter: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    color: theme.colors.text,
+    fontSize: 16,
   },
   timestamp: {
-    color: '#9E9E9E',
+    color: theme.colors.textTertiary,
+    marginTop: 2,
   },
-  costAnalysisHint: {
-    color: '#4CAF50',
-    fontWeight: '600',
+  cardBody: {
+    gap: 12,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 4,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.outlineVariant, // Dashed effect simulated by solid line for now
+  },
+  col: {
+    flex: 1,
+  },
+  label: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  value: {
+    color: theme.colors.text,
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  highlight: {
+    color: theme.colors.primary,
+    fontWeight: '700',
+  },
+  footer: {
+      marginTop: 12,
+      flexDirection: 'row',
+      justifyContent: 'flex-end'
   },
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 48,
+    padding: 48,
   },
   emptyText: {
-    color: '#9E9E9E',
-    textAlign: 'center',
-  },
-  emptyHint: {
-    color: '#BDBDBD',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  emptyButton: {
+    color: theme.colors.textSecondary,
     marginTop: 16,
   },
   errorText: {
-    color: '#F44336',
-    textAlign: 'center',
-    marginTop: 12,
+    color: theme.colors.error,
+    marginTop: 16,
     marginBottom: 16,
   },
   retryButton: {
-    borderColor: '#F44336',
-    marginTop: 8,
+    minWidth: 120,
+  },
+  emptyButton: {
+    marginTop: 24,
   },
 });
