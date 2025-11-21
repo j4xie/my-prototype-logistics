@@ -14,6 +14,10 @@ import { useNavigation } from '@react-navigation/native';
 import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../services/api/materialSpecApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
+
+// 创建MaterialSpecManagement专用logger
+const materialSpecLogger = logger.createContextLogger('MaterialSpecManagement');
 
 /**
  * 原材料规格配置管理页面
@@ -45,9 +49,16 @@ export default function MaterialSpecManagementScreen() {
     try {
       setLoading(true);
       const response = await materialSpecApiClient.getSpecConfig(user?.factoryId);
+      materialSpecLogger.info('规格配置加载成功', {
+        factoryId: user?.factoryId,
+        categoryCount: Object.keys(response.data).length,
+      });
       setSpecConfig(response.data);
     } catch (error) {
-      console.warn('加载规格配置失败，使用默认配置:', error.message);
+      materialSpecLogger.warn('加载规格配置失败，使用默认配置', {
+        factoryId: user?.factoryId,
+        error: (error as Error).message,
+      });
       setSpecConfig(DEFAULT_SPEC_CONFIG);
     } finally {
       setLoading(false);
