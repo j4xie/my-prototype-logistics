@@ -1,30 +1,45 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-// API配置 - 使用本地Java Spring Boot后端
-// 注意：
-// - iOS模拟器: 'http://localhost:10010'
-// - Android模拟器: 'http://10.0.2.2:10010' (10.0.2.2是Android模拟器访问主机的特殊IP)
-// - 真机设备: 'http://[你的电脑IP]:10010' (如: http://100.110.227.100:10010)
-// - JAR位置: ~/Downloads/cretas-backend-system-main/target/cretas-backend-system-1.0.0.jar
-// - 远程服务器: 'http://139.196.165.140:10010' (备用)
+// API配置 - 使用远程服务器的不同环境
+// 环境说明：
+// - 测试环境 (TEST): 'http://139.196.165.140:10010' - 用于开发测试
+// - 生产环境 (PROD): 'http://139.196.165.140:3001' - 用于正式部署
 //
-// 旧Node.js后端已停用（已备份至 backend-nodejs-backup-20251030）
+// 切换环境方法：
+// - 测试环境: npm run android:test 或 EXPO_PUBLIC_ENV=test npm run android
+// - 生产环境: npm run android:prod 或 EXPO_PUBLIC_ENV=prod npm run android
 
-// 根据平台自动选择API地址
-const getApiBaseUrl = () => {
-  if (__DEV__) {
-    // 开发环境：根据平台选择
-    if (Platform.OS === 'android') {
-      // Android模拟器使用10.0.2.2访问主机
-      return 'http://10.0.2.2:10010';
-    } else {
-      // iOS模拟器可以使用localhost
-      return 'http://localhost:10010';
-    }
-  } else {
-    // 生产环境：使用远程服务器
-    return 'http://139.196.165.140:10010';
-  }
+// 环境类型
+type Environment = 'test' | 'prod';
+
+// 环境配置
+const ENV_CONFIG = {
+  test: {
+    API_URL: 'http://139.196.165.140:10010',
+    NAME: '测试环境',
+  },
+  prod: {
+    API_URL: 'http://139.196.165.140:3001',
+    NAME: '生产环境',
+  },
+} as const;
+
+// 获取当前环境（从环境变量读取，默认为test）
+const getCurrentEnvironment = (): Environment => {
+  const env = Constants.expoConfig?.extra?.env || process.env.EXPO_PUBLIC_ENV || 'test';
+  return (env === 'prod' ? 'prod' : 'test') as Environment;
+};
+
+// 当前环境
+export const CURRENT_ENV = getCurrentEnvironment();
+
+// 根据环境选择API地址
+const getApiBaseUrl = (): string => {
+  const config = ENV_CONFIG[CURRENT_ENV];
+  console.log(`[Config] 当前环境: ${config.NAME} (${CURRENT_ENV})`);
+  console.log(`[Config] API地址: ${config.API_URL}`);
+  return config.API_URL;
 };
 
 export const API_BASE_URL = getApiBaseUrl();
