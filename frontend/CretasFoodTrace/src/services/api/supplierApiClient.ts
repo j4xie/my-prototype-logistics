@@ -92,11 +92,24 @@ class SupplierApiClient {
       `${this.getFactoryPath(factoryId)}/suppliers`,
       { params: queryParams }
     );
-    // 兼容旧格式：包装成 {data: [...]}
-    if (apiResponse.content) {
-      return { data: apiResponse.content };
+    
+    // 处理分页响应：apiResponse.data.content
+    if (apiResponse.data?.content) {
+      return { data: apiResponse.data.content };
     }
-    return { data: apiResponse };
+    
+    // 兼容直接返回数组的情况
+    if (Array.isArray(apiResponse.data)) {
+      return { data: apiResponse.data };
+    }
+    
+    // 防御性编程：兼容旧格式
+    if (Array.isArray(apiResponse)) {
+      return { data: apiResponse };
+    }
+    
+    console.warn('[SupplierAPI] 未预期的响应格式:', apiResponse);
+    return { data: [] };
   }
 
   /**
