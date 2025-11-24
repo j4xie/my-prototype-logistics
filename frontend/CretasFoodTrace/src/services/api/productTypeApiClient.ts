@@ -3,7 +3,7 @@ import { DEFAULT_FACTORY_ID } from '../../constants/config';
 
 /**
  * 产品类型管理API客户端
- * 总计12个API - 路径：/api/mobile/{factoryId}/products/types/*
+ * 总计12个API - 路径：/api/mobile/{factoryId}/product-types/*
  */
 
 export interface ProductType {
@@ -22,18 +22,31 @@ export interface ProductType {
 
 class ProductTypeApiClient {
   private getPath(factoryId?: string) {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/products/types`;
+    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/product-types`;
   }
 
   async getProductTypes(params?: { factoryId?: string; isActive?: boolean; limit?: number; page?: number }) {
     const { factoryId, ...query } = params || {};
     // apiClient拦截器已统一返回data
     const apiResponse = await apiClient.get<any>(this.getPath(factoryId), { params: query });
-    // 兼容旧格式：包装成 {data: [...]}
-    if (apiResponse.content) {
-      return { data: apiResponse.content };
+    
+    // 处理分页响应：apiResponse.data.content
+    if (apiResponse.data?.content) {
+      return { data: apiResponse.data.content };
     }
-    return { data: apiResponse };
+    
+    // 兼容直接返回数组的情况
+    if (Array.isArray(apiResponse.data)) {
+      return { data: apiResponse.data };
+    }
+    
+    // 防御性编程：兼容旧格式
+    if (Array.isArray(apiResponse)) {
+      return { data: apiResponse };
+    }
+    
+    console.warn('[ProductTypeAPI] 未预期的响应格式:', apiResponse);
+    return { data: [] };
   }
 
   async createProductType(data: any, factoryId?: string) {
