@@ -17,15 +17,20 @@ import javax.validation.Valid;
 /**
  * 质量检验控制器
  *
+ * @deprecated 该控制器的功能已迁移到 ProcessingController
+ *             前端应使用 /api/mobile/{factoryId}/processing/quality/* 路径
+ *             计划在下一个版本中移除此控制器
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2025-01-19
  */
+@Deprecated
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/quality-inspections")
 @RequiredArgsConstructor
-@Tag(name = "质量检验管理")
+@Tag(name = "质量检验管理（已废弃）", description = "请使用 ProcessingController 中的质检接口")
 public class QualityInspectionController {
 
     private final QualityInspectionService qualityInspectionService;
