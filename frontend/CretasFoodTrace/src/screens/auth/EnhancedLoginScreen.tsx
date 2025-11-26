@@ -5,33 +5,292 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
   Alert,
   ScrollView,
-  Dimensions,
   StatusBar,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useLogin } from '../../hooks/useLogin';
 import { getPostLoginRoute } from '../../utils/navigationHelper';
 import { useAuthStore } from '../../store/authStore';
-import { NeoCard, NeoButton, ScreenWrapper } from '../../components/ui';
+import { NeoButton, ScreenWrapper } from '../../components/ui';
 import { theme } from '../../theme';
 import { logger } from '../../utils/logger';
 
 // 创建LoginScreen专用logger
 const loginLogger = logger.createContextLogger('EnhancedLoginScreen');
 
-const { width } = Dimensions.get('window');
-
 interface LoginScreenProps {
   navigation: any;
 }
 
+// ========== Landing 视图组件 ==========
+interface LandingViewProps {
+  onLogin: () => void;
+  onRegister: () => void;
+}
+
+const LandingView: React.FC<LandingViewProps> = ({ onLogin, onRegister }) => {
+  return (
+    <LinearGradient
+      colors={['#2d5016', '#4a7c2c', '#6b9e54']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.landingContainer}
+    >
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+
+      <View style={styles.landingContent}>
+        {/* 顶部标题 */}
+        <Text style={styles.landingPageTitle}>Landing{'\n'}Page</Text>
+
+        {/* 中间品牌信息 */}
+        <View style={styles.brandContainer}>
+          <View style={styles.logoCircle}>
+            <Ionicons name="leaf" size={56} color="#FFFFFF" />
+          </View>
+          <Text style={styles.brandTitle}>白垩纪食品溯源</Text>
+          <Text style={styles.brandSubtitle}>移动端管理系统</Text>
+        </View>
+
+        {/* 底部按钮 */}
+        <View style={styles.landingButtons}>
+          <TouchableOpacity
+            style={styles.landingPrimaryButton}
+            onPress={onLogin}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.landingPrimaryButtonText}>登录</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.landingSecondaryButton}
+            onPress={onRegister}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.landingSecondaryButtonText}>注册用户</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+};
+
+// ========== 登录表单视图组件 ==========
+interface LoginFormViewProps {
+  username: string;
+  password: string;
+  showPassword: boolean;
+  rememberMe: boolean;
+  isLoading: boolean;
+  error: string | null;
+  retryCount: number;
+  networkStatus: boolean;
+  biometricStatus: { available: boolean; isEnrolled: boolean };
+  onUsernameChange: (text: string) => void;
+  onPasswordChange: (text: string) => void;
+  onTogglePassword: () => void;
+  onToggleRememberMe: () => void;
+  onLogin: () => void;
+  onBiometricLogin: () => void;
+  onNavigateRegister: () => void;
+  onNavigateForgotPassword: () => void;
+  clearError: () => void;
+  retry: () => void;
+}
+
+const LoginFormView: React.FC<LoginFormViewProps> = ({
+  username,
+  password,
+  showPassword,
+  rememberMe,
+  isLoading,
+  error,
+  retryCount,
+  networkStatus,
+  biometricStatus,
+  onUsernameChange,
+  onPasswordChange,
+  onTogglePassword,
+  onToggleRememberMe,
+  onLogin,
+  onBiometricLogin,
+  onNavigateRegister,
+  onNavigateForgotPassword,
+  clearError,
+  retry,
+}) => {
+  const renderNetworkStatus = () => {
+    if (!networkStatus) {
+      return (
+        <View style={styles.networkStatus}>
+          <Ionicons name="cloud-offline" size={16} color={theme.colors.error} />
+          <Text style={[styles.networkStatusText, { color: theme.colors.error }]}>网络离线</Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
+  const renderError = () => {
+    if (!error) return null;
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle" size={20} color={theme.colors.error} />
+        <Text style={styles.errorText}>{error}</Text>
+        {retryCount > 0 && (
+          <TouchableOpacity onPress={retry}>
+            <Text style={styles.retryText}>重试</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.loginFormContainer}>
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+
+      <ScrollView
+        contentContainerStyle={styles.loginFormScrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 顶部标题 */}
+        <Text style={styles.loginTitle}>登录</Text>
+
+        {/* 网络状态 */}
+        {renderNetworkStatus()}
+
+        {/* 表单卡片 */}
+        <View style={styles.formCard}>
+          {/* 用户名输入 */}
+          <Text style={styles.inputLabel}>用户名</Text>
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="person-outline"
+              size={20}
+              color={theme.colors.onSurfaceVariant}
+              style={styles.inputIcon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="abc"
+              placeholderTextColor={theme.colors.onSurfaceVariant}
+              value={username}
+              onChangeText={onUsernameChange}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="username"
+              editable={!isLoading}
+            />
+          </View>
+
+          {/* 密码输入 */}
+          <Text style={styles.inputLabel}>密码</Text>
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color={theme.colors.onSurfaceVariant}
+              style={styles.inputIcon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="abc"
+              placeholderTextColor={theme.colors.onSurfaceVariant}
+              value={password}
+              onChangeText={onPasswordChange}
+              secureTextEntry={!showPassword}
+              autoComplete="password"
+              editable={!isLoading}
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={onTogglePassword}
+            >
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color={theme.colors.onSurfaceVariant}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* 记住我 */}
+          <TouchableOpacity
+            style={styles.rememberContainer}
+            onPress={onToggleRememberMe}
+            disabled={isLoading}
+          >
+            <Ionicons
+              name={rememberMe ? "checkbox" : "square-outline"}
+              size={20}
+              color={rememberMe ? theme.colors.primary : theme.colors.onSurfaceVariant}
+            />
+            <Text style={styles.rememberText}>记住我并启用生物识别登录</Text>
+          </TouchableOpacity>
+
+          {/* 错误提示 */}
+          {renderError()}
+
+          {/* 登录按钮 */}
+          <TouchableOpacity
+            style={[
+              styles.loginButton,
+              isLoading && styles.loginButtonDisabled,
+            ]}
+            onPress={onLogin}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.loginButtonText}>登录</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* 分隔线 */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>其他登录方式</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* 注册和忘记密码按钮 */}
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={onNavigateRegister}
+          >
+            <Text style={styles.secondaryButtonText}>注册用户</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={onNavigateForgotPassword}
+          >
+            <Text style={styles.secondaryButtonText}>忘记密码</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 版本号 */}
+        <Text style={styles.versionText}>v1.0.0</Text>
+      </ScrollView>
+    </View>
+  );
+};
+
+// ========== 主组件 ==========
 export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+  // 视图状态：'landing' 或 'login'
+  const [currentView, setCurrentView] = useState<'landing' | 'login'>('landing');
+
+  // 表单状态
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -104,16 +363,12 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
     }
 
     try {
-      const success = await biometricLogin({
-        promptMessage: `使用${biometricStatus.type}快速登录`,
-        cancelButtonText: '取消',
-        fallbackToDevicePasscode: true,
-      });
+      const success = await biometricLogin();
 
       if (success) {
         navigateToMain();
       }
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('生物识别登录失败', error.message);
     }
   };
@@ -132,195 +387,151 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
     });
   };
 
-  const renderNetworkStatus = () => {
-    if (networkStatus === 'offline') {
-      return (
-        <View style={styles.networkStatus}>
-          <Ionicons name="cloud-offline" size={16} color={theme.colors.error} />
-          <Text style={[styles.networkStatusText, { color: theme.colors.error }]}>网络离线</Text>
-        </View>
-      );
-    }
-    if (networkStatus === 'checking') {
-      return (
-        <View style={styles.networkStatus}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text style={[styles.networkStatusText, { color: theme.colors.primary }]}>检查网络...</Text>
-        </View>
-      );
-    }
-    return null;
+  const handleShowLogin = () => {
+    setCurrentView('login');
   };
 
-  const renderError = () => {
-    if (!error) return null;
-    return (
-      <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle" size={20} color={theme.colors.error} />
-        <Text style={styles.errorText}>{error}</Text>
-        {retryCount > 0 && (
-          <TouchableOpacity onPress={retry}>
-            <Text style={styles.retryText}>重试</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
+  const handleShowRegister = () => {
+    navigation.navigate('RegisterScreen');
   };
+
+  const handleForgotPassword = () => {
+    navigation.navigate('ForgotPassword');
+  };
+
+  // 根据当前视图渲染不同内容
+  if (currentView === 'landing') {
+    return (
+      <ScreenWrapper edges={['top', 'bottom']}>
+        <LandingView
+          onLogin={handleShowLogin}
+          onRegister={handleShowRegister}
+        />
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper edges={['top', 'bottom']}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-      
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.headerContainer}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="leaf" size={48} color={theme.colors.primary} />
-          </View>
-          <Text style={styles.title}>白垩纪食品溯源</Text>
-          <Text style={styles.subtitle}>移动端管理系统</Text>
-        </View>
-
-        {renderNetworkStatus()}
-
-        <NeoCard style={styles.formCard}>
-          {/* Username Input */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="person-outline" size={20} color={theme.colors.onSurfaceVariant} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="用户名"
-              placeholderTextColor={theme.colors.onSurfaceVariant}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="username"
-              editable={!isLoading}
-            />
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color={theme.colors.onSurfaceVariant} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="密码"
-              placeholderTextColor={theme.colors.onSurfaceVariant}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoComplete="password"
-              editable={!isLoading}
-            />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Ionicons
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
-                size={20}
-                color={theme.colors.onSurfaceVariant}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Remember Me */}
-          <TouchableOpacity
-            style={styles.rememberContainer}
-            onPress={() => setRememberMe(!rememberMe)}
-            disabled={isLoading}
-          >
-            <Ionicons
-              name={rememberMe ? "checkbox" : "square-outline"}
-              size={20}
-              color={rememberMe ? theme.colors.primary : theme.colors.onSurfaceVariant}
-            />
-            <Text style={styles.rememberText}>记住我并启用生物识别</Text>
-          </TouchableOpacity>
-
-          {renderError()}
-
-          <NeoButton
-            variant="primary"
-            size="large"
-            onPress={handleLogin}
-            loading={isLoading}
-            disabled={isLoading}
-            style={styles.loginButton}
-          >
-            登录
-          </NeoButton>
-
-          {biometricStatus.available && (
-            <NeoButton
-              variant="outline"
-              size="large"
-              onPress={handleBiometricLogin}
-              disabled={!biometricStatus.isEnrolled || isLoading}
-              style={styles.biometricButton}
-              icon="finger-print"
-            >
-              {biometricStatus.isEnrolled ? '使用生物识别登录' : '生物识别未启用'}
-            </NeoButton>
-          )}
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>其他方式</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <View style={styles.footerActions}>
-            <TouchableOpacity onPress={() => navigation.navigate('RegisterScreen')}>
-              <Text style={styles.linkText}>注册账户</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-              <Text style={styles.linkText}>忘记密码</Text>
-            </TouchableOpacity>
-          </View>
-        </NeoCard>
-
-        <Text style={styles.versionText}>v1.0.0</Text>
-      </ScrollView>
+      <LoginFormView
+        username={username}
+        password={password}
+        showPassword={showPassword}
+        rememberMe={rememberMe}
+        isLoading={isLoading}
+        error={error}
+        retryCount={retryCount}
+        networkStatus={networkStatus}
+        biometricStatus={biometricStatus}
+        onUsernameChange={setUsername}
+        onPasswordChange={setPassword}
+        onTogglePassword={() => setShowPassword(!showPassword)}
+        onToggleRememberMe={() => setRememberMe(!rememberMe)}
+        onLogin={handleLogin}
+        onBiometricLogin={handleBiometricLogin}
+        onNavigateRegister={handleShowRegister}
+        onNavigateForgotPassword={handleForgotPassword}
+        clearError={clearError}
+        retry={retry}
+      />
     </ScreenWrapper>
   );
 };
 
+// ========== 样式 ==========
 const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: theme.colors.background,
+  // ===== Landing 视图样式 =====
+  landingContainer: {
+    flex: 1,
   },
-  headerContainer: {
+  landingContent: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 80,
+    paddingBottom: 60,
+    justifyContent: 'space-between',
+  },
+  landingPageTitle: {
+    fontSize: 48,
+    fontWeight: '300',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    lineHeight: 56,
+    opacity: 0.9,
+  },
+  brandContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    flex: 1,
+    justifyContent: 'center',
   },
   logoCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: theme.colors.surface,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
-    ...theme.custom.shadows.medium,
+    marginBottom: 32,
   },
-  title: {
+  brandTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  brandSubtitle: {
+    fontSize: 18,
+    fontWeight: '400',
+    color: '#FFFFFF',
+    opacity: 0.9,
+    textAlign: 'center',
+  },
+  landingButtons: {
+    gap: 16,
+  },
+  landingPrimaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  landingPrimaryButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2d5016',
+  },
+  landingSecondaryButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 28,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  landingSecondaryButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  // ===== 登录表单视图样式 =====
+  loginFormContainer: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  loginFormScrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    justifyContent: 'center',
+  },
+  loginTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
+    color: theme.custom.colors.text,
+    marginBottom: 32,
   },
   networkStatus: {
     flexDirection: 'row',
@@ -338,18 +549,37 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   formCard: {
-    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.custom.colors.text,
+    marginBottom: 8,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceVariant,
-    borderRadius: theme.custom.borderRadius.m,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     paddingHorizontal: 16,
     height: 56,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    marginBottom: 20,
   },
   inputIcon: {
     marginRight: 12,
@@ -357,7 +587,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: theme.colors.text,
+    color: theme.custom.colors.text,
     height: '100%',
   },
   eyeIcon: {
@@ -370,14 +600,14 @@ const styles = StyleSheet.create({
   },
   rememberText: {
     marginLeft: 8,
-    color: theme.colors.textSecondary,
+    color: theme.custom.colors.textSecondary,
     fontSize: 14,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.errorContainer,
-    borderRadius: theme.custom.borderRadius.s,
+    borderRadius: 8,
     padding: 12,
     marginBottom: 16,
   },
@@ -393,10 +623,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   loginButton: {
-    marginBottom: 16,
+    backgroundColor: '#4a7c2c',
+    borderRadius: 8,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  biometricButton: {
-    marginBottom: 16,
+  loginButtonDisabled: {
+    opacity: 0.6,
+  },
+  loginButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   divider: {
     flexDirection: 'row',
@@ -410,23 +650,29 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     paddingHorizontal: 16,
-    color: theme.colors.textSecondary,
+    color: theme.custom.colors.textSecondary,
     fontSize: 12,
   },
-  footerActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4a7c2c',
+    marginBottom: 16,
   },
-  linkText: {
-    color: theme.colors.primary,
+  secondaryButtonText: {
+    fontSize: 16,
     fontWeight: '600',
-    fontSize: 14,
+    color: '#4a7c2c',
   },
   versionText: {
     textAlign: 'center',
-    color: theme.colors.textTertiary,
+    color: theme.custom.colors.textTertiary,
     fontSize: 12,
+    marginTop: 24,
   },
 });
 
