@@ -68,7 +68,7 @@ mysql.server start
 ```bash
 cd backend-java/backend-ai-chat
 source venv/bin/activate
-python main_enhanced.py
+python scripts/main_enhanced.py
 ```
 
 ### 3. Spring Boot
