@@ -8,7 +8,7 @@
  * - 白名单（5个）
  *
  * 使用方法：
- * 1. 确保后端服务运行在 http://47.251.121.76:10010/
+ * 1. 确保后端服务运行在 http://139.196.165.140:10010/
  * 2. 运行：npx ts-node src/tests/phase1-api-test.ts
  * 或在React Native项目中导入并调用测试函数
  */
@@ -325,7 +325,7 @@ export async function runPhase1APITests() {
   console.log('║' + ' '.repeat(20) + 'Phase 1 API对接测试' + ' '.repeat(39) + '║');
   console.log('╚' + '═'.repeat(78) + '╝');
   console.log('');
-  console.log('测试服务器: http://47.251.121.76:10010/');
+  console.log('测试服务器: http://139.196.165.140:10010/');
   console.log('测试范围: Phase 1共28个API');
   console.log('');
 

@@ -1,10 +1,22 @@
 module.exports = function(api) {
   api.cache(true);
-  
+
   const presets = ['babel-preset-expo'];
-  
-  const plugins = [];
-  
+
+  const plugins = [
+    // Add react-native-dotenv for environment variable management
+    [
+      'module:react-native-dotenv',
+      {
+        moduleName: '@env',
+        path: '.env',
+        safe: false,
+        allowUndefined: true,
+        verbose: false,
+      },
+    ],
+  ];
+
   // Add import.meta transformation for web
   if (process.env.BABEL_ENV === 'web' || process.env.NODE_ENV === 'web') {
     plugins.push(
