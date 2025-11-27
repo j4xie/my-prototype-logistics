@@ -126,11 +126,11 @@ export default function ProductTypeManagementScreen() {
     try {
       if (editingItem) {
         // 更新
-        // await productTypeApi.updateProductType(editingItem.id, formData);
+        await productTypeApiClient.updateProductType(editingItem.id, formData, factoryId);
         Alert.alert('成功', '产品类型更新成功');
       } else {
         // 创建
-        // await productTypeApi.createProductType(formData);
+        await productTypeApiClient.createProductType(formData, factoryId);
         Alert.alert('成功', '产品类型创建成功');
       }
       setModalVisible(false);
