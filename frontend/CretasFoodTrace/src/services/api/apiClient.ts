@@ -27,6 +27,13 @@ class ApiClient {
     // 请求拦截器 - 智能token管理
     this.client.interceptors.request.use(
       async (config) => {
+        // 打印完整的请求URL
+        const fullUrl = `${config.baseURL || ''}${config.url}`;
+        apiLogger.debug(`API请求: ${config.method?.toUpperCase()} ${fullUrl}`, {
+          params: config.params,
+          data: config.data
+        });
+        
         // 只使用安全存储的访问token，不允许降级
         const accessToken = await StorageService.getSecureItem('secure_access_token');
         if (accessToken) {
