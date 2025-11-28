@@ -23,6 +23,7 @@ import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../se
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { canManageBasicData, getPermissionDebugInfo, getFactoryId } from '../../utils/permissionHelper';
 
 // 创建MaterialTypeManagement专用logger
 const materialTypeLogger = logger.createContextLogger('MaterialTypeManagement');
@@ -35,6 +36,7 @@ const materialTypeLogger = logger.createContextLogger('MaterialTypeManagement');
 export default function MaterialTypeManagementScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const factoryId = getFactoryId(user);
 
   const [materialTypes, setMaterialTypes] = useState<MaterialType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,35 +55,17 @@ export default function MaterialTypeManagementScreen() {
   const [customSpecMode, setCustomSpecMode] = useState(false);
   const [customSpecValue, setCustomSpecValue] = useState('');
 
-  // 权限控制
-  const userType = user?.userType || 'factory';
-  // 修复：后端可能返回 position 字段的值（如 proc_admin），需要映射到实际角色代码
-  const rawRole = user?.factoryUser?.role || user?.factoryUser?.roleCode || user?.roleCode || 'viewer';
-  const position = user?.factoryUser?.position || '';
-  
-  // 角色映射：将 position 值（如 proc_admin）映射到实际角色代码
-  let roleCode = rawRole;
-  if (rawRole === 'proc_admin' || position === 'proc_admin' || rawRole === 'department_admin') {
-    roleCode = 'department_admin';
-  }
-  
-  const isPlatformAdmin = userType === 'platform';
-  // 修复：permission_admin 和 department_admin 也应该有管理权限
-  const isSuperAdmin = roleCode === 'factory_super_admin' || roleCode === 'permission_admin';
-  const isDepartmentAdmin = roleCode === 'department_admin';
-  const canManage = isPlatformAdmin || isSuperAdmin || isDepartmentAdmin;
+  // 权限控制 - 使用统一的权限检查工具
+  const canManage = canManageBasicData(user);
 
   // 权限检查日志
-  materialTypeLogger.debug('权限检查', {
-    userType,
-    rawRole,
-    position,
-    roleCode,
-    isPlatformAdmin,
-    isSuperAdmin,
-    isDepartmentAdmin,
-    canManage,
-  });
+  useEffect(() => {
+    const debugInfo = getPermissionDebugInfo(user);
+    materialTypeLogger.debug('权限检查', {
+      ...debugInfo,
+      canManage,
+    });
+  }, [user]);
 
   // 常用选项
   const categoryOptions = ['海鲜', '肉类', '蔬菜', '水果', '粉类', '米面', '油类', '调料', '其他'];
@@ -108,13 +92,12 @@ export default function MaterialTypeManagementScreen() {
 
   const loadSpecConfig = async () => {
     try {
-      materialTypeLogger.debug('加载规格配置', { factoryId: user?.factoryId });
-      const response = await materialSpecApiClient.getSpecConfig(user?.factoryId);
+      materialTypeLogger.debug('加载规格配置', { factoryId });
+      const response = await materialSpecApiClient.getSpecConfig(factoryId);
       materialTypeLogger.info('规格配置加载成功', { hasData: !!response.data });
       setSpecConfig(response.data);
     } catch (error) {
       materialTypeLogger.warn('规格配置加载失败，使用默认配置', error);
-      // 使用前端默认配置作为fallback
       setSpecConfig(DEFAULT_SPEC_CONFIG);
     }
   };
@@ -122,31 +105,22 @@ export default function MaterialTypeManagementScreen() {
   const loadMaterialTypes = async () => {
     try {
       setLoading(true);
-      materialTypeLogger.debug('开始加载原材料类型', { factoryId: user?.factoryId });
+      materialTypeLogger.debug('开始加载原材料类型', { factoryId });
 
-      // 使用 getActiveMaterialTypes 获取激活的原材料类型列表（返回 List，不需要分页）
-      const response = await materialTypeApiClient.getActiveMaterialTypes(user?.factoryId);
+      const response = await materialTypeApiClient.getActiveMaterialTypes(factoryId);
 
-      materialTypeLogger.debug('API响应接收', { hasData: !!response.data });
+      // 统一响应处理：response.data 应该是数组
+      const materialData = response?.data || [];
 
-      // 后端返回格式: ApiResponse<List<RawMaterialTypeDTO>>
-      // response.data 直接是数组
-      if (response && response.data && Array.isArray(response.data)) {
-        materialTypeLogger.info('原材料类型加载成功', { count: response.data.length });
-        setMaterialTypes(response.data);
-      } else if (Array.isArray(response)) {
-        // 兼容旧格式（直接返回数组）
-        materialTypeLogger.info('原材料类型加载成功(兼容格式)', { count: response.length });
-        setMaterialTypes(response);
-      } else {
-        materialTypeLogger.warn('响应格式异常', { response });
-        setMaterialTypes([]);
-      }
-    } catch (error) {
-      materialTypeLogger.error('加载原材料类型失败', error, {
-        status: error.response?.status,
+      materialTypeLogger.info('原材料类型加载成功', {
+        count: materialData.length,
+        factoryId,
       });
-      Alert.alert('错误', error.response?.data?.message || '加载原材料类型失败');
+      setMaterialTypes(materialData);
+    } catch (error) {
+      materialTypeLogger.error('加载原材料类型失败', error as Error, { factoryId });
+      const errorMessage = error instanceof Error ? error.message : '加载原材料类型失败';
+      Alert.alert('错误', errorMessage);
       setMaterialTypes([]);
     } finally {
       setLoading(false);
@@ -161,22 +135,20 @@ export default function MaterialTypeManagementScreen() {
 
     try {
       setLoading(true);
-      // searchMaterialTypes 返回分页响应: ApiResponse<PageResponse<RawMaterialTypeDTO>>
-      const response = await materialTypeApiClient.searchMaterialTypes(searchQuery, user?.factoryId);
-      
-      // 处理分页响应格式
-      if (response && response.data && response.data.content) {
-        setMaterialTypes(response.data.content);
-      } else if (response && response.data && Array.isArray(response.data)) {
-        setMaterialTypes(response.data);
-      } else if (Array.isArray(response)) {
-        setMaterialTypes(response);
-      } else {
-        setMaterialTypes([]);
-      }
+      const response = await materialTypeApiClient.searchMaterialTypes(searchQuery, factoryId);
+
+      // 统一处理分页响应：response.data.content
+      const searchData = response?.data?.content || response?.data || [];
+
+      materialTypeLogger.info('搜索完成', {
+        query: searchQuery,
+        resultCount: searchData.length,
+      });
+      setMaterialTypes(searchData);
     } catch (error) {
-      materialTypeLogger.error('搜索失败', error, { query: searchQuery });
-      Alert.alert('错误', error.response?.data?.message || '搜索失败');
+      materialTypeLogger.error('搜索失败', error as Error, { query: searchQuery });
+      const errorMessage = error instanceof Error ? error.message : '搜索失败';
+      Alert.alert('错误', errorMessage);
       setMaterialTypes([]);
     } finally {
       setLoading(false);
@@ -204,7 +176,7 @@ export default function MaterialTypeManagementScreen() {
   const handleEdit = (item: MaterialType) => {
     setEditingItem(item);
     setFormData({
-      code: item.code,
+      code: item.materialCode,  // 修正：使用 materialCode 而不是 code
       name: item.name,
       category: item.category || '',
       specification: item.specification || '',
@@ -232,23 +204,26 @@ export default function MaterialTypeManagementScreen() {
         await materialTypeApiClient.updateMaterialType(
           editingItem.id,
           formData as Partial<CreateMaterialTypeRequest>,
-          user?.factoryId
+          factoryId
         );
         Alert.alert('成功', '原材料类型更新成功');
+        materialTypeLogger.info('原材料类型更新成功', { id: editingItem.id });
       } else {
         // 创建 - 移除code字段，让后端自动生成
         const { code, ...dataWithoutCode } = formData;
         await materialTypeApiClient.createMaterialType(
           dataWithoutCode as CreateMaterialTypeRequest,
-          user?.factoryId
+          factoryId
         );
         Alert.alert('成功', '原材料类型创建成功');
+        materialTypeLogger.info('原材料类型创建成功', { name: formData.name });
       }
       setModalVisible(false);
       loadMaterialTypes();
     } catch (error) {
-      materialTypeLogger.error(editingItem ? '更新失败' : '创建失败', error);
-      Alert.alert('错误', error.response?.data?.message || (editingItem ? '更新失败' : '创建失败'));
+      materialTypeLogger.error(editingItem ? '更新失败' : '创建失败', error as Error);
+      const errorMessage = error instanceof Error ? error.message : (editingItem ? '更新失败' : '创建失败');
+      Alert.alert('错误', errorMessage);
     }
   };
 
@@ -263,12 +238,14 @@ export default function MaterialTypeManagementScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await materialTypeApiClient.deleteMaterialType(item.id, user?.factoryId);
+              await materialTypeApiClient.deleteMaterialType(item.id, factoryId);
               Alert.alert('成功', '原材料类型删除成功');
+              materialTypeLogger.info('原材料类型删除成功', { id: item.id });
               loadMaterialTypes();
             } catch (error) {
-              materialTypeLogger.error('删除失败', error, { itemId: item.id });
-              Alert.alert('错误', error.response?.data?.message || '删除失败');
+              materialTypeLogger.error('删除失败', error as Error, { itemId: item.id });
+              const errorMessage = error instanceof Error ? error.message : '删除失败';
+              Alert.alert('错误', errorMessage);
             }
           },
         },
@@ -278,27 +255,34 @@ export default function MaterialTypeManagementScreen() {
 
   const handleToggleStatus = async (item: MaterialType) => {
     try {
-      // 传递完整数据，并进行字段映射（materialCode → code, description → notes）
+      // 只更新 isActive 状态，使用 UpdateMaterialTypeRequest 接口
       const updateData = {
-        code: item.materialCode,
-        name: item.name,
-        unit: item.unit,
-        category: item.category,
-        storageType: item.storageType,
-        notes: item.description || '',
         isActive: !item.isActive,
       };
+
+      materialTypeLogger.debug('切换原材料状态', {
+        id: item.id,
+        name: item.name,
+        currentStatus: item.isActive,
+        newStatus: !item.isActive,
+      });
 
       await materialTypeApiClient.updateMaterialType(
         item.id,
         updateData,
-        user?.factoryId
+        factoryId
       );
       Alert.alert('成功', item.isActive ? '已停用' : '已启用');
+      materialTypeLogger.info('原材料状态切换成功', {
+        id: item.id,
+        name: item.name,
+        newStatus: !item.isActive,
+      });
       loadMaterialTypes();
     } catch (error) {
-      materialTypeLogger.error('切换状态失败', error, { itemId: item.id });
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      materialTypeLogger.error('切换状态失败', error as Error, { itemId: item.id });
+      const errorMessage = error instanceof Error ? error.message : '操作失败';
+      Alert.alert('错误', errorMessage);
     }
   };
 
@@ -392,7 +376,7 @@ export default function MaterialTypeManagementScreen() {
                     </View>
                     <View style={styles.titleContainer}>
                       <Text style={styles.itemName}>{item.name}</Text>
-                      <Text style={styles.itemCode}>{item.code}</Text>
+                      <Text style={styles.itemCode}>{item.materialCode}</Text>
                     </View>
                   </View>
                   <Chip
@@ -573,17 +557,21 @@ export default function MaterialTypeManagementScreen() {
               }
             >
               {/* 当前类别的规格选项 */}
-              {(specConfig[formData.category || categoryOptions[0]] || []).map((spec) => (
-                <Menu.Item
-                  key={spec}
-                  title={spec}
-                  onPress={() => {
-                    setFormData({ ...formData, specification: spec });
-                    setSpecMenuVisible(false);
-                    setCustomSpecMode(false);
-                  }}
-                />
-              ))}
+              {(() => {
+                const category = formData.category || categoryOptions[0] || '其他';
+                const specs = specConfig[category] || [];
+                return specs.map((spec: string) => (
+                  <Menu.Item
+                    key={spec}
+                    title={spec}
+                    onPress={() => {
+                      setFormData({ ...formData, specification: spec });
+                      setSpecMenuVisible(false);
+                      setCustomSpecMode(false);
+                    }}
+                  />
+                ));
+              })()}
               <Divider />
               <Menu.Item
                 leadingIcon="pencil"
