@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * AI API客户端
@@ -163,7 +163,11 @@ class AIApiClient {
    * 获取基础路径
    */
   private getBasePath(factoryId?: string): string {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/ai`;
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return `/api/mobile/${currentFactoryId}/ai`;
   }
 
   // ========== 成本分析接口 ==========

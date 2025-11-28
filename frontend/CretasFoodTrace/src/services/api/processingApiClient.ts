@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { requireFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 生产加工管理API客户端
@@ -8,6 +8,10 @@ import { DEFAULT_FACTORY_ID } from '../../constants/config';
  *
  * 注意：Dashboard相关API（4个）已移至 dashboardApiClient.ts
  * Phase 3 P1-002: 新增质检完整流程API（9个）
+ *
+ * factoryId 说明：
+ * - 工厂用户：自动从登录信息获取
+ * - 平台管理员：必须显式提供 factoryId 参数
  */
 
 // ========== 类型定义 ==========
@@ -112,7 +116,8 @@ export interface TimeRangeCostAnalysis {
 
 class ProcessingApiClient {
   private getPath(factoryId?: string) {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/processing`;
+    const currentFactoryId = requireFactoryId(factoryId);
+    return `/api/mobile/${currentFactoryId}/processing`;
   }
 
   // ===== 批次管理 (8个API) =====
@@ -308,7 +313,8 @@ class ProcessingApiClient {
     const startLocalDate = startDate.split('T')[0];
     const endLocalDate = endDate.split('T')[0];
 
-    return await apiClient.get(`/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/reports/cost-analysis`, {
+    const currentFactoryId = requireFactoryId(factoryId);
+    return await apiClient.get(`/api/mobile/${currentFactoryId}/reports/cost-analysis`, {
       params: {
         startDate: startLocalDate,
         endDate: endLocalDate

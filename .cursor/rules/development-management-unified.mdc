@@ -265,6 +265,28 @@ Neo Minimal iOS-Style Admin UI标准：
 - Mock API任务 → 必读 docs/architecture/mock-api-architecture.md + docs/api/schema-version-management.md
 - 测试验证 → 使用 test-validation-unified.mdc
 
+## 🧪 **测试环境特殊处理**
+
+### **网络错误处理（测试环境专用）**
+
+**适用场景**：测试环境调试网络连接问题
+
+**重要提示**：
+- `authService.ts` 中的 `handleAuthError` 函数包含详细的网络错误处理逻辑，**仅用于测试环境**
+- 生产环境应使用更简洁的错误处理，避免暴露过多技术细节
+- Android 9+ 默认禁止 HTTP 流量，测试环境需要：
+  - `app.json` 中设置 `"usesCleartextTraffic": true`
+  - `AndroidManifest.xml` 中设置 `android:usesCleartextTraffic="true"`
+  - 或配置网络安全策略允许特定域名的 HTTP 流量
+
+**常见网络错误处理**：
+- `ECONNREFUSED`: 服务器未启动或端口错误 → 提示检查服务器状态和API地址
+- `ENOTFOUND`: DNS解析失败或地址错误 → 提示检查API地址配置和DNS设置
+- `ETIMEDOUT`: 请求超时 → 提示检查网络稳定性和服务器响应
+- `Cleartext HTTP traffic`: Android 9+ HTTP流量被禁止 → 提示检查 `usesCleartextTraffic` 配置
+
+**注意**：生产环境部署时应简化错误处理逻辑，避免向用户暴露过多技术细节。
+
 ---
 
 **维护信息**：
