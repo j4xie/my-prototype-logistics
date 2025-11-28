@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 原材料类型管理API客户端
@@ -47,7 +47,11 @@ export interface UpdateMaterialTypeRequest extends Partial<CreateMaterialTypeReq
 
 class MaterialTypeApiClient {
   private getPath(factoryId?: string) {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/materials/types`;
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return `/api/mobile/${currentFactoryId}/materials/types`;
   }
 
   async getMaterialTypes(params?: { factoryId?: string; isActive?: boolean }): Promise<{ data: MaterialType[] }> {

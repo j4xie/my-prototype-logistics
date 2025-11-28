@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 工厂设置API客户端
@@ -73,7 +73,11 @@ export interface UpdateFactorySettingsRequest {
 
 class FactoryApiClient {
   private getPath(factoryId?: string) {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/settings`;
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return `/api/mobile/${currentFactoryId}/settings`;
   }
 
   /**
