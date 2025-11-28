@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 转换率管理API客户端
@@ -21,7 +21,11 @@ export interface ConversionRate {
 
 class ConversionApiClient {
   private getPath(factoryId?: string) {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/conversions`;
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return `/api/mobile/${currentFactoryId}/conversions`;
   }
 
   // 1. 分页查询转换率配置
