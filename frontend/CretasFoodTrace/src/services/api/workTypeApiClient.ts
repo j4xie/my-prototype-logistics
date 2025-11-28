@@ -1,9 +1,13 @@
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { requireFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 工作类型管理API客户端
  * 总计10个API - 路径：/api/mobile/{factoryId}/work-types/*
+ *
+ * factoryId 说明：
+ * - 工厂用户：自动从登录信息获取
+ * - 平台管理员：必须显式提供 factoryId 参数
  */
 
 /**
@@ -44,7 +48,8 @@ export interface UpdateWorkTypeRequest extends Partial<CreateWorkTypeRequest> {
 
 class WorkTypeApiClient {
   private getPath(factoryId?: string) {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/work-types`;
+    const currentFactoryId = requireFactoryId(factoryId);
+    return `/api/mobile/${currentFactoryId}/work-types`;
   }
 
   // 1. 获取工作类型列表

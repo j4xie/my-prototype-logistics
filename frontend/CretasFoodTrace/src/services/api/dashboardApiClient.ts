@@ -1,10 +1,14 @@
 /**
  * Dashboard API Client
  * 仪表板数据API调用
+ *
+ * 注意：所有方法都需要 factoryId
+ * - 工厂用户：自动从登录信息获取
+ * - 平台管理员：必须显式提供 factoryId 参数
  */
 
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { requireFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 生产概览数据
@@ -161,21 +165,22 @@ export const dashboardAPI = {
   /**
    * 获取生产概览
    * @param period - 时间周期: today, week, month
-   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
+   * @param factoryId - 工厂ID（可选，工厂用户自动获取；平台管理员必须提供）
    */
   getDashboardOverview: async (
     period: 'today' | 'week' | 'month' = 'today',
-    factoryId: string = DEFAULT_FACTORY_ID
+    factoryId?: string
   ): Promise<{
     success: boolean;
     data: DashboardOverviewData;
     message?: string;
   }> => {
+    const currentFactoryId = requireFactoryId(factoryId);
     const response = await apiClient.get<{
       success: boolean;
       data: DashboardOverviewData;
       message?: string;
-    }>(`/api/mobile/${factoryId}/processing/dashboard/overview`, {
+    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/overview`, {
       params: { period },
     });
     return response;
@@ -184,7 +189,7 @@ export const dashboardAPI = {
   /**
    * 获取生产统计
    * @param params - 查询参数
-   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
+   * @param factoryId - 工厂ID（可选，将从登录用户信息中获取）
    */
   getProductionStatistics: async (
     params?: {
@@ -192,17 +197,18 @@ export const dashboardAPI = {
       endDate?: string;
       department?: string;
     },
-    factoryId: string = DEFAULT_FACTORY_ID
+    factoryId?: string
   ): Promise<{
     success: boolean;
     data: ProductionStatisticsData;
     message?: string;
   }> => {
+    const currentFactoryId = requireFactoryId(factoryId);
     const response = await apiClient.get<{
       success: boolean;
       data: ProductionStatisticsData;
       message?: string;
-    }>(`/api/mobile/${factoryId}/processing/dashboard/production`, {
+    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/production`, {
       params,
     });
     return response;
@@ -210,39 +216,41 @@ export const dashboardAPI = {
 
   /**
    * 获取设备统计
-   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
+   * @param factoryId - 工厂ID（可选，将从登录用户信息中获取）
    */
-  getEquipmentDashboard: async (factoryId: string = DEFAULT_FACTORY_ID): Promise<{
+  getEquipmentDashboard: async (factoryId?: string): Promise<{
     success: boolean;
     data: EquipmentDashboardData;
     message?: string;
   }> => {
+    const currentFactoryId = requireFactoryId(factoryId);
     const response = await apiClient.get<{
       success: boolean;
       data: EquipmentDashboardData;
       message?: string;
-    }>(`/api/mobile/${factoryId}/processing/dashboard/equipment`);
+    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/equipment`);
     return response;
   },
 
   /**
    * 获取质量统计
    * @param period - 时间周期: week, month, quarter
-   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
+   * @param factoryId - 工厂ID（可选，将从登录用户信息中获取）
    */
   getQualityDashboard: async (
     period: 'week' | 'month' | 'quarter' = 'month',
-    factoryId: string = DEFAULT_FACTORY_ID
+    factoryId?: string
   ): Promise<{
     success: boolean;
     data: QualityDashboardData;
     message?: string;
   }> => {
+    const currentFactoryId = requireFactoryId(factoryId);
     const response = await apiClient.get<{
       success: boolean;
       data: QualityDashboardData;
       message?: string;
-    }>(`/api/mobile/${factoryId}/processing/dashboard/quality`, {
+    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/quality`, {
       params: { period },
     });
     return response;
@@ -251,21 +259,22 @@ export const dashboardAPI = {
   /**
    * 获取告警统计
    * @param period - 时间周期: week, month
-   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
+   * @param factoryId - 工厂ID（可选，将从登录用户信息中获取）
    */
   getAlertsDashboard: async (
     period: 'week' | 'month' = 'week',
-    factoryId: string = DEFAULT_FACTORY_ID
+    factoryId?: string
   ): Promise<{
     success: boolean;
     data: AlertsDashboardData;
     message?: string;
   }> => {
+    const currentFactoryId = requireFactoryId(factoryId);
     const response = await apiClient.get<{
       success: boolean;
       data: AlertsDashboardData;
       message?: string;
-    }>(`/api/mobile/${factoryId}/processing/dashboard/alerts`, {
+    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/alerts`, {
       params: { period },
     });
     return response;
@@ -274,24 +283,25 @@ export const dashboardAPI = {
   /**
    * 获取趋势分析
    * @param params - 查询参数
-   * @param factoryId - 工厂ID（可选，默认使用DEFAULT_FACTORY_ID）
+   * @param factoryId - 工厂ID（可选，将从登录用户信息中获取）
    */
   getTrendAnalysis: async (
     params: {
       period?: 'week' | 'month' | 'quarter';
       metric?: 'production' | 'quality';
     } = {},
-    factoryId: string = DEFAULT_FACTORY_ID
+    factoryId?: string
   ): Promise<{
     success: boolean;
     data: TrendAnalysisData;
     message?: string;
   }> => {
+    const currentFactoryId = requireFactoryId(factoryId);
     const response = await apiClient.get<{
       success: boolean;
       data: TrendAnalysisData;
       message?: string;
-    }>(`/api/mobile/${factoryId}/processing/dashboard/trends`, {
+    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/trends`, {
       params,
     });
     return response;
