@@ -17,6 +17,7 @@ import {
   Chip,
   IconButton,
   TextInput,
+  Switch,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
@@ -65,6 +66,9 @@ export default function BatchComparisonScreen() {
   // 自定义问题状态
   const [customQuestion, setCustomQuestion] = useState('');
   const [showQuestionInput, setShowQuestionInput] = useState(false);
+
+  // 思考模式状态（默认开启）
+  const [enableThinking, setEnableThinking] = useState(true);
 
   // 快速问题
   const QUICK_QUESTIONS = [
@@ -185,6 +189,7 @@ export default function BatchComparisonScreen() {
         batchIds: Array.from(selectedBatches),
         dimension: dimension,
         question: question || undefined,
+        enableThinking, // 思考模式开关
       }, factoryId);
 
       if (response && response.data) {
@@ -321,6 +326,25 @@ export default function BatchComparisonScreen() {
                   剩余 {aiQuota.remaining} 次
                 </Chip>
               )}
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* 思考模式开关 */}
+        <Card style={styles.thinkingCard} mode="outlined">
+          <Card.Content>
+            <View style={styles.thinkingModeRow}>
+              <View style={{ flex: 1 }}>
+                <Text variant="titleSmall" style={styles.sectionTitle}>深度思考模式</Text>
+                <Text variant="bodySmall" style={styles.thinkingHint}>
+                  {enableThinking ? 'AI深度推理，结果更准确' : '普通模式，响应更快'}
+                </Text>
+              </View>
+              <Switch
+                value={enableThinking}
+                onValueChange={setEnableThinking}
+                color="#9C27B0"
+              />
             </View>
           </Card.Content>
         </Card>
@@ -675,5 +699,18 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     flex: 1,
+  },
+  thinkingCard: {
+    marginBottom: 16,
+    backgroundColor: '#F3E5F5',
+  },
+  thinkingModeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  thinkingHint: {
+    color: '#757575',
+    marginTop: 4,
   },
 });

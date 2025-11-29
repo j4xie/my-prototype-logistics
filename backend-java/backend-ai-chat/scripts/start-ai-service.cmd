@@ -39,10 +39,11 @@ REM 检查.env文件
 echo [3/4] 检查配置...
 if not exist ".env" (
     echo [警告] .env文件不存在！
-    echo 请创建.env文件并配置HF_TOKEN
+    echo 请创建.env文件并配置DASHSCOPE_API_KEY
     echo.
     echo 示例：
-    echo HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    echo DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    echo DASHSCOPE_MODEL=qwen-plus
     echo REDIS_HOST=localhost
     echo REDIS_PORT=6379
     echo REDIS_DB=0

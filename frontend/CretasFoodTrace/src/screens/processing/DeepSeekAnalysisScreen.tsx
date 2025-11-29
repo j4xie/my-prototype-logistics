@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, Button, Appbar, ActivityIndicator, Chip, TextInput as PaperTextInput, IconButton, ProgressBar, Divider } from 'react-native-paper';
+import { Text, Card, Button, Appbar, ActivityIndicator, Chip, TextInput as PaperTextInput, IconButton, ProgressBar, Divider, Switch } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
@@ -215,6 +215,9 @@ export default function DeepSeekAnalysisScreen() {
   const [question, setQuestion] = useState('');
   const [showQuestionInput, setShowQuestionInput] = useState(false);
 
+  // 思考模式状态（默认开启）
+  const [enableThinking, setEnableThinking] = useState(true);
+
   // Parse analysis text into structured data
   const parsedAnalysis = useMemo(() => {
     if (!analysisResponse?.analysis) return null;
@@ -236,6 +239,7 @@ export default function DeepSeekAnalysisScreen() {
         {
           batchId: Number(batchId),
           analysisType: 'default', // 默认分析
+          enableThinking, // 思考模式开关
         },
         factoryId
       );
@@ -296,6 +300,7 @@ export default function DeepSeekAnalysisScreen() {
           question: question.trim(),
           sessionId,
           analysisType: 'default',
+          enableThinking, // 思考模式开关
         },
         factoryId
       );
@@ -367,6 +372,25 @@ export default function DeepSeekAnalysisScreen() {
       </Appbar.Header>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        {/* 思考模式开关 */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            <View style={styles.thinkingModeRow}>
+              <View style={styles.thinkingModeInfo}>
+                <Text variant="titleMedium">深度思考模式</Text>
+                <Text variant="bodySmall" style={styles.thinkingModeHint}>
+                  {enableThinking ? 'AI会进行深度推理分析，结果更准确' : '普通模式，响应更快'}
+                </Text>
+              </View>
+              <Switch
+                value={enableThinking}
+                onValueChange={setEnableThinking}
+                color="#9C27B0"
+              />
+            </View>
+          </Card.Content>
+        </Card>
+
         {/* 配额信息 */}
         {quota && (
           <Card style={styles.card} mode="elevated">
@@ -706,6 +730,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  thinkingModeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  thinkingModeInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  thinkingModeHint: {
+    color: '#757575',
+    marginTop: 4,
   },
   cacheHint: {
     marginTop: 8,

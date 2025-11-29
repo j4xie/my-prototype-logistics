@@ -21,6 +21,16 @@ export interface BatchCostAnalysisRequest {
   question?: string;
   sessionId?: string;
   analysisType?: 'default' | 'deep' | 'comparison';
+  /**
+   * 是否启用思考模式（默认true）
+   * 思考模式下，AI会先进行深度推理再给出答案
+   */
+  enableThinking?: boolean;
+  /**
+   * 思考预算（10-100，默认50）
+   * 数值越大，思考越深入
+   */
+  thinkingBudget?: number;
 }
 
 /**
@@ -31,6 +41,10 @@ export interface TimeRangeCostAnalysisRequest {
   endDate: string;   // ISO 8601 format
   dimension?: 'overall' | 'daily' | 'weekly';
   question?: string;
+  /** 是否启用思考模式（默认true） */
+  enableThinking?: boolean;
+  /** 思考预算（10-100，默认50） */
+  thinkingBudget?: number;
 }
 
 /**
@@ -40,6 +54,10 @@ export interface ComparativeCostAnalysisRequest {
   batchIds: number[];
   dimension?: 'cost' | 'efficiency' | 'quality' | 'comprehensive';
   question?: string;
+  /** 是否启用思考模式（默认true） */
+  enableThinking?: boolean;
+  /** 思考预算（10-100，默认50） */
+  thinkingBudget?: number;
 }
 
 /**
