@@ -1,21 +1,37 @@
 """
 白垩纪食品溯源系统 - AI食品加工数据分析服务
-基于 Llama-3.1-8B-Instruct 的智能分析API
+基于阿里云通义千问 (DashScope) 的智能分析API
+支持思考模式 (Thinking Mode) - 深度推理分析
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import os
-import requests
+import json
 from dotenv import load_dotenv
+
+# 导入 OpenAI SDK (阿里云 DashScope 兼容 OpenAI 格式)
+from openai import OpenAI
 
 load_dotenv()
 
 # ==================== 配置 ====================
-HF_API_URL = "https://router.huggingface.co/v1/chat/completions"
-HF_TOKEN = os.environ.get('HF_TOKEN', 'YOUR_HF_TOKEN_HERE')
+# 阿里云 DashScope 配置
+DASHSCOPE_API_KEY = os.environ.get('DASHSCOPE_API_KEY', '')
+DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+# 可选模型: qwen-turbo (最快最便宜), qwen-plus (平衡), qwen-max (最强)
+DASHSCOPE_MODEL = os.environ.get('DASHSCOPE_MODEL', 'qwen-plus')
+
+# 初始化 OpenAI 客户端 (兼容 DashScope)
+client = None
+if DASHSCOPE_API_KEY:
+    client = OpenAI(
+        api_key=DASHSCOPE_API_KEY,
+        base_url=DASHSCOPE_BASE_URL,
+    )
 
 # ==================== FastAPI 应用 ====================
 app = FastAPI(title="食品加工数据分析 API", version="1.0.0")
@@ -42,26 +58,107 @@ class CostAnalysisRequest(BaseModel):
     message: str  # 成本数据的文本描述
     user_id: str  # 工厂ID_batch_批次ID
     session_id: Optional[str] = None
+    enable_thinking: Optional[bool] = True  # 默认开启思考模式
+    thinking_budget: Optional[int] = 50  # 思考预算 (10-100)
 
 # ==================== 核心功能 ====================
-def query_llama(messages: list) -> str:
-    """调用Llama模型"""
-    if not HF_TOKEN:
-        raise HTTPException(status_code=500, detail="HF_TOKEN未配置")
+def query_qwen(messages: list, enable_thinking: bool = False, thinking_budget: int = 50) -> dict:
+    """
+    调用阿里云通义千问模型
 
-    response = requests.post(
-        HF_API_URL,
-        headers={"Authorization": f"Bearer {HF_TOKEN}", "Content-Type": "application/json"},
-        json={
-            "messages": messages,
-            "model": "meta-llama/Llama-3.1-8B-Instruct:fireworks-ai",
-            "max_tokens": 1500,
-            "temperature": 0.7,
-        },
-        timeout=60
-    )
-    response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
+    Args:
+        messages: 消息列表
+        enable_thinking: 是否启用思考模式
+        thinking_budget: 思考预算 (10-100)
+
+    Returns:
+        dict: {
+            "content": str,  # 最终回答
+            "reasoning_content": str,  # 思考过程 (仅思考模式)
+            "thinking_enabled": bool
+        }
+    """
+    if not client:
+        raise HTTPException(status_code=500, detail="DASHSCOPE_API_KEY未配置")
+
+    try:
+        if enable_thinking:
+            # 思考模式：使用流式响应收集思考过程和最终答案
+            return query_qwen_with_thinking(messages, thinking_budget)
+        else:
+            # 普通模式
+            completion = client.chat.completions.create(
+                model=DASHSCOPE_MODEL,
+                messages=messages,
+                max_tokens=1500,
+                temperature=0.7,
+            )
+            return {
+                "content": completion.choices[0].message.content,
+                "reasoning_content": "",
+                "thinking_enabled": False
+            }
+    except Exception as e:
+        # 参考文档: https://help.aliyun.com/zh/model-studio/developer-reference/error-code
+        raise HTTPException(status_code=500, detail=f"通义千问调用失败: {str(e)}")
+
+
+def query_qwen_with_thinking(messages: list, thinking_budget: int = 50) -> dict:
+    """
+    思考模式调用 - 使用流式响应收集思考过程
+
+    思考模式会返回两部分内容:
+    1. reasoning_content: AI的思考过程
+    2. content: 最终回答
+    """
+    reasoning_content = ""
+    answer_content = ""
+
+    try:
+        completion = client.chat.completions.create(
+            model=DASHSCOPE_MODEL,
+            messages=messages,
+            extra_body={
+                "enable_thinking": True,
+                "thinking_budget": thinking_budget
+            },
+            stream=True,
+            stream_options={
+                "include_usage": True
+            },
+        )
+
+        for chunk in completion:
+            if chunk.choices and len(chunk.choices) > 0:
+                choice = chunk.choices[0]
+                delta = choice.delta
+
+                # 检查是否有内容
+                if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                    reasoning_content += delta.reasoning_content
+                elif hasattr(delta, 'content') and delta.content:
+                    answer_content += delta.content
+
+        return {
+            "content": answer_content,
+            "reasoning_content": reasoning_content,
+            "thinking_enabled": True
+        }
+
+    except Exception as e:
+        # 如果思考模式失败，回退到普通模式
+        print(f"[WARN] 思考模式失败，回退到普通模式: {e}")
+        completion = client.chat.completions.create(
+            model=DASHSCOPE_MODEL,
+            messages=messages,
+            max_tokens=1500,
+            temperature=0.7,
+        )
+        return {
+            "content": completion.choices[0].message.content,
+            "reasoning_content": "",
+            "thinking_enabled": False
+        }
 
 def build_prompt(section_data: Dict[str, str]) -> str:
     """
@@ -139,7 +236,8 @@ async def root():
     return {
         "service": "食品加工数据分析 API",
         "status": "running",
-        "model": "Llama-3.1-8B-Instruct"
+        "model": f"阿里云通义千问 ({DASHSCOPE_MODEL})",
+        "api_configured": bool(DASHSCOPE_API_KEY)
     }
 
 @app.post("/api/ai/food-processing-analysis", response_model=FoodProcessingResponse)
@@ -197,13 +295,13 @@ async def analyze(request: FoodProcessingRequest):
             }
         ]
 
-        # 步骤3: 获取AI分析
-        ai_analysis = query_llama(messages)
+        # 步骤3: 获取AI分析 (普通模式，不使用思考)
+        result = query_qwen(messages, enable_thinking=False)
 
         # 步骤4: 返回结果
         return FoodProcessingResponse(
             success=True,
-            analysis=ai_analysis,
+            analysis=result["content"],
             message="分析完成"
         )
 
@@ -266,21 +364,32 @@ async def cost_analysis(request: CostAnalysisRequest):
             }
         ]
 
+        # 获取思考模式配置 (默认开启)
+        enable_thinking = request.enable_thinking if request.enable_thinking is not None else True
+        thinking_budget = request.thinking_budget if request.thinking_budget else 50
+
         # 尝试调用AI模型，如果失败则返回模拟分析（用于演示）
         try:
-            ai_analysis = query_llama(messages)
+            result = query_qwen(messages, enable_thinking=enable_thinking, thinking_budget=thinking_budget)
+            ai_analysis = result["content"]
+            reasoning_content = result["reasoning_content"]
+            thinking_enabled = result["thinking_enabled"]
         except Exception as ai_error:
             # 如果AI调用失败，返回基于规则的模拟分析（仅用于演示和测试）
-            print(f"⚠️ AI调用失败，使用模拟分析: {ai_error}")
+            print(f"[WARN] AI调用失败，使用模拟分析: {ai_error}")
             ai_analysis = generate_mock_analysis(request.message)
+            reasoning_content = ""
+            thinking_enabled = False
 
         # 生成会话ID（如果没有提供）
         session_id = request.session_id if request.session_id else f"session_{uuid.uuid4().hex[:16]}"
 
-        # 返回结果（匹配Java期望的格式）
+        # 返回结果（匹配Java期望的格式，增加思考内容）
         return {
             "success": True,
             "aiAnalysis": ai_analysis,
+            "reasoningContent": reasoning_content,  # 思考过程
+            "thinkingEnabled": thinking_enabled,    # 是否使用了思考模式
             "sessionId": session_id,
             "messageCount": 1,
             "timestamp": int(time.time() * 1000)
@@ -425,9 +534,25 @@ def generate_mock_analysis(cost_data: str) -> str:
 # ==================== 启动 ====================
 if __name__ == "__main__":
     import uvicorn
+    import sys
 
-    if not HF_TOKEN:
-        print("⚠️ 警告: HF_TOKEN 未设置")
-        print("请在.env文件中配置: HF_TOKEN=your_token")
+    # 修复Windows终端编码问题
+    if sys.platform == 'win32':
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+    print("\n" + "="*50)
+    print("[START] AI Cost Analysis Service")
+    print("="*50)
+    print(f"Model: Alibaba Qwen ({DASHSCOPE_MODEL})")
+    print(f"Port: 8085")
+
+    if not DASHSCOPE_API_KEY:
+        print("[WARN] DASHSCOPE_API_KEY not configured")
+        print("Please set in .env: DASHSCOPE_API_KEY=sk-xxx")
+    else:
+        print("[OK] API Key configured")
+
+    print("="*50 + "\n")
 
     uvicorn.run("main:app", host="0.0.0.0", port=8085, reload=True)
