@@ -1,6 +1,6 @@
 """
 白垩纪食品溯源系统 - AI食品加工数据分析服务（增强版）
-基于 Llama-3.1-8B-Instruct 的智能分析API
+基于阿里云通义千问 (DashScope) 的智能分析API
 支持Redis会话管理和多轮对话
 """
 
@@ -9,11 +9,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, List
 import os
-import requests
 import json
 import uuid
 import time
 from dotenv import load_dotenv
+
+# 导入 OpenAI SDK (阿里云 DashScope 兼容 OpenAI 格式)
+from openai import OpenAI
 
 # 尝试导入Redis
 try:
@@ -26,8 +28,19 @@ except ImportError:
 load_dotenv()
 
 # ==================== 配置 ====================
-HF_API_URL = "https://router.huggingface.co/v1/chat/completions"
-HF_TOKEN = os.environ.get('HF_TOKEN', '')
+# 阿里云 DashScope 配置
+DASHSCOPE_API_KEY = os.environ.get('DASHSCOPE_API_KEY', '')
+DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+# 可选模型: qwen-turbo (最快最便宜), qwen-plus (平衡), qwen-max (最强)
+DASHSCOPE_MODEL = os.environ.get('DASHSCOPE_MODEL', 'qwen-plus')
+
+# 初始化 OpenAI 客户端 (兼容 DashScope)
+client = None
+if DASHSCOPE_API_KEY:
+    client = OpenAI(
+        api_key=DASHSCOPE_API_KEY,
+        base_url=DASHSCOPE_BASE_URL,
+    )
 
 # Redis配置
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
@@ -117,29 +130,21 @@ class SessionManager:
         return f"session_{uuid.uuid4().hex[:16]}"
 
 # ==================== 核心功能 ====================
-def query_llama(messages: list) -> str:
-    """调用Llama模型"""
-    if not HF_TOKEN:
-        raise HTTPException(status_code=500, detail="HF_TOKEN未配置")
-
-    headers = {
-        "Authorization": f"Bearer {HF_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "model": "meta-llama/Llama-3.1-8B-Instruct",
-        "messages": messages,
-        "max_tokens": 4000,  # 增加到4000以获得更详细的分析
-        "temperature": 0.7
-    }
+def query_qwen(messages: list) -> str:
+    """调用阿里云通义千问模型"""
+    if not client:
+        raise HTTPException(status_code=500, detail="DASHSCOPE_API_KEY未配置")
 
     try:
-        response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=30)
-        response.raise_for_status()
-        result = response.json()
-        return result['choices'][0]['message']['content']
+        completion = client.chat.completions.create(
+            model=DASHSCOPE_MODEL,
+            messages=messages,
+            max_tokens=4000,  # 增加到4000以获得更详细的分析
+            temperature=0.7,
+        )
+        return completion.choices[0].message.content
     except Exception as e:
+        # 参考文档: https://help.aliyun.com/zh/model-studio/developer-reference/error-code
         print(f"⚠️  AI调用失败: {e}")
         raise
 
@@ -183,8 +188,9 @@ async def root():
     return {
         "service": "食品加工数据分析 API (Enhanced)",
         "status": "running",
-        "model": "Llama-3.1-8B-Instruct",
+        "model": f"阿里云通义千问 ({DASHSCOPE_MODEL})",
         "version": "2.0.0",
+        "api_configured": bool(DASHSCOPE_API_KEY),
         "features": {
             "session_management": True,
             "redis_enabled": redis_client is not None,
@@ -236,7 +242,7 @@ async def cost_analysis(request: CostAnalysisRequest):
 
         # 4. 调用AI模型
         try:
-            ai_analysis = query_llama(messages)
+            ai_analysis = query_qwen(messages)
             use_mock = False
         except Exception as ai_error:
             print(f"⚠️  AI调用失败，使用模拟分析: {ai_error}")
@@ -310,10 +316,17 @@ if __name__ == "__main__":
     print("\n" + "="*50)
     print("🚀 启动AI成本分析服务（增强版）")
     print("="*50)
-    print(f"Model: Llama-3.1-8B-Instruct")
+    print(f"Model: 阿里云通义千问 ({DASHSCOPE_MODEL})")
     print(f"Port: 8085")
     print(f"Redis: {'✅ 已连接' if redis_client else '❌ 未连接（使用内存存储）'}")
     print(f"Session TTL: {SessionManager.SESSION_TTL}秒")
+
+    if not DASHSCOPE_API_KEY:
+        print("⚠️ 警告: DASHSCOPE_API_KEY 未设置")
+        print("请在.env文件中配置: DASHSCOPE_API_KEY=sk-xxx")
+    else:
+        print("✅ API Key 已配置")
+
     print("="*50 + "\n")
 
     uvicorn.run(app, host="0.0.0.0", port=8085)

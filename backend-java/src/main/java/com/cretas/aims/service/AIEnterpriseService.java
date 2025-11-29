@@ -107,15 +107,20 @@ public class AIEnterpriseService {
             String sessionId = request.getSession_id();
             Integer messageCount = 0;
 
+            // 思考模式参数（默认开启）
+            Boolean enableThinking = request.getEnableThinking() != null ? request.getEnableThinking() : true;
+            Integer thinkingBudget = request.getThinkingBudget() != null ? request.getThinkingBudget() : 50;
+
             if ("historical".equals(questionType)) {
                 // 生成历史综合报告
                 aiAnalysis = generateHistoricalReport(factoryId, request.getStartDate(), request.getEndDate());
             } else {
-                // 获取成本数据并调用AI
+                // 获取成本数据并调用AI（传递思考模式参数）
                 Map<String, Object> costData = processingService.getBatchCostAnalysis(factoryId, request.getBatchId());
                 Map<String, Object> aiResult = basicAIService.analyzeCost(
                         factoryId, request.getBatchId(), costData,
-                        sessionId, request.getQuestion());
+                        sessionId, request.getQuestion(),
+                        enableThinking, thinkingBudget);
 
                 if (aiResult != null && Boolean.TRUE.equals(aiResult.get("success"))) {
                     aiAnalysis = (String) aiResult.get("aiAnalysis");
