@@ -511,6 +511,20 @@ public class MobileDTO {
 
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime endDate;
+
+        /**
+         * 是否启用思考模式（默认true）
+         * 思考模式下，AI会先进行深度推理再给出答案
+         */
+        @Builder.Default
+        private Boolean enableThinking = true;
+
+        /**
+         * 思考预算（10-100，默认50）
+         * 数值越大，思考越深入
+         */
+        @Builder.Default
+        private Integer thinkingBudget = 50;
     }
 
     /**

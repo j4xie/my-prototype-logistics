@@ -51,6 +51,28 @@ public class AIAnalysisService {
                                            Map<String, Object> costData,
                                            String sessionId,
                                            String customMessage) {
+        // 默认开启思考模式
+        return analyzeCost(factoryId, batchId, costData, sessionId, customMessage, true, 50);
+    }
+
+    /**
+     * 调用AI分析批次成本（支持思考模式）
+     *
+     * @param factoryId 工厂ID
+     * @param batchId 批次ID
+     * @param costData 成本数据
+     * @param sessionId 会话ID（可选，用于多轮对话）
+     * @param customMessage 自定义问题（可选）
+     * @param enableThinking 是否启用思考模式（默认true）
+     * @param thinkingBudget 思考预算 10-100（默认50）
+     * @return AI分析结果
+     */
+    public Map<String, Object> analyzeCost(String factoryId, String batchId,
+                                           Map<String, Object> costData,
+                                           String sessionId,
+                                           String customMessage,
+                                           Boolean enableThinking,
+                                           Integer thinkingBudget) {
         try {
             // 1. 格式化成本数据为AI提示词
             String message = customMessage != null && !customMessage.trim().isEmpty()
@@ -67,12 +89,17 @@ public class AIAnalysisService {
                 request.put("session_id", sessionId);
             }
 
+            // 思考模式参数（默认开启）
+            request.put("enable_thinking", enableThinking != null ? enableThinking : true);
+            request.put("thinking_budget", thinkingBudget != null ? thinkingBudget : 50);
+
             // 3. 发送请求
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
-            log.info("调用AI服务: url={}, batchId={}, factoryId={}", url, batchId, factoryId);
+            log.info("调用AI服务: url={}, batchId={}, factoryId={}, enableThinking={}",
+                    url, batchId, factoryId, enableThinking);
             ResponseEntity<Map> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, Map.class);
 
@@ -83,10 +110,13 @@ public class AIAnalysisService {
 
                 result.put("success", true);
                 result.put("aiAnalysis", body.get("aiAnalysis"));  // Python服务返回的字段名
+                result.put("reasoningContent", body.get("reasoningContent")); // 思考过程
+                result.put("thinkingEnabled", body.get("thinkingEnabled"));   // 是否使用了思考模式
                 result.put("sessionId", body.get("sessionId"));     // 驼峰命名
                 result.put("messageCount", body.get("messageCount")); // 驼峰命名
 
-                log.info("AI分析成功: batchId={}, sessionId={}", batchId, body.get("sessionId"));
+                log.info("AI分析成功: batchId={}, sessionId={}, thinkingEnabled={}",
+                        batchId, body.get("sessionId"), body.get("thinkingEnabled"));
                 return result;
             } else {
                 throw new RuntimeException("AI服务返回错误: " + response.getStatusCode());
