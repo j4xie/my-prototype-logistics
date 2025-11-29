@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, Appbar, Card, Button, ActivityIndicator, Chip, SegmentedButtons, IconButton, TextInput, Divider } from 'react-native-paper';
+import { Text, Appbar, Card, Button, ActivityIndicator, Chip, SegmentedButtons, IconButton, TextInput, Divider, Switch } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
@@ -65,6 +65,9 @@ export default function TimeRangeCostAnalysisScreen() {
   // 自定义问题状态
   const [customQuestion, setCustomQuestion] = useState('');
   const [showQuestionInput, setShowQuestionInput] = useState(false);
+
+  // 思考模式状态（默认开启）
+  const [enableThinking, setEnableThinking] = useState(true);
 
   // 快捷时间范围选项
   const quickRangeOptions = [
@@ -209,13 +212,12 @@ export default function TimeRangeCostAnalysisScreen() {
 
       // 调用AI时间范围分析API
       const response = await aiApiClient.analyzeTimeRangeCost({
-        factoryId,
-        userId: Number(userId),
         startDate: dateRange.startDate.toISOString().split('T')[0],
         endDate: dateRange.endDate.toISOString().split('T')[0],
         dimension: 'overall', // 可选: daily, weekly, overall
         question: question || undefined,
-      });
+        enableThinking, // 思考模式开关
+      }, factoryId);
 
       timeRangeLogger.info('AI分析完成', {
         hasAnalysis: !!response.data?.analysis,
@@ -440,6 +442,21 @@ export default function TimeRangeCostAnalysisScreen() {
                       </View>
                     )}
                   </View>
+                </View>
+
+                {/* 思考模式开关 */}
+                <View style={styles.thinkingModeRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="bodyMedium">深度思考模式</Text>
+                    <Text variant="bodySmall" style={{ color: '#64748B' }}>
+                      {enableThinking ? 'AI深度推理，结果更准确' : '普通模式，响应更快'}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={enableThinking}
+                    onValueChange={setEnableThinking}
+                    color="#9C27B0"
+                  />
                 </View>
 
                 {/* 初始状态 */}
@@ -708,6 +725,15 @@ const styles = StyleSheet.create({
   resetText: {
     color: '#64748B',
     marginTop: 2,
+  },
+  thinkingModeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   aiInitial: {
     alignItems: 'center',
