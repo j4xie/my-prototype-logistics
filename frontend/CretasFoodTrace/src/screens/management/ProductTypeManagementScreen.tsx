@@ -19,6 +19,7 @@ import { productTypeApiClient } from '../../services/api/productTypeApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
 import { logger } from '../../utils/logger';
+import { canManageBasicData, getPermissionDebugInfo } from '../../utils/permissionHelper';
 
 // 创建ProductTypeManagement专用logger
 const productTypeLogger = logger.createContextLogger('ProductTypeManagement');
@@ -44,6 +45,18 @@ export default function ProductTypeManagementScreen() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<ProductType | null>(null);
+
+  // 权限检查
+  const canManage = canManageBasicData(user);
+
+  // 权限检查日志
+  useEffect(() => {
+    const debugInfo = getPermissionDebugInfo(user);
+    productTypeLogger.debug('权限检查', {
+      ...debugInfo,
+      canManage,
+    });
+  }, [user]);
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -124,19 +137,31 @@ export default function ProductTypeManagementScreen() {
     }
 
     try {
+      // 映射前端字段到后端期望的字段格式
+      const requestData = {
+        name: formData.name,
+        productCode: formData.code,  // 前端code → 后端productCode
+        category: formData.category || undefined,
+        description: formData.description || undefined,
+      };
+
       if (editingItem) {
         // 更新
-        await productTypeApiClient.updateProductType(editingItem.id, formData, factoryId);
+        await productTypeApiClient.updateProductType(editingItem.id, requestData, factoryId);
         Alert.alert('成功', '产品类型更新成功');
+        productTypeLogger.info('产品类型更新成功', { id: editingItem.id, name: formData.name });
       } else {
         // 创建
-        await productTypeApiClient.createProductType(formData, factoryId);
+        await productTypeApiClient.createProductType(requestData, factoryId);
         Alert.alert('成功', '产品类型创建成功');
+        productTypeLogger.info('产品类型创建成功', { name: formData.name });
       }
       setModalVisible(false);
       loadProductTypes();
     } catch (error) {
-      Alert.alert('错误', editingItem ? '更新失败' : '创建失败');
+      productTypeLogger.error(editingItem ? '更新产品类型失败' : '创建产品类型失败', error as Error);
+      const errorMessage = error instanceof Error ? error.message : '操作失败';
+      Alert.alert('错误', editingItem ? `更新失败: ${errorMessage}` : `创建失败: ${errorMessage}`);
     }
   };
 
@@ -151,11 +176,14 @@ export default function ProductTypeManagementScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // await productTypeApi.deleteProductType(item.id);
+              await productTypeApiClient.deleteProductType(item.id, factoryId);
               Alert.alert('成功', '产品类型删除成功');
+              productTypeLogger.info('产品类型删除成功', { id: item.id, name: item.name });
               loadProductTypes();
             } catch (error) {
-              Alert.alert('错误', '删除失败');
+              productTypeLogger.error('删除产品类型失败', error as Error, { id: item.id });
+              const errorMessage = error instanceof Error ? error.message : '删除失败';
+              Alert.alert('错误', errorMessage);
             }
           },
         },
@@ -165,13 +193,41 @@ export default function ProductTypeManagementScreen() {
 
   const handleToggleStatus = async (item: ProductType) => {
     try {
-      // await productTypeApi.updateProductType(item.id, { isActive: !item.isActive });
+      await productTypeApiClient.updateProductType(
+        item.id,
+        { isActive: !item.isActive },
+        factoryId
+      );
       Alert.alert('成功', item.isActive ? '已停用' : '已启用');
+      productTypeLogger.info('产品类型状态切换成功', {
+        id: item.id,
+        name: item.name,
+        newStatus: !item.isActive,
+      });
       loadProductTypes();
     } catch (error) {
-      Alert.alert('错误', '操作失败');
+      productTypeLogger.error('切换产品类型状态失败', error as Error, { id: item.id });
+      const errorMessage = error instanceof Error ? error.message : '操作失败';
+      Alert.alert('错误', errorMessage);
     }
   };
+
+  // 无权限界面
+  if (!canManage) {
+    return (
+      <View style={styles.container}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content title="产品类型管理" />
+        </Appbar.Header>
+        <View style={styles.noPermission}>
+          <List.Icon icon="lock" color="#999" />
+          <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
+          <Text style={styles.noPermissionHint}>仅限工厂超管、权限管理员和部门管理员</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -377,6 +433,25 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  noPermission: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  noPermissionText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  noPermissionHint: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,

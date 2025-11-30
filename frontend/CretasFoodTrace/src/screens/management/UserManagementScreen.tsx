@@ -23,6 +23,7 @@ import { useAuthStore } from '../../store/authStore';
 import { NotImplementedError } from '../../errors';
 import { handleError } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { canManageUsers, getPermissionDebugInfo, getFactoryId } from '../../utils/permissionHelper';
 
 // 创建UserManagement专用logger
 const userManagementLogger = logger.createContextLogger('UserManagement');
@@ -35,6 +36,7 @@ const userManagementLogger = logger.createContextLogger('UserManagement');
 export default function UserManagementScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const factoryId = getFactoryId(user);
 
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,12 +49,17 @@ export default function UserManagementScreen() {
   const [roleMenuVisible, setRoleMenuVisible] = useState(false);
   const [departmentMenuVisible, setDepartmentMenuVisible] = useState(false);
 
-  // 权限控制
-  const userType = user?.userType || 'factory';
-  const roleCode = user?.factoryUser?.role || user?.factoryUser?.roleCode || user?.roleCode || 'viewer';
-  const isPlatformAdmin = userType === 'platform';
-  const isSuperAdmin = roleCode === 'factory_super_admin';
-  const canManageUsers = isPlatformAdmin || isSuperAdmin;
+  // 权限控制 - 使用统一的权限检查工具
+  const canManage = canManageUsers(user);
+
+  // 权限检查日志
+  useEffect(() => {
+    const debugInfo = getPermissionDebugInfo(user);
+    userManagementLogger.debug('权限检查', {
+      ...debugInfo,
+      canManage,
+    });
+  }, [user]);
 
   // 表单数据
   const [formData, setFormData] = useState<Partial<CreateUserRequest>>({
@@ -91,36 +98,26 @@ export default function UserManagementScreen() {
     try {
       setLoading(true);
       const response = await userApiClient.getUsers({
-        factoryId: user?.factoryId,
-        page: 1, // 后端要求 page >= 1
+        factoryId: factoryId,
+        page: 1,
         size: 100,
       });
 
-      // 📊 调试日志：查看API响应结构
-      userManagementLogger.debug('API响应结构', {
-        hasData: !!response.data,
-        dataType: typeof response.data,
-        hasContent: !!(response.data && response.data.content),
-        isContentArray: response.data && Array.isArray(response.data.content),
-        contentLength: response.data && response.data.content ? response.data.content.length : 0,
-      });
+      // 处理分页响应 - userApiClient.getUsers 返回 PageResponse<UserDTO>
+      const userData = response.content;
 
-      // ✅ 正确的数据访问：response.data.content
-      if (response.data && response.data.content) {
-        userManagementLogger.info('用户列表加载成功', {
-          userCount: response.data.content.length,
-          factoryId: user?.factoryId,
-        });
-        setUsers(response.data.content);
-      } else {
-        userManagementLogger.warn('API返回空数据', { response });
-        setUsers([]);
-      }
+      userManagementLogger.info('用户列表加载成功', {
+        userCount: userData.length,
+        factoryId,
+      });
+      setUsers(userData);
     } catch (error) {
       userManagementLogger.error('加载用户列表失败', error as Error, {
-        factoryId: user?.factoryId,
+        factoryId,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || '加载用户列表失败');
+      const errorMessage = error instanceof Error ? error.message : '加载用户列表失败';
+      Alert.alert('错误', errorMessage);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -136,7 +133,7 @@ export default function UserManagementScreen() {
       setLoading(true);
       const results = await userApiClient.searchUsers({
         keyword: searchQuery,
-        factoryId: user?.factoryId,
+        factoryId: factoryId,
       });
       userManagementLogger.info('用户搜索完成', {
         keyword: searchQuery,
@@ -146,7 +143,7 @@ export default function UserManagementScreen() {
     } catch (error) {
       userManagementLogger.error('搜索用户失败', error as Error, {
         keyword: searchQuery,
-        factoryId: user?.factoryId,
+        factoryId: factoryId,
       });
       Alert.alert('错误', '搜索失败');
     } finally {
@@ -208,14 +205,14 @@ export default function UserManagementScreen() {
             department: formData.department,
             position: formData.position,
           },
-          user?.factoryId
+          factoryId
         );
         Alert.alert('成功', '用户信息已更新');
       } else {
         // 创建用户
         await userApiClient.createUser(
           formData as CreateUserRequest,
-          user?.factoryId
+          factoryId
         );
         Alert.alert('成功', '用户创建成功');
       }
@@ -247,7 +244,7 @@ export default function UserManagementScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await userApiClient.deleteUser(userId, user?.factoryId);
+              await userApiClient.deleteUser(userId, factoryId);
               userManagementLogger.info('用户删除成功', {
                 userId,
                 userName,
@@ -270,17 +267,17 @@ export default function UserManagementScreen() {
   const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
     try {
       if (currentStatus) {
-        await userApiClient.deactivateUser(userId, user?.factoryId);
+        await userApiClient.deactivateUser(userId, factoryId);
         userManagementLogger.info('用户停用成功', {
           userId,
-          factoryId: user?.factoryId,
+          factoryId: factoryId,
         });
         Alert.alert('成功', '用户已停用');
       } else {
-        await userApiClient.activateUser(userId, user?.factoryId);
+        await userApiClient.activateUser(userId, factoryId);
         userManagementLogger.info('用户激活成功', {
           userId,
-          factoryId: user?.factoryId,
+          factoryId: factoryId,
         });
         Alert.alert('成功', '用户已激活');
       }
@@ -289,9 +286,10 @@ export default function UserManagementScreen() {
       userManagementLogger.error('切换用户状态失败', error as Error, {
         userId,
         currentStatus,
-        factoryId: user?.factoryId,
+        factoryId: factoryId,
       });
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      const errorMessage = error instanceof Error ? error.message : '操作失败';
+      Alert.alert('错误', errorMessage);
     }
   };
 
@@ -683,7 +681,7 @@ export default function UserManagementScreen() {
       </Portal>
 
       {/* FAB */}
-      {canManageUsers && (
+      {canManage && (
         <FAB
           icon="plus"
           style={styles.fab}

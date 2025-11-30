@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 移动端专用API客户端
@@ -66,7 +66,11 @@ export const offlineSyncAPI = {
    * GET /api/mobile/offline/{factoryId}
    */
   getOfflineDataPackage: async (factoryId?: string) => {
-    return await apiClient.get(`/api/mobile/offline/${factoryId || DEFAULT_FACTORY_ID}`);
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return await apiClient.get(`/api/mobile/offline/${currentFactoryId}`);
   },
 
   /**
@@ -74,7 +78,11 @@ export const offlineSyncAPI = {
    * POST /api/mobile/sync/{factoryId}
    */
   syncData: async (syncRequest: any, factoryId?: string) => {
-    return await apiClient.post(`/api/mobile/sync/${factoryId || DEFAULT_FACTORY_ID}`, syncRequest);
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return await apiClient.post(`/api/mobile/sync/${currentFactoryId}`, syncRequest);
   },
 };
 
@@ -150,7 +158,11 @@ export const mobileConfigAPI = {
    * GET /api/mobile/config/{factoryId}
    */
   getConfig: async (platform?: string, factoryId?: string) => {
-    return await apiClient.get(`/api/mobile/config/${factoryId || DEFAULT_FACTORY_ID}`, {
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return await apiClient.get(`/api/mobile/config/${currentFactoryId}`, {
       params: { platform }
     });
   },
@@ -160,7 +172,11 @@ export const mobileConfigAPI = {
    * GET /api/mobile/dashboard/{factoryId}
    */
   getDashboard: async (factoryId?: string) => {
-    return await apiClient.get(`/api/mobile/dashboard/${factoryId || DEFAULT_FACTORY_ID}`);
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return await apiClient.get(`/api/mobile/dashboard/${currentFactoryId}`);
   },
 };
 

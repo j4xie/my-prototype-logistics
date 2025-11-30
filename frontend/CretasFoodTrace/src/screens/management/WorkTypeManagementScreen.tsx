@@ -71,8 +71,6 @@ export default function WorkTypeManagementScreen() {
       setLoading(true);
       const response = await workTypeApiClient.getWorkTypes({
         factoryId: user?.factoryId,
-        page: 1, // 后端要求 page >= 1
-        size: 100,
       });
 
       if (response.data) {
@@ -81,6 +79,13 @@ export default function WorkTypeManagementScreen() {
           factoryId: user?.factoryId,
         });
         setWorkTypes(response.data);
+      } else if (Array.isArray(response)) {
+        // 兼容直接返回数组的情况
+        workTypeLogger.info('工种类型列表加载成功', {
+          workTypeCount: response.length,
+          factoryId: user?.factoryId,
+        });
+        setWorkTypes(response);
       }
     } catch (error) {
       workTypeLogger.error('加载工种类型失败', error as Error, {
@@ -100,15 +105,24 @@ export default function WorkTypeManagementScreen() {
 
     try {
       setLoading(true);
-      const results = await workTypeApiClient.searchWorkTypes({
-        keyword: searchQuery,
-        factoryId: user?.factoryId,
-      });
+      const results = await workTypeApiClient.searchWorkTypes(
+        searchQuery,
+        user?.factoryId
+      );
+
+      // 处理不同的响应格式
+      let workTypeList: WorkType[] = [];
+      if (Array.isArray(results)) {
+        workTypeList = results;
+      } else if (results?.data) {
+        workTypeList = Array.isArray(results.data) ? results.data : [];
+      }
+
       workTypeLogger.info('工种搜索完成', {
         keyword: searchQuery,
-        resultCount: results.length,
+        resultCount: workTypeList.length,
       });
-      setWorkTypes(results);
+      setWorkTypes(workTypeList);
     } catch (error) {
       workTypeLogger.error('搜索工种失败', error as Error, {
         keyword: searchQuery,
