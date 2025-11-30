@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 生产计划管理API客户端 - MVP精简版
@@ -135,7 +135,11 @@ export interface StockSummary {
 
 class ProductionPlanApiClient {
   private getPath(factoryId?: string) {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/production-plans`;
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return `/api/mobile/${currentFactoryId}/production-plans`;
   }
 
   // ===== 核心CRUD操作 (6个API) =====
@@ -209,7 +213,10 @@ class ProductionPlanApiClient {
   // 12. 获取可用库存（前端辅助方法）
   // 注意：这个方法调用material-batches API来获取库存信息
   async getAvailableStock(params?: { productTypeId?: string; factoryId?: string }): Promise<ApiResponse<StockWithConversion | StockSummary>> {
-    const factoryId = params?.factoryId || DEFAULT_FACTORY_ID;
+    const factoryId = getCurrentFactoryId(params?.factoryId);
+    if (!factoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
 
     if (params?.productTypeId) {
       // 有产品ID：查询该产品所需原料的库存和转换率
