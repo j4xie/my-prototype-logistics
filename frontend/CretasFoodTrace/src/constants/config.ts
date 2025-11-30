@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { REACT_APP_API_URL } from '@env';
 
 // API配置 - 使用本地Java Spring Boot后端
 // 注意：
@@ -13,9 +14,10 @@ import { Platform } from 'react-native';
 // 从环境变量读取API地址，支持多环境配置
 const getApiBaseUrl = () => {
   // 优先读取环境变量，支持通过 .env 文件配置不同环境
-  const envUrl = process.env.REACT_APP_API_URL;
+  // 注意：必须使用 import from '@env'，不能用 process.env
+  const envUrl = REACT_APP_API_URL;
 
-  if (envUrl) {
+  if (envUrl && envUrl.trim() !== '') {
     console.log(`[API Config] Using API URL from environment: ${envUrl}`);
     return envUrl;
   }

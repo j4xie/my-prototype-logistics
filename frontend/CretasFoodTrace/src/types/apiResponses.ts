@@ -101,6 +101,7 @@ export interface ChangePasswordApiResponse {
 // 错误响应接口 (用于错误处理)
 export interface ApiErrorResponse {
   response?: {
+    status?: number;
     data?: {
       message?: string;
       error?: string;
@@ -108,4 +109,5 @@ export interface ApiErrorResponse {
     };
   };
   message?: string;
+  code?: string; // 错误代码，如 ECONNREFUSED, ENOTFOUND, ETIMEDOUT 等
 }

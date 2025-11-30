@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 import 'react-native-get-random-values'; // Polyfill for crypto.getRandomValues
 import { v4 as uuidv4 } from 'uuid';
 
@@ -32,7 +32,10 @@ export const materialQuickAPI = {
    * 用于车间快速选择
    */
   getMaterialTypes: async (factoryId?: string): Promise<MaterialType[]> => {
-    const fId = factoryId || DEFAULT_FACTORY_ID;
+    const fId = getCurrentFactoryId(factoryId);
+    if (!fId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
     // apiClient拦截器已统一返回data
     const response = await apiClient.get<any>(`/api/mobile/${fId}/materials/types/active`);
     // 后端返回格式: { success: true, data: [...] }
@@ -56,7 +59,10 @@ export const materialQuickAPI = {
     description?: string;
     code?: string;
   }, factoryId?: string): Promise<MaterialType> => {
-    const fId = factoryId || DEFAULT_FACTORY_ID;
+    const fId = getCurrentFactoryId(factoryId);
+    if (!fId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
 
     // 生成唯一code：优先使用用户提供的code，否则使用UUID确保唯一性
     // UUID格式: MAT_<8位UUID前缀>_<时间戳后6位>
