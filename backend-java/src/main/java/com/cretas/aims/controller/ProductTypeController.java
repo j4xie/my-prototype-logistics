@@ -4,7 +4,9 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.producttype.ProductTypeDTO;
+import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.ProductTypeService;
+import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,6 +35,7 @@ import java.util.List;
 public class ProductTypeController {
 
     private final ProductTypeService productTypeService;
+    private final MobileService mobileService;
 
     /**
      * 创建产品类型
@@ -41,8 +44,13 @@ public class ProductTypeController {
     @Operation(summary = "创建产品类型", description = "创建新的产品类型")
     public ApiResponse<ProductTypeDTO> createProductType(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestBody @Valid @Parameter(description = "产品类型信息") ProductTypeDTO dto) {
+            @RequestBody @Valid @Parameter(description = "产品类型信息") ProductTypeDTO dto,
+            @RequestHeader("Authorization") String authorization) {
         log.info("创建产品类型: factoryId={}, code={}", factoryId, dto.getCode());
+        // 获取当前用户ID
+        String token = TokenUtils.extractToken(authorization);
+        Integer userId = mobileService.getUserFromToken(token).getId();
+        dto.setCreatedBy(userId);
         ProductTypeDTO result = productTypeService.createProductType(factoryId, dto);
         return ApiResponse.success(result);
     }
