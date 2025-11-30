@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 时间统计管理API客户端
@@ -177,7 +177,11 @@ export interface TimeStatsQueryParams {
 
 class TimeStatsApiClient {
   private getPath(factoryId?: string) {
-    return `/api/mobile/${factoryId || DEFAULT_FACTORY_ID}/time-stats`;
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return `/api/mobile/${currentFactoryId}/time-stats`;
   }
 
   async getTimeStats(params?: TimeStatsQueryParams & { factoryId?: string }): Promise<ApiResponse<TimeRecord[]>> {
