@@ -149,7 +149,7 @@ public class ConversionServiceImpl implements ConversionService {
 
         Map<String, RawMaterialType> materialTypeMap = materialTypeRepository.findAllById(materialTypeIds).stream()
                 .collect(Collectors.toMap(RawMaterialType::getId, m -> m));
-        Map<String, ProductType> productTypeMap = productTypeRepository.findAllById(productTypeIds).stream()
+        Map<Long, ProductType> productTypeMap = productTypeRepository.findAllById(productTypeIds).stream()
                 .collect(Collectors.toMap(ProductType::getId, p -> p));
 
         List<ConversionDTO> dtos = page.getContent().stream()
@@ -176,7 +176,7 @@ public class ConversionServiceImpl implements ConversionService {
         Set<String> productTypeIds = conversions.stream()
                 .map(MaterialProductConversion::getProductTypeId)
                 .collect(Collectors.toSet());
-        Map<String, ProductType> productTypeMap = productTypeRepository.findAllById(productTypeIds).stream()
+        Map<Long, ProductType> productTypeMap = productTypeRepository.findAllById(productTypeIds).stream()
                 .collect(Collectors.toMap(ProductType::getId, p -> p));
 
         return conversions.stream()
@@ -285,7 +285,7 @@ public class ConversionServiceImpl implements ConversionService {
         Set<String> productTypeIds = conversions.stream()
                 .map(MaterialProductConversion::getProductTypeId)
                 .collect(Collectors.toSet());
-        Map<String, ProductType> productTypeMap = productTypeRepository.findAllById(productTypeIds).stream()
+        Map<Long, ProductType> productTypeMap = productTypeRepository.findAllById(productTypeIds).stream()
                 .collect(Collectors.toMap(ProductType::getId, p -> p));
 
         return conversions.stream()
@@ -371,7 +371,7 @@ public class ConversionServiceImpl implements ConversionService {
 
         Map<String, RawMaterialType> materialTypeMap = materialTypeRepository.findAllById(materialTypeIds).stream()
                 .collect(Collectors.toMap(RawMaterialType::getId, m -> m));
-        Map<String, ProductType> productTypeMap = productTypeRepository.findAllById(productTypeIds).stream()
+        Map<Long, ProductType> productTypeMap = productTypeRepository.findAllById(productTypeIds).stream()
                 .collect(Collectors.toMap(ProductType::getId, p -> p));
 
         return conversions.stream()
