@@ -17,19 +17,87 @@ import java.util.*;
 /**
  * 原材料类型业务逻辑层
  *
- * 功能:
- * 1. 获取原材料类型列表（分页、筛选）
- * 2. 创建原材料类型（唯一性验证）
- * 3. 更新原材料类型
- * 4. 删除原材料类型
- * 5. 搜索原材料类型
- * 6. 批量操作（状态更新）
- * 7. 初始化默认数据
- * 8. 类别和存储方式管理
- * 9. 低库存查询
+ * <p>本服务类负责原材料类型相关的所有业务逻辑处理，包括数据验证、业务规则执行、数据转换等。</p>
+ *
+ * <h3>主要功能模块</h3>
+ * <ol>
+ *   <li><b>查询功能</b>
+ *     <ul>
+ *       <li>分页查询：支持分页、排序、筛选</li>
+ *       <li>条件查询：按类别、存储方式、激活状态等筛选</li>
+ *       <li>搜索功能：按名称或编码模糊搜索</li>
+ *       <li>统计查询：获取类别列表、统计数量等</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>数据管理</b>
+ *     <ul>
+ *       <li>创建：验证唯一性后创建新类型</li>
+ *       <li>更新：支持部分字段更新，验证唯一性</li>
+ *       <li>删除：检查关联关系后删除</li>
+ *       <li>批量操作：批量更新状态等</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>业务规则</b>
+ *     <ul>
+ *       <li>唯一性验证：名称和编码在同一工厂内必须唯一</li>
+ *       <li>数据隔离：所有操作基于工厂ID进行隔离</li>
+ *       <li>默认数据：提供系统默认原材料类型初始化</li>
+ *       <li>关联检查：删除前检查是否被使用</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>数据导入导出</b>
+ *     <ul>
+ *       <li>Excel导出：导出原材料类型列表</li>
+ *       <li>Excel导入：批量导入原材料类型</li>
+ *       <li>模板生成：生成导入模板文件</li>
+ *     </ul>
+ *   </li>
+ * </ol>
+ *
+ * <h3>业务规则说明</h3>
+ * <ul>
+ *   <li><b>唯一性约束</b>：
+ *     <ul>
+ *       <li>同一工厂内，原材料名称（name）必须唯一</li>
+ *       <li>同一工厂内，原材料编码（materialCode）必须唯一（如果提供）</li>
+ *       <li>更新时，需要排除自身进行唯一性检查</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>数据隔离</b>：
+ *     <ul>
+ *       <li>所有查询和操作都基于factoryId进行数据隔离</li>
+ *       <li>不同工厂之间的数据完全隔离，互不影响</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>状态管理</b>：
+ *     <ul>
+ *       <li>新创建的原材料类型默认激活（isActive=true）</li>
+ *       <li>停用的类型不会出现在生产相关的下拉列表中</li>
+ *       <li>支持批量激活/停用操作</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>默认值设置</b>：
+ *     <ul>
+ *       <li>单位（unit）默认为"kg"</li>
+ *       <li>激活状态（isActive）默认为true</li>
+ *       <li>创建时间和更新时间由系统自动设置</li>
+ *     </ul>
+ *   </li>
+ * </ul>
+ *
+ * <h3>异常处理</h3>
+ * <ul>
+ *   <li><b>EntityNotFoundException</b>：当查询的资源不存在时抛出</li>
+ *   <li><b>IllegalArgumentException</b>：当数据验证失败（如唯一性冲突）时抛出</li>
+ *   <li><b>BusinessException</b>：当业务规则不满足时抛出（如删除被使用的类型）</li>
+ * </ul>
  *
  * @author Claude (AI Assistant)
  * @date 2025-11-19
+ * @version 1.0.0
+ * @see MaterialTypeController 控制器层
+ * @see MaterialTypeRepository 数据访问层
+ * @see MaterialType 实体类
  */
 @Slf4j
 @Service
@@ -116,13 +184,39 @@ public class MaterialTypeService {
     /**
      * 获取原材料类型列表（分页）
      *
-     * @param factoryId 工厂ID
-     * @param isActive 是否激活（null=全部）
-     * @param page 页码（从0开始）
-     * @param size 每页大小
-     * @param sortBy 排序字段
-     * @param sortDirection 排序方向（ASC/DESC）
-     * @return 分页结果
+     * <p>根据工厂ID获取原材料类型列表，支持分页、排序和状态筛选。</p>
+     *
+     * <h4>功能说明</h4>
+     * <ul>
+     *   <li>支持按激活状态筛选：isActive=true仅返回激活的，isActive=false仅返回停用的，null返回全部</li>
+     *   <li>支持自定义排序：通过sortBy指定排序字段，sortDirection指定排序方向</li>
+     *   <li>支持分页：通过page和size控制分页，注意Spring Data的page从0开始</li>
+     * </ul>
+     *
+     * <h4>排序字段说明</h4>
+     * <p>常用的排序字段包括：</p>
+     * <ul>
+     *   <li><code>createdAt</code>：创建时间（默认）</li>
+     *   <li><code>name</code>：名称（字母顺序）</li>
+     *   <li><code>category</code>：类别</li>
+     *   <li><code>materialCode</code>：编码</li>
+     * </ul>
+     *
+     * <h4>性能考虑</h4>
+     * <ul>
+     *   <li>建议设置合理的pageSize，避免一次查询过多数据（建议不超过100）</li>
+     *   <li>对于大数据量，建议使用索引字段进行排序（如createdAt）</li>
+     *   <li>如果只需要激活的类型，建议传入isActive=true以提高查询效率</li>
+     * </ul>
+     *
+     * @param factoryId 工厂ID（必填，用于数据隔离）
+     * @param isActive 是否激活（可选，null=全部，true=仅激活，false=仅停用）
+     * @param page 页码（从0开始，注意：前端传入的页码可能需要减1）
+     * @param size 每页大小（建议10-100之间）
+     * @param sortBy 排序字段（可选，如：createdAt, name, category，默认createdAt）
+     * @param sortDirection 排序方向（可选，ASC=升序，DESC=降序，默认DESC）
+     * @return 分页结果，包含原材料类型列表和分页信息
+     * @throws IllegalArgumentException 如果参数不合法（如page<0, size<=0）
      */
     public Page<MaterialType> getMaterialTypes(String factoryId, Boolean isActive,
                                                  int page, int size,
@@ -244,9 +338,52 @@ public class MaterialTypeService {
     /**
      * 创建原材料类型
      *
-     * @param materialType 原材料类型数据
-     * @return 创建的原材料类型
-     * @throws IllegalArgumentException 如果编码或名称已存在
+     * <p>在指定工厂下创建新的原材料类型。创建前会进行严格的唯一性验证。</p>
+     *
+     * <h4>验证规则</h4>
+     * <ol>
+     *   <li><b>名称唯一性验证</b>：
+     *     <ul>
+     *       <li>检查同一工厂内是否已存在相同名称的原材料类型</li>
+     *       <li>如果已存在，抛出IllegalArgumentException异常</li>
+     *     </ul>
+     *   </li>
+     *   <li><b>编码唯一性验证</b>（如果提供了编码）：
+     *     <ul>
+     *       <li>检查同一工厂内是否已存在相同编码的原材料类型</li>
+     *       <li>如果已存在，抛出IllegalArgumentException异常</li>
+     *       <li>如果未提供编码（null或空字符串），跳过此验证</li>
+     *     </ul>
+     *   </li>
+     *   <li><b>必填字段验证</b>：
+     *     <ul>
+     *       <li>名称（name）必须提供且不能为空</li>
+     *       <li>单位（unit）如果未提供，会使用默认值"kg"</li>
+     *     </ul>
+     *   </li>
+     * </ol>
+     *
+     * <h4>自动设置字段</h4>
+     * <ul>
+     *   <li><code>id</code>：自动生成UUID字符串</li>
+     *   <li><code>factoryId</code>：从参数中获取（由Controller层设置）</li>
+     *   <li><code>isActive</code>：默认为true（如果未设置）</li>
+     *   <li><code>unit</code>：默认为"kg"（如果未设置）</li>
+     *   <li><code>createdAt</code>：自动设置为当前时间（通过@PrePersist）</li>
+     *   <li><code>updatedAt</code>：自动设置为当前时间（通过@PrePersist）</li>
+     * </ul>
+     *
+     * <h4>事务处理</h4>
+     * <p>本方法使用@Transactional注解，确保数据一致性：</p>
+     * <ul>
+     *   <li>如果验证失败，整个操作会回滚</li>
+     *   <li>如果保存失败，会抛出异常并回滚</li>
+     * </ul>
+     *
+     * @param materialType 原材料类型数据对象（必须包含factoryId和name）
+     * @return 创建成功后的原材料类型对象（包含自动生成的id和时间戳）
+     * @throws IllegalArgumentException 如果名称或编码已存在，或必填字段缺失
+     * @throws RuntimeException 如果数据库操作失败
      */
     @Transactional
     public MaterialType createMaterialType(MaterialType materialType) {

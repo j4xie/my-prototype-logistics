@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.MaterialType;
 import com.cretas.aims.service.MaterialTypeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,25 +21,56 @@ import java.util.Map;
 /**
  * 原材料类型管理控制器
  *
- * 路径: /api/mobile/{factoryId}/materials/types
+ * <p>本控制器负责处理原材料类型相关的所有HTTP请求，提供完整的CRUD操作和业务查询功能。</p>
  *
- * 提供13个API端点:
- * 1. GET    /materials/types                     - 获取原材料类型列表（分页）
- * 2. POST   /materials/types                     - 创建原材料类型
- * 3. GET    /materials/types/{id}                - 获取单个原材料类型详情
- * 4. PUT    /materials/types/{id}                - 更新原材料类型
- * 5. DELETE /materials/types/{id}                - 删除原材料类型
- * 6. GET    /materials/types/active              - 获取激活的原材料类型列表
- * 7. GET    /materials/types/category/{category} - 按类别获取原材料类型
- * 8. GET    /materials/types/storage-type/{storageType} - 按存储方式获取原材料类型
- * 9. GET    /materials/types/search              - 搜索原材料类型
- * 10. GET   /materials/types/check-code          - 检查原材料编码是否存在
- * 11. GET   /materials/types/categories          - 获取所有类别列表
- * 12. GET   /materials/types/low-stock           - 获取低库存原材料
- * 13. PUT   /materials/types/batch/status        - 批量更新原材料类型状态
+ * <h3>API路径</h3>
+ * <p>基础路径: <code>/api/mobile/{factoryId}/materials/types</code></p>
+ * <p>所有接口都需要在路径中包含工厂ID ({@code factoryId})，确保数据隔离和权限控制。</p>
+ *
+ * <h3>提供的API端点 (共16个)</h3>
+ * <ol>
+ *   <li><b>GET</b>    /materials/types                     - 获取原材料类型列表（支持分页、筛选、排序）</li>
+ *   <li><b>POST</b>   /materials/types                     - 创建新的原材料类型（需验证唯一性）</li>
+ *   <li><b>GET</b>    /materials/types/{id}                - 根据ID获取单个原材料类型详情</li>
+ *   <li><b>PUT</b>    /materials/types/{id}                - 更新指定原材料类型信息</li>
+ *   <li><b>DELETE</b> /materials/types/{id}                - 删除指定原材料类型（软删除或硬删除）</li>
+ *   <li><b>GET</b>    /materials/types/active              - 获取所有激活状态的原材料类型列表（不分页）</li>
+ *   <li><b>GET</b>    /materials/types/category/{category} - 按类别筛选原材料类型（如：海水鱼、淡水鱼）</li>
+ *   <li><b>GET</b>    /materials/types/storage-type/{storageType} - 按存储方式筛选（如：冷冻、冷藏、常温）</li>
+ *   <li><b>GET</b>    /materials/types/search              - 按关键词搜索原材料类型（名称或编码模糊匹配）</li>
+ *   <li><b>GET</b>    /materials/types/check-code          - 检查原材料编码是否已存在（用于前端验证）</li>
+ *   <li><b>GET</b>    /materials/types/categories          - 获取所有唯一的原材料类别列表（去重）</li>
+ *   <li><b>GET</b>    /materials/types/low-stock           - 获取低库存预警的原材料类型列表</li>
+ *   <li><b>PUT</b>    /materials/types/batch/status        - 批量更新多个原材料类型的激活状态</li>
+ *   <li><b>GET</b>    /materials/types/export              - 导出原材料类型列表（Excel）</li>
+ *   <li><b>POST</b>   /materials/types/import              - 批量导入原材料类型（Excel）</li>
+ *   <li><b>GET</b>    /materials/types/export/template     - 下载导入模板（Excel）</li>
+ * </ol>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li><b>唯一性约束</b>：同一工厂内，原材料名称和编码必须唯一</li>
+ *   <li><b>数据隔离</b>：所有操作都基于工厂ID进行数据隔离</li>
+ *   <li><b>状态管理</b>：支持激活/停用状态，停用的原材料类型不会出现在生产相关列表中</li>
+ *   <li><b>关联检查</b>：删除前需检查是否被批次、生产计划等关联使用</li>
+ * </ul>
+ *
+ * <h3>响应格式</h3>
+ * <p>所有接口统一使用 {@link ApiResponse} 包装响应数据，包含以下字段：</p>
+ * <ul>
+ *   <li><code>success</code>: 操作是否成功 (boolean)</li>
+ *   <li><code>code</code>: HTTP状态码 (int)</li>
+ *   <li><code>message</code>: 响应消息 (String)</li>
+ *   <li><code>data</code>: 响应数据 (泛型T)</li>
+ *   <li><code>timestamp</code>: 响应时间戳 (LocalDateTime)</li>
+ * </ul>
  *
  * @author Claude (AI Assistant)
  * @date 2025-11-19
+ * @version 1.0.0
+ * @see MaterialTypeService 业务逻辑层
+ * @see MaterialType 实体类
+ * @see MaterialTypeRepository 数据访问层
  */
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/materials/types")
@@ -57,22 +89,67 @@ public class MaterialTypeController {
     /**
      * 获取原材料类型列表（支持分页和激活状态筛选）
      *
-     * GET /api/mobile/{factoryId}/materials/types?isActive=true&page=0&size=20
+     * <p>根据工厂ID获取原材料类型列表，支持以下功能：</p>
+     * <ul>
+     *   <li>分页查询：通过page和size参数控制分页</li>
+     *   <li>状态筛选：通过isActive参数筛选激活/停用的类型</li>
+     *   <li>排序功能：通过sortBy和sortDirection参数自定义排序</li>
+     * </ul>
+     *
+     * <h4>请求示例</h4>
+     * <pre>
+     * GET /api/mobile/F001/materials/types?isActive=true&page=1&size=20&sortBy=createdAt&sortDirection=DESC
+     * </pre>
+     *
+     * <h4>参数说明</h4>
+     * <ul>
+     *   <li><code>factoryId</code> (路径参数, 必填): 工厂ID</li>
+     *   <li><code>isActive</code> (查询参数, 可选): 是否激活 (true=仅激活, false=仅停用, null=全部)</li>
+     *   <li><code>page</code> (查询参数, 可选, 默认1): 页码（从1开始，前端使用1-based）</li>
+     *   <li><code>size</code> (查询参数, 可选, 默认20): 每页大小</li>
+     *   <li><code>sortBy</code> (查询参数, 可选): 排序字段（如：createdAt, name, category）</li>
+     *   <li><code>sortDirection</code> (查询参数, 可选, 默认DESC): 排序方向（ASC/DESC）</li>
+     * </ul>
+     *
+     * <h4>响应示例</h4>
+     * <pre>
+     * {
+     *   "success": true,
+     *   "code": 200,
+     *   "message": "获取成功",
+     *   "data": {
+     *     "content": [...],  // 原材料类型列表
+     *     "totalElements": 100,
+     *     "totalPages": 5,
+     *     "number": 0,
+     *     "size": 20
+     *   },
+     *   "timestamp": "2025-11-19T10:00:00"
+     * }
+     * </pre>
+     *
+     * @param factoryId 工厂ID（路径参数）
+     * @param isActive 是否激活（可选，null表示查询全部）
+     * @param page 页码（从1开始，默认1，前端使用1-based）
+     * @param size 每页大小（默认20）
+     * @param sortBy 排序字段（可选）
+     * @param sortDirection 排序方向（ASC/DESC，默认DESC）
+     * @return 分页的原材料类型列表
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<MaterialType>>> getMaterialTypes(
             @PathVariable String factoryId,
             @RequestParam(required = false) Boolean isActive,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection) {
         try {
             Page<MaterialType> result = service.getMaterialTypes(factoryId, isActive, page, size, sortBy, sortDirection);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "获取成功", result));
+            return ResponseEntity.ok(ApiResponse.success("获取成功", result));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "获取失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "获取失败: " + e.getMessage()));
         }
     }
 
@@ -83,8 +160,62 @@ public class MaterialTypeController {
     /**
      * 创建新的原材料类型
      *
-     * POST /api/mobile/{factoryId}/materials/types
-     * Body: { "name": "三文鱼", "materialCode": "SWY", "category": "海水鱼", "unit": "kg", "storageType": "冷冻" }
+     * <p>在指定工厂下创建新的原材料类型。创建前会进行以下验证：</p>
+     * <ul>
+     *   <li>名称唯一性：同一工厂内原材料名称不能重复</li>
+     *   <li>编码唯一性：如果提供了编码，同一工厂内编码不能重复</li>
+     *   <li>必填字段：名称、单位等必填字段必须提供</li>
+     * </ul>
+     *
+     * <h4>请求示例</h4>
+     * <pre>
+     * POST /api/mobile/F001/materials/types
+     * Content-Type: application/json
+     *
+     * {
+     *   "name": "三文鱼",
+     *   "materialCode": "SWY",
+     *   "category": "海水鱼",
+     *   "unit": "kg",
+     *   "storageType": "冷冻",
+     *   "description": "挪威进口三文鱼"
+     * }
+     * </pre>
+     *
+     * <h4>字段说明</h4>
+     * <ul>
+     *   <li><code>name</code> (必填): 原材料名称，如"三文鱼"、"带鱼"</li>
+     *   <li><code>materialCode</code> (可选): 原材料编码，如"SWY"、"DY"，用于快速识别</li>
+     *   <li><code>category</code> (可选): 原材料类别，如"海水鱼"、"淡水鱼"、"虾类"、"贝类"</li>
+     *   <li><code>unit</code> (必填, 默认"kg"): 计量单位，如"kg"、"g"、"箱"</li>
+     *   <li><code>storageType</code> (可选): 存储方式，如"冷冻"、"冷藏"、"常温"</li>
+     *   <li><code>description</code> (可选): 原材料描述信息</li>
+     * </ul>
+     *
+     * <h4>响应示例</h4>
+     * <pre>
+     * {
+     *   "success": true,
+     *   "code": 201,
+     *   "message": "创建成功",
+     *   "data": {
+     *     "id": "uuid-string",
+     *     "factoryId": "F001",
+     *     "name": "三文鱼",
+     *     "materialCode": "SWY",
+     *     "category": "海水鱼",
+     *     "unit": "kg",
+     *     "storageType": "冷冻",
+     *     "isActive": true,
+     *     "createdAt": "2025-11-19T10:00:00"
+     *   }
+     * }
+     * </pre>
+     *
+     * @param factoryId 工厂ID（路径参数，会自动设置到materialType对象中）
+     * @param materialType 原材料类型对象（请求体）
+     * @return 创建成功的原材料类型对象
+     * @throws IllegalArgumentException 如果名称或编码已存在
      */
     @PostMapping
     public ResponseEntity<ApiResponse<MaterialType>> createMaterialType(
@@ -94,13 +225,13 @@ public class MaterialTypeController {
             materialType.setFactoryId(factoryId);
             MaterialType created = service.createMaterialType(materialType);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new ApiResponse<>(true, 201, "创建成功", created));
+                    .body(ApiResponse.of(201, "创建成功", created));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, 400, e.getMessage(), null));
+                    .body(ApiResponse.error(400, e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "创建失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "创建失败: " + e.getMessage()));
         }
     }
 
@@ -119,13 +250,13 @@ public class MaterialTypeController {
             @PathVariable String id) {
         try {
             MaterialType materialType = service.getMaterialTypeById(factoryId, id);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "获取成功", materialType));
+            return ResponseEntity.ok(ApiResponse.success("获取成功", materialType));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>(false, 404, e.getMessage(), null));
+                    .body(ApiResponse.error(404, e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "获取失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "获取失败: " + e.getMessage()));
         }
     }
 
@@ -146,16 +277,16 @@ public class MaterialTypeController {
             @RequestBody MaterialType materialType) {
         try {
             MaterialType updated = service.updateMaterialType(factoryId, id, materialType);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "更新成功", updated));
+            return ResponseEntity.ok(ApiResponse.success("更新成功", updated));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>(false, 404, e.getMessage(), null));
+                    .body(ApiResponse.error(404, e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, 400, e.getMessage(), null));
+                    .body(ApiResponse.error(400, e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "更新失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "更新失败: " + e.getMessage()));
         }
     }
 
@@ -174,13 +305,13 @@ public class MaterialTypeController {
             @PathVariable String id) {
         try {
             service.deleteMaterialType(factoryId, id);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "删除成功", null));
+            return ResponseEntity.ok(ApiResponse.success("删除成功", null));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>(false, 404, e.getMessage(), null));
+                    .body(ApiResponse.error(404, e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "删除失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "删除失败: " + e.getMessage()));
         }
     }
 
@@ -198,10 +329,10 @@ public class MaterialTypeController {
             @PathVariable String factoryId) {
         try {
             List<MaterialType> materials = service.getActiveMaterialTypes(factoryId);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "获取成功", materials));
+            return ResponseEntity.ok(ApiResponse.success("获取成功", materials));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "获取失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "获取失败: " + e.getMessage()));
         }
     }
 
@@ -221,10 +352,10 @@ public class MaterialTypeController {
             @PathVariable String category) {
         try {
             List<MaterialType> materials = service.getMaterialTypesByCategory(factoryId, category);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "获取成功", materials));
+            return ResponseEntity.ok(ApiResponse.success("获取成功", materials));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "获取失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "获取失败: " + e.getMessage()));
         }
     }
 
@@ -244,10 +375,10 @@ public class MaterialTypeController {
             @PathVariable String storageType) {
         try {
             List<MaterialType> materials = service.getMaterialTypesByStorageType(factoryId, storageType);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "获取成功", materials));
+            return ResponseEntity.ok(ApiResponse.success("获取成功", materials));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "获取失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "获取失败: " + e.getMessage()));
         }
     }
 
@@ -258,20 +389,20 @@ public class MaterialTypeController {
     /**
      * 搜索原材料类型（按名称或编码模糊匹配）
      *
-     * GET /api/mobile/{factoryId}/materials/types/search?keyword=鱼&page=0&size=20
+     * GET /api/mobile/{factoryId}/materials/types/search?keyword=鱼&page=1&size=20
      */
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<Page<MaterialType>>> searchMaterialTypes(
             @PathVariable String factoryId,
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
             Page<MaterialType> result = service.searchMaterialTypes(factoryId, keyword, page, size);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "搜索成功", result));
+            return ResponseEntity.ok(ApiResponse.success("搜索成功", result));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "搜索失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "搜索失败: " + e.getMessage()));
         }
     }
 
@@ -292,10 +423,10 @@ public class MaterialTypeController {
             boolean exists = service.checkCodeExists(factoryId, materialCode);
             Map<String, Boolean> result = new HashMap<>();
             result.put("exists", exists);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "检查完成", result));
+            return ResponseEntity.ok(ApiResponse.success("检查完成", result));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "检查失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "检查失败: " + e.getMessage()));
         }
     }
 
@@ -313,10 +444,10 @@ public class MaterialTypeController {
             @PathVariable String factoryId) {
         try {
             List<String> categories = service.getCategories(factoryId);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "获取成功", categories));
+            return ResponseEntity.ok(ApiResponse.success("获取成功", categories));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "获取失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "获取失败: " + e.getMessage()));
         }
     }
 
@@ -334,10 +465,10 @@ public class MaterialTypeController {
             @PathVariable String factoryId) {
         try {
             List<MaterialType> materials = service.getLowStockMaterials(factoryId);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "获取成功", materials));
+            return ResponseEntity.ok(ApiResponse.success("获取成功", materials));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "获取失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "获取失败: " + e.getMessage()));
         }
     }
 
@@ -359,10 +490,10 @@ public class MaterialTypeController {
             int count = service.batchUpdateStatus(factoryId, request.getIds(), request.getIsActive());
             Map<String, Integer> result = new HashMap<>();
             result.put("count", count);
-            return ResponseEntity.ok(new ApiResponse<>(true, 200, "批量更新成功，共更新 " + count + " 条记录", result));
+            return ResponseEntity.ok(ApiResponse.success("批量更新成功，共更新 " + count + " 条记录", result));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, 500, "批量更新失败: " + e.getMessage(), null));
+                    .body(ApiResponse.error(500, "批量更新失败: " + e.getMessage()));
         }
     }
 
@@ -455,80 +586,8 @@ public class MaterialTypeController {
     }
 
     // ========================================
-    // 辅助类和响应包装器
+    // 辅助类
     // ========================================
-
-    /**
-     * 统一API响应格式
-     */
-    public static class ApiResponse<T> {
-        private boolean success;
-        private int code;
-        private String message;
-        private T data;
-        private LocalDateTime timestamp;
-
-        public ApiResponse() {
-            this.timestamp = LocalDateTime.now();
-        }
-
-        public ApiResponse(boolean success, int code, String message, T data) {
-            this.success = success;
-            this.code = code;
-            this.message = message;
-            this.data = data;
-            this.timestamp = LocalDateTime.now();
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public void setSuccess(boolean success) {
-            this.success = success;
-        }
-
-        public int getCode() {
-            return code;
-        }
-
-        public void setCode(int code) {
-            this.code = code;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        public T getData() {
-            return data;
-        }
-
-        public void setData(T data) {
-            this.data = data;
-        }
-
-        public LocalDateTime getTimestamp() {
-            return timestamp;
-        }
-
-        public void setTimestamp(LocalDateTime timestamp) {
-            this.timestamp = timestamp;
-        }
-
-        // 静态工厂方法
-        public static <T> ApiResponse<T> success(String message, T data) {
-            return new ApiResponse<>(true, 200, message, data);
-        }
-
-        public static <T> ApiResponse<T> error(String message) {
-            return new ApiResponse<>(false, 500, message, null);
-        }
-    }
 
     /**
      * 批量状态更新请求
