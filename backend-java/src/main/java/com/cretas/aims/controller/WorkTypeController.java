@@ -49,7 +49,7 @@ public class WorkTypeController {
     @Operation(summary = "获取工作类型列表")
     public ApiResponse<PageResponse<WorkTypeDTO>> getWorkTypes(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "0") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
             @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size,
             @RequestParam(defaultValue = "displayOrder") @Parameter(description = "排序字段") String sortBy,
             @RequestParam(defaultValue = "ASC") @Parameter(description = "排序方向") String sortDirection) {
