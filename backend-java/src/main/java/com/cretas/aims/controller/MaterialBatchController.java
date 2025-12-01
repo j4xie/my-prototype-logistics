@@ -27,9 +27,77 @@ import java.util.Map;
 /**
  * 原材料批次管理控制器
  *
+ * <p>本控制器负责处理原材料批次相关的所有HTTP请求，提供完整的批次管理功能。</p>
+ *
+ * <h3>功能说明</h3>
+ * <p>原材料批次管理是生产管理系统的核心模块之一，负责管理原材料的入库、出库、库存、过期处理等全生命周期。</p>
+ *
+ * <h3>API路径</h3>
+ * <p>基础路径: <code>/api/mobile/{factoryId}/material-batches</code></p>
+ *
+ * <h3>提供的API端点 (共24个接口)</h3>
+ * <ol>
+ *   <li><b>GET</b>    /material-batches                          - 获取原材料批次列表（分页，支持关键词搜索）</li>
+ *   <li><b>POST</b>   /material-batches                          - 创建原材料批次（入库）</li>
+ *   <li><b>POST</b>   /material-batches/batch                    - 批量创建材料批次</li>
+ *   <li><b>GET</b>    /material-batches/{batchId}                - 获取原材料批次详情</li>
+ *   <li><b>PUT</b>    /material-batches/{batchId}                - 更新原材料批次</li>
+ *   <li><b>DELETE</b> /material-batches/{batchId}                - 删除原材料批次</li>
+ *   <li><b>GET</b>    /material-batches/material-type/{materialTypeId} - 按材料类型获取批次</li>
+ *   <li><b>GET</b>    /material-batches/status/{status}          - 按状态获取批次</li>
+ *   <li><b>GET</b>    /material-batches/fifo/{materialTypeId}    - 获取FIFO批次（先进先出）</li>
+ *   <li><b>GET</b>    /material-batches/expiring                 - 获取即将过期的批次</li>
+ *   <li><b>GET</b>    /material-batches/expired                  - 获取已过期的批次</li>
+ *   <li><b>GET</b>    /material-batches/inventory/statistics     - 获取库存统计</li>
+ *   <li><b>GET</b>    /material-batches/inventory/valuation      - 获取库存价值</li>
+ *   <li><b>GET</b>    /material-batches/low-stock                - 获取低库存警告</li>
+ *   <li><b>POST</b>   /material-batches/{batchId}/use            - 使用批次材料</li>
+ *   <li><b>POST</b>   /material-batches/{batchId}/adjust         - 调整批次数量</li>
+ *   <li><b>PUT</b>    /material-batches/{batchId}/status         - 更新批次状态</li>
+ *   <li><b>POST</b>   /material-batches/{batchId}/reserve        - 预留批次材料</li>
+ *   <li><b>POST</b>   /material-batches/{batchId}/release        - 释放预留材料</li>
+ *   <li><b>POST</b>   /material-batches/{batchId}/consume        - 消耗批次材料</li>
+ *   <li><b>GET</b>    /material-batches/{batchId}/usage-history  - 获取批次使用历史</li>
+ *   <li><b>POST</b>   /material-batches/handle-expired           - 处理过期批次</li>
+ *   <li><b>POST</b>   /material-batches/{batchId}/convert-to-frozen - 将批次转为冻品</li>
+ *   <li><b>POST</b>   /material-batches/{batchId}/undo-frozen    - 撤销转冻品操作</li>
+ *   <li><b>GET</b>    /material-batches/export                   - 导出库存报表</li>
+ * </ol>
+ *
+ * <h3>批次状态说明</h3>
+ * <ul>
+ *   <li><b>AVAILABLE</b>：可用 - 批次已入库，可以正常使用</li>
+ *   <li><b>RESERVED</b>：已预留 - 批次已被生产计划预留，等待使用</li>
+ *   <li><b>IN_USE</b>：使用中 - 批次正在被生产使用</li>
+ *   <li><b>DEPLETED</b>：已耗尽 - 批次数量已用完</li>
+ *   <li><b>EXPIRED</b>：已过期 - 批次已超过保质期</li>
+ * </ul>
+ *
+ * <h3>核心业务功能</h3>
+ * <ul>
+ *   <li><b>批次入库</b>：创建新的原材料批次，记录入库信息</li>
+ *   <li><b>FIFO出库</b>：按照先进先出原则推荐出库批次</li>
+ *   <li><b>批次预留</b>：为生产计划预留原材料</li>
+ *   <li><b>批次使用</b>：记录原材料的使用情况</li>
+ *   <li><b>过期管理</b>：自动检测和处理过期批次</li>
+ *   <li><b>库存统计</b>：提供库存数量、价值等统计信息</li>
+ * </ul>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li><b>唯一性</b>：批次号（batchNumber）必须全局唯一</li>
+ *   <li><b>数量管理</b>：可用数量 = 入库数量 - 已用数量 - 预留数量</li>
+ *   <li><b>状态流转</b>：AVAILABLE -> RESERVED -> IN_USE -> DEPLETED</li>
+ *   <li><b>过期处理</b>：系统自动检测过期批次并更新状态</li>
+ *   <li><b>数据隔离</b>：所有操作基于工厂ID进行数据隔离</li>
+ * </ul>
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2025-01-09
+ * @see MaterialBatchService 业务逻辑层
+ * @see MaterialBatch 实体类
+ * @see MaterialBatchRepository 数据访问层
  */
 @Slf4j
 @RestController
@@ -112,14 +180,61 @@ public class MaterialBatchController {
 
     /**
      * 获取原材料批次列表（分页）
+     *
+     * <p>根据工厂ID获取原材料批次列表，支持分页、排序和关键词搜索。</p>
+     *
+     * <h4>功能说明</h4>
+     * <ul>
+     *   <li>分页查询：通过page和size参数控制分页</li>
+     *   <li>排序功能：通过sortBy和sortDirection参数自定义排序</li>
+     *   <li>关键词搜索：通过keyword参数搜索批次号或材料类型名称</li>
+     * </ul>
+     *
+     * <h4>请求示例</h4>
+     * <pre>
+     * GET /api/mobile/F001/material-batches?page=1&size=20&sortBy=createdAt&sortDirection=DESC&keyword=MT001
+     * </pre>
+     *
+     * <h4>参数说明</h4>
+     * <ul>
+     *   <li><code>factoryId</code> (路径参数, 必填): 工厂ID</li>
+     *   <li><code>page</code> (查询参数, 可选, 默认1): 页码（从1开始）</li>
+     *   <li><code>size</code> (查询参数, 可选, 默认20): 每页大小</li>
+     *   <li><code>sortBy</code> (查询参数, 可选, 默认createdAt): 排序字段</li>
+     *   <li><code>sortDirection</code> (查询参数, 可选, 默认DESC): 排序方向（ASC/DESC）</li>
+     *   <li><code>keyword</code> (查询参数, 可选): 搜索关键词（批次号或材料类型名称）</li>
+     * </ul>
+     *
+     * <h4>响应示例</h4>
+     * <pre>
+     * {
+     *   "success": true,
+     *   "code": 200,
+     *   "message": "操作成功",
+     *   "data": {
+     *     "content": [...],  // 批次列表
+     *     "totalElements": 100,
+     *     "totalPages": 5,
+     *     "currentPage": 1,
+     *     "pageSize": 20
+     *   }
+     * }
+     * </pre>
+     *
+     * @param factoryId 工厂ID（路径参数，必填）
+     * @param pageRequest 分页请求对象（包含page、size、sortBy、sortDirection、keyword）
+     * @return 分页的批次列表
      */
     @GetMapping
-    @Operation(summary = "获取原材料批次列表（分页）")
+    @Operation(summary = "获取原材料批次列表（分页）", 
+               description = "支持分页、排序和关键词搜索（批次号或材料类型名称）")
     public ApiResponse<PageResponse<MaterialBatchDTO>> getMaterialBatchList(
             @Parameter(description = "工厂ID", required = true)
             @PathVariable @NotBlank String factoryId,
             @Valid PageRequest pageRequest) {
 
+        log.debug("获取原材料批次列表: factoryId={}, page={}, size={}, keyword={}", 
+                 factoryId, pageRequest.getPage(), pageRequest.getSize(), pageRequest.getKeyword());
         PageResponse<MaterialBatchDTO> response = materialBatchService.getMaterialBatchList(factoryId, pageRequest);
         return ApiResponse.success(response);
     }

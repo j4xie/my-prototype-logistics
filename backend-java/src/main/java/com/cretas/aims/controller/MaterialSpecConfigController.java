@@ -18,9 +18,48 @@ import java.util.Map;
 /**
  * 原材料规格配置控制器
  *
+ * <p>本控制器负责处理原材料规格配置相关的所有HTTP请求。</p>
+ *
+ * <h3>功能说明</h3>
+ * <p>原材料规格配置用于管理每个工厂的原材料类别对应的规格选项。例如：</p>
+ * <ul>
+ *   <li>海鲜类别 -> ["整条", "切片", "去骨切片", "鱼块", "鱼排", "虾仁", "去壳"]</li>
+ *   <li>肉类类别 -> ["整块", "切片", "切丁", "绞肉", "排骨", "带骨", "去骨"]</li>
+ *   <li>蔬菜类别 -> ["整颗", "切段", "切丝", "切块", "切片"]</li>
+ * </ul>
+ *
+ * <h3>API路径</h3>
+ * <p>基础路径: <code>/api/mobile/{factoryId}/material-spec-config</code></p>
+ *
+ * <h3>提供的API端点</h3>
+ * <ol>
+ *   <li><b>GET</b>    /material-spec-config                    - 获取工厂的所有规格配置</li>
+ *   <li><b>GET</b>    /material-spec-config/{category}         - 获取指定类别的规格配置</li>
+ *   <li><b>PUT</b>    /material-spec-config/{category}         - 更新指定类别的规格配置</li>
+ *   <li><b>DELETE</b> /material-spec-config/{category}         - 重置为系统默认配置</li>
+ *   <li><b>GET</b>    /material-spec-config/system/defaults    - 获取系统默认配置</li>
+ * </ol>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li><b>系统默认配置</b>：每个类别都有系统预设的默认规格选项</li>
+ *   <li><b>自定义配置</b>：工厂可以自定义每个类别的规格选项</li>
+ *   <li><b>配置优先级</b>：如果工厂有自定义配置，使用自定义配置；否则使用系统默认配置</li>
+ *   <li><b>数据存储</b>：规格列表以JSON格式存储在数据库中</li>
+ * </ul>
+ *
+ * <h3>使用场景</h3>
+ * <ul>
+ *   <li>在创建原材料批次时，根据原材料类别显示对应的规格选项</li>
+ *   <li>管理员可以自定义每个类别的规格选项，以适应不同工厂的业务需求</li>
+ *   <li>支持重置为系统默认配置，方便恢复初始状态</li>
+ * </ul>
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2025-11-04
+ * @see MaterialSpecConfigService 业务逻辑层
+ * @see MaterialSpecConfig 实体类
  */
 @Slf4j
 @RestController

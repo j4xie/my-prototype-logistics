@@ -6,7 +6,6 @@ import com.cretas.aims.service.MaterialSpecConfigService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,9 +17,49 @@ import java.util.stream.Collectors;
 /**
  * 原材料规格配置服务实现
  *
+ * <p>本服务类负责原材料规格配置的业务逻辑处理，包括配置的查询、更新、重置等功能。</p>
+ *
+ * <h3>核心功能</h3>
+ * <ul>
+ *   <li><b>配置查询</b>：获取工厂的规格配置，支持按类别查询</li>
+ *   <li><b>配置更新</b>：更新指定类别的规格选项列表</li>
+ *   <li><b>配置重置</b>：将自定义配置重置为系统默认配置</li>
+ *   <li><b>初始化</b>：为新工厂初始化默认规格配置</li>
+ * </ul>
+ *
+ * <h3>系统默认配置</h3>
+ * <p>系统预设了以下类别的默认规格配置：</p>
+ * <ul>
+ *   <li><b>海鲜</b>：整条、切片、去骨切片、鱼块、鱼排、虾仁、去壳</li>
+ *   <li><b>肉类</b>：整块、切片、切丁、绞肉、排骨、带骨、去骨</li>
+ *   <li><b>蔬菜</b>：整颗、切段、切丝、切块、切片</li>
+ *   <li><b>水果</b>：整个、切片、切块、去皮、带皮</li>
+ *   <li><b>粉类</b>：袋装、散装、桶装</li>
+ *   <li><b>米面</b>：袋装、散装、包装</li>
+ *   <li><b>油类</b>：瓶装、桶装、散装、大桶、小瓶</li>
+ *   <li><b>调料</b>：瓶装、袋装、罐装、散装、盒装</li>
+ *   <li><b>其他</b>：原装、分装、定制</li>
+ * </ul>
+ *
+ * <h3>数据存储格式</h3>
+ * <p>规格列表以JSON数组格式存储在数据库的specifications字段中：</p>
+ * <pre>
+ * ["整条", "切片", "去骨切片", "鱼块", "鱼排"]
+ * </pre>
+ * <p>Service层负责JSON的序列化和反序列化，上层调用者直接使用List&lt;String&gt;。</p>
+ *
+ * <h3>配置优先级</h3>
+ * <ol>
+ *   <li>如果工厂有自定义配置，优先使用自定义配置</li>
+ *   <li>如果工厂没有自定义配置，使用系统默认配置</li>
+ *   <li>如果类别不存在于系统默认配置中，返回空列表</li>
+ * </ol>
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2025-11-04
+ * @see MaterialSpecConfigService 服务接口
+ * @see MaterialSpecConfigRepository 数据访问层
  */
 @Service
 public class MaterialSpecConfigServiceImpl implements MaterialSpecConfigService {
