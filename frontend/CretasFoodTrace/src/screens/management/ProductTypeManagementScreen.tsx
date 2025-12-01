@@ -523,11 +523,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   codeChip: {
-    height: 24,
+    height: 31,
   },
   itemActions: {
     flexDirection: 'row',
     marginLeft: 8,
+    marginTop: 22,
   },
   categoryChip: {
     alignSelf: 'flex-start',
@@ -544,7 +545,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   statusChip: {
-    height: 28,
+    height: 31,
   },
   fab: {
     position: 'absolute',

@@ -29,9 +29,9 @@ import java.util.List;
 )
 public class ProductType extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", length = 11)
-    private Long id;
+    //@GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", length = 100)
+    private String id;
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
     @Column(name = "code", nullable = false, length = 50)

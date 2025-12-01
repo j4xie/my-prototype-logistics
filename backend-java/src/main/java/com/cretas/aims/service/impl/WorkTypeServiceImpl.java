@@ -53,6 +53,7 @@ public class WorkTypeServiceImpl implements WorkTypeService {
         workType.setTypeName(dto.getName());
         workType.setDescription(dto.getDescription());
         workType.setDepartment(dto.getDepartment());
+        workType.setHourlyRate(dto.getHourlyRate());
         workType.setBillingType(dto.getBillingType());
         workType.setHazardLevel(dto.getHazardLevel() != null ? dto.getHazardLevel() : 0);
         workType.setCertificationRequired(dto.getCertificationRequired() != null ? dto.getCertificationRequired() : false);
@@ -149,10 +150,12 @@ public class WorkTypeServiceImpl implements WorkTypeService {
         workType.setTypeName(dto.getName());
         workType.setDescription(dto.getDescription());
         workType.setDepartment(dto.getDepartment());
+        workType.setHourlyRate(dto.getHourlyRate());
         workType.setBillingType(dto.getBillingType());
         workType.setRequiredSkills(dto.getRequiredSkills());
         workType.setColor(dto.getColor());
         workType.setIcon(dto.getIcon());
+        workType.setIsActive(dto.getIsActive());
 
         // 更新危险等级和认证要求
         if (dto.getHazardLevel() != null) {
@@ -372,6 +375,7 @@ public class WorkTypeServiceImpl implements WorkTypeService {
                 .code(workType.getCode())
                 .description(workType.getDescription())
                 .department(workType.getDepartment())
+                .hourlyRate(workType.getHourlyRate())
                 .billingType(workType.getBillingType())
                 .baseRate(workType.getBaseRate())
                 .overtimeRateMultiplier(workType.getOvertimeRateMultiplier())

@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductTypeDTO {
-    private Long id;
+    private String id;
     private String factoryId;
     private String code;
     private String name;
