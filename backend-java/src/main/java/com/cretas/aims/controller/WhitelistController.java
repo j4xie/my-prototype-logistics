@@ -54,7 +54,7 @@ public class WhitelistController {
             @RequestParam(required = false) @Parameter(description = "部门") String department,
             @RequestParam(required = false) @Parameter(description = "角色") String role,
             @RequestParam(required = false) @Parameter(description = "搜索关键词") String keyword,
-            @RequestParam(defaultValue = "0") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
             @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size,
             @RequestParam(defaultValue = "createdAt") @Parameter(description = "排序字段") String sortBy,
             @RequestParam(defaultValue = "DESC") @Parameter(description = "排序方向") String sortDirection) {
@@ -182,7 +182,7 @@ public class WhitelistController {
     public ApiResponse<PageResponse<WhitelistDTO>> searchWhitelist(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestParam @Parameter(description = "搜索关键词") String keyword,
-            @RequestParam(defaultValue = "0") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
             @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
         log.debug("搜索白名单: factoryId={}, keyword={}", factoryId, keyword);
         // 前端使用1-based索引，Spring Data使用0-based索引，需要减1

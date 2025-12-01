@@ -33,6 +33,8 @@ public class WorkTypeDTO {
     private String description;
     @Size(max = 50, message = "部门名称不能超过50个字符")
     private String department;
+    @DecimalMax(value = "9999.99", message = "时薪不能超过9999.99")
+    private BigDecimal hourlyRate;
     private String billingType; // HOURLY, PIECE, DAILY, MONTHLY
     @DecimalMin(value = "0.0", inclusive = false, message = "基础费率必须大于0")
     @DecimalMax(value = "999999.99", message = "基础费率不能超过999999.99")
