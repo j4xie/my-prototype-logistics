@@ -20,7 +20,6 @@ import com.cretas.aims.repository.MaterialConsumptionRepository;
 import com.cretas.aims.repository.ProductionPlanBatchUsageRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.service.MaterialBatchService;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -38,9 +37,73 @@ import java.util.stream.Collectors;
 /**
  * 原材料批次服务实现
  *
+ * <p>本服务类负责原材料批次相关的所有业务逻辑处理，包括批次创建、更新、查询、FIFO出库、过期处理等核心功能。</p>
+ *
+ * <h3>核心功能模块</h3>
+ * <ol>
+ *   <li><b>批次管理</b>
+ *     <ul>
+ *       <li>创建批次：入库操作，自动生成批次号，计算到期日期</li>
+ *       <li>更新批次：修改批次信息（仅限可用状态）</li>
+ *       <li>删除批次：删除未使用的批次</li>
+ *       <li>查询批次：支持多种条件查询和分页</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>库存管理</b>
+ *     <ul>
+ *       <li>FIFO出库：按先进先出原则推荐出库批次</li>
+ *       <li>批次预留：为生产计划预留原材料</li>
+ *       <li>批次使用：记录原材料使用，更新数量</li>
+ *       <li>数量调整：调整批次数量（如损耗、盘点等）</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>过期管理</b>
+ *     <ul>
+ *       <li>过期检测：自动检测即将过期和已过期的批次</li>
+ *       <li>过期处理：批量更新过期批次状态</li>
+ *       <li>预警提醒：提供过期预警功能</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>统计分析</b>
+ *     <ul>
+ *       <li>库存统计：统计库存数量、价值等</li>
+ *       <li>低库存预警：检测低于安全库存的材料</li>
+ *       <li>使用历史：记录批次使用历史</li>
+ *     </ul>
+ *   </li>
+ * </ol>
+ *
+ * <h3>业务规则</h3>
+ * <ul>
+ *   <li><b>批次号生成</b>：自动生成唯一批次号，格式：MT-YYYYMMDD-XXXX</li>
+ *   <li><b>到期日期计算</b>：如果未提供，根据原材料类型的保质期自动计算</li>
+ *   <li><b>数量管理</b>：可用数量 = 入库数量 - 已用数量 - 预留数量</li>
+ *   <li><b>状态流转</b>：AVAILABLE -> RESERVED -> IN_USE -> DEPLETED</li>
+ *   <li><b>FIFO原则</b>：出库时优先使用最早入库的批次</li>
+ *   <li><b>权限控制</b>：所有操作都基于工厂ID进行数据隔离</li>
+ * </ul>
+ *
+ * <h3>事务管理</h3>
+ * <p>关键业务方法使用@Transactional注解，确保数据一致性：</p>
+ * <ul>
+ *   <li>创建、更新、删除操作：使用@Transactional确保原子性</li>
+ *   <li>数量调整：使用@Transactional确保数量计算的准确性</li>
+ *   <li>批量操作：使用@Transactional确保批量操作的一致性</li>
+ * </ul>
+ *
+ * <h3>异常处理</h3>
+ * <ul>
+ *   <li><b>ResourceNotFoundException</b>：当查询的资源不存在时抛出</li>
+ *   <li><b>BusinessException</b>：当业务规则不满足时抛出（如数量不足、状态不允许等）</li>
+ *   <li><b>IllegalArgumentException</b>：当参数不合法时抛出</li>
+ * </ul>
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2025-01-09
+ * @see MaterialBatchService 服务接口
+ * @see MaterialBatchRepository 数据访问层
+ * @see MaterialBatch 实体类
  */
 @Service
 public class MaterialBatchServiceImpl implements MaterialBatchService {
@@ -153,6 +216,29 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         return materialBatchMapper.toDTO(batch);
     }
 
+    /**
+     * 获取原材料批次列表（分页）
+     *
+     * <p>根据工厂ID获取原材料批次列表，支持分页、排序和关键词搜索。</p>
+     *
+     * <h4>功能说明</h4>
+     * <ul>
+     *   <li>支持分页查询：通过page和size参数控制分页</li>
+     *   <li>支持排序：通过sortBy和sortDirection参数自定义排序</li>
+     *   <li>支持关键词搜索：如果提供了keyword，会搜索批次号或材料类型名称</li>
+     * </ul>
+     *
+     * <h4>搜索功能</h4>
+     * <p>当提供keyword参数时，会在以下字段中搜索：</p>
+     * <ul>
+     *   <li>批次号（batchNumber）：精确或模糊匹配</li>
+     *   <li>材料类型名称（materialType.name）：模糊匹配</li>
+     * </ul>
+     *
+     * @param factoryId 工厂ID（必填，用于数据隔离）
+     * @param pageRequest 分页请求对象（包含page、size、sortBy、sortDirection、keyword）
+     * @return 分页的批次列表
+     */
     @Override
     @Transactional(readOnly = true)
     public PageResponse<MaterialBatchDTO> getMaterialBatchList(String factoryId, PageRequest pageRequest) {
@@ -169,7 +255,16 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 sort
             );
 
-        Page<MaterialBatch> batchPage = materialBatchRepository.findByFactoryId(factoryId, pageable);
+        Page<MaterialBatch> batchPage;
+        
+        // 如果提供了关键词，使用搜索方法；否则使用普通查询
+        if (pageRequest.getKeyword() != null && !pageRequest.getKeyword().trim().isEmpty()) {
+            log.debug("搜索原材料批次: factoryId={}, keyword={}", factoryId, pageRequest.getKeyword());
+            batchPage = materialBatchRepository.searchByKeyword(factoryId, pageRequest.getKeyword().trim(), pageable);
+        } else {
+            batchPage = materialBatchRepository.findByFactoryId(factoryId, pageable);
+        }
+        
         List<MaterialBatchDTO> batchDTOs = batchPage.getContent().stream()
                 .map(materialBatchMapper::toDTO)
                 .collect(Collectors.toList());
