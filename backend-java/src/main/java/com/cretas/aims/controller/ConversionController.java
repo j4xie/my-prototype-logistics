@@ -81,7 +81,7 @@ public class ConversionController {
     public ApiResponse<PageResponse<ConversionDTO>> getConversions(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestParam(required = false) @Parameter(description = "是否激活") Boolean isActive,
-            @RequestParam(defaultValue = "0") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
             @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size,
             @RequestParam(defaultValue = "id") @Parameter(description = "排序字段") String sort,
             @RequestParam(defaultValue = "DESC") @Parameter(description = "排序方向") String direction) {

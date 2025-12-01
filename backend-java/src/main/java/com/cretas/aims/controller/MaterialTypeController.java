@@ -63,7 +63,7 @@ public class MaterialTypeController {
     public ResponseEntity<ApiResponse<Page<MaterialType>>> getMaterialTypes(
             @PathVariable String factoryId,
             @RequestParam(required = false) Boolean isActive,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection) {
@@ -264,7 +264,7 @@ public class MaterialTypeController {
     public ResponseEntity<ApiResponse<Page<MaterialType>>> searchMaterialTypes(
             @PathVariable String factoryId,
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
             Page<MaterialType> result = service.searchMaterialTypes(factoryId, keyword, page, size);
