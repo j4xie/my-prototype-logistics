@@ -85,7 +85,7 @@ export default function ConversionRateScreen() {
 
       conversionLogger.info('加载转换率配置数据', { factoryId });
 
-      // 并行加载三类数据
+      // 并行加载三类数据 
       const [materialsRes, productsRes, conversionsRes] = await Promise.all([
         materialTypeApiClient.getMaterialTypes({ factoryId }),
         productTypeApiClient.getProductTypes({ factoryId }),
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#666',
-    marginLeft: -8,
+    marginLeft: 8,
   },
   statsCard: {
     margin: 16,

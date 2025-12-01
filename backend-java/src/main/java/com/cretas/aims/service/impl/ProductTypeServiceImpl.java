@@ -52,7 +52,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         }
 
         ProductType productType = new ProductType();
-        //productType.setId(java.util.UUID.randomUUID().toString());
+        productType.setId(java.util.UUID.randomUUID().toString());
         productType.setFactoryId(factoryId);
         productType.setCode(dto.getCode());
         productType.setName(dto.getName());
@@ -64,7 +64,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         productType.setPackageSpec(dto.getPackageSpec());
         productType.setNotes(dto.getNotes());
         productType.setIsActive(true);
-        //productType.setCreatedBy(20); // TODO: 从当前用户获取
+        productType.setCreatedBy(dto.getCreatedBy());
         productType.setCreatedAt(LocalDateTime.now());
         productType.setUpdatedAt(LocalDateTime.now());
 

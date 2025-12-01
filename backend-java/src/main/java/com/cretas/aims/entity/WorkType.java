@@ -41,6 +41,8 @@ public class WorkType extends BaseEntity {
     private String description;
     @Column(name = "department", length = 50)
     private String department;
+    @Column(name = "hourly_rate", precision = 8, scale = 2)
+    private BigDecimal hourlyRate;
     @Column(name = "billing_type", length = 20)
     private String billingType; // HOURLY, PIECE, DAILY, MONTHLY
     @Column(name = "base_rate", precision = 10, scale = 2)
