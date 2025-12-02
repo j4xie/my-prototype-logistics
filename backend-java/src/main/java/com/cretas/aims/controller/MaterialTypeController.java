@@ -242,7 +242,16 @@ public class MaterialTypeController {
     /**
      * 获取指定ID的原材料类型详情
      *
-     * GET /api/mobile/{factoryId}/materials/types/{id}
+     * <p>根据UUID主键获取单个原材料类型的完整信息。</p>
+     *
+     * <h4>请求示例</h4>
+     * <pre>
+     * GET /api/mobile/F001/materials/types/550e8400-e29b-41d4-a716-446655440000
+     * </pre>
+     *
+     * @param factoryId 工厂ID
+     * @param id 原材料类型ID（UUID格式）
+     * @return 原材料类型详情，如果不存在返回404
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<MaterialType>> getMaterialTypeById(
@@ -267,8 +276,31 @@ public class MaterialTypeController {
     /**
      * 更新原材料类型信息
      *
-     * PUT /api/mobile/{factoryId}/materials/types/{id}
-     * Body: { "name": "更新的名称", "storageType": "冷藏" }
+     * <p>更新指定原材料类型的信息。更新时会验证名称和编码的唯一性。</p>
+     *
+     * <h4>请求示例</h4>
+     * <pre>
+     * PUT /api/mobile/F001/materials/types/{id}
+     * Content-Type: application/json
+     *
+     * {
+     *   "name": "更新的名称",
+     *   "storageType": "冷藏",
+     *   "description": "更新后的描述"
+     * }
+     * </pre>
+     *
+     * <h4>业务规则</h4>
+     * <ul>
+     *   <li>如果更新名称，需验证同工厂内名称唯一</li>
+     *   <li>如果更新编码，需验证同工厂内编码唯一</li>
+     *   <li>只更新请求中提供的字段</li>
+     * </ul>
+     *
+     * @param factoryId 工厂ID
+     * @param id 原材料类型ID
+     * @param materialType 更新的数据
+     * @return 更新后的原材料类型信息
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<MaterialType>> updateMaterialType(
@@ -297,7 +329,18 @@ public class MaterialTypeController {
     /**
      * 删除原材料类型
      *
-     * DELETE /api/mobile/{factoryId}/materials/types/{id}
+     * <p>删除指定的原材料类型。实际为软删除，将 isActive 设置为 false。</p>
+     *
+     * <h4>业务规则</h4>
+     * <ul>
+     *   <li>软删除机制：不物理删除，保留数据用于审计</li>
+     *   <li>删除后该类型不会出现在激活列表中</li>
+     *   <li>已被批次引用的类型仍可查看历史记录</li>
+     * </ul>
+     *
+     * @param factoryId 工厂ID
+     * @param id 原材料类型ID
+     * @return 删除成功返回200，不存在返回404
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteMaterialType(
@@ -322,7 +365,17 @@ public class MaterialTypeController {
     /**
      * 获取所有激活状态的原材料类型（不分页）
      *
-     * GET /api/mobile/{factoryId}/materials/types/active
+     * <p>获取工厂内所有激活状态的原材料类型，通常用于下拉选择框。</p>
+     *
+     * <h4>使用场景</h4>
+     * <ul>
+     *   <li>创建批次时选择原材料类型</li>
+     *   <li>生产计划中选择材料</li>
+     *   <li>库存统计筛选</li>
+     * </ul>
+     *
+     * @param factoryId 工厂ID
+     * @return 激活状态的原材料类型列表（按名称排序）
      */
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<List<MaterialType>>> getActiveMaterialTypes(
