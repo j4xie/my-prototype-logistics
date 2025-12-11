@@ -17,7 +17,7 @@ export interface Supplier {
   code: string; // 别名，指向supplierCode
   name: string;
   contactPerson?: string;
-  contactPhone?: string;
+  phone?: string;
   email?: string;
   address?: string;
   businessType?: string;
@@ -48,7 +48,7 @@ export interface CreateSupplierRequest {
   supplierCode: string;
   name: string;
   contactPerson?: string;
-  contactPhone?: string;
+  phone?: string;
   email?: string;
   address?: string;
   businessType?: string;

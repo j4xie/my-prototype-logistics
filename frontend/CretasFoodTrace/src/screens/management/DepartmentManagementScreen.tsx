@@ -84,7 +84,7 @@ export default function DepartmentManagementScreen() {
       setLoading(true);
       const response: ApiResponse<PagedResponse<DepartmentDTO>> = await departmentApiClient.getDepartments({
         factoryId: getFactoryId(user),
-        page: 0,
+        page: 1,
         size: 100,
         sortBy: 'displayOrder',
         sortDirection: 'ASC',
@@ -143,7 +143,7 @@ export default function DepartmentManagementScreen() {
       const response: ApiResponse<PagedResponse<DepartmentDTO>> = await departmentApiClient.searchDepartments({
         keyword: searchQuery,
         factoryId: getFactoryId(user),
-        page: 0,
+        page: 1,
         size: 100,
       });
 

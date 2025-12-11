@@ -52,9 +52,9 @@ public class SupplierServiceImpl implements SupplierService {
         // 创建供应商实体
         Supplier supplier = supplierMapper.toEntity(request, factoryId, userId);
         // 生成UUID作为ID
-        supplier.setId(java.util.UUID.randomUUID().toString());
+        //supplier.setId(java.util.UUID.randomUUID().toString());
         // 确保供应商代码唯一
-        String baseCode = supplier.getSupplierCode();
+        String baseCode = "SUP";//supplier.getSupplierCode();
         int counter = 0;
         while (supplierRepository.existsBySupplierCode(supplier.getSupplierCode())) {
             counter++;
