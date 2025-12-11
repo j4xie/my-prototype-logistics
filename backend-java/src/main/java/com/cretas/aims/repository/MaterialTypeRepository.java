@@ -14,23 +14,50 @@ import java.util.Optional;
 /**
  * 原材料类型数据访问层
  *
- * 提供13个API端点的数据库查询支持:
- * 1. GET /materials/types - 分页列表
- * 2. POST /materials/types - 创建
- * 3. GET /materials/types/{id} - 详情
- * 4. PUT /materials/types/{id} - 更新
- * 5. DELETE /materials/types/{id} - 删除
- * 6. GET /materials/types/active - 激活列表
- * 7. GET /materials/types/category/{category} - 按类别
- * 8. GET /materials/types/storage-type/{storageType} - 按存储方式
- * 9. GET /materials/types/search - 搜索
- * 10. GET /materials/types/check-code - 检查编码
- * 11. GET /materials/types/categories - 类别列表
- * 12. GET /materials/types/low-stock - 低库存（需关联库存表）
- * 13. PUT /materials/types/batch/status - 批量更新状态
+ * <p>本接口继承自JpaRepository，提供原材料类型实体的基础CRUD操作和自定义查询方法。</p>
+ *
+ * <h3>功能分类</h3>
+ * <ol>
+ *   <li><b>基础查询</b>：按工厂ID、激活状态等条件查询（支持分页）</li>
+ *   <li><b>条件查询</b>：按类别、存储方式等条件筛选</li>
+ *   <li><b>搜索功能</b>：按关键词模糊搜索名称或编码</li>
+ *   <li><b>唯一性检查</b>：检查名称或编码是否已存在</li>
+ *   <li><b>批量操作</b>：批量查询、批量删除等</li>
+ *   <li><b>统计查询</b>：统计数量、获取唯一值列表等</li>
+ * </ol>
+ *
+ * <h3>查询方法命名规范</h3>
+ * <p>Spring Data JPA根据方法名自动生成查询，命名规范如下：</p>
+ * <ul>
+ *   <li><code>findBy</code>：查询方法前缀</li>
+ *   <li><code>FactoryId</code>：按工厂ID查询（必填，用于数据隔离）</li>
+ *   <li><code>And</code>：条件连接符（AND逻辑）</li>
+ *   <li><code>IsActive</code>：按激活状态查询</li>
+ *   <li><code>Category</code>：按类别查询</li>
+ *   <li><code>StorageType</code>：按存储方式查询</li>
+ * </ul>
+ *
+ * <h3>自定义查询</h3>
+ * <p>使用@Query注解定义JPQL查询：</p>
+ * <ul>
+ *   <li><code>searchByKeyword</code>：模糊搜索名称或编码</li>
+ *   <li><code>findDistinctCategoriesByFactoryId</code>：获取唯一的类别列表</li>
+ *   <li><code>findLowStockMaterials</code>：查找低库存原材料（需关联库存表）</li>
+ * </ul>
+ *
+ * <h3>性能优化建议</h3>
+ * <ul>
+ *   <li>所有查询都基于factoryId，确保数据隔离和查询效率</li>
+ *   <li>分页查询使用Pageable参数，避免一次性加载大量数据</li>
+ *   <li>唯一性检查使用exists方法，比find方法更高效</li>
+ *   <li>统计查询使用count方法，避免加载实体对象</li>
+ * </ul>
  *
  * @author Claude (AI Assistant)
  * @date 2025-11-19
+ * @version 1.0.0
+ * @see MaterialType 实体类
+ * @see MaterialTypeService 业务逻辑层
  */
 @Repository
 public interface MaterialTypeRepository extends JpaRepository<MaterialType, String> {
@@ -86,7 +113,7 @@ public interface MaterialTypeRepository extends JpaRepository<MaterialType, Stri
      * 搜索原材料类型（按名称或编码模糊匹配）
      */
     @Query("SELECT m FROM MaterialType m WHERE m.factoryId = :factoryId " +
-           "AND (m.name LIKE %:keyword% OR m.materialCode LIKE %:keyword%)")
+           "AND (m.name LIKE CONCAT('%', :keyword, '%') OR m.materialCode LIKE CONCAT('%', :keyword, '%'))")
     Page<MaterialType> searchByKeyword(@Param("factoryId") String factoryId,
                                        @Param("keyword") String keyword,
                                        Pageable pageable);

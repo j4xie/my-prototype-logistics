@@ -17,9 +17,74 @@ import java.util.Optional;
 /**
  * 原材料批次数据访问接口
  *
+ * <p>本接口继承自JpaRepository，提供原材料批次实体的基础CRUD操作和复杂的业务查询方法。</p>
+ *
+ * <h3>功能分类</h3>
+ * <ol>
+ *   <li><b>基础查询</b>：按工厂ID、批次号、状态等条件查询</li>
+ *   <li><b>FIFO查询</b>：按先进先出原则查询可用批次</li>
+ *   <li><b>过期管理</b>：查询即将过期和已过期的批次</li>
+ *   <li><b>库存统计</b>：计算库存总值、按类型统计数量等</li>
+ *   <li><b>关联查询</b>：按材料类型、供应商等关联查询</li>
+ * </ol>
+ *
+ * <h3>核心查询方法说明</h3>
+ * <ul>
+ *   <li><b>findAvailableBatchesFIFO</b>：
+ *     <ul>
+ *       <li>功能：按FIFO（先进先出）原则查找可用批次</li>
+ *       <li>排序：按入库日期（receiptDate）升序，ID升序</li>
+ *       <li>条件：状态为AVAILABLE，可用数量大于0</li>
+ *       <li>用途：生产出库时推荐使用最早入库的批次</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>findExpiringBatches</b>：
+ *     <ul>
+ *       <li>功能：查找即将过期的批次</li>
+ *       <li>条件：过期日期在当前日期和警告日期之间</li>
+ *       <li>排序：按过期日期升序</li>
+ *       <li>用途：库存预警，提醒及时使用</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>findExpiredBatches</b>：
+ *     <ul>
+ *       <li>功能：查找已过期的批次</li>
+ *       <li>条件：过期日期小于当前日期，状态不是EXPIRED</li>
+ *       <li>用途：过期批次处理</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>calculateInventoryValue</b>：
+ *     <ul>
+ *       <li>功能：计算库存总价值</li>
+ *       <li>公式：SUM((入库数量 - 已用数量 - 预留数量) × 单价)</li>
+ *       <li>条件：仅统计可用状态的批次</li>
+ *     </ul>
+ *   </li>
+ * </ul>
+ *
+ * <h3>查询性能优化</h3>
+ * <ul>
+ *   <li>所有查询都基于factoryId，确保数据隔离</li>
+ *   <li>使用索引字段进行排序（如receiptDate、expireDate）</li>
+ *   <li>统计查询使用聚合函数，避免加载实体对象</li>
+ *   <li>分页查询使用Pageable参数</li>
+ * </ul>
+ *
+ * <h3>数据库索引建议</h3>
+ * <p>建议在以下字段上创建索引以提高查询性能：</p>
+ * <ul>
+ *   <li><code>factory_id</code>：所有查询的基础条件</li>
+ *   <li><code>status</code>：状态筛选</li>
+ *   <li><code>expire_date</code>：过期查询</li>
+ *   <li><code>material_type_id</code>：按材料类型查询</li>
+ *   <li><code>batch_number</code>：批次号查询（唯一索引）</li>
+ * </ul>
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2025-01-09
+ * @see MaterialBatch 实体类
+ * @see MaterialBatchService 业务逻辑层
  */
 @Repository
 public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, String> {
@@ -33,6 +98,35 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
      * 查找工厂的原材料批次
      */
     Page<MaterialBatch> findByFactoryId(String factoryId, Pageable pageable);
+
+    /**
+     * 搜索原材料批次（按批次号或材料类型名称模糊匹配）
+     * 
+     * <p>搜索功能说明：</p>
+     * <ul>
+     *   <li>批次号搜索：支持精确或模糊匹配批次号</li>
+     *   <li>材料类型名称搜索：通过关联的RawMaterialType实体搜索材料类型名称</li>
+     * </ul>
+     * 
+     * <p>查询逻辑：</p>
+     * <ul>
+     *   <li>使用LEFT JOIN关联RawMaterialType实体</li>
+     *   <li>在批次号（batchNumber）和材料类型名称（materialType.name）中搜索关键词</li>
+     *   <li>使用LIKE进行模糊匹配，支持部分匹配</li>
+     * </ul>
+     * 
+     * @param factoryId 工厂ID（必填，用于数据隔离）
+     * @param keyword 搜索关键词（批次号或材料类型名称，支持模糊匹配）
+     * @param pageable 分页参数
+     * @return 分页的批次列表
+     */
+    @Query("SELECT m FROM MaterialBatch m " +
+           "LEFT JOIN m.materialType mt " +
+           "WHERE m.factoryId = :factoryId " +
+           "AND (m.batchNumber LIKE CONCAT('%', :keyword, '%') OR mt.name LIKE CONCAT('%', :keyword, '%'))")
+    Page<MaterialBatch> searchByKeyword(@Param("factoryId") String factoryId,
+                                        @Param("keyword") String keyword,
+                                        Pageable pageable);
 
     /**
      * 根据状态查找批次
