@@ -45,7 +45,7 @@ public class WhitelistServiceImpl implements WhitelistService {
 
     @Override
     @Transactional
-    public WhitelistDTO.BatchResult batchAdd(String factoryId, WhitelistDTO.BatchAddRequest request) {
+    public WhitelistDTO.BatchResult batchAdd(String factoryId, Integer userId, WhitelistDTO.BatchAddRequest request) {
         log.info("批量添加白名单: factoryId={}, count={}", factoryId, request.getEntries().size());
         WhitelistDTO.BatchResult result = WhitelistDTO.BatchResult.builder()
                 .successCount(0)
@@ -53,7 +53,7 @@ public class WhitelistServiceImpl implements WhitelistService {
                 .successPhones(new ArrayList<>())
                 .failedEntries(new ArrayList<>())
                 .build();
-        Integer currentUserId = SecurityUtils.getCurrentUserId();
+        Integer currentUserId = userId;//SecurityUtils.getCurrentUserId();
         for (WhitelistDTO.WhitelistEntry entry : request.getEntries()) {
             try {
                 // 检查是否已存在

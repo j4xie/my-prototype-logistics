@@ -19,7 +19,7 @@ public interface WhitelistService {
      * @param request 批量添加请求
      * @return 批量操作结果
      */
-    WhitelistDTO.BatchResult batchAdd(String factoryId, WhitelistDTO.BatchAddRequest request);
+    WhitelistDTO.BatchResult batchAdd(String factoryId, Integer userId, WhitelistDTO.BatchAddRequest request);
      /**
      * 获取白名单列表
      * @param queryRequest 查询条件
