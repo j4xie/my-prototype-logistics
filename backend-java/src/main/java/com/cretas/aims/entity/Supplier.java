@@ -29,6 +29,7 @@ import java.util.List;
 )
 public class Supplier extends BaseEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, length = 191)
     private String id;
     @Column(name = "factory_id", nullable = false)

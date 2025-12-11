@@ -28,7 +28,8 @@ import java.util.List;
 )
 public class Customer extends BaseEntity {
     @Id
-    @Column(name = "id", nullable = false, length = 191)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false, length = 11)
     private String id;
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
