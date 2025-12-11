@@ -94,8 +94,9 @@ export default function MaterialTypeManagementScreen() {
     try {
       materialTypeLogger.debug('加载规格配置', { factoryId });
       const response = await materialSpecApiClient.getSpecConfig(factoryId);
-      materialTypeLogger.info('规格配置加载成功', { hasData: !!response.data });
-      setSpecConfig(response.data);
+      materialTypeLogger.info('规格配置加载成功', { hasData: !!response?.data });
+      // 确保 specConfig 不会被设置为 undefined
+      setSpecConfig(response?.data || DEFAULT_SPEC_CONFIG);
     } catch (error) {
       materialTypeLogger.warn('规格配置加载失败，使用默认配置', error);
       setSpecConfig(DEFAULT_SPEC_CONFIG);
