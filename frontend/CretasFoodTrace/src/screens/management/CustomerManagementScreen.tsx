@@ -523,15 +523,17 @@ export default function CustomerManagementScreen() {
 
           <ScrollView style={styles.modalScrollView}>
             {/* Customer Code */}
-            <TextInput
-              label="客户编码 *"
-              value={formData.customerCode}
-              onChangeText={(text) => setFormData({ ...formData, customerCode: text })}
-              mode="outlined"
-              style={styles.input}
-              disabled={!!editingCustomer}
-              placeholder="例如：CUS001"
-            />
+            {
+              editingCustomer && <TextInput
+                label="客户编码 *"
+                value={formData.customerCode}
+                onChangeText={(text) => setFormData({ ...formData, customerCode: text })}
+                mode="outlined"
+                style={styles.input}
+                disabled={!!editingCustomer}
+                placeholder="例如：CUS001"
+              />
+            }
 
             {/* Name */}
             <TextInput

@@ -54,7 +54,7 @@ export default function SupplierManagementScreen() {
     supplierCode: '',
     name: '',
     contactPerson: '',
-    contactPhone: '',
+    phone: '',
     email: '',
     address: '',
     businessType: '',
@@ -135,7 +135,7 @@ export default function SupplierManagementScreen() {
       supplierCode: '',
       name: '',
       contactPerson: '',
-      contactPhone: '',
+      phone: '',
       email: '',
       address: '',
       businessType: '',
@@ -153,7 +153,7 @@ export default function SupplierManagementScreen() {
       supplierCode: supplier.supplierCode,
       name: supplier.name,
       contactPerson: supplier.contactPerson || '',
-      contactPhone: supplier.contactPhone || '',
+      phone: supplier.phone || '',
       email: supplier.email || '',
       address: supplier.address || '',
       businessType: supplier.businessType || '',
@@ -167,7 +167,7 @@ export default function SupplierManagementScreen() {
 
   const handleSave = async () => {
     // 验证必填项
-    if (!formData.name || !formData.contactPhone) {
+    if (!formData.name || !formData.phone) {
       Alert.alert('提示', '供应商名称和联系电话不能为空');
       return;
     }
@@ -389,10 +389,10 @@ export default function SupplierManagementScreen() {
                       <Text style={styles.infoText}>{supplier.contactPerson}</Text>
                     </View>
                   )}
-                  {supplier.contactPhone && (
+                  {supplier.phone && (
                     <View style={styles.infoRow}>
                       <List.Icon icon="phone" style={styles.infoIcon} />
-                      <Text style={styles.infoText}>{supplier.contactPhone}</Text>
+                      <Text style={styles.infoText}>{supplier.phone}</Text>
                     </View>
                   )}
                   {supplier.businessType && (
@@ -462,15 +462,17 @@ export default function SupplierManagementScreen() {
           <ScrollView style={styles.modalScrollView}>
 
             {/* Supplier Code */}
-            <TextInput
-              label="供应商编码 *"
-              value={formData.supplierCode}
-              onChangeText={(text) => setFormData({ ...formData, supplierCode: text })}
-              mode="outlined"
-              style={styles.input}
-              disabled={!!editingSupplier}
-              placeholder="例如：SUP001"
-            />
+            {
+              editingSupplier && <TextInput
+                label="供应商编码 *"
+                value={formData.supplierCode}
+                onChangeText={(text) => setFormData({ ...formData, supplierCode: text })}
+                mode="outlined"
+                style={styles.input}
+                disabled={!!editingSupplier}
+                placeholder="例如：SUP001"
+              />
+            }
 
             {/* Name */}
             <TextInput
@@ -495,8 +497,8 @@ export default function SupplierManagementScreen() {
             {/* Contact Phone */}
             <TextInput
               label="联系电话 *"
-              value={formData.contactPhone}
-              onChangeText={(text) => setFormData({ ...formData, contactPhone: text })}
+              value={formData.phone}
+              onChangeText={(text) => setFormData({ ...formData, phone: text })}
               mode="outlined"
               style={styles.input}
               keyboardType="phone-pad"
