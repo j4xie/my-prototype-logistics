@@ -3,7 +3,9 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.WhitelistDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.WhitelistService;
+import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,15 +35,21 @@ import java.util.List;
 public class WhitelistController {
 
     private final WhitelistService whitelistService;
+    private final MobileService mobileService;
 
     @PostMapping("/batch")
     @Operation(summary = "批量添加白名单")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<WhitelistDTO.BatchResult> batchAdd(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestHeader("Authorization") String authorization,
             @RequestBody @Valid WhitelistDTO.BatchAddRequest request) {
         log.info("批量添加白名单: factoryId={}, count={}", factoryId, request.getEntries().size());
-        WhitelistDTO.BatchResult result = whitelistService.batchAdd(factoryId, request);
+        // 获取当前用户ID
+        String token = TokenUtils.extractToken(authorization);
+        Integer userId = mobileService.getUserFromToken(token).getId();
+
+        WhitelistDTO.BatchResult result = whitelistService.batchAdd(factoryId, userId, request);
         return ApiResponse.success(result);
     }
 
