@@ -52,9 +52,9 @@ public class CustomerServiceImpl implements CustomerService {
         // 创建客户实体
         Customer customer = customerMapper.toEntity(request, factoryId, userId);
         // 生成UUID作为ID
-        customer.setId(java.util.UUID.randomUUID().toString());
+        //customer.setId(java.util.UUID.randomUUID().toString());
         // 确保客户代码唯一
-        String baseCode = customer.getCustomerCode();
+        String baseCode = "CUS";//customer.getCustomerCode();
         int counter = 0;
         while (customerRepository.existsByCustomerCode(customer.getCustomerCode())) {
             counter++;
