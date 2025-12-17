@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商户审核 - 白垩纪食品溯源管理后台</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+
+  <style>
+    /* 审核队列 */
+    .review-queue {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .queue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .queue-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+    }
+
+    .queue-tabs {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    .queue-tab {
+      padding: var(--spacing-sm) var(--spacing-lg);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .queue-tab.active {
+      background: var(--primary-color);
+      color: var(--text-inverse);
+    }
+
+    .queue-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--spacing-md);
+    }
+
+    .queue-item {
+      padding: var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .queue-item:hover {
+      border-color: var(--primary-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .queue-item.active {
+      border-color: var(--primary-color);
+      background: rgba(102, 126, 234, 0.05);
+    }
+
+    .queue-item-name {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .queue-item-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    /* 商户详情 */
+    .merchant-details {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--spacing-lg);
+    }
+
+    .details-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2xl);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-2xl);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .details-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+    }
+
+    .details-section {
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .details-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .details-section-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .details-row {
+      display: flex;
+      padding: var(--spacing-md) 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .details-row:last-child {
+      border-bottom: none;
+    }
+
+    .details-label {
+      width: 120px;
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .details-value {
+      flex: 1;
+      font-size: var(--font-size-sm);
+      color: var(--text-primary);
+    }
+
+    /* 证件图片 */
+    .license-image {
+      width: 100%;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .license-image:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    /* 审核表单 */
+    .review-form {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2xl);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .form-group {
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .form-label.required::after {
+      content: ' *';
+      color: var(--error-color);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      transition: border-color var(--transition-base);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .decision-buttons {
+      display: flex;
+      gap: var(--spacing-md);
+    }
+
+    .btn-approve {
+      flex: 1;
+      padding: var(--spacing-lg);
+      background: var(--success-color);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .btn-approve:hover {
+      background: #47a519;
+    }
+
+    .btn-reject {
+      flex: 1;
+      padding: var(--spacing-lg);
+      background: var(--error-color);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .btn-reject:hover {
+      background: #d9222c;
+    }
+
+    /* 历史记录 */
+    .history-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .history-result {
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .history-result.approved {
+      color: var(--success-color);
+    }
+
+    .history-result.rejected {
+      color: var(--error-color);
+    }
+
+    .history-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .history-comment {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <!-- 桌面端容器 -->
+  <div class="desktop-container">
+    <!-- 顶部导航栏 -->
+    <div class="desktop-header">
+      <div class="desktop-header-left">
+        <div class="desktop-logo">🍱 白垩纪食品溯源</div>
+      </div>
+      <div class="desktop-header-center">
+        <div class="desktop-search">
+          <input type="text" placeholder="搜索商户、产品、订单..." class="desktop-search-input">
+          <button class="desktop-search-btn"></button>
+        </div>
+      </div>
+      <div class="desktop-header-right">
+        <div class="desktop-header-icon">
+          <span>🔔</span>
+          <span class="desktop-header-badge">5</span>
+        </div>
+        <div class="desktop-header-icon">
+          <span>✉️</span>
+          <span class="desktop-header-badge">12</span>
+        </div>
+        <div class="desktop-user-menu">
+          <div class="desktop-user-avatar"></div>
+          <div class="desktop-user-info">
+            <div class="desktop-user-name">管理员</div>
+            <div class="desktop-user-role">超级管理员</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div class="desktop-sidebar">
+      <div class="desktop-menu">
+        <div class="desktop-menu-item" onclick="navigateTo('../dashboard/overview.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">总览</span>
+        </div>
+        <div class="desktop-menu-item active">
+          <span class="desktop-menu-icon">🏢</span>
+          <span class="desktop-menu-label">商户管理</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../product-management/list.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">产品管理</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../content-control/review-queue.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">内容控制</span>
+        </div>
+        <div class="desktop-menu-item">
+          <span class="desktop-menu-icon">📢</span>
+          <span class="desktop-menu-label">流量广告</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../ai-knowledge/knowledge-base.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">AI知识库</span>
+        </div>
+        <div class="desktop-menu-item">
+          <span class="desktop-menu-icon">📈</span>
+          <span class="desktop-menu-label">分析</span>
+        </div>
+        <div class="desktop-menu-item">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">设置</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="desktop-main">
+      <div class="desktop-content">
+        <!-- 页面标题 -->
+        <div class="desktop-page-header">
+          <div>
+            <h1 class="desktop-page-title">商户审核</h1>
+            <p class="desktop-page-subtitle">审核待入驻商户</p>
+          </div>
+          <div class="desktop-page-actions">
+            <button class="btn btn-default" onclick="navigateTo('list.html')">← 返回列表</button>
+          </div>
+        </div>
+
+        <!-- 审核队列 -->
+        <div class="review-queue">
+          <div class="queue-header">
+            <div class="queue-title">审核队列 (5)</div>
+            <div class="queue-tabs">
+              <button class="queue-tab active">待审核</button>
+              <button class="queue-tab">已通过</button>
+              <button class="queue-tab">已拒绝</button>
+            </div>
+          </div>
+          <div class="queue-list" id="queueList">
+            <!-- 队列项将通过JavaScript动态生成 -->
+          </div>
+        </div>
+
+        <!-- 商户详情和审核表单 -->
+        <div class="merchant-details">
+          <!-- 商户详情 -->
+          <div class="details-card">
+            <div class="details-header">
+              <div class="details-title">商户详细信息</div>
+            </div>
+
+            <!-- 基本信息 -->
+            <div class="details-section">
+              <div class="details-section-title">基本信息</div>
+              <div class="details-row">
+                <div class="details-label">公司名称</div>
+                <div class="details-value" id="companyName">上海餐饮有限公司</div>
+              </div>
+              <div class="details-row">
+                <div class="details-label">统一社会信用代码</div>
+                <div class="details-value" id="creditCode">91310000XXXXXXXXXX</div>
+              </div>
+              <div class="details-row">
+                <div class="details-label">法定代表人</div>
+                <div class="details-value" id="legalPerson">张三</div>
+              </div>
+              <div class="details-row">
+                <div class="details-label">公司地址</div>
+                <div class="details-value" id="address">上海市浦东新区陆家嘴环路1000号</div>
+              </div>
+            </div>
+
+            <!-- 联系信息 -->
+            <div class="details-section">
+              <div class="details-section-title">联系信息</div>
+              <div class="details-row">
+                <div class="details-label">联系人</div>
+                <div class="details-value" id="contact">李四</div>
+              </div>
+              <div class="details-row">
+                <div class="details-label">联系电话</div>
+                <div class="details-value" id="phone">138****1234</div>
+              </div>
+              <div class="details-row">
+                <div class="details-label">电子邮箱</div>
+                <div class="details-value" id="email">lisi@example.com</div>
+              </div>
+            </div>
+
+            <!-- 营业执照 -->
+            <div class="details-section">
+              <div class="details-section-title">营业执照</div>
+              <img
+                src="https://via.placeholder.com/500x300/667eea/ffffff?text=营业执照"
+                alt="营业执照"
+                class="license-image"
+                onclick="viewImage(this.src)"
+              >
+            </div>
+          </div>
+
+          <!-- 审核表单 -->
+          <div>
+            <div class="review-form">
+              <div class="details-header">
+                <div class="details-title">审核操作</div>
+              </div>
+
+              <form id="reviewForm">
+                <div class="form-group">
+                  <label class="form-label required">审核结果</label>
+                  <select class="form-control" id="reviewDecision" required>
+                    <option value="">请选择</option>
+                    <option value="approved">通过</option>
+                    <option value="rejected">拒绝</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label required">审核意见</label>
+                  <textarea
+                    class="form-control form-textarea"
+                    id="reviewComment"
+                    placeholder="请填写审核意见..."
+                    required
+                  ></textarea>
+                </div>
+
+                <div class="decision-buttons">
+                  <button type="button" class="btn-approve" onclick="submitReview('approved')">
+                    ✓ 审核通过
+                  </button>
+                  <button type="button" class="btn-reject" onclick="submitReview('rejected')">
+                    ✕ 审核拒绝
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- 历史审核记录 -->
+            <div class="review-form" style="margin-top: var(--spacing-lg);">
+              <div class="details-header">
+                <div class="details-title">历史审核记录</div>
+              </div>
+              <div class="history-list" id="historyList">
+                <div class="history-item">
+                  <div class="history-header">
+                    <span class="history-result approved">审核通过</span>
+                    <span class="history-time">2024-12-01 10:30</span>
+                  </div>
+                  <div class="history-comment">商户资料完整，审核通过</div>
+                </div>
+                <div class="history-item">
+                  <div class="history-header">
+                    <span class="history-result rejected">审核拒绝</span>
+                    <span class="history-time">2024-11-28 15:20</span>
+                  </div>
+                  <div class="history-comment">营业执照照片不清晰，请重新上传</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/mockAPI.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+
+  <script>
+    // ==================== 全局状态 ====================
+    let pendingMerchants = [];
+    let currentMerchantId = null;
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPendingMerchants();
+    });
+
+    // ==================== 加载待审核商户 ====================
+    async function loadPendingMerchants() {
+      try {
+        const result = await MockAPI.request('admin.merchants.list', {
+          status: 'pending',
+          skipError: true
+        });
+
+        pendingMerchants = result.data.filter(m => m.reviewStatus === 'pending');
+        renderQueueList();
+
+        // 默认选中第一个
+        if (pendingMerchants.length > 0) {
+          selectMerchant(pendingMerchants[0].id);
+        }
+
+      } catch (error) {
+        console.error('加载待审核商户失败:', error);
+        Utils.showToast('加载数据失败', 'error');
+      }
+    }
+
+    // ==================== 渲染队列列表 ====================
+    function renderQueueList() {
+      const queueList = document.getElementById('queueList');
+
+      if (pendingMerchants.length === 0) {
+        queueList.innerHTML = '<div style="text-align: center; padding: var(--spacing-2xl); color: var(--text-tertiary);">暂无待审核商户</div>';
+        return;
+      }
+
+      queueList.innerHTML = pendingMerchants.map(merchant => {
+        const isActive = merchant.id === currentMerchantId;
+        return `
+          <div class="queue-item ${isActive ? 'active' : ''}" onclick="selectMerchant(${merchant.id})">
+            <div class="queue-item-name">${merchant.name}</div>
+            <div class="queue-item-time">${Utils.formatDate(new Date(merchant.registerTime), 'YYYY-MM-DD HH:mm')}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== 选择商户 ====================
+    function selectMerchant(id) {
+      currentMerchantId = id;
+      const merchant = pendingMerchants.find(m => m.id === id);
+
+      if (!merchant) return;
+
+      // 更新队列列表高亮
+      renderQueueList();
+
+      // 更新商户详情
+      document.getElementById('companyName').textContent = merchant.name;
+      document.getElementById('creditCode').textContent = merchant.creditCode || '91310000XXXXXXXXXX';
+      document.getElementById('legalPerson').textContent = merchant.legalPerson || '张三';
+      document.getElementById('address').textContent = merchant.address || '上海市浦东新区陆家嘴环路1000号';
+      document.getElementById('contact').textContent = merchant.contact;
+      document.getElementById('phone').textContent = merchant.phone;
+      document.getElementById('email').textContent = merchant.email || 'contact@example.com';
+
+      // 重置表单
+      document.getElementById('reviewForm').reset();
+    }
+
+    // ==================== 提交审核 ====================
+    async function submitReview(decision) {
+      const comment = document.getElementById('reviewComment').value.trim();
+
+      if (!comment) {
+        Utils.showToast('请填写审核意见', 'warning');
+        return;
+      }
+
+      const merchant = pendingMerchants.find(m => m.id === currentMerchantId);
+      const confirmText = decision === 'approved'
+        ? `确认审核通过商户 "${merchant.name}"？`
+        : `确认拒绝商户 "${merchant.name}"？`;
+
+      const confirmed = await Utils.confirm(confirmText, '确认审核');
+
+      if (confirmed) {
+        const hideLoading = Utils.showLoading('提交审核中...');
+
+        try {
+          await Utils.sleep(1000);
+
+          // 更新商户状态
+          merchant.reviewStatus = decision === 'approved' ? 'active' : 'rejected';
+          merchant.reviewComment = comment;
+          merchant.reviewTime = new Date().toISOString();
+
+          // 从待审核列表移除
+          pendingMerchants = pendingMerchants.filter(m => m.id !== currentMerchantId);
+
+          hideLoading();
+          Utils.showToast('审核提交成功', 'success');
+
+          // 刷新列表
+          renderQueueList();
+
+          // 选择下一个商户
+          if (pendingMerchants.length > 0) {
+            selectMerchant(pendingMerchants[0].id);
+          } else {
+            Utils.showToast('所有商户已审核完毕', 'success');
+            setTimeout(() => {
+              navigateTo('list.html');
+            }, 2000);
+          }
+
+        } catch (error) {
+          hideLoading();
+          Utils.showToast('审核提交失败', 'error');
+        }
+      }
+    }
+
+    // ==================== 查看图片 ====================
+    function viewImage(src) {
+      window.open(src, '_blank');
+    }
+
+    // ==================== 导航函数 ====================
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+  </script>
+</body>
+</html>

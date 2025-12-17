@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>商家详情 - 溯源商城</title>
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    /* 商家特有样式 */
+    .merchant-header {
+        background: var(--bg-white);
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+    .merchant-logo {
+        width: 60px;
+        height: 60px;
+        border-radius: var(--radius-md);
+        background: var(--primary-gradient);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+    }
+    .merchant-info h1 {
+        font-size: var(--font-size-lg);
+        font-weight: bold;
+        margin-bottom: var(--spacing-xs);
+        color: var(--text-primary);
+    }
+    .merchant-meta {
+        font-size: var(--font-size-xs);
+        color: var(--text-tertiary);
+    }
+    
+    .info-section {
+        background: var(--bg-white);
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-md);
+    }
+    .section-title {
+        font-size: var(--font-size-base);
+        font-weight: bold;
+        margin-bottom: var(--spacing-md);
+        border-left: 3px solid var(--primary-color);
+        padding-left: var(--spacing-sm);
+        color: var(--text-primary);
+    }
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid var(--border-color-light);
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        color: var(--text-tertiary);
+        font-size: var(--font-size-sm);
+    }
+    .info-value {
+        color: var(--text-primary);
+        font-size: var(--font-size-sm);
+        text-align: right;
+    }
+    
+    /* 产品列表样式 */
+    .product-list {
+        padding: 0 var(--spacing-md);
+    }
+    .product-card {
+        background: var(--bg-white);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        gap: var(--spacing-md);
+        box-shadow: var(--shadow-sm);
+    }
+    .product-img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+        background: var(--bg-gray);
+    }
+    .product-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .product-name {
+        font-size: var(--font-size-base);
+        font-weight: bold;
+        margin-bottom: var(--spacing-xs);
+        color: var(--text-primary);
+    }
+    .product-price {
+        color: var(--ecommerce-accent);
+        font-weight: bold;
+    }
+
+    /* 底部操作栏 */
+    .bottom-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: var(--bg-white);
+      border-top: 1px solid var(--border-color);
+      padding: var(--spacing-md) var(--spacing-lg);
+      display: flex;
+      gap: var(--spacing-md);
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+      z-index: var(--z-index-sticky);
+      box-sizing: border-box;
+    }
+
+    .action-cart-btn {
+      flex: 1;
+      padding: var(--spacing-md);
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+    
+    .mobile-content {
+        padding-bottom: 80px;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">商家详情</div>
+      <div class="mobile-header-action"></div>
+    </div>
+
+    <div class="mobile-content">
+      <!-- 商家头部 -->
+      <div class="merchant-header">
+        <div class="merchant-logo">工</div>
+        <div class="merchant-info">
+          <h1 id="merchantName">加载中...</h1>
+          <div class="merchant-meta" id="merchantMeta">5年老店 · 品质保证</div>
+        </div>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="info-section">
+        <div class="section-title">基本信息</div>
+        <div class="info-row">
+          <div class="info-label">公司名称</div>
+          <div class="info-value" id="companyName">-</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">地址</div>
+          <div class="info-value" id="merchantAddress">-</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">成立时间</div>
+          <div class="info-value" id="establishDate">-</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">经营范围</div>
+          <div class="info-value">速冻食品生产、冷链物流</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">资质认证</div>
+          <div class="info-value">ISO 9001, HACCP</div>
+        </div>
+      </div>
+
+      <!-- 商家产品 -->
+      <div class="info-section" style="padding: 0; background: transparent;">
+        <div class="section-title" style="margin: var(--spacing-md); background: var(--bg-white); padding: var(--spacing-md); border-radius: var(--radius-md);">热销产品</div>
+        <div class="product-list" id="productList">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- 底部操作栏 -->
+    <div class="bottom-action-bar">
+        <button class="action-cart-btn" onclick="contactService()">🎧 联系客服</button>
+    </div>
+  </div>
+
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/mockAPI.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMerchantDetail();
+    });
+
+    function loadMerchantDetail() {
+        // 模拟商家数据
+        const merchant = {
+            name: '白垩纪食品有限公司',
+            company: '白垩纪食品有限公司',
+            address: '上海市浦东新区食品工业园区',
+            establishDate: '2019年3月',
+            products: MockDB.products.slice(0, 3) // 取前3个产品作为示例
+        };
+
+        document.getElementById('merchantName').textContent = merchant.name;
+        document.getElementById('companyName').textContent = merchant.company;
+        document.getElementById('merchantAddress').textContent = merchant.address;
+        document.getElementById('establishDate').textContent = merchant.establishDate;
+        
+        renderProducts(merchant.products);
+    }
+
+    function renderProducts(products) {
+        const list = document.getElementById('productList');
+        list.innerHTML = products.map(p => `
+            <div class="product-card" onclick="window.location.href='../products/detail.html?id=${p.id}'">
+                <img src="${p.images[0]}" class="product-img">
+                <div class="product-info">
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-price">¥${p.price.base}/${p.price.unit}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function contactService() {
+        Utils.showToast('正在连接客服...', 'info');
+        setTimeout(() => {
+          window.location.href = '../ai-rag/chat.html?type=supplier';
+        }, 1000);
+    }
+  </script>
+</body>
+</html>

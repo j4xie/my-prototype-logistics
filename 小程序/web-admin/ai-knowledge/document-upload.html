@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档上传 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <style>
+    .upload-area {
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-3xl);
+      text-align: center;
+      background: var(--bg-gray);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .upload-area:hover { border-color: var(--primary-color); background: var(--primary-light); }
+    .file-list { margin-top: var(--spacing-xl); }
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-md);
+      background: var(--bg-white);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--spacing-sm);
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-sidebar">
+      <div class="sidebar-header"><h2>溯源商城</h2><p>管理后台</p></div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html">总览</a>
+        <a href="../merchant/list.html">商户管理</a>
+        <a href="../product-management/list.html">产品管理</a>
+        <a href="../content-control/review-queue.html">内容审核</a>
+        <a href="../traffic-ad/ranking-config.html">流量广告</a>
+        <a href="knowledge-base.html" class="active">AI知识库</a>
+        <a href="../analytics/traffic-stats.html">数据分析</a>
+        <a href="../settings/system-config.html">系统设置</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a><span>/</span>
+          <a href="knowledge-base.html">AI知识库</a><span>/</span><span>文档上传</span>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <div style="background: var(--bg-white); padding: var(--spacing-xl); border-radius: var(--radius-md);">
+          <h3 style="margin-bottom: var(--spacing-lg);">上传文档</h3>
+          <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">点击或拖拽文件到此处上传</div>
+            <div style="font-size: 14px; color: var(--text-tertiary);">支持 PDF、Word、Excel、TXT 格式，单个文件不超过 10MB</div>
+            <input type="file" id="fileInput" style="display: none;" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" onchange="handleFileSelect(event)">
+          </div>
+
+          <div class="file-list" id="fileList"></div>
+
+          <div style="margin-top: var(--spacing-xl); display: flex; gap: var(--spacing-md);">
+            <div class="form-group" style="flex: 1; margin: 0;">
+              <label class="form-label">文档分类</label>
+              <select class="form-control">
+                <option>产品知识</option>
+                <option>溯源指南</option>
+                <option>常见问题</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1; margin: 0;">
+              <label class="form-label">标签</label>
+              <input type="text" class="form-control" placeholder="多个标签用逗号分隔">
+            </div>
+          </div>
+
+          <div style="margin-top: var(--spacing-xl);">
+            <button class="btn btn-primary" onclick="uploadFiles()">开始上传</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    let selectedFiles = [];
+    function handleFileSelect(event) {
+      selectedFiles = Array.from(event.target.files);
+      renderFileList();
+    }
+    function renderFileList() {
+      const list = document.getElementById('fileList');
+      list.innerHTML = selectedFiles.map((file, index) => `
+        <div class="file-item">
+          <div><span>📄</span> ${file.name} (${(file.size / 1024).toFixed(2)} KB)</div>
+          <button class="btn btn-sm btn-danger" onclick="removeFile(${index})">删除</button>
+        </div>
+      `).join('');
+    }
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      renderFileList();
+    }
+    async function uploadFiles() {
+      if (selectedFiles.length === 0) {
+        Utils.showToast('请先选择文件', 'error');
+        return;
+      }
+      Utils.showLoading('上传中...');
+      await Utils.sleep(2000);
+      Utils.hideLoading();
+      Utils.showToast(`已上传 ${selectedFiles.length} 个文件`, 'success');
+      selectedFiles = [];
+      renderFileList();
+    }
+  </script>
+</body>
+</html>

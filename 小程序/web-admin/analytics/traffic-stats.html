@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>流量统计 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-sidebar">
+      <div class="sidebar-header"><h2>溯源商城</h2><p>管理后台</p></div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html">总览</a>
+        <a href="../merchant/list.html">商户管理</a>
+        <a href="../product-management/list.html">产品管理</a>
+        <a href="../content-control/review-queue.html">内容审核</a>
+        <a href="../traffic-ad/ranking-config.html">流量广告</a>
+        <a href="../ai-knowledge/knowledge-base.html">AI知识库</a>
+        <a href="traffic-stats.html" class="active">数据分析</a>
+        <a href="../settings/system-config.html">系统设置</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a><span>/</span><span>流量统计</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-default">导出报表</button>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+          <div style="background: var(--bg-white); padding: var(--spacing-lg); border-radius: var(--radius-md); text-align: center;">
+            <div style="font-size: 14px; color: var(--text-tertiary); margin-bottom: 8px;">今日访问量</div>
+            <div style="font-size: 32px; font-weight: bold; color: var(--primary-color);">12,568</div>
+          </div>
+          <div style="background: var(--bg-white); padding: var(--spacing-lg); border-radius: var(--radius-md); text-align: center;">
+            <div style="font-size: 14px; color: var(--text-tertiary); margin-bottom: 8px;">今日UV</div>
+            <div style="font-size: 32px; font-weight: bold; color: var(--primary-color);">8,920</div>
+          </div>
+          <div style="background: var(--bg-white); padding: var(--spacing-lg); border-radius: var(--radius-md); text-align: center;">
+            <div style="font-size: 14px; color: var(--text-tertiary); margin-bottom: 8px;">平均停留（分钟）</div>
+            <div style="font-size: 32px; font-weight: bold; color: var(--primary-color);">5.2</div>
+          </div>
+          <div style="background: var(--bg-white); padding: var(--spacing-lg); border-radius: var(--radius-md); text-align: center;">
+            <div style="font-size: 14px; color: var(--text-tertiary); margin-bottom: 8px;">跳出率</div>
+            <div style="font-size: 32px; font-weight: bold; color: var(--primary-color);">38%</div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-white); padding: var(--spacing-xl); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+          <h3 style="margin-bottom: var(--spacing-lg);">近7天流量趋势</h3>
+          <div style="height: 300px; background: var(--bg-gray); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary);">
+            图表区域（可集成 ECharts）
+          </div>
+        </div>
+
+        <div style="background: var(--bg-white); border-radius: var(--radius-md);">
+          <table class="table">
+            <thead>
+              <tr><th>页面路径</th><th>浏览量</th><th>UV</th><th>平均停留</th><th>跳出率</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>/home</td>
+                <td>8,920</td>
+                <td>6,250</td>
+                <td>3.5分钟</td>
+                <td>32%</td>
+              </tr>
+              <tr>
+                <td>/products</td>
+                <td>5,680</td>
+                <td>4,120</td>
+                <td>6.8分钟</td>
+                <td>25%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+</body>
+</html>

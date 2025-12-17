@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商户列表 - 白垩纪食品溯源管理后台</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+
+  <style>
+    /* 筛选器栏 */
+    .filter-bar {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-row {
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .filter-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .filter-select {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      min-width: 150px;
+      cursor: pointer;
+      transition: border-color var(--transition-base);
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .filter-input {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      min-width: 250px;
+      transition: border-color var(--transition-base);
+    }
+
+    .filter-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    /* 批量操作栏 */
+    .bulk-actions-bar {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.08) 100%);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md) var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .bulk-actions-bar.show {
+      display: flex;
+    }
+
+    .bulk-actions-text {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+
+    .bulk-actions-buttons {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    /* 表格容器 */
+    .table-container {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table thead {
+      background: var(--bg-gray);
+    }
+
+    .table th {
+      padding: var(--spacing-md) var(--spacing-lg);
+      text-align: left;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .table th:hover {
+      background: var(--bg-hover);
+    }
+
+    .table th.sortable::after {
+      content: ' ⇅';
+      opacity: 0.3;
+      font-size: var(--font-size-xs);
+    }
+
+    .table th.sorted-asc::after {
+      content: ' ↑';
+      opacity: 1;
+      color: var(--primary-color);
+    }
+
+    .table th.sorted-desc::after {
+      content: ' ↓';
+      opacity: 1;
+      color: var(--primary-color);
+    }
+
+    .table td {
+      padding: var(--spacing-md) var(--spacing-lg);
+      font-size: var(--font-size-sm);
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .table tbody tr:hover {
+      background: var(--bg-gray);
+    }
+
+    .table tbody tr.selected {
+      background: rgba(102, 126, 234, 0.05);
+    }
+
+    /* 商户信息单元格 */
+    .merchant-info {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+
+    .merchant-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: var(--font-weight-bold);
+      flex-shrink: 0;
+    }
+
+    .merchant-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .merchant-name {
+      font-weight: var(--font-weight-medium);
+      color: var(--text-primary);
+    }
+
+    .merchant-id {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    /* 状态徽章 */
+    .status-badge {
+      display: inline-block;
+      padding: var(--spacing-xs) var(--spacing-md);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .status-badge.active {
+      background: rgba(82, 196, 26, 0.1);
+      color: var(--success-color);
+    }
+
+    .status-badge.pending {
+      background: rgba(250, 173, 20, 0.1);
+      color: var(--warning-color);
+    }
+
+    .status-badge.rejected {
+      background: rgba(245, 34, 45, 0.1);
+      color: var(--error-color);
+    }
+
+    .status-badge.disabled {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--text-tertiary);
+    }
+
+    /* 操作按钮 */
+    .action-buttons {
+      display: flex;
+      gap: var(--spacing-xs);
+    }
+
+    .action-btn {
+      padding: var(--spacing-xs) var(--spacing-sm);
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .action-btn:hover {
+      background: var(--bg-gray);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    /* 分页 */
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-lg);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .pagination-info {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+
+    .pagination-controls {
+      display: flex;
+      gap: var(--spacing-xs);
+    }
+
+    .pagination-btn {
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: var(--bg-white);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: var(--bg-gray);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination-btn.active {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: var(--text-inverse);
+    }
+  </style>
+</head>
+<body>
+  <!-- 桌面端容器 -->
+  <div class="desktop-container">
+    <!-- 顶部导航栏 -->
+    <div class="desktop-header">
+      <div class="desktop-header-left">
+        <div class="desktop-logo">🍱 白垩纪食品溯源</div>
+      </div>
+      <div class="desktop-header-center">
+        <div class="desktop-search">
+          <input type="text" placeholder="搜索商户、产品、订单..." class="desktop-search-input">
+          <button class="desktop-search-btn"></button>
+        </div>
+      </div>
+      <div class="desktop-header-right">
+        <div class="desktop-header-icon" onclick="Utils.showToast('通知功能开发中', 'info')">
+          <span>🔔</span>
+          <span class="desktop-header-badge">5</span>
+        </div>
+        <div class="desktop-header-icon" onclick="Utils.showToast('消息功能开发中', 'info')">
+          <span>✉️</span>
+          <span class="desktop-header-badge">12</span>
+        </div>
+        <div class="desktop-user-menu">
+          <div class="desktop-user-avatar"></div>
+          <div class="desktop-user-info">
+            <div class="desktop-user-name">管理员</div>
+            <div class="desktop-user-role">超级管理员</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div class="desktop-sidebar">
+      <div class="desktop-menu">
+        <div class="desktop-menu-item" onclick="navigateTo('../dashboard/overview.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">总览</span>
+        </div>
+        <div class="desktop-menu-item active">
+          <span class="desktop-menu-icon">🏢</span>
+          <span class="desktop-menu-label">商户管理</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../product-management/list.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">产品管理</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../content-control/review-queue.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">内容控制</span>
+        </div>
+        <div class="desktop-menu-item" onclick="Utils.showToast('流量广告功能开发中', 'info')">
+          <span class="desktop-menu-icon">📢</span>
+          <span class="desktop-menu-label">流量广告</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../ai-knowledge/knowledge-base.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">AI知识库</span>
+        </div>
+        <div class="desktop-menu-item" onclick="Utils.showToast('分析功能开发中', 'info')">
+          <span class="desktop-menu-icon">📈</span>
+          <span class="desktop-menu-label">分析</span>
+        </div>
+        <div class="desktop-menu-item" onclick="Utils.showToast('设置功能开发中', 'info')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">设置</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="desktop-main">
+      <div class="desktop-content">
+        <!-- 页面标题 -->
+        <div class="desktop-page-header">
+          <div>
+            <h1 class="desktop-page-title">商户列表</h1>
+            <p class="desktop-page-subtitle">管理所有入驻商户</p>
+          </div>
+          <div class="desktop-page-actions">
+            <button class="btn btn-default" onclick="loadMerchants()">🔄 刷新</button>
+            <button class="btn btn-default" onclick="Utils.showToast('导出功能开发中', 'info')">📥 导出</button>
+            <button class="btn btn-primary" onclick="Utils.showToast('添加商户功能开发中', 'info')">+ 添加商户</button>
+          </div>
+        </div>
+
+        <!-- 筛选器 -->
+        <div class="filter-bar">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label class="filter-label">状态</label>
+              <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+                <option value="">全部状态</option>
+                <option value="active">已激活</option>
+                <option value="pending">待审核</option>
+                <option value="rejected">已拒绝</option>
+                <option value="disabled">已禁用</option>
+              </select>
+            </div>
+
+            <div class="filter-item">
+              <label class="filter-label">搜索</label>
+              <input
+                type="text"
+                class="filter-input"
+                id="searchInput"
+                placeholder="搜索商户名称、联系人、电话..."
+                oninput="applyFilters()"
+              >
+            </div>
+
+            <div class="filter-item" style="align-self: flex-end;">
+              <button class="btn btn-default" onclick="resetFilters()">重置筛选</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 批量操作栏 -->
+        <div class="bulk-actions-bar" id="bulkActionsBar">
+          <div class="bulk-actions-text">已选择 <strong id="selectedCount">0</strong> 个商户</div>
+          <div class="bulk-actions-buttons">
+            <button class="btn btn-default" onclick="bulkAction('approve')">批量审核通过</button>
+            <button class="btn btn-default" onclick="bulkAction('disable')">批量禁用</button>
+            <button class="btn btn-link" onclick="clearSelection()">取消选择</button>
+          </div>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">
+                  <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                </th>
+                <th class="sortable" onclick="sortTable('name')">商户信息</th>
+                <th class="sortable" onclick="sortTable('contact')">联系人</th>
+                <th class="sortable" onclick="sortTable('phone')">联系电话</th>
+                <th class="sortable" onclick="sortTable('status')">状态</th>
+                <th class="sortable" onclick="sortTable('registerTime')">注册时间</th>
+                <th style="width: 200px;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="merchantTableBody">
+              <!-- 数据将通过JavaScript动态生成 -->
+            </tbody>
+          </table>
+
+          <!-- 分页 -->
+          <div class="pagination">
+            <div class="pagination-info" id="paginationInfo">
+              显示 1-10 / 共 156 条
+            </div>
+            <div class="pagination-controls">
+              <button class="pagination-btn" id="prevBtn" onclick="goToPage(currentPage - 1)" disabled>
+                上一页
+              </button>
+              <button class="pagination-btn active">1</button>
+              <button class="pagination-btn" onclick="goToPage(2)">2</button>
+              <button class="pagination-btn" onclick="goToPage(3)">3</button>
+              <button class="pagination-btn">...</button>
+              <button class="pagination-btn" onclick="goToPage(16)">16</button>
+              <button class="pagination-btn" id="nextBtn" onclick="goToPage(currentPage + 1)">
+                下一页
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/mockAPI.js"></script>
+  <script src="../../assets/js/listHelper.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+
+  <script>
+    // ==================== 全局状态 ====================
+    let allMerchants = [];
+    let filteredMerchants = [];
+    let selectedMerchants = new Set();
+    let currentPage = 1;
+    let pageSize = 10;
+    let sortBy = 'registerTime';
+    let sortOrder = 'desc';
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMerchants();
+    });
+
+    // ==================== 加载商户列表 ====================
+    async function loadMerchants() {
+      try {
+        const result = await MockAPI.request('admin.merchants.list', {
+          page: 1,
+          pageSize: 100,
+          skipError: true
+        });
+
+        allMerchants = result.data;
+        filteredMerchants = [...allMerchants];
+        renderTable();
+        Utils.showToast('数据已刷新', 'success');
+
+      } catch (error) {
+        console.error('加载商户列表失败:', error);
+        Utils.showToast('加载数据失败', 'error');
+      }
+    }
+
+    // ==================== 应用筛选 ====================
+    function applyFilters() {
+      const status = document.getElementById('statusFilter').value;
+      const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+
+      filteredMerchants = allMerchants.filter(merchant => {
+        // 状态筛选
+        if (status && merchant.reviewStatus !== status) return false;
+
+        // 关键词搜索
+        if (keyword) {
+          const searchText = `${merchant.name} ${merchant.contact} ${merchant.phone}`.toLowerCase();
+          if (!searchText.includes(keyword)) return false;
+        }
+
+        return true;
+      });
+
+      currentPage = 1;
+      renderTable();
+    }
+
+    // ==================== 重置筛选 ====================
+    function resetFilters() {
+      document.getElementById('statusFilter').value = '';
+      document.getElementById('searchInput').value = '';
+      applyFilters();
+    }
+
+    // ==================== 排序表格 ====================
+    function sortTable(column) {
+      if (sortBy === column) {
+        sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortBy = column;
+        sortOrder = 'asc';
+      }
+
+      filteredMerchants = ListHelper.sort(filteredMerchants, sortBy, sortOrder);
+      renderTable();
+
+      // 更新排序图标
+      document.querySelectorAll('.table th').forEach(th => {
+        th.classList.remove('sorted-asc', 'sorted-desc');
+      });
+      event.target.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+    }
+
+    // ==================== 渲染表格 ====================
+    function renderTable() {
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredMerchants.slice(start, end);
+
+      const tbody = document.getElementById('merchantTableBody');
+      tbody.innerHTML = pageData.map(merchant => {
+        const isSelected = selectedMerchants.has(merchant.id);
+        const statusClass = merchant.reviewStatus;
+        const statusText = {
+          active: '已激活',
+          pending: '待审核',
+          rejected: '已拒绝',
+          disabled: '已禁用'
+        }[merchant.reviewStatus];
+
+        return `
+          <tr class="${isSelected ? 'selected' : ''}">
+            <td>
+              <input
+                type="checkbox"
+                ${isSelected ? 'checked' : ''}
+                onchange="toggleSelect(${merchant.id})"
+              >
+            </td>
+            <td>
+              <div class="merchant-info">
+                <div class="merchant-avatar">${merchant.name.charAt(0)}</div>
+                <div class="merchant-details">
+                  <div class="merchant-name">${merchant.name}</div>
+                  <div class="merchant-id">ID: ${merchant.id}</div>
+                </div>
+              </div>
+            </td>
+            <td>${merchant.contact}</td>
+            <td>${merchant.phone}</td>
+            <td>
+              <span class="status-badge ${statusClass}">${statusText}</span>
+            </td>
+            <td>${Utils.formatDate(new Date(merchant.registerTime), 'YYYY-MM-DD')}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="action-btn" onclick="viewMerchant(${merchant.id})">查看</button>
+                <button class="action-btn" onclick="navigateTo('review.html?id=${merchant.id}')">审核</button>
+                <button class="action-btn" onclick="toggleMerchantStatus(${merchant.id})">
+                  ${merchant.reviewStatus === 'disabled' ? '启用' : '禁用'}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // 更新分页信息
+      updatePagination();
+    }
+
+    // ==================== 切换选择 ====================
+    function toggleSelect(id) {
+      if (selectedMerchants.has(id)) {
+        selectedMerchants.delete(id);
+      } else {
+        selectedMerchants.add(id);
+      }
+      updateBulkActionsBar();
+      renderTable();
+    }
+
+    function toggleSelectAll() {
+      const selectAll = document.getElementById('selectAll').checked;
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredMerchants.slice(start, end);
+
+      if (selectAll) {
+        pageData.forEach(m => selectedMerchants.add(m.id));
+      } else {
+        pageData.forEach(m => selectedMerchants.delete(m.id));
+      }
+
+      updateBulkActionsBar();
+      renderTable();
+    }
+
+    function clearSelection() {
+      selectedMerchants.clear();
+      document.getElementById('selectAll').checked = false;
+      updateBulkActionsBar();
+      renderTable();
+    }
+
+    // ==================== 更新批量操作栏 ====================
+    function updateBulkActionsBar() {
+      const bulkActionsBar = document.getElementById('bulkActionsBar');
+      const count = selectedMerchants.size;
+
+      document.getElementById('selectedCount').textContent = count;
+
+      if (count > 0) {
+        bulkActionsBar.classList.add('show');
+      } else {
+        bulkActionsBar.classList.remove('show');
+      }
+    }
+
+    // ==================== 批量操作 ====================
+    function bulkAction(action) {
+      const count = selectedMerchants.size;
+      const actionText = action === 'approve' ? '审核通过' : '禁用';
+
+      Utils.confirm(`确认${actionText} ${count} 个商户？`, `批量${actionText}`).then(confirmed => {
+        if (confirmed) {
+          Utils.showToast(`已${actionText} ${count} 个商户`, 'success');
+          clearSelection();
+        }
+      });
+    }
+
+    // ==================== 商户操作 ====================
+    function viewMerchant(id) {
+      Utils.showToast(`查看商户 ${id} 详情`, 'info');
+    }
+
+    function toggleMerchantStatus(id) {
+      const merchant = allMerchants.find(m => m.id === id);
+      const newStatus = merchant.reviewStatus === 'disabled' ? 'active' : 'disabled';
+      const actionText = newStatus === 'disabled' ? '禁用' : '启用';
+
+      Utils.confirm(`确认${actionText}商户 "${merchant.name}"？`, `${actionText}商户`).then(confirmed => {
+        if (confirmed) {
+          merchant.reviewStatus = newStatus;
+          renderTable();
+          Utils.showToast(`已${actionText}商户`, 'success');
+        }
+      });
+    }
+
+    // ==================== 分页 ====================
+    function updatePagination() {
+      const total = filteredMerchants.length;
+      const start = (currentPage - 1) * pageSize + 1;
+      const end = Math.min(start + pageSize - 1, total);
+
+      document.getElementById('paginationInfo').textContent =
+        `显示 ${start}-${end} / 共 ${total} 条`;
+
+      document.getElementById('prevBtn').disabled = currentPage === 1;
+      document.getElementById('nextBtn').disabled = end >= total;
+    }
+
+    function goToPage(page) {
+      const totalPages = Math.ceil(filteredMerchants.length / pageSize);
+      if (page < 1 || page > totalPages) return;
+
+      currentPage = page;
+      renderTable();
+    }
+
+    // ==================== 导航函数 ====================
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+  </script>
+</body>
+</html>
