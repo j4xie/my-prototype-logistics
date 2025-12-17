@@ -33,6 +33,17 @@ public class FactorySettings extends BaseEntity {
      */
     @Column(name = "factory_id", nullable = false, unique = true, length = 50)
     private String factoryId;
+
+    /**
+     * 工厂名称
+     */
+    private String factoryName;
+    private String factoryAddress;
+    private String contactPhone;
+    private String contactEmail;
+
+    private int workingHours;
+
     // ==================== AI设置 ====================
     /**
      * AI设置JSON

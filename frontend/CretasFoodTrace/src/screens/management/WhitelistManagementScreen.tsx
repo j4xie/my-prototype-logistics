@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: -8,
+    marginLeft: 0,
   },
   infoText: {
     fontSize: 13,
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   statusChip: {
-    height: 24,
+    height: 32,
   },
   itemInfo: {
     marginBottom: 12,
