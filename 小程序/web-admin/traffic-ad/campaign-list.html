@@ -4,28 +4,71 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>营销活动 - 溯源商城管理后台</title>
-  <link rel="stylesheet" href="../../assets/css/variables.css">
-  <link rel="stylesheet" href="../../assets/css/common.css">
-  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <link rel="stylesheet" href="../../assets/css/variables.css?v=1765970711">
+  <link rel="stylesheet" href="../../assets/css/common.css?v=1765970711">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
 </head>
 <body>
-  <div class="admin-container">
-    <div class="admin-sidebar">
-      <div class="sidebar-header"><h2>溯源商城</h2><p>管理后台</p></div>
+  <div class="desktop-container">
+        <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
       <nav class="sidebar-nav">
-        <a href="../dashboard/overview.html">总览</a>
-        <a href="../merchant/list.html">商户管理</a>
-        <a href="../product-management/list.html">产品管理</a>
-        <a href="../content-control/review-queue.html">内容审核</a>
-        <a href="ranking-config.html" class="active">流量广告</a>
-        <a href="../ai-knowledge/knowledge-base.html">AI知识库</a>
-        <a href="../analytics/traffic-stats.html">数据分析</a>
-        <a href="../settings/system-config.html">系统设置</a>
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
       </nav>
     </div>
 
-    <div class="admin-main">
-      <div class="admin-header">
+    <div class="desktop-main">
+      <div class="desktop-header">
         <div class="breadcrumb">
           <a href="../dashboard/overview.html">首页</a><span>/</span><span>营销活动</span>
         </div>
@@ -34,7 +77,7 @@
         </div>
       </div>
 
-      <div class="admin-content">
+      <div class="desktop-content">
         <div style="background: var(--bg-white); border-radius: var(--radius-md);">
           <table class="table">
             <thead>
@@ -64,7 +107,7 @@
     </div>
   </div>
 
-  <script src="../../assets/js/utils.js"></script>
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
   <script>
     function createCampaign() { Utils.showToast('创建活动功能开发中'); }
     function viewCampaign(id) { Utils.showToast('查看活动功能开发中'); }

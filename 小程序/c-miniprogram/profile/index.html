@@ -45,6 +45,62 @@
       font-weight: bold;
     }
 
+    /* Merchant Workspace Card */
+    .merchant-card {
+        margin: 15px;
+        background: linear-gradient(135deg, #2c3e50 0%, #000000 100%);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--primary-color);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .merchant-card::after {
+        content: 'WORKBENCH';
+        position: absolute;
+        right: -10px;
+        bottom: -15px;
+        font-size: 40px;
+        font-weight: bold;
+        color: rgba(255,255,255,0.05);
+        pointer-events: none;
+    }
+
+    .merchant-card-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .merchant-card-icon {
+        font-size: 28px;
+        background: rgba(255,255,255,0.1);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .merchant-card-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .merchant-card-subtitle {
+        font-size: 12px;
+        color: rgba(255,255,255,0.6);
+        margin-top: 4px;
+    }
+
     .menu-group {
       background: white;
       margin: 15px;
@@ -84,6 +140,18 @@
       </div>
     </div>
 
+    <!-- Merchant Workspace Entry -->
+    <div class="merchant-card" onclick="navigateTo('../merchant-center/index.html')">
+        <div class="merchant-card-left">
+            <div class="merchant-card-icon">🏪</div>
+            <div>
+                <div class="merchant-card-title">商家工作台</div>
+                <div class="merchant-card-subtitle">管理商品、订单与店铺数据</div>
+            </div>
+        </div>
+        <div style="font-size: 20px;">➜</div>
+    </div>
+
     <!-- 菜单列表 -->
     <div class="menu-group">
       <div class="menu-item" onclick="navigateTo('../orders/list.html')">
@@ -111,6 +179,9 @@
       </div>
     </div>
 
+    <!-- AI悬浮按钮 -->
+    <div class="mobile-fab" onclick="openConsultation()">🎧</div>
+
     <!-- 底部Tab导航 -->
     <div class="mobile-tabbar">
       <div class="tabbar-item" onclick="navigateTo('../home/home.html')">
@@ -136,6 +207,14 @@
   <script>
     function navigateTo(path) {
       window.location.href = path;
+    }
+
+    function openConsultation() {
+      Utils.confirm('是否要连接专业客服进行咨询？', '咨询服务').then(ok => {
+        if (ok) {
+          window.location.href = '../ai-rag/chat.html';
+        }
+      });
     }
   </script>
 </body>

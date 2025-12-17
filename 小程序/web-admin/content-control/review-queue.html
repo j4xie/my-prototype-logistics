@@ -8,7 +8,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="../../assets/css/variables.css">
   <link rel="stylesheet" href="../../assets/css/common.css">
-  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
 
   <style>
     /* Tab切换 */
@@ -314,71 +314,61 @@
 <body>
   <div class="desktop-container">
     <!-- 侧边栏 -->
-    <div class="desktop-sidebar">
+            <div class="desktop-sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">🏢 白垩纪管理后台</div>
       </div>
-
       <nav class="sidebar-nav">
         <a href="../dashboard/overview.html" class="nav-item">
-          <span class="nav-icon"></span>
-          <span class="nav-label">总览仪表板</span>
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
         </a>
-
+        
         <div class="nav-group">
-          <div class="nav-group-title">商户管理</div>
-          <a href="../merchant/list.html" class="nav-item">
-            <span class="nav-icon"></span>
-            <span class="nav-label">商户列表</span>
-          </a>
-          <a href="../merchant/review.html" class="nav-item">
-            <span class="nav-icon"></span>
-            <span class="nav-label">商户审核</span>
-          </a>
-        </div>
-
-        <div class="nav-group">
-          <div class="nav-group-title">产品管理</div>
-          <a href="../product-management/list.html" class="nav-item">
-            <span class="nav-icon"></span>
-            <span class="nav-label">产品列表</span>
-          </a>
-          <a href="../product-management/create.html" class="nav-item">
-            <span class="nav-icon">➕</span>
-            <span class="nav-label">新建产品</span>
-          </a>
-          <a href="../product-management/price-config.html" class="nav-item">
-            <span class="nav-icon"></span>
-            <span class="nav-label">价格配置</span>
-          </a>
-        </div>
-
-        <div class="nav-group">
-          <div class="nav-group-title">内容管理</div>
-          <a href="review-queue.html" class="nav-item active">
-            <span class="nav-icon"></span>
-            <span class="nav-label">内容审核</span>
-          </a>
-        </div>
-
-        <div class="nav-group">
-          <div class="nav-group-title">AI知识库</div>
-          <a href="../ai-knowledge/knowledge-base.html" class="nav-item">
-            <span class="nav-icon"></span>
-            <span class="nav-label">知识库管理</span>
-          </a>
-        </div>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="user-profile">
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="头像" class="user-avatar">
-          <div class="user-info">
-            <div class="user-name">管理员</div>
-            <div class="user-role">Platform Admin</div>
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
           </div>
         </div>
-      </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
     </div>
 
     <!-- 主内容区 -->
@@ -469,8 +459,8 @@
   </div>
 
   <!-- JavaScript -->
-  <script src="../../assets/js/mockData.js"></script>
-  <script src="../../assets/js/utils.js"></script>
+  <script src="../../assets/js/mockData.js?v=1765970807"></script>
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
 
   <script>
     // ==================== 全局状态 ====================
