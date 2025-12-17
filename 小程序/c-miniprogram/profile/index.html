@@ -158,22 +158,26 @@
         <div><span class="menu-icon">📦</span>我的订单</div>
         <div>➜</div>
       </div>
-      <div class="menu-item">
+      <div class="menu-item" onclick="Utils.showToast('功能开发中', 'info')">
         <div><span class="menu-icon">❤️</span>我的收藏</div>
         <div>➜</div>
       </div>
-      <div class="menu-item">
+      <div class="menu-item" onclick="Utils.showToast('功能开发中', 'info')">
         <div><span class="menu-icon">📍</span>收货地址</div>
         <div>➜</div>
       </div>
     </div>
 
     <div class="menu-group">
-      <div class="menu-item">
+      <div class="menu-item" onclick="navigateTo('../referral/share.html')">
+        <div><span class="menu-icon">🎁</span>邀请好友</div>
+        <div>➜</div>
+      </div>
+      <div class="menu-item" onclick="contactService()">
         <div><span class="menu-icon">🎧</span>联系客服</div>
         <div>➜</div>
       </div>
-      <div class="menu-item">
+      <div class="menu-item" onclick="navigateTo('settings.html')">
         <div><span class="menu-icon">⚙️</span>设置</div>
         <div>➜</div>
       </div>
@@ -213,6 +217,14 @@
       Utils.confirm('是否要连接专业客服进行咨询？', '咨询服务').then(ok => {
         if (ok) {
           window.location.href = '../ai-rag/chat.html';
+        }
+      });
+    }
+
+    function contactService() {
+      Utils.confirm('是否要联系客服？', '联系客服').then(ok => {
+        if (ok) {
+          window.location.href = '../ai-rag/chat.html?type=supplier';
         }
       });
     }

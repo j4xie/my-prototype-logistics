@@ -812,6 +812,25 @@
         </div>
       </div>
 
+      <!-- AI 智能分析入口 -->
+      <div class="ai-analysis-section" style="background: var(--bg-white); padding: var(--spacing-lg); margin-bottom: var(--spacing-md);">
+        <h2 class="section-title">🤖 AI 智能分析</h2>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-md);">
+          <div class="ai-entry-card" onclick="navigateToAnalysis('product')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: var(--radius-md); padding: var(--spacing-lg); text-align: center; color: white; cursor: pointer;">
+            <div style="font-size: 24px; margin-bottom: 8px;">📊</div>
+            <div style="font-size: 12px;">产品分析</div>
+          </div>
+          <div class="ai-entry-card" onclick="navigateToAnalysis('factory')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: var(--radius-md); padding: var(--spacing-lg); text-align: center; color: white; cursor: pointer;">
+            <div style="font-size: 24px; margin-bottom: 8px;">🏭</div>
+            <div style="font-size: 12px;">工厂分析</div>
+          </div>
+          <div class="ai-entry-card" onclick="navigateToAnalysis('industry')" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: var(--radius-md); padding: var(--spacing-lg); text-align: center; color: white; cursor: pointer;">
+            <div style="font-size: 24px; margin-bottom: 8px;">📈</div>
+            <div style="font-size: 12px;">行业分析</div>
+          </div>
+        </div>
+      </div>
+
       <!-- 相关推荐 -->
       <div class="related-section">
         <h2 class="section-title">🔥 相关推荐</h2>
@@ -1173,6 +1192,12 @@
     function navigateToTraceDetail() {
       // 导航到完整溯源信息页
       window.location.href = '../traceability/batch-info.html';
+    }
+
+    function navigateToAnalysis(type) {
+      // 导航到 AI 分析页面
+      const productId = currentProduct ? currentProduct.id : 1;
+      window.location.href = `../ai-analysis/${type}-analysis.html?productId=${productId}`;
     }
 
     // ==================== 点击背景关闭模态框 ====================
