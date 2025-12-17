@@ -316,14 +316,58 @@
   </div>
 
   <!-- JavaScript -->
-  <script src="../../assets/js/mockData.js"></script>
-  <script src="../../assets/js/utils.js"></script>
+  <script src="../../assets/js/mockData.js?v=20251217"></script>
+  <script src="../../assets/js/mockAPI.js?v=20251217"></script>
+  <script src="../../assets/js/utils.js?v=20251217"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       renderCategories();
       renderRecommended();
+      loadBannerAds();
     });
+
+    async function loadBannerAds() {
+      try {
+        const result = await MockAPI.request('ads.list', { position: 'home_top' });
+        const ads = result.data || [];
+        
+        if (ads.length > 0) {
+          renderCarousel(ads);
+        }
+      } catch (error) {
+        console.error('加载Banner广告失败:', error);
+      }
+    }
+
+    function renderCarousel(ads) {
+      const carouselInner = document.querySelector('.mobile-carousel-inner');
+      const indicators = document.querySelector('.mobile-carousel-indicators');
+      
+      if (!carouselInner || !indicators) return;
+
+      carouselInner.innerHTML = ads.map(ad => `
+        <div class="mobile-carousel-item" onclick="handleAdClick(${ad.id}, ${ad.productId})">
+          <div style="width: 100%; height: 100%; background: url('${ad.image}') center/cover no-repeat; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+          </div>
+        </div>
+      `).join('');
+
+      indicators.innerHTML = ads.map((_, index) => `
+        <span class="mobile-carousel-dot ${index === 0 ? 'active' : ''}"></span>
+      `).join('');
+    }
+
+    async function handleAdClick(adId, productId) {
+        try {
+            await MockAPI.request('ads.click', { adId });
+        } catch (e) {
+            console.error('记录点击失败', e);
+        }
+        if (productId) {
+            navigateToProduct(productId);
+        }
+    }
 
     function renderCategories() {
       const grid = document.getElementById('categoryGrid');

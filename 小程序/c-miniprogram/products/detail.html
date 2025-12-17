@@ -739,6 +739,11 @@
             <!-- 阶梯价格表将通过JavaScript动态生成 -->
           </div>
         </div>
+
+        <!-- 广告区域 -->
+        <div id="detailAdContainer" style="margin-bottom: 16px; display: none;">
+          <!-- 动态生成广告 -->
+        </div>
       </div>
 
       <!-- 供货商信息 -->
@@ -855,9 +860,9 @@
   </div>
 
   <!-- JavaScript -->
-  <script src="../../assets/js/mockData.js"></script>
-  <script src="../../assets/js/mockAPI.js"></script>
-  <script src="../../assets/js/utils.js"></script>
+  <script src="../../assets/js/mockData.js?v=20251217"></script>
+  <script src="../../assets/js/mockAPI.js?v=20251217"></script>
+  <script src="../../assets/js/utils.js?v=20251217"></script>
 
   <script>
     // ==================== 全局状态 ====================
@@ -870,7 +875,48 @@
       const urlParams = new URLSearchParams(window.location.search);
       const productId = parseInt(urlParams.get('id')) || 1;
       loadProductDetail(productId);
+      loadDetailAds();
     });
+
+    // ==================== 加载广告 ====================
+    async function loadDetailAds() {
+      console.log('[AD] 开始加载详情页广告...');
+      try {
+        const result = await MockAPI.request('ads.list', { position: 'detail_bottom' });
+        console.log('[AD] API返回结果:', result);
+        const ads = result.data || [];
+        console.log('[AD] 有效广告数量:', ads.length);
+        
+        if (ads.length > 0) {
+          const container = document.getElementById('detailAdContainer');
+          // 随机展示一个
+          const ad = ads[0]; 
+          console.log('[AD] 展示广告:', ad);
+          container.style.display = 'block';
+          container.innerHTML = `
+            <div onclick="handleAdClick(${ad.id}, ${ad.productId})" style="width: 100%; height: 90px; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;">
+              <img src="${ad.image}" style="width: 100%; height: 100%; object-fit: cover;">
+              <div style="position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.3); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px 0 0 0;">广告</div>
+            </div>
+          `;
+        } else {
+          console.log('[AD] 没有找到有效广告');
+        }
+      } catch (error) {
+        console.error('[AD] 加载详情广告失败:', error);
+      }
+    }
+
+    async function handleAdClick(adId, productId) {
+        try {
+            await MockAPI.request('ads.click', { adId });
+        } catch (e) {
+            console.error('记录点击失败', e);
+        }
+        if (productId && productId !== currentProduct.id) {
+            window.location.href = `detail.html?id=${productId}`;
+        }
+    }
 
     // ==================== 加载产品详情 ====================
     async function loadProductDetail(productId) {
