@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>展示策略配置 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <style>
+    .config-section {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-lg);
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 2px solid var(--border-color);
+    }
+    .section-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+    }
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-xl);
+    }
+    .switch-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-md);
+      background: var(--bg-gray);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--spacing-md);
+    }
+    .switch-label {
+      flex: 1;
+    }
+    .switch-title {
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-xs);
+    }
+    .switch-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-sidebar">
+      <div class="sidebar-header">
+        <h2>溯源商城</h2>
+        <p>管理后台</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html">总览</a>
+        <a href="../merchant/list.html">商户管理</a>
+        <a href="../product-management/list.html">产品管理</a>
+        <a href="review-queue.html" class="active">内容审核</a>
+        <a href="../traffic-ad/ranking-config.html">流量广告</a>
+        <a href="../ai-knowledge/knowledge-base.html">AI知识库</a>
+        <a href="../analytics/traffic-stats.html">数据分析</a>
+        <a href="../settings/system-config.html">系统设置</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a>
+          <span>/</span>
+          <a href="review-queue.html">内容控制</a>
+          <span>/</span>
+          <span>展示策略配置</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <!-- 首页展示策略 -->
+        <div class="config-section">
+          <div class="section-header">
+            <div class="section-title">首页展示策略</div>
+          </div>
+          <div class="switch-item">
+            <div class="switch-label">
+              <div class="switch-title">显示推荐产品</div>
+              <div class="switch-desc">在首页顶部展示运营推荐的精选产品</div>
+            </div>
+            <label class="switch"><input type="checkbox" checked><span></span></label>
+          </div>
+          <div class="switch-item">
+            <div class="switch-label">
+              <div class="switch-title">显示热销榜单</div>
+              <div class="switch-desc">根据销量自动展示热销产品排行</div>
+            </div>
+            <label class="switch"><input type="checkbox" checked><span></span></label>
+          </div>
+          <div class="switch-item">
+            <div class="switch-label">
+              <div class="switch-title">显示新品推荐</div>
+              <div class="switch-desc">展示最近30天上架的新产品</div>
+            </div>
+            <label class="switch"><input type="checkbox"><span></span></label>
+          </div>
+          <div class="config-grid">
+            <div class="form-group">
+              <label class="form-label">推荐产品数量</label>
+              <input type="number" class="form-control" value="8" min="4" max="20">
+            </div>
+            <div class="form-group">
+              <label class="form-label">更新频率</label>
+              <select class="form-control">
+                <option>每小时</option>
+                <option selected>每日</option>
+                <option>每周</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 排序策略 -->
+        <div class="config-section">
+          <div class="section-header">
+            <div class="section-title">产品排序策略</div>
+          </div>
+          <div class="config-grid">
+            <div class="form-group">
+              <label class="form-label">默认排序方式</label>
+              <select class="form-control">
+                <option selected>综合排序（推荐）</option>
+                <option>销量优先</option>
+                <option>价格从低到高</option>
+                <option>最新上架</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">权重算法</label>
+              <select class="form-control">
+                <option>智能推荐</option>
+                <option selected>销量+评分</option>
+                <option>自定义权重</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 内容过滤策略 -->
+        <div class="config-section">
+          <div class="section-header">
+            <div class="section-title">内容过滤策略</div>
+          </div>
+          <div class="switch-item">
+            <div class="switch-label">
+              <div class="switch-title">自动过滤违规内容</div>
+              <div class="switch-desc">AI自动检测并隐藏可能违规的产品和文案</div>
+            </div>
+            <label class="switch"><input type="checkbox" checked><span></span></label>
+          </div>
+          <div class="switch-item">
+            <div class="switch-label">
+              <div class="switch-title">隐藏低评分产品</div>
+              <div class="switch-desc">评分低于3.0的产品不在首页展示</div>
+            </div>
+            <label class="switch"><input type="checkbox"><span></span></label>
+          </div>
+          <div class="switch-item">
+            <div class="switch-label">
+              <div class="switch-title">过滤售罄产品</div>
+              <div class="switch-desc">库存为0的产品自动隐藏</div>
+            </div>
+            <label class="switch"><input type="checkbox" checked><span></span></label>
+          </div>
+        </div>
+
+        <!-- Banner轮播策略 -->
+        <div class="config-section">
+          <div class="section-header">
+            <div class="section-title">Banner轮播策略</div>
+          </div>
+          <div class="config-grid">
+            <div class="form-group">
+              <label class="form-label">轮播间隔（秒）</label>
+              <input type="number" class="form-control" value="5" min="3" max="10">
+            </div>
+            <div class="form-group">
+              <label class="form-label">最大Banner数量</label>
+              <input type="number" class="form-control" value="5" min="3" max="8">
+            </div>
+          </div>
+          <div class="switch-item">
+            <div class="switch-label">
+              <div class="switch-title">自动播放</div>
+              <div class="switch-desc">Banner自动轮播切换</div>
+            </div>
+            <label class="switch"><input type="checkbox" checked><span></span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    async function saveConfig() {
+      Utils.showLoading('保存中...');
+      await Utils.sleep(1000);
+      Utils.hideLoading();
+      Utils.showToast('配置已保存', 'success');
+    }
+  </script>
+</body>
+</html>

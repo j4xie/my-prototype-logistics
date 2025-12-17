@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>首页 - 溯源商城</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+
+  <style>
+    /* ==================== 首页特有样式 (黑金奢华版) ==================== */
+    
+    /* 顶部导航重写 */
+    .mobile-header {
+      background: var(--bg-dark);
+      border-bottom: none;
+      padding: 0 var(--spacing-md);
+      height: 54px;
+    }
+
+    .header-logo {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-white);
+      letter-spacing: 1px;
+      font-family: serif;
+      margin-right: var(--spacing-sm);
+    }
+
+    .header-logo span {
+      color: var(--primary-color);
+    }
+
+    .header-search {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: var(--radius-pill);
+      height: 32px;
+      display: flex;
+      align-items: center;
+      padding: 0 var(--spacing-md);
+      margin: 0 var(--spacing-sm);
+    }
+
+    .header-search-icon {
+      color: var(--text-secondary);
+      margin-right: var(--spacing-xs);
+    }
+
+    .header-search-input {
+      border: none;
+      background: transparent;
+      width: 100%;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .header-search-input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    .header-icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-white);
+      font-size: 14px;
+    }
+
+    /* 通知栏 */
+    .notification-bar {
+      background: #FFF8E1; /* 浅金底 */
+      color: #856404;
+      font-size: 12px;
+      padding: 8px var(--spacing-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .notification-icon {
+      font-size: 14px;
+    }
+
+    /* 分类网格 */
+    .category-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg) 0;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--spacing-lg) var(--spacing-sm);
+      padding: 0 var(--spacing-lg);
+    }
+
+    .category-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .category-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--bg-dark); /* 黑底金标 */
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      border: 1px solid var(--primary-color);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .category-name {
+      font-size: 11px;
+      color: var(--text-primary);
+      text-align: center;
+    }
+
+    /* 广告位 */
+    .promo-section {
+      padding: 0 var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .promo-banner {
+      width: 100%;
+      height: 100px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-color);
+      font-size: 24px;
+      font-weight: bold;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .promo-banner::after {
+      content: 'LUXURY SUPPLY CHAIN';
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 2px;
+    }
+
+    /* 推荐产品 */
+    .section-header {
+      padding: 0 var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--text-primary);
+      position: relative;
+      padding-left: 10px;
+    }
+
+    .section-title::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      background: var(--primary-color);
+      border-radius: 2px;
+    }
+
+    /* 快捷入口重设计 */
+    .quick-service {
+      display: flex;
+      justify-content: space-between;
+      padding: var(--spacing-md) var(--spacing-lg);
+      background: var(--bg-white);
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .service-card {
+      flex: 1;
+      height: 60px;
+      margin: 0 4px;
+      border-radius: var(--radius-md);
+      background: var(--bg-gray);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-color);
+    }
+    
+    .service-title {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    
+    .service-desc {
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <!-- 顶部导航栏 (自定义) -->
+    <div class="mobile-header">
+      <div class="header-logo">B<span>&</span>F</div>
+      <div class="header-search">
+        <span class="header-search-icon">🔍</span>
+        <input type="text" class="header-search-input" placeholder="请输入商品名称">
+      </div>
+      <div class="header-actions">
+        <div class="header-icon-btn">•••</div>
+        <div class="header-icon-btn">◎</div>
+      </div>
+    </div>
+
+    <!-- 通知栏 -->
+    <div class="notification-bar">
+      <span class="notification-icon">🔊</span>
+      <span>联系电话：13916928096，微信同号</span>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="mobile-content" style="padding: 0; padding-bottom: 70px;">
+      
+      <!-- 轮播图 (复用Mobile.css组件但移除边距) -->
+      <div class="mobile-carousel" style="border-radius: 0; margin-bottom: 0;">
+        <div class="mobile-carousel-inner">
+          <div class="mobile-carousel-item">
+            <div style="width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1555244162-803834f70033?w=800') center/cover; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+              <h2 style="text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 32px; margin-bottom: 10px;">源头直采</h2>
+              <p style="text-shadow: 0 1px 2px rgba(0,0,0,0.5); font-size: 16px;">一件也是批发价</p>
+            </div>
+          </div>
+        </div>
+        <div class="mobile-carousel-indicators">
+          <span class="mobile-carousel-dot active"></span>
+          <span class="mobile-carousel-dot"></span>
+          <span class="mobile-carousel-dot"></span>
+        </div>
+      </div>
+
+      <!-- 分类网格 (根据Screenshot 1) -->
+      <div class="category-section">
+        <div class="category-grid" id="categoryGrid">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+
+      <!-- 推荐商品 -->
+      <div class="section-header">
+        <div class="section-title">推荐商品</div>
+      </div>
+      <div class="mobile-grid col-2" id="recommendGrid" style="padding-top: 0; padding-bottom: 0; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+        <!-- 动态生成 -->
+      </div>
+
+    </div>
+
+    <!-- 悬浮客服按钮 -->
+    <div class="mobile-fab" onclick="openConsultation()">
+      🎧
+    </div>
+
+    <!-- 底部Tab导航 -->
+    <div class="mobile-tabbar">
+      <div class="tabbar-item active">
+        <div class="tabbar-icon">🏠</div>
+        <div class="tabbar-label">首页</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../products/list.html')">
+        <div class="tabbar-icon">📦</div>
+        <div class="tabbar-label">分类</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../orders/list.html')">
+        <div class="tabbar-icon">🧾</div>
+        <div class="tabbar-label">订单</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../profile/index.html')">
+        <div class="tabbar-icon">👤</div>
+        <div class="tabbar-label">我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCategories();
+      renderRecommended();
+    });
+
+    function renderCategories() {
+      const grid = document.getElementById('categoryGrid');
+      const categories = MockDB.categories.slice(0, 10); // 取前10个展示
+
+      grid.innerHTML = categories.map(cat => `
+        <div class="category-item" onclick="navigateToCategory('${cat.id}')">
+          <div class="category-icon-box">${cat.icon}</div>
+          <div class="category-name">${cat.name}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderRecommended() {
+      const grid = document.getElementById('recommendGrid');
+      const products = MockDB.products.slice(0, 4); 
+      
+      grid.innerHTML = products.map(p => `
+        <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: var(--shadow-sm);" onclick="navigateToProduct(${p.id})">
+          <div style="height: 150px; width: 100%; background: #f5f5f5;">
+            <img src="${p.images[0]}" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          <div style="padding: 10px;">
+            <div style="font-size: 13px; font-weight: bold; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);">${p.name}</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+              <div style="color: var(--ecommerce-accent); font-weight: bold; font-size: 14px;">¥${p.wholesalePrice}</div>
+              <div style="font-size: 10px; color: #999;">已售${p.sales}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+
+    function navigateToCategory(id) {
+      window.location.href = `../products/list.html?category=${id}`;
+    }
+
+    function navigateToProduct(id) {
+      window.location.href = `../products/detail.html?id=${id}`;
+    }
+
+    function openConsultation() {
+      Utils.confirm('是否要连接专业客服进行咨询？', '咨询服务').then(ok => {
+        if (ok) {
+          // 这里可以跳转到客服页面，或者显示QR码模态框
+          // 为了演示，我们跳转到 AI 客服聊天界面 (如果有) 或者显示一个提示
+          // 假设我们有一个 ai-rag/chat.html 页面，或者直接显示联系方式
+          // Utils.showToast('正在为您转接专业顾问...', 'loading');
+          // setTimeout(() => {
+             window.location.href = '../ai-rag/chat.html';
+          // }, 1000);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

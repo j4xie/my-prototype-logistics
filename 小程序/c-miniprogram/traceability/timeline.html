@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>溯源时间线 - 溯源商城</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .timeline {
+      padding: var(--spacing-lg);
+      position: relative;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 32px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border-color);
+    }
+    .timeline-item {
+      position: relative;
+      padding-left: 50px;
+      margin-bottom: var(--spacing-xl);
+    }
+    .timeline-dot {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      border: 4px solid var(--bg-white);
+      z-index: 1;
+    }
+    .timeline-content {
+      background: var(--bg-white);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+    .timeline-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+    .timeline-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      margin-bottom: var(--spacing-sm);
+    }
+    .timeline-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">溯源时间线</div>
+    </div>
+    <div class="mobile-content">
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title">🚚 配送中</div>
+            <div class="timeline-time">2025-01-10 14:30</div>
+            <div class="timeline-desc">产品已发货，预计1-2天送达</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title">📦 包装完成</div>
+            <div class="timeline-time">2025-01-10 09:15</div>
+            <div class="timeline-desc">产品完成包装，通过最终检验</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title">✅ 质检通过</div>
+            <div class="timeline-time">2025-01-09 16:20</div>
+            <div class="timeline-desc">质检报告：所有指标合格</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title"> 加工完成</div>
+            <div class="timeline-time">2025-01-08 10:30</div>
+            <div class="timeline-desc">完成速冻加工，产品进入质检环节</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title">🐟 原料验收</div>
+            <div class="timeline-time">2025-01-05 08:00</div>
+            <div class="timeline-desc">原料来源：山东青岛深海捕捞，检验合格</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

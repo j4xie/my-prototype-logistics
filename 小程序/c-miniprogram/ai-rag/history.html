@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>咨询历史 - 溯源商城</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .history-list {
+      padding: var(--spacing-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    .history-item {
+      background: var(--bg-white);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+    }
+    .history-question {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+    .history-answer {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: var(--spacing-xs);
+    }
+    .history-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">咨询历史</div>
+      <div class="mobile-header-action" onclick="clearHistory()">清空</div>
+    </div>
+    <div class="mobile-content">
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    const historyData = [
+      { id: 1, question: '如何查看产品的溯源信息？', answer: '您可以在产品详情页点击"查看溯源"按钮...', time: '2025-01-10 14:30' },
+      { id: 2, question: '阶梯价格是如何计算的？', answer: '我们的价格采用阶梯定价模式，订购数量越多...', time: '2025-01-09 10:15' },
+      { id: 3, question: '产品的质检标准是什么？', answer: '所有产品都经过严格的质检流程...', time: '2025-01-08 16:20' }
+    ];
+    document.addEventListener('DOMContentLoaded', () => {
+      const list = document.getElementById('historyList');
+      list.innerHTML = historyData.map(item => `
+        <div class="history-item" onclick="viewDetail(${item.id})">
+          <div class="history-question">${item.question}</div>
+          <div class="history-answer">${item.answer}</div>
+          <div class="history-time">${item.time}</div>
+        </div>
+      `).join('');
+    });
+    function viewDetail(id) {
+      window.location.href = `chat.html?history=${id}`;
+    }
+    function clearHistory() {
+      Utils.confirm('确认清空咨询历史？', '清空历史').then(ok => {
+        if (ok) Utils.showToast('已清空', 'success');
+      });
+    }
+  </script>
+</body>
+</html>

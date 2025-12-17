@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑产品 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <style>
+    .form-container {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-lg);
+    }
+    .form-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-xl);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 2px solid var(--border-color);
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-xl);
+    }
+    .form-full {
+      grid-column: 1 / -1;
+    }
+    .image-upload-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--spacing-md);
+    }
+    .image-upload-box {
+      aspect-ratio: 1;
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .image-upload-box:hover {
+      border-color: var(--primary-color);
+      background: var(--primary-light);
+    }
+    .image-upload-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .image-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+    }
+    .image-upload-box:hover .image-remove {
+      display: block;
+    }
+    .spec-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    .spec-item {
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: center;
+    }
+    .spec-item input {
+      flex: 1;
+    }
+    .tier-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    .tier-item {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 80px;
+      gap: var(--spacing-md);
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-sidebar">
+      <div class="sidebar-header">
+        <h2>溯源商城</h2>
+        <p>管理后台</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html">总览</a>
+        <a href="../merchant/list.html">商户管理</a>
+        <a href="list.html" class="active">产品管理</a>
+        <a href="../content-control/review-queue.html">内容审核</a>
+        <a href="../traffic-ad/ranking-config.html">流量广告</a>
+        <a href="../ai-knowledge/knowledge-base.html">AI知识库</a>
+        <a href="../analytics/traffic-stats.html">数据分析</a>
+        <a href="../settings/system-config.html">系统设置</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a>
+          <span>/</span>
+          <a href="list.html">产品管理</a>
+          <span>/</span>
+          <span>编辑产品</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-default" onclick="window.history.back()">返回</button>
+          <button class="btn btn-primary" onclick="saveProduct()">保存</button>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <div class="form-container">
+          <h2 class="form-title">编辑产品信息</h2>
+
+          <div class="form-grid">
+            <!-- 基本信息 -->
+            <div class="form-full">
+              <h3 style="margin-bottom: var(--spacing-lg);">基本信息</h3>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">产品名称</label>
+              <input type="text" class="form-control" value="速冻鱼排" placeholder="请输入产品名称">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">所属商户</label>
+              <select class="form-control">
+                <option>白垩纪（上海）食品有限公司</option>
+                <option>海洋食品加工厂</option>
+                <option>绿色农场</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">产品分类</label>
+              <select class="form-control">
+                <option>水产加工</option>
+                <option>速冻食品</option>
+                <option>有机蔬菜</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">产品编号</label>
+              <input type="text" class="form-control" value="PROD-20240615-001" placeholder="自动生成" readonly>
+            </div>
+
+            <div class="form-group form-full">
+              <label class="form-label">产品描述</label>
+              <textarea class="form-control" rows="4" placeholder="请输入产品描述">深海捕捞，急速冷冻，保持原汁原味。每一片鱼排都经过严格质检，确保新鲜安全。</textarea>
+            </div>
+
+            <!-- 产品图片 -->
+            <div class="form-full">
+              <h3 style="margin: var(--spacing-xl) 0 var(--spacing-lg) 0;">产品图片</h3>
+              <div class="image-upload-grid">
+                <div class="image-upload-box">
+                  <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=200" alt="">
+                  <button class="image-remove" onclick="removeImage(0)">×</button>
+                </div>
+                <div class="image-upload-box" onclick="uploadImage()">
+                  <div style="font-size: 32px;">+</div>
+                  <div style="font-size: 12px; color: var(--text-tertiary);">添加图片</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 规格与库存 -->
+            <div class="form-full">
+              <h3 style="margin: var(--spacing-xl) 0 var(--spacing-lg) 0;">规格与库存</h3>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">规格</label>
+              <input type="text" class="form-control" value="500g/袋" placeholder="例如：500g/袋">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">库存数量</label>
+              <input type="number" class="form-control" value="8560" placeholder="请输入库存数量">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">库存预警</label>
+              <input type="number" class="form-control" value="1000" placeholder="低于此值时预警">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">单位</label>
+              <input type="text" class="form-control" value="件" placeholder="例如：件、盒、袋">
+            </div>
+
+            <!-- 定价信息 -->
+            <div class="form-full">
+              <h3 style="margin: var(--spacing-xl) 0 var(--spacing-lg) 0;">定价信息</h3>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">基础价格（元）</label>
+              <input type="number" class="form-control" value="28.00" step="0.01" placeholder="请输入基础价格">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">成本价（元）</label>
+              <input type="number" class="form-control" value="18.00" step="0.01" placeholder="请输入成本价">
+            </div>
+
+            <div class="form-full">
+              <label class="form-label">阶梯定价</label>
+              <div class="tier-list" id="tierList">
+                <div class="tier-item">
+                  <input type="number" class="form-control" placeholder="起订量" value="100">
+                  <input type="number" class="form-control" placeholder="价格" value="26.00" step="0.01">
+                  <input type="number" class="form-control" placeholder="折扣率%" value="7.14" step="0.01">
+                  <button class="btn btn-sm btn-danger" onclick="removeTier(this)">删除</button>
+                </div>
+                <div class="tier-item">
+                  <input type="number" class="form-control" placeholder="起订量" value="500">
+                  <input type="number" class="form-control" placeholder="价格" value="24.00" step="0.01">
+                  <input type="number" class="form-control" placeholder="折扣率%" value="14.29" step="0.01">
+                  <button class="btn btn-sm btn-danger" onclick="removeTier(this)">删除</button>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-default" style="margin-top: var(--spacing-md);" onclick="addTier()">+ 添加阶梯</button>
+            </div>
+
+            <!-- 溯源信息 -->
+            <div class="form-full">
+              <h3 style="margin: var(--spacing-xl) 0 var(--spacing-lg) 0;">溯源信息</h3>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">溯源码前缀</label>
+              <input type="text" class="form-control" value="CRETAS" placeholder="溯源码前缀">
+            </div>
+
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                <input type="checkbox" checked>
+                <span>启用批次溯源</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                <input type="checkbox" checked>
+                <span>启用区块链存证</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                <input type="checkbox">
+                <span>显示供应商信息</span>
+              </label>
+            </div>
+
+            <!-- 销售设置 -->
+            <div class="form-full">
+              <h3 style="margin: var(--spacing-xl) 0 var(--spacing-lg) 0;">销售设置</h3>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">最小起订量</label>
+              <input type="number" class="form-control" value="10" placeholder="最小起订量">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">销售状态</label>
+              <select class="form-control">
+                <option selected>在售</option>
+                <option>下架</option>
+                <option>售罄</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                <input type="checkbox" checked>
+                <span>允许C端购买</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                <input type="checkbox">
+                <span>推荐产品（首页展示）</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions" style="margin-top: var(--spacing-xl); display: flex; justify-content: flex-end; gap: var(--spacing-md);">
+            <button class="btn btn-default" onclick="window.history.back()">取消</button>
+            <button class="btn btn-primary" onclick="saveProduct()">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    function uploadImage() {
+      Utils.showToast('图片上传功能开发中');
+    }
+
+    function removeImage(index) {
+      Utils.showToast('图片已删除');
+    }
+
+    function addTier() {
+      const tierList = document.getElementById('tierList');
+      const tierItem = document.createElement('div');
+      tierItem.className = 'tier-item';
+      tierItem.innerHTML = `
+        <input type="number" class="form-control" placeholder="起订量">
+        <input type="number" class="form-control" placeholder="价格" step="0.01">
+        <input type="number" class="form-control" placeholder="折扣率%" step="0.01">
+        <button class="btn btn-sm btn-danger" onclick="removeTier(this)">删除</button>
+      `;
+      tierList.appendChild(tierItem);
+    }
+
+    function removeTier(btn) {
+      btn.parentElement.remove();
+    }
+
+    async function saveProduct() {
+      Utils.showLoading('保存中...');
+      await Utils.sleep(1500);
+      Utils.hideLoading();
+      Utils.showToast('保存成功', 'success');
+      await Utils.sleep(1000);
+      window.location.href = 'list.html';
+    }
+  </script>
+</body>
+</html>

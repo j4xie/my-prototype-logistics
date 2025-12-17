@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的订单 - 溯源商城</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .tabs {
+      background: var(--bg-white);
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 44px;
+      z-index: 10;
+    }
+    .tab {
+      flex: 1;
+      padding: var(--spacing-md);
+      text-align: center;
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+    }
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+      font-weight: var(--font-weight-semibold);
+    }
+    .order-list {
+      padding: var(--spacing-lg);
+    }
+    .order-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-md);
+      overflow: hidden;
+    }
+    .order-header {
+      padding: var(--spacing-md) var(--spacing-lg);
+      background: var(--bg-gray);
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--font-size-sm);
+    }
+    .order-body {
+      padding: var(--spacing-lg);
+      display: flex;
+      gap: var(--spacing-md);
+    }
+    .order-image {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+    }
+    .order-info {
+      flex: 1;
+    }
+    .order-name {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-xs);
+    }
+    .order-spec {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      margin-bottom: var(--spacing-sm);
+    }
+    .order-price {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--error-color);
+    }
+    .order-footer {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--spacing-sm);
+    }
+    
+    /* 批量支付栏 */
+    .batch-pay-bar {
+      position: fixed;
+      bottom: calc(var(--mobile-tabbar-height) + 1px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      background: var(--bg-white);
+      border-top: 1px solid var(--border-color);
+      padding: var(--spacing-md) var(--spacing-lg);
+      display: none; /* 默认隐藏 */
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      z-index: 90;
+      box-sizing: border-box;
+    }
+    
+    .batch-select-all {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+    }
+    
+    .batch-info {
+      font-size: 14px;
+    }
+    
+    .batch-total {
+      color: var(--error-color);
+      font-weight: bold;
+      font-size: 18px;
+    }
+    
+    .batch-btn {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .order-select-container {
+      display: flex;
+      align-items: center;
+      padding-right: 10px;
+    }
+    
+    .order-checkbox {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">我的订单</div>
+    </div>
+    <div class="mobile-content">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('all')">全部</div>
+        <div class="tab" onclick="switchTab('pending')">待付款</div>
+        <div class="tab" onclick="switchTab('shipping')">配送中</div>
+        <div class="tab" onclick="switchTab('completed')">已完成</div>
+      </div>
+      <div class="order-list" id="orderList"></div>
+      
+      <!-- 批量支付栏 -->
+      <div class="batch-pay-bar" id="batchPayBar">
+        <div class="batch-select-all">
+          <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+          <label for="selectAll">全选</label>
+        </div>
+        <div class="batch-info">
+          <span>合计:</span>
+          <span class="batch-total" id="batchTotal">¥0</span>
+        </div>
+        <button class="batch-btn" onclick="processBatchPay()">合并支付</button>
+      </div>
+    </div>
+
+    <!-- 底部Tab导航 -->
+    <div class="mobile-tabbar">
+      <div class="tabbar-item" onclick="navigateTo('../home/home.html')">
+        <div class="tabbar-icon">🏠</div>
+        <div class="tabbar-label">首页</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../products/list.html')">
+        <div class="tabbar-icon">📦</div>
+        <div class="tabbar-label">分类</div>
+      </div>
+      <div class="tabbar-item active">
+        <div class="tabbar-icon">🧾</div>
+        <div class="tabbar-label">订单</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../profile/index.html')">
+        <div class="tabbar-icon">👤</div>
+        <div class="tabbar-label">我的</div>
+      </div>
+    </div>
+  </div>
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+    const orders = [
+      { id: 1, name: '速冻鱼排', qty: 100, price: 2600, status: 'shipping', time: '2025-01-10', image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=200' },
+      { id: 2, name: '有机蔬菜', qty: 50, price: 800, status: 'completed', time: '2025-01-08', image: 'https://images.unsplash.com/photo-1628773822990-202c049cd3f7?w=200' },
+      { id: 3, name: '优质大米', qty: 200, price: 1200, status: 'pending', time: '2025-01-09', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200' }
+    ];
+    const statusMap = { pending: '待付款', shipping: '配送中', completed: '已完成' };
+    let currentTab = 'all';
+    let selectedOrders = new Set();
+
+    function renderOrders() {
+      const list = document.getElementById('orderList');
+      const filteredOrders = currentTab === 'all' ? orders : orders.filter(o => o.status === currentTab);
+      
+      // 更新批量支付栏显示状态
+      const hasPending = filteredOrders.some(o => o.status === 'pending');
+      const batchBar = document.getElementById('batchPayBar');
+      if (hasPending) {
+        batchBar.style.display = 'flex';
+        // 增加底部padding防止遮挡
+        document.querySelector('.mobile-content').style.paddingBottom = '120px';
+      } else {
+        batchBar.style.display = 'none';
+        document.querySelector('.mobile-content').style.paddingBottom = '70px';
+      }
+
+      list.innerHTML = filteredOrders.map(o => `
+        <div class="order-card" onclick="viewOrder(${o.id})">
+          <div class="order-header">
+            <div style="display: flex; align-items: center;">
+              ${o.status === 'pending' ? `
+                <div class="order-select-container" onclick="event.stopPropagation()">
+                  <input type="checkbox" class="order-checkbox" 
+                         data-id="${o.id}" 
+                         data-price="${o.price}"
+                         onchange="handleOrderSelect(this)"
+                         ${selectedOrders.has(o.id) ? 'checked' : ''}>
+                </div>
+              ` : ''}
+              <span>订单号: ${o.id}</span>
+            </div>
+            <span style="color: var(--primary-color);">${statusMap[o.status]}</span>
+          </div>
+          <div class="order-body">
+            <img src="${o.image}" class="order-image">
+            <div class="order-info">
+              <div class="order-name">${o.name}</div>
+              <div class="order-spec">数量: ${o.qty} 件</div>
+              <div class="order-price">¥${o.price}</div>
+            </div>
+          </div>
+          <div class="order-footer">
+            ${o.status === 'pending' ? '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); payOrder(' + o.id + ')">去支付</button>' : ''}
+            ${o.status === 'shipping' ? '<button class="btn btn-sm btn-default">查看物流</button>' : ''}
+            <button class="btn btn-sm btn-default" onclick="event.stopPropagation(); viewOrder(${o.id})">查看详情</button>
+          </div>
+        </div>
+      `).join('');
+      
+      updateBatchTotal();
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      renderOrders();
+    }
+
+    function handleOrderSelect(checkbox) {
+      const id = parseInt(checkbox.dataset.id);
+      if (checkbox.checked) {
+        selectedOrders.add(id);
+      } else {
+        selectedOrders.delete(id);
+      }
+      updateBatchTotal();
+      updateSelectAllState();
+    }
+
+    function toggleSelectAll() {
+      const selectAll = document.getElementById('selectAll');
+      const checkboxes = document.querySelectorAll('.order-checkbox');
+      
+      checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+        handleOrderSelect(cb);
+      });
+    }
+    
+    function updateSelectAllState() {
+      const checkboxes = document.querySelectorAll('.order-checkbox');
+      const selectAll = document.getElementById('selectAll');
+      if (checkboxes.length === 0) {
+        selectAll.checked = false;
+        return;
+      }
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      selectAll.checked = allChecked;
+    }
+
+    function updateBatchTotal() {
+      let total = 0;
+      selectedOrders.forEach(id => {
+        const order = orders.find(o => o.id === id);
+        if (order) total += order.price;
+      });
+      document.getElementById('batchTotal').textContent = '¥' + total;
+    }
+
+    function processBatchPay() {
+      if (selectedOrders.size === 0) {
+        Utils.showToast('请先选择要支付的订单', 'info');
+        return;
+      }
+      Utils.showToast(`正在合并支付 ${selectedOrders.size} 个订单...`, 'success');
+      setTimeout(() => {
+        // 模拟支付成功，更新状态
+        selectedOrders.forEach(id => {
+          const order = orders.find(o => o.id === id);
+          if (order) order.status = 'shipping';
+        });
+        selectedOrders.clear();
+        document.getElementById('selectAll').checked = false;
+        renderOrders();
+        Utils.showToast('支付成功', 'success');
+      }, 1500);
+    }
+    
+    function payOrder(id) {
+       Utils.showToast(`正在支付订单 ${id}...`, 'info');
+       setTimeout(() => {
+          const order = orders.find(o => o.id === id);
+          if (order) order.status = 'shipping';
+          renderOrders();
+          Utils.showToast('支付成功', 'success');
+       }, 1500);
+    }
+
+    function viewOrder(id) {
+      window.location.href = `detail.html?id=${id}`;
+    }
+    document.addEventListener('DOMContentLoaded', renderOrders);
+  </script>
+</body>
+</html>

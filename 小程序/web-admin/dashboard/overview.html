@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>总览仪表板 - 白垩纪食品溯源管理后台</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+
+  <style>
+    /* 关键指标卡片 */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .metric-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2xl);
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-base);
+      cursor: pointer;
+    }
+
+    .metric-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .metric-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-2xl);
+    }
+
+    .metric-icon.primary {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+
+    .metric-icon.success {
+      background: rgba(82, 196, 26, 0.1);
+    }
+
+    .metric-icon.warning {
+      background: rgba(250, 173, 20, 0.1);
+    }
+
+    .metric-icon.danger {
+      background: rgba(245, 34, 45, 0.1);
+    }
+
+    .metric-trend {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: var(--font-size-sm);
+    }
+
+    .metric-trend.up {
+      color: var(--success-color);
+    }
+
+    .metric-trend.down {
+      color: var(--error-color);
+    }
+
+    .metric-value {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .metric-label {
+      font-size: var(--font-size-base);
+      color: var(--text-secondary);
+    }
+
+    /* 图表区域 */
+    .charts-section {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .chart-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2xl);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-2xl);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .chart-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+    }
+
+    .chart-filters {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    .chart-filter-btn {
+      padding: var(--spacing-xs) var(--spacing-md);
+      background: var(--bg-gray);
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .chart-filter-btn.active {
+      background: var(--primary-color);
+      color: var(--text-inverse);
+    }
+
+    .chart-placeholder {
+      height: 300px;
+      background: linear-gradient(180deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.02) 100%);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+
+    /* 待办事项 */
+    .todos-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-lg);
+    }
+
+    .todos-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2xl);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .todos-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .todos-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+    }
+
+    .todos-badge {
+      padding: var(--spacing-xs) var(--spacing-md);
+      background: var(--error-color);
+      color: var(--text-inverse);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .todo-item {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background var(--transition-base);
+    }
+
+    .todo-item:last-child {
+      border-bottom: none;
+    }
+
+    .todo-item:hover {
+      background: var(--bg-gray);
+    }
+
+    .todo-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .todo-item-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      color: var(--text-primary);
+    }
+
+    .todo-item-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .todo-item-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+
+    /* 活动列表 */
+    .activity-item {
+      display: flex;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: var(--font-weight-bold);
+      flex-shrink: 0;
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-text {
+      font-size: var(--font-size-sm);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .activity-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body>
+  <!-- 桌面端容器 -->
+  <div class="desktop-container">
+    <!-- 顶部导航栏 -->
+    <div class="desktop-header">
+      <div class="desktop-header-left">
+        <div class="desktop-logo">🍱 白垩纪食品溯源</div>
+      </div>
+      <div class="desktop-header-center">
+        <div class="desktop-search">
+          <input type="text" placeholder="搜索商户、产品、订单..." class="desktop-search-input">
+          <button class="desktop-search-btn"></button>
+        </div>
+      </div>
+      <div class="desktop-header-right">
+        <div class="desktop-header-icon" onclick="Utils.showToast('通知功能开发中', 'info')">
+          <span>🔔</span>
+          <span class="desktop-header-badge">5</span>
+        </div>
+        <div class="desktop-header-icon" onclick="Utils.showToast('消息功能开发中', 'info')">
+          <span>✉️</span>
+          <span class="desktop-header-badge">12</span>
+        </div>
+        <div class="desktop-user-menu">
+          <div class="desktop-user-avatar"></div>
+          <div class="desktop-user-info">
+            <div class="desktop-user-name">管理员</div>
+            <div class="desktop-user-role">超级管理员</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div class="desktop-sidebar">
+      <div class="desktop-menu">
+        <div class="desktop-menu-item active">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">总览</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../merchant/list.html')">
+          <span class="desktop-menu-icon">🏢</span>
+          <span class="desktop-menu-label">商户管理</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../product-management/list.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">产品管理</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../content-control/review-queue.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">内容控制</span>
+        </div>
+        <div class="desktop-menu-item" onclick="Utils.showToast('流量广告功能开发中', 'info')">
+          <span class="desktop-menu-icon">📢</span>
+          <span class="desktop-menu-label">流量广告</span>
+        </div>
+        <div class="desktop-menu-item" onclick="navigateTo('../ai-knowledge/knowledge-base.html')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">AI知识库</span>
+        </div>
+        <div class="desktop-menu-item" onclick="Utils.showToast('分析功能开发中', 'info')">
+          <span class="desktop-menu-icon">📈</span>
+          <span class="desktop-menu-label">分析</span>
+        </div>
+        <div class="desktop-menu-item" onclick="Utils.showToast('设置功能开发中', 'info')">
+          <span class="desktop-menu-icon"></span>
+          <span class="desktop-menu-label">设置</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="desktop-main">
+      <div class="desktop-content">
+        <!-- 页面标题 -->
+        <div class="desktop-page-header">
+          <div>
+            <h1 class="desktop-page-title">总览仪表板</h1>
+            <p class="desktop-page-subtitle">欢迎回来，这是今天的数据概览</p>
+          </div>
+          <div class="desktop-page-actions">
+            <button class="btn btn-default" onclick="loadDashboardData()">🔄 刷新数据</button>
+            <button class="btn btn-primary" onclick="Utils.showToast('导出功能开发中', 'info')">📥 导出报表</button>
+          </div>
+        </div>
+
+        <!-- 关键指标 -->
+        <div class="metrics-grid">
+          <div class="metric-card" onclick="navigateTo('../merchant/list.html')">
+            <div class="metric-header">
+              <div class="metric-icon primary">🏢</div>
+              <div class="metric-trend up">
+                <span>↑</span>
+                <span>+12%</span>
+              </div>
+            </div>
+            <div class="metric-value" id="merchantCount">156</div>
+            <div class="metric-label">入驻商户</div>
+          </div>
+
+          <div class="metric-card" onclick="navigateTo('../product-management/list.html')">
+            <div class="metric-header">
+              <div class="metric-icon success"></div>
+              <div class="metric-trend up">
+                <span>↑</span>
+                <span>+8%</span>
+              </div>
+            </div>
+            <div class="metric-value" id="productCount">2,341</div>
+            <div class="metric-label">在售产品</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon warning"></div>
+              <div class="metric-trend up">
+                <span>↑</span>
+                <span>+24%</span>
+              </div>
+            </div>
+            <div class="metric-value" id="gmvTotal">¥1.2M</div>
+            <div class="metric-label">本月GMV</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon danger">📋</div>
+              <div class="metric-trend down">
+                <span>↓</span>
+                <span>-5%</span>
+              </div>
+            </div>
+            <div class="metric-value" id="orderCount">8,567</div>
+            <div class="metric-label">本月订单</div>
+          </div>
+        </div>
+
+        <!-- 图表 -->
+        <div class="charts-section">
+          <!-- 订单趋势 -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">订单趋势</div>
+              <div class="chart-filters">
+                <button class="chart-filter-btn active">7天</button>
+                <button class="chart-filter-btn">30天</button>
+                <button class="chart-filter-btn">90天</button>
+              </div>
+            </div>
+            <div class="chart-placeholder">
+              📈 订单趋势图 (模拟图表 - 实际应使用 Chart.js 或 ECharts)
+            </div>
+          </div>
+
+          <!-- 产品分类占比 -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">产品分类占比</div>
+            </div>
+            <div class="chart-placeholder">
+               饼图 (模拟图表 - 实际应使用 Chart.js 或 ECharts)
+            </div>
+          </div>
+        </div>
+
+        <!-- 待办事项和最近活动 -->
+        <div class="todos-section">
+          <!-- 待办事项 -->
+          <div class="todos-card">
+            <div class="todos-header">
+              <div class="todos-title">待办事项</div>
+              <div class="todos-badge">8</div>
+            </div>
+            <div id="todosContainer">
+              <div class="todo-item" onclick="navigateTo('../merchant/review.html')">
+                <div class="todo-item-header">
+                  <div class="todo-item-title">商户审核</div>
+                  <div class="todo-item-time">2小时前</div>
+                </div>
+                <div class="todo-item-desc">5个商户待审核</div>
+              </div>
+              <div class="todo-item" onclick="navigateTo('../content-control/review-queue.html')">
+                <div class="todo-item-header">
+                  <div class="todo-item-title">内容审核</div>
+                  <div class="todo-item-time">5小时前</div>
+                </div>
+                <div class="todo-item-desc">12条产品文案待审核</div>
+              </div>
+              <div class="todo-item" onclick="navigateTo('../product-management/list.html')">
+                <div class="todo-item-header">
+                  <div class="todo-item-title">产品上架</div>
+                  <div class="todo-item-time">1天前</div>
+                </div>
+                <div class="todo-item-desc">8个新产品待上架</div>
+              </div>
+              <div class="todo-item" onclick="Utils.showToast('系统维护功能开发中', 'info')">
+                <div class="todo-item-header">
+                  <div class="todo-item-title">系统维护</div>
+                  <div class="todo-item-time">2天前</div>
+                </div>
+                <div class="todo-item-desc">定期数据备份</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 最近活动 -->
+          <div class="todos-card">
+            <div class="todos-header">
+              <div class="todos-title">最近活动</div>
+            </div>
+            <div id="activityContainer">
+              <div class="activity-item">
+                <div class="activity-avatar">张</div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>张三</strong> 审核通过了商户 <strong>上海餐饮有限公司</strong></div>
+                  <div class="activity-time">10分钟前</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-avatar">李</div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>李四</strong> 上架了产品 <strong>速冻鱼排</strong></div>
+                  <div class="activity-time">1小时前</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-avatar">王</div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>王五</strong> 更新了知识库文档 <strong>溯源操作指南</strong></div>
+                  <div class="activity-time">3小时前</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-avatar">赵</div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>赵六</strong> 处理了内容审核 <strong>12条产品文案</strong></div>
+                  <div class="activity-time">5小时前</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/mockAPI.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+
+  <script>
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboardData();
+    });
+
+    // ==================== 加载仪表板数据 ====================
+    async function loadDashboardData() {
+      try {
+        const result = await MockAPI.request('admin.dashboard.stats', {
+          skipError: true
+        });
+
+        // 更新关键指标
+        document.getElementById('merchantCount').textContent = result.data.merchants.total.toLocaleString();
+        document.getElementById('productCount').textContent = result.data.products.total.toLocaleString();
+        document.getElementById('gmvTotal').textContent = `¥${(result.data.orders.gmv / 1000000).toFixed(1)}M`;
+        document.getElementById('orderCount').textContent = result.data.orders.total.toLocaleString();
+
+        Utils.showToast('数据已刷新', 'success');
+
+      } catch (error) {
+        console.error('加载仪表板数据失败:', error);
+        Utils.showToast('加载数据失败', 'error');
+      }
+    }
+
+    // ==================== 导航函数 ====================
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+
+    // ==================== 图表筛选 ====================
+    document.querySelectorAll('.chart-filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // 移除所有激活状态
+        e.target.parentElement.querySelectorAll('.chart-filter-btn').forEach(b => {
+          b.classList.remove('active');
+        });
+        // 激活当前按钮
+        e.target.classList.add('active');
+        // 重新加载图表数据
+        Utils.showToast(`切换到${e.target.textContent}视图`, 'info');
+      });
+    });
+  </script>
+</body>
+</html>
