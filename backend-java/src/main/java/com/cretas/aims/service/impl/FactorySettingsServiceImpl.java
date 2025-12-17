@@ -1,9 +1,11 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.dto.FactorySettingsDTO;
+import com.cretas.aims.entity.Factory;
 import com.cretas.aims.entity.FactorySettings;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.repository.FactoryRepository;
 import com.cretas.aims.repository.FactorySettingsRepository;
 import com.cretas.aims.service.FactorySettingsService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,11 +36,22 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
 
     private final FactorySettingsRepository settingsRepository;
     private final ObjectMapper objectMapper;
+    private final FactoryRepository factoryRepository;
 
     @Override
     public FactorySettingsDTO getSettings(String factoryId) {
         FactorySettings settings = settingsRepository.findByFactoryId(factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("工厂设置不存在"));
+        Factory factory = factoryRepository.findById(factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("工厂不存在，ID: " + factoryId));
+        if(null != factory){
+            settings.setFactoryName(factory.getName());
+            settings.setFactoryAddress(factory.getAddress());
+            settings.setContactPhone(factory.getContactPhone());
+            settings.setContactEmail(factory.getContactEmail());
+            settings.setWorkingHours(10);
+        }
+
         return convertToDTO(settings);
     }
 
@@ -384,6 +398,12 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
                 .enableAttendance(settings.getEnableAttendance())
                 // 审计信息
                 .lastModifiedAt(settings.getLastModifiedAt())
+                .factoryName(settings.getFactoryName())
+                .factoryAddress(settings.getFactoryAddress())
+                .contactPhone(settings.getContactPhone())
+                .contactEmail(settings.getContactEmail())
+                .workingHours(settings.getWorkingHours())
+                .workingDays(List.of(new Boolean[]{true, true, true, true, true, false, false}))
                 .build();
     }
 
@@ -526,12 +546,12 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
                 return clazz.cast(FactorySettingsDTO.WorkTimeSettings.builder()
                         .startTime("08:00")
                         .endTime("18:00")
-                        .workDays("1,2,3,4,5")
+                        .workDays(List.of(new String[]{"1", "2", "3", "4", "5"}))
                         .build());
             } else if (clazz == FactorySettingsDTO.ProductionSettings.class) {
                 return clazz.cast(FactorySettingsDTO.ProductionSettings.builder()
                         .defaultBatchSize(100)
-                        .qualityCheckFrequency(10)
+                        .qualityCheckFrequency("10")
                         .autoApprovalThreshold(95)
                         .build());
             } else if (clazz == FactorySettingsDTO.InventorySettings.class) {
