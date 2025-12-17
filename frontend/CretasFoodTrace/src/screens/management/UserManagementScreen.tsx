@@ -102,9 +102,9 @@ export default function UserManagementScreen() {
         page: 1,
         size: 100,
       });
-
+      console.log("response=", response);
       // 处理分页响应 - userApiClient.getUsers 返回 PageResponse<UserDTO>
-      const userData = response.content;
+      const userData = response.data.content;
 
       userManagementLogger.info('用户列表加载成功', {
         userCount: userData.length,
@@ -797,7 +797,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   roleChip: {
-    height: 24,
+    height: 32,
   },
   userInfo: {
     marginBottom: 12,

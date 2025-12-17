@@ -6,6 +6,7 @@ import lombok.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 工厂设置DTO
@@ -105,6 +106,21 @@ public class FactorySettingsDTO {
     private LocalDateTime lastModifiedAt;
 
     /**
+     * 工厂名称
+     */
+    private String factoryName;
+    private String factoryAddress;
+    private String contactPhone;
+    private String contactEmail;
+
+    private int workingHours;
+
+    private List<Boolean> workingDays;
+
+    private int lateThresholdMinutes = 10;
+    private int earlyLeaveThresholdMinutes = 10;
+
+    /**
      * AI设置
      */
     @Data
@@ -185,7 +201,7 @@ public class FactorySettingsDTO {
         private String endTime;
 
         @Schema(description = "工作日", example = "[1,2,3,4,5]")
-        private String workDays;
+        private List<String> workDays;
 
         @Schema(description = "节假日")
         private String holidays;
@@ -203,7 +219,7 @@ public class FactorySettingsDTO {
         private Integer defaultBatchSize;
 
         @Schema(description = "质检频率", example = "10")
-        private Integer qualityCheckFrequency;
+        private String qualityCheckFrequency;
 
         @Schema(description = "自动审批阈值", example = "95")
         private Integer autoApprovalThreshold;
