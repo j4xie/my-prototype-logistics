@@ -547,7 +547,18 @@ const MockDB = {
   orders: [],
 
   // ==================== Web端商户数据 ====================
-  merchants: [],
+  merchants: [
+    { id: 1, name: '上海鲜优食品有限公司', contact: '张三', phone: '13800138001', status: 'active', reviewStatus: 'approved', createTime: '2024-12-01T08:00:00Z', approveTime: '2024-12-02T10:00:00Z', businessLicense: 'BL20241201001', address: '上海市浦东新区张江高科技园区', productCount: 25 },
+    { id: 2, name: '广州海鲜批发中心', contact: '李四', phone: '13800138002', status: 'active', reviewStatus: 'approved', createTime: '2024-11-15T08:00:00Z', approveTime: '2024-11-16T14:00:00Z', businessLicense: 'BL20241115002', address: '广州市白云区江高镇', productCount: 42 },
+    { id: 3, name: '深圳冷链物流有限公司', contact: '王五', phone: '13800138003', status: 'pending', reviewStatus: 'pending', createTime: '2024-12-15T08:00:00Z', businessLicense: 'BL20241215003', address: '深圳市龙岗区坪山街道', productCount: 0 },
+    { id: 4, name: '北京农产品配送中心', contact: '赵六', phone: '13800138004', status: 'active', reviewStatus: 'approved', createTime: '2024-10-20T08:00:00Z', approveTime: '2024-10-21T09:00:00Z', businessLicense: 'BL20241020004', address: '北京市通州区张家湾镇', productCount: 18 },
+    { id: 5, name: '杭州西湖食品厂', contact: '钱七', phone: '13800138005', status: 'rejected', reviewStatus: 'rejected', createTime: '2024-12-10T08:00:00Z', reviewReason: '资质材料不完整', businessLicense: 'BL20241210005', address: '杭州市西湖区转塘街道', productCount: 0 },
+    { id: 6, name: '成都蜀味源食品', contact: '孙八', phone: '13800138006', status: 'active', reviewStatus: 'approved', createTime: '2024-09-05T08:00:00Z', approveTime: '2024-09-06T11:00:00Z', businessLicense: 'BL20240905006', address: '成都市锦江区春熙路街道', productCount: 35 },
+    { id: 7, name: '武汉楚天食材', contact: '周九', phone: '13800138007', status: 'active', reviewStatus: 'approved', createTime: '2024-08-18T08:00:00Z', approveTime: '2024-08-19T16:00:00Z', businessLicense: 'BL20240818007', address: '武汉市江汉区汉正街', productCount: 28 },
+    { id: 8, name: '南京秦淮水产', contact: '吴十', phone: '13800138008', status: 'pending', reviewStatus: 'pending', createTime: '2024-12-14T08:00:00Z', businessLicense: 'BL20241214008', address: '南京市秦淮区夫子庙街道', productCount: 0 },
+    { id: 9, name: '重庆火锅食材批发', contact: '郑十一', phone: '13800138009', status: 'active', reviewStatus: 'approved', createTime: '2024-07-22T08:00:00Z', approveTime: '2024-07-23T10:00:00Z', businessLicense: 'BL20240722009', address: '重庆市渝中区解放碑街道', productCount: 52 },
+    { id: 10, name: '青岛海洋食品集团', contact: '冯十二', phone: '13800138010', status: 'active', reviewStatus: 'approved', createTime: '2024-06-10T08:00:00Z', approveTime: '2024-06-11T13:00:00Z', businessLicense: 'BL20240610010', address: '青岛市市南区香港中路', productCount: 67 }
+  ],
 
   // ==================== AI知识库数据 ====================
   knowledgeBase: [],
@@ -558,8 +569,121 @@ const MockDB = {
   // ==================== 推荐数据 ====================
   referrals: [],
 
+  // ==================== 广告位数据（固定配置） ====================
+  adSlots: [
+    { id: 1, name: '首页顶部Banner', position: 'home_top', size: '750x300', maxAds: 5, description: '首页轮播Banner，最显眼的广告位' },
+    { id: 2, name: '列表页右侧', position: 'list_right', size: '300x250', maxAds: 3, description: '商品列表页右侧推荐位' },
+    { id: 3, name: '详情页底部', position: 'detail_bottom', size: '728x90', maxAds: 2, description: '商品详情页底部横幅' },
+    { id: 4, name: '搜索结果顶部', position: 'search_top', size: '750x150', maxAds: 2, description: '搜索结果页顶部推广位' },
+    { id: 5, name: '分类页Banner', position: 'category_banner', size: '750x200', maxAds: 3, description: '分类页面顶部Banner' }
+  ],
+
+  // ==================== 广告内容数据 ====================
+  ads: [
+    {
+      id: 1,
+      slotId: 1,
+      image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=750&h=300&fit=crop',
+      merchantId: 1,
+      merchantName: '上海鲜优食品有限公司',
+      productId: 1,
+      productName: '流沙黄金麻球咸蛋黄',
+      startTime: '2025-01-01',
+      endTime: '2026-12-31',
+      status: 'active',
+      clicks: 8920,
+      impressions: 125680,
+      createTime: '2024-12-01T08:00:00Z'
+    },
+    {
+      id: 2,
+      slotId: 1,
+      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=750&h=300&fit=crop',
+      merchantId: 2,
+      merchantName: '广州海鲜批发中心',
+      productId: 3,
+      productName: '尚品好蔡原味牛肉片',
+      startTime: '2025-01-01',
+      endTime: '2026-12-31',
+      status: 'active',
+      clicks: 5430,
+      impressions: 89200,
+      createTime: '2024-12-15T10:00:00Z'
+    },
+    {
+      id: 3,
+      slotId: 1,
+      image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=750&h=300&fit=crop',
+      merchantId: 6,
+      merchantName: '成都蜀味源食品',
+      productId: 4,
+      productName: '冷冻猪肉丸',
+      startTime: '2025-01-01',
+      endTime: '2026-12-31',
+      status: 'active',
+      clicks: 12350,
+      impressions: 156000,
+      createTime: '2024-11-01T09:00:00Z'
+    },
+    {
+      id: 4,
+      slotId: 2,
+      image: 'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=300&h=250&fit=crop',
+      merchantId: 9,
+      merchantName: '重庆火锅食材批发',
+      productId: 5,
+      productName: '火锅底料套装',
+      startTime: '2025-01-01',
+      endTime: '2026-12-31',
+      status: 'active',
+      clicks: 3560,
+      impressions: 68520,
+      createTime: '2024-12-01T14:00:00Z'
+    },
+    {
+      id: 5,
+      slotId: 2,
+      image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=300&h=250&fit=crop',
+      merchantId: 10,
+      merchantName: '青岛海洋食品集团',
+      productId: 15,
+      productName: '干海带结',
+      startTime: '2025-01-01',
+      endTime: '2026-12-31',
+      status: 'active',
+      clicks: 2100,
+      impressions: 42100,
+      createTime: '2024-12-10T11:00:00Z'
+    },
+    {
+      id: 6,
+      slotId: 3,
+      image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=728&h=90&fit=crop',
+      merchantId: 4,
+      merchantName: '北京农产品配送中心',
+      productId: 14,
+      productName: '手工挂面',
+      startTime: '2025-01-01',
+      endTime: '2026-12-31',
+      status: 'active',
+      clicks: 1890,
+      impressions: 42100,
+      createTime: '2024-12-05T16:00:00Z'
+    }
+  ],
+
   // ==================== 统计数据 ====================
-  statistics: {}
+  statistics: {
+    overview: {
+      merchants: { total: 156, growth: 0.12 },
+      products: { total: 2341, growth: 0.08 },
+      orders: { total: 8567, gmv: 1200000, growth: -0.05 },
+      chartData: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        values: [120, 150, 180, 220, 200, 250, 300]
+      }
+    }
+  }
 };
 
 // 工具函数：生成批次号

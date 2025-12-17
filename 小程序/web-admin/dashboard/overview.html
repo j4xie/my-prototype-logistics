@@ -8,7 +8,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="../../assets/css/variables.css">
   <link rel="stylesheet" href="../../assets/css/common.css">
-  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
 
   <style>
     /* 关键指标卡片 */
@@ -271,6 +271,12 @@
   </style>
 </head>
 <body>
+  <!-- #region agent log - body start -->
+  <script>
+    fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:body:start',message:'Body tag started',data:{url: window.location.href},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+  </script>
+  <!-- #endregion -->
+
   <!-- 桌面端容器 -->
   <div class="desktop-container">
     <!-- 顶部导航栏 -->
@@ -303,42 +309,62 @@
       </div>
     </div>
 
-    <!-- 侧边栏 -->
+    <!-- 侧边栏 (New Structure) -->
     <div class="desktop-sidebar">
-      <div class="desktop-menu">
-        <div class="desktop-menu-item active">
-          <span class="desktop-menu-icon"></span>
-          <span class="desktop-menu-label">总览</span>
-        </div>
-        <div class="desktop-menu-item" onclick="navigateTo('../merchant/list.html')">
-          <span class="desktop-menu-icon">🏢</span>
-          <span class="desktop-menu-label">商户管理</span>
-        </div>
-        <div class="desktop-menu-item" onclick="navigateTo('../product-management/list.html')">
-          <span class="desktop-menu-icon"></span>
-          <span class="desktop-menu-label">产品管理</span>
-        </div>
-        <div class="desktop-menu-item" onclick="navigateTo('../content-control/review-queue.html')">
-          <span class="desktop-menu-icon"></span>
-          <span class="desktop-menu-label">内容控制</span>
-        </div>
-        <div class="desktop-menu-item" onclick="Utils.showToast('流量广告功能开发中', 'info')">
-          <span class="desktop-menu-icon">📢</span>
-          <span class="desktop-menu-label">流量广告</span>
-        </div>
-        <div class="desktop-menu-item" onclick="navigateTo('../ai-knowledge/knowledge-base.html')">
-          <span class="desktop-menu-icon"></span>
-          <span class="desktop-menu-label">AI知识库</span>
-        </div>
-        <div class="desktop-menu-item" onclick="Utils.showToast('分析功能开发中', 'info')">
-          <span class="desktop-menu-icon">📈</span>
-          <span class="desktop-menu-label">分析</span>
-        </div>
-        <div class="desktop-menu-item" onclick="Utils.showToast('设置功能开发中', 'info')">
-          <span class="desktop-menu-icon"></span>
-          <span class="desktop-menu-label">设置</span>
-        </div>
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
       </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item active">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
     </div>
 
     <!-- 主内容区 -->
@@ -366,31 +392,31 @@
                 <span>+12%</span>
               </div>
             </div>
-            <div class="metric-value" id="merchantCount">156</div>
+            <div class="metric-value" id="merchantCount">--</div>
             <div class="metric-label">入驻商户</div>
           </div>
 
           <div class="metric-card" onclick="navigateTo('../product-management/list.html')">
             <div class="metric-header">
-              <div class="metric-icon success"></div>
+              <div class="metric-icon success">📦</div>
               <div class="metric-trend up">
                 <span>↑</span>
                 <span>+8%</span>
               </div>
             </div>
-            <div class="metric-value" id="productCount">2,341</div>
+            <div class="metric-value" id="productCount">--</div>
             <div class="metric-label">在售产品</div>
           </div>
 
           <div class="metric-card">
             <div class="metric-header">
-              <div class="metric-icon warning"></div>
+              <div class="metric-icon warning">💰</div>
               <div class="metric-trend up">
                 <span>↑</span>
                 <span>+24%</span>
               </div>
             </div>
-            <div class="metric-value" id="gmvTotal">¥1.2M</div>
+            <div class="metric-value" id="gmvTotal">--</div>
             <div class="metric-label">本月GMV</div>
           </div>
 
@@ -402,7 +428,7 @@
                 <span>-5%</span>
               </div>
             </div>
-            <div class="metric-value" id="orderCount">8,567</div>
+            <div class="metric-value" id="orderCount">--</div>
             <div class="metric-label">本月订单</div>
           </div>
         </div>
@@ -516,35 +542,59 @@
     </div>
   </div>
 
-  <!-- JavaScript -->
-  <script src="../../assets/js/mockData.js"></script>
-  <script src="../../assets/js/mockAPI.js"></script>
-  <script src="../../assets/js/utils.js"></script>
+  <!-- JavaScript with cache busting -->
+  <script src="../../assets/js/mockData.js?v=1765970807"></script>
+  <script src="../../assets/js/mockAPI.js?v=1765970807"></script>
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
 
   <script>
+    // #region agent log - script start
+    fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:script:init',message:'Script started',data:{MockDBExists: typeof MockDB !== 'undefined', MockAPIExists: typeof MockAPI !== 'undefined', UtilsExists: typeof Utils !== 'undefined'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+
     // ==================== 初始化 ====================
     document.addEventListener('DOMContentLoaded', () => {
+      // #region agent log - DOM ready
+      fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:DOMContentLoaded',message:'DOM Content Loaded',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       loadDashboardData();
     });
 
     // ==================== 加载仪表板数据 ====================
     async function loadDashboardData() {
       try {
-        const result = await MockAPI.request('admin.dashboard.stats', {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:loadDashboardData:start',message:'Starting data load',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'1'})}).catch(()=>{});
+        // #endregion
+
+        // Changed endpoint to admin.statistics
+        const result = await MockAPI.request('admin.statistics', {
+          type: 'overview',
           skipError: true
         });
 
-        // 更新关键指标
-        document.getElementById('merchantCount').textContent = result.data.merchants.total.toLocaleString();
-        document.getElementById('productCount').textContent = result.data.products.total.toLocaleString();
-        document.getElementById('gmvTotal').textContent = `¥${(result.data.orders.gmv / 1000000).toFixed(1)}M`;
-        document.getElementById('orderCount').textContent = result.data.orders.total.toLocaleString();
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:loadDashboardData:result',message:'API Result',data:{result},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'2'})}).catch(()=>{});
+        // #endregion
 
-        Utils.showToast('数据已刷新', 'success');
+        if (result && result.data) {
+            // 更新关键指标
+            document.getElementById('merchantCount').textContent = result.data.merchants.total.toLocaleString();
+            document.getElementById('productCount').textContent = result.data.products.total.toLocaleString();
+            document.getElementById('gmvTotal').textContent = `¥${(result.data.orders.gmv / 1000000).toFixed(1)}M`;
+            document.getElementById('orderCount').textContent = result.data.orders.total.toLocaleString();
+            
+            Utils.showToast('数据已刷新', 'success');
+        } else {
+             throw new Error("No data returned");
+        }
 
       } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:loadDashboardData:error',message:'Data load error',data:{error: error.message, stack: error.stack},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'1'})}).catch(()=>{});
+        // #endregion
         console.error('加载仪表板数据失败:', error);
-        Utils.showToast('加载数据失败', 'error');
+        Utils.showToast('加载数据失败: ' + error.message, 'error');
       }
     }
 
@@ -552,6 +602,8 @@
     function navigateTo(path) {
       window.location.href = path;
     }
+
+    // Removed inline toggleSidebarGroup as it's now in utils.js attached to window
 
     // ==================== 图表筛选 ====================
     document.querySelectorAll('.chart-filter-btn').forEach(btn => {

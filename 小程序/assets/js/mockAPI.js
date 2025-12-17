@@ -32,16 +32,30 @@ class MockAPI {
       'orders.list': () => this.getOrders(options),
       'referrals.list': () => this.getReferrals(options),
       'referrals.share': () => this.generateShareCode(options),
+      'ads.list': () => this.getPublicAds(options),
+      'ads.click': () => this.trackAdClick(options),
 
       // Web端API
       'merchants.list': () => this.getMerchants(options),
       'merchants.review': () => this.reviewMerchant(options),
+      'admin.merchants.list': () => this.getMerchants(options),
+      'admin.merchants.detail': () => this.getMerchantDetail(options),
+      'admin.merchants.review': () => this.reviewMerchant(options),
       'admin.products.list': () => this.getAdminProducts(options),
       'admin.products.create': () => this.createProduct(options),
       'admin.products.update': () => this.updateProduct(options),
       'admin.knowledge.list': () => this.getKnowledge(options),
       'admin.knowledge.upload': () => this.uploadDocument(options),
-      'admin.statistics': () => this.getStatistics(options)
+      'admin.statistics': () => this.getStatistics(options),
+      
+      // 广告管理API
+      'admin.adSlots.list': () => this.getAdSlots(options),
+      'admin.adSlots.detail': () => this.getAdSlotDetail(options),
+      'admin.ads.list': () => this.getAds(options),
+      'admin.ads.detail': () => this.getAdDetail(options),
+      'admin.ads.create': () => this.createAd(options),
+      'admin.ads.update': () => this.updateAd(options),
+      'admin.ads.delete': () => this.deleteAd(options)
     };
 
     const handler = routes[endpoint];
@@ -431,6 +445,55 @@ class MockAPI {
     };
   }
 
+  /**
+   * 获取公开广告（C端用）
+   */
+  static async getPublicAds({ position }) {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 1. 找到对应的广告位
+    const slot = (MockDB.adSlots || []).find(s => s.position === position);
+    if (!slot) return { success: true, data: [] };
+
+    // 2. 获取该广告位下的所有广告
+    let ads = (MockDB.ads || []).filter(ad => ad.slotId === slot.id);
+
+    // 3. 筛选有效广告
+    const now = new Date();
+    // 忽略时分秒，只比较日期
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    ads = ads.filter(ad => {
+      if (ad.status !== 'active') return false;
+      
+      const startTime = new Date(ad.startTime).getTime();
+      const endTime = new Date(ad.endTime).getTime();
+      
+      return today >= startTime && today <= endTime;
+    });
+
+    // 4. 增加曝光量（简单模拟，实际应由服务端统计）
+    ads.forEach(ad => {
+        ad.impressions = (ad.impressions || 0) + 1;
+    });
+
+    return {
+      success: true,
+      data: ads
+    };
+  }
+
+  /**
+   * 记录广告点击
+   */
+  static async trackAdClick({ adId }) {
+    const ad = (MockDB.ads || []).find(a => a.id === parseInt(adId));
+    if (ad) {
+        ad.clicks = (ad.clicks || 0) + 1;
+    }
+    return { success: true };
+  }
+
   // ==================== Web端API ====================
 
   /**
@@ -468,6 +531,22 @@ class MockAPI {
         pageSize,
         totalPages: Math.ceil(total / pageSize)
       }
+    };
+  }
+
+  /**
+   * 获取商户详情
+   */
+  static async getMerchantDetail({ merchantId }) {
+    const merchant = MockDB.merchants.find(m => m.id === merchantId);
+    
+    if (!merchant) {
+      throw new Error('商户不存在');
+    }
+    
+    return {
+      success: true,
+      data: merchant
     };
   }
 
@@ -653,9 +732,202 @@ class MockAPI {
   static async getStatistics({ type = 'overview' }) {
     await new Promise(resolve => setTimeout(resolve, 800));
 
+    // Safe access
+    const statsData = (MockDB && MockDB.statistics && (MockDB.statistics[type] || MockDB.statistics.overview)) || {};
+
     return {
       success: true,
-      data: MockDB.statistics[type] || MockDB.statistics.overview
+      data: statsData
+    };
+  }
+
+  // ==================== 广告管理API ====================
+
+  /**
+   * 获取广告位列表
+   */
+  static async getAdSlots() {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const adSlots = MockDB.adSlots || [];
+    const ads = MockDB.ads || [];
+
+    // 计算每个广告位的统计数据
+    const slotsWithStats = adSlots.map(slot => {
+      const slotAds = ads.filter(ad => ad.slotId === slot.id);
+      const activeAds = slotAds.filter(ad => ad.status === 'active');
+      const totalClicks = slotAds.reduce((sum, ad) => sum + (ad.clicks || 0), 0);
+      const totalImpressions = slotAds.reduce((sum, ad) => sum + (ad.impressions || 0), 0);
+
+      return {
+        ...slot,
+        currentAds: slotAds.length,
+        activeAds: activeAds.length,
+        totalClicks,
+        totalImpressions
+      };
+    });
+
+    return {
+      success: true,
+      data: slotsWithStats
+    };
+  }
+
+  /**
+   * 获取广告位详情
+   */
+  static async getAdSlotDetail({ slotId }) {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const slot = (MockDB.adSlots || []).find(s => s.id === parseInt(slotId));
+    if (!slot) {
+      throw new Error('广告位不存在');
+    }
+
+    return {
+      success: true,
+      data: slot
+    };
+  }
+
+  /**
+   * 获取某广告位的广告列表
+   */
+  static async getAds({ slotId, status, page = 1, pageSize = 20 }) {
+    await new Promise(resolve => setTimeout(resolve, 400));
+
+    let data = [...(MockDB.ads || [])];
+
+    // 按广告位筛选
+    if (slotId) {
+      data = data.filter(ad => ad.slotId === parseInt(slotId));
+    }
+
+    // 按状态筛选
+    if (status) {
+      data = data.filter(ad => ad.status === status);
+    }
+
+    // 按创建时间排序（最新的在前）
+    data.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    // 分页
+    const total = data.length;
+    const start = (page - 1) * pageSize;
+    const items = data.slice(start, start + pageSize);
+
+    return {
+      success: true,
+      data: {
+        items,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize)
+      }
+    };
+  }
+
+  /**
+   * 获取广告详情
+   */
+  static async getAdDetail({ adId }) {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const ad = (MockDB.ads || []).find(a => a.id === parseInt(adId));
+    if (!ad) {
+      throw new Error('广告不存在');
+    }
+
+    return {
+      success: true,
+      data: ad
+    };
+  }
+
+  /**
+   * 创建广告
+   */
+  static async createAd({ slotId, image, merchantId, merchantName, productId, productName, startTime, endTime }) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 验证广告位
+    const slot = (MockDB.adSlots || []).find(s => s.id === parseInt(slotId));
+    if (!slot) {
+      throw new Error('广告位不存在');
+    }
+
+    // 检查广告位是否已满
+    const existingAds = (MockDB.ads || []).filter(ad => ad.slotId === parseInt(slotId) && ad.status === 'active');
+    if (existingAds.length >= slot.maxAds) {
+      throw new Error(`该广告位最多支持 ${slot.maxAds} 个广告`);
+    }
+
+    const newAd = {
+      id: Math.max(0, ...(MockDB.ads || []).map(a => a.id)) + 1,
+      slotId: parseInt(slotId),
+      image,
+      merchantId: parseInt(merchantId),
+      merchantName,
+      productId: parseInt(productId),
+      productName,
+      startTime,
+      endTime,
+      status: 'active',
+      clicks: 0,
+      impressions: 0,
+      createTime: new Date().toISOString()
+    };
+
+    MockDB.ads = MockDB.ads || [];
+    MockDB.ads.push(newAd);
+
+    return {
+      success: true,
+      data: newAd,
+      message: '广告创建成功'
+    };
+  }
+
+  /**
+   * 更新广告
+   */
+  static async updateAd({ adId, ...updates }) {
+    await new Promise(resolve => setTimeout(resolve, 400));
+
+    const ad = (MockDB.ads || []).find(a => a.id === parseInt(adId));
+    if (!ad) {
+      throw new Error('广告不存在');
+    }
+
+    Object.assign(ad, updates, {
+      updateTime: new Date().toISOString()
+    });
+
+    return {
+      success: true,
+      data: ad,
+      message: '广告更新成功'
+    };
+  }
+
+  /**
+   * 删除广告
+   */
+  static async deleteAd({ adId }) {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const index = (MockDB.ads || []).findIndex(a => a.id === parseInt(adId));
+    if (index === -1) {
+      throw new Error('广告不存在');
+    }
+
+    MockDB.ads.splice(index, 1);
+
+    return {
+      success: true,
+      message: '广告删除成功'
     };
   }
 }
