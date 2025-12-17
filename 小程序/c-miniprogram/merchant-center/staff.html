@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>员工管理 - 商家中心</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .staff-list {
+        padding: 10px;
+    }
+    .staff-card {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .staff-info {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    .staff-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #f5f5f5;
+        object-fit: cover;
+    }
+    .staff-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .staff-name {
+        font-size: 16px;
+        font-weight: bold;
+    }
+    .staff-role {
+        font-size: 12px;
+        color: #666;
+        background: #f0f0f0;
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+    .staff-actions {
+        display: flex;
+        gap: 10px;
+    }
+    .btn-icon {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #999;
+    }
+    .fab-add {
+        position: fixed;
+        bottom: 30px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: black;
+        font-size: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 100;
+    }
+    
+    /* 在宽屏上限制悬浮按钮位置在手机容器内 */
+    @media (min-width: 430px) {
+        .fab-add {
+            right: auto;
+            left: 50%;
+            margin-left: 145px;
+        }
+    }
+    
+    /* Modal */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        display: none;
+    }
+    .modal.active {
+        display: flex;
+    }
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        width: 85%;
+        padding: 20px;
+    }
+    .modal-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .form-label {
+        font-size: 14px;
+        margin-bottom: 5px;
+        display: block;
+    }
+    .form-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    .btn-modal {
+        padding: 8px 20px;
+        border-radius: 20px;
+        border: none;
+        font-size: 14px;
+    }
+    .btn-cancel {
+        background: #f5f5f5;
+        color: #666;
+    }
+    .btn-confirm {
+        background: var(--primary-color);
+        color: black;
+        font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+        <div class="mobile-header-left" onclick="history.back()">←</div>
+        <div class="mobile-header-title">员工管理</div>
+        <div class="mobile-header-right"></div>
+    </div>
+
+    <div class="mobile-content" style="padding-top: 60px;">
+        <div class="staff-list" id="staffList">
+            <!-- JS Injected -->
+        </div>
+    </div>
+
+    <div class="fab-add" onclick="showAddModal()">+</div>
+
+    <!-- Add Staff Modal -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-title">添加员工</div>
+            <div class="form-group">
+                <label class="form-label">微信昵称/手机号</label>
+                <input type="text" class="form-input" id="searchUser" placeholder="搜索用户绑定">
+            </div>
+            <div class="form-group">
+                <label class="form-label">分配角色</label>
+                <select class="form-input" id="roleSelect" style="background: white;">
+                    <option value="manager">店长 (全部权限)</option>
+                    <option value="operator">运营 (商品/订单)</option>
+                    <option value="clerk">店员 (仅订单/核销)</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn-modal btn-confirm" onclick="addStaff()">添加</button>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    let staffList = [
+        { id: 1, name: '张三', role: '店主', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zhang', isOwner: true },
+        { id: 2, name: '李四', role: '运营', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Li', isOwner: false },
+        { id: 3, name: '王五', role: '店员', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Wang', isOwner: false }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderList();
+    });
+
+    function renderList() {
+        const container = document.getElementById('staffList');
+        container.innerHTML = staffList.map(s => `
+            <div class="staff-card">
+                <div class="staff-info">
+                    <img src="${s.avatar}" class="staff-avatar">
+                    <div class="staff-details">
+                        <div class="staff-name">${s.name} ${s.isOwner ? '<span style="color:gold;">👑</span>' : ''}</div>
+                        <div><span class="staff-role">${s.role}</span></div>
+                    </div>
+                </div>
+                <div class="staff-actions">
+                    ${!s.isOwner ? `
+                        <button class="btn-icon" onclick="editStaff(${s.id})">✎</button>
+                        <button class="btn-icon" style="color:red;" onclick="removeStaff(${s.id})">🗑</button>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showAddModal() {
+        document.getElementById('addModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('addModal').classList.remove('active');
+        document.getElementById('searchUser').value = '';
+    }
+
+    function addStaff() {
+        const user = document.getElementById('searchUser').value;
+        const roleSelect = document.getElementById('roleSelect');
+        const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' ')[0];
+        
+        if(!user) {
+            Utils.showToast('请输入用户信息', 'error');
+            return;
+        }
+
+        // Mock Add
+        staffList.push({
+            id: Date.now(),
+            name: user, // In real app, name comes from user search
+            role: roleName,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user}`,
+            isOwner: false
+        });
+
+        Utils.showToast('添加成功', 'success');
+        closeModal();
+        renderList();
+    }
+
+    function removeStaff(id) {
+        Utils.confirm('确定移除该员工吗？', '删除确认').then(ok => {
+            if(ok) {
+                staffList = staffList.filter(s => s.id !== id);
+                renderList();
+                Utils.showToast('已移除', 'success');
+            }
+        });
+    }
+
+    function editStaff(id) {
+        Utils.showToast('编辑权限功能开发中', 'info');
+    }
+  </script>
+</body>
+</html>
+

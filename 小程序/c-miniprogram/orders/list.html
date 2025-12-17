@@ -102,6 +102,11 @@
       box-sizing: border-box;
     }
     
+    /* 悬浮按钮位置调整，避免遮挡批量支付栏 */
+    .mobile-fab {
+      bottom: 130px !important;
+    }
+    
     .batch-select-all {
       display: flex;
       align-items: center;
@@ -170,6 +175,9 @@
         <button class="batch-btn" onclick="processBatchPay()">合并支付</button>
       </div>
     </div>
+
+    <!-- AI悬浮按钮 -->
+    <div class="mobile-fab" onclick="openConsultation()">🎧</div>
 
     <!-- 底部Tab导航 -->
     <div class="mobile-tabbar">
@@ -337,6 +345,15 @@
     function viewOrder(id) {
       window.location.href = `detail.html?id=${id}`;
     }
+
+    function openConsultation() {
+      Utils.confirm('是否要连接专业客服进行咨询？', '咨询服务').then(ok => {
+        if (ok) {
+          window.location.href = '../ai-rag/chat.html';
+        }
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', renderOrders);
   </script>
 </body>
