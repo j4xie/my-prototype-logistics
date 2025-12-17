@@ -1,0 +1,397 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
+import {
+  Text,
+  Card,
+  Searchbar,
+  ActivityIndicator,
+  Chip,
+  useTheme,
+} from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+/**
+ * 工作类型接口
+ */
+interface WorkType {
+  code: string;
+  description: string;
+  color: string | null;
+  department: string | null;
+  displayOrder: number | null;
+}
+
+/**
+ * Mock工作类型数据
+ * TODO: 后续从后端API获取
+ */
+const mockWorkTypes: WorkType[] = [
+  {
+    code: 'WT-RECEIVE',
+    description: '原料接收入库',
+    color: '#4CAF50',
+    department: 'processing',
+    displayOrder: 1,
+  },
+  {
+    code: 'WT-INSPECT',
+    description: '原料的质量检验',
+    color: '#2196F3',
+    department: 'processing',
+    displayOrder: 2,
+  },
+  {
+    code: 'WT-PROCESS',
+    description: '原料加工成产品',
+    color: '#FF9800',
+    department: 'processing',
+    displayOrder: 3,
+  },
+  {
+    code: 'WT-PACKAGE',
+    description: '产品的包装和标签',
+    color: '#9C27B0',
+    department: 'processing',
+    displayOrder: 4,
+  },
+  {
+    code: 'WT-STORAGE',
+    description: '产品的冷库存储',
+    color: '#00BCD4',
+    department: 'processing',
+    displayOrder: 5,
+  },
+];
+
+/**
+ * 工作类型图标映射
+ */
+const getWorkTypeIcon = (code: string): string => {
+  const iconMap: Record<string, string> = {
+    'WT-RECEIVE': 'truck-delivery',
+    'WT-INSPECT': 'magnify-scan',
+    'WT-PROCESS': 'cog-outline',
+    'WT-PACKAGE': 'package-variant',
+    'WT-STORAGE': 'fridge-outline',
+  };
+  return iconMap[code] || 'briefcase-outline';
+};
+
+/**
+ * 工作类型列表页面
+ * operator专用 - 显示所有可用的工作类型
+ */
+export function WorkTypeListScreen() {
+  const theme = useTheme();
+  const navigation = useNavigation();
+
+  const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
+  const [filteredWorkTypes, setFilteredWorkTypes] = useState<WorkType[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // 初始化加载工作类型
+  useEffect(() => {
+    loadWorkTypes();
+  }, []);
+
+  // 搜索过滤
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredWorkTypes(workTypes);
+    } else {
+      const filtered = workTypes.filter(
+        (wt) =>
+          wt.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          wt.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredWorkTypes(filtered);
+    }
+  }, [searchQuery, workTypes]);
+
+  /**
+   * 加载工作类型列表
+   * TODO: 接入后端API
+   */
+  const loadWorkTypes = async () => {
+    setLoading(true);
+    try {
+      // TODO: 替换为真实API调用
+      // const response = await workTypeApiClient.getAvailableWorkTypes();
+      // setWorkTypes(response.data);
+
+      // 临时使用mock数据
+      await new Promise((resolve) => setTimeout(resolve, 500)); // 模拟网络延迟
+      setWorkTypes(mockWorkTypes);
+      setFilteredWorkTypes(mockWorkTypes);
+    } catch (error) {
+      console.error('加载工作类型失败:', error);
+      // TODO: 显示错误提示
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * 下拉刷新
+   */
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadWorkTypes();
+    setRefreshing(false);
+  };
+
+  /**
+   * 点击工作类型 → 进入工作记录表单
+   */
+  const handleWorkTypePress = (workType: WorkType) => {
+    console.log('导航到工作表单:', workType.code);
+
+    // Route to specific Wizards based on Work Type Code
+    switch (workType.code) {
+      case 'WT-RECEIVE':
+        // 原料接收 -> 原料入库向导
+        navigation.navigate('CreateBatch' as any);
+        break;
+      case 'WT-INSPECT':
+        // 质量检验 -> 质检记录向导
+        navigation.navigate('CreateQualityRecord' as any, {
+          batchId: 'BATCH_MOCK', // In real app, user might select batch first
+          inspectionType: 'process'
+        });
+        break;
+      case 'WT-PACKAGE':
+        // 产品包装 -> 包装向导
+        navigation.navigate('CreatePackaging' as any);
+        break;
+      default:
+        // 其他类型 (加工、存储等) -> 通用工作向导
+        navigation.navigate('WorkTypeForm', {
+          workTypeCode: workType.code,
+          workTypeName: workType.description,
+        });
+    }
+  };
+
+  /**
+   * 渲染工作类型卡片
+   */
+  const renderWorkTypeItem = ({ item }: { item: WorkType }) => (
+    <TouchableOpacity
+      onPress={() => handleWorkTypePress(item)}
+      activeOpacity={0.7}
+    >
+      <Card style={styles.card} mode="elevated">
+        <Card.Content style={styles.cardContent}>
+          {/* 图标 */}
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: item.color || theme.colors.primary },
+            ]}
+          >
+            <Icon name={getWorkTypeIcon(item.code)} size={32} color="#fff" />
+          </View>
+
+          {/* 信息 */}
+          <View style={styles.infoContainer}>
+            <Text variant="titleMedium" style={styles.title}>
+              {item.description}
+            </Text>
+            <Text variant="bodySmall" style={styles.code}>
+              {item.code}
+            </Text>
+            {item.department && (
+              <Chip
+                mode="outlined"
+                compact
+                style={styles.chip}
+                textStyle={styles.chipText}
+              >
+                {item.department === 'processing' ? '生产部' : item.department}
+              </Chip>
+            )}
+          </View>
+
+          {/* 箭头 */}
+          <Icon name="chevron-right" size={24} color={theme.colors.outline} />
+        </Card.Content>
+      </Card>
+    </TouchableOpacity>
+  );
+
+  /**
+   * 空状态
+   */
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Icon
+        name="briefcase-off-outline"
+        size={64}
+        color={theme.colors.outline}
+      />
+      <Text variant="titleMedium" style={styles.emptyTitle}>
+        暂无可用的工作类型
+      </Text>
+      <Text variant="bodySmall" style={styles.emptyDescription}>
+        请联系管理员分配工作类型
+      </Text>
+    </View>
+  );
+
+  if (loading && !refreshing) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+        <Text variant="bodyMedium" style={styles.loadingText}>
+          加载中...
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* 标题 */}
+      <View style={styles.header}>
+        <Text variant="headlineMedium" style={styles.headerTitle}>
+          我的工作
+        </Text>
+        <Text variant="bodyMedium" style={styles.headerSubtitle}>
+          选择一个工作类型开始记录
+        </Text>
+      </View>
+
+      {/* 搜索栏 */}
+      <View style={styles.searchContainer}>
+        <Searchbar
+          placeholder="搜索工作类型..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchBar}
+        />
+      </View>
+
+      {/* 工作类型列表 */}
+      <FlatList
+        data={filteredWorkTypes}
+        renderItem={renderWorkTypeItem}
+        keyExtractor={(item) => item.code}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={renderEmptyState}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 16,
+    color: '#666',
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerTitle: {
+    fontWeight: 'bold',
+    color: '#212121',
+  },
+  headerSubtitle: {
+    marginTop: 4,
+    color: '#666',
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
+  searchBar: {
+    elevation: 0,
+    backgroundColor: '#f5f5f5',
+  },
+  listContent: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  card: {
+    marginBottom: 12,
+    backgroundColor: '#fff',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  infoContainer: {
+    flex: 1,
+  },
+  title: {
+    fontWeight: '600',
+    color: '#212121',
+    marginBottom: 4,
+  },
+  code: {
+    color: '#666',
+    marginBottom: 8,
+  },
+  chip: {
+    alignSelf: 'flex-start',
+    height: 24,
+  },
+  chipText: {
+    fontSize: 11,
+    marginVertical: 0,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyTitle: {
+    marginTop: 16,
+    color: '#666',
+    fontWeight: '600',
+  },
+  emptyDescription: {
+    marginTop: 8,
+    color: '#999',
+  },
+});
+
+export default WorkTypeListScreen;

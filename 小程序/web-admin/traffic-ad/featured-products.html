@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>推荐位管理 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-sidebar">
+      <div class="sidebar-header"><h2>溯源商城</h2><p>管理后台</p></div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html">总览</a>
+        <a href="../merchant/list.html">商户管理</a>
+        <a href="../product-management/list.html">产品管理</a>
+        <a href="../content-control/review-queue.html">内容审核</a>
+        <a href="ranking-config.html" class="active">流量广告</a>
+        <a href="../ai-knowledge/knowledge-base.html">AI知识库</a>
+        <a href="../analytics/traffic-stats.html">数据分析</a>
+        <a href="../settings/system-config.html">系统设置</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a><span>/</span><span>推荐位管理</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="addProduct()">+ 添加产品</button>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <div style="background: var(--bg-white); border-radius: var(--radius-md);">
+          <table class="table">
+            <thead>
+              <tr><th>位置</th><th>产品</th><th>商户</th><th>点击率</th><th>转化率</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>速冻鱼排</td>
+                <td>白垩纪</td>
+                <td>12.5%</td>
+                <td>3.2%</td>
+                <td><button class="btn btn-sm btn-link" onclick="removeProduct(1)">移除</button></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>有机虾仁</td>
+                <td>白垩纪</td>
+                <td>10.8%</td>
+                <td>2.9%</td>
+                <td><button class="btn btn-sm btn-link" onclick="removeProduct(2)">移除</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    function addProduct() { Utils.showToast('添加产品功能开发中'); }
+    async function removeProduct(id) {
+      const ok = await Utils.confirm('确认移除该产品？', '移除产品');
+      if (ok) Utils.showToast('已移除', 'success');
+    }
+  </script>
+</body>
+</html>

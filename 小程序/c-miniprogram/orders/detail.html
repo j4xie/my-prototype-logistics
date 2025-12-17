@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>订单详情 - 溯源商城</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .status-card {
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      padding: var(--spacing-xl) var(--spacing-lg);
+      text-align: center;
+    }
+    .status-icon { font-size: var(--font-size-4xl); margin-bottom: var(--spacing-sm); }
+    .status-text { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); }
+    .info-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+    .section-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-md);
+      padding-bottom: var(--spacing-sm);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: var(--spacing-sm) 0;
+      font-size: var(--font-size-sm);
+    }
+    .info-label { color: var(--text-tertiary); }
+    .info-value { color: var(--text-primary); font-weight: var(--font-weight-medium); }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">订单详情</div>
+    </div>
+    <div class="mobile-content">
+      <div class="status-card">
+        <div class="status-icon">🚚</div>
+        <div class="status-text">配送中</div>
+        <div style="font-size: var(--font-size-sm); margin-top: var(--spacing-xs); opacity: 0.9;">预计1-2天送达</div>
+      </div>
+      <div class="info-section">
+        <div class="section-title">📦 商品信息</div>
+        <div style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+          <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=200" style="width: 80px; height: 80px; border-radius: var(--radius-sm);">
+          <div style="flex: 1;">
+            <div style="font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-xs);">速冻鱼排</div>
+            <div style="font-size: var(--font-size-sm); color: var(--text-tertiary);">数量: 100 件</div>
+            <div style="font-size: var(--font-size-lg); color: var(--error-color); font-weight: var(--font-weight-bold); margin-top: var(--spacing-xs);">¥2600</div>
+          </div>
+        </div>
+      </div>
+      <div class="info-section">
+        <div class="section-title">📍 配送信息</div>
+        <div class="info-row">
+          <div class="info-label">收货人</div>
+          <div class="info-value">张三</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">联系电话</div>
+          <div class="info-value">138****1234</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">收货地址</div>
+          <div class="info-value">上海市浦东新区XX路XX号</div>
+        </div>
+      </div>
+      <div class="info-section">
+        <div class="section-title">💰 价格明细</div>
+        <div class="info-row">
+          <div class="info-label">商品总价</div>
+          <div class="info-value">¥2800</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">优惠金额</div>
+          <div class="info-value" style="color: var(--success-color);">-¥200</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">运费</div>
+          <div class="info-value">¥0</div>
+        </div>
+        <div class="info-row" style="border-top: 1px solid var(--border-color); padding-top: var(--spacing-md); margin-top: var(--spacing-sm);">
+          <div class="info-label" style="font-size: var(--font-size-base); color: var(--text-primary);">实付金额</div>
+          <div class="info-value" style="font-size: var(--font-size-xl); color: var(--error-color);">¥2600</div>
+        </div>
+      </div>
+      <div class="info-section">
+        <div class="section-title">📋 订单信息</div>
+        <div class="info-row">
+          <div class="info-label">订单编号</div>
+          <div class="info-value">202501100001</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">下单时间</div>
+          <div class="info-value">2025-01-10 14:30</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">支付方式</div>
+          <div class="info-value">微信支付</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>知识库管理 - 白垩纪食品溯源管理后台</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+
+  <style>
+    /* 两栏布局 */
+    .knowledge-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: var(--spacing-lg);
+      align-items: start;
+    }
+
+    /* 分类树 */
+    .category-panel {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-lg);
+    }
+
+    .category-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .category-tree {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .category-item {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+
+    .category-item:hover {
+      background: var(--bg-gray);
+    }
+
+    .category-item.active {
+      background: rgba(102, 126, 234, 0.1);
+      color: var(--primary-color);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .category-icon {
+      font-size: var(--font-size-base);
+    }
+
+    .category-count {
+      margin-left: auto;
+      padding: 2px 6px;
+      background: var(--bg-gray);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+    }
+
+    .category-item.active .category-count {
+      background: var(--primary-color);
+      color: var(--text-inverse);
+    }
+
+    /* 文档列表区域 */
+    .docs-panel {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .docs-header {
+      padding: var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 300px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 40px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-sm);
+      outline: none;
+      transition: border-color var(--transition-base);
+    }
+
+    .search-input:focus {
+      border-color: var(--primary-color);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: var(--spacing-md);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+    }
+
+    /* 文档表格 */
+    .docs-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .docs-table thead {
+      background: var(--bg-gray);
+    }
+
+    .docs-table th {
+      padding: var(--spacing-md) var(--spacing-lg);
+      text-align: left;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .docs-table td {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+      font-size: var(--font-size-sm);
+      color: var(--text-primary);
+    }
+
+    .docs-table tbody tr {
+      transition: background var(--transition-base);
+    }
+
+    .docs-table tbody tr:hover {
+      background: var(--bg-gray);
+    }
+
+    /* 文档信息 */
+    .doc-title {
+      font-weight: var(--font-weight-medium);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .doc-meta {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    /* 文档类型图标 */
+    .doc-type-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-lg);
+      background: var(--bg-gray);
+    }
+
+    .doc-type-icon.pdf {
+      background: rgba(245, 34, 45, 0.1);
+      color: var(--error-color);
+    }
+
+    .doc-type-icon.word {
+      background: rgba(24, 144, 255, 0.1);
+      color: var(--info-color);
+    }
+
+    .doc-type-icon.excel {
+      background: rgba(82, 196, 26, 0.1);
+      color: var(--success-color);
+    }
+
+    .doc-type-icon.txt {
+      background: rgba(250, 173, 20, 0.1);
+      color: var(--warning-color);
+    }
+
+    /* 版本标签 */
+    .version-badge {
+      display: inline-block;
+      padding: 2px var(--spacing-xs);
+      background: var(--bg-gray);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      color: var(--text-secondary);
+    }
+
+    .version-badge.latest {
+      background: rgba(82, 196, 26, 0.1);
+      color: var(--success-color);
+    }
+
+    /* 状态徽章 */
+    .status-badge {
+      display: inline-block;
+      padding: 4px var(--spacing-sm);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .status-badge.published {
+      background: rgba(82, 196, 26, 0.1);
+      color: var(--success-color);
+    }
+
+    .status-badge.draft {
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--text-tertiary);
+    }
+
+    /* 操作按钮 */
+    .doc-actions {
+      display: flex;
+      gap: var(--spacing-xs);
+    }
+
+    .doc-action-btn {
+      padding: 4px var(--spacing-sm);
+      border: none;
+      background: none;
+      color: var(--primary-color);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .doc-action-btn:hover {
+      text-decoration: underline;
+    }
+
+    .doc-action-btn.danger {
+      color: var(--error-color);
+    }
+
+    /* 上传区域 */
+    .upload-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: var(--z-index-modal);
+    }
+
+    .upload-modal.active {
+      display: flex;
+    }
+
+    .upload-dialog {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-2xl);
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .upload-header {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .upload-area {
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-3xl);
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .upload-area:hover,
+    .upload-area.dragging {
+      border-color: var(--primary-color);
+      background: rgba(102, 126, 234, 0.05);
+    }
+
+    .upload-icon {
+      font-size: var(--font-size-4xl);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .upload-text {
+      font-size: var(--font-size-base);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .upload-hint {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+    }
+
+    .upload-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: flex-end;
+    }
+
+    /* 统计卡片 */
+    .stats-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .stat-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-lg);
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--primary-color);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .stat-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body>
+  <div class="desktop-container">
+    <!-- 侧边栏 -->
+    <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="nav-icon"></span>
+          <span class="nav-label">总览仪表板</span>
+        </a>
+
+        <div class="nav-group">
+          <div class="nav-group-title">商户管理</div>
+          <a href="../merchant/list.html" class="nav-item">
+            <span class="nav-icon"></span>
+            <span class="nav-label">商户列表</span>
+          </a>
+          <a href="../merchant/review.html" class="nav-item">
+            <span class="nav-icon"></span>
+            <span class="nav-label">商户审核</span>
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">产品管理</div>
+          <a href="../product-management/list.html" class="nav-item">
+            <span class="nav-icon"></span>
+            <span class="nav-label">产品列表</span>
+          </a>
+          <a href="../product-management/create.html" class="nav-item">
+            <span class="nav-icon">➕</span>
+            <span class="nav-label">新建产品</span>
+          </a>
+          <a href="../product-management/price-config.html" class="nav-item">
+            <span class="nav-icon"></span>
+            <span class="nav-label">价格配置</span>
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">内容管理</div>
+          <a href="../content-control/review-queue.html" class="nav-item">
+            <span class="nav-icon"></span>
+            <span class="nav-label">内容审核</span>
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">AI知识库</div>
+          <a href="knowledge-base.html" class="nav-item active">
+            <span class="nav-icon"></span>
+            <span class="nav-label">知识库管理</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="头像" class="user-avatar">
+          <div class="user-info">
+            <div class="user-name">管理员</div>
+            <div class="user-role">Platform Admin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="desktop-main">
+      <!-- 顶部栏 -->
+      <div class="desktop-header">
+        <div class="header-title">AI知识库管理</div>
+        <div class="header-actions">
+          <button class="btn btn-default" onclick="Utils.showToast('通知功能开发中', 'info')">
+            🔔 通知
+          </button>
+          <button class="btn btn-default" onclick="Utils.showToast('设置功能开发中', 'info')">
+             设置
+          </button>
+        </div>
+      </div>
+
+      <!-- 面包屑 -->
+      <div class="breadcrumb">
+        <a href="../dashboard/overview.html">首页</a>
+        <span class="breadcrumb-separator">/</span>
+        <span>AI知识库</span>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">知识库管理</span>
+      </div>
+
+      <!-- 内容区域 -->
+      <div class="desktop-content">
+        <!-- 统计卡片 -->
+        <div class="stats-cards">
+          <div class="stat-card">
+            <div class="stat-value" id="totalDocs">28</div>
+            <div class="stat-label">总文档数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="publishedDocs">24</div>
+            <div class="stat-label">已发布</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="draftDocs">4</div>
+            <div class="stat-label">草稿</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalCategories">6</div>
+            <div class="stat-label">分类数</div>
+          </div>
+        </div>
+
+        <!-- 两栏布局 -->
+        <div class="knowledge-layout">
+          <!-- 左侧：分类树 -->
+          <div class="category-panel">
+            <div class="category-title">
+              分类
+              <button class="btn btn-sm btn-link" onclick="Utils.showToast('分类管理功能开发中', 'info')">
+                
+              </button>
+            </div>
+
+            <div class="category-tree" id="categoryTree">
+              <!-- 分类将通过JavaScript动态生成 -->
+            </div>
+          </div>
+
+          <!-- 右侧：文档列表 -->
+          <div class="docs-panel">
+            <div class="docs-header">
+              <div class="search-box">
+                <span class="search-icon"></span>
+                <input
+                  type="text"
+                  class="search-input"
+                  id="searchInput"
+                  placeholder="搜索文档名称或内容..."
+                  oninput="searchDocs()"
+                >
+              </div>
+
+              <button class="btn btn-primary" onclick="openUploadModal()">
+                ➕ 上传文档
+              </button>
+            </div>
+
+            <table class="docs-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;"></th>
+                  <th>文档名称</th>
+                  <th style="width: 100px;">分类</th>
+                  <th style="width: 100px;">版本</th>
+                  <th style="width: 100px;">状态</th>
+                  <th style="width: 150px;">更新时间</th>
+                  <th style="width: 200px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="docsTableBody">
+                <!-- 表格行将通过JavaScript动态生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 上传文档模态框 -->
+  <div class="upload-modal" id="uploadModal">
+    <div class="upload-dialog">
+      <div class="upload-header">上传文档到知识库</div>
+
+      <div class="form-group">
+        <label class="form-label required">选择分类</label>
+        <select class="form-control" id="uploadCategory">
+          <option value="">请选择分类</option>
+          <option value="product">产品相关</option>
+          <option value="quality">质检标准</option>
+          <option value="traceability">溯源流程</option>
+          <option value="pricing">价格政策</option>
+          <option value="faq">常见问题</option>
+          <option value="policy">平台政策</option>
+        </select>
+      </div>
+
+      <div class="upload-area" id="uploadArea" onclick="triggerFileUpload()">
+        <div class="upload-icon"></div>
+        <div class="upload-text">点击或拖拽文件到此区域上传</div>
+        <div class="upload-hint">支持 PDF、Word、Excel、TXT 等格式，单个文件不超过 10MB</div>
+      </div>
+
+      <input
+        type="file"
+        id="fileInput"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+        multiple
+        style="display: none;"
+        onchange="handleFileSelect(event)"
+      >
+
+      <div class="upload-actions">
+        <button class="btn btn-default" onclick="closeUploadModal()">
+          取消
+        </button>
+        <button class="btn btn-primary" onclick="uploadFiles()">
+          开始上传
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+
+  <script>
+    // ==================== 全局状态 ====================
+    let currentCategory = 'all';
+    let selectedFiles = [];
+
+    // Mock知识库数据
+    const knowledgeBase = [
+      {
+        id: 1,
+        name: '产品溯源指南.pdf',
+        type: 'pdf',
+        category: 'traceability',
+        version: 'v2.1',
+        status: 'published',
+        updateTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 2,
+        name: '质检标准文档.docx',
+        type: 'word',
+        category: 'quality',
+        version: 'v1.5',
+        status: 'published',
+        updateTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 3,
+        name: '阶梯定价FAQ.xlsx',
+        type: 'excel',
+        category: 'pricing',
+        version: 'v1.0',
+        status: 'published',
+        updateTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 4,
+        name: '平台使用手册.pdf',
+        type: 'pdf',
+        category: 'faq',
+        version: 'v3.0',
+        status: 'draft',
+        updateTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: 5,
+        name: '产品介绍模板.txt',
+        type: 'txt',
+        category: 'product',
+        version: 'v1.2',
+        status: 'published',
+        updateTime: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+      }
+    ];
+
+    const categories = [
+      { id: 'all', name: '全部文档', icon: '', count: 28 },
+      { id: 'product', name: '产品相关', icon: '', count: 8 },
+      { id: 'quality', name: '质检标准', icon: '', count: 5 },
+      { id: 'traceability', name: '溯源流程', icon: '', count: 6 },
+      { id: 'pricing', name: '价格政策', icon: '', count: 4 },
+      { id: 'faq', name: '常见问题', icon: '', count: 3 },
+      { id: 'policy', name: '平台政策', icon: '', count: 2 }
+    ];
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCategories();
+      renderDocs();
+      setupDragAndDrop();
+    });
+
+    // ==================== 渲染分类树 ====================
+    function renderCategories() {
+      const categoryTree = document.getElementById('categoryTree');
+
+      categoryTree.innerHTML = categories.map(cat => `
+        <div
+          class="category-item ${cat.id === currentCategory ? 'active' : ''}"
+          onclick="selectCategory('${cat.id}')"
+        >
+          <span class="category-icon">${cat.icon}</span>
+          <span>${cat.name}</span>
+          <span class="category-count">${cat.count}</span>
+        </div>
+      `).join('');
+    }
+
+    // ==================== 选择分类 ====================
+    function selectCategory(categoryId) {
+      currentCategory = categoryId;
+      renderCategories();
+      renderDocs();
+    }
+
+    // ==================== 渲染文档列表 ====================
+    function renderDocs() {
+      const tbody = document.getElementById('docsTableBody');
+
+      let filteredDocs = knowledgeBase;
+
+      // 分类筛选
+      if (currentCategory !== 'all') {
+        filteredDocs = filteredDocs.filter(doc => doc.category === currentCategory);
+      }
+
+      // 搜索筛选
+      const keyword = document.getElementById('searchInput').value.toLowerCase();
+      if (keyword) {
+        filteredDocs = filteredDocs.filter(doc =>
+          doc.name.toLowerCase().includes(keyword)
+        );
+      }
+
+      if (filteredDocs.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; padding: var(--spacing-3xl); color: var(--text-tertiary);">
+              暂无文档
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filteredDocs.map(doc => {
+        const typeIcons = {
+          pdf: '📄',
+          word: '📘',
+          excel: '',
+          txt: ''
+        };
+
+        const categoryNames = {
+          product: '产品相关',
+          quality: '质检标准',
+          traceability: '溯源流程',
+          pricing: '价格政策',
+          faq: '常见问题',
+          policy: '平台政策'
+        };
+
+        return `
+          <tr>
+            <td>
+              <div class="doc-type-icon ${doc.type}">
+                ${typeIcons[doc.type] || '📄'}
+              </div>
+            </td>
+            <td>
+              <div class="doc-title">${doc.name}</div>
+              <div class="doc-meta">
+                <span>ID: ${doc.id}</span>
+              </div>
+            </td>
+            <td>${categoryNames[doc.category] || doc.category}</td>
+            <td>
+              <span class="version-badge latest">${doc.version}</span>
+            </td>
+            <td>
+              <span class="status-badge ${doc.status}">
+                ${doc.status === 'published' ? '已发布' : '草稿'}
+              </span>
+            </td>
+            <td>${Utils.formatDate(doc.updateTime, 'YYYY-MM-DD HH:mm')}</td>
+            <td>
+              <div class="doc-actions">
+                <button class="doc-action-btn" onclick="viewDoc(${doc.id})">
+                  查看
+                </button>
+                <button class="doc-action-btn" onclick="editDoc(${doc.id})">
+                  编辑
+                </button>
+                <button class="doc-action-btn" onclick="manageVersions(${doc.id})">
+                  版本
+                </button>
+                <button class="doc-action-btn danger" onclick="deleteDoc(${doc.id})">
+                  删除
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ==================== 搜索文档 ====================
+    function searchDocs() {
+      renderDocs();
+    }
+
+    // ==================== 上传文档模态框 ====================
+    function openUploadModal() {
+      document.getElementById('uploadModal').classList.add('active');
+    }
+
+    function closeUploadModal() {
+      document.getElementById('uploadModal').classList.remove('active');
+      selectedFiles = [];
+      document.getElementById('uploadCategory').value = '';
+    }
+
+    function setupDragAndDrop() {
+      const uploadArea = document.getElementById('uploadArea');
+
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragging');
+      });
+
+      uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragging');
+      });
+
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragging');
+
+        const files = Array.from(e.dataTransfer.files);
+        handleFiles(files);
+      });
+    }
+
+    function triggerFileUpload() {
+      document.getElementById('fileInput').click();
+    }
+
+    function handleFileSelect(event) {
+      const files = Array.from(event.target.files);
+      handleFiles(files);
+    }
+
+    function handleFiles(files) {
+      selectedFiles = files.filter(file => {
+        const validTypes = [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'text/plain'
+        ];
+
+        if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|txt)$/i)) {
+          Utils.showToast(`不支持的文件格式: ${file.name}`, 'error');
+          return false;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+          Utils.showToast(`文件过大: ${file.name}（限制10MB）`, 'error');
+          return false;
+        }
+
+        return true;
+      });
+
+      if (selectedFiles.length > 0) {
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.innerHTML = `
+          <div class="upload-icon"></div>
+          <div class="upload-text">已选择 ${selectedFiles.length} 个文件</div>
+          <div class="upload-hint">${selectedFiles.map(f => f.name).join(', ')}</div>
+        `;
+      }
+    }
+
+    async function uploadFiles() {
+      if (selectedFiles.length === 0) {
+        Utils.showToast('请选择要上传的文件', 'error');
+        return;
+      }
+
+      const category = document.getElementById('uploadCategory').value;
+      if (!category) {
+        Utils.showToast('请选择分类', 'error');
+        return;
+      }
+
+      Utils.showToast('正在上传...', 'info');
+      await Utils.sleep(2000);
+
+      console.log('上传文件:', selectedFiles, '分类:', category);
+
+      Utils.showToast(`成功上传 ${selectedFiles.length} 个文档`, 'success');
+      closeUploadModal();
+      renderDocs();
+    }
+
+    // ==================== 文档操作 ====================
+    function viewDoc(docId) {
+      Utils.showToast(`查看文档 ${docId}`, 'info');
+    }
+
+    function editDoc(docId) {
+      Utils.showToast(`编辑文档 ${docId}`, 'info');
+    }
+
+    function manageVersions(docId) {
+      Utils.showToast(`版本管理 ${docId}`, 'info');
+    }
+
+    async function deleteDoc(docId) {
+      const confirmed = await Utils.confirm(
+        '确认删除此文档？删除后无法恢复。',
+        '删除文档'
+      );
+
+      if (confirmed) {
+        Utils.showToast('文档已删除', 'success');
+        const index = knowledgeBase.findIndex(d => d.id === docId);
+        if (index !== -1) {
+          knowledgeBase.splice(index, 1);
+          renderDocs();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
