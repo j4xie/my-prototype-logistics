@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statusChip: {
-    height: 24,
+    height: 32,
   },
   typeChip: {
     height: 24,

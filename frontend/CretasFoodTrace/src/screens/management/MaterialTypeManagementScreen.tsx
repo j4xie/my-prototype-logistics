@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
     color: '#757575',
   },
   statusChip: {
-    height: 28,
+    height: 32,
     paddingHorizontal: 4,
   },
   tagsRow: {

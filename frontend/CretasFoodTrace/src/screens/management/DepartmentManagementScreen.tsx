@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   codeChip: {
-    height: 24,
+    height: 32,
   },
   itemActions: {
     flexDirection: 'row',
@@ -736,10 +736,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   statusChip: {
-    height: 28,
+    height: 32,
   },
   orderChip: {
-    height: 28,
+    height: 32,
   },
   fab: {
     position: 'absolute',
