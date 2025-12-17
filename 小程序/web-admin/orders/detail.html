@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>订单详情 - 白垩纪食品溯源管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
+  <style>
+      .detail-card {
+          background: var(--bg-white);
+          border-radius: var(--radius-md);
+          padding: var(--spacing-xl);
+          margin-bottom: var(--spacing-lg);
+      }
+      .section-title {
+          font-size: var(--font-size-lg);
+          font-weight: bold;
+          margin-bottom: var(--spacing-md);
+          border-bottom: 1px solid var(--border-color);
+          padding-bottom: var(--spacing-sm);
+      }
+      .info-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: var(--spacing-lg);
+      }
+      .info-item label {
+          color: var(--text-tertiary);
+          font-size: var(--font-size-sm);
+          display: block;
+          margin-bottom: 4px;
+      }
+      .info-item div {
+          color: var(--text-primary);
+          font-weight: 500;
+      }
+      .product-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: var(--spacing-md);
+      }
+      .product-table th, .product-table td {
+          padding: var(--spacing-md);
+          border-bottom: 1px solid var(--border-color);
+          text-align: left;
+      }
+      .product-table th {
+          background: var(--bg-gray);
+          color: var(--text-secondary);
+      }
+      .total-bar {
+          text-align: right;
+          margin-top: var(--spacing-lg);
+          font-size: var(--font-size-lg);
+      }
+      .total-price {
+          color: var(--error-color);
+          font-size: var(--font-size-2xl);
+          font-weight: bold;
+      }
+  </style>
+</head>
+<body>
+  <div class="desktop-container">
+            <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+    </div>
+
+    <div class="desktop-main">
+      <div class="desktop-header">
+        <div class="header-title">订单详情</div>
+        <div class="header-actions">
+           <button class="btn btn-default" onclick="history.back()">返回列表</button>
+        </div>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="../dashboard/overview.html">首页</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="list.html">订单管理</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">订单详情</span>
+      </div>
+
+      <div class="desktop-content">
+        <div id="loading">加载中...</div>
+        <div id="orderContent" style="display:none;">
+            
+            <!-- Basic Info -->
+            <div class="detail-card">
+                <div class="section-title">基本信息</div>
+                <div class="info-grid">
+                    <div class="info-item"><label>订单编号</label><div id="orderId"></div></div>
+                    <div class="info-item"><label>下单时间</label><div id="createTime"></div></div>
+                    <div class="info-item"><label>当前状态</label><div id="status"></div></div>
+                    <div class="info-item"><label>支付方式</label><div id="payMethod"></div></div>
+                    <div class="info-item"><label>合并支付</label><div id="isMerged"></div></div>
+                </div>
+            </div>
+
+            <!-- User Info -->
+            <div class="detail-card">
+                <div class="section-title">买家信息</div>
+                <div class="info-grid">
+                    <div class="info-item"><label>买家昵称</label><div id="userName"></div></div>
+                    <div class="info-item"><label>联系电话</label><div id="userPhone"></div></div>
+                    <div class="info-item"><label>收货地址</label><div id="userAddress">上海市浦东新区张江高科园区 (Mock)</div></div>
+                </div>
+            </div>
+
+            <!-- Product List -->
+            <div class="detail-card">
+                <div class="section-title">商品清单</div>
+                <table class="product-table">
+                    <thead>
+                        <tr>
+                            <th>商品名称</th>
+                            <th>单价</th>
+                            <th>数量</th>
+                            <th>小计</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productBody">
+                        <!-- JS injected -->
+                    </tbody>
+                </table>
+                <div class="total-bar">
+                    订单总额: <span class="total-price" id="totalAmount"></span>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="detail-card" style="text-align: right;">
+                <button class="btn btn-default" onclick="history.back()">返回</button>
+                <button class="btn btn-primary" id="shipBtn" onclick="doShip()" style="display:none;">确认发货</button>
+            </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/mockData.js?v=1765970807"></script>
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
+  <script>
+    let currentOrder = null;
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        
+        // Mock data load if MockDB empty
+        if (!MockDB.orders || MockDB.orders.length === 0) {
+             MockDB.orders = [
+                {
+                    id: 1001,
+                    user: { name: '张三', phone: '138****1234' },
+                    items: [ { name: '流沙黄金麻球咸蛋黄', quantity: 2, price: 294.00 } ],
+                    totalAmount: 588.00,
+                    status: 'completed',
+                    createTime: '2025-01-10 10:30:00',
+                    paymentMethod: 'wx_pay',
+                    isMerged: false
+                }
+            ];
+        }
+
+        currentOrder = MockDB.orders.find(o => o.id == id);
+        
+        if (!currentOrder) {
+            document.getElementById('loading').textContent = '订单不存在';
+            return;
+        }
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('orderContent').style.display = 'block';
+        
+        // Fill Data
+        document.getElementById('orderId').textContent = currentOrder.id;
+        document.getElementById('createTime').textContent = currentOrder.createTime;
+        document.getElementById('status').textContent = currentOrder.status;
+        document.getElementById('payMethod').textContent = currentOrder.paymentMethod === 'wx_pay' ? '微信支付' : '其他';
+        document.getElementById('isMerged').textContent = currentOrder.isMerged ? '是' : '否';
+        
+        document.getElementById('userName').textContent = currentOrder.user.name;
+        document.getElementById('userPhone').textContent = currentOrder.user.phone;
+        
+        const tbody = document.getElementById('productBody');
+        tbody.innerHTML = currentOrder.items.map(item => `
+            <tr>
+                <td>${item.name}</td>
+                <td>¥${item.price.toFixed(2)}</td>
+                <td>${item.quantity}</td>
+                <td>¥${(item.price * item.quantity).toFixed(2)}</td>
+            </tr>
+        `).join('');
+        
+        document.getElementById('totalAmount').textContent = '¥' + currentOrder.totalAmount.toFixed(2);
+
+        if (currentOrder.status === 'pending') {
+            document.getElementById('shipBtn').style.display = 'inline-block';
+        }
+    });
+
+    function doShip() {
+        if(confirm('确认发货?')) {
+            currentOrder.status = 'shipping';
+            document.getElementById('status').textContent = 'shipping';
+            document.getElementById('shipBtn').style.display = 'none';
+            Utils.showToast('发货成功', 'success');
+        }
+    }
+  </script>
+</body>
+</html>
+

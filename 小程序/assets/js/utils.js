@@ -350,8 +350,68 @@ const Utils = {
   maskPhone(phone) {
     if (!phone || phone.length !== 11) return phone;
     return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+  },
+
+  /**
+   * 切换侧边栏菜单组
+   * @param {HTMLElement} element - 点击的元素
+   */
+  toggleSidebarGroup(element) {
+    // 找到父级 nav-group
+    const group = element.closest('.nav-group');
+    if (group) {
+        group.classList.toggle('expanded');
+        
+        // 保存状态到 localStorage (如果每个 group 有唯一标识)
+        // 这里简单实现：保存所有 expanded 的 group index
+        this.saveSidebarState();
+    }
+  },
+
+  /**
+   * 保存侧边栏状态
+   */
+  saveSidebarState() {
+      const groups = document.querySelectorAll('.nav-group');
+      const expandedIndices = [];
+      groups.forEach((group, index) => {
+          if (group.classList.contains('expanded')) {
+              expandedIndices.push(index);
+          }
+      });
+      localStorage.setItem('sidebarState', JSON.stringify(expandedIndices));
+  },
+
+  /**
+   * 恢复侧边栏状态
+   */
+  restoreSidebarState() {
+      const savedState = localStorage.getItem('sidebarState');
+      if (savedState) {
+          const expandedIndices = JSON.parse(savedState);
+          const groups = document.querySelectorAll('.nav-group');
+          expandedIndices.forEach(index => {
+              if (groups[index]) {
+                  groups[index].classList.add('expanded');
+              }
+          });
+      }
   }
 };
+
+// 页面加载时恢复侧边栏状态
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof Utils !== 'undefined' && Utils.restoreSidebarState) {
+        Utils.restoreSidebarState();
+    }
+    
+    // 绑定侧边栏点击事件 (如果 HTML 中没有 onclick)
+    // 但目前 HTML 中有 onclick="toggleSidebarGroup(this)"，需要确保全局能访问
+    // 将 toggleSidebarGroup 挂载到 window 对象，以便 HTML onclick 属性可以访问
+    if (typeof window !== 'undefined') {
+        window.toggleSidebarGroup = (el) => Utils.toggleSidebarGroup(el);
+    }
+});
 
 // 导出
 if (typeof module !== 'undefined' && module.exports) {

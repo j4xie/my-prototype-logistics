@@ -135,6 +135,7 @@
       flex: 1;
       overflow-y: auto;
       padding: 10px;
+      padding-bottom: 80px; /* 为悬浮按钮预留空间 */
     }
 
     /* 产品卡片 (模仿 Screenshot 2) */
@@ -306,12 +307,20 @@
           <div class="content-tab">大牌同款</div>
         </div>
 
+        <!-- 广告区域 -->
+        <div id="listAdContainer" style="padding: 10px 10px 0 10px; display: none;">
+          <!-- 动态生成广告 -->
+        </div>
+
         <!-- 商品列表 -->
         <div class="product-list-scroll" id="productList">
           <!-- 动态生成 -->
         </div>
       </div>
     </div>
+
+    <!-- AI悬浮按钮 -->
+    <div class="mobile-fab" onclick="openConsultation()">🎧</div>
 
     <!-- 底部Tab导航 -->
     <div class="mobile-tabbar">
@@ -334,8 +343,9 @@
     </div>
   </div>
 
-  <script src="../../assets/js/mockData.js"></script>
-  <script src="../../assets/js/utils.js"></script>
+  <script src="../../assets/js/mockData.js?v=20251217"></script>
+  <script src="../../assets/js/mockAPI.js?v=20251217"></script>
+  <script src="../../assets/js/utils.js?v=20251217"></script>
   <script>
     let currentCategory = 'all_categories';
     const cartState = {}; // { productId: quantity }
@@ -343,7 +353,41 @@
     document.addEventListener('DOMContentLoaded', () => {
       renderSidebar();
       renderProducts();
+      loadListAds();
     });
+
+    async function loadListAds() {
+      try {
+        const result = await MockAPI.request('ads.list', { position: 'list_right' });
+        const ads = result.data || [];
+        
+        if (ads.length > 0) {
+          const container = document.getElementById('listAdContainer');
+          // 随机展示一个，或者轮播
+          const ad = ads[0]; 
+          container.style.display = 'block';
+          container.innerHTML = `
+            <div onclick="handleAdClick(${ad.id}, ${ad.productId})" style="width: 100%; height: 100px; border-radius: 8px; overflow: hidden; position: relative;">
+              <img src="${ad.image}" style="width: 100%; height: 100%; object-fit: cover;">
+              <div style="position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.3); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px 0 0 0;">广告</div>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('加载列表广告失败:', error);
+      }
+    }
+
+    async function handleAdClick(adId, productId) {
+        try {
+            await MockAPI.request('ads.click', { adId });
+        } catch (e) {
+            console.error('记录点击失败', e);
+        }
+        if (productId) {
+            navigateToDetail(productId);
+        }
+    }
 
     function renderSidebar() {
       const sidebar = document.getElementById('sidebar');
@@ -429,6 +473,14 @@
 
     function navigateToDetail(id) {
       window.location.href = `detail.html?id=${id}`;
+    }
+
+    function openConsultation() {
+      Utils.confirm('是否要连接专业客服进行咨询？', '咨询服务').then(ok => {
+        if (ok) {
+          window.location.href = '../ai-rag/chat.html';
+        }
+      });
     }
   </script>
 </body>
