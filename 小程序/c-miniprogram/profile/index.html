@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>个人中心 - 溯源商城</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+
+  <style>
+    /* 个人中心特有样式 */
+    .profile-header {
+      background: var(--bg-dark); /* 黑金背景 */
+      padding: 40px 20px 30px;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .user-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: 2px solid var(--primary-color);
+      background: #333;
+    }
+
+    .user-info h2 {
+      font-size: 20px;
+      color: white;
+      margin-bottom: 5px;
+    }
+
+    .user-level {
+      display: inline-block;
+      background: var(--primary-color);
+      color: black;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    .menu-group {
+      background: white;
+      margin: 15px;
+      border-radius: 8px;
+      padding: 0 15px;
+    }
+
+    .menu-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+
+    .menu-icon {
+      margin-right: 10px;
+      width: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <!-- 头部用户信息 -->
+    <div class="profile-header">
+      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Zhang" class="user-avatar">
+      <div class="user-info">
+        <h2>张三</h2>
+        <span class="user-level">SVIP 黑金会员</span>
+      </div>
+    </div>
+
+    <!-- 菜单列表 -->
+    <div class="menu-group">
+      <div class="menu-item" onclick="navigateTo('../orders/list.html')">
+        <div><span class="menu-icon">📦</span>我的订单</div>
+        <div>➜</div>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-icon">❤️</span>我的收藏</div>
+        <div>➜</div>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-icon">📍</span>收货地址</div>
+        <div>➜</div>
+      </div>
+    </div>
+
+    <div class="menu-group">
+      <div class="menu-item">
+        <div><span class="menu-icon">🎧</span>联系客服</div>
+        <div>➜</div>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-icon">⚙️</span>设置</div>
+        <div>➜</div>
+      </div>
+    </div>
+
+    <!-- 底部Tab导航 -->
+    <div class="mobile-tabbar">
+      <div class="tabbar-item" onclick="navigateTo('../home/home.html')">
+        <div class="tabbar-icon">🏠</div>
+        <div class="tabbar-label">首页</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../products/list.html')">
+        <div class="tabbar-icon">📦</div>
+        <div class="tabbar-label">分类</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../orders/list.html')">
+        <div class="tabbar-icon">🧾</div>
+        <div class="tabbar-label">订单</div>
+      </div>
+      <div class="tabbar-item active">
+        <div class="tabbar-icon">👤</div>
+        <div class="tabbar-label">我的</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+  </script>
+</body>
+</html>

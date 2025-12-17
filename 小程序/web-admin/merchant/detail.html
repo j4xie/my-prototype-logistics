@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商户详情 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <style>
+    .detail-header {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      margin-bottom: var(--spacing-lg);
+      border-radius: var(--radius-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .header-left {
+      flex: 1;
+    }
+    .merchant-name {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+    .status-badge {
+      padding: 6px 16px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+    }
+    .status-active {
+      background: var(--success-color);
+      color: white;
+    }
+    .status-pending {
+      background: var(--warning-color);
+      color: white;
+    }
+    .status-inactive {
+      background: var(--bg-gray);
+      color: var(--text-tertiary);
+    }
+    .merchant-meta {
+      display: flex;
+      gap: var(--spacing-xl);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-md);
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+    }
+    .header-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+    }
+    .info-card {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      border-radius: var(--radius-md);
+    }
+    .card-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 2px solid var(--border-color);
+    }
+    .info-row {
+      display: flex;
+      padding: var(--spacing-md) 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      width: 120px;
+      color: var(--text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+    .info-value {
+      flex: 1;
+      color: var(--text-primary);
+      font-size: var(--font-size-sm);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+    .stat-card {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+    .stat-value {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--primary-color);
+      margin-bottom: var(--spacing-xs);
+    }
+    .stat-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+    }
+    .tab-nav {
+      background: var(--bg-white);
+      padding: 0 var(--spacing-xl);
+      margin-bottom: var(--spacing-lg);
+      border-radius: var(--radius-md);
+      display: flex;
+      gap: var(--spacing-xl);
+    }
+    .tab-item {
+      padding: var(--spacing-md) 0;
+      font-size: var(--font-size-base);
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+    }
+    .tab-item.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+      font-weight: var(--font-weight-semibold);
+    }
+    .timeline {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      border-radius: var(--radius-md);
+    }
+    .timeline-item {
+      display: flex;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md) 0;
+      border-left: 2px solid var(--border-color);
+      padding-left: var(--spacing-lg);
+      position: relative;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -6px;
+      top: 20px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary-color);
+    }
+    .timeline-time {
+      width: 140px;
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+    .timeline-content {
+      flex: 1;
+    }
+    .timeline-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-xs);
+    }
+    .timeline-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+    .document-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-md);
+    }
+    .document-card {
+      background: var(--bg-gray);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .document-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+    .document-icon {
+      font-size: var(--font-size-3xl);
+      margin-bottom: var(--spacing-sm);
+    }
+    .document-name {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-xs);
+    }
+    .document-meta {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-sidebar">
+      <div class="sidebar-header">
+        <h2>溯源商城</h2>
+        <p>管理后台</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html">总览</a>
+        <a href="list.html" class="active">商户管理</a>
+        <a href="../product-management/list.html">产品管理</a>
+        <a href="../content-control/review-queue.html">内容审核</a>
+        <a href="../traffic-ad/ranking-config.html">流量广告</a>
+        <a href="../ai-knowledge/knowledge-base.html">AI知识库</a>
+        <a href="../analytics/traffic-stats.html">数据分析</a>
+        <a href="../settings/system-config.html">系统设置</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a>
+          <span>/</span>
+          <a href="list.html">商户管理</a>
+          <span>/</span>
+          <span>商户详情</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-default" onclick="window.history.back()">返回</button>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <!-- 商户头部信息 -->
+        <div class="detail-header">
+          <div class="header-left">
+            <div class="merchant-name">
+              白垩纪（上海）食品有限公司
+              <span class="status-badge status-active">营业中</span>
+            </div>
+            <div class="merchant-meta">
+              <div class="meta-item">
+                <span>📅 入驻时间：2024-06-15</span>
+              </div>
+              <div class="meta-item">
+                <span>🆔 商户ID：M20240615001</span>
+              </div>
+              <div class="meta-item">
+                <span> 负责人：张经理</span>
+              </div>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-default" onclick="editMerchant()">编辑信息</button>
+            <button class="btn btn-default" onclick="manageStatus()">状态管理</button>
+            <button class="btn btn-primary" onclick="contactMerchant()">联系商户</button>
+          </div>
+        </div>
+
+        <!-- 统计数据 -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">156</div>
+            <div class="stat-label">在售产品</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">2,358</div>
+            <div class="stat-label">总订单数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">¥1,285,600</div>
+            <div class="stat-label">累计成交额</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">4.8</div>
+            <div class="stat-label">平均评分</div>
+          </div>
+        </div>
+
+        <!-- 标签页导航 -->
+        <div class="tab-nav">
+          <div class="tab-item active" onclick="switchTab('info')">基本信息</div>
+          <div class="tab-item" onclick="switchTab('documents')">资质文件</div>
+          <div class="tab-item" onclick="switchTab('products')">产品列表</div>
+          <div class="tab-item" onclick="switchTab('timeline')">操作记录</div>
+        </div>
+
+        <!-- 基本信息 -->
+        <div id="tab-info" class="tab-content">
+          <div class="info-grid">
+            <div class="info-card">
+              <h3 class="card-title">企业信息</h3>
+              <div class="info-row">
+                <div class="info-label">企业名称</div>
+                <div class="info-value">白垩纪（上海）食品有限公司</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">统一社会信用代码</div>
+                <div class="info-value">91310000MA1FL5E73K</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">企业类型</div>
+                <div class="info-value">食品加工制造</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">成立日期</div>
+                <div class="info-value">2015-03-20</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">注册资本</div>
+                <div class="info-value">500万元</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">企业地址</div>
+                <div class="info-value">上海市浦东新区张江高科技园区XXX路XXX号</div>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <h3 class="card-title">联系信息</h3>
+              <div class="info-row">
+                <div class="info-label">联系人</div>
+                <div class="info-value">张经理</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">职位</div>
+                <div class="info-value">运营总监</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">手机号码</div>
+                <div class="info-value">138-1234-5678</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">电子邮箱</div>
+                <div class="info-value">zhang@cretas.com</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">办公电话</div>
+                <div class="info-value">021-12345678</div>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <h3 class="card-title">经营信息</h3>
+              <div class="info-row">
+                <div class="info-label">主营类目</div>
+                <div class="info-value">水产品加工、速冻食品</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">经营许可证号</div>
+                <div class="info-value">SC12345678901234567</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">许可证有效期</div>
+                <div class="info-value">2020-06-01 至 2025-05-31</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">认证资质</div>
+                <div class="info-value">ISO9001、HACCP、有机认证</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">溯源系统</div>
+                <div class="info-value">已接入 - 批次溯源、区块链存证</div>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <h3 class="card-title">账户信息</h3>
+              <div class="info-row">
+                <div class="info-label">入驻时间</div>
+                <div class="info-value">2024-06-15 10:30:25</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">审核状态</div>
+                <div class="info-value"><span style="color: var(--success-color); font-weight: 600;">已通过</span></div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">运营状态</div>
+                <div class="info-value"><span style="color: var(--success-color); font-weight: 600;">营业中</span></div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">会员等级</div>
+                <div class="info-value">金牌商户</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">保证金</div>
+                <div class="info-value">¥50,000（已缴纳）</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 资质文件 -->
+        <div id="tab-documents" class="tab-content" style="display: none;">
+          <div class="info-card">
+            <h3 class="card-title">资质文件</h3>
+            <div class="document-grid">
+              <div class="document-card" onclick="viewDocument('营业执照')">
+                <div class="document-icon">📄</div>
+                <div class="document-name">营业执照</div>
+                <div class="document-meta">已验证 · 2024-06-15</div>
+              </div>
+              <div class="document-card" onclick="viewDocument('食品经营许可证')">
+                <div class="document-icon">📋</div>
+                <div class="document-name">食品经营许可证</div>
+                <div class="document-meta">已验证 · 2024-06-15</div>
+              </div>
+              <div class="document-card" onclick="viewDocument('ISO9001证书')">
+                <div class="document-icon">🏆</div>
+                <div class="document-name">ISO9001证书</div>
+                <div class="document-meta">已验证 · 2024-06-15</div>
+              </div>
+              <div class="document-card" onclick="viewDocument('HACCP证书')">
+                <div class="document-icon"></div>
+                <div class="document-name">HACCP证书</div>
+                <div class="document-meta">已验证 · 2024-06-15</div>
+              </div>
+              <div class="document-card" onclick="viewDocument('有机认证')">
+                <div class="document-icon">🌿</div>
+                <div class="document-name">有机认证</div>
+                <div class="document-meta">已验证 · 2024-07-01</div>
+              </div>
+              <div class="document-card" onclick="viewDocument('银行开户许可证')">
+                <div class="document-icon">🏦</div>
+                <div class="document-name">银行开户许可证</div>
+                <div class="document-meta">已验证 · 2024-06-15</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 产品列表 -->
+        <div id="tab-products" class="tab-content" style="display: none;">
+          <div class="info-card">
+            <h3 class="card-title">产品列表 (156)</h3>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>产品名称</th>
+                  <th>分类</th>
+                  <th>价格</th>
+                  <th>库存</th>
+                  <th>销量</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>速冻鱼排</td>
+                  <td>水产加工</td>
+                  <td>¥28.00</td>
+                  <td>8,560</td>
+                  <td>1,256</td>
+                  <td><span class="badge badge-success">在售</span></td>
+                  <td><a href="../product-management/edit.html">查看</a></td>
+                </tr>
+                <tr>
+                  <td>有机虾仁</td>
+                  <td>水产加工</td>
+                  <td>¥58.00</td>
+                  <td>3,200</td>
+                  <td>896</td>
+                  <td><span class="badge badge-success">在售</span></td>
+                  <td><a href="../product-management/edit.html">查看</a></td>
+                </tr>
+                <tr>
+                  <td>速冻鱼丸</td>
+                  <td>速冻食品</td>
+                  <td>¥22.00</td>
+                  <td>6,800</td>
+                  <td>2,100</td>
+                  <td><span class="badge badge-success">在售</span></td>
+                  <td><a href="../product-management/edit.html">查看</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 操作记录 -->
+        <div id="tab-timeline" class="tab-content" style="display: none;">
+          <div class="timeline">
+            <h3 class="card-title">操作记录</h3>
+            <div class="timeline-item">
+              <div class="timeline-time">2025-01-15 14:30</div>
+              <div class="timeline-content">
+                <div class="timeline-title">产品上架</div>
+                <div class="timeline-desc">商户上架新产品"速冻鱼排"，已通过审核</div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-time">2025-01-10 09:15</div>
+              <div class="timeline-content">
+                <div class="timeline-title">认证更新</div>
+                <div class="timeline-desc">更新了有机认证证书，证书有效期至2026-06-30</div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-time">2025-01-05 16:20</div>
+              <div class="timeline-content">
+                <div class="timeline-title">会员升级</div>
+                <div class="timeline-desc">累计成交额超过100万，升级为金牌商户</div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-time">2024-12-28 11:45</div>
+              <div class="timeline-content">
+                <div class="timeline-title">资质审核</div>
+                <div class="timeline-desc">HACCP证书年审通过</div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-time">2024-06-15 10:30</div>
+              <div class="timeline-content">
+                <div class="timeline-title">商户入驻</div>
+                <div class="timeline-desc">提交入驻申请，平台审核通过，正式入驻溯源商城</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    function switchTab(tabName) {
+      // 隐藏所有内容
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+      });
+      // 移除所有active状态
+      document.querySelectorAll('.tab-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      // 显示选中的内容
+      document.getElementById('tab-' + tabName).style.display = 'block';
+      // 添加active状态
+      event.target.classList.add('active');
+    }
+
+    function editMerchant() {
+      Utils.showToast('编辑商户信息功能开发中');
+    }
+
+    function manageStatus() {
+      window.location.href = 'status-management.html';
+    }
+
+    function contactMerchant() {
+      Utils.showToast('联系商户功能开发中');
+    }
+
+    function viewDocument(name) {
+      Utils.showToast('查看' + name);
+    }
+  </script>
+</body>
+</html>

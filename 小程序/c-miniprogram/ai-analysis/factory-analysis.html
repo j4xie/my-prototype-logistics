@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>工厂分析报告 - 溯源商城</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .report-header {
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      padding: var(--spacing-xl) var(--spacing-lg);
+      text-align: center;
+    }
+    .report-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-xs);
+    }
+    .report-date {
+      font-size: var(--font-size-sm);
+      opacity: 0.9;
+    }
+    .score-card {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      text-align: center;
+      margin-bottom: var(--spacing-md);
+    }
+    .score-circle {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--spacing-md);
+      box-shadow: var(--shadow-md);
+    }
+    .score-number {
+      font-size: var(--font-size-4xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-inverse);
+    }
+    .score-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-inverse);
+      opacity: 0.9;
+    }
+    .score-desc {
+      font-size: var(--font-size-base);
+      color: var(--text-secondary);
+    }
+    .analysis-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+    .section-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+    .metric-card {
+      background: var(--bg-gray);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+    .metric-value {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--primary-color);
+      margin-bottom: var(--spacing-xs);
+    }
+    .metric-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+    }
+    .insight-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    .insight-item {
+      display: flex;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      background: var(--bg-gray);
+      border-radius: var(--radius-md);
+    }
+    .insight-icon {
+      font-size: var(--font-size-xl);
+      flex-shrink: 0;
+    }
+    .insight-content {
+      flex: 1;
+    }
+    .insight-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-xs);
+    }
+    .insight-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .strength-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--success-color);
+      color: white;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      margin-right: var(--spacing-xs);
+      margin-bottom: var(--spacing-xs);
+    }
+    .weakness-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--warning-color);
+      color: white;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      margin-right: var(--spacing-xs);
+      margin-bottom: var(--spacing-xs);
+    }
+    .chart-container {
+      height: 200px;
+      background: var(--bg-gray);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+    .chart-bar {
+      flex: 1;
+      max-width: 40px;
+      background: var(--primary-gradient);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      position: relative;
+      margin: 0 var(--spacing-xs);
+    }
+    .chart-label {
+      position: absolute;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">工厂分析报告</div>
+      <div class="mobile-header-action" onclick="shareReport()">分享</div>
+    </div>
+    <div class="mobile-content">
+      <!-- 报告标题 -->
+      <div class="report-header">
+        <div class="report-title">白垩纪（上海）食品厂</div>
+        <div class="report-date">分析日期: 2025-01-15</div>
+      </div>
+
+      <!-- 综合评分 -->
+      <div class="score-card">
+        <div class="score-circle">
+          <div class="score-number">8.7</div>
+          <div class="score-label">综合评分</div>
+        </div>
+        <div class="score-desc">优秀 | 超过全国86%的同类工厂</div>
+      </div>
+
+      <!-- 关键指标 -->
+      <div class="analysis-section">
+        <div class="section-title">📊 关键指标</div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-value">98.5%</div>
+            <div class="metric-label">质检合格率</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">92%</div>
+            <div class="metric-label">生产效率</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">156</div>
+            <div class="metric-label">月均产量(吨)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">4.8</div>
+            <div class="metric-label">客户满意度</div>
+          </div>
+        </div>
+
+        <!-- 月度产量趋势 -->
+        <div style="margin-bottom: var(--spacing-md);">
+          <div style="font-size: var(--font-size-sm); color: var(--text-tertiary); margin-bottom: var(--spacing-sm);">近6个月产量趋势</div>
+          <div class="chart-container">
+            <div class="chart-bar" style="height: 60%;">
+              <div class="chart-label">8月</div>
+            </div>
+            <div class="chart-bar" style="height: 75%;">
+              <div class="chart-label">9月</div>
+            </div>
+            <div class="chart-bar" style="height: 70%;">
+              <div class="chart-label">10月</div>
+            </div>
+            <div class="chart-bar" style="height: 85%;">
+              <div class="chart-label">11月</div>
+            </div>
+            <div class="chart-bar" style="height: 90%;">
+              <div class="chart-label">12月</div>
+            </div>
+            <div class="chart-bar" style="height: 100%;">
+              <div class="chart-label">1月</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 核心优势 -->
+      <div class="analysis-section">
+        <div class="section-title"> 核心优势</div>
+        <div>
+          <span class="strength-badge">质检体系完善</span>
+          <span class="strength-badge">溯源系统健全</span>
+          <span class="strength-badge">设备现代化</span>
+          <span class="strength-badge">员工素质高</span>
+          <span class="strength-badge">供应链稳定</span>
+        </div>
+      </div>
+
+      <!-- 改进建议 -->
+      <div class="analysis-section">
+        <div class="section-title">💡 改进建议</div>
+        <div>
+          <span class="weakness-badge">产能利用率待提升</span>
+          <span class="weakness-badge">自动化程度可提高</span>
+          <span class="weakness-badge">能耗管理需优化</span>
+        </div>
+      </div>
+
+      <!-- AI智能洞察 -->
+      <div class="analysis-section">
+        <div class="section-title"> AI智能洞察</div>
+        <div class="insight-list">
+          <div class="insight-item">
+            <div class="insight-icon">🎯</div>
+            <div class="insight-content">
+              <div class="insight-title">质量管控优秀</div>
+              <div class="insight-desc">过去6个月质检合格率稳定在98%以上，远超行业平均水平（93%），建议将质量管控经验推广到其他产线。</div>
+            </div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-icon">📈</div>
+            <div class="insight-content">
+              <div class="insight-title">产能增长趋势明显</div>
+              <div class="insight-desc">近3个月产量环比增长15%，预计下季度可突破180吨/月。建议提前规划原料采购和仓储。</div>
+            </div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-icon">⚡</div>
+            <div class="insight-content">
+              <div class="insight-title">能耗优化空间大</div>
+              <div class="insight-desc">单位产品能耗比行业平均高12%，建议引入节能设备和优化生产工艺，预计可降低成本8-10%。</div>
+            </div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-icon">👥</div>
+            <div class="insight-content">
+              <div class="insight-title">人员流动率低</div>
+              <div class="insight-desc">核心岗位人员流动率仅5%（行业平均18%），说明企业文化和薪酬体系有竞争力，有利于长期发展。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI生成说明 -->
+      <div style="padding: var(--spacing-lg); text-align: center; color: var(--text-tertiary); font-size: var(--font-size-xs);">
+        * 本报告由AI智能分析生成，仅供参考
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    function shareReport() {
+      Utils.showToast('分享功能开发中');
+    }
+  </script>
+</body>
+</html>

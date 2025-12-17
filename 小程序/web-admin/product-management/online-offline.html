@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>批量上下线 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <style>
+    .filter-bar {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+      border-radius: var(--radius-md);
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: flex-end;
+    }
+    .batch-actions {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+      border-radius: var(--radius-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .selected-count {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+    .selected-count strong {
+      color: var(--primary-color);
+      font-size: var(--font-size-lg);
+    }
+    .table-container {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-sidebar">
+      <div class="sidebar-header">
+        <h2>溯源商城</h2>
+        <p>管理后台</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html">总览</a>
+        <a href="../merchant/list.html">商户管理</a>
+        <a href="list.html" class="active">产品管理</a>
+        <a href="../content-control/review-queue.html">内容审核</a>
+        <a href="../traffic-ad/ranking-config.html">流量广告</a>
+        <a href="../ai-knowledge/knowledge-base.html">AI知识库</a>
+        <a href="../analytics/traffic-stats.html">数据分析</a>
+        <a href="../settings/system-config.html">系统设置</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a>
+          <span>/</span>
+          <a href="list.html">产品管理</a>
+          <span>/</span>
+          <span>批量上下线</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-default" onclick="window.history.back()">返回</button>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">商户</label>
+            <select class="form-control">
+              <option>全部商户</option>
+              <option>白垩纪（上海）食品有限公司</option>
+              <option>海洋食品加工厂</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">分类</label>
+            <select class="form-control">
+              <option>全部分类</option>
+              <option>水产加工</option>
+              <option>速冻食品</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">状态</label>
+            <select class="form-control" onchange="filterByStatus(this.value)">
+              <option value="all">全部</option>
+              <option value="online">在售</option>
+              <option value="offline">已下架</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label">搜索</label>
+            <input type="text" class="form-control" placeholder="产品名称/编号">
+          </div>
+          <button class="btn btn-primary">搜索</button>
+        </div>
+
+        <!-- 批量操作栏 -->
+        <div class="batch-actions">
+          <div class="selected-count">
+            已选择 <strong id="selectedCount">0</strong> 个产品
+          </div>
+          <div style="display: flex; gap: var(--spacing-sm);">
+            <button class="btn btn-success" onclick="batchOnline()">批量上架</button>
+            <button class="btn btn-warning" onclick="batchOffline()">批量下架</button>
+            <button class="btn btn-default" onclick="clearSelection()">清空选择</button>
+          </div>
+        </div>
+
+        <!-- 产品列表 -->
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">
+                  <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                </th>
+                <th>产品信息</th>
+                <th>所属商户</th>
+                <th>分类</th>
+                <th>价格</th>
+                <th>库存</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="productTable">
+              <!-- 产品列表将由JS渲染 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    const products = [
+      { id: 1, name: '速冻鱼排', merchant: '白垩纪', category: '水产加工', price: 28, stock: 8560, status: 'online' },
+      { id: 2, name: '有机虾仁', merchant: '白垩纪', category: '水产加工', price: 58, stock: 3200, status: 'online' },
+      { id: 3, name: '速冻鱼丸', merchant: '白垩纪', category: '速冻食品', price: 22, stock: 6800, status: 'online' },
+      { id: 4, name: '冷冻扇贝', merchant: '海洋食品', category: '水产加工', price: 45, stock: 2100, status: 'offline' },
+      { id: 5, name: '冷冻鱿鱼', merchant: '海洋食品', category: '水产加工', price: 35, stock: 1500, status: 'online' },
+      { id: 6, name: '速冻蟹棒', merchant: '白垩纪', category: '速冻食品', price: 18, stock: 9500, status: 'offline' },
+      { id: 7, name: '有机蔬菜包', merchant: '绿色农场', category: '有机蔬菜', price: 25, stock: 4200, status: 'online' },
+      { id: 8, name: '冷冻牛排', merchant: '白垩纪', category: '肉类加工', price: 88, stock: 560, status: 'online' }
+    ];
+
+    let selectedIds = [];
+
+    function renderProducts(filter = 'all') {
+      const tbody = document.getElementById('productTable');
+      let filtered = products;
+
+      if (filter !== 'all') {
+        filtered = products.filter(p => p.status === filter);
+      }
+
+      tbody.innerHTML = filtered.map(product => {
+        const statusClass = product.status === 'online' ? 'badge-success' : 'badge-default';
+        const statusText = product.status === 'online' ? '在售' : '已下架';
+        const actionText = product.status === 'online' ? '下架' : '上架';
+        const actionFn = product.status === 'online' ? 'offlineProduct' : 'onlineProduct';
+
+        return `
+          <tr>
+            <td><input type="checkbox" class="product-checkbox" value="${product.id}" onchange="updateSelection()"></td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 50px; height: 50px; background: var(--bg-gray); border-radius: 4px;"></div>
+                <div>
+                  <div style="font-weight: 600;">${product.name}</div>
+                  <div style="font-size: 12px; color: var(--text-tertiary);">ID: ${product.id}</div>
+                </div>
+              </div>
+            </td>
+            <td>${product.merchant}</td>
+            <td>${product.category}</td>
+            <td>¥${product.price}</td>
+            <td>${product.stock}</td>
+            <td><span class="badge ${statusClass}">${statusText}</span></td>
+            <td>
+              <button class="btn btn-sm btn-link" onclick="${actionFn}(${product.id})">${actionText}</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function toggleSelectAll() {
+      const checkboxes = document.querySelectorAll('.product-checkbox');
+      const selectAll = document.getElementById('selectAll').checked;
+      checkboxes.forEach(cb => cb.checked = selectAll);
+      updateSelection();
+    }
+
+    function updateSelection() {
+      const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+      selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+      document.getElementById('selectedCount').textContent = selectedIds.length;
+    }
+
+    function clearSelection() {
+      document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
+      document.getElementById('selectAll').checked = false;
+      updateSelection();
+    }
+
+    async function batchOnline() {
+      if (selectedIds.length === 0) {
+        Utils.showToast('请先选择产品', 'error');
+        return;
+      }
+
+      const confirmed = await Utils.confirm(`确认上架选中的 ${selectedIds.length} 个产品？`, '批量上架');
+      if (!confirmed) return;
+
+      Utils.showLoading('处理中...');
+      await Utils.sleep(1500);
+      Utils.hideLoading();
+      Utils.showToast(`已成功上架 ${selectedIds.length} 个产品`, 'success');
+      clearSelection();
+    }
+
+    async function batchOffline() {
+      if (selectedIds.length === 0) {
+        Utils.showToast('请先选择产品', 'error');
+        return;
+      }
+
+      const confirmed = await Utils.confirm(`确认下架选中的 ${selectedIds.length} 个产品？`, '批量下架');
+      if (!confirmed) return;
+
+      Utils.showLoading('处理中...');
+      await Utils.sleep(1500);
+      Utils.hideLoading();
+      Utils.showToast(`已成功下架 ${selectedIds.length} 个产品`, 'success');
+      clearSelection();
+    }
+
+    async function onlineProduct(id) {
+      const confirmed = await Utils.confirm('确认上架该产品？', '上架产品');
+      if (!confirmed) return;
+
+      Utils.showLoading('处理中...');
+      await Utils.sleep(1000);
+      Utils.hideLoading();
+      Utils.showToast('已上架', 'success');
+    }
+
+    async function offlineProduct(id) {
+      const confirmed = await Utils.confirm('确认下架该产品？', '下架产品');
+      if (!confirmed) return;
+
+      Utils.showLoading('处理中...');
+      await Utils.sleep(1000);
+      Utils.hideLoading();
+      Utils.showToast('已下架', 'success');
+    }
+
+    function filterByStatus(status) {
+      renderProducts(status);
+      clearSelection();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderProducts();
+    });
+  </script>
+</body>
+</html>

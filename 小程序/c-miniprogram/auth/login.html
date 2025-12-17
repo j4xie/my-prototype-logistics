@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>微信授权登录 - 溯源商城</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+
+  <style>
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--primary-gradient);
+      padding: var(--spacing-3xl) var(--spacing-2xl);
+    }
+
+    .login-logo {
+      width: 120px;
+      height: 120px;
+      background: var(--bg-white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-5xl);
+      margin-bottom: var(--spacing-2xl);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-title {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-inverse);
+      margin-bottom: var(--spacing-md);
+      text-align: center;
+    }
+
+    .login-subtitle {
+      font-size: var(--font-size-base);
+      color: var(--text-inverse);
+      opacity: 0.9;
+      margin-bottom: var(--spacing-5xl);
+      text-align: center;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 350px;
+      background: var(--bg-white);
+      border-radius: var(--radius-xl);
+      padding: var(--spacing-3xl) var(--spacing-2xl);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .wechat-btn {
+      width: 100%;
+      padding: var(--spacing-lg);
+      background: #07c160;
+      color: var(--text-inverse);
+      border: none;
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-md);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      box-shadow: var(--shadow-md);
+    }
+
+    .wechat-btn:active {
+      transform: scale(0.98);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .wechat-btn-icon {
+      font-size: var(--font-size-2xl);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: var(--spacing-2xl) 0;
+      color: var(--text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+
+    .divider::before {
+      margin-right: var(--spacing-md);
+    }
+
+    .divider::after {
+      margin-left: var(--spacing-md);
+    }
+
+    .phone-login-btn {
+      width: 100%;
+      padding: var(--spacing-md);
+      background: transparent;
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-base);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .phone-login-btn:active {
+      background: var(--bg-hover);
+    }
+
+    .agreement {
+      margin-top: var(--spacing-2xl);
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .agreement-link {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+
+    .features {
+      margin-top: var(--spacing-5xl);
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      max-width: 350px;
+    }
+
+    .feature-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-sm);
+      color: var(--text-inverse);
+    }
+
+    .feature-icon {
+      font-size: var(--font-size-3xl);
+    }
+
+    .feature-label {
+      font-size: var(--font-size-xs);
+      opacity: 0.9;
+    }
+
+    /* 模态框 */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: var(--z-index-modal);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-3xl) var(--spacing-2xl);
+      max-width: 300px;
+      width: 90%;
+      text-align: center;
+    }
+
+    .modal-icon {
+      font-size: var(--font-size-5xl);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .modal-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .modal-message {
+      font-size: var(--font-size-base);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-2xl);
+      line-height: 1.6;
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: var(--spacing-md);
+      background: var(--primary-color);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-base);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="login-container">
+      <!-- Logo -->
+      <div class="login-logo">🍱</div>
+
+      <!-- 标题 -->
+      <h1 class="login-title">溯源商城</h1>
+      <p class="login-subtitle">全程可追溯 · 品质有保障</p>
+
+      <!-- 登录卡片 -->
+      <div class="login-card">
+        <!-- 微信登录按钮 -->
+        <button class="wechat-btn" onclick="wechatLogin()">
+          <span class="wechat-btn-icon"></span>
+          <span>微信一键登录</span>
+        </button>
+
+        <!-- 分隔线 -->
+        <div class="divider">其他登录方式</div>
+
+        <!-- 手机号登录 -->
+        <button class="phone-login-btn" onclick="phoneLogin()">
+          手机号登录
+        </button>
+
+        <!-- 用户协议 -->
+        <div class="agreement">
+          登录即表示同意
+          <a href="#" class="agreement-link">《用户协议》</a>
+          和
+          <a href="#" class="agreement-link">《隐私政策》</a>
+        </div>
+      </div>
+
+      <!-- 特性展示 -->
+      <div class="features">
+        <div class="feature-item">
+          <div class="feature-icon"></div>
+          <div class="feature-label">扫码溯源</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon"></div>
+          <div class="feature-label">AI智能</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">✓</div>
+          <div class="feature-label">品质保证</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 授权弹窗 -->
+  <div class="modal" id="authModal">
+    <div class="modal-content">
+      <div class="modal-icon"></div>
+      <h3 class="modal-title">微信授权登录</h3>
+      <p class="modal-message">
+        溯源商城将获取你的<br>
+        微信昵称、头像等公开信息
+      </p>
+      <button class="modal-btn" onclick="confirmAuth()">确认授权</button>
+      <div style="margin-top: var(--spacing-md);">
+        <button class="phone-login-btn" onclick="cancelAuth()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/stateManager.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+
+  <script>
+    // ==================== 微信登录 ====================
+    function wechatLogin() {
+      // 显示授权弹窗
+      const modal = document.getElementById('authModal');
+      modal.classList.add('show');
+    }
+
+    // ==================== 确认授权 ====================
+    async function confirmAuth() {
+      const modal = document.getElementById('authModal');
+      modal.classList.remove('show');
+
+      // 显示加载提示
+      const hideLoading = Utils.showLoading('授权登录中...');
+
+      try {
+        // 模拟授权延迟
+        await Utils.sleep(1500);
+
+        // 模拟用户数据（实际应从微信获取）
+        const userData = {
+          id: 1,
+          name: '张三',
+          phone: '138****1234',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zhang',
+          level: 'VIP'
+        };
+
+        // 保存用户信息到状态管理
+        globalState.set(StateKeys.USER, userData);
+        globalState.set(StateKeys.IS_LOGGED_IN, true);
+        globalState.set(StateKeys.ACCESS_TOKEN, 'mock_token_' + Date.now());
+
+        hideLoading();
+        Utils.showToast('登录成功', 'success');
+
+        // 延迟跳转到首页
+        setTimeout(() => {
+          window.location.href = '../home/home.html';
+        }, 1000);
+
+      } catch (error) {
+        hideLoading();
+        Utils.showToast('登录失败，请重试', 'error');
+      }
+    }
+
+    // ==================== 取消授权 ====================
+    function cancelAuth() {
+      const modal = document.getElementById('authModal');
+      modal.classList.remove('show');
+    }
+
+    // ==================== 手机号登录 ====================
+    function phoneLogin() {
+      Utils.showToast('手机号登录功能开发中...', 'info');
+      // 实际应跳转到手机号登录页面
+      // window.location.href = 'phone-login.html';
+    }
+
+    // ==================== 检查登录状态 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      const isLoggedIn = globalState.get(StateKeys.IS_LOGGED_IN, false);
+
+      if (isLoggedIn) {
+        // 已登录，直接跳转到首页
+        Utils.showToast('您已登录', 'info');
+        setTimeout(() => {
+          window.location.href = '../home/home.html';
+        }, 1000);
+      }
+    });
+
+    // ==================== 点击背景关闭弹窗 ====================
+    document.getElementById('authModal').addEventListener('click', (e) => {
+      if (e.target.id === 'authModal') {
+        cancelAuth();
+      }
+    });
+  </script>
+</body>
+</html>

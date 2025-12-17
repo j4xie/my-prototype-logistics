@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>推荐奖励 - 溯源商城</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .balance-card {
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      padding: var(--spacing-2xl) var(--spacing-lg);
+      text-align: center;
+      margin-bottom: var(--spacing-md);
+    }
+    .balance-label {
+      font-size: var(--font-size-sm);
+      opacity: 0.9;
+      margin-bottom: var(--spacing-xs);
+    }
+    .balance-amount {
+      font-size: var(--font-size-4xl);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-md);
+    }
+    .balance-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: center;
+    }
+    .balance-btn {
+      padding: var(--spacing-sm) var(--spacing-xl);
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+    }
+    .stats-grid {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-md);
+      text-align: center;
+    }
+    .stat-number {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--primary-color);
+      margin-bottom: var(--spacing-xs);
+    }
+    .stat-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+    .tabs {
+      background: var(--bg-white);
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 44px;
+      z-index: 10;
+    }
+    .tab {
+      flex: 1;
+      padding: var(--spacing-md);
+      text-align: center;
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+    }
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+      font-weight: var(--font-weight-semibold);
+    }
+    .reward-list {
+      padding: var(--spacing-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    .reward-item {
+      background: var(--bg-white);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+    .reward-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+    }
+    .reward-type {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+    }
+    .reward-amount {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+    }
+    .reward-amount.income {
+      color: var(--success-color);
+    }
+    .reward-amount.expense {
+      color: var(--text-tertiary);
+    }
+    .reward-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      padding-top: var(--spacing-sm);
+      border-top: 1px solid var(--border-color);
+    }
+    .status-tag {
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+    }
+    .status-completed {
+      background: var(--success-color);
+      color: white;
+    }
+    .status-pending {
+      background: var(--warning-color);
+      color: white;
+    }
+    .empty-state {
+      padding: var(--spacing-3xl) var(--spacing-lg);
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+    .empty-icon {
+      font-size: var(--font-size-4xl);
+      margin-bottom: var(--spacing-md);
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">推荐奖励</div>
+    </div>
+    <div class="mobile-content">
+      <!-- 余额卡片 -->
+      <div class="balance-card">
+        <div class="balance-label">可提现余额（元）</div>
+        <div class="balance-amount">¥320.00</div>
+        <div class="balance-actions">
+          <button class="balance-btn" onclick="withdraw()">提现</button>
+          <button class="balance-btn" onclick="viewRules()">提现规则</button>
+        </div>
+      </div>
+
+      <!-- 统计数据 -->
+      <div class="stats-grid">
+        <div>
+          <div class="stat-number">¥520</div>
+          <div class="stat-label">累计收入</div>
+        </div>
+        <div>
+          <div class="stat-number">¥200</div>
+          <div class="stat-label">已提现</div>
+        </div>
+        <div>
+          <div class="stat-number">¥320</div>
+          <div class="stat-label">可提现</div>
+        </div>
+      </div>
+
+      <!-- 标签页 -->
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('all')">全部</div>
+        <div class="tab" onclick="switchTab('income')">收入</div>
+        <div class="tab" onclick="switchTab('expense')">支出</div>
+      </div>
+
+      <!-- 奖励记录列表 -->
+      <div class="reward-list" id="rewardList"></div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    const rewards = [
+      {
+        id: 1,
+        type: 'income',
+        title: '推荐奖励',
+        desc: '推荐好友张三注册成功',
+        amount: 50,
+        date: '2025-01-10 14:30',
+        status: 'completed'
+      },
+      {
+        id: 2,
+        type: 'income',
+        title: '推荐奖励',
+        desc: '推荐好友李四注册成功',
+        amount: 50,
+        date: '2025-01-08 10:20',
+        status: 'completed'
+      },
+      {
+        id: 3,
+        type: 'expense',
+        title: '提现',
+        desc: '提现到微信钱包',
+        amount: -100,
+        date: '2025-01-07 16:45',
+        status: 'completed'
+      },
+      {
+        id: 4,
+        type: 'income',
+        title: '推荐奖励',
+        desc: '推荐好友赵六注册成功',
+        amount: 50,
+        date: '2025-01-05 09:15',
+        status: 'completed'
+      },
+      {
+        id: 5,
+        type: 'income',
+        title: '推荐奖励',
+        desc: '推荐好友孙八注册成功',
+        amount: 50,
+        date: '2025-01-03 11:30',
+        status: 'completed'
+      },
+      {
+        id: 6,
+        type: 'expense',
+        title: '提现',
+        desc: '提现到支付宝',
+        amount: -100,
+        date: '2025-01-02 15:20',
+        status: 'completed'
+      },
+      {
+        id: 7,
+        type: 'income',
+        title: '推荐奖励',
+        desc: '推荐好友吴十注册成功',
+        amount: 50,
+        date: '2024-12-28 14:10',
+        status: 'completed'
+      },
+      {
+        id: 8,
+        type: 'income',
+        title: '推荐奖励',
+        desc: '推荐好友郑十一注册成功',
+        amount: 50,
+        date: '2024-12-25 10:05',
+        status: 'completed'
+      },
+      {
+        id: 9,
+        type: 'income',
+        title: '推荐奖励',
+        desc: '推荐好友王五下单',
+        amount: 20,
+        date: '2025-01-12 16:30',
+        status: 'pending'
+      }
+    ];
+
+    let currentTab = 'all';
+
+    function renderRewards() {
+      const list = document.getElementById('rewardList');
+      let filteredData = rewards;
+
+      if (currentTab !== 'all') {
+        filteredData = rewards.filter(r => r.type === currentTab);
+      }
+
+      if (filteredData.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div>暂无记录</div>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = filteredData.map(reward => {
+        const amountClass = reward.amount > 0 ? 'income' : 'expense';
+        const amountPrefix = reward.amount > 0 ? '+' : '';
+        const statusClass = reward.status === 'completed' ? 'status-completed' : 'status-pending';
+        const statusLabel = reward.status === 'completed' ? '已完成' : '处理中';
+
+        return `
+          <div class="reward-item">
+            <div class="reward-header">
+              <div>
+                <div class="reward-type">${reward.title}</div>
+                <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-top: 4px;">
+                  ${reward.desc}
+                </div>
+              </div>
+              <div class="reward-amount ${amountClass}">${amountPrefix}¥${Math.abs(reward.amount)}</div>
+            </div>
+            <div class="reward-meta">
+              <span>${reward.date}</span>
+              <span class="status-tag ${statusClass}">${statusLabel}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      renderRewards();
+    }
+
+    async function withdraw() {
+      const balance = 320;
+      if (balance < 100) {
+        Utils.showToast('余额不足¥100，暂时无法提现');
+        return;
+      }
+
+      const confirmed = await Utils.confirm(
+        '提现金额：¥' + balance + '\n预计1-3个工作日到账',
+        '确认提现'
+      );
+
+      if (!confirmed) return;
+
+      Utils.showLoading('提交中...');
+      await Utils.sleep(1500);
+      Utils.hideLoading();
+      Utils.showToast('提现申请已提交，请耐心等待', 'success');
+    }
+
+    function viewRules() {
+      Utils.showToast('提现规则：\n1. 最低提现金额¥100\n2. 提现手续费1%\n3. 1-3个工作日到账');
+    }
+
+    document.addEventListener('DOMContentLoaded', renderRewards);
+  </script>
+</body>
+</html>
