@@ -103,8 +103,13 @@ export default function FactorySettingsScreen() {
       factorySettingsLogger.debug('加载工厂设置', { factoryId });
 
       const response = await factoryApiClient.getFactorySettings(factoryId);
-
-      if (response.success && response.data) {
+      console.log(response)
+      factorySettingsLogger.info('工厂设置加载成功', {
+          factoryName: response.factoryName,
+          hasWorkingHours: !!response.workingHours,
+        });
+        setSettings(response);
+      /* if (response.success && response.data) {
         factorySettingsLogger.info('工厂设置加载成功', {
           factoryName: response.data.factoryName,
           hasWorkingHours: !!response.data.workingHours,
@@ -112,7 +117,7 @@ export default function FactorySettingsScreen() {
         setSettings(response.data);
       } else {
         throw new Error(response.message || '加载失败');
-      }
+      } */
     } catch (error) {
       factorySettingsLogger.error('加载工厂设置失败', error, { factoryId });
       Alert.alert('加载失败', error.response?.data?.message || error.message || '无法加载工厂设置，请重试');
