@@ -571,6 +571,7 @@ const MockDB = {
 
   // ==================== 广告位数据（固定配置） ====================
   adSlots: [
+    { id: 0, name: '启动广告', position: 'splash_ad', size: '750x1334', maxAds: 1, description: '小程序启动时全屏弹窗广告' },
     { id: 1, name: '首页顶部Banner', position: 'home_top', size: '750x300', maxAds: 5, description: '首页轮播Banner，最显眼的广告位' },
     { id: 2, name: '列表页右侧', position: 'list_right', size: '300x250', maxAds: 3, description: '商品列表页右侧推荐位' },
     { id: 3, name: '详情页底部', position: 'detail_bottom', size: '728x90', maxAds: 2, description: '商品详情页底部横幅' },
@@ -580,6 +581,21 @@ const MockDB = {
 
   // ==================== 广告内容数据 ====================
   ads: [
+    {
+      id: 0,
+      slotId: 0,
+      image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=750&h=1334&fit=crop',
+      merchantId: 1,
+      merchantName: '上海鲜优食品有限公司',
+      productId: 1,
+      productName: '流沙黄金麻球咸蛋黄',
+      startTime: '2025-01-01',
+      endTime: '2026-12-31',
+      status: 'active',
+      clicks: 0,
+      impressions: 0,
+      createTime: '2025-01-01T08:00:00Z'
+    },
     {
       id: 1,
       slotId: 1,

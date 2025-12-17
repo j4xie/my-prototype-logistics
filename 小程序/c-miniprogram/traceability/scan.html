@@ -36,7 +36,7 @@
           <!-- 扫描线 -->
           <div class="mobile-scan-line"></div>
         </div>
-    </div>
+      </div>
 
     <!-- 操作按钮 -->
     <div class="mobile-actions">
@@ -51,11 +51,11 @@
         <div class="mobile-action-item" onclick="simulateScan()">
             <div class="mobile-action-icon">📷</div>
             <div class="mobile-action-label">模拟扫描</div>
-        </div>
+      </div>
         <div class="mobile-action-item" onclick="showManualInputModal()">
             <div class="mobile-action-icon">⌨️</div>
             <div class="mobile-action-label">输码</div>
-        </div>
+      </div>
     </div>
 
     <!-- 底部Tab导航 -->
@@ -93,7 +93,7 @@
     function navigateTo(path) {
       window.location.href = path;
     }
-    
+
     // 省略具体JS实现，复用原有逻辑
     async function simulateScan() {
         Utils.showToast('模拟扫描成功', 'success');
