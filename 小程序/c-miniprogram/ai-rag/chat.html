@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI智能问答 - 溯源商城</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+
+  <style>
+    .mobile-content {
+      padding: 0;
+      padding-bottom: 70px;
+    }
+
+    /* 聊天区域 */
+    .chat-container {
+      padding: var(--spacing-lg);
+      min-height: calc(100vh - var(--mobile-header-height) - var(--mobile-tabbar-height) - 70px);
+    }
+
+    /* 欢迎信息 */
+    .welcome-section {
+      text-align: center;
+      padding: var(--spacing-3xl) var(--spacing-lg);
+    }
+
+    .welcome-icon {
+      font-size: var(--font-size-5xl);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .welcome-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .welcome-subtitle {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    /* 快捷问题 */
+    .quick-questions {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    .quick-question-btn {
+      padding: var(--spacing-md) var(--spacing-lg);
+      background: var(--bg-white);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      text-align: left;
+      cursor: pointer;
+      transition: all var(--transition-base);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .quick-question-btn:active {
+      background: var(--bg-gray);
+      transform: scale(0.98);
+    }
+
+    /* 消息列表 */
+    .messages-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+      padding-bottom: var(--spacing-lg);
+    }
+
+    /* 消息气泡 */
+    .message {
+      display: flex;
+      gap: var(--spacing-sm);
+      animation: messageSlideIn 0.3s ease;
+    }
+
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-lg);
+      flex-shrink: 0;
+    }
+
+    .message.user .message-avatar {
+      background: var(--bg-gray);
+    }
+
+    .message-content {
+      max-width: 70%;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .message-bubble {
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      background: var(--bg-white);
+      box-shadow: var(--shadow-sm);
+      line-height: 1.6;
+      font-size: var(--font-size-base);
+      color: var(--text-primary);
+    }
+
+    .message.user .message-bubble {
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      border-radius: var(--radius-md) var(--radius-md) 0 var(--radius-md);
+    }
+
+    .message.ai .message-bubble {
+      border-radius: var(--radius-md) var(--radius-md) var(--radius-md) 0;
+    }
+
+    .message-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      align-self: flex-end;
+      padding: 0 var(--spacing-xs);
+    }
+
+    .message.user .message-time {
+      align-self: flex-start;
+    }
+
+    /* 消息来源 */
+    .message-sources {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-xs);
+      margin-top: var(--spacing-xs);
+    }
+
+    .source-tag {
+      padding: 2px var(--spacing-xs);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      background: rgba(102, 126, 234, 0.1);
+      color: var(--primary-color);
+    }
+
+    /* 输入中动画 */
+    .typing-indicator {
+      display: flex;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-md);
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      width: fit-content;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+      animation: typingAnimation 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typingAnimation {
+      0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+      }
+      30% {
+        transform: translateY(-10px);
+        opacity: 1;
+      }
+    }
+
+    /* 输入区域 */
+    .input-area {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: var(--bg-white);
+      border-top: 1px solid var(--border-color);
+      padding: var(--spacing-md) var(--spacing-lg);
+      z-index: var(--z-index-sticky);
+      box-sizing: border-box;
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: var(--spacing-sm);
+      align-items: center;
+    }
+
+    .voice-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg-gray);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-xl);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      flex-shrink: 0;
+    }
+
+    .voice-btn:active {
+      background: var(--bg-hover);
+      transform: scale(0.95);
+    }
+
+    .input-field {
+      flex: 1;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-base);
+      outline: none;
+      transition: border-color var(--transition-base);
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary-color);
+    }
+
+    .send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-xl);
+      color: var(--text-inverse);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      flex-shrink: 0;
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .send-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <!-- 顶部导航栏 -->
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">AI智能问答</div>
+      <div class="mobile-header-action" onclick="clearChat()">🗑️</div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="mobile-content">
+      <div class="chat-container" id="chatContainer">
+        <!-- 欢迎区域 -->
+        <div class="welcome-section" id="welcomeSection">
+          <div class="welcome-icon"></div>
+          <div class="welcome-title">AI智能助手</div>
+          <div class="welcome-subtitle">我可以帮您解答关于产品溯源、质检、订购等问题</div>
+
+          <!-- 快捷问题 -->
+          <div class="quick-questions">
+            <button class="quick-question-btn" onclick="askQuestion('如何查看产品的溯源信息？')">
+              如何查看产品的溯源信息？
+            </button>
+            <button class="quick-question-btn" onclick="askQuestion('阶梯价格是如何计算的？')">
+              阶梯价格是如何计算的？
+            </button>
+            <button class="quick-question-btn" onclick="askQuestion('产品的质检标准是什么？')">
+              产品的质检标准是什么？
+            </button>
+            <button class="quick-question-btn" onclick="askQuestion('如何下单购买产品？')">
+              如何下单购买产品？
+            </button>
+          </div>
+        </div>
+
+        <!-- 消息列表 -->
+        <div class="messages-list" id="messagesList" style="display: none;">
+          <!-- 消息将通过JavaScript动态生成 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 输入区域 -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <button class="voice-btn" onclick="Utils.showToast('语音输入功能开发中', 'info')">
+          🎤
+        </button>
+        <input
+          type="text"
+          class="input-field"
+          id="messageInput"
+          placeholder="输入您的问题..."
+          onkeypress="handleKeyPress(event)"
+        >
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+          ➤
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/mockAPI.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+
+  <script>
+    // ==================== 全局状态 ====================
+    let messages = [];
+    let isAITyping = false;
+    let isHumanMode = false;
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      const messageInput = document.getElementById('messageInput');
+      const sendBtn = document.getElementById('sendBtn');
+      
+      // 检查是否为人工客服/供应商模式
+      const type = Utils.getUrlParam('type');
+      if (type === 'supplier') {
+        isHumanMode = true;
+        initSupplierMode();
+      }
+
+      // 监听输入变化，启用/禁用发送按钮
+      messageInput.addEventListener('input', () => {
+        sendBtn.disabled = !messageInput.value.trim();
+      });
+    });
+
+    function initSupplierMode() {
+      // 修改标题
+      document.querySelector('.mobile-header-title').textContent = '联系供应商';
+      
+      // 修改欢迎语
+      document.querySelector('.welcome-title').textContent = '供应商专属客服';
+      document.querySelector('.welcome-subtitle').textContent = '您好，很高兴为您服务。请问有什么关于产品的问题？';
+      
+      // 隐藏AI快捷问题
+      document.querySelector('.quick-questions').style.display = 'none';
+      
+      // 自动发送一条欢迎消息
+      setTimeout(() => {
+        addMessage('ai', '您好！我是B&F供应链的专属客服代表。收到您的咨询需求，请问具体是对哪款产品感兴趣？');
+      }, 500);
+      
+      // 隐藏默认欢迎页，直接显示消息列表
+      document.getElementById('welcomeSection').style.display = 'none';
+      document.getElementById('messagesList').style.display = 'flex';
+    }
+
+    // ==================== 发送消息 ====================
+    async function sendMessage() {
+      const messageInput = document.getElementById('messageInput');
+      const text = messageInput.value.trim();
+
+      if (!text) return;
+
+      // 清空输入框
+      messageInput.value = '';
+      document.getElementById('sendBtn').disabled = true;
+
+      // 发送用户消息
+      await askQuestion(text);
+    }
+
+    // ==================== 快捷问题 ====================
+    async function askQuestion(question) {
+      if (isAITyping) {
+        Utils.showToast(isHumanMode ? '客服正在输入...' : 'AI正在回复中，请稍候', 'info');
+        return;
+      }
+
+      // 隐藏欢迎区域
+      document.getElementById('welcomeSection').style.display = 'none';
+      document.getElementById('messagesList').style.display = 'flex';
+
+      // 添加用户消息
+      addMessage('user', question);
+
+      // 滚动到底部
+      scrollToBottom();
+
+      // 显示输入中...
+      isAITyping = true;
+      showTypingIndicator();
+
+      if (isHumanMode) {
+        // 模拟人工客服回复
+        setTimeout(() => {
+           removeTypingIndicator();
+           const reply = getHumanReply(question);
+           addMessage('ai', reply);
+           scrollToBottom();
+           isAITyping = false;
+        }, 1500);
+        return;
+      }
+
+      try {
+        // 调用AI API
+        const result = await MockAPI.request('ai.chat', {
+          question,
+          userId: 1,
+          skipError: true
+        });
+
+        // 移除输入中指示器
+        removeTypingIndicator();
+
+        // 添加AI回复
+        addMessage('ai', result.answer, result.sources);
+
+        // 滚动到底部
+        scrollToBottom();
+
+      } catch (error) {
+        removeTypingIndicator();
+        Utils.showToast('AI回复失败，请稍后重试', 'error');
+      } finally {
+        isAITyping = false;
+      }
+    }
+
+    function getHumanReply(question) {
+      const q = question.toLowerCase();
+      if (q.includes('价') || q.includes('钱') || q.includes('多少')) {
+        return '关于价格问题，我们需要根据您的具体采购量来核算。目前我们针对新客户有优惠政策，请问您预计的月采购量大概是多少？';
+      }
+      if (q.includes('货') || q.includes('库存') || q.includes('有吗')) {
+        return '目前这款产品库存充足，现货直发。如果您需要大批量订购（超过1000件），我们建议您提前3天预订以确保交期。';
+      }
+      if (q.includes('样') || q.includes('寄') || q.includes('看')) {
+        return '我们可以提供样品寄送服务，以确保您对品质满意。请您提供一下详细收货地址和联系人，我们安排顺丰冷链寄送。';
+      }
+      if (q.includes('好') || q.includes('谢') || q.includes('ok')) {
+        return '不客气，期待与您的合作！如有其他问题随时联系。';
+      }
+      return '收到您的消息。我已经记录下您的需求，并反馈给产品经理。稍后（约10分钟内）会有专人致电您 139****8096 进行详细对接，请保持电话畅通。';
+    }
+
+    // ==================== 添加消息 ====================
+    function addMessage(sender, text, sources = []) {
+      const message = {
+        id: Date.now(),
+        sender,
+        text,
+        sources,
+        timestamp: new Date()
+      };
+
+      messages.push(message);
+      renderMessages();
+    }
+
+    // ==================== 渲染消息 ====================
+    function renderMessages() {
+      const messagesList = document.getElementById('messagesList');
+
+      messagesList.innerHTML = messages.map(msg => {
+        const isUser = msg.sender === 'user';
+        const avatar = isUser ? '' : '';
+        const timeStr = Utils.formatDate(msg.timestamp, 'HH:mm');
+
+        return `
+          <div class="message ${isUser ? 'user' : 'ai'}">
+            <div class="message-avatar">${avatar}</div>
+            <div class="message-content">
+              <div class="message-bubble">${msg.text}</div>
+              ${!isUser && msg.sources && msg.sources.length > 0 ? `
+                <div class="message-sources">
+                  ${msg.sources.map(source => `
+                    <span class="source-tag">📚 ${source}</span>
+                  `).join('')}
+                </div>
+              ` : ''}
+              <div class="message-time">${timeStr}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== 显示输入中指示器 ====================
+    function showTypingIndicator() {
+      const messagesList = document.getElementById('messagesList');
+
+      const typingHtml = `
+        <div class="message ai" id="typingIndicator">
+          <div class="message-avatar"></div>
+          <div class="message-content">
+            <div class="typing-indicator">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      messagesList.insertAdjacentHTML('beforeend', typingHtml);
+      scrollToBottom();
+    }
+
+    // ==================== 移除输入中指示器 ====================
+    function removeTypingIndicator() {
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) {
+        indicator.remove();
+      }
+    }
+
+    // ==================== 滚动到底部 ====================
+    function scrollToBottom() {
+      setTimeout(() => {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+
+    // ==================== 清空聊天 ====================
+    function clearChat() {
+      Utils.confirm('确认清空聊天记录？', '清空聊天').then(confirmed => {
+        if (confirmed) {
+          messages = [];
+          document.getElementById('welcomeSection').style.display = 'block';
+          document.getElementById('messagesList').style.display = 'none';
+          Utils.showToast('聊天记录已清空', 'success');
+        }
+      });
+    }
+
+    // ==================== 按Enter发送 ====================
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    // ==================== 导航函数 ====================
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+  </script>
+</body>
+</html>

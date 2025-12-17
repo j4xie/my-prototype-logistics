@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>行业分析报告 - 溯源商城</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .report-header {
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      padding: var(--spacing-xl) var(--spacing-lg);
+      text-align: center;
+    }
+    .report-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-xs);
+    }
+    .report-subtitle {
+      font-size: var(--font-size-sm);
+      opacity: 0.9;
+    }
+    .highlight-cards {
+      padding: var(--spacing-lg);
+      background: var(--bg-white);
+      margin-bottom: var(--spacing-md);
+    }
+    .highlight-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-md);
+    }
+    .highlight-card {
+      background: var(--bg-gray);
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+    .highlight-number {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: var(--spacing-xs);
+    }
+    .highlight-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+    }
+    .trend-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+    .section-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    .trend-item {
+      background: var(--bg-gray);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-md);
+    }
+    .trend-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+    }
+    .trend-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+    }
+    .trend-tag {
+      padding: 4px 12px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      color: white;
+    }
+    .trend-tag.hot {
+      background: var(--error-color);
+    }
+    .trend-tag.rising {
+      background: var(--warning-color);
+    }
+    .trend-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .competitive-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: var(--spacing-md);
+    }
+    .competitive-table th {
+      background: var(--bg-gray);
+      padding: var(--spacing-sm);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .competitive-table td {
+      padding: var(--spacing-sm);
+      font-size: var(--font-size-sm);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .rank-badge {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      text-align: center;
+      border-radius: 50%;
+      font-weight: var(--font-weight-bold);
+      color: white;
+      font-size: var(--font-size-xs);
+    }
+    .rank-1 { background: #FFD700; }
+    .rank-2 { background: #C0C0C0; }
+    .rank-3 { background: #CD7F32; }
+    .rank-other { background: var(--text-tertiary); }
+    .opportunity-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-md);
+    }
+    .opportunity-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-sm);
+    }
+    .opportunity-desc {
+      font-size: var(--font-size-sm);
+      line-height: 1.6;
+      opacity: 0.95;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">行业分析报告</div>
+      <div class="mobile-header-action" onclick="shareReport()">分享</div>
+    </div>
+    <div class="mobile-content">
+      <!-- 报告标题 -->
+      <div class="report-header">
+        <div class="report-title">食品溯源行业分析</div>
+        <div class="report-subtitle">2025年Q1季度报告</div>
+      </div>
+
+      <!-- 行业亮点 -->
+      <div class="highlight-cards">
+        <div class="highlight-grid">
+          <div class="highlight-card">
+            <div class="highlight-number">¥1280亿</div>
+            <div class="highlight-label">市场规模</div>
+          </div>
+          <div class="highlight-card">
+            <div class="highlight-number">+23%</div>
+            <div class="highlight-label">年增长率</div>
+          </div>
+          <div class="highlight-card">
+            <div class="highlight-number">15,600+</div>
+            <div class="highlight-label">参与企业</div>
+          </div>
+          <div class="highlight-card">
+            <div class="highlight-number">92%</div>
+            <div class="highlight-label">渗透率</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 行业趋势 -->
+      <div class="trend-section">
+        <div class="section-title">📈 行业趋势</div>
+
+        <div class="trend-item">
+          <div class="trend-header">
+            <div class="trend-title">AI智能溯源兴起</div>
+            <span class="trend-tag hot">热门</span>
+          </div>
+          <div class="trend-desc">AI技术在食品溯源领域应用加速，智能识别、风险预警、数据分析等场景快速普及，预计未来3年应用率将达到75%。</div>
+        </div>
+
+        <div class="trend-item">
+          <div class="trend-header">
+            <div class="trend-title">区块链溯源标准化</div>
+            <span class="trend-tag rising">上升</span>
+          </div>
+          <div class="trend-desc">国家推动区块链溯源标准制定，大型食品企业纷纷布局，行业规范逐步完善，消费者信任度持续提升。</div>
+        </div>
+
+        <div class="trend-item">
+          <div class="trend-header">
+            <div class="trend-title">全链路数字化</div>
+            <span class="trend-tag rising">上升</span>
+          </div>
+          <div class="trend-desc">从原料采购到终端销售，全链路数字化溯源成为标配，IoT设备部署量年增长40%，数据采集自动化率显著提高。</div>
+        </div>
+      </div>
+
+      <!-- 竞争格局 -->
+      <div class="trend-section">
+        <div class="section-title">🏆 竞争格局</div>
+        <table class="competitive-table">
+          <thead>
+            <tr>
+              <th>排名</th>
+              <th>企业</th>
+              <th>市场份额</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rank-badge rank-1">1</span></td>
+              <td>蚂蚁链溯源</td>
+              <td>18.5%</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge rank-2">2</span></td>
+              <td>京东云溯源</td>
+              <td>15.2%</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge rank-3">3</span></td>
+              <td>腾讯安心平台</td>
+              <td>12.8%</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge rank-other">4</span></td>
+              <td>白垩纪溯源</td>
+              <td>3.2%</td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge rank-other">5</span></td>
+              <td>其他</td>
+              <td>50.3%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 市场机会 -->
+      <div class="trend-section">
+        <div class="section-title">💎 市场机会</div>
+
+        <div class="opportunity-card">
+          <div class="opportunity-title">中小型食品企业数字化转型</div>
+          <div class="opportunity-desc">中小型食品企业溯源系统普及率不足40%，存在巨大市场空间。提供轻量化、低成本的SaaS溯源解决方案将是蓝海市场。</div>
+        </div>
+
+        <div class="opportunity-card">
+          <div class="opportunity-title">跨境食品溯源需求激增</div>
+          <div class="opportunity-desc">进口食品规模年增20%，海关、消费者对国际溯源需求旺盛。支持多国标准、多语言的跨境溯源系统将快速增长。</div>
+        </div>
+
+        <div class="opportunity-card">
+          <div class="opportunity-title">农产品溯源政策红利</div>
+          <div class="opportunity-desc">国家大力推进农产品溯源体系建设，补贴政策持续加码。面向农产品供应链的专业溯源服务迎来发展黄金期。</div>
+        </div>
+      </div>
+
+      <!-- AI洞察 -->
+      <div class="trend-section">
+        <div class="section-title"> AI智能洞察</div>
+        <div style="background: var(--bg-gray); padding: var(--spacing-md); border-radius: var(--radius-md); font-size: var(--font-size-sm); line-height: 1.8; color: var(--text-secondary);">
+          根据AI分析，未来12-18个月食品溯源行业将呈现以下特点：
+          <br><br>
+          <strong>1. 技术融合加速：</strong>AI、区块链、IoT三大技术深度融合，形成智能化溯源生态。
+          <br><br>
+          <strong>2. 市场集中度提升：</strong>头部企业通过并购和技术壁垒，市场份额将进一步集中到前10名。
+          <br><br>
+          <strong>3. 垂直领域细分：</strong>乳制品、肉类、海鲜等细分市场将涌现专业溯源服务商。
+          <br><br>
+          <strong>4. 消费者参与增强：</strong>溯源不再只是企业工具，将成为消费者选购决策的重要依据。
+        </div>
+      </div>
+
+      <!-- AI生成说明 -->
+      <div style="padding: var(--spacing-lg); text-align: center; color: var(--text-tertiary); font-size: var(--font-size-xs);">
+        * 本报告由AI智能分析生成，数据来源于公开市场研究，仅供参考
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    function shareReport() {
+      Utils.showToast('分享功能开发中');
+    }
+  </script>
+</body>
+</html>

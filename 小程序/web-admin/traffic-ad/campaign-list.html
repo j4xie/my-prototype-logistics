@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>营销活动 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-sidebar">
+      <div class="sidebar-header"><h2>溯源商城</h2><p>管理后台</p></div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html">总览</a>
+        <a href="../merchant/list.html">商户管理</a>
+        <a href="../product-management/list.html">产品管理</a>
+        <a href="../content-control/review-queue.html">内容审核</a>
+        <a href="ranking-config.html" class="active">流量广告</a>
+        <a href="../ai-knowledge/knowledge-base.html">AI知识库</a>
+        <a href="../analytics/traffic-stats.html">数据分析</a>
+        <a href="../settings/system-config.html">系统设置</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a><span>/</span><span>营销活动</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="createCampaign()">+ 创建活动</button>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <div style="background: var(--bg-white); border-radius: var(--radius-md);">
+          <table class="table">
+            <thead>
+              <tr><th>活动名称</th><th>类型</th><th>时间</th><th>状态</th><th>参与商户</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>新春大促</td>
+                <td>限时折扣</td>
+                <td>2025-01-15 ~ 2025-02-15</td>
+                <td><span class="badge badge-success">进行中</span></td>
+                <td>25</td>
+                <td><button class="btn btn-sm btn-link" onclick="viewCampaign(1)">查看</button></td>
+              </tr>
+              <tr>
+                <td>限时秒杀</td>
+                <td>秒杀活动</td>
+                <td>2025-01-20 ~ 2025-01-27</td>
+                <td><span class="badge badge-warning">未开始</span></td>
+                <td>12</td>
+                <td><button class="btn btn-sm btn-link" onclick="viewCampaign(2)">查看</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    function createCampaign() { Utils.showToast('创建活动功能开发中'); }
+    function viewCampaign(id) { Utils.showToast('查看活动功能开发中'); }
+  </script>
+</body>
+</html>

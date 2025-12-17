@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>排序权重配置 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-sidebar">
+      <div class="sidebar-header"><h2>溯源商城</h2><p>管理后台</p></div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html">总览</a>
+        <a href="../merchant/list.html">商户管理</a>
+        <a href="../product-management/list.html">产品管理</a>
+        <a href="../content-control/review-queue.html">内容审核</a>
+        <a href="ranking-config.html" class="active">流量广告</a>
+        <a href="../ai-knowledge/knowledge-base.html">AI知识库</a>
+        <a href="../analytics/traffic-stats.html">数据分析</a>
+        <a href="../settings/system-config.html">系统设置</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a><span>/</span><span>排序权重配置</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <div style="background: var(--bg-white); padding: var(--spacing-xl); border-radius: var(--radius-md);">
+          <h3 style="margin-bottom: var(--spacing-lg);">排序因子权重</h3>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-lg);">
+            <div class="form-group">
+              <label class="form-label">销量权重 (%)</label>
+              <input type="range" min="0" max="100" value="30" class="form-control" oninput="this.nextElementSibling.textContent=this.value">
+              <span>30</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">评分权重 (%)</label>
+              <input type="range" min="0" max="100" value="25" class="form-control" oninput="this.nextElementSibling.textContent=this.value">
+              <span>25</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">价格权重 (%)</label>
+              <input type="range" min="0" max="100" value="20" class="form-control" oninput="this.nextElementSibling.textContent=this.value">
+              <span>20</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">新品加权 (%)</label>
+              <input type="range" min="0" max="100" value="15" class="form-control" oninput="this.nextElementSibling.textContent=this.value">
+              <span>15</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">商户等级权重 (%)</label>
+              <input type="range" min="0" max="100" value="10" class="form-control" oninput="this.nextElementSibling.textContent=this.value">
+              <span>10</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    async function saveConfig() {
+      Utils.showLoading('保存中...');
+      await Utils.sleep(1000);
+      Utils.hideLoading();
+      Utils.showToast('配置已保存', 'success');
+    }
+  </script>
+</body>
+</html>
