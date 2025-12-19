@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>完善信息 - 溯源商城</title>
+  <title>绑定商家 - 溯源商城</title>
 
   <!-- CSS -->
   <link rel="stylesheet" href="../../assets/css/variables.css">
@@ -65,35 +65,6 @@
 
     .section-icon {
       font-size: var(--font-size-lg);
-    }
-
-    /* 用户协议 */
-    .agreement-section {
-      padding: var(--spacing-lg);
-      margin-bottom: calc(var(--spacing-lg) + 20px);
-    }
-
-    .agreement-checkbox {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--spacing-sm);
-      font-size: var(--font-size-sm);
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-
-    .agreement-checkbox input[type="checkbox"] {
-      margin-top: 2px;
-      flex-shrink: 0;
-    }
-
-    .agreement-link {
-      color: var(--primary-color);
-      text-decoration: none;
-    }
-
-    .agreement-link:active {
-      opacity: 0.7;
     }
 
     /* 提交按钮 */
@@ -308,20 +279,20 @@
     <!-- 顶部导航栏 -->
     <div class="mobile-header">
       <div class="mobile-header-back" onclick="window.history.back()">←</div>
-      <div class="mobile-header-title">完善信息</div>
+      <div class="mobile-header-title">绑定商家</div>
     </div>
 
     <!-- 主内容区 -->
     <div class="mobile-content">
       <!-- 头部信息 -->
       <div class="register-header">
-        <div class="header-icon"></div>
-        <div class="header-title">欢迎加入溯源商城</div>
-        <div class="header-subtitle">请完善以下信息以完成注册</div>
+        <div class="header-icon">🏢</div>
+        <div class="header-title">绑定商家账号</div>
+        <div class="header-subtitle">请填写商家信息以完成绑定</div>
       </div>
 
-      <!-- 注册表单 -->
-      <form id="registerForm" class="register-form" onsubmit="handleSubmit(event)">
+      <!-- 绑定表单 -->
+      <form id="bindForm" class="register-form" onsubmit="handleSubmit(event)">
         <!-- 微信账号信息 -->
         <div class="form-section">
           <div class="section-title">
@@ -331,10 +302,10 @@
 
           <div class="wechat-info">
             <img
+              id="wechatAvatar"
               src="https://api.dicebear.com/7.x/avataaars/svg?seed=User"
               alt="微信头像"
               class="wechat-avatar"
-              id="wechatAvatar"
             >
             <div class="wechat-details">
               <div class="wechat-name" id="wechatName">微信用户</div>
@@ -427,7 +398,7 @@
         <!-- 联系人信息 -->
         <div class="form-section">
           <div class="section-title">
-            <span class="section-icon"></span>
+            <span class="section-icon">👤</span>
             联系人信息
           </div>
 
@@ -455,106 +426,22 @@
               required
             >
           </div>
-
-          <div class="form-group">
-            <label class="form-label">职位</label>
-            <input
-              type="text"
-              class="form-control"
-              name="position"
-              placeholder="例如：采购经理"
-            >
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">邮箱</label>
-            <input
-              type="email"
-              class="form-control"
-              name="email"
-              placeholder="请输入邮箱地址"
-            >
-          </div>
         </div>
 
-        <!-- 业务需求 -->
-        <div class="form-section">
-          <div class="section-title">
-            <span class="section-icon">📋</span>
-            业务需求
+        <div class="form-tip">
+          <div class="tip-title">💡 温馨提示</div>
+          <div class="tip-content">
+            • 提交后平台将在1-3个工作日内审核<br>
+            • 审核通过后即可使用商家功能<br>
+            • 如有疑问请联系客服：400-123-4567
           </div>
-
-          <div class="form-group">
-            <label class="form-label">主要采购品类</label>
-            <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); margin-top: var(--spacing-sm);">
-              <label class="checkbox-label">
-                <input type="checkbox" name="categories" value="seafood">
-                海鲜水产
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="categories" value="meat">
-                肉类禽蛋
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="categories" value="vegetable">
-                蔬菜果蔬
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="categories" value="grain">
-                粮油米面
-              </label>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">月均采购量</label>
-            <select class="form-control" name="purchaseVolume">
-              <option value="">请选择</option>
-              <option value="small">500件以下</option>
-              <option value="medium">500-2000件</option>
-              <option value="large">2000-5000件</option>
-              <option value="xlarge">5000件以上</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">备注</label>
-            <textarea
-              class="form-control"
-              name="remarks"
-              rows="3"
-              placeholder="其他需要说明的信息（选填）"
-            ></textarea>
-          </div>
-
-          <div class="form-tip">
-            <div class="tip-title">💡 温馨提示</div>
-            <div class="tip-content">
-              • 提交后平台将在1-3个工作日内审核<br>
-              • 审核通过后即可开始采购产品<br>
-              • 如有疑问请联系客服：400-123-4567
-            </div>
-          </div>
-        </div>
-
-        <!-- 用户协议 -->
-        <div class="agreement-section">
-          <label class="agreement-checkbox">
-            <input type="checkbox" id="agreementCheckbox" required>
-            <span>
-              我已阅读并同意
-              <a href="#" class="agreement-link" onclick="showAgreement(); return false;">《用户服务协议》</a>
-              和
-              <a href="#" class="agreement-link" onclick="showPrivacy(); return false;">《隐私政策》</a>
-            </span>
-          </label>
         </div>
       </form>
 
       <!-- 提交按钮 -->
       <div class="submit-section">
-        <button type="submit" class="submit-btn" form="registerForm">
-          提交注册
+        <button type="submit" class="submit-btn" form="bindForm">
+          提交绑定
         </button>
       </div>
     </div>
@@ -570,15 +457,25 @@
   <script>
     // ==================== 初始化 ====================
     document.addEventListener('DOMContentLoaded', () => {
+      // 检查是否已登录
+      const isLoggedIn = globalState.get(StateKeys.IS_LOGGED_IN, false);
+      if (!isLoggedIn) {
+        Utils.showToast('请先登录', 'error');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1000);
+        return;
+      }
+
       loadWechatInfo();
     });
 
     // ==================== 加载微信信息 ====================
     function loadWechatInfo() {
-      // 从状态管理获取微信授权信息（模拟）
+      const user = globalState.get(StateKeys.USER, {});
       const wechatInfo = globalState.get(StateKeys.WECHAT_INFO, {
-        nickname: '微信用户',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'
+        nickname: user.name || '微信用户',
+        avatar: user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'
       });
 
       document.getElementById('wechatName').textContent = wechatInfo.nickname;
@@ -665,81 +562,42 @@
         return;
       }
 
-      // 检查协议勾选
-      const agreementCheckbox = document.getElementById('agreementCheckbox');
-      if (!agreementCheckbox.checked) {
-        Utils.showToast('请先阅读并同意用户协议', 'error');
-        return;
-      }
-
       // 收集表单数据
       const formData = new FormData(form);
-      const registerData = {
-        wechat: globalState.get(StateKeys.WECHAT_INFO),
-        company: {
-          name: formData.get('companyName'),
-          creditCode: formData.get('creditCode'),
-          type: formData.get('companyType'),
-          address: formData.get('companyAddress'),
-          businessLicenseImage: licenseImageUrl
-        },
-        contact: {
-          name: formData.get('contactName'),
-          phone: formData.get('contactPhone'),
-          position: formData.get('position'),
-          email: formData.get('email')
-        },
-        business: {
-          categories: Array.from(form.querySelectorAll('input[name="categories"]:checked'))
-            .map(input => input.value),
-          purchaseVolume: formData.get('purchaseVolume'),
-          remarks: formData.get('remarks')
-        },
-        submitTime: new Date().toISOString()
-      };
+      const wechatInfo = globalState.get(StateKeys.WECHAT_INFO, {});
+      const userId = globalState.get(StateKeys.USER, {}).id || Date.now();
 
-      // 提交注册到后端
+      // 提交绑定到后端
       try {
-        Utils.showToast('正在提交注册信息...', 'info');
+        Utils.showToast('正在提交绑定信息...', 'info');
         
-        // 调用API创建商家
-        const result = await MockAPI.request('merchants.create', {
-          wechatInfo: registerData.wechat,
-          companyName: registerData.company.name,
-          creditCode: registerData.company.creditCode,
-          companyType: registerData.company.type,
-          address: registerData.company.address,
-          businessLicenseImage: registerData.company.businessLicenseImage,
-          contactName: registerData.contact.name,
-          contactPhone: registerData.contact.phone,
-          position: registerData.contact.position,
-          email: registerData.contact.email,
-          categories: registerData.business.categories,
-          purchaseVolume: registerData.business.purchaseVolume,
-          remarks: registerData.business.remarks
+        // 调用API绑定商家
+        const result = await MockAPI.request('merchants.bind', {
+          userId: userId,
+          wechatInfo: wechatInfo,
+          companyName: formData.get('companyName'),
+          creditCode: formData.get('creditCode'),
+          companyType: formData.get('companyType'),
+          address: formData.get('companyAddress'),
+          businessLicenseImage: licenseImageUrl,
+          contactName: formData.get('contactName'),
+          contactPhone: formData.get('contactPhone')
         });
 
         if (result.success) {
-          // 保存用户信息
-          const userData = {
-            id: result.data.userId,
-            name: registerData.contact.name,
-            phone: registerData.contact.phone,
-            avatar: registerData.wechat?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User',
-            merchantId: result.data.merchantId,
-            merchantStatus: 'pending'
-          };
-          
-          globalState.set(StateKeys.USER, userData);
-          globalState.set(StateKeys.IS_LOGGED_IN, true);
+          // 更新用户信息
+          const user = globalState.get(StateKeys.USER, {});
+          user.merchantId = result.data.merchantId;
+          user.merchantStatus = 'pending';
+          globalState.set(StateKeys.USER, user);
           globalState.set(StateKeys.MERCHANT_STATUS, 'pending');
 
-          Utils.showToast('注册信息已提交！', 'success');
+          Utils.showToast('绑定信息已提交！', 'success');
 
           // 显示审核提示
           await Utils.sleep(1500);
           await Utils.confirm(
-            '您的注册信息已提交，平台将在1-3个工作日内完成审核。审核结果将通过微信通知您。',
+            '您的绑定信息已提交，平台将在1-3个工作日内完成审核。审核结果将通过微信通知您。',
             '提交成功',
             { confirmText: '知道了', showCancel: false }
           );
@@ -749,23 +607,16 @@
             window.location.href = '../home/home.html';
           }, 1000);
         } else {
-          throw new Error(result.message || '注册失败');
+          throw new Error(result.message || '绑定失败');
         }
 
       } catch (error) {
-        console.error('注册失败:', error);
-        Utils.showToast('注册失败：' + (error.message || '请重试'), 'error');
+        console.error('绑定失败:', error);
+        Utils.showToast('绑定失败：' + (error.message || '请重试'), 'error');
       }
-    }
-
-    // ==================== 显示协议 ====================
-    function showAgreement() {
-      Utils.showToast('用户服务协议页面开发中', 'info');
-    }
-
-    function showPrivacy() {
-      Utils.showToast('隐私政策页面开发中', 'info');
     }
   </script>
 </body>
 </html>
+
+
