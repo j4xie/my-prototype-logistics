@@ -34,6 +34,9 @@ class MockAPI {
       'referrals.share': () => this.generateShareCode(options),
       'ads.list': () => this.getPublicAds(options),
       'ads.click': () => this.trackAdClick(options),
+      'merchants.create': () => this.createMerchant(options),
+      'merchants.bind': () => this.bindMerchant(options),
+      'merchants.check': () => this.checkMerchantBinding(options),
 
       // Web端API
       'merchants.list': () => this.getMerchants(options),
@@ -574,6 +577,137 @@ class MockAPI {
       success: true,
       data: merchant,
       message: action === 'approved' ? '审核通过' : '审核拒绝'
+    };
+  }
+
+  /**
+   * 创建商家（注册）
+   */
+  static async createMerchant({ wechatInfo, companyName, creditCode, companyType, address, businessLicenseImage, contactName, contactPhone, position, email, categories, purchaseVolume, remarks }) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 检查统一社会信用代码是否已存在
+    const existingMerchant = MockDB.merchants.find(m => m.businessLicense === creditCode);
+    if (existingMerchant) {
+      throw new Error('该统一社会信用代码已被注册');
+    }
+
+    // 生成新的商家ID
+    const merchantId = Math.max(...MockDB.merchants.map(m => m.id), 0) + 1;
+    const userId = Date.now();
+
+    // 创建商家记录
+    const newMerchant = {
+      id: merchantId,
+      name: companyName,
+      contact: contactName,
+      phone: contactPhone,
+      status: 'pending',
+      reviewStatus: 'pending',
+      createTime: new Date().toISOString(),
+      businessLicense: creditCode,
+      businessLicenseImage: businessLicenseImage,
+      wechatUserId: userId,
+      address: address,
+      companyType: companyType,
+      position: position,
+      email: email,
+      categories: categories || [],
+      purchaseVolume: purchaseVolume,
+      remarks: remarks,
+      productCount: 0
+    };
+
+    MockDB.merchants.push(newMerchant);
+
+    return {
+      success: true,
+      data: {
+        merchantId: merchantId,
+        userId: userId
+      },
+      message: '商家注册成功，等待审核'
+    };
+  }
+
+  /**
+   * 绑定商家（已登录用户）
+   */
+  static async bindMerchant({ userId, wechatInfo, companyName, creditCode, companyType, address, businessLicenseImage, contactName, contactPhone }) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 检查统一社会信用代码是否已存在
+    const existingMerchant = MockDB.merchants.find(m => m.businessLicense === creditCode);
+    if (existingMerchant) {
+      throw new Error('该统一社会信用代码已被注册');
+    }
+
+    // 检查用户是否已绑定商家
+    const userMerchant = MockDB.merchants.find(m => m.wechatUserId === userId);
+    if (userMerchant) {
+      throw new Error('您已绑定商家，请勿重复绑定');
+    }
+
+    // 生成新的商家ID
+    const merchantId = Math.max(...MockDB.merchants.map(m => m.id), 0) + 1;
+
+    // 创建商家记录
+    const newMerchant = {
+      id: merchantId,
+      name: companyName,
+      contact: contactName,
+      phone: contactPhone,
+      status: 'pending',
+      reviewStatus: 'pending',
+      createTime: new Date().toISOString(),
+      businessLicense: creditCode,
+      businessLicenseImage: businessLicenseImage,
+      wechatUserId: userId,
+      address: address,
+      companyType: companyType,
+      productCount: 0
+    };
+
+    MockDB.merchants.push(newMerchant);
+
+    return {
+      success: true,
+      data: {
+        merchantId: merchantId
+      },
+      message: '商家绑定成功，等待审核'
+    };
+  }
+
+  /**
+   * 检查用户是否已绑定商家
+   */
+  static async checkMerchantBinding({ userId, wechatOpenId }) {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 通过 userId 或 wechatOpenId 查找商家
+    const merchant = MockDB.merchants.find(m => 
+      m.wechatUserId === userId || 
+      (wechatOpenId && m.wechatOpenId === wechatOpenId)
+    );
+
+    if (merchant) {
+      return {
+        success: true,
+        data: {
+          merchantId: merchant.id,
+          status: merchant.reviewStatus, // 'pending', 'approved', 'rejected'
+          reviewReason: merchant.reviewReason
+        }
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        merchantId: null,
+        status: null
+      }
     };
   }
 

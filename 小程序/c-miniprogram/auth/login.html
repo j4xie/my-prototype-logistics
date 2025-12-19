@@ -292,6 +292,7 @@
 
   <!-- JavaScript -->
   <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/mockAPI.js"></script>
   <script src="../../assets/js/stateManager.js"></script>
   <script src="../../assets/js/utils.js"></script>
 
@@ -316,30 +317,102 @@
         await Utils.sleep(1500);
 
         // 模拟用户数据（实际应从微信获取）
+        const userId = Date.now();
+        const wechatInfo = {
+          nickname: '微信用户_' + userId.toString().slice(-4),
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + userId,
+          openId: 'wx_' + userId
+        };
+
+        // 保存微信信息
+        globalState.set(StateKeys.WECHAT_INFO, wechatInfo);
+
+        // 检查用户是否已绑定商家
+        const merchantCheck = await MockAPI.request('merchants.check', {
+          userId: userId,
+          wechatOpenId: wechatInfo.openId
+        });
+
         const userData = {
-          id: 1,
-          name: '张三',
-          phone: '138****1234',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zhang',
+          id: userId,
+          name: wechatInfo.nickname,
+          avatar: wechatInfo.avatar,
           level: 'VIP'
         };
 
-        // 保存用户信息到状态管理
-        globalState.set(StateKeys.USER, userData);
-        globalState.set(StateKeys.IS_LOGGED_IN, true);
-        globalState.set(StateKeys.ACCESS_TOKEN, 'mock_token_' + Date.now());
+        if (merchantCheck.success && merchantCheck.data.merchantId) {
+          // 已绑定商家
+          userData.merchantId = merchantCheck.data.merchantId;
+          userData.merchantStatus = merchantCheck.data.status;
 
-        hideLoading();
-        Utils.showToast('登录成功', 'success');
+          // 保存用户信息到状态管理
+          globalState.set(StateKeys.USER, userData);
+          globalState.set(StateKeys.IS_LOGGED_IN, true);
+          globalState.set(StateKeys.ACCESS_TOKEN, 'mock_token_' + userId);
+          globalState.set(StateKeys.MERCHANT_STATUS, merchantCheck.data.status);
 
-        // 延迟跳转到首页
-        setTimeout(() => {
-          window.location.href = '../home/home.html';
-        }, 1000);
+          hideLoading();
+
+          if (merchantCheck.data.status === 'pending') {
+            // 审核中
+            Utils.showToast('登录成功，商家审核中', 'info');
+            await Utils.sleep(1000);
+            await Utils.confirm(
+              '您的商家账号正在审核中，审核通过后即可使用全部功能。',
+              '审核中',
+              { confirmText: '知道了', showCancel: false }
+            );
+          } else if (merchantCheck.data.status === 'rejected') {
+            // 审核被拒
+            Utils.showToast('登录成功，但商家审核未通过', 'warning');
+            await Utils.sleep(1000);
+            await Utils.confirm(
+              '您的商家账号审核未通过：' + (merchantCheck.data.reviewReason || '请重新提交资料') + '。是否重新绑定？',
+              '审核未通过',
+              { confirmText: '重新绑定', cancelText: '稍后' }
+            ).then(ok => {
+              if (ok) {
+                window.location.href = 'bind-merchant.html';
+                return;
+              }
+            });
+          } else {
+            // 审核通过
+            Utils.showToast('登录成功', 'success');
+          }
+
+          // 跳转到首页
+          setTimeout(() => {
+            window.location.href = '../home/home.html';
+          }, 1000);
+
+        } else {
+          // 未绑定商家，跳转到绑定页面
+          globalState.set(StateKeys.USER, userData);
+          globalState.set(StateKeys.IS_LOGGED_IN, true);
+          globalState.set(StateKeys.ACCESS_TOKEN, 'mock_token_' + userId);
+
+          hideLoading();
+          Utils.showToast('登录成功，请绑定商家', 'info');
+
+          await Utils.sleep(1000);
+          await Utils.confirm(
+            '您需要绑定商家账号才能使用全部功能。是否现在绑定？',
+            '绑定商家',
+            { confirmText: '立即绑定', cancelText: '稍后' }
+          ).then(ok => {
+            if (ok) {
+              window.location.href = 'bind-merchant.html';
+            } else {
+              window.location.href = '../home/home.html';
+            }
+          });
+        }
 
       } catch (error) {
         hideLoading();
-        Utils.showToast('登录失败，请重试', 'error');
+        console.error('登录失败:', error);
+        Utils.showToast('登录失败：' + (error.message || '请重试'), 'error');
       }
     }
 
