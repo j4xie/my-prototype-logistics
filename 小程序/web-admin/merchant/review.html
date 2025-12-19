@@ -470,12 +470,19 @@
             <!-- 营业执照 -->
             <div class="details-section">
               <div class="details-section-title">营业执照</div>
-              <img
-                src="https://via.placeholder.com/500x300/667eea/ffffff?text=营业执照"
-                alt="营业执照"
-                class="license-image"
-                onclick="viewImage(this.src)"
-              >
+              <div id="licenseImageContainer" style="margin-top: var(--spacing-md);">
+                <img
+                  id="licenseImage"
+                  src=""
+                  alt="营业执照"
+                  style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: pointer; display: none;"
+                  onclick="viewLicenseFullscreen()"
+                >
+                <div id="licenseImagePlaceholder" style="text-align: center; padding: var(--spacing-2xl); color: var(--text-tertiary);">
+                  暂无营业执照图片
+                </div>
+                <div id="licenseImageHint" style="margin-top: var(--spacing-xs); font-size: var(--font-size-xs); color: var(--text-tertiary); display: none;">点击图片查看大图</div>
+              </div>
             </div>
           </div>
 
@@ -603,7 +610,7 @@
     }
 
     // ==================== 选择商户 ====================
-    function selectMerchant(id) {
+    async function selectMerchant(id) {
       currentMerchantId = id;
       const merchant = pendingMerchants.find(m => m.id === id);
 
@@ -612,14 +619,51 @@
       // 更新队列列表高亮
       renderQueueList();
 
-      // 更新商户详情
-      document.getElementById('companyName').textContent = merchant.name;
-      document.getElementById('creditCode').textContent = merchant.creditCode || '91310000XXXXXXXXXX';
-      document.getElementById('legalPerson').textContent = merchant.legalPerson || '张三';
-      document.getElementById('address').textContent = merchant.address || '上海市浦东新区陆家嘴环路1000号';
-      document.getElementById('contact').textContent = merchant.contact;
-      document.getElementById('phone').textContent = merchant.phone;
-      document.getElementById('email').textContent = merchant.email || 'contact@example.com';
+      // 加载商户详情（包含营业执照）
+      try {
+        const detailResult = await MockAPI.request('admin.merchants.detail', {
+          merchantId: id,
+          skipError: true
+        });
+
+        const merchantDetail = detailResult.data || merchant;
+
+        // 更新商户详情
+        document.getElementById('companyName').textContent = merchantDetail.name || merchant.name;
+        document.getElementById('creditCode').textContent = merchantDetail.businessLicense || merchant.businessLicense || '91310000XXXXXXXXXX';
+        document.getElementById('legalPerson').textContent = merchantDetail.legalPerson || merchant.contact || '张三';
+        document.getElementById('address').textContent = merchantDetail.address || merchant.address || '上海市浦东新区陆家嘴环路1000号';
+        document.getElementById('contact').textContent = merchantDetail.contact || merchant.contact;
+        document.getElementById('phone').textContent = merchantDetail.phone || merchant.phone;
+        document.getElementById('email').textContent = merchantDetail.email || merchant.email || 'contact@example.com';
+
+        // 更新营业执照图片
+        const licenseImage = document.getElementById('licenseImage');
+        const licensePlaceholder = document.getElementById('licenseImagePlaceholder');
+        const licenseHint = document.getElementById('licenseImageHint');
+        
+        if (merchantDetail.businessLicenseImage) {
+          licenseImage.src = merchantDetail.businessLicenseImage;
+          licenseImage.style.display = 'block';
+          licensePlaceholder.style.display = 'none';
+          licenseHint.style.display = 'block';
+        } else {
+          licenseImage.style.display = 'none';
+          licensePlaceholder.style.display = 'block';
+          licenseHint.style.display = 'none';
+        }
+
+      } catch (error) {
+        console.error('加载商户详情失败:', error);
+        // 使用基础数据
+        document.getElementById('companyName').textContent = merchant.name;
+        document.getElementById('creditCode').textContent = merchant.businessLicense || '91310000XXXXXXXXXX';
+        document.getElementById('legalPerson').textContent = merchant.contact || '张三';
+        document.getElementById('address').textContent = merchant.address || '上海市浦东新区陆家嘴环路1000号';
+        document.getElementById('contact').textContent = merchant.contact;
+        document.getElementById('phone').textContent = merchant.phone;
+        document.getElementById('email').textContent = merchant.email || 'contact@example.com';
+      }
 
       // 重置表单
       document.getElementById('reviewForm').reset();
@@ -681,6 +725,31 @@
     // ==================== 查看图片 ====================
     function viewImage(src) {
       window.open(src, '_blank');
+    }
+
+    // ==================== 查看营业执照大图 ====================
+    function viewLicenseFullscreen() {
+      const licenseImage = document.getElementById('licenseImage');
+      if (licenseImage && licenseImage.src) {
+        // 创建全屏查看模态框
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; align-items: center; justify-content: center; cursor: pointer;';
+        modal.onclick = () => modal.remove();
+        
+        const img = document.createElement('img');
+        img.src = licenseImage.src;
+        img.style.cssText = 'max-width: 90%; max-height: 90%; object-fit: contain;';
+        img.onclick = (e) => e.stopPropagation();
+        
+        const closeBtn = document.createElement('div');
+        closeBtn.textContent = '✕';
+        closeBtn.style.cssText = 'position: absolute; top: 20px; right: 20px; color: white; font-size: 32px; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); border-radius: 50%;';
+        closeBtn.onclick = () => modal.remove();
+        
+        modal.appendChild(img);
+        modal.appendChild(closeBtn);
+        document.body.appendChild(modal);
+      }
     }
 
     // ==================== 导航函数 ====================
