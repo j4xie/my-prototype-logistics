@@ -19,9 +19,9 @@ export interface Customer {
   code: string; // 别名，指向customerCode
   name: string;
   contactPerson?: string;
-  contactPhone?: string;
+  phone?: string;
   email?: string;
-  address?: string;
+  shippingAddress?: string;
   businessType?: string;
   customerType?: string;
   industry?: string;
@@ -34,9 +34,9 @@ export interface CreateCustomerRequest {
   customerCode: string;
   name: string;
   contactPerson?: string;
-  contactPhone?: string;
+  phone?: string;
   email?: string;
-  address?: string;
+  shippingAddress?: string;
   businessType?: string;
   customerType?: string;
   industry?: string;
@@ -138,6 +138,7 @@ class CustomerApiClient {
     request: Partial<CreateCustomerRequest>,
     factoryId?: string
   ): Promise<Customer> {
+    console.log("----update", request)
     // apiClient拦截器已统一返回data
     return await apiClient.put<Customer>(
       `${this.getFactoryPath(factoryId)}/customers/${customerId}`,
@@ -195,7 +196,7 @@ class CustomerApiClient {
     // apiClient拦截器已统一返回data
     return await apiClient.put<Customer>(
       `${this.getFactoryPath(factoryId)}/customers/${customerId}/status`,
-      { isActive }
+      {},{ params: {isActive: isActive} }
     );
   }
 
