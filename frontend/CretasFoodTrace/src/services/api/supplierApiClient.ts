@@ -210,7 +210,7 @@ class SupplierApiClient {
     // apiClient拦截器已统一返回data
     return await apiClient.put<Supplier>(
       `${this.getFactoryPath(factoryId)}/suppliers/${supplierId}/status`,
-      { isActive }
+      {},{ params: {isActive: isActive} }
     );
   }
 

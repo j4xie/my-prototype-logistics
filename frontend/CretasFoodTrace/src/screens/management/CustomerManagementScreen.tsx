@@ -59,9 +59,9 @@ export default function CustomerManagementScreen() {
     customerCode: '',
     name: '',
     contactPerson: '',
-    contactPhone: '',
+    phone: '',
     email: '',
-    address: '',
+    shippingAddress: '',
     businessType: '',
     customerType: 'distributor',
     industry: 'restaurant',
@@ -164,9 +164,9 @@ export default function CustomerManagementScreen() {
       customerCode: '',
       name: '',
       contactPerson: '',
-      contactPhone: '',
+      phone: '',
       email: '',
-      address: '',
+      shippingAddress: '',
       businessType: '',
       customerType: 'distributor',
       industry: 'restaurant',
@@ -180,9 +180,9 @@ export default function CustomerManagementScreen() {
       customerCode: customer.customerCode,
       name: customer.name,
       contactPerson: customer.contactPerson || '',
-      contactPhone: customer.contactPhone || '',
+      phone: customer.phone || '',
       email: customer.email || '',
-      address: customer.address || '',
+      shippingAddress: customer.shippingAddress || '',
       businessType: customer.businessType || '',
       customerType: customer.customerType || 'distributor',
       industry: customer.industry || '',
@@ -192,7 +192,7 @@ export default function CustomerManagementScreen() {
 
   const handleSave = async () => {
     // 验证必填项
-    if (!formData.name || !formData.contactPhone) {
+    if (!formData.name || !formData.phone) {
       Alert.alert('提示', '客户名称和联系电话不能为空');
       return;
     }
@@ -208,10 +208,10 @@ export default function CustomerManagementScreen() {
         Alert.alert('成功', '客户信息已更新');
       } else {
         // 创建客户
-        if (!formData.customerCode) {
+        /* if (!formData.customerCode) {
           Alert.alert('提示', '客户编码不能为空');
           return;
-        }
+        } */
         await customerApiClient.createCustomer(
           formData as CreateCustomerRequest,
           user?.factoryId
@@ -266,6 +266,7 @@ export default function CustomerManagementScreen() {
   };
 
   const handleToggleStatus = async (customerId: string, currentStatus: boolean) => {
+    console.log("----", currentStatus);
     try {
       await customerApiClient.toggleCustomerStatus(
         customerId,
@@ -451,10 +452,10 @@ export default function CustomerManagementScreen() {
                       <Text style={styles.infoText}>{customer.contactPerson}</Text>
                     </View>
                   )}
-                  {customer.contactPhone && (
+                  {customer.phone && (
                     <View style={styles.infoRow}>
                       <List.Icon icon="phone" style={styles.infoIcon} />
-                      <Text style={styles.infoText}>{customer.contactPhone}</Text>
+                      <Text style={styles.infoText}>{customer.phone}</Text>
                     </View>
                   )}
                   {customer.industry && (
@@ -463,10 +464,10 @@ export default function CustomerManagementScreen() {
                       <Text style={styles.infoText}>{getIndustryName(customer.industry)}</Text>
                     </View>
                   )}
-                  {customer.address && (
+                  {customer.shippingAddress && (
                     <View style={styles.infoRow}>
                       <List.Icon icon="map-marker" style={styles.infoIcon} />
-                      <Text style={styles.infoText}>{customer.address}</Text>
+                      <Text style={styles.infoText}>{customer.shippingAddress}</Text>
                     </View>
                   )}
                 </View>
@@ -558,8 +559,8 @@ export default function CustomerManagementScreen() {
             {/* Contact Phone */}
             <TextInput
               label="联系电话 *"
-              value={formData.contactPhone}
-              onChangeText={(text) => setFormData({ ...formData, contactPhone: text })}
+              value={formData.phone}
+              onChangeText={(text) => setFormData({ ...formData, phone: text })}
               mode="outlined"
               style={styles.input}
               keyboardType="phone-pad"
@@ -580,8 +581,8 @@ export default function CustomerManagementScreen() {
             {/* Address */}
             <TextInput
               label="地址"
-              value={formData.address}
-              onChangeText={(text) => setFormData({ ...formData, address: text })}
+              value={formData.shippingAddress}
+              onChangeText={(text) => setFormData({ ...formData, shippingAddress: text })}
               mode="outlined"
               style={styles.input}
               multiline
