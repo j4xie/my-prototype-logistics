@@ -187,10 +187,10 @@ export default function SupplierManagementScreen() {
         Alert.alert('成功', '供应商信息已更新');
       } else {
         // 创建供应商
-        if (!formData.supplierCode) {
+        /* if (!formData.supplierCode) {
           Alert.alert('提示', '供应商编码不能为空');
           return;
-        }
+        } */
         await supplierApiClient.createSupplier(
           formData as CreateSupplierRequest,
           user?.factoryId
