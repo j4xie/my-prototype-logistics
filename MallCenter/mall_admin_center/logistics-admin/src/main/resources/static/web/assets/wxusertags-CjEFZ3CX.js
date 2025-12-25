@@ -1,1 +1,0 @@
-import{U as r}from"./index-DxyzpFVi.js";function a(t){return r({url:"/wxusertags/list",method:"get",params:t})}function s(t){return r({url:"/wxusertags",method:"post",data:t})}function u(t){return r({url:"/wxusertags",method:"put",data:t})}function n(t){return r({url:"/wxusertags",method:"delete",params:t})}export{s as a,n as d,a as g,u as p};
