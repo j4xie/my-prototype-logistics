@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>溯源结果 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* 顶部Header */
+    .header {
+      background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+      padding: 16px;
+      padding-top: 48px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+    }
+
+    .back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      text-decoration: none;
+    }
+
+    .header-title {
+      flex: 1;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 600;
+      color: white;
+      margin-right: 36px;
+    }
+
+    /* 基本信息卡片 */
+    .info-card {
+      background: white;
+      margin: -20px 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      position: relative;
+      z-index: 10;
+    }
+
+    .info-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .cattle-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      flex-shrink: 0;
+    }
+
+    .cattle-main-info {
+      flex: 1;
+    }
+
+    .cattle-breed {
+      font-size: 20px;
+      font-weight: 600;
+      color: #212121;
+      margin-bottom: 4px;
+    }
+
+    .cattle-eartag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #757575;
+      margin-bottom: 8px;
+    }
+
+    .copy-btn {
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .cattle-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .cattle-status.active {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .cattle-status.sold {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .cattle-status.slaughtered {
+      background: #FFEBEE;
+      color: #C62828;
+    }
+
+    .verify-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+      color: white;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding-top: 16px;
+      border-top: 1px solid #F5F5F5;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #9E9E9E;
+    }
+
+    .info-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: #212121;
+    }
+
+    /* 溯源时间线 */
+    .timeline-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #212121;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title-icon {
+      font-size: 20px;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: #E0E0E0;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-bottom: 24px;
+    }
+
+    .timeline-item:last-child {
+      padding-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -28px;
+      top: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid #2E7D32;
+      z-index: 1;
+    }
+
+    .timeline-item.completed .timeline-dot {
+      background: #2E7D32;
+    }
+
+    .timeline-item.completed .timeline-dot::after {
+      content: '✓';
+      color: white;
+      font-size: 10px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .timeline-content {
+      background: #F9FBE7;
+      border-radius: 12px;
+      padding: 16px;
+      border-left: 3px solid #2E7D32;
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .timeline-stage {
+      font-size: 15px;
+      font-weight: 600;
+      color: #212121;
+    }
+
+    .timeline-date {
+      font-size: 12px;
+      color: #757575;
+    }
+
+    .timeline-location {
+      font-size: 13px;
+      color: #616161;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .timeline-data {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .data-item {
+      font-size: 13px;
+    }
+
+    .data-item .label {
+      color: #9E9E9E;
+    }
+
+    .data-item .value {
+      color: #424242;
+      font-weight: 500;
+    }
+
+    .timeline-images {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .timeline-image {
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      background: #E8F5E9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    /* 证书区域 */
+    .cert-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .cert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cert-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #F5F5F5;
+      border-radius: 12px;
+    }
+
+    .cert-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #E3F2FD;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .cert-icon.verified {
+      background: #E8F5E9;
+    }
+
+    .cert-info {
+      flex: 1;
+    }
+
+    .cert-type {
+      font-size: 14px;
+      font-weight: 500;
+      color: #212121;
+    }
+
+    .cert-number {
+      font-size: 12px;
+      color: #757575;
+      margin-top: 2px;
+    }
+
+    .cert-status {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .cert-status.valid {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .cert-status.expired {
+      background: #FFEBEE;
+      color: #C62828;
+    }
+
+    /* 质量报告 */
+    .quality-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .quality-grade {
+      text-align: center;
+      padding: 20px 0;
+      border-bottom: 1px solid #F5F5F5;
+      margin-bottom: 16px;
+    }
+
+    .grade-label {
+      font-size: 13px;
+      color: #9E9E9E;
+      margin-bottom: 8px;
+    }
+
+    .grade-value {
+      font-size: 36px;
+      font-weight: 600;
+      color: #2E7D32;
+    }
+
+    .grade-stars {
+      margin-top: 8px;
+      font-size: 20px;
+      letter-spacing: 4px;
+    }
+
+    .quality-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .quality-item {
+      text-align: center;
+      padding: 12px;
+      background: #F5F5F5;
+      border-radius: 12px;
+    }
+
+    .quality-item-label {
+      font-size: 12px;
+      color: #757575;
+      margin-bottom: 4px;
+    }
+
+    .quality-item-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #212121;
+    }
+
+    /* 底部操作栏 */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      z-index: 100;
+      box-sizing: border-box;
+    }
+
+    .action-btn {
+      flex: 1;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.3s;
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+      color: white;
+    }
+
+    .action-btn.secondary {
+      background: #F5F5F5;
+      color: #424242;
+    }
+
+    .action-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-state span {
+      font-size: 64px;
+      display: block;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      color: #424242;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      color: #9E9E9E;
+      margin-bottom: 24px;
+    }
+
+    .empty-state .back-link {
+      color: #2E7D32;
+      font-size: 15px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .toast.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* 加载状态 */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid #E0E0E0;
+      border-top-color: #2E7D32;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      color: #757575;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 顶部Header -->
+  <header class="header">
+    <div class="header-top">
+      <a href="javascript:history.back()" class="back-btn"><i class="mdi mdi-arrow-left"></i></a>
+      <h1 class="header-title">溯源详情</h1>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main id="mainContent">
+    <!-- 动态加载 -->
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">正在加载溯源信息...</p>
+    </div>
+  </main>
+
+  <!-- 底部操作栏 -->
+  <div class="bottom-bar" id="bottomBar" style="display: none;">
+    <button class="action-btn secondary" onclick="shareTrace()">
+      <span><i class="mdi mdi-share-variant"></i></span>
+      <span>分享</span>
+    </button>
+    <button class="action-btn primary" onclick="downloadReport()">
+      <span><i class="mdi mdi-file-document"></i></span>
+      <span>下载报告</span>
+    </button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- JS -->
+  <script src="../../assets/js/utils.js"></script>
+  <script src="../../assets/js/stateManager.js"></script>
+  <script src="../../assets/js/mockData.js"></script>
+
+  <script>
+    // ==================== 全局变量 ====================
+    let traceData = null;
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', function () {
+      loadTraceData();
+    });
+
+    // ==================== 加载数据 ====================
+    function loadTraceData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const traceId = urlParams.get('id');
+
+      if (!traceId) {
+        showEmptyState('缺少溯源码参数');
+        return;
+      }
+
+      // 模拟加载延迟
+      setTimeout(() => {
+        traceData = MockData.getTraceByCode(traceId);
+
+        if (!traceData) {
+          showEmptyState('未找到溯源信息');
+          return;
+        }
+
+        renderTraceResult(traceData);
+        document.getElementById('bottomBar').style.display = 'flex';
+      }, 500);
+    }
+
+    // ==================== 渲染结果 ====================
+    function renderTraceResult(data) {
+      const container = document.getElementById('mainContent');
+
+      const statusClass = data.currentStage === '待销售' ? 'active' :
+        data.currentStage === '已屠宰' ? 'slaughtered' : 'sold';
+      const statusText = data.currentStage;
+
+      container.innerHTML = `
+        <!-- 基本信息卡片 -->
+        <div class="info-card">
+          <div class="verify-badge">
+            <span><i class="mdi mdi-check-circle"></i></span>
+            <span>已认证</span>
+          </div>
+          <div class="info-header">
+            <div class="cattle-avatar"><i class="mdi mdi-cow"></i></div>
+            <div class="cattle-main-info">
+              <div class="cattle-breed">${data.breed}</div>
+              <div class="cattle-eartag">
+                <span>耳标号：${data.earTag}</span>
+                <span class="copy-btn" onclick="copyText('${data.earTag}')"><i class="mdi mdi-content-copy"></i></span>
+              </div>
+              <div class="cattle-status ${statusClass}">
+                <span>${getStatusIcon(data.currentStage)}</span>
+                <span>${statusText}</span>
+              </div>
+            </div>
+          </div>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">溯源码</span>
+              <span class="info-value">${data.traceId}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">追溯时间</span>
+              <span class="info-value">${formatDate(data.createdAt)} 至今</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">溯源节点</span>
+              <span class="info-value">${data.timeline.length}个</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">最后更新</span>
+              <span class="info-value">${formatDate(data.updatedAt)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 溯源时间线 -->
+        <div class="timeline-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <span class="section-title-icon"><i class="mdi mdi-map-marker"></i></span>
+              溯源轨迹
+            </h2>
+          </div>
+          <div class="timeline">
+            ${renderTimeline(data.timeline)}
+          </div>
+        </div>
+
+        <!-- 证书信息 -->
+        <div class="cert-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <span class="section-title-icon"><i class="mdi mdi-file-certificate"></i></span>
+              证书信息
+            </h2>
+          </div>
+          <div class="cert-list">
+            ${renderCertifications(data.certifications)}
+          </div>
+        </div>
+
+        ${data.qualityReport ? renderQualityReport(data.qualityReport) : ''}
+      `;
+    }
+
+    // ==================== 渲染时间线 ====================
+    function renderTimeline(timeline) {
+      return timeline.map((item, index) => {
+        const isCompleted = true; // 所有已记录的节点都是完成状态
+
+        return `
+          <div class="timeline-item ${isCompleted ? 'completed' : ''}">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="timeline-stage">${getStageIcon(item.stage)} ${item.stage}</span>
+                <span class="timeline-date">${item.date}</span>
+              </div>
+              ${item.location ? `
+                <div class="timeline-location">
+                  <span><i class="mdi mdi-map-marker"></i></span>
+                  ${typeof item.location === 'string' ? item.location :
+              (item.from ? `${item.from} → ${item.to}` : '')}
+                </div>
+              ` : ''}
+              <div class="timeline-data">
+                ${renderTimelineData(item.stage, item.data)}
+              </div>
+              ${item.images && item.images.length > 0 ? `
+                <div class="timeline-images">
+                  ${item.images.map(img => `
+                    <div class="timeline-image"><i class="mdi mdi-image"></i></div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTimelineData(stage, data) {
+      if (!data) return '';
+
+      const dataItems = [];
+
+      switch (stage) {
+        case '出生':
+          if (data.birthWeight) dataItems.push({ label: '出生体重', value: data.birthWeight });
+          if (data.mother) dataItems.push({ label: '母牛编号', value: data.mother });
+          if (data.father) dataItems.push({ label: '父牛编号', value: data.father });
+          break;
+        case '免疫':
+          if (data.vaccines) dataItems.push({ label: '疫苗种类', value: data.vaccines.join('、') });
+          if (data.batchNo) dataItems.push({ label: '批次号', value: data.batchNo });
+          if (data.vet) dataItems.push({ label: '兽医', value: data.vet });
+          break;
+        case '养殖':
+          if (data.farm) dataItems.push({ label: '养殖场', value: data.farm });
+          if (data.feedType) dataItems.push({ label: '饲料类型', value: data.feedType });
+          if (data.avgDailyGain) dataItems.push({ label: '日均增重', value: data.avgDailyGain });
+          if (data.currentWeight) dataItems.push({ label: '当前体重', value: data.currentWeight });
+          break;
+        case '检疫':
+          if (data.certNo) dataItems.push({ label: '证书编号', value: data.certNo });
+          if (data.inspector) dataItems.push({ label: '检疫员', value: data.inspector });
+          if (data.result) dataItems.push({ label: '检疫结果', value: data.result });
+          if (data.validUntil) dataItems.push({ label: '有效期至', value: data.validUntil });
+          break;
+        case '运输':
+          if (data.vehicle) dataItems.push({ label: '运输车辆', value: data.vehicle });
+          if (data.driver) dataItems.push({ label: '司机', value: data.driver });
+          if (data.distance) dataItems.push({ label: '运输距离', value: data.distance });
+          if (data.duration) dataItems.push({ label: '运输时长', value: data.duration });
+          break;
+        case '屠宰':
+          if (data.plant) dataItems.push({ label: '屠宰场', value: data.plant });
+          if (data.batchNo) dataItems.push({ label: '批次号', value: data.batchNo });
+          if (data.hotWeight) dataItems.push({ label: '热胴体重', value: data.hotWeight });
+          if (data.slaughterCert) dataItems.push({ label: '屠宰证号', value: data.slaughterCert });
+          break;
+      }
+
+      return dataItems.map(item => `
+        <div class="data-item">
+          <span class="label">${item.label}：</span>
+          <span class="value">${item.value}</span>
+        </div>
+      `).join('');
+    }
+
+    // ==================== 渲染证书 ====================
+    function renderCertifications(certs) {
+      if (!certs || certs.length === 0) {
+        return '<div class="empty-hint">暂无证书信息</div>';
+      }
+
+      return certs.map(cert => {
+        const isValid = !cert.validUntil || new Date(cert.validUntil) > new Date();
+
+        return `
+          <div class="cert-item">
+            <div class="cert-icon ${isValid ? 'verified' : ''}">
+              ${getCertIcon(cert.type)}
+            </div>
+            <div class="cert-info">
+              <div class="cert-type">${cert.type}</div>
+              <div class="cert-number">${cert.certNo || cert.tagNo}</div>
+            </div>
+            <span class="cert-status ${isValid ? 'valid' : 'expired'}">
+              ${isValid ? '有效' : '已过期'}
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== 渲染质量报告 ====================
+    function renderQualityReport(report) {
+      if (!report) return '';
+
+      const stars = '<i class="mdi mdi-star"></i>'.repeat(report.marbling || 0) + '<i class="mdi mdi-star-outline"></i>'.repeat(5 - (report.marbling || 0));
+
+      return `
+        <div class="quality-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <span class="section-title-icon"><i class="mdi mdi-chart-bar"></i></span>
+              质量报告
+            </h2>
+          </div>
+          <div class="quality-grade">
+            <div class="grade-label">综合评级</div>
+            <div class="grade-value">${report.grade}</div>
+            <div class="grade-stars">${stars}</div>
+          </div>
+          <div class="quality-grid">
+            <div class="quality-item">
+              <div class="quality-item-label">大理石纹</div>
+              <div class="quality-item-value">${report.marbling}级</div>
+            </div>
+            <div class="quality-item">
+              <div class="quality-item-label">肉色</div>
+              <div class="quality-item-value">${report.meatColor}</div>
+            </div>
+            <div class="quality-item">
+              <div class="quality-item-label">脂肪色</div>
+              <div class="quality-item-value">${report.fatColor}</div>
+            </div>
+            <div class="quality-item">
+              <div class="quality-item-label">pH值</div>
+              <div class="quality-item-value">${report.pH}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==================== 空状态 ====================
+    function showEmptyState(message) {
+      const container = document.getElementById('mainContent');
+      container.innerHTML = `
+        <div class="empty-state">
+          <span><i class="mdi mdi-magnify" style="font-size: 48px;"></i></span>
+          <h3>${message}</h3>
+          <p>请检查溯源码是否正确，或重新扫描</p>
+          <a href="scan.html" class="back-link"><i class="mdi mdi-arrow-left"></i> 返回扫码</a>
+        </div>
+      `;
+    }
+
+    // ==================== 操作功能 ====================
+    function shareTrace() {
+      if (navigator.share) {
+        navigator.share({
+          title: `牛只溯源 - ${traceData.earTag}`,
+          text: `查看${traceData.breed}的完整溯源信息`,
+          url: window.location.href
+        });
+      } else {
+        copyText(window.location.href);
+        showToast('链接已复制，可分享给好友');
+      }
+    }
+
+    function downloadReport() {
+      showToast('正在生成溯源报告...');
+      setTimeout(() => {
+        showToast('报告已保存到相册');
+      }, 1500);
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已复制到剪贴板');
+      }).catch(() => {
+        showToast('复制失败');
+      });
+    }
+
+    // ==================== 工具函数 ====================
+    function getStageIcon(stage) {
+      const icons = {
+        '出生': '<i class="mdi mdi-egg"></i>',
+        '免疫': '<i class="mdi mdi-needle"></i>',
+        '养殖': '<i class="mdi mdi-home-modern"></i>',
+        '检疫': '<i class="mdi mdi-file-document-outline"></i>',
+        '运输': '<i class="mdi mdi-truck"></i>',
+        '屠宰': '<i class="mdi mdi-knife"></i>'
+      };
+      return icons[stage] || '<i class="mdi mdi-map-marker"></i>';
+    }
+
+    function getStatusIcon(status) {
+      const icons = {
+        '待销售': '<i class="mdi mdi-tag"></i>',
+        '已屠宰': '<i class="mdi mdi-check"></i>',
+        '运输中': '<i class="mdi mdi-truck"></i>'
+      };
+      return icons[status] || '<i class="mdi mdi-map-marker"></i>';
+    }
+
+    function getCertIcon(type) {
+      const icons = {
+        '动物耳标': '<i class="mdi mdi-tag"></i>',
+        '检疫证明': '<i class="mdi mdi-file-document-outline"></i>',
+        '屠宰合格证': '<i class="mdi mdi-certificate"></i>'
+      };
+      return icons[type] || '<i class="mdi mdi-file-document"></i>';
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const date = new Date(dateStr);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+  </script>
+</body>
+
+</html>

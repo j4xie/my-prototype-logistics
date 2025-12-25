@@ -1,0 +1,210 @@
+<!--
+  设置页面
+-->
+<view class="container">
+  <!-- 账号设置 -->
+  <view class="settings-group">
+    <view class="group-title">账号设置</view>
+    <view class="settings-item" bindtap="goToProfile">
+      <view class="item-left">
+        <text class="item-icon">👤</text>
+        <view class="item-content">
+          <text class="item-title">个人信息</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+    <view class="settings-item" bindtap="changePassword">
+      <view class="item-left">
+        <text class="item-icon">🔐</text>
+        <view class="item-content">
+          <text class="item-title">修改密码</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+    <view class="settings-item" bindtap="manageAddress">
+      <view class="item-left">
+        <text class="item-icon">📍</text>
+        <view class="item-content">
+          <text class="item-title">收货地址</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 通知设置 -->
+  <view class="settings-group">
+    <view class="group-title">通知设置</view>
+    <view class="settings-item">
+      <view class="item-left">
+        <text class="item-icon">🔔</text>
+        <view class="item-content">
+          <text class="item-title">订单通知</text>
+          <text class="item-desc">接收订单状态更新提醒</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <switch checked="{{orderNotification}}" bindchange="toggleOrderNotification" color="#667eea" />
+      </view>
+    </view>
+    <view class="settings-item">
+      <view class="item-left">
+        <text class="item-icon">💬</text>
+        <view class="item-content">
+          <text class="item-title">消息通知</text>
+          <text class="item-desc">接收系统消息和活动推送</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <switch checked="{{messageNotification}}" bindchange="toggleMessageNotification" color="#667eea" />
+      </view>
+    </view>
+    <view class="settings-item">
+      <view class="item-left">
+        <text class="item-icon">📢</text>
+        <view class="item-content">
+          <text class="item-title">营销推送</text>
+          <text class="item-desc">接收优惠和促销信息</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <switch checked="{{marketingNotification}}" bindchange="toggleMarketingNotification" color="#667eea" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 隐私与安全 -->
+  <view class="settings-group">
+    <view class="group-title">隐私与安全</view>
+    <view class="settings-item" bindtap="privacySettings">
+      <view class="item-left">
+        <text class="item-icon">🔒</text>
+        <view class="item-content">
+          <text class="item-title">隐私设置</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+    <view class="settings-item" bindtap="accountSecurity">
+      <view class="item-left">
+        <text class="item-icon">🛡️</text>
+        <view class="item-content">
+          <text class="item-title">账号安全</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+    <view class="settings-item">
+      <view class="item-left">
+        <text class="item-icon">👆</text>
+        <view class="item-content">
+          <text class="item-title">生物识别</text>
+          <text class="item-desc">使用指纹/面容登录</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <switch checked="{{biometricEnabled}}" bindchange="toggleBiometric" color="#667eea" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 通用设置 -->
+  <view class="settings-group">
+    <view class="group-title">通用设置</view>
+    <view class="settings-item" bindtap="languageSettings">
+      <view class="item-left">
+        <text class="item-icon">🌍</text>
+        <view class="item-content">
+          <text class="item-title">语言</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-value">简体中文</text>
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+    <view class="settings-item" bindtap="clearCache">
+      <view class="item-left">
+        <text class="item-icon">🗑️</text>
+        <view class="item-content">
+          <text class="item-title">清除缓存</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-value">{{cacheSize}}</text>
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 关于 -->
+  <view class="settings-group">
+    <view class="group-title">关于</view>
+    <view class="settings-item" bindtap="aboutUs">
+      <view class="item-left">
+        <text class="item-icon">ℹ️</text>
+        <view class="item-content">
+          <text class="item-title">关于我们</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+    <view class="settings-item" bindtap="checkUpdate">
+      <view class="item-left">
+        <text class="item-icon">🔄</text>
+        <view class="item-content">
+          <text class="item-title">检查更新</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-value">v{{version}}</text>
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+    <view class="settings-item" bindtap="userAgreement">
+      <view class="item-left">
+        <text class="item-icon">📄</text>
+        <view class="item-content">
+          <text class="item-title">用户协议</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+    <view class="settings-item" bindtap="privacyPolicy">
+      <view class="item-left">
+        <text class="item-icon">📋</text>
+        <view class="item-content">
+          <text class="item-title">隐私政策</text>
+        </view>
+      </view>
+      <view class="item-right">
+        <text class="item-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 版本信息 -->
+  <view class="version-info">
+    <text>溯源商城系统 v{{version}}</text>
+    <text>© 2025 Cretas. All rights reserved.</text>
+  </view>
+
+  <!-- 退出登录按钮 -->
+  <button class="logout-btn" bindtap="logout">退出登录</button>
+</view>

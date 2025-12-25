@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.ReferralMapper">
+    
+    <resultMap id="referralMap" type="com.joolun.mall.entity.Referral">
+        <id column="id" property="id"/>
+        <result column="referral_code" property="referralCode"/>
+        <result column="referrer_id" property="referrerId"/>
+        <result column="referrer_name" property="referrerName"/>
+        <result column="referee_id" property="refereeId"/>
+        <result column="referee_name" property="refereeName"/>
+        <result column="referee_phone" property="refereePhone"/>
+        <result column="referral_type" property="referralType"/>
+        <result column="status" property="status"/>
+        <result column="order_id" property="orderId"/>
+        <result column="order_amount" property="orderAmount"/>
+        <result column="reward_amount" property="rewardAmount"/>
+        <result column="reward_type" property="rewardType"/>
+        <result column="reward_time" property="rewardTime"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List">
+        id, referral_code, referrer_id, referrer_name, referee_id, referee_name, referee_phone,
+        referral_type, status, order_id, order_amount, reward_amount, reward_type, reward_time,
+        remark, create_time, update_time, del_flag
+    </sql>
+    
+    <!-- 根据推荐人ID查询推荐记录 -->
+    <select id="selectByReferrerId" resultMap="referralMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM referral
+        WHERE del_flag = 0 AND referrer_id = #{referrerId}
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据被推荐人ID查询 -->
+    <select id="selectByRefereeId" resultMap="referralMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM referral
+        WHERE del_flag = 0 AND referee_id = #{refereeId}
+    </select>
+    
+    <!-- 根据推荐码查询 -->
+    <select id="selectByReferralCode" resultMap="referralMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM referral
+        WHERE del_flag = 0 AND referral_code = #{referralCode}
+    </select>
+    
+    <!-- 统计推荐人的推荐数量 -->
+    <select id="countByReferrerId" resultType="int">
+        SELECT COUNT(*)
+        FROM referral
+        WHERE del_flag = 0 AND referrer_id = #{referrerId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+    
+    <!-- 统计推荐人的总奖励金额 -->
+    <select id="sumRewardByReferrerId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(reward_amount), 0)
+        FROM referral
+        WHERE del_flag = 0 AND referrer_id = #{referrerId} AND status = 2
+    </select>
+    
+    <!-- 查询待发放奖励的推荐记录 -->
+    <select id="selectPendingRewards" resultMap="referralMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM referral
+        WHERE del_flag = 0 AND status = 1
+        ORDER BY create_time ASC
+    </select>
+    
+</mapper>

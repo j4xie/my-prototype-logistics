@@ -1,0 +1,136 @@
+<!--
+  推荐奖励页面
+-->
+<view class="container">
+  <!-- 余额卡片 -->
+  <view class="balance-card">
+    <view class="balance-bg"></view>
+    <view class="balance-content">
+      <view class="balance-main">
+        <text class="balance-label">可提现金额（元）</text>
+        <text class="balance-value">{{balance.available}}</text>
+      </view>
+      <view class="balance-actions">
+        <view class="withdraw-btn" bindtap="openWithdrawModal">
+          <text>提现</text>
+        </view>
+      </view>
+      <view class="balance-detail">
+        <view class="detail-item">
+          <text class="detail-value">¥{{balance.total}}</text>
+          <text class="detail-label">累计奖励</text>
+        </view>
+        <view class="detail-divider"></view>
+        <view class="detail-item">
+          <text class="detail-value">¥{{balance.pending}}</text>
+          <text class="detail-label">待到账</text>
+        </view>
+        <view class="detail-divider"></view>
+        <view class="detail-item">
+          <text class="detail-value">¥{{balance.withdrawn}}</text>
+          <text class="detail-label">已提现</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="quick-actions">
+    <view class="action-item" bindtap="goShare">
+      <text class="action-icon">👥</text>
+      <text class="action-text">邀请好友</text>
+    </view>
+    <view class="action-item" bindtap="viewRules">
+      <text class="action-icon">📋</text>
+      <text class="action-text">提现规则</text>
+    </view>
+  </view>
+
+  <!-- 标签页 -->
+  <view class="tabs-wrapper">
+    <view class="tabs">
+      <view class="tab-item {{activeTab === item.key ? 'active' : ''}}"
+            wx:for="{{tabs}}" wx:key="key"
+            data-key="{{item.key}}"
+            bindtap="switchTab">
+        <text class="tab-text">{{item.name}}</text>
+        <view class="tab-indicator" wx:if="{{activeTab === item.key}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 列表内容 -->
+  <block wx:else>
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{recordList.length === 0}}">
+      <text class="empty-icon">💰</text>
+      <text class="empty-text">暂无奖励记录</text>
+      <view class="empty-action" bindtap="goShare">去邀请好友</view>
+    </view>
+
+    <!-- 记录列表 -->
+    <view class="record-list" wx:else>
+      <view class="record-item" wx:for="{{recordList}}" wx:key="id">
+        <view class="record-icon {{item.type}}">
+          <text wx:if="{{item.type === 'income'}}">💰</text>
+          <text wx:else>💳</text>
+        </view>
+        <view class="record-info">
+          <text class="record-title">{{item.title}}</text>
+          <text class="record-desc">{{item.desc}}</text>
+          <text class="record-time">{{item.createTime}}</text>
+        </view>
+        <view class="record-amount {{item.amount > 0 ? 'income' : 'expense'}}">
+          <text>{{item.amount > 0 ? '+' : ''}}{{item.amount}}</text>
+          <text class="record-status {{item.status}}" wx:if="{{item.status !== 'success'}}">
+            {{item.status === 'processing' ? '处理中' : '待确认'}}
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="load-more" wx:if="{{recordList.length > 0}}">
+      <view class="loading-more" wx:if="{{loadingMore}}">
+        <view class="loading-spinner small"></view>
+        <text>加载中...</text>
+      </view>
+      <text class="no-more" wx:elif="{{!hasMore}}">没有更多了</text>
+    </view>
+  </block>
+
+  <!-- 提现弹窗 -->
+  <view class="modal-mask" wx:if="{{showWithdrawModal}}" bindtap="closeWithdrawModal">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">提现</text>
+        <view class="modal-close" bindtap="closeWithdrawModal">×</view>
+      </view>
+      <view class="modal-body">
+        <view class="available-row">
+          <text class="available-label">可提现金额</text>
+          <text class="available-value">¥{{balance.available}}</text>
+        </view>
+        <view class="input-group">
+          <text class="input-prefix">¥</text>
+          <input class="amount-input" type="digit" placeholder="请输入提现金额"
+                 value="{{withdrawAmount}}" bindinput="onWithdrawInput" />
+          <view class="withdraw-all-btn" bindtap="withdrawAll">全部提现</view>
+        </view>
+        <view class="tips-row">
+          <text class="tips-text">最低提现金额 ¥{{minWithdraw}}，预计1-3个工作日到账</text>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <view class="cancel-btn" bindtap="closeWithdrawModal">取消</view>
+        <view class="confirm-btn" bindtap="confirmWithdraw">确认提现</view>
+      </view>
+    </view>
+  </view>
+</view>

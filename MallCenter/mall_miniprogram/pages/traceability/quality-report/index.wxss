@@ -1,0 +1,245 @@
+/* 质检报告详情页样式 */
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 140rpx;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}
+
+.loading-spinner {
+  width: 80rpx;
+  height: 80rpx;
+  border: 6rpx solid #f3f3f3;
+  border-top: 6rpx solid #52c41a;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 30rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 错误状态 */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  padding: 40rpx;
+}
+
+.error-icon {
+  font-size: 80rpx;
+  margin-bottom: 30rpx;
+}
+
+.error-message {
+  font-size: 28rpx;
+  color: #666;
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.retry-btn {
+  padding: 20rpx 60rpx;
+  background: #52c41a;
+  color: #fff;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+/* 报告头部 */
+.report-header {
+  padding: 80rpx 30rpx;
+  text-align: center;
+}
+
+.report-header.pass {
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+}
+
+.report-header.fail {
+  background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+}
+
+.status-icon {
+  display: block;
+  font-size: 100rpx;
+  margin-bottom: 20rpx;
+}
+
+.status-text {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* 信息卡片 */
+.info-card {
+  background: #fff;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+  padding-left: 16rpx;
+  border-left: 6rpx solid #52c41a;
+}
+
+.info-row {
+  display: flex;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  width: 160rpx;
+  flex-shrink: 0;
+  font-size: 28rpx;
+  color: #999;
+}
+
+.info-value {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 检测项目列表 */
+.test-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.test-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.test-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.test-name {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.test-standard {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.test-result {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+}
+
+.test-result.pass {
+  background: #f6ffed;
+}
+
+.test-result.fail {
+  background: #fff2f0;
+}
+
+.result-icon {
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.test-result.pass .result-icon,
+.test-result.pass .result-text {
+  color: #52c41a;
+}
+
+.test-result.fail .result-icon,
+.test-result.fail .result-text {
+  color: #ff4d4f;
+}
+
+.result-text {
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+/* 底部声明 */
+.disclaimer {
+  padding: 40rpx 30rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.disclaimer text {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* 底部操作栏 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 20rpx 40rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  width: 100%;
+  padding: 24rpx;
+  background: #52c41a;
+  color: #fff;
+  border-radius: 48rpx;
+  font-size: 30rpx;
+  border: none;
+}
+
+.share-btn::after {
+  border: none;
+}

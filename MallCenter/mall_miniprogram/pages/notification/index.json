@@ -1,0 +1,5 @@
+{
+  "navigationBarTitleText": "消息通知",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50
+}
