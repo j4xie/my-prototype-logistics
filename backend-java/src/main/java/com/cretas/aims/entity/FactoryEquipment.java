@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -10,8 +11,9 @@ import java.util.List;
  * 工厂设备实体类
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-01-09
+ * @updated 2025-12-22 - 主键改为 BIGINT 自增，提升 JOIN 性能
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -30,8 +32,9 @@ import java.util.List;
 )
 public class FactoryEquipment extends BaseEntity {
     @Id
-    @Column(name = "id", nullable = false, length = 191)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Long id;  // 改为 Long 自增主键，提升 JOIN 性能
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
     @Column(name = "code", nullable = false, length = 50)
@@ -73,16 +76,26 @@ public class FactoryEquipment extends BaseEntity {
     @Column(name = "serial_number", length = 100)
     private String serialNumber;
     @Column(name = "created_by", nullable = false)
-    private Integer createdBy;
+    private Long createdBy;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
-    // 关联关系
+
+    // 乐观锁版本号
+    @Version
+    @Column(name = "version")
+    private Integer version;
+
+    // 关联关系 (使用 @JsonIgnore 防止循环引用)
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
+
+    @JsonIgnore
     @OneToMany(mappedBy = "equipment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BatchEquipmentUsage> equipmentUsages = new ArrayList<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "equipment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<EquipmentMaintenance> maintenanceRecords = new ArrayList<>();
 }

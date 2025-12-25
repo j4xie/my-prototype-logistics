@@ -1,10 +1,13 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 /**
  * 产品类型实体类
  *
@@ -17,6 +20,7 @@ import java.util.List;
 @ToString(exclude = {"factory", "createdBy", "conversions", "productionPlans"})
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "product_types",
        uniqueConstraints = {
@@ -29,9 +33,15 @@ import java.util.List;
 )
 public class ProductType extends BaseEntity {
     @Id
-    //@GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", length = 100)
     private String id;
+
+    @PrePersist
+    void assignUUID() {
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+        }
+    }
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
     @Column(name = "code", nullable = false, length = 50)
@@ -55,17 +65,23 @@ public class ProductType extends BaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
     @Column(name = "created_by", nullable = false)
-    private Integer createdBy;
-    // 关联关系
+    private Long createdBy;
+    // 关联关系 (使用 @JsonIgnore 防止循环引用)
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
     private User createdByUser;
+
+    @JsonIgnore
     @OneToMany(mappedBy = "productType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialProductConversion> conversions = new ArrayList<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "productType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductionPlan> productionPlans = new ArrayList<>();
 }

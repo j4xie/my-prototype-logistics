@@ -1,6 +1,7 @@
 package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
+import com.cretas.aims.entity.enums.ProductionPlanType;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -48,15 +49,31 @@ public class ProductionPlan extends BaseEntity {
     private LocalDateTime startTime;
     @Column(name = "end_time")
     private LocalDateTime endTime;
+
+    @Column(name = "expected_completion_date")
+    private LocalDate expectedCompletionDate;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private ProductionPlanStatus status = ProductionPlanStatus.PENDING;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "plan_type")
+    private ProductionPlanType planType = ProductionPlanType.FROM_INVENTORY;
     @Column(name = "customer_order_number", length = 100)
     private String customerOrderNumber;
     @Column(name = "priority")
     private Integer priority;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    // 未来计划自动匹配相关字段
+    @Column(name = "allocated_quantity", precision = 10, scale = 2)
+    private BigDecimal allocatedQuantity = BigDecimal.ZERO;  // 已分配的原料数量
+
+    @Column(name = "is_fully_matched")
+    private Boolean isFullyMatched = false;  // 是否完全匹配
+
     // 成本相关字段
     @Column(name = "estimated_material_cost", precision = 10, scale = 2)
     private BigDecimal estimatedMaterialCost;
@@ -75,7 +92,7 @@ public class ProductionPlan extends BaseEntity {
     @Column(name = "actual_other_cost", precision = 10, scale = 2)
     private BigDecimal actualOtherCost;
     @Column(name = "created_by", nullable = false)
-    private Integer createdBy;
+    private Long createdBy;
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
@@ -94,4 +111,26 @@ public class ProductionPlan extends BaseEntity {
 
     @OneToMany(mappedBy = "productionPlan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductionPlanBatchUsage> batchUsages = new ArrayList<>();
+
+    /**
+     * 计算剩余需要匹配的原料数量
+     */
+    public BigDecimal getRemainingQuantity() {
+        if (plannedQuantity == null) return BigDecimal.ZERO;
+        if (allocatedQuantity == null) return plannedQuantity;
+        return plannedQuantity.subtract(allocatedQuantity);
+    }
+
+    /**
+     * 计算匹配进度百分比
+     */
+    public Integer getMatchingProgress() {
+        if (plannedQuantity == null || plannedQuantity.compareTo(BigDecimal.ZERO) == 0) {
+            return 0;
+        }
+        if (allocatedQuantity == null) return 0;
+        return allocatedQuantity.multiply(new BigDecimal(100))
+                .divide(plannedQuantity, 0, java.math.RoundingMode.HALF_UP)
+                .intValue();
+    }
 }

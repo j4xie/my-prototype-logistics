@@ -72,24 +72,29 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
 
         if (overviewRes.success && overviewRes.data) {
           const overview = overviewRes.data;
-          quickStatsLogger.debug('解析概览数据', {
-            hasSummary: !!overview.summary,
-            hasTodayStats: !!overview.todayStats,
-          });
+          // 支持两种格式：包装格式(summary/todayStats) 或 扁平格式
+          const summary = overview.summary || overview;
+          const todayStats = overview.todayStats || overview;
 
-          // 从概览数据中提取统计信息
+          quickStatsLogger.debug('解析概览数据', { overview });
+
+          // 从概览数据中提取统计信息（兼容两种字段名格式）
           const newStatsData = {
-            // ✅ 后端已有字段 (DashboardOverviewData.summary)
-            completedBatches: overview.summary?.completedBatches ?? 0,
-            totalBatches: overview.summary?.totalBatches ?? 0,
-            onDutyWorkers: overview.summary?.onDutyWorkers ?? 0,
-            totalWorkers: overview.summary?.totalWorkers ?? 0,
+            // 批次统计
+            completedBatches: summary.completedBatches ?? 0,
+            totalBatches: summary.todayBatches ?? summary.totalBatches ?? 0,
+            inProgressBatches: summary.inProgressBatches ?? summary.activeBatches ?? 0,
+            onDutyWorkers: summary.onDutyWorkers ?? 0,
+            totalWorkers: summary.totalWorkers ?? 0,
 
-            // ✅ 后端已实现字段 (DashboardOverviewData.todayStats) - 2025-11-20
-            // 从 todayStats 对象中读取
-            todayOutput: overview.todayStats?.todayOutputKg ?? 0,
-            activeEquipment: overview.todayStats?.activeEquipment ?? 0,
-            totalEquipment: overview.todayStats?.totalEquipment ?? 0,
+            // 今日/月度统计
+            todayOutput: todayStats.todayOutputKg ?? todayStats.monthlyOutput ?? 0,
+            activeEquipment: todayStats.activeEquipment ?? 0,
+            totalEquipment: todayStats.totalEquipment ?? 0,
+
+            // 额外字段
+            monthlyYieldRate: summary.monthlyYieldRate ?? 0,
+            lowStockMaterials: summary.lowStockMaterials ?? 0,
           };
 
           quickStatsLogger.info('统计数据加载成功', {

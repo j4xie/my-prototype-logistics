@@ -16,7 +16,7 @@ import java.util.List;
  * @since 2025-01-09
  */
 @Repository
-public interface BatchWorkSessionRepository extends JpaRepository<BatchWorkSession, Integer> {
+public interface BatchWorkSessionRepository extends JpaRepository<BatchWorkSession, Long> {
 
     /**
      * 根据批次ID查找工作会话
@@ -31,22 +31,22 @@ public interface BatchWorkSessionRepository extends JpaRepository<BatchWorkSessi
     /**
      * 根据批次ID查找工作会话
      */
-    List<BatchWorkSession> findByBatchId(Integer batchId);
+    List<BatchWorkSession> findByBatchId(Long batchId);
 
     /**
      * 根据工作会话ID查找
      */
-    List<BatchWorkSession> findByWorkSessionId(Integer workSessionId);
+    List<BatchWorkSession> findByWorkSessionId(Long workSessionId);
 
     /**
      * 计算批次的总人工成本
      */
     @Query("SELECT SUM(bws.laborCost) FROM BatchWorkSession bws WHERE bws.batchId = :batchId")
-    BigDecimal calculateTotalLaborCostByBatch(@Param("batchId") Integer batchId);
+    BigDecimal calculateTotalLaborCostByBatch(@Param("batchId") Long batchId);
 
     /**
      * 计算批次的总工作时长
      */
     @Query("SELECT SUM(bws.workMinutes) FROM BatchWorkSession bws WHERE bws.batchId = :batchId")
-    Integer calculateTotalWorkMinutesByBatch(@Param("batchId") Integer batchId);
+    Integer calculateTotalWorkMinutesByBatch(@Param("batchId") Long batchId);
 }

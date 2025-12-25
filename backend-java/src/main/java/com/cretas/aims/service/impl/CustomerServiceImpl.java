@@ -43,7 +43,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    public CustomerDTO createCustomer(String factoryId, CreateCustomerRequest request, Integer userId) {
+    public CustomerDTO createCustomer(String factoryId, CreateCustomerRequest request, Long userId) {
         log.info("创建客户: factoryId={}, name={}", factoryId, request.getName());
         // 检查客户名称是否重复
         if (customerRepository.existsByFactoryIdAndName(factoryId, request.getName())) {
@@ -282,7 +282,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .collect(Collectors.toList());
 
         // 生成Excel文件
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] excelBytes = excelUtil.exportToExcel(
                 exportDTOs,
                 com.cretas.aims.dto.customer.CustomerExportDTO.class,
@@ -298,7 +298,7 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("生成客户导入模板");
 
         // 使用ExcelUtil生成空模板
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] templateBytes = excelUtil.generateTemplate(
                 com.cretas.aims.dto.customer.CustomerExportDTO.class,
                 "客户导入模板"
@@ -314,7 +314,7 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("开始从Excel批量导入客户: factoryId={}", factoryId);
 
         // 1. 解析Excel文件
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         List<com.cretas.aims.dto.customer.CustomerExportDTO> excelData;
         try {
             excelData = excelUtil.importFromExcel(inputStream, com.cretas.aims.dto.customer.CustomerExportDTO.class);
@@ -410,7 +410,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional
     public List<CustomerDTO> importCustomers(String factoryId, List<CreateCustomerRequest> requests,
-                                            Integer userId) {
+                                            Long userId) {
         log.info("批量导入客户: factoryId={}, count={}", factoryId, requests.size());
         List<CustomerDTO> importedCustomers = new ArrayList<>();
         for (CreateCustomerRequest request : requests) {

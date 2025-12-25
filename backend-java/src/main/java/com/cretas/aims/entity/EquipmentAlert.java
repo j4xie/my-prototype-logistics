@@ -3,6 +3,7 @@ package com.cretas.aims.entity;
 import com.cretas.aims.entity.enums.AlertLevel;
 import com.cretas.aims.entity.enums.AlertStatus;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -11,15 +12,16 @@ import java.time.LocalDateTime;
  * 设备告警实体类
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-11-19
+ * @updated 2025-12-22 - 继承 BaseEntity 添加软删除和乐观锁支持
  */
 @Data
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 @ToString(exclude = {"equipment", "factory"})
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@SuperBuilder
 @Entity
 @Table(name = "equipment_alerts",
        indexes = {
@@ -29,18 +31,23 @@ import java.time.LocalDateTime;
            @Index(name = "idx_alert_triggered_at", columnList = "triggered_at")
        }
 )
-public class EquipmentAlert {
+public class EquipmentAlert extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
+    // 乐观锁版本号
+    @Version
+    @Column(name = "version")
+    private Integer version;
+
     @Column(name = "factory_id", nullable = false, length = 50)
     private String factoryId;
 
-    @Column(name = "equipment_id", nullable = false, length = 191)
-    private String equipmentId;  // 修改为String，与FactoryEquipment.id一致
+    @Column(name = "equipment_id", nullable = false)
+    private Long equipmentId;  // 修改为Long，与FactoryEquipment.id一致
 
     @Column(name = "alert_type", nullable = false, length = 50)
     private String alertType;  // 告警类型：维护提醒、保修即将到期等
@@ -68,7 +75,7 @@ public class EquipmentAlert {
     private LocalDateTime acknowledgedAt;
 
     @Column(name = "acknowledged_by")
-    private Integer acknowledgedBy;  // 确认人用户ID
+    private Long acknowledgedBy;  // 确认人用户ID
 
     @Column(name = "acknowledged_by_name", length = 100)
     private String acknowledgedByName;
@@ -77,7 +84,7 @@ public class EquipmentAlert {
     private LocalDateTime resolvedAt;
 
     @Column(name = "resolved_by")
-    private Integer resolvedBy;  // 解决人用户ID
+    private Long resolvedBy;  // 解决人用户ID
 
     @Column(name = "resolved_by_name", length = 100)
     private String resolvedByName;
@@ -89,7 +96,7 @@ public class EquipmentAlert {
     private LocalDateTime ignoredAt;
 
     @Column(name = "ignored_by")
-    private Integer ignoredBy;  // 忽略人用户ID
+    private Long ignoredBy;  // 忽略人用户ID
 
     @Column(name = "ignored_by_name", length = 100)
     private String ignoredByName;
@@ -97,10 +104,10 @@ public class EquipmentAlert {
     @Column(name = "ignore_reason", columnDefinition = "TEXT")
     private String ignoreReason;  // 忽略原因
 
-    // 关联关系
+    // 关联关系 - 使用 FactoryEquipment（Equipment 已废弃）
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "equipment_id", referencedColumnName = "id", insertable = false, updatable = false)
-    private Equipment equipment;
+    private FactoryEquipment equipment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)

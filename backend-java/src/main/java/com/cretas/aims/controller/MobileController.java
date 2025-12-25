@@ -64,7 +64,7 @@ public class MobileController {
     @Operation(summary = "用户登出")
     public ApiResponse<Void> logout(
             @RequestParam(required = false) @Parameter(description = "设备ID") String deviceId) {
-        Integer userId = SecurityUtils.getCurrentUserId();
+        Long userId = SecurityUtils.getCurrentUserId();
         log.info("用户登出: userId={}, deviceId={}", userId, deviceId);
         mobileService.logout(userId, deviceId);
         return ApiResponse.success();
@@ -149,7 +149,7 @@ public class MobileController {
     @Operation(summary = "获取移动端仪表盘数据")
     public ApiResponse<MobileDTO.DashboardData> getMobileDashboard(
             @PathVariable @Parameter(description = "工厂ID") String factoryId) {
-        Integer userId = SecurityUtils.getCurrentUserId();
+        Long userId = SecurityUtils.getCurrentUserId();
         log.debug("获取移动端仪表盘数据: factoryId={}, userId={}", factoryId, userId);
         MobileDTO.DashboardData data = mobileService.getDashboardData(factoryId, userId);
         return ApiResponse.success(data);
@@ -171,7 +171,7 @@ public class MobileController {
     @Operation(summary = "获取离线数据包")
     public ApiResponse<MobileDTO.OfflineDataPackage> getOfflineDataPackage(
             @PathVariable @Parameter(description = "工厂ID") String factoryId) {
-        Integer userId = SecurityUtils.getCurrentUserId();
+        Long userId = SecurityUtils.getCurrentUserId();
         log.info("获取离线数据包: factoryId={}, userId={}", factoryId, userId);
         MobileDTO.OfflineDataPackage data = mobileService.getOfflineDataPackage(factoryId, userId);
         return ApiResponse.success(data);
@@ -183,7 +183,7 @@ public class MobileController {
     @Operation(summary = "注册推送通知")
     public ApiResponse<Void> registerPushNotification(
             @RequestBody @Valid MobileDTO.PushRegistration registration) {
-        Integer userId = SecurityUtils.getCurrentUserId();
+        Long userId = SecurityUtils.getCurrentUserId();
         log.info("注册推送: userId={}, platform={}", userId, registration.getPlatform());
         mobileService.registerPushNotification(userId, registration);
         return ApiResponse.success();
@@ -193,7 +193,7 @@ public class MobileController {
     @Operation(summary = "取消推送通知注册")
     public ApiResponse<Void> unregisterPushNotification(
             @RequestParam @Parameter(description = "设备令牌") String deviceToken) {
-        Integer userId = SecurityUtils.getCurrentUserId();
+        Long userId = SecurityUtils.getCurrentUserId();
         log.info("取消推送: userId={}, token={}", userId, deviceToken);
         mobileService.unregisterPushNotification(userId, deviceToken);
         return ApiResponse.success();
@@ -204,7 +204,7 @@ public class MobileController {
     @GetMapping("/devices")
     @Operation(summary = "获取用户设备列表")
     public ApiResponse<List<MobileDTO.DeviceInfo>> getUserDevices() {
-        Integer userId = SecurityUtils.getCurrentUserId();
+        Long userId = SecurityUtils.getCurrentUserId();
         log.debug("获取设备列表: userId={}", userId);
         List<MobileDTO.DeviceInfo> devices = mobileService.getUserDevices(userId);
         return ApiResponse.success(devices);
@@ -214,7 +214,7 @@ public class MobileController {
     @Operation(summary = "移除设备")
     public ApiResponse<Void> removeDevice(
             @PathVariable @Parameter(description = "设备ID") String deviceId) {
-        Integer userId = SecurityUtils.getCurrentUserId();
+        Long userId = SecurityUtils.getCurrentUserId();
         log.info("移除设备: userId={}, deviceId={}", userId, deviceId);
         mobileService.removeDevice(userId, deviceId);
         return ApiResponse.success();
@@ -404,7 +404,7 @@ public class MobileController {
             @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
             @RequestParam @Parameter(description = "开始日期 YYYY-MM-DD", required = true) String startDate,
             @RequestParam @Parameter(description = "结束日期 YYYY-MM-DD", required = true) String endDate,
-            @RequestParam(required = false) @Parameter(description = "用户ID") Integer userId) {
+            @RequestParam(required = false) @Parameter(description = "用户ID") Long userId) {
         log.info("获取人员绩效: factoryId={}, startDate={}, endDate={}, userId={}", factoryId, startDate, endDate, userId);
         List<MobileDTO.PerformanceItem> performance = mobileService.getPersonnelPerformance(factoryId, startDate, endDate, userId);
         return ApiResponse.success(performance);
@@ -462,7 +462,7 @@ public class MobileController {
             @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
             @PathVariable @Parameter(description = "告警ID（支持数字ID或动态ID如MAINT_1）", required = true) String alertId,
             @RequestBody(required = false) MobileDTO.AcknowledgeAlertRequest request,
-            @RequestAttribute("userId") Integer userId,
+            @RequestAttribute("userId") Long userId,
             @RequestAttribute("username") String username) {
         log.info("确认设备告警: factoryId={}, alertId={}, userId={}", factoryId, alertId, userId);
 
@@ -479,7 +479,7 @@ public class MobileController {
             @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
             @PathVariable @Parameter(description = "告警ID（支持数字ID或动态ID如MAINT_1）", required = true) String alertId,
             @RequestBody(required = false) MobileDTO.ResolveAlertRequest request,
-            @RequestAttribute("userId") Integer userId,
+            @RequestAttribute("userId") Long userId,
             @RequestAttribute("username") String username) {
         log.info("解决设备告警: factoryId={}, alertId={}, userId={}", factoryId, alertId, userId);
 
@@ -496,7 +496,7 @@ public class MobileController {
             @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
             @PathVariable @Parameter(description = "告警ID", required = true) String alertId,
             @RequestBody(required = false) @Parameter(description = "忽略原因（可选）") MobileDTO.IgnoreAlertRequest request,
-            @RequestAttribute("userId") Integer userId,
+            @RequestAttribute("userId") Long userId,
             @RequestAttribute("username") String username) {
         log.info("忽略设备告警: factoryId={}, alertId={}, userId={}, reason={}",
                 factoryId, alertId, userId, request != null ? request.getReason() : "未填写");
@@ -535,7 +535,7 @@ public class MobileController {
         MobileDTO.AlertResponse response = new MobileDTO.AlertResponse();
         response.setId(alert.getId());
         response.setFactoryId(alert.getFactoryId());
-        response.setEquipmentId(alert.getEquipmentId());
+        response.setEquipmentId(alert.getEquipmentId() != null ? String.valueOf(alert.getEquipmentId()) : null);
         response.setAlertType(alert.getAlertType());
         response.setLevel(alert.getLevel().name());
         response.setStatus(alert.getStatus().name());
@@ -595,8 +595,9 @@ public class MobileController {
 
         // 按设备分类 (Top 5)
         Map<String, Long> byEquipment = allAlerts.stream()
+                .filter(alert -> alert.getEquipmentId() != null)
                 .collect(java.util.stream.Collectors.groupingBy(
-                        EquipmentAlert::getEquipmentId,
+                        alert -> String.valueOf(alert.getEquipmentId()),
                         java.util.stream.Collectors.counting()
                 ))
                 .entrySet().stream()
@@ -662,7 +663,7 @@ public class MobileController {
     public ApiResponse<MobileDTO.FeedbackResponse> submitFeedback(
             @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
             @RequestBody @Parameter(description = "反馈内容", required = true) MobileDTO.SubmitFeedbackRequest request,
-            @RequestAttribute("userId") Integer userId) {
+            @RequestAttribute("userId") Long userId) {
         log.info("提交用户反馈: factoryId={}, userId={}, type={}", factoryId, userId, request.getType());
 
         MobileDTO.FeedbackResponse response = mobileService.submitFeedback(factoryId, request, userId);

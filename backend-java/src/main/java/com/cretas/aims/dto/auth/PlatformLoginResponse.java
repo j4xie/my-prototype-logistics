@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 public class PlatformLoginResponse {
 
     @Schema(description = "用户ID", example = "1")
-    private Integer userId;
+    private Long userId;
 
     @Schema(description = "用户名", example = "platform_admin")
     private String username;

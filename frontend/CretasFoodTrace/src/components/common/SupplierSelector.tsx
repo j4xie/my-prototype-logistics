@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { supplierApiClient, Supplier } from '../../services/api/supplierApiClient';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 
 interface SupplierSelectorProps {
   value: string;
@@ -102,9 +102,10 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
       setCreating(true);
 
       const newSupplier = await supplierApiClient.createSupplier({
+        supplierCode: `SUP${Date.now()}`,
         name: newSupplierName.trim(),
         contactPerson: newContactPerson.trim() || undefined,
-        contactPhone: newContactPhone.trim() || undefined,
+        phone: newContactPhone.trim() || undefined,
         address: newAddress.trim() || undefined,
         businessType: newBusinessType,
       });
@@ -121,7 +122,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
       handleModalClose();
     } catch (error) {
       console.error('❌ Failed to create supplier:', error);
-      Alert.alert('创建失败', error.response?.data?.message || error.message || '请重试');
+      Alert.alert('创建失败', getErrorMsg(error) || '请重试');
     } finally {
       setCreating(false);
     }
@@ -184,7 +185,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                   <>
                     <List.Item
                       title={item.name}
-                      description={`${item.code}${item.contactPerson ? ' • ' + item.contactPerson : ''}${item.contactPhone ? ' • ' + item.contactPhone : ''}`}
+                      description={`${item.code}${item.contactPerson ? ' • ' + item.contactPerson : ''}${item.phone ? ' • ' + item.phone : ''}`}
                       onPress={() => handleSelect(item)}
                       right={props => value === item.name ? <List.Icon {...props} icon="check" color="#2196F3" /> : null}
                     />
@@ -256,7 +257,6 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                         onValueChange={setNewBusinessType}
                         buttons={[
                           { value: '水产批发', label: '批发' },
-                          { value: '养殖场', label: '养殖' },
                           { value: '进口商', label: '进口' },
                           { value: '其他', label: '其他' },
                         ]}

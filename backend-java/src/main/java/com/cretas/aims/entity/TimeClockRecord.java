@@ -1,9 +1,13 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,12 +19,14 @@ import java.time.LocalDateTime;
  * @since 2025-01-09
  */
 @Data
+@EqualsAndHashCode(callSuper = true, exclude = {"user"})
+@ToString(exclude = {"user"})
 @Entity
-@Table(name = "time_clock_record")
-@Builder
+@Table(name = "time_clock_records")
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TimeClockRecord {
+public class TimeClockRecord extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -34,15 +40,24 @@ public class TimeClockRecord {
       */
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    /**
+     * 关联的用户实体
+     * <p>用于直接访问用户信息，避免额外查询</p>
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", insertable = false, updatable = false)
+    private User user;
+
      /**
       * 用户名（计算字段，不映射到数据库）
       */
     @Transient
     private String username;
      /**
-      * 打卡日期（从clock_in_time派生，不存储在表中）
+      * 打卡日期
       */
-    @Transient
+    @Column(name = "clock_date", nullable = false)
     private LocalDate clockDate;
      /**
       * 上班打卡时间
@@ -140,29 +155,7 @@ public class TimeClockRecord {
       */
     @Transient
     private String editReason;
-     /**
-      * 创建时间
-      */
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-     /**
-      * 更新时间
-      */
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
-    }
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    // createdAt, updatedAt, deletedAt 继承自 BaseEntity
 
     /**
      * 获取打卡日期（从clock_in_time派生）
@@ -195,5 +188,88 @@ public class TimeClockRecord {
                 this.overtimeMinutes = 0;
             }
         }
+    }
+
+    // ==================== 前端字段别名 ====================
+
+    /**
+     * location 别名（兼容前端）
+     * 前端使用 location，后端使用 clockLocation
+     */
+    @JsonProperty("location")
+    public String getLocation() {
+        return clockLocation;
+    }
+
+    /**
+     * device 别名（兼容前端）
+     * 前端使用 device，后端使用 clockDevice
+     */
+    @JsonProperty("device")
+    public String getDevice() {
+        return clockDevice;
+    }
+
+    /**
+     * workDuration 别名（兼容前端）
+     * 前端使用 workDuration，后端使用 workDurationMinutes
+     */
+    @JsonProperty("workDuration")
+    public Integer getWorkDuration() {
+        return workDurationMinutes;
+    }
+
+    /**
+     * breakDuration 别名（兼容前端）
+     * 前端使用 breakDuration，后端使用 breakDurationMinutes
+     */
+    @JsonProperty("breakDuration")
+    public Integer getBreakDuration() {
+        return breakDurationMinutes;
+    }
+
+    /**
+     * remarks 别名（兼容前端）
+     * 前端使用 remarks，后端使用 notes
+     */
+    @JsonProperty("remarks")
+    public String getRemarks() {
+        return notes;
+    }
+
+    /**
+     * employeeId 别名（兼容前端）
+     * 前端使用 employeeId，后端使用 userId
+     */
+    @JsonProperty("employeeId")
+    public Long getEmployeeId() {
+        return userId;
+    }
+
+    /**
+     * startTime 别名（兼容前端）
+     * 前端使用 startTime，后端使用 clockInTime
+     */
+    @JsonProperty("startTime")
+    public LocalDateTime getStartTime() {
+        return clockInTime;
+    }
+
+    /**
+     * endTime 别名（兼容前端）
+     * 前端使用 endTime，后端使用 clockOutTime
+     */
+    @JsonProperty("endTime")
+    public LocalDateTime getEndTime() {
+        return clockOutTime;
+    }
+
+    /**
+     * date 别名（兼容前端）
+     * 前端使用 date，后端使用 clockDate
+     */
+    @JsonProperty("date")
+    public LocalDate getDate() {
+        return getClockDate();
     }
 }

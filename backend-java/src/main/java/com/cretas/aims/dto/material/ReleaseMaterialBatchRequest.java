@@ -19,6 +19,9 @@ public class ReleaseMaterialBatchRequest {
     @DecimalMin(value = "0.01", message = "释放数量必须大于0")
     private BigDecimal quantity;
 
+    @Schema(description = "生产计划ID（可选，用于指定释放哪个计划的预留）")
+    private String productionPlanId;
+
     @Schema(description = "备注")
     private String notes;
 }

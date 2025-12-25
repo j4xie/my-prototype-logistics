@@ -47,7 +47,7 @@ public class WhitelistController {
         log.info("批量添加白名单: factoryId={}, count={}", factoryId, request.getEntries().size());
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
 
         WhitelistDTO.BatchResult result = whitelistService.batchAdd(factoryId, userId, request);
         return ApiResponse.success(result);

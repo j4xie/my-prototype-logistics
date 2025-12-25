@@ -7,7 +7,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Text, Card, Button, Input } from '@rneui/themed';
+import { Text, Card, Button, TextInput } from 'react-native-paper';
 import { materialTypeApiClient } from '../../services/api/materialTypeApiClient';
 import { supplierApiClient } from '../../services/api/supplierApiClient';
 import { processingApiClient } from '../../services/api/processingApiClient';
@@ -57,16 +57,16 @@ export const BatchOperationsTestScreen = () => {
         name: '测试鲜鱼',
         category: '原材料',
         unit: '公斤',
+        storageType: 'fresh', // fresh, frozen, dry
         shelfLifeDays: 7,
-        storageCondition: '冷藏',
-        description: '前端测试用'
+        notes: '前端测试用'
       });
 
-      const id = response.data?.id || response.id;
+      const id = (response as any).data?.id || (response as any).id;
       setMaterialTypeId(id);
       addLog(`✅ 成功：创建原材料类型 ID=${id}`);
     } catch (error: any) {
-      addLog(`❌ 失败：${error.message || JSON.stringify(error)}`);
+      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
@@ -82,15 +82,15 @@ export const BatchOperationsTestScreen = () => {
         supplierCode: `SUP_${Date.now()}`,
         name: '测试供应商',
         contactPerson: '张三',
-        contactPhone: '13800138000',
+        phone: '13800138000', // 使用phone而不是contactPhone
         address: '测试地址'
       });
 
-      const id = response.data?.id || response.id;
+      const id = (response as any).data?.id || (response as any).id;
       setSupplierId(id);
       addLog(`✅ 成功：创建供应商 ID=${id}`);
     } catch (error: any) {
-      addLog(`❌ 失败：${error.message || JSON.stringify(error)}`);
+      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
@@ -108,20 +108,18 @@ export const BatchOperationsTestScreen = () => {
 
     try {
       const response = await processingApiClient.recordMaterialReceipt({
-        batchNumber: `BATCH_${Date.now()}`,
-        materialType: { id: parseInt(materialTypeId) },
-        supplier: { id: parseInt(supplierId) },
-        receiptDate: new Date().toISOString().split('T')[0],
-        initialQuantity: 500,
-        unitPrice: 25.00,
-        storageLocation: '冷库A-01'
+        materialTypeId: materialTypeId,
+        quantity: 500,
+        unit: 'kg',
+        supplierId: supplierId,
+        receivedDate: new Date().toISOString().split('T')[0]
       });
 
-      const id = response.data?.id || response.id;
+      const id = (response as any).data?.id || (response as any).id;
       setBatchId(id);
       addLog(`✅ 成功：原材料入库 Batch ID=${id}, 数量=500kg`);
     } catch (error: any) {
-      addLog(`❌ 失败：${error.message || JSON.stringify(error)}`);
+      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
@@ -147,9 +145,9 @@ export const BatchOperationsTestScreen = () => {
 
       // 查询确认
       const batch = await materialBatchApiClient.getBatchById(batchId);
-      addLog(`📊 查询结果：剩余=${batch.data?.remainingQuantity}kg, 预留=${batch.data?.reservedQuantity}kg`);
+      addLog(`📊 查询结果：剩余=${(batch as any).data?.remainingQuantity}kg, 预留=${(batch as any).data?.reservedQuantity}kg`);
     } catch (error: any) {
-      addLog(`❌ 失败：${error.message || JSON.stringify(error)}`);
+      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
@@ -175,9 +173,9 @@ export const BatchOperationsTestScreen = () => {
 
       // 查询确认
       const batch = await materialBatchApiClient.getBatchById(batchId);
-      addLog(`📊 查询结果：预留=${batch.data?.reservedQuantity}kg, 已用=${batch.data?.usedQuantity}kg`);
+      addLog(`📊 查询结果：预留=${(batch as any).data?.reservedQuantity}kg, 已用=${(batch as any).data?.usedQuantity}kg`);
     } catch (error: any) {
-      addLog(`❌ 失败：${error.message || JSON.stringify(error)}`);
+      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
@@ -203,9 +201,9 @@ export const BatchOperationsTestScreen = () => {
 
       // 查询确认
       const batch = await materialBatchApiClient.getBatchById(batchId);
-      addLog(`📊 查询结果：剩余=${batch.data?.remainingQuantity}kg, 预留=${batch.data?.reservedQuantity}kg`);
+      addLog(`📊 查询结果：剩余=${(batch as any).data?.remainingQuantity}kg, 预留=${(batch as any).data?.reservedQuantity}kg`);
     } catch (error: any) {
-      addLog(`❌ 失败：${error.message || JSON.stringify(error)}`);
+      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
@@ -246,114 +244,121 @@ export const BatchOperationsTestScreen = () => {
       addLog('✅ 完整流程测试完成！');
       addLog('========================================');
     } catch (error: any) {
-      addLog(`❌ 流程测试失败：${error.message}`);
+      addLog(`❌ 流程测试失败：${(error as any).message}`);
     }
   };
 
   return (
     <ScrollView style={styles.container}>
       <Card>
-        <Card.Title>批次操作接口测试</Card.Title>
-        <Card.Divider />
+        <Card.Title title="批次操作接口测试" />
+        <Card.Content>
+          {loading && <ActivityIndicator size="large" color="#0066CC" style={styles.loader} />}
 
-        {loading && <ActivityIndicator size="large" color="#0066CC" style={styles.loader} />}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>单步测试</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>单步测试</Text>
+            <Button
+              mode="contained"
+              onPress={testCreateMaterialType}
+              disabled={loading}
+              style={styles.buttonContainer}
+            >
+              1. 创建原材料类型
+            </Button>
 
-          <Button
-            title="1. 创建原材料类型"
-            onPress={testCreateMaterialType}
-            disabled={loading}
-            containerStyle={styles.buttonContainer}
-          />
+            <Button
+              mode="contained"
+              onPress={testCreateSupplier}
+              disabled={loading}
+              style={styles.buttonContainer}
+            >
+              2. 创建供应商
+            </Button>
 
-          <Button
-            title="2. 创建供应商"
-            onPress={testCreateSupplier}
-            disabled={loading}
-            containerStyle={styles.buttonContainer}
-          />
+            <Button
+              mode="contained"
+              onPress={testMaterialReceipt}
+              disabled={loading || !materialTypeId || !supplierId}
+              style={styles.buttonContainer}
+            >
+              3. 原材料入库 (500kg)
+            </Button>
 
-          <Button
-            title="3. 原材料入库 (500kg)"
-            onPress={testMaterialReceipt}
-            disabled={loading || !materialTypeId || !supplierId}
-            containerStyle={styles.buttonContainer}
-          />
+            <Button
+              mode="contained"
+              onPress={testReserveBatch}
+              disabled={loading || !batchId}
+              style={[styles.buttonContainer, styles.primaryButton]}
+            >
+              4. 预留批次 (300kg)
+            </Button>
 
-          <Button
-            title="4. 预留批次 (300kg)"
-            onPress={testReserveBatch}
-            disabled={loading || !batchId}
-            containerStyle={styles.buttonContainer}
-            buttonStyle={styles.primaryButton}
-          />
+            <Button
+              mode="contained"
+              onPress={testConsumeBatch}
+              disabled={loading || !batchId}
+              style={[styles.buttonContainer, styles.primaryButton]}
+            >
+              5. 消耗批次 (150kg)
+            </Button>
 
-          <Button
-            title="5. 消耗批次 (150kg)"
-            onPress={testConsumeBatch}
-            disabled={loading || !batchId}
-            containerStyle={styles.buttonContainer}
-            buttonStyle={styles.primaryButton}
-          />
+            <Button
+              mode="contained"
+              onPress={testReleaseBatch}
+              disabled={loading || !batchId}
+              style={[styles.buttonContainer, styles.primaryButton]}
+            >
+              6. 释放预留 (50kg)
+            </Button>
+          </View>
 
-          <Button
-            title="6. 释放预留 (50kg)"
-            onPress={testReleaseBatch}
-            disabled={loading || !batchId}
-            containerStyle={styles.buttonContainer}
-            buttonStyle={styles.primaryButton}
-          />
-        </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>完整流程测试</Text>
 
-        <Card.Divider />
+            <Button
+              mode="contained"
+              onPress={runFullTest}
+              disabled={loading}
+              style={[styles.buttonContainer, styles.fullTestButton]}
+            >
+              🎯 运行完整测试
+            </Button>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>完整流程测试</Text>
+            <Button
+              mode="outlined"
+              onPress={clearLogs}
+              disabled={loading}
+              style={[styles.buttonContainer, styles.clearButton]}
+            >
+              清空日志
+            </Button>
+          </View>
 
-          <Button
-            title="🎯 运行完整测试"
-            onPress={runFullTest}
-            disabled={loading}
-            containerStyle={styles.buttonContainer}
-            buttonStyle={styles.fullTestButton}
-          />
-
-          <Button
-            title="清空日志"
-            onPress={clearLogs}
-            disabled={loading}
-            containerStyle={styles.buttonContainer}
-            buttonStyle={styles.clearButton}
-            type="outline"
-          />
-        </View>
-
-        <Card.Divider />
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>当前测试数据</Text>
-          <Text style={styles.dataText}>原材料类型ID: {materialTypeId || '未创建'}</Text>
-          <Text style={styles.dataText}>供应商ID: {supplierId || '未创建'}</Text>
-          <Text style={styles.dataText}>批次ID: {batchId || '未创建'}</Text>
-          <Text style={styles.dataText}>生产计划ID: {productionPlanId}</Text>
-        </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>当前测试数据</Text>
+            <Text style={styles.dataText}>原材料类型ID: {materialTypeId || '未创建'}</Text>
+            <Text style={styles.dataText}>供应商ID: {supplierId || '未创建'}</Text>
+            <Text style={styles.dataText}>批次ID: {batchId || '未创建'}</Text>
+            <Text style={styles.dataText}>生产计划ID: {productionPlanId}</Text>
+          </View>
+        </Card.Content>
       </Card>
 
-      <Card>
-        <Card.Title>测试日志</Card.Title>
-        <Card.Divider />
-        <ScrollView style={styles.logContainer}>
-          {logs.map((log, index) => (
-            <Text key={index} style={styles.logText}>
-              {log}
-            </Text>
-          ))}
-          {logs.length === 0 && (
-            <Text style={styles.emptyText}>暂无日志</Text>
-          )}
-        </ScrollView>
+      <Card style={styles.logCard}>
+        <Card.Title title="测试日志" />
+        <Card.Content>
+          <ScrollView style={styles.logContainer}>
+            {logs.map((log, index) => (
+              <Text key={index} style={styles.logText}>
+                {log}
+              </Text>
+            ))}
+            {logs.length === 0 && (
+              <Text style={styles.emptyText}>暂无日志</Text>
+            )}
+          </ScrollView>
+        </Card.Content>
       </Card>
     </ScrollView>
   );
@@ -363,6 +368,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  logCard: {
+    marginTop: 16,
   },
   loader: {
     marginVertical: 20,

@@ -370,12 +370,15 @@
     document.addEventListener('DOMContentLoaded', () => {
       const messageInput = document.getElementById('messageInput');
       const sendBtn = document.getElementById('sendBtn');
-      
+
       // 检查是否为人工客服/供应商模式
       const type = Utils.getUrlParam('type');
       if (type === 'supplier') {
         isHumanMode = true;
         initSupplierMode();
+      } else {
+        // AI模式：加载模拟历史对话
+        initMockHistory();
       }
 
       // 监听输入变化，启用/禁用发送按钮
@@ -383,6 +386,68 @@
         sendBtn.disabled = !messageInput.value.trim();
       });
     });
+
+    // ==================== 初始化模拟历史对话 ====================
+    function initMockHistory() {
+      const mockConversations = [
+        {
+          user: '这批澳洲和牛M9的产地信息在哪里可以查到？',
+          ai: '您可以通过扫描产品包装上的溯源二维码，或在"溯源查询"页面输入批次号来查看完整的产地信息。这批澳洲和牛M9来自澳大利亚维多利亚州的认证牧场，全程冷链运输，您可以查看从牧场到仓库的完整轨迹。',
+          aiSources: ['产品溯源系统', '供应链追踪']
+        },
+        {
+          user: '你们的牛肉有什么质量认证吗？',
+          ai: '我们的澳洲和牛系列拥有多项权威认证：\n\n1）澳洲MLA肉类标准局认证\n2）HACCP食品安全管理体系认证\n3）ISO22000国际食品安全认证\n\n每批产品都有独立的SGS检测报告，您可以在产品详情页下载查看。',
+          aiSources: ['质量认证中心', '检测报告库']
+        },
+        {
+          user: '大批量采购有优惠吗？阶梯价格怎么算的？',
+          ai: '我们提供阶梯式批发优惠：\n\n• 单次采购50kg以上享9.5折\n• 100kg以上享9折\n• 500kg以上享8.5折\n• 1000kg以上可申请定制价格\n\n长期合作客户还可享受账期结算和优先配送服务。',
+          aiSources: ['价格政策', '会员权益']
+        },
+        {
+          user: '怎么查看这批货的检测报告？',
+          ai: '您可以通过以下方式查看检测报告：\n\n1）在产品详情页点击"质检报告"标签直接下载\n2）扫描产品溯源码后点击"检测信息"\n3）在"我的订单"中找到对应订单查看随货检测报告\n\n所有报告均为PDF格式，包含微生物、重金属、农残等完整检测项目。',
+          aiSources: ['质检报告库', '溯源系统']
+        }
+      ];
+
+      // 设置基准时间为今天的不同时间点
+      const now = new Date();
+      const baseTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 30, 0);
+
+      mockConversations.forEach((conv, index) => {
+        // 用户消息
+        const userTime = new Date(baseTime.getTime() + index * 10 * 60 * 1000); // 每隔10分钟
+        messages.push({
+          id: Date.now() - (8 - index * 2) * 60000,
+          sender: 'user',
+          text: conv.user,
+          sources: [],
+          timestamp: userTime
+        });
+
+        // AI回复（1分钟后）
+        const aiTime = new Date(userTime.getTime() + 1 * 60 * 1000);
+        messages.push({
+          id: Date.now() - (7 - index * 2) * 60000,
+          sender: 'ai',
+          text: conv.ai,
+          sources: conv.aiSources,
+          timestamp: aiTime
+        });
+      });
+
+      // 隐藏欢迎区域，显示消息列表
+      document.getElementById('welcomeSection').style.display = 'none';
+      document.getElementById('messagesList').style.display = 'flex';
+
+      // 渲染消息
+      renderMessages();
+
+      // 滚动到底部
+      setTimeout(() => scrollToBottom(), 100);
+    }
 
     function initSupplierMode() {
       // 修改标题

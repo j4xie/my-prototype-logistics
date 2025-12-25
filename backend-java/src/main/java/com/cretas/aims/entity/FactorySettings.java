@@ -181,13 +181,13 @@ public class FactorySettings extends BaseEntity {
      * 创建人ID
      */
     @Column(name = "created_by")
-    private Integer createdBy;
+    private Long createdBy;
 
     /**
      * 更新人ID
      */
     @Column(name = "updated_by")
-    private Integer updatedBy;
+    private Long updatedBy;
 
     /**
      * 最后修改时间

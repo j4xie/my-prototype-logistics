@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -32,8 +33,8 @@ public class ShipmentRecord extends BaseEntity {
     private String factoryId;
     @Column(name = "shipment_number", nullable = false, unique = true, length = 50)
     private String shipmentNumber;
-    @Column(name = "customer_id", nullable = false)
-    private Integer customerId;
+    @Column(name = "customer_id", nullable = false, length = 191)
+    private String customerId;
     @Column(name = "order_number", length = 100)
     private String orderNumber;
     @Column(name = "product_name", nullable = false)
@@ -57,16 +58,21 @@ public class ShipmentRecord extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private String status = "pending"; // pending, shipped, delivered, returned
     @Column(name = "recorded_by", nullable = false)
-    private Integer recordedBy;
+    private Long recordedBy;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
-    // 关联关系
+    // 关联关系 - 使用JsonIgnore避免懒加载序列化问题
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Customer customer;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recorded_by", referencedColumnName = "id", insertable = false, updatable = false)
     private User recorder;

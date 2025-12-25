@@ -63,7 +63,7 @@ public class UserController {
             @Parameter(description = "工厂ID", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "用户ID", required = true)
-            @PathVariable @NotNull Integer userId,
+            @PathVariable @NotNull Long userId,
             @Valid @RequestBody CreateUserRequest request) {
         log.info("更新用户: factoryId={}, userId={}", factoryId, userId);
         UserDTO user = userService.updateUser(factoryId, userId, request);
@@ -79,7 +79,7 @@ public class UserController {
             @Parameter(description = "工厂ID", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "用户ID", required = true)
-            @PathVariable @NotNull Integer userId) {
+            @PathVariable @NotNull Long userId) {
         log.info("删除用户: factoryId={}, userId={}", factoryId, userId);
         userService.deleteUser(factoryId, userId);
         return ApiResponse.success("用户删除成功", null);
@@ -94,7 +94,7 @@ public class UserController {
             @Parameter(description = "工厂ID", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "用户ID", required = true)
-            @PathVariable @NotNull Integer userId) {
+            @PathVariable @NotNull Long userId) {
         UserDTO user = userService.getUserById(factoryId, userId);
         return ApiResponse.success(user);
     }
@@ -135,7 +135,7 @@ public class UserController {
             @Parameter(description = "工厂ID", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "用户ID", required = true)
-            @PathVariable @NotNull Integer userId) {
+            @PathVariable @NotNull Long userId) {
         log.info("激活用户: factoryId={}, userId={}", factoryId, userId);
         userService.activateUser(factoryId, userId);
         return ApiResponse.success("用户激活成功", null);
@@ -150,7 +150,7 @@ public class UserController {
             @Parameter(description = "工厂ID", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "用户ID", required = true)
-            @PathVariable @NotNull Integer userId) {
+            @PathVariable @NotNull Long userId) {
         log.info("停用用户: factoryId={}, userId={}", factoryId, userId);
         userService.deactivateUser(factoryId, userId);
         return ApiResponse.success("用户停用成功", null);
@@ -165,7 +165,7 @@ public class UserController {
             @Parameter(description = "工厂ID", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "用户ID", required = true)
-            @PathVariable @NotNull Integer userId,
+            @PathVariable @NotNull Long userId,
             @Parameter(description = "新角色", required = true)
             @RequestParam FactoryUserRole newRole) {
         log.info("更新用户角色: factoryId={}, userId={}, newRole={}", factoryId, userId, newRole);

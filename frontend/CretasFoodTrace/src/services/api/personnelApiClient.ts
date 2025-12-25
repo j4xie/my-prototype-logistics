@@ -6,6 +6,7 @@
  */
 
 import { apiClient } from './apiClient';
+import { getErrorMsg } from '../../utils/errorHandler';
 
 /**
  * 人员总览统计
@@ -92,7 +93,7 @@ export const personnelApiClient = {
       `/api/mobile/${factoryId}/personnel/statistics`,
       { params }
     );
-    return response.data;
+    return (response as any).data;
   },
 
   /**
@@ -115,7 +116,7 @@ export const personnelApiClient = {
         params: { startDate, endDate, limit },
       }
     );
-    return response.data;
+    return (response as any).data;
   },
 
   /**
@@ -139,7 +140,7 @@ export const personnelApiClient = {
       `/api/mobile/${factoryId}/personnel/overtime-statistics`,
       { params }
     );
-    return response.data;
+    return (response as any).data;
   },
 
   /**
@@ -163,6 +164,6 @@ export const personnelApiClient = {
       `/api/mobile/${factoryId}/personnel/performance`,
       { params }
     );
-    return response.data;
+    return (response as any).data;
   },
 };

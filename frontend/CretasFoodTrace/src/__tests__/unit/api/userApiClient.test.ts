@@ -319,7 +319,7 @@ describe('userApiClient', () => {
       const result = await userApiClient.searchUsers({ keyword: '张' });
 
       expect(result).toHaveLength(2);
-      expect(result[0].realName).toContain('张');
+      expect(result[0]?.realName).toContain('张');
     });
 
     it('应该支持按角色筛选', async () => {
@@ -333,7 +333,7 @@ describe('userApiClient', () => {
       const result = await userApiClient.searchUsers({ keyword: 'admin', role: 'admin' });
 
       expect(result).toHaveLength(1);
-      expect(result[0].role).toBe('admin');
+      expect(result[0]?.role).toBe('admin');
     });
   });
 

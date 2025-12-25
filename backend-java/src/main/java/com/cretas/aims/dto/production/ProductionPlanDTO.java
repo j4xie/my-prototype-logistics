@@ -1,6 +1,7 @@
 package com.cretas.aims.dto.production;
 
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
+import com.cretas.aims.entity.enums.ProductionPlanType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,7 +50,7 @@ public class ProductionPlanDTO {
     @Schema(description = "实际数量")
     private BigDecimal actualQuantity;
 
-    @Schema(description = "计划日期")
+    @Schema(description = "计划日期 (从startTime自动推导，如果startTime存在)")
     private LocalDate plannedDate;
 
     @Schema(description = "开始时间")
@@ -58,11 +59,29 @@ public class ProductionPlanDTO {
     @Schema(description = "结束时间")
     private LocalDateTime endTime;
 
+    @Schema(description = "预计完成日期")
+    private LocalDate expectedCompletionDate;
+
     @Schema(description = "状态")
     private ProductionPlanStatus status;
 
     @Schema(description = "状态显示名称")
     private String statusDisplayName;
+
+    @Schema(description = "计划类型 (FUTURE=未来计划, FROM_INVENTORY=基于库存)")
+    private ProductionPlanType planType;
+
+    @Schema(description = "计划类型显示名称")
+    private String planTypeDisplayName;
+
+    @Schema(description = "转换率是否已配置")
+    private Boolean conversionRateConfigured;
+
+    @Schema(description = "转换率")
+    private BigDecimal conversionRate;
+
+    @Schema(description = "损耗率")
+    private BigDecimal wastageRate;
 
     @Schema(description = "客户订单号")
     private String customerOrderNumber;
@@ -101,7 +120,7 @@ public class ProductionPlanDTO {
     private String notes;
 
     @Schema(description = "创建人ID")
-    private Integer createdBy;
+    private Long createdBy;
 
     @Schema(description = "创建人姓名")
     private String createdByName;
@@ -111,4 +130,18 @@ public class ProductionPlanDTO {
 
     @Schema(description = "更新时间")
     private LocalDateTime updatedAt;
+
+    // ======= 未来计划匹配相关字段 =======
+
+    @Schema(description = "已分配的原料数量")
+    private BigDecimal allocatedQuantity;
+
+    @Schema(description = "是否完全匹配")
+    private Boolean isFullyMatched;
+
+    @Schema(description = "匹配进度百分比")
+    private Integer matchingProgress;
+
+    @Schema(description = "剩余需求量")
+    private BigDecimal remainingQuantity;
 }

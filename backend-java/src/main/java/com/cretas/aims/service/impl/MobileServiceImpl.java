@@ -3,14 +3,14 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.MobileDTO;
 import com.cretas.aims.dto.user.UserDTO;
 import com.cretas.aims.entity.DeviceActivation;
-import com.cretas.aims.entity.Equipment;
 import com.cretas.aims.entity.EquipmentAlert;
 import com.cretas.aims.entity.Factory;
 import com.cretas.aims.entity.FactoryEquipment;
 import com.cretas.aims.entity.FactorySettings;
 import com.cretas.aims.entity.PlatformAdmin;
 import com.cretas.aims.entity.UserFeedback;
-import com.cretas.aims.entity.ProcessingBatch;
+import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.entity.enums.ProductionBatchStatus;
 import com.cretas.aims.entity.QualityInspection;
 import com.cretas.aims.entity.Session;
 import com.cretas.aims.entity.TimeClockRecord;
@@ -27,7 +27,7 @@ import com.cretas.aims.repository.DeviceActivationRepository;
 import com.cretas.aims.repository.EquipmentAlertRepository;
 import com.cretas.aims.repository.EquipmentRepository;
 import com.cretas.aims.repository.PlatformAdminRepository;
-import com.cretas.aims.repository.ProcessingBatchRepository;
+import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.QualityInspectionRepository;
 import com.cretas.aims.repository.SessionRepository;
 import com.cretas.aims.repository.TimeClockRecordRepository;
@@ -35,7 +35,7 @@ import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.WhitelistRepository;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.TempTokenService;
-import com.cretas.aims.util.JwtUtil;
+import com.cretas.aims.utils.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -85,7 +85,7 @@ public class MobileServiceImpl implements MobileService {
     // 人员报表相关Repository
     private final TimeClockRecordRepository timeClockRecordRepository;
     private final QualityInspectionRepository qualityInspectionRepository;
-    private final ProcessingBatchRepository processingBatchRepository;
+    private final ProductionBatchRepository productionBatchRepository;
 
     // 设备告警相关Repository
     private final EquipmentAlertRepository equipmentAlertRepository;
@@ -105,7 +105,7 @@ public class MobileServiceImpl implements MobileService {
     private String latestVersion;
 
     // 模拟设备登录记录（实际应使用数据库）
-    private final Map<Integer, List<MobileDTO.DeviceInfo>> userDevices = new ConcurrentHashMap<>();
+    private final Map<Long, List<MobileDTO.DeviceInfo>> userDevices = new ConcurrentHashMap<>();
 
     @Override
     @Transactional
@@ -168,9 +168,9 @@ public class MobileServiceImpl implements MobileService {
             recordDeviceLogin(user.getId(), request.getDeviceInfo());
         }
 
-        // 生成令牌（包含角色信息）
+        // 生成令牌（包含角色和工厂信息）
         String role = user.getRoleCode() != null ? user.getRoleCode() : "viewer";
-        String token = jwtUtil.generateToken(user.getId().toString(), role);
+        String token = jwtUtil.generateToken(user.getId(), user.getFactoryId(), user.getUsername(), role);
         String refreshToken = jwtUtil.generateRefreshToken(user.getId().toString());
 
         // 更新最后登录时间
@@ -220,9 +220,10 @@ public class MobileServiceImpl implements MobileService {
             recordDeviceLogin(admin.getId(), deviceInfo);
         }
 
-        // 生成令牌（使用 "platform_" 前缀区分平台管理员，包含角色信息）
-        String role = admin.getPlatformRole() != null ? admin.getPlatformRole().name() : "auditor";
-        String token = jwtUtil.generateToken("platform_" + admin.getId(), role);
+        // 生成令牌（使用 "platform_" 前缀区分平台管理员，包含角色信息和PLATFORM工厂ID）
+        String role = admin.getPlatformRole() != null ? admin.getPlatformRole().name().toLowerCase() : "auditor";
+        // 平台管理员使用 factoryId="PLATFORM" 以通过跨工厂权限验证
+        String token = jwtUtil.generateToken(admin.getId(), "PLATFORM", admin.getUsername(), role);
         String refreshToken = jwtUtil.generateRefreshToken("platform_" + admin.getId());
 
         // 更新最后登录时间
@@ -350,7 +351,7 @@ public class MobileServiceImpl implements MobileService {
     }
 
     @Override
-    public MobileDTO.DashboardData getDashboardData(String factoryId, Integer userId) {
+    public MobileDTO.DashboardData getDashboardData(String factoryId, Long userId) {
         log.debug("获取仪表盘数据: factoryId={}, userId={}", factoryId, userId);
 
         // ========== 查询今日统计数据 (2025-11-20 新增) ==========
@@ -359,16 +360,16 @@ public class MobileServiceImpl implements MobileService {
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
 
         // 1. 今日产量（千克）- 使用quantity字段，只统计已完成的批次
-        Double todayOutputKg = processingBatchRepository
+        Double todayOutputKg = productionBatchRepository
                 .findByFactoryIdAndCreatedAtBetween(factoryId, startOfDay, endOfDay)
                 .stream()
-                .filter(batch -> "COMPLETED".equalsIgnoreCase(batch.getStatus()))
+                .filter(batch -> batch.getStatus() == ProductionBatchStatus.COMPLETED)
                 .filter(batch -> batch.getQuantity() != null)
                 .mapToDouble(batch -> batch.getQuantity().doubleValue())
                 .sum();
 
         // 2. 总批次数
-        Long totalBatchesLong = processingBatchRepository.countByFactoryId(factoryId);
+        Long totalBatchesLong = productionBatchRepository.countByFactoryId(factoryId);
         Integer totalBatches = totalBatchesLong != null ? totalBatchesLong.intValue() : 0;
 
         // 3. 总工人数
@@ -458,13 +459,13 @@ public class MobileServiceImpl implements MobileService {
     }
 
     @Override
-    public void registerPushNotification(Integer userId, MobileDTO.PushRegistration registration) {
+    public void registerPushNotification(Long userId, MobileDTO.PushRegistration registration) {
         log.info("注册推送通知: userId={}, platform={}", userId, registration.getPlatform());
         // TODO: 实现推送通知注册逻辑
     }
 
     @Override
-    public void unregisterPushNotification(Integer userId, String deviceToken) {
+    public void unregisterPushNotification(Long userId, String deviceToken) {
         log.info("取消推送通知: userId={}, token={}", userId, deviceToken);
         // TODO: 实现取消推送通知逻辑
     }
@@ -500,7 +501,7 @@ public class MobileServiceImpl implements MobileService {
     }
 
     @Override
-    public MobileDTO.OfflineDataPackage getOfflineDataPackage(String factoryId, Integer userId) {
+    public MobileDTO.OfflineDataPackage getOfflineDataPackage(String factoryId, Long userId) {
         log.info("获取离线数据包: factoryId={}, userId={}", factoryId, userId);
 
         // TODO: 生成实际的离线数据包
@@ -515,7 +516,7 @@ public class MobileServiceImpl implements MobileService {
     }
 
     @Override
-    public void recordDeviceLogin(Integer userId, MobileDTO.DeviceInfo deviceInfo) {
+    public void recordDeviceLogin(Long userId, MobileDTO.DeviceInfo deviceInfo) {
         log.debug("记录设备登录: userId={}, deviceId={}", userId, deviceInfo.getDeviceId());
 
         userDevices.computeIfAbsent(userId, k -> new ArrayList<>());
@@ -534,13 +535,13 @@ public class MobileServiceImpl implements MobileService {
     }
 
     @Override
-    public List<MobileDTO.DeviceInfo> getUserDevices(Integer userId) {
+    public List<MobileDTO.DeviceInfo> getUserDevices(Long userId) {
         log.debug("获取用户设备列表: userId={}", userId);
         return userDevices.getOrDefault(userId, new ArrayList<>());
     }
 
     @Override
-    public void removeDevice(Integer userId, String deviceId) {
+    public void removeDevice(Long userId, String deviceId) {
         log.info("移除设备: userId={}, deviceId={}", userId, deviceId);
         List<MobileDTO.DeviceInfo> devices = userDevices.get(userId);
         if (devices != null) {
@@ -558,7 +559,7 @@ public class MobileServiceImpl implements MobileService {
         }
 
         String userId = jwtUtil.getUserIdFromTokenAsString(refreshToken);
-        User user = userRepository.findById(Integer.parseInt(userId))
+        User user = userRepository.findById(Long.parseLong(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
 
         // 生成新的访问令牌
@@ -572,7 +573,7 @@ public class MobileServiceImpl implements MobileService {
     }
 
     @Override
-    public void logout(Integer userId, String deviceId) {
+    public void logout(Long userId, String deviceId) {
         log.info("用户登出: userId={}, deviceId={}", userId, deviceId);
 
         // 移除设备记录
@@ -754,7 +755,7 @@ public class MobileServiceImpl implements MobileService {
 
     @Override
     public UserDTO getUserFromToken(String token) {
-        Integer userId = jwtUtil.getUserIdFromToken(token);
+        Long userId = jwtUtil.getUserIdFromToken(token);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
         return userMapper.toDTO(user);
@@ -762,7 +763,7 @@ public class MobileServiceImpl implements MobileService {
 
     @Override
     @Transactional
-    public void changePassword(Integer userId, String oldPassword, String newPassword) {
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
         // 查询用户
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
@@ -777,7 +778,7 @@ public class MobileServiceImpl implements MobileService {
         userRepository.save(user);
 
         // 撤销所有会话
-        sessionRepository.revokeAllUserSessions(userId);
+        sessionRepository.revokeAllUserSessions(userId.longValue());
     }
 
     @Override
@@ -791,7 +792,7 @@ public class MobileServiceImpl implements MobileService {
         userRepository.save(user);
 
         // 撤销所有会话
-        sessionRepository.revokeAllUserSessions(user.getId());
+        sessionRepository.revokeAllUserSessions(user.getId().longValue());
     }
 
     // ==================== 忘记密码功能实现 ====================
@@ -947,7 +948,7 @@ public class MobileServiceImpl implements MobileService {
             userRepository.save(user);
 
             // 撤销该用户所有会话
-            sessionRepository.revokeAllUserSessions(user.getId());
+            sessionRepository.revokeAllUserSessions(user.getId().longValue());
 
             updatedCount++;
             log.info("✅ 密码已重置: userId={}, username={}", user.getId(), user.getUsername());
@@ -1133,13 +1134,13 @@ public class MobileServiceImpl implements MobileService {
         }
 
         // 统计每个用户的加班数据
-        Map<Integer, Double> userOvertimeMap = new HashMap<>();
+        Map<Long, Double> userOvertimeMap = new HashMap<>();
         double totalOvertimeMinutes = 0.0;
 
         for (User user : users) {
             // 查询用户在日期范围内的所有打卡记录
             List<TimeClockRecord> records = timeClockRecordRepository
-                    .findByFactoryIdAndUserIdAndClockDateBetween(factoryId, Long.valueOf(user.getId()), startDateTime, endDateTime);
+                    .findByFactoryIdAndUserIdAndClockDateBetween(factoryId, user.getId(), startDateTime, endDateTime);
 
             // 计算该用户的总加班时长
             double userOvertimeMinutes = records.stream()
@@ -1164,15 +1165,15 @@ public class MobileServiceImpl implements MobileService {
                 : 0.0;
 
         // 按加班时长排序，获取TOP 10
-        List<Map.Entry<Integer, Double>> sortedEntries = userOvertimeMap.entrySet().stream()
+        List<Map.Entry<Long, Double>> sortedEntries = userOvertimeMap.entrySet().stream()
                 .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
                 .limit(10)
                 .collect(Collectors.toList());
 
         // 构建TOP 10加班员工列表
         List<MobileDTO.OvertimeEmployeeItem> topOvertimeEmployees = new ArrayList<>();
-        for (Map.Entry<Integer, Double> entry : sortedEntries) {
-            Integer userId = entry.getKey();
+        for (Map.Entry<Long, Double> entry : sortedEntries) {
+            Long userId = entry.getKey();
             double overtimeMinutes = entry.getValue();
 
             User user = users.stream()
@@ -1201,7 +1202,7 @@ public class MobileServiceImpl implements MobileService {
     }
 
     @Override
-    public List<MobileDTO.PerformanceItem> getPersonnelPerformance(String factoryId, String startDate, String endDate, Integer userId) {
+    public List<MobileDTO.PerformanceItem> getPersonnelPerformance(String factoryId, String startDate, String endDate, Long userId) {
         log.info("获取人员绩效: factoryId={}, startDate={}, endDate={}, userId={}", factoryId, startDate, endDate, userId);
 
         // 解析日期范围
@@ -1266,11 +1267,11 @@ public class MobileServiceImpl implements MobileService {
             // 效率评估：作为主管的批次完成情况
             // 注意：startDateTime和endDateTime已在方法开头定义
 
-            List<ProcessingBatch> batches = processingBatchRepository
+            List<ProductionBatch> batches = productionBatchRepository
                     .findBatchesInDateRange(factoryId, startDateTime, endDateTime);
 
             // 筛选该用户作为主管的批次
-            List<ProcessingBatch> userBatches = batches.stream()
+            List<ProductionBatch> userBatches = batches.stream()
                     .filter(batch -> batch.getSupervisorId() != null && batch.getSupervisorId().equals(user.getId()))
                     .collect(Collectors.toList());
 
@@ -1279,7 +1280,7 @@ public class MobileServiceImpl implements MobileService {
                 // 效率 = 完成批次数 / 总批次数 * 100
                 long completedCount = userBatches.stream()
                         .filter(batch -> "COMPLETED".equals(batch.getStatus())
-                                || ProcessingBatch.BatchStatus.COMPLETED.name().equals(batch.getStatus()))
+                                || ProductionBatchStatus.COMPLETED.name().equals(batch.getStatus()))
                         .count();
                 efficiencyScore = ((double) completedCount / userBatches.size()) * 100;
             } else {
@@ -1319,14 +1320,14 @@ public class MobileServiceImpl implements MobileService {
 
         for (String batchId : batchIds) {
             // 查询批次信息
-            Optional<ProcessingBatch> batchOpt = processingBatchRepository.findByFactoryIdAndId(factoryId, batchId);
+            Optional<ProductionBatch> batchOpt = productionBatchRepository.findByIdAndFactoryId(Long.valueOf(batchId), factoryId);
 
             if (batchOpt.isEmpty()) {
                 log.warn("批次不存在: factoryId={}, batchId={}", factoryId, batchId);
                 continue;
             }
 
-            ProcessingBatch batch = batchOpt.get();
+            ProductionBatch batch = batchOpt.get();
 
             // 提取成本数据（从BigDecimal转Double）
             Double totalCost = batch.getTotalCost() != null ? batch.getTotalCost().doubleValue() : 0.0;
@@ -1348,7 +1349,7 @@ public class MobileServiceImpl implements MobileService {
 
             // 构建成本数据对象
             MobileDTO.BatchCostData costData = MobileDTO.BatchCostData.builder()
-                    .batchId(batch.getId())
+                    .batchId(String.valueOf(batch.getId()))
                     .batchNumber(batch.getBatchNumber())
                     .productType(batch.getProductName())
                     .totalCost(totalCost)
@@ -1415,7 +1416,7 @@ public class MobileServiceImpl implements MobileService {
 
     @Override
     @Transactional
-    public MobileDTO.AlertResponse acknowledgeAlert(String factoryId, String alertId, Integer userId, String username, MobileDTO.AcknowledgeAlertRequest request) {
+    public MobileDTO.AlertResponse acknowledgeAlert(String factoryId, String alertId, Long userId, String username, MobileDTO.AcknowledgeAlertRequest request) {
         log.info("确认设备告警: factoryId={}, alertId={}, userId={}", factoryId, alertId, userId);
 
         // 1. 获取或创建告警记录（支持动态ID）
@@ -1446,7 +1447,7 @@ public class MobileServiceImpl implements MobileService {
 
     @Override
     @Transactional
-    public MobileDTO.AlertResponse resolveAlert(String factoryId, String alertId, Integer userId, String username, MobileDTO.ResolveAlertRequest request) {
+    public MobileDTO.AlertResponse resolveAlert(String factoryId, String alertId, Long userId, String username, MobileDTO.ResolveAlertRequest request) {
         log.info("解决设备告警: factoryId={}, alertId={}, userId={}", factoryId, alertId, userId);
 
         // 1. 获取或创建告警记录（支持动态ID）
@@ -1506,7 +1507,7 @@ public class MobileServiceImpl implements MobileService {
             String equipmentId = parts[1];  // Equipment ID现在是String类型
 
             // 查询设备信息
-            FactoryEquipment equipment = equipmentRepository.findById(equipmentId)
+            FactoryEquipment equipment = equipmentRepository.findById(Long.valueOf(equipmentId))
                     .orElseThrow(() -> new ResourceNotFoundException("设备不存在: equipmentId=" + equipmentId));
 
             // 根据类型创建告警记录（从设备维护信息动态生成）
@@ -1627,7 +1628,7 @@ public class MobileServiceImpl implements MobileService {
         return MobileDTO.AlertResponse.builder()
                 .id(alert.getId())
                 .factoryId(alert.getFactoryId())
-                .equipmentId(alert.getEquipmentId())
+                .equipmentId(String.valueOf(alert.getEquipmentId()))
                 .equipmentName(equipmentName)
                 .alertType(alert.getAlertType())
                 .level(alert.getLevel().name())
@@ -1690,7 +1691,7 @@ public class MobileServiceImpl implements MobileService {
     public MobileDTO.FactorySettingsResponse updateFactorySettings(
             String factoryId,
             MobileDTO.UpdateFactorySettingsRequest request,
-            Integer userId) {
+            Long userId) {
 
         // 1. 更新工厂基本信息
         Factory factory = factoryRepository.findById(factoryId)
@@ -1733,7 +1734,7 @@ public class MobileServiceImpl implements MobileService {
         // 4. 将工作时间设置序列化为JSON
         String workTimeSettingsJson = serializeWorkTimeSettings(workTimeSettings);
         settings.setWorkTimeSettings(workTimeSettingsJson);
-        settings.setUpdatedBy(userId);
+        settings.setUpdatedBy(userId.longValue());
         factorySettingsRepository.save(settings);
 
         log.info("✅ 工厂设置已更新: factoryId={}, userId={}", factoryId, userId);
@@ -1836,7 +1837,7 @@ public class MobileServiceImpl implements MobileService {
     public MobileDTO.FeedbackResponse submitFeedback(
             String factoryId,
             MobileDTO.SubmitFeedbackRequest request,
-            Integer userId) {
+            Long userId) {
 
         // 1. 验证反馈类型
         if (!request.getType().matches("bug|feature|other")) {
@@ -1868,7 +1869,7 @@ public class MobileServiceImpl implements MobileService {
         // 4. 创建反馈记录
         UserFeedback feedback = UserFeedback.builder()
                 .factoryId(factoryId)
-                .userId(userId)
+                .userId(userId.longValue())
                 .type(request.getType())
                 .title(request.getTitle().trim())
                 .content(request.getContent().trim())

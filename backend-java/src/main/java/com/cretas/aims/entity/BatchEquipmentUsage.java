@@ -28,9 +28,9 @@ public class BatchEquipmentUsage extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;  // 统一为 Long
     @Column(name = "batch_id", nullable = false)
-    private Long batchId;  // 统一为 Long，与 ProcessingBatch.id 类型一致
+    private Long batchId;  // 统一为 Long，与 ProductionBatch.id 类型一致
     @Column(name = "equipment_id", nullable = false)
-    private Integer equipmentId;
+    private Long equipmentId;  // 改为 Long 类型，与 FactoryEquipment.id 匹配
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
     @Column(name = "end_time")
@@ -41,10 +41,18 @@ public class BatchEquipmentUsage extends BaseEntity {
     private BigDecimal powerConsumption;
     @Column(name = "equipment_cost", nullable = false, precision = 10, scale = 2)
     private BigDecimal equipmentCost;
+
+    // 乐观锁版本号
+    @Version
+    @Column(name = "version")
+    private Integer version;
+
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "batch_id", referencedColumnName = "id", insertable = false, updatable = false)
-    private ProcessingBatch batch;
+    private ProductionBatch batch;
+
+    @ManyToOne(fetch = FetchType.LAZY)  // 修复：添加缺失的 @ManyToOne 注解
     @JoinColumn(name = "equipment_id", referencedColumnName = "id", insertable = false, updatable = false)
     private FactoryEquipment equipment;
 }

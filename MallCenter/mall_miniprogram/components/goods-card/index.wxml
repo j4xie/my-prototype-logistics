@@ -8,7 +8,7 @@
   <view class="goods-box" wx:for="{{goodsList}}" wx:key="index">
     <navigator hover-class='none' url='/pages/goods/goods-detail/index?id={{item.id}}'>
     <view class="text-black margin-top text-bold padding-lr overflow-1">{{item.name}}</view>
-      <view class="img-box">
+      <view class="goods-box-img-box">
         <image src="{{item.picUrls[0] ? item.picUrls[0] : '/public/img/no_pic.png'}}" class="margin-top-xs"/>
       </view>
       <view class="text-center margin-top">

@@ -129,7 +129,7 @@ export default function AIQuotaManagementScreen() {
           {/* 工厂名称 */}
           <View style={styles.factoryHeader}>
             <View style={styles.factoryNameContainer}>
-              <List.Icon icon="factory" size={28} />
+              <List.Icon icon="factory" />
               <Text variant="titleMedium" style={styles.factoryName}>
                 {factory.name}
               </Text>
@@ -317,7 +317,7 @@ export default function AIQuotaManagementScreen() {
 
                 return suggestion ? (
                   <View key={factory.factoryId} style={styles.tipRow}>
-                    <List.Icon icon={icon} color={color} size={20} />
+                    <List.Icon icon={icon} color={color} />
                     <Text variant="bodySmall" style={[styles.tipText, { color }]}>
                       {suggestion}
                     </Text>

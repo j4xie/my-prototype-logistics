@@ -47,7 +47,7 @@ public interface MobileService {
      * @param userId 用户ID
      * @return 仪表盘数据
      */
-    MobileDTO.DashboardData getDashboardData(String factoryId, Integer userId);
+    MobileDTO.DashboardData getDashboardData(String factoryId, Long userId);
 
     /**
      * 数据同步
@@ -64,7 +64,7 @@ public interface MobileService {
      * @param userId 用户ID
      * @param registration 推送注册信息
      */
-    void registerPushNotification(Integer userId, MobileDTO.PushRegistration registration);
+    void registerPushNotification(Long userId, MobileDTO.PushRegistration registration);
 
     /**
      * 取消推送通知注册
@@ -72,7 +72,7 @@ public interface MobileService {
      * @param userId 用户ID
      * @param deviceToken 设备令牌
      */
-    void unregisterPushNotification(Integer userId, String deviceToken);
+    void unregisterPushNotification(Long userId, String deviceToken);
 
     /**
      * 检查应用版本
@@ -90,7 +90,7 @@ public interface MobileService {
      * @param userId 用户ID
      * @return 离线数据包
      */
-    MobileDTO.OfflineDataPackage getOfflineDataPackage(String factoryId, Integer userId);
+    MobileDTO.OfflineDataPackage getOfflineDataPackage(String factoryId, Long userId);
 
     /**
      * 记录设备登录信息
@@ -98,7 +98,7 @@ public interface MobileService {
      * @param userId 用户ID
      * @param deviceInfo 设备信息
      */
-    void recordDeviceLogin(Integer userId, MobileDTO.DeviceInfo deviceInfo);
+    void recordDeviceLogin(Long userId, MobileDTO.DeviceInfo deviceInfo);
 
     /**
      * 获取用户设备列表
@@ -106,7 +106,7 @@ public interface MobileService {
      * @param userId 用户ID
      * @return 设备信息列表
      */
-    List<MobileDTO.DeviceInfo> getUserDevices(Integer userId);
+    List<MobileDTO.DeviceInfo> getUserDevices(Long userId);
 
     /**
      * 移除设备
@@ -114,7 +114,7 @@ public interface MobileService {
      * @param userId 用户ID
      * @param deviceId 设备ID
      */
-    void removeDevice(Integer userId, String deviceId);
+    void removeDevice(Long userId, String deviceId);
 
     /**
      * 刷新访问令牌
@@ -130,7 +130,7 @@ public interface MobileService {
      * @param userId 用户ID
      * @param deviceId 设备ID
      */
-    void logout(Integer userId, String deviceId);
+    void logout(Long userId, String deviceId);
 
     /**
      * 获取移动端配置
@@ -196,7 +196,7 @@ public interface MobileService {
      * @param oldPassword 旧密码
      * @param newPassword 新密码
      */
-    void changePassword(Integer userId, String oldPassword, String newPassword);
+    void changePassword(Long userId, String oldPassword, String newPassword);
 
     /**
      * 重置密码
@@ -276,7 +276,7 @@ public interface MobileService {
      * @param userId 用户ID（可选）
      * @return 人员绩效列表
      */
-    List<MobileDTO.PerformanceItem> getPersonnelPerformance(String factoryId, String startDate, String endDate, Integer userId);
+    List<MobileDTO.PerformanceItem> getPersonnelPerformance(String factoryId, String startDate, String endDate, Long userId);
 
     // ==================== 成本对比相关 ====================
 
@@ -311,7 +311,7 @@ public interface MobileService {
      * @param request 确认请求
      * @return 告警响应
      */
-    MobileDTO.AlertResponse acknowledgeAlert(String factoryId, String alertId, Integer userId, String username, MobileDTO.AcknowledgeAlertRequest request);
+    MobileDTO.AlertResponse acknowledgeAlert(String factoryId, String alertId, Long userId, String username, MobileDTO.AcknowledgeAlertRequest request);
 
     /**
      * 解决设备告警
@@ -323,7 +323,7 @@ public interface MobileService {
      * @param request 解决请求
      * @return 告警响应
      */
-    MobileDTO.AlertResponse resolveAlert(String factoryId, String alertId, Integer userId, String username, MobileDTO.ResolveAlertRequest request);
+    MobileDTO.AlertResponse resolveAlert(String factoryId, String alertId, Long userId, String username, MobileDTO.ResolveAlertRequest request);
 
     /**
      * 获取工厂设置
@@ -341,7 +341,7 @@ public interface MobileService {
      * @param userId 用户ID
      * @return 工厂设置响应
      */
-    MobileDTO.FactorySettingsResponse updateFactorySettings(String factoryId, MobileDTO.UpdateFactorySettingsRequest request, Integer userId);
+    MobileDTO.FactorySettingsResponse updateFactorySettings(String factoryId, MobileDTO.UpdateFactorySettingsRequest request, Long userId);
 
     /**
      * 提交用户反馈
@@ -351,5 +351,5 @@ public interface MobileService {
      * @param userId 用户ID
      * @return 反馈响应
      */
-    MobileDTO.FeedbackResponse submitFeedback(String factoryId, MobileDTO.SubmitFeedbackRequest request, Integer userId);
+    MobileDTO.FeedbackResponse submitFeedback(String factoryId, MobileDTO.SubmitFeedbackRequest request, Long userId);
 }

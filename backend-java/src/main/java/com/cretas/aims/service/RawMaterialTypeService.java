@@ -1,8 +1,11 @@
 package com.cretas.aims.service;
 
+import com.cretas.aims.dto.common.ImportResult;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.RawMaterialTypeDTO;
+import com.cretas.aims.entity.RawMaterialType;
+import java.io.InputStream;
 import java.util.List;
 /**
  * 原材料类型服务接口
@@ -64,4 +67,29 @@ public interface RawMaterialTypeService {
      * 检查原材料编码是否存在
       */
     boolean checkCodeExists(String factoryId, String code, String excludeId);
+
+    /**
+     * 导出原材料类型列表
+     */
+    byte[] exportMaterialTypes(String factoryId);
+
+    /**
+     * 生成原材料类型导入模板
+     */
+    byte[] generateImportTemplate();
+
+    /**
+     * 从Excel文件批量导入原材料类型
+     */
+    ImportResult<RawMaterialType> importMaterialTypesFromExcel(String factoryId, InputStream inputStream);
+
+    /**
+     * 初始化默认原材料类型
+     */
+    int initializeDefaults(String factoryId);
+
+    /**
+     * 统计原材料类型数量
+     */
+    long countMaterialTypes(String factoryId, Boolean isActive);
 }

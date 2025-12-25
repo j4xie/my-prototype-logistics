@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from 'uuid';
  * - materialBatchApiClient (仓库): 批次入库/出库操作，22个API
  * - materialQuickApiClient (车间): 快速查询+创建，2个API，自动UUID
  *
- * 总计2个API - 路径：/api/mobile/{factoryId}/materials/types/*
+ * 总计2个API - 路径：/api/mobile/{factoryId}/raw-material-types/*
  */
 
 export interface MaterialType {
@@ -36,9 +36,10 @@ export const materialQuickAPI = {
     if (!fId) {
       throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
     }
-    // apiClient拦截器已统一返回data
-    const response = await apiClient.get<any>(`/api/mobile/${fId}/materials/types/active`);
-    // 后端返回格式: { success: true, data: [...] }
+    // 后端端点: /api/mobile/{factoryId}/raw-material-types/active
+    // apiClient拦截器已统一返回data（外层 { code, message, data }）
+    const response = await apiClient.get<any>(`/api/mobile/${fId}/raw-material-types/active`);
+    // 后端返回格式: { code: 200, message: "...", data: [...] }
     if (response.data && Array.isArray(response.data)) {
       return response.data;
     }
@@ -79,8 +80,10 @@ export const materialQuickAPI = {
       isActive: true,
     };
 
+    // 后端端点: /api/mobile/{factoryId}/raw-material-types
     // apiClient拦截器已统一返回data
-    return await apiClient.post<MaterialType>(`/api/mobile/${fId}/materials/types`, materialData);
+    const response = await apiClient.post<any>(`/api/mobile/${fId}/raw-material-types`, materialData);
+    return response.data || response;
   },
 };
 

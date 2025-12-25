@@ -69,12 +69,12 @@ export interface PageResponse<T> {
 // ========== API客户端类 ==========
 
 class SupplierApiClient {
-  private getFactoryPath(factoryId?: string) {
+  private getPath(factoryId?: string) {
     const currentFactoryId = getCurrentFactoryId(factoryId);
     if (!currentFactoryId) {
       throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
     }
-    return `/api/mobile/${currentFactoryId}`;
+    return `/api/mobile/${currentFactoryId}/suppliers`;
   }
 
   /**
@@ -93,7 +93,7 @@ class SupplierApiClient {
     const { factoryId, ...queryParams } = params || {};
     // apiClient拦截器已统一返回data
     const apiResponse = await apiClient.get<any>(
-      `${this.getFactoryPath(factoryId)}/suppliers`,
+      `${this.getPath(factoryId)}`,
       { params: queryParams }
     );
     
@@ -126,7 +126,7 @@ class SupplierApiClient {
   ): Promise<{data: Supplier}> {
     // apiClient拦截器已统一返回data
     const apiData = await apiClient.post<Supplier>(
-      `${this.getFactoryPath(factoryId)}/suppliers`,
+      `${this.getPath(factoryId)}`,
       request
     );
     // 兼容旧格式：包装成 {data: {...}}
@@ -140,7 +140,7 @@ class SupplierApiClient {
   async getSupplierById(supplierId: string, factoryId?: string): Promise<Supplier> {
     // apiClient拦截器已统一返回data
     return await apiClient.get<Supplier>(
-      `${this.getFactoryPath(factoryId)}/suppliers/${supplierId}`
+      `${this.getPath(factoryId)}/${supplierId}`
     );
   }
 
@@ -155,7 +155,7 @@ class SupplierApiClient {
   ): Promise<Supplier> {
     // apiClient拦截器已统一返回data
     return await apiClient.put<Supplier>(
-      `${this.getFactoryPath(factoryId)}/suppliers/${supplierId}`,
+      `${this.getPath(factoryId)}/${supplierId}`,
       request
     );
   }
@@ -165,7 +165,7 @@ class SupplierApiClient {
    * DELETE /api/mobile/{factoryId}/suppliers/{supplierId}
    */
   async deleteSupplier(supplierId: string, factoryId?: string): Promise<void> {
-    await apiClient.delete(`${this.getFactoryPath(factoryId)}/suppliers/${supplierId}`);
+    await apiClient.delete(`${this.getPath(factoryId)}/${supplierId}`);
   }
 
   /**
@@ -175,7 +175,7 @@ class SupplierApiClient {
   async getActiveSuppliers(factoryId?: string): Promise<Supplier[]> {
     // apiClient拦截器已统一返回data
     return await apiClient.get<Supplier[]>(
-      `${this.getFactoryPath(factoryId)}/suppliers/active`
+      `${this.getPath(factoryId)}/active`
     );
   }
 
@@ -193,7 +193,7 @@ class SupplierApiClient {
     const { factoryId, ...queryParams } = params;
     // apiClient拦截器已统一返回data
     return await apiClient.get<Supplier[]>(
-      `${this.getFactoryPath(factoryId)}/suppliers/search`,
+      `${this.getPath(factoryId)}/search`,
       { params: queryParams }
     );
   }
@@ -209,54 +209,92 @@ class SupplierApiClient {
   ): Promise<Supplier> {
     // apiClient拦截器已统一返回data
     return await apiClient.put<Supplier>(
-      `${this.getFactoryPath(factoryId)}/suppliers/${supplierId}/status`,
-      {},{ params: {isActive: isActive} }
+      `${this.getPath(factoryId)}/${supplierId}/status`,
+      {},
+      { params: { isActive: isActive } }
     );
   }
 
-  // ===== MVP暂不使用的功能 =====
+  // ===== 新增功能 (Phase 3) =====
+
+  /**
+   * 9. 按材料类型筛选供应商
+   * GET /api/mobile/{factoryId}/suppliers/by-material
+   */
+  async getSuppliersByMaterial(params: {
+    materialType: string;
+    factoryId?: string;
+  }): Promise<Supplier[]> {
+    const { factoryId, materialType } = params;
+    return await apiClient.get<Supplier[]>(
+      `${this.getPath(factoryId)}/by-material`,
+      { params: { materialType } }
+    );
+  }
+
+  /**
+   * 10. 更新供应商评级
+   * PUT /api/mobile/{factoryId}/suppliers/{supplierId}/rating
+   */
+  async updateSupplierRating(params: {
+    supplierId: string;
+    rating: number;
+    notes?: string;
+    factoryId?: string;
+  }): Promise<Supplier> {
+    const { factoryId, supplierId, ...body } = params;
+    return await apiClient.put<Supplier>(
+      `${this.getPath(factoryId)}/${supplierId}/rating`,
+      body
+    );
+  }
+
+  /**
+   * 11. 获取供应商统计信息
+   * GET /api/mobile/{factoryId}/suppliers/{supplierId}/statistics
+   */
+  async getSupplierStatistics(
+    supplierId: string,
+    factoryId?: string
+  ): Promise<SupplierStats> {
+    return await apiClient.get<SupplierStats>(
+      `${this.getPath(factoryId)}/${supplierId}/statistics`
+    );
+  }
+
+  /**
+   * 12. 获取供应商供货历史
+   * GET /api/mobile/{factoryId}/suppliers/{supplierId}/history
+   */
+  async getSupplierHistory(
+    supplierId: string,
+    factoryId?: string
+  ): Promise<{
+    batches: any[];
+    totalBatches: number;
+    totalValue: number;
+    averageDeliveryDays: number;
+  }> {
+    return await apiClient.get<{
+      batches: any[];
+      totalBatches: number;
+      totalValue: number;
+      averageDeliveryDays: number;
+    }>(
+      `${this.getPath(factoryId)}/${supplierId}/history`
+    );
+  }
+
+  // ===== 保留供后续版本的功能 =====
   /*
-   * 以下功能在MVP阶段暂不实现，后续根据需要逐步添加：
+   * 以下功能暂不实现，详见 .claude/rules/unused-api-endpoints.md:
    *
-   * 1. getSuppliersByMaterial - 按材料类型筛选供应商
-   *    原因：可在前端使用getSuppliers获取全部数据后筛选
-   *    GET /api/mobile/{factoryId}/suppliers/by-material
-   *
-   * 2. checkSupplierCodeExists - 检查供应商代码是否存在
-   *    原因：可在前端表单验证时处理，或在创建时由后端返回错误
-   *    GET /api/mobile/{factoryId}/suppliers/check-code
-   *
-   * 3. getSupplierHistory - 获取供应商供货历史
-   *    原因：统计分析功能，MVP阶段暂不需要
-   *    GET /api/mobile/{factoryId}/suppliers/{supplierId}/history
-   *
-   * 4. updateCreditLimit - 更新供应商信用额度
-   *    原因：财务管理功能，MVP阶段不涉及
-   *    PUT /api/mobile/{factoryId}/suppliers/{supplierId}/credit-limit
-   *
-   * 5. updateSupplierRating - 更新供应商评级
-   *    原因：评级系统功能，MVP阶段不需要
-   *    PUT /api/mobile/{factoryId}/suppliers/{supplierId}/rating
-   *
-   * 6. getSuppliersWithOutstandingBalance - 获取有欠款的供应商
-   *    原因：财务对账功能，MVP阶段不涉及
-   *    GET /api/mobile/{factoryId}/suppliers/outstanding-balance
-   *
-   * 7. getRatingDistribution - 获取供应商评级分布
-   *    原因：统计分析功能，MVP阶段暂不需要
-   *    GET /api/mobile/{factoryId}/suppliers/rating-distribution
-   *
-   * 8. exportSuppliers - 导出供应商列表
-   *    原因：导出功能属于高级特性，MVP阶段暂不实现
-   *    GET /api/mobile/{factoryId}/suppliers/export
-   *
-   * 9. importSuppliers - 批量导入供应商
-   *    原因：批量导入功能属于高级特性，MVP阶段暂不实现
-   *    POST /api/mobile/{factoryId}/suppliers/import
-   *
-   * 10. getSupplierStatistics - 获取供应商统计信息
-   *    原因：统计分析功能，MVP阶段暂不需要
-   *    GET /api/mobile/{factoryId}/suppliers/{supplierId}/statistics
+   * - checkSupplierCodeExists - 检查供应商代码是否存在
+   * - updateCreditLimit - 更新供应商信用额度
+   * - getSuppliersWithOutstandingBalance - 获取有欠款的供应商
+   * - getRatingDistribution - 获取供应商评级分布
+   * - exportSuppliers - 导出供应商列表
+   * - importSuppliers - 批量导入供应商
    */
 }
 

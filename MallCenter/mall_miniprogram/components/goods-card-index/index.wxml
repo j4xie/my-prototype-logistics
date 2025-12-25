@@ -7,14 +7,16 @@
 <view class="goods-container">
   <view class="goods-box" wx:for="{{goodsList}}" wx:key="index">
     <navigator hover-class='none' url='/pages/goods/goods-detail/index?id={{item.id}}'>
-      <view class="text-black margin-top text-bold padding-lr overflow-1">{{item.name}}</view>
+      <!-- 图片在上 -->
       <view class="img-box">
-        <image src="{{item.picUrls[0] ? item.picUrls[0] : '/public/img/no_pic.png'}}" class="margin-top-xs"/>
+        <image src="{{item.picUrls[0] ? item.picUrls[0] : '/public/img/no_pic.png'}}" class="goods-image" mode="aspectFill"/>
       </view>
-      <view class="text-center margin-top">
-        <view class="cu-tag line-black round text-df text-price text-bold text-black">{{item.salesPrice}}</view>
-        <view class="market-price text-price text-gray text-sm margin-top-xs">
-          {{item.marketPrice}}
+      <!-- 商品信息 -->
+      <view class="goods-info">
+        <view class="goods-name">{{item.name}}</view>
+        <view class="price-row">
+          <text class="sales-price">¥{{item.salesPrice}}</text>
+          <text class="market-price">¥{{item.marketPrice}}</text>
         </view>
       </view>
     </navigator>

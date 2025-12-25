@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.ContextualSerializer;
 import com.joolun.common.utils.SensitiveUtils;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -18,11 +16,16 @@ import java.util.Objects;
  * @Author: https://www.cnblogs.com/xiluonanfeng/p/10183926.html
  * 脱敏序列化
  */
-@NoArgsConstructor
-@AllArgsConstructor
 public class SensitiveSerialize extends JsonSerializer<String> implements ContextualSerializer {
 
 	private SensitiveTypeEnum type;
+
+	public SensitiveSerialize() {
+	}
+
+	public SensitiveSerialize(SensitiveTypeEnum type) {
+		this.type = type;
+	}
 
 	@Override
 	public void serialize(final String originStr, final JsonGenerator jsonGenerator,

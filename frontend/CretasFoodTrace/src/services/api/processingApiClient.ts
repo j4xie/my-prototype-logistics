@@ -40,6 +40,25 @@ export interface PagedResponse<T> {
   empty: boolean;
 }
 
+export interface RawMaterial {
+  materialType?: string;
+  type?: string;  // Alias for materialType
+  quantity?: number;
+  unit?: string;
+  cost?: number;
+}
+
+export interface BatchSupplier {
+  id?: string;
+  name?: string;
+}
+
+export interface BatchSupervisor {
+  id?: number;
+  fullName?: string;
+  username?: string;
+}
+
 export interface ProcessingBatch {
   id: number;
   batchNumber: string;
@@ -49,11 +68,18 @@ export interface ProcessingBatch {
   actualQuantity?: number;
   startTime?: string;
   endTime?: string;
-  supervisor?: string;
+  supervisor?: BatchSupervisor | string;  // Can be object or string
   supervisorId?: number;
   createdAt: string;
   updatedAt?: string;
+  // Extended fields for edit mode
+  rawMaterials?: RawMaterial[];
+  supplier?: BatchSupplier;
+  notes?: string;
 }
+
+// Type alias for backward compatibility
+export type BatchResponse = ProcessingBatch;
 
 export interface MaterialConsumptionRecord {
   materialId: string;
@@ -144,8 +170,10 @@ class ProcessingApiClient {
   }
 
   // 4. 开始生产
-  async startProduction(batchId: string, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
-    return await apiClient.post(`${this.getPath(factoryId)}/batches/${batchId}/start`);
+  async startProduction(batchId: string, supervisorId: number, factoryId?: string): Promise<ApiResponse<ProcessingBatch>> {
+    return await apiClient.post(`${this.getPath(factoryId)}/batches/${batchId}/start`, null, {
+      params: { supervisorId }
+    });
   }
 
   // 5. 完成生产
@@ -289,11 +317,34 @@ class ProcessingApiClient {
     );
   }
 
-  // ===== AI成本分析 (2个API) =====
+  // ===== AI成本分析 (3个API) =====
 
-  // 17. 获取批次成本分析数据
+  // 17. 获取批次成本分析数据（简化版）
   async getBatchCostAnalysis(batchId: number | string, factoryId?: string): Promise<ApiResponse<BatchCostData>> {
     return await apiClient.get(`${this.getPath(factoryId)}/batches/${batchId}/cost-analysis`);
+  }
+
+  // 17.5. 获取增强版批次成本分析（CostAnalysisDashboard使用）
+  // 返回完整结构：batchInfo, costBreakdown, materialConsumptions, equipmentUsages, laborSessions等
+  async getEnhancedBatchCostAnalysis(batchId: number | string, factoryId?: string): Promise<ApiResponse<{
+    batchInfo: any;
+    costBreakdown: {
+      rawMaterialCost: number;
+      rawMaterialPercentage: number;
+      laborCost: number;
+      laborPercentage: number;
+      equipmentCost: number;
+      equipmentPercentage: number;
+      totalCost: number;
+    };
+    costSummary: any;
+    materialConsumptions: any[];
+    equipmentUsages: any[];
+    laborSessions: any[];
+    qualityInspections: any[];
+    risks: string[];
+  }>> {
+    return await apiClient.get(`${this.getPath(factoryId)}/batches/${batchId}/cost-analysis/enhanced`);
   }
 
   // 18. AI成本分析 - 已移除，请使用 aiApiClient.analyzeBatchCost()
@@ -308,13 +359,14 @@ class ProcessingApiClient {
     factoryId?: string;
   }): Promise<ApiResponse<TimeRangeCostAnalysis>> {
     const { factoryId, startDate, endDate } = params;
-    // 后端实际API路径: /api/mobile/{factoryId}/reports/cost-analysis
+    // 后端实际API路径: /api/mobile/{factoryId}/reports/finance
+    // 该端点返回完整的成本分解数据 (materialCost, laborCost, equipmentCost, otherCost, totalCost)
     // 转换ISO日期字符串为LocalDate格式 (YYYY-MM-DD)
     const startLocalDate = startDate.split('T')[0];
     const endLocalDate = endDate.split('T')[0];
 
     const currentFactoryId = requireFactoryId(factoryId);
-    return await apiClient.get(`/api/mobile/${currentFactoryId}/reports/cost-analysis`, {
+    return await apiClient.get(`/api/mobile/${currentFactoryId}/reports/finance`, {
       params: {
         startDate: startLocalDate,
         endDate: endLocalDate

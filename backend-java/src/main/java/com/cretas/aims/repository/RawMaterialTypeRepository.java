@@ -44,10 +44,11 @@ public interface RawMaterialTypeRepository extends JpaRepository<RawMaterialType
     List<RawMaterialType> findByFactoryIdAndStorageType(String factoryId, String storageType);
      /**
      * 搜索原材料类型
+     * 注意：code使用右模糊（可使用索引），name/category使用双向模糊（无法使用索引）
       */
     @Query("SELECT r FROM RawMaterialType r WHERE r.factoryId = :factoryId AND " +
            "(LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(r.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(r.code) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
            "LOWER(r.category) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<RawMaterialType> searchMaterialTypes(@Param("factoryId") String factoryId,
                                               @Param("keyword") String keyword,
@@ -61,6 +62,16 @@ public interface RawMaterialTypeRepository extends JpaRepository<RawMaterialType
       */
     @Query("SELECT COUNT(r) FROM RawMaterialType r WHERE r.factoryId = :factoryId AND r.isActive = true")
     Long countActiveMaterialTypes(@Param("factoryId") String factoryId);
+
+    /**
+     * 按工厂ID和激活状态统计数量
+     */
+    long countByFactoryIdAndIsActive(String factoryId, Boolean isActive);
+
+    /**
+     * 按工厂ID统计数量
+     */
+    long countByFactoryId(String factoryId);
      /**
      * 获取有库存预警的原材料类型
       */

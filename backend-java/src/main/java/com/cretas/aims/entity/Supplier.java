@@ -5,6 +5,7 @@ import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 /**
  * 供应商实体类
  *
@@ -29,9 +30,15 @@ import java.util.List;
 )
 public class Supplier extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, length = 191)
     private String id;
+
+    @PrePersist
+    void assignUUID() {
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+        }
+    }
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
     @Column(name = "code", nullable = false, length = 50)
@@ -83,11 +90,12 @@ public class Supplier extends BaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
     @Column(name = "created_by", nullable = false)
-    private Integer createdBy;
+    private Long createdBy;
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
     private User createdByUser;
     @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

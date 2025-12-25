@@ -62,7 +62,7 @@ export type Department = typeof DEPARTMENTS[keyof typeof DEPARTMENTS];
 
 // 基础用户接口
 interface BaseUser {
-  id: string;
+  id: number;  // Backend uses Long, which serializes as number
   username: string;
   email: string;
   phone?: string;
@@ -72,6 +72,12 @@ interface BaseUser {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+  // Common shortcut properties (for easier access without type guards)
+  factoryId?: string;
+  department?: Department;
+  position?: string;
+  roleCode?: FactoryRole | PlatformRole;
+  role?: string;
 }
 
 // 平台用户接口 (PlatformAdmin表)
@@ -81,6 +87,8 @@ export interface PlatformUser extends BaseUser {
     role: PlatformRole;
     permissions: string[];
   };
+  // Optional factory properties (always undefined for platform users)
+  factoryUser?: undefined;
 }
 
 // 工厂用户接口 (User表)
@@ -93,6 +101,8 @@ export interface FactoryUser extends BaseUser {
     position?: string;
     permissions: string[];
   };
+  // Optional platform properties (always undefined for factory users)
+  platformUser?: undefined;
 }
 
 // 统一用户类型
@@ -358,6 +368,23 @@ export function getUserPermissions(user: User | null | undefined): string[] {
 }
 
 /**
+ * 根据角色获取默认权限
+ */
+function getDefaultPermissionsForRole(role: string): string[] {
+  const rolePermissions: Record<string, string[]> = {
+    // 平台角色
+    platform_admin: ['platform_access', 'admin_access', 'processing_access', 'farming_access', 'logistics_access', 'trace_access'],
+    // 工厂角色
+    factory_super_admin: ['admin_access', 'processing_access', 'farming_access', 'logistics_access', 'trace_access'],
+    permission_admin: ['admin_access'],
+    department_admin: ['processing_access'],
+    operator: ['processing_access'],
+    viewer: ['trace_access'],
+  };
+  return rolePermissions[role] || [];
+}
+
+/**
  * 检查用户是否有某个权限
  * @param user 用户对象
  * @param permission 权限字符串
@@ -368,7 +395,23 @@ export function hasPermission(
 ): boolean {
   if (!user) return false;
 
+  // 获取用户角色
+  const role = isFactoryUser(user)
+    ? user.factoryUser.role
+    : isPlatformUser(user)
+      ? user.platformUser.role
+      : '';
+
+  // 获取用户权限数组
   const permissions = getUserPermissions(user);
+
+  // 如果权限数组为空，根据角色自动授权
+  if (permissions.length === 0 && role) {
+    const defaultPermissions = getDefaultPermissionsForRole(role);
+    if (defaultPermissions.includes(permission)) {
+      return true;
+    }
+  }
 
   // 部门管理员特殊处理：自动授予所在部门的访问权限
   if (isFactoryUser(user) && user.factoryUser.role === 'department_admin') {

@@ -14,7 +14,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { personnelApiClient } from '../../services/api/personnelApiClient';
-import { handleError } from '../../utils/errorHandler';
+import { handleError , getErrorMsg} from '../../utils/errorHandler';
 import type {
   PersonnelStatistics,
   WorkHoursRankingItem,
@@ -131,7 +131,7 @@ export default function PersonnelReportScreen() {
         timeRange,
       });
       const errorMessage =
-        error.response?.data?.message || error.message || '加载人员数据失败，请稍后重试';
+        getErrorMsg(error) || '加载人员数据失败，请稍后重试';
       Alert.alert('加载失败', errorMessage);
       setPersonnelStats(null);
       setWorkHoursRanking([]);
