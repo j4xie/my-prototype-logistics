@@ -20,7 +20,7 @@ public interface ProductionPlanService {
     /**
      * 创建生产计划
      */
-    ProductionPlanDTO createProductionPlan(String factoryId, CreateProductionPlanRequest request, Integer userId);
+    ProductionPlanDTO createProductionPlan(String factoryId, CreateProductionPlanRequest request, Long userId);
      /**
      * 更新生产计划
       */
@@ -96,7 +96,7 @@ public interface ProductionPlanService {
      /**
      * 批量创建生产计划
       */
-    List<ProductionPlanDTO> batchCreateProductionPlans(String factoryId, List<CreateProductionPlanRequest> requests, Integer userId);
+    List<ProductionPlanDTO> batchCreateProductionPlans(String factoryId, List<CreateProductionPlanRequest> requests, Long userId);
      /**
      * 导出生产计划
       */

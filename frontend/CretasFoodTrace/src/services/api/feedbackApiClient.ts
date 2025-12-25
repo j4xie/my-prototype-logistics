@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
+import { getErrorMsg } from '../../utils/errorHandler';
 
 /**
  * 用户反馈API客户端
@@ -60,7 +61,7 @@ class FeedbackApiClient {
     factoryId?: string
   ): Promise<{ success: boolean; data: FeedbackResponse; message: string }> {
     const response = await apiClient.post(this.getPath(factoryId), request);
-    return response.data;
+    return (response as any).data;
   }
 }
 

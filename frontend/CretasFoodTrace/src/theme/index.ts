@@ -37,34 +37,48 @@ export const theme = {
     onPrimary: '#FFFFFF',
     primaryContainer: '#E6F7FF', // Light Blue Background
     onPrimaryContainer: '#0050B3', // Dark Blue Text
-    
+
     secondary: brandColors.secondary,
     onSecondary: '#FFFFFF',
     secondaryContainer: '#F0F5FF',
     onSecondaryContainer: '#2F54EB',
-    
+
     tertiary: brandColors.accent,
     onTertiary: '#FFFFFF',
     tertiaryContainer: '#FFF0F6',
     onTertiaryContainer: '#C41D7F',
-    
+
     background: brandColors.background,
     onBackground: brandColors.text,
-    
+
     surface: brandColors.surface,
     onSurface: brandColors.text,
     surfaceVariant: brandColors.surfaceVariant,
     onSurfaceVariant: brandColors.textSecondary,
-    
+
     error: brandColors.error,
     onError: '#FFFFFF',
     errorContainer: '#FFF1F0',
     onErrorContainer: '#CF1322',
-    
+
     outline: brandColors.border,
     outlineVariant: brandColors.divider,
-    
+
     backdrop: brandColors.backdrop,
+
+    // Custom text colors (added for TypeScript compatibility)
+    text: brandColors.text,
+    textSecondary: brandColors.textSecondary,
+    textTertiary: brandColors.textTertiary,
+
+    // Custom semantic colors
+    success: brandColors.success,
+    warning: brandColors.warning,
+    info: brandColors.info,
+
+    // Custom UI colors
+    border: brandColors.border,
+    divider: brandColors.divider,
   },
   // 自定义属性 (非Paper标准属性, 但可在应用中使用)
   custom: {

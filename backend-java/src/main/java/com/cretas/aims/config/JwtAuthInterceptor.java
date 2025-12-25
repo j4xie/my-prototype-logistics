@@ -1,14 +1,22 @@
 package com.cretas.aims.config;
 
-import com.cretas.aims.util.JwtUtil;
+import com.cretas.aims.utils.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * JWT认证拦截器
@@ -23,6 +31,14 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthInterceptor.class);
 
+    // 平台管理员角色列表，可访问所有工厂
+    private static final Set<String> PLATFORM_ADMIN_ROLES = Set.of(
+            "super_admin", "platform_admin", "developer"
+    );
+
+    // 匹配URL中的factoryId的正则表达式
+    private static final Pattern FACTORY_ID_PATTERN = Pattern.compile("/api/mobile/([^/]+)/");
+
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -31,6 +47,10 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
         // 从Authorization header中提取token
         String authorization = request.getHeader("Authorization");
 
+        String tokenFactoryId = null;
+        String tokenRole = null;
+        Long userId = null;
+
         if (authorization != null && authorization.startsWith("Bearer ")) {
             String token = authorization.substring(7); // 移除"Bearer "前缀
 
@@ -38,7 +58,7 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
                 // 验证token
                 if (jwtUtil.validateToken(token)) {
                     // 提取userId
-                    Integer userId = jwtUtil.getUserIdFromToken(token);
+                    userId = jwtUtil.getUserIdFromToken(token);
                     if (userId != null) {
                         request.setAttribute("userId", userId);
                         log.debug("从JWT提取userId: {}", userId);
@@ -52,17 +72,17 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
                     }
 
                     // 提取factoryId (可选)
-                    String factoryId = jwtUtil.getFactoryIdFromToken(token);
-                    if (factoryId != null) {
-                        request.setAttribute("factoryId", factoryId);
-                        log.debug("从JWT提取factoryId: {}", factoryId);
+                    tokenFactoryId = jwtUtil.getFactoryIdFromToken(token);
+                    if (tokenFactoryId != null) {
+                        request.setAttribute("factoryId", tokenFactoryId);
+                        log.debug("从JWT提取factoryId: {}", tokenFactoryId);
                     }
 
                     // 提取role (可选)
-                    String role = jwtUtil.getRoleFromToken(token);
-                    if (role != null) {
-                        request.setAttribute("role", role);
-                        log.debug("从JWT提取role: {}", role);
+                    tokenRole = jwtUtil.getRoleFromToken(token);
+                    if (tokenRole != null) {
+                        request.setAttribute("role", tokenRole);
+                        log.debug("从JWT提取role: {}", tokenRole);
                     }
                 } else {
                     log.warn("无效的JWT token");
@@ -74,7 +94,88 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             log.debug("请求未包含Authorization header或格式不正确");
         }
 
-        // 继续处理请求（即使没有token，也允许继续，让Controller决定是否需要认证）
+        // 跨工厂权限验证
+        String requestUri = request.getRequestURI();
+        String urlFactoryId = extractFactoryIdFromUrl(requestUri);
+
+        if (urlFactoryId != null && !isPublicEndpoint(requestUri)) {
+            // URL中包含factoryId，需要验证权限
+            if (!validateFactoryAccess(urlFactoryId, tokenFactoryId, tokenRole)) {
+                log.warn("跨工厂访问被拒绝: userId={}, tokenFactoryId={}, urlFactoryId={}, role={}",
+                        userId, tokenFactoryId, urlFactoryId, tokenRole);
+                sendForbiddenResponse(response, "无权访问该工厂数据");
+                return false;
+            }
+        }
+
+        // 继续处理请求
         return true;
+    }
+
+    /**
+     * 从URL中提取factoryId
+     */
+    private String extractFactoryIdFromUrl(String uri) {
+        Matcher matcher = FACTORY_ID_PATTERN.matcher(uri);
+        if (matcher.find()) {
+            String factoryId = matcher.group(1);
+            // 排除非factoryId的路径部分
+            if (!"auth".equals(factoryId) && !"activation".equals(factoryId)
+                    && !"health".equals(factoryId) && !"upload".equals(factoryId)) {
+                return factoryId;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 检查是否为公开端点（不需要权限验证）
+     */
+    private boolean isPublicEndpoint(String uri) {
+        return uri.contains("/auth/") ||
+               uri.contains("/activation/") ||
+               uri.contains("/health") ||
+               uri.contains("/upload") ||
+               uri.startsWith("/api/public/");  // 公开溯源查询接口
+    }
+
+    /**
+     * 验证工厂访问权限
+     */
+    private boolean validateFactoryAccess(String urlFactoryId, String tokenFactoryId, String tokenRole) {
+        // 未登录用户不能访问工厂数据
+        if (tokenFactoryId == null && tokenRole == null) {
+            return false;
+        }
+
+        // 平台管理员可访问所有工厂（大小写不敏感）
+        if (tokenRole != null && PLATFORM_ADMIN_ROLES.contains(tokenRole.toLowerCase())) {
+            return true;
+        }
+
+        // PLATFORM工厂ID表示平台级用户
+        if ("PLATFORM".equals(tokenFactoryId)) {
+            return true;
+        }
+
+        // 普通用户只能访问自己工厂的数据
+        return urlFactoryId.equals(tokenFactoryId);
+    }
+
+    /**
+     * 发送403 Forbidden响应
+     */
+    private void sendForbiddenResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json;charset=UTF-8");
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("code", 403);
+        errorResponse.put("message", message);
+        errorResponse.put("success", false);
+        errorResponse.put("timestamp", java.time.LocalDateTime.now().toString());
+
+        ObjectMapper mapper = new ObjectMapper();
+        response.getWriter().write(mapper.writeValueAsString(errorResponse));
     }
 }

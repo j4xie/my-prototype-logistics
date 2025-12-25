@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ConversionDTO {
-    private Integer id;
+    private String id;
     @NotNull(message = "原材料类型ID不能为空")
     private String materialTypeId;
     private String materialTypeName;

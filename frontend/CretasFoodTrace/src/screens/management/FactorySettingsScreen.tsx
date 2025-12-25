@@ -16,7 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { factoryApiClient } from '../../services/api/factoryApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建FactorySettings专用logger
@@ -103,12 +103,14 @@ export default function FactorySettingsScreen() {
       factorySettingsLogger.debug('加载工厂设置', { factoryId });
 
       const response = await factoryApiClient.getFactorySettings(factoryId);
-      console.log(response)
-      factorySettingsLogger.info('工厂设置加载成功', {
-          factoryName: response.factoryName,
-          hasWorkingHours: !!response.workingHours,
+      console.log(response);
+      if (response.success && response.data) {
+        factorySettingsLogger.info('工厂设置加载成功', {
+          factoryName: response.data.factoryName,
+          hasWorkingHours: !!response.data.workingHours,
         });
-        setSettings(response);
+        setSettings(response.data);
+      }
       /* if (response.success && response.data) {
         factorySettingsLogger.info('工厂设置加载成功', {
           factoryName: response.data.factoryName,
@@ -120,7 +122,7 @@ export default function FactorySettingsScreen() {
       } */
     } catch (error) {
       factorySettingsLogger.error('加载工厂设置失败', error, { factoryId });
-      Alert.alert('加载失败', error.response?.data?.message || error.message || '无法加载工厂设置，请重试');
+      Alert.alert('加载失败', getErrorMsg(error) || '无法加载工厂设置，请重试');
     } finally {
       setLoading(false);
     }
@@ -193,7 +195,7 @@ export default function FactorySettingsScreen() {
       }
     } catch (error) {
       factorySettingsLogger.error('保存工厂设置失败', error, { factoryId });
-      Alert.alert('保存失败', error.response?.data?.message || error.message || '保存设置时出现错误，请重试');
+      Alert.alert('保存失败', getErrorMsg(error) || '保存设置时出现错误，请重试');
     } finally {
       setSaving(false);
     }

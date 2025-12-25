@@ -17,6 +17,92 @@ global.console = {
   info: jest.fn(),
 };
 
+// Mock Logger 以避免 Platform.OS 问题
+jest.mock('../utils/logger', () => {
+  const mockContextLogger = {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  };
+
+  return {
+    logger: {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      child: jest.fn(() => mockContextLogger),
+      createContextLogger: jest.fn(() => mockContextLogger),
+    },
+    Logger: jest.fn().mockImplementation(() => ({
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      child: jest.fn(() => mockContextLogger),
+      createContextLogger: jest.fn(() => mockContextLogger),
+    })),
+    ContextLogger: jest.fn().mockImplementation(() => mockContextLogger),
+    LogLevel: {
+      DEBUG: 0,
+      INFO: 1,
+      WARN: 2,
+      ERROR: 3,
+    },
+  };
+});
+
+// Mock StorageService
+jest.mock('../services/storage/storageService', () => ({
+  StorageService: {
+    getSecureItem: jest.fn(() => Promise.resolve(null)),
+    setSecureItem: jest.fn(() => Promise.resolve()),
+    removeSecureItem: jest.fn(() => Promise.resolve()),
+    getItem: jest.fn(() => Promise.resolve(null)),
+    setItem: jest.fn(() => Promise.resolve()),
+    removeItem: jest.fn(() => Promise.resolve()),
+    clear: jest.fn(() => Promise.resolve()),
+  },
+}));
+
+// Mock apiClient with a real axios instance for MockAdapter compatibility
+const axios = require('axios');
+const mockAxiosInstance = axios.create({
+  baseURL: 'http://localhost:10010',
+  timeout: 30000,
+});
+
+// Add response interceptor to unwrap data (like the real apiClient does)
+mockAxiosInstance.interceptors.response.use(
+  (response: any) => response.data,
+  (error: any) => Promise.reject(error)
+);
+
+jest.mock('../services/api/apiClient', () => ({
+  apiClient: mockAxiosInstance,
+}));
+
+// Mock factoryIdHelper to return a default factory ID for tests
+jest.mock('../utils/factoryIdHelper', () => {
+  const DEFAULT_FACTORY = 'CRETAS_2024_001';
+  return {
+    getCurrentFactoryId: jest.fn((provided?: string) => provided || DEFAULT_FACTORY),
+    getFactoryId: jest.fn((provided?: string) => provided || DEFAULT_FACTORY),
+    requireFactoryId: jest.fn((provided?: string) => provided || DEFAULT_FACTORY),
+    getFactoryIdWithFallback: jest.fn((provided?: string) => provided || DEFAULT_FACTORY),
+    isValidFactoryId: jest.fn((id: string | null | undefined) => !!(id && id.trim() !== '')),
+    isFactoryUser: jest.fn(() => true),
+    isPlatformAdmin: jest.fn(() => false),
+    FactoryIdStrategy: {
+      REQUIRED: 'required',
+      FROM_USER: 'from_user',
+      OPTIONAL: 'optional',
+      PLATFORM_ADMIN: 'platform_admin',
+    },
+  };
+});
+
 // Mock React Native模块
 jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
 

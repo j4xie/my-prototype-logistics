@@ -126,4 +126,42 @@ public interface ReportService {
      * 获取实时数据
       */
     Map<String, Object> getRealtimeData(String factoryId);
+
+    // ========== Dashboard 委托方法 (集成 ProcessingService) ==========
+
+    /**
+     * 获取生产概览 Dashboard
+     * 委托 ProcessingService.getDashboardOverview
+     */
+    Map<String, Object> getDashboardOverview(String factoryId, String period);
+
+    /**
+     * 获取生产统计 Dashboard
+     * 委托 ProcessingService.getProductionStatistics
+     */
+    Map<String, Object> getProductionDashboard(String factoryId, String period);
+
+    /**
+     * 获取质量 Dashboard
+     * 委托 ProcessingService.getQualityDashboard
+     */
+    Map<String, Object> getQualityDashboard(String factoryId);
+
+    /**
+     * 获取设备 Dashboard
+     * 委托 ProcessingService.getEquipmentDashboard
+     */
+    Map<String, Object> getEquipmentDashboard(String factoryId);
+
+    /**
+     * 获取告警 Dashboard
+     * 委托 ProcessingService.getAlertsDashboard
+     */
+    Map<String, Object> getAlertsDashboard(String factoryId, String period);
+
+    /**
+     * 获取趋势分析 Dashboard
+     * 委托 ProcessingService.getTrendAnalysis
+     */
+    Map<String, Object> getTrendsDashboard(String factoryId, String period, String metric, Integer days);
 }

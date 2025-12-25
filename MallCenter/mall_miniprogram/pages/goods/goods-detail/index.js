@@ -19,6 +19,18 @@ Page({
     shoppingCartCount: 0,
     shareShow: '',
     modalService: '',
+    // 阶梯定价
+    priceTiers: [],
+    hasTiers: false,
+    currentPrice: null,
+    currentTier: null,
+    nextTier: null,
+    quantityToNextTier: 0,
+    // 溯源信息
+    traceInfo: null,
+    hasTrace: false,
+    // 数量选择弹窗
+    showQtyModal: false
   },
   onLoad(options) {
     let id
@@ -34,6 +46,7 @@ Page({
       .then(res => {
         this.goodsGet(id)
         this.shoppingCartCount()
+        this.loadPriceTiers(id)
       })
   },
   onShareAppMessage: function () {
@@ -134,7 +147,7 @@ Page({
           }]
         })
         wx.navigateTo({
-          url: '/pages/order/order-confirm/index'
+          url: '/pages/orders/checkout/index'
         })
       }
     }
@@ -182,13 +195,356 @@ Page({
    * 异步生成海报
    */
   onCreatePoster() {
-    
+    const goodsSpu = this.data.goodsSpu
+    if (!goodsSpu) {
+      wx.showToast({
+        title: '商品信息加载中',
+        icon: 'none'
+      })
+      return
+    }
+
+    // 获取小程序码（这里使用商品图片作为替代，实际应从后端获取小程序码）
+    const qrCodeUrl = goodsSpu.picUrls && goodsSpu.picUrls[0] ? goodsSpu.picUrls[0] : '/public/img/no_pic.png'
+
+    // 构建海报配置
+    const posterConfig = {
+      width: 750,
+      height: 1200,
+      backgroundColor: '#ffffff',
+      debug: false,
+      blocks: [
+        // 背景
+        {
+          width: 750,
+          height: 1200,
+          x: 0,
+          y: 0,
+          backgroundColor: '#ffffff'
+        }
+      ],
+      images: [
+        // 商品图片
+        {
+          url: goodsSpu.picUrls && goodsSpu.picUrls[0] ? goodsSpu.picUrls[0] : '/public/img/no_pic.png',
+          width: 690,
+          height: 690,
+          x: 30,
+          y: 30,
+          borderRadius: 10
+        },
+        // 小程序码
+        {
+          url: qrCodeUrl,
+          width: 150,
+          height: 150,
+          x: 570,
+          y: 1020,
+          borderRadius: 75
+        }
+      ],
+      texts: [
+        // 商品名称
+        {
+          text: goodsSpu.name || '',
+          x: 30,
+          y: 760,
+          fontSize: 36,
+          color: '#333333',
+          width: 690,
+          lineNum: 2,
+          lineHeight: 50,
+          fontWeight: 'bold'
+        },
+        // 商品卖点
+        {
+          text: goodsSpu.sellPoint || '',
+          x: 30,
+          y: 870,
+          fontSize: 28,
+          color: '#999999',
+          width: 690,
+          lineNum: 1
+        },
+        // 价格
+        {
+          text: '¥' + (this.data.hasTiers && this.data.currentPrice ? this.data.currentPrice : goodsSpu.salesPrice),
+          x: 30,
+          y: 940,
+          fontSize: 48,
+          color: '#ff4444',
+          fontWeight: 'bold'
+        },
+        // 原价
+        {
+          text: goodsSpu.marketPrice ? '¥' + goodsSpu.marketPrice : '',
+          x: 200,
+          y: 960,
+          fontSize: 28,
+          color: '#999999',
+          textDecoration: 'line-through'
+        },
+        // 扫码提示
+        {
+          text: '长按识别小程序码查看',
+          x: 30,
+          y: 1100,
+          fontSize: 24,
+          color: '#999999'
+        }
+      ]
+    }
+
+    this.setData({
+      posterConfig: posterConfig
+    })
+
+    // 使用定时器确保配置已更新
+    setTimeout(() => {
+      Poster.create(false, this)
+        .then(() => {
+          this.setData({
+            posterShow: true,
+            shareShow: ''
+          })
+        })
+        .catch(err => {
+          console.error('生成海报失败:', err)
+          wx.showToast({
+            title: '生成海报失败',
+            icon: 'none'
+          })
+        })
+    }, 100)
   },
+
   //点击保存到相册
   savePoster: function () {
-    
+    const posterUrl = this.data.posterUrl
+    if (!posterUrl) {
+      wx.showToast({
+        title: '请先生成海报',
+        icon: 'none'
+      })
+      return
+    }
+
+    // 检查相册权限
+    wx.getSetting({
+      success: (res) => {
+        if (res.authSetting['scope.writePhotosAlbum'] === false) {
+          // 用户拒绝过权限，引导开启
+          wx.showModal({
+            title: '提示',
+            content: '需要您授权保存相册权限',
+            confirmText: '去设置',
+            success: (modalRes) => {
+              if (modalRes.confirm) {
+                wx.openSetting()
+              }
+            }
+          })
+        } else {
+          // 保存到相册
+          wx.saveImageToPhotosAlbum({
+            filePath: posterUrl,
+            success: () => {
+              wx.showToast({
+                title: '保存成功',
+                icon: 'success'
+              })
+              this.setData({
+                posterShow: false
+              })
+            },
+            fail: (err) => {
+              if (err.errMsg.indexOf('auth deny') !== -1 || err.errMsg.indexOf('authorize') !== -1) {
+                wx.showModal({
+                  title: '提示',
+                  content: '需要您授权保存相册权限',
+                  confirmText: '去设置',
+                  success: (modalRes) => {
+                    if (modalRes.confirm) {
+                      wx.openSetting()
+                    }
+                  }
+                })
+              } else {
+                wx.showToast({
+                  title: '保存失败',
+                  icon: 'none'
+                })
+              }
+            }
+          })
+        }
+      }
+    })
   },
+
   handleContact(e) {
     console.log(e)
+  },
+  // 检查ID是否为数字类型
+  isNumericId(id) {
+    if (id === null || id === undefined) return false
+    // 如果是纯数字或可以转换为有效数字
+    return !isNaN(id) && !isNaN(parseFloat(id)) && !/[a-zA-Z_]/.test(String(id))
+  },
+  // 加载阶梯定价
+  loadPriceTiers(spuId) {
+    // 检查spuId是否为数字类型，后端API要求Long类型
+    if (!this.isNumericId(spuId)) {
+      console.log('跳过阶梯定价加载: spuId不是数字类型', spuId)
+      return
+    }
+    app.api.getPriceTiers(spuId)
+      .then(res => {
+        if (res.data && res.data.length > 0) {
+          this.setData({
+            priceTiers: res.data,
+            hasTiers: true
+          })
+          // 初始计算价格
+          this.calculateCurrentPrice(this.data.cartNum)
+        }
+      })
+      .catch(err => {
+        console.log('加载阶梯定价失败:', err)
+      })
+  },
+  // 计算当前价格
+  calculateCurrentPrice(quantity) {
+    if (!this.data.hasTiers) return
+    // 检查ID是否为数字类型
+    if (!this.isNumericId(this.data.id)) return
+
+    app.api.calculatePrice(this.data.id, quantity)
+      .then(res => {
+        if (res.data && res.data.hasTier) {
+          this.setData({
+            currentPrice: res.data.price,
+            currentTier: res.data.tier,
+            nextTier: res.data.nextTier,
+            quantityToNextTier: res.data.quantityToNextTier
+          })
+        }
+      })
+  },
+  // 数量变化
+  onQuantityChange(e) {
+    const quantity = e.detail.value
+    this.setData({ cartNum: quantity })
+    if (this.data.hasTiers) {
+      this.calculateCurrentPrice(quantity)
+    }
+  },
+  // 增加数量
+  addNum() {
+    let cartNum = this.data.cartNum + 1
+    this.setData({ cartNum: cartNum })
+    if (this.data.hasTiers) {
+      this.calculateCurrentPrice(cartNum)
+    }
+  },
+  // 减少数量
+  minusNum() {
+    let cartNum = this.data.cartNum
+    if (cartNum > 1) {
+      cartNum = cartNum - 1
+      this.setData({ cartNum: cartNum })
+      if (this.data.hasTiers) {
+        this.calculateCurrentPrice(cartNum)
+      }
+    }
+  },
+  // 跳转溯源页面
+  goToTrace() {
+    const goodsSpu = this.data.goodsSpu
+    if (goodsSpu && goodsSpu.traceCode) {
+      wx.navigateTo({
+        url: '/pages/traceability/detail/index?batchNo=' + goodsSpu.traceCode
+      })
+    } else {
+      // 没有溯源码，跳转到扫码页
+      wx.showModal({
+        title: '溯源信息',
+        content: '该商品暂无溯源码，您可以扫描商品包装上的二维码查看溯源信息',
+        confirmText: '扫码溯源',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({
+              url: '/pages/traceability/scan/index'
+            })
+          }
+        }
+      })
+    }
+  },
+  // 跳转AI分析报告页面
+  goToAiAnalysis(e) {
+    const type = e.currentTarget.dataset.type || 'product'
+    const goodsSpu = this.data.goodsSpu
+    if (goodsSpu && goodsSpu.id) {
+      wx.navigateTo({
+        url: '/pages/ai-analysis/product/index?productId=' + goodsSpu.id + '&type=' + type
+      })
+    } else {
+      wx.showToast({
+        title: '商品信息加载中',
+        icon: 'none'
+      })
+    }
+  },
+  // 跳转AI聊天
+  goToAiChat() {
+    const goodsSpu = this.data.goodsSpu
+    let url = '/pages/ai-rag/chat/index'
+    if (goodsSpu && goodsSpu.id) {
+      url += '?productId=' + goodsSpu.id + '&productName=' + encodeURIComponent(goodsSpu.name || '')
+    }
+    wx.navigateTo({ url })
+  },
+  // 跳转商家页面
+  goToMerchant() {
+    // TODO: 实现商家详情页跳转
+    wx.showToast({
+      title: '商家详情即将上线',
+      icon: 'none'
+    })
+  },
+  // 联系供应商
+  contactSupplier() {
+    wx.showModal({
+      title: '联系供应商',
+      content: '供应商联系电话: 021-12345678\n工作时间: 周一至周五 9:00-18:00',
+      showCancel: true,
+      confirmText: '拨打电话',
+      success: (res) => {
+        if (res.confirm) {
+          wx.makePhoneCall({
+            phoneNumber: '02112345678',
+            fail: () => {
+              wx.showToast({
+                title: '拨打失败',
+                icon: 'none'
+              })
+            }
+          })
+        }
+      }
+    })
+  },
+  // 显示数量选择弹窗
+  showQtyModal() {
+    this.setData({ showQtyModal: true })
+  },
+  // 隐藏数量选择弹窗
+  hideQtyModal() {
+    this.setData({ showQtyModal: false })
+  },
+  // 阻止冒泡关闭
+  preventClose() {
+    // 空函数，阻止点击内容区域关闭弹窗
   }
 })

@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { apiClient } from '../apiClient';
 
 /**
  * 设备激活管理API客户端 - Phase 1必需

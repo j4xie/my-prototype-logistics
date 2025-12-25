@@ -36,6 +36,8 @@ public interface FactoryRepository extends JpaRepository<Factory, String> {
     List<Factory> findByRegionCode(String regionCode);
      /**
      * 模糊搜索工厂
+     * 注意：name/address/contactName都是用户友好名称字段，使用双向模糊（无法使用索引）
+     * 如果性能成为问题，考虑添加 factory_code 字段并使用右模糊
       */
     @Query("SELECT f FROM Factory f WHERE " +
            "(LOWER(f.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -58,9 +60,34 @@ public interface FactoryRepository extends JpaRepository<Factory, String> {
      * 检查工厂ID是否存在
       */
     boolean existsById(String id);
+
+    /**
+     * 根据ID前缀统计工厂数量（用于生成序号）
+     * @param prefix ID前缀，如 "FISH_2025_"
+     * @return 匹配的工厂数量
+     */
+    @Query("SELECT COUNT(f) FROM Factory f WHERE f.id LIKE CONCAT(:prefix, '%')")
+    long countByIdPrefix(@Param("prefix") String prefix);
+
+    /**
+     * 分页获取所有工厂
+     */
+    Page<Factory> findAll(Pageable pageable);
+
+    /**
+     * 分页获取激活的工厂
+     */
+    Page<Factory> findByIsActive(boolean isActive, Pageable pageable);
      /**
      * 获取工厂的AI使用配额信息
       */
     @Query("SELECT f.aiWeeklyQuota FROM Factory f WHERE f.id = :factoryId")
     Integer getAiWeeklyQuota(@Param("factoryId") String factoryId);
+
+    /**
+     * 计算所有激活工厂的AI周配额总和
+     * @return 配额总和（null视为默认值50）
+     */
+    @Query("SELECT COALESCE(SUM(COALESCE(f.aiWeeklyQuota, 50)), 0) FROM Factory f WHERE f.isActive = true")
+    Integer sumActiveFactoriesAIQuota();
 }

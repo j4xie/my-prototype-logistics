@@ -54,7 +54,39 @@
     </view>
   </view>
 </view>
+<!-- 商家工作台卡片 - 黑金风格 -->
+<view class="merchant-card" bindtap="goToMerchantCenter" hover-class="merchant-card-active">
+  <view class="merchant-card-left">
+    <view class="merchant-card-icon">
+      <text class="cuIcon-shop"></text>
+    </view>
+    <view class="merchant-card-info">
+      <text class="merchant-card-title">商家工作台</text>
+      <text class="merchant-card-subtitle">管理商品、订单与店铺数据</text>
+    </view>
+  </view>
+  <view class="merchant-card-arrow">
+    <text class="cuIcon-right"></text>
+  </view>
+  <text class="merchant-card-watermark">WORKBENCH</text>
+</view>
+
 <view class="cu-list menu card-menu radius address">
+  <navigator class="cu-item arrow" url="/pages/notification/index" hover-class="none">
+    <view class="content">
+      <text class="cuIcon-notification text-xl text-blue margin-right-sm"></text>
+      <text class="text-black">消息通知</text>
+    </view>
+    <view class="action" wx:if="{{unreadCount > 0}}">
+      <text class="cu-tag badge">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
+    </view>
+  </navigator>
+  <navigator class="cu-item arrow" url="/pages/ai-rag/chat/index" hover-class="none">
+    <view class="content">
+      <text class="cuIcon-creativefill text-xl text-purple margin-right-sm"></text>
+      <text class="text-black">AI智能助手</text>
+    </view>
+  </navigator>
   <navigator class="cu-item arrow" url="/pages/user/user-address/list/index" hover-class="none">
     <view class="content">
       <image class="address-image" src="/public/img/7-1.png"></image>

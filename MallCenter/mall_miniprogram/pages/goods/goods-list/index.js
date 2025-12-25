@@ -23,7 +23,12 @@ Page({
     price: '',
     sales: '',
     createTime: '',
-    title: ''
+    title: '',
+    // 无结果处理相关
+    noResult: false,
+    searchKeyword: '',
+    keywordRecorded: false,
+    showAiTip: false
   },
   onLoad(options) {
     let title = options.title ? decodeURI(options.title) : '默认'
@@ -37,7 +42,8 @@ Page({
     }
     if (options.name) {
       this.setData({
-        ['parameter.name']: options.name
+        ['parameter.name']: options.name,
+        searchKeyword: options.name
       })
     }
     if (options.type) {
@@ -80,7 +86,49 @@ Page({
             loadmore: false
           })
         }
+        // 检测无结果情况
+        if (this.data.goodsList.length === 0 && this.data.searchKeyword && this.data.page.current === 1) {
+          this.handleNoResult()
+        } else {
+          this.setData({
+            noResult: false
+          })
+        }
       })
+  },
+  // 处理无搜索结果
+  handleNoResult() {
+    this.setData({
+      noResult: true
+    })
+    // 记录无结果搜索关键词
+    if (this.data.searchKeyword && !this.data.keywordRecorded) {
+      app.api.recordSearchKeyword({
+        keyword: this.data.searchKeyword,
+        resultCount: 0
+      }).then(res => {
+        if (res.code === 200) {
+          this.setData({
+            keywordRecorded: true,
+            showAiTip: true
+          })
+          // 3秒后隐藏提示
+          setTimeout(() => {
+            this.setData({
+              showAiTip: false
+            })
+          }, 3000)
+        }
+      }).catch(err => {
+        console.log('记录搜索关键词失败', err)
+      })
+    }
+  },
+  // 跳转到AI助手
+  goToAiChat() {
+    wx.navigateTo({
+      url: '/pages/ai-rag/chat/index?keyword=' + encodeURIComponent(this.data.searchKeyword)
+    })
   },
   viewTypeEdit(){
     this.setData({

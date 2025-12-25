@@ -1,5 +1,7 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -32,9 +34,9 @@ public class QualityInspection extends BaseEntity {
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
     @Column(name = "production_batch_id", nullable = false)
-    private String productionBatchId;
+    private Long productionBatchId;
     @Column(name = "inspector_id", nullable = false)
-    private Integer inspectorId;
+    private Long inspectorId;
     @Column(name = "inspection_date", nullable = false)
     private LocalDate inspectionDate;
     @Column(name = "sample_size", nullable = false, precision = 10, scale = 2)
@@ -49,13 +51,14 @@ public class QualityInspection extends BaseEntity {
     private String result;  // PASS, FAIL, CONDITIONAL
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
-    // 关联关系
+    // 关联关系 (使用 @JsonIgnore 防止循环引用)
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "production_batch_id", referencedColumnName = "id", insertable = false, updatable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private ProductionBatch productionBatch;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inspector_id", referencedColumnName = "id", insertable = false, updatable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
     private User inspector;
 }

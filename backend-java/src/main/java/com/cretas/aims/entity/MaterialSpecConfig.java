@@ -20,7 +20,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "material_spec_config",
+@Table(name = "material_spec_configs",
        uniqueConstraints = {
            @UniqueConstraint(columnNames = {"factory_id", "category"})
        },

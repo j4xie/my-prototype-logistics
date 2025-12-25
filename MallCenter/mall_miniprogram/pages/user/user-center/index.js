@@ -11,7 +11,8 @@ Page({
     config: app.globalData.config,
     wxUser: null,
     userInfo: null,
-    orderCountAll: []
+    orderCountAll: [],
+    unreadCount: 0
   },
   onShow(){
     //更新tabbar购物车数量
@@ -26,6 +27,7 @@ Page({
     })
     this.wxUserGet()
     this.orderCountAll()
+    this.loadUnreadCount()
     if(this.data.config.adEnable){
       // 在页面中定义插屏广告
       let interstitialAd = null
@@ -91,5 +93,47 @@ Page({
           orderCountAll: res.data
         })
       })
+  },
+  //获取未读通知数量
+  loadUnreadCount(){
+    app.api.getUnreadNotificationCount()
+      .then(res => {
+        if (res.code === 200) {
+          this.setData({
+            unreadCount: res.data || 0
+          })
+        }
+      })
+      .catch(err => {
+        console.error('获取未读通知数量失败:', err)
+      })
+  },
+  // 跳转到商家工作台
+  goToMerchantCenter() {
+    // 检查用户是否已绑定商户
+    const userInfo = this.data.userInfo
+    const merchantId = app.globalData.merchantId || (userInfo && userInfo.merchantId)
+    
+    if (merchantId) {
+      // 已绑定商户，跳转到商家工作台
+      wx.navigateTo({
+        url: '/pages/merchant-center/index/index'
+      })
+    } else {
+      // 未绑定商户，提示绑定
+      wx.showModal({
+        title: '提示',
+        content: '您还未绑定商户，是否前往绑定？',
+        confirmText: '去绑定',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({
+              url: '/pages/auth/bind-merchant/index'
+            })
+          }
+        }
+      })
+    }
   }
 })

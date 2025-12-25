@@ -39,7 +39,7 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
         Page<QualityInspection> page;
         if (productionBatchId != null && !productionBatchId.trim().isEmpty()) {
             page = qualityInspectionRepository.findByFactoryIdAndProductionBatchId(
-                    factoryId, productionBatchId, springPageRequest);
+                    factoryId, Long.parseLong(productionBatchId), springPageRequest);
         } else {
             page = qualityInspectionRepository.findByFactoryId(factoryId, springPageRequest);
         }

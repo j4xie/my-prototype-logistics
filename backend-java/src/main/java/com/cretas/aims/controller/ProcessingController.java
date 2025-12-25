@@ -4,19 +4,14 @@ import com.cretas.aims.dto.MobileDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
-import com.cretas.aims.entity.EquipmentAlert;
+import com.cretas.aims.dto.processing.ProcessingStageRecordDTO;
 import com.cretas.aims.entity.MaterialBatch;
-import com.cretas.aims.entity.ProcessingBatch;
 import com.cretas.aims.entity.ProductionBatch;
-import com.cretas.aims.entity.QualityInspection;
-import com.cretas.aims.entity.enums.AlertStatus;
-import com.cretas.aims.repository.EquipmentAlertRepository;
-import com.cretas.aims.repository.EquipmentRepository;
-import com.cretas.aims.repository.ProcessingBatchRepository;
-import com.cretas.aims.repository.QualityInspectionRepository;
+import com.cretas.aims.entity.enums.ProcessingStageType;
 import com.cretas.aims.service.AIEnterpriseService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.ProcessingService;
+import com.cretas.aims.service.ProcessingStageRecordService;
 import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,8 +25,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,10 +45,7 @@ public class ProcessingController {
     private final ProcessingService processingService;
     private final MobileService mobileService;
     private final AIEnterpriseService aiEnterpriseService;
-    private final ProcessingBatchRepository processingBatchRepository;
-    private final EquipmentRepository equipmentRepository;
-    private final EquipmentAlertRepository equipmentAlertRepository;
-    private final QualityInspectionRepository qualityInspectionRepository;
+    private final ProcessingStageRecordService stageRecordService;
 
     // ========== 批次管理接口 ==========
 
@@ -189,7 +179,7 @@ public class ProcessingController {
         log.info("原材料接收: factoryId={}, batchNumber={}", factoryId, materialBatch.getBatchNumber());
 
         // 获取当前用户ID（如果提供了token）
-        Integer userId = null;
+        Long userId = null;
         if (authorization != null && !authorization.trim().isEmpty()) {
             try {
                 String token = TokenUtils.extractToken(authorization);
@@ -275,6 +265,19 @@ public class ProcessingController {
     }
 
     /**
+     * 获取质检详情
+     */
+    @GetMapping("/quality/inspections/{inspectionId}")
+    @Operation(summary = "获取质检详情", description = "根据ID获取质检记录详情")
+    public ApiResponse<Map<String, Object>> getInspectionById(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "质检记录ID") String inspectionId) {
+        log.info("获取质检详情: factoryId={}, inspectionId={}", factoryId, inspectionId);
+        Map<String, Object> result = processingService.getInspectionById(factoryId, inspectionId);
+        return ApiResponse.success(result);
+    }
+
+    /**
      * 获取质量统计
      */
     @GetMapping("/quality/statistics")
@@ -319,6 +322,20 @@ public class ProcessingController {
     }
 
     /**
+     * 获取增强版批次成本分析（前端CostAnalysisDashboard使用）
+     * 返回完整的成本分解结构，包含原材料、人工、设备详情
+     */
+    @GetMapping("/batches/{batchId}/cost-analysis/enhanced")
+    @Operation(summary = "增强版批次成本分析", description = "获取包含costBreakdown的完整成本分析")
+    public ApiResponse<Map<String, Object>> getEnhancedBatchCostAnalysis(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") String batchId) {
+        log.info("获取增强版批次成本分析: factoryId={}, batchId={}", factoryId, batchId);
+        Map<String, Object> analysis = processingService.getEnhancedBatchCostAnalysis(factoryId, batchId);
+        return ApiResponse.success(analysis);
+    }
+
+    /**
      * 重新计算批次成本
      */
     @PostMapping("/batches/{batchId}/recalculate-cost")
@@ -335,345 +352,141 @@ public class ProcessingController {
     // 所有AI接口已迁移到 AIController (/api/mobile/{factoryId}/ai/*)
     // 详见: com.cretas.aims.controller.AIController
 
-    // ========== 仪表盘接口 ==========
-
-    /**
-     * 生产概览
-     */
-    @GetMapping("/dashboard/overview")
-    @Operation(summary = "生产概览", description = "获取生产概览数据")
-    public ApiResponse<Map<String, Object>> getDashboardOverview(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "today") @Parameter(description = "时间周期") String period) {
-        log.info("获取生产概览: factoryId={}, period={}", factoryId, period);
-        Map<String, Object> overviewData = processingService.getDashboardOverview(factoryId);
-
-        // ========== 新增: 查询今日产量、设备统计 (2025-11-20) ==========
-        LocalDate today = LocalDate.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
-
-        // 1. 今日产量（千克）- 只统计已完成的批次
-        Double todayOutputKg = processingBatchRepository
-                .findByFactoryIdAndCreatedAtBetween(factoryId, startOfDay, endOfDay)
-                .stream()
-                .filter(batch -> "COMPLETED".equalsIgnoreCase(batch.getStatus()))
-                .filter(batch -> batch.getQuantity() != null)
-                .mapToDouble(batch -> batch.getQuantity().doubleValue())
-                .sum();
-
-        // 2. 活跃设备数 (状态为RUNNING)
-        Long activeEquipmentLong = equipmentRepository.countByFactoryIdAndStatus(factoryId, "RUNNING");
-        Integer activeEquipment = activeEquipmentLong != null ? activeEquipmentLong.intValue() : 0;
-
-        // 3. 总设备数
-        Long totalEquipmentLong = equipmentRepository.countByFactoryId(factoryId);
-        Integer totalEquipment = totalEquipmentLong != null ? totalEquipmentLong.intValue() : 0;
-
-        log.debug("新增统计字段: todayOutputKg={}kg, activeEquipment={}, totalEquipment={}",
-                todayOutputKg, activeEquipment, totalEquipment);
-
-        // 映射后端数据到前端期望的格式
-        Map<String, Object> summary = new HashMap<>();
-
-        // 获取生产相关数据
-        long activeBatches = (Long) overviewData.getOrDefault("inProgressBatches", 0L);
-
-        // 因为todayBatches查询可能有问题，我们使用activeBatches作为基础
-        // 在实际应用中应该修复底层查询
-        long totalBatches = activeBatches > 0 ? activeBatches : 0L;
-        long completedBatches = 0L;
-
-        summary.put("totalBatches", activeBatches);  // 使用进行中批次作为总批次（临时方案）
-        summary.put("activeBatches", activeBatches);
-        summary.put("completedBatches", completedBatches);
-        summary.put("qualityInspections", overviewData.getOrDefault("qualityInspections", 0L));
-        summary.put("activeAlerts", overviewData.getOrDefault("lowStockMaterials", 0L));
-        summary.put("onDutyWorkers", overviewData.getOrDefault("onDutyWorkers", 0));
-        summary.put("totalWorkers", overviewData.getOrDefault("totalWorkers", 0));
-
-        // ========== 新增字段 (2025-11-20) ==========
-        summary.put("todayOutputKg", todayOutputKg);
-        summary.put("activeEquipment", activeEquipment);
-        summary.put("totalEquipment", totalEquipment);
-
-        // 包装数据以匹配前端期望的格式
-        Map<String, Object> response = new HashMap<>();
-        response.put("period", period);
-        response.put("summary", summary);
-
-        // 添加KPI数据
-        Map<String, Object> kpi = new HashMap<>();
-        Object yieldRate = overviewData.getOrDefault("monthlyYieldRate", BigDecimal.ZERO);
-        kpi.put("productionEfficiency", yieldRate);
-        kpi.put("qualityPassRate", yieldRate);
-        kpi.put("equipmentUtilization", overviewData.getOrDefault("equipmentUtilization", 0));
-        response.put("kpi", kpi);
-
-        // 添加告警数据
-        Map<String, Object> alerts = new HashMap<>();
-        alerts.put("active", overviewData.getOrDefault("lowStockMaterials", 0L));
-        alerts.put("status", "normal");
-        response.put("alerts", alerts);
-
-        log.info("仪表板数据: totalBatches={}, activeBatches={}, completedBatches={}", totalBatches, activeBatches, completedBatches);
-        return ApiResponse.success(response);
-    }
-
-    /**
-     * 生产统计
-     */
-    @GetMapping("/dashboard/production")
-    @Operation(summary = "生产统计", description = "获取生产统计数据")
-    public ApiResponse<Map<String, Object>> getProductionStatistics(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "today") @Parameter(description = "时间周期: today, week, month") String period) {
-        log.info("获取生产统计: factoryId={}, period={}", factoryId, period);
-        Map<String, Object> statistics = processingService.getProductionStatistics(factoryId, period);
-        return ApiResponse.success(statistics);
-    }
-
-    /**
-     * 质量仪表盘
-     */
-    @GetMapping("/dashboard/quality")
-    @Operation(summary = "质量仪表盘", description = "获取质量统计和趋势")
-    public ApiResponse<Map<String, Object>> getQualityDashboard(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
-        log.info("获取质量仪表盘: factoryId={}", factoryId);
-        Map<String, Object> dashboard = processingService.getQualityDashboard(factoryId);
-        return ApiResponse.success(dashboard);
-    }
-
-    /**
-     * 设备仪表盘
-     */
-    @GetMapping("/dashboard/equipment")
-    @Operation(summary = "设备仪表盘", description = "获取设备状态统计")
-    public ApiResponse<Map<String, Object>> getEquipmentDashboard(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
-        log.info("获取设备仪表盘: factoryId={}, period={}", factoryId);
-        Map<String, Object> dashboard = processingService.getEquipmentDashboard(factoryId);
-        return ApiResponse.success(dashboard);
-    }
-
-    /**
-     * 告警仪表盘
-     */
-    @GetMapping("/dashboard/alerts")
-    @Operation(summary = "告警仪表盘", description = "获取告警统计和趋势")
-    public ApiResponse<Map<String, Object>> getAlertsDashboard(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "week") @Parameter(description = "时间周期: today, week, month") String period) {
-        log.info("获取告警仪表盘: factoryId={}, period={}", factoryId, period);
-
-        // 查询所有告警
-        List<EquipmentAlert> allAlerts = equipmentAlertRepository.findByFactoryIdOrderByTriggeredAtDesc(factoryId);
-
-        Map<String, Object> dashboard = new java.util.HashMap<>();
-
-        // 告警总数统计
-        long totalAlerts = allAlerts.size();
-        long unresolvedAlerts = allAlerts.stream()
-                .filter(a -> a.getStatus() == AlertStatus.ACTIVE || a.getStatus() == AlertStatus.ACKNOWLEDGED)
-                .count();
-        long resolvedAlerts = allAlerts.stream()
-                .filter(a -> a.getStatus() == AlertStatus.RESOLVED)
-                .count();
-        long ignoredAlerts = allAlerts.stream()
-                .filter(a -> a.getStatus() == AlertStatus.IGNORED)
-                .count();
-
-        dashboard.put("totalAlerts", totalAlerts);
-        dashboard.put("unresolvedAlerts", unresolvedAlerts);
-        dashboard.put("resolvedAlerts", resolvedAlerts);
-        dashboard.put("ignoredAlerts", ignoredAlerts);
-
-        // 按严重程度分类
-        Map<String, Long> bySeverity = allAlerts.stream()
-                .collect(java.util.stream.Collectors.groupingBy(
-                        a -> a.getLevel().name().toLowerCase(),
-                        java.util.stream.Collectors.counting()
-                ));
-        dashboard.put("bySeverity", bySeverity);
-
-        // 按类型分类
-        Map<String, Long> byType = allAlerts.stream()
-                .collect(java.util.stream.Collectors.groupingBy(
-                        EquipmentAlert::getAlertType,
-                        java.util.stream.Collectors.counting()
-                ));
-        dashboard.put("byType", byType);
-
-        // 最近的未处理告警 (Top 10)
-        List<Map<String, Object>> recentAlerts = allAlerts.stream()
-                .filter(a -> a.getStatus() == AlertStatus.ACTIVE || a.getStatus() == AlertStatus.ACKNOWLEDGED)
-                .limit(10)
-                .map(alert -> {
-                    Map<String, Object> alertMap = new java.util.HashMap<>();
-                    alertMap.put("id", alert.getId());
-                    alertMap.put("equipmentId", alert.getEquipmentId());
-                    alertMap.put("type", alert.getAlertType());
-                    alertMap.put("severity", alert.getLevel().name().toLowerCase());
-                    alertMap.put("message", alert.getMessage());
-                    alertMap.put("timestamp", alert.getTriggeredAt());
-                    alertMap.put("status", alert.getStatus().name());
-                    return alertMap;
-                })
-                .collect(java.util.stream.Collectors.toList());
-        dashboard.put("recentAlerts", recentAlerts);
-
-        dashboard.put("period", period);
-        dashboard.put("generatedAt", LocalDateTime.now());
-
-        return ApiResponse.success(dashboard);
-    }
-
-    /**
-     * 趋势分析仪表盘
-     */
-    @GetMapping("/dashboard/trends")
-    @Operation(summary = "趋势分析", description = "获取生产、质量、设备等趋势数据")
-    public ApiResponse<Map<String, Object>> getTrendsDashboard(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "month") @Parameter(description = "时间周期: week, month, quarter, year") String period,
-            @RequestParam(defaultValue = "production") @Parameter(description = "趋势类型: production, quality, equipment, cost") String metric) {
-        log.info("获取趋势分析: factoryId={}, period={}, metric={}", factoryId, period, metric);
-
-        int days = "week".equals(period) ? 7 : ("month".equals(period) ? 30 : ("quarter".equals(period) ? 90 : 365));
-        LocalDateTime startDate = LocalDateTime.now().minusDays(days);
-
-        Map<String, Object> trends = new java.util.HashMap<>();
-        List<Map<String, Object>> dataPoints = new java.util.ArrayList<>();
-
-        // 根据metric类型从不同表查询数据
-        switch (metric) {
-            case "production":
-                // 查询生产批次数量趋势
-                List<ProcessingBatch> batches = processingBatchRepository.findAll().stream()
-                        .filter(b -> b.getCreatedAt() != null && b.getCreatedAt().isAfter(startDate))
-                        .collect(java.util.stream.Collectors.toList());
-
-                // 按日期分组统计
-                for (int i = days - 1; i >= 0; i--) {
-                    LocalDate date = LocalDate.now().minusDays(i);
-                    LocalDateTime dayStart = date.atStartOfDay();
-                    LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
-
-                    long count = batches.stream()
-                            .filter(b -> b.getCreatedAt() != null &&
-                                    !b.getCreatedAt().isBefore(dayStart) &&
-                                    b.getCreatedAt().isBefore(dayEnd))
-                            .count();
-
-                    Map<String, Object> point = new java.util.HashMap<>();
-                    point.put("date", date.toString());
-                    point.put("value", count);
-                    point.put("target", 10); // 目标值可以从配置读取
-                    dataPoints.add(point);
-                }
-                break;
-
-            case "quality":
-                // 查询质检合格率趋势
-                LocalDate startLocalDate = startDate.toLocalDate();
-                List<QualityInspection> inspections = qualityInspectionRepository.findAll().stream()
-                        .filter(qi -> qi.getInspectionDate() != null && qi.getInspectionDate().isAfter(startLocalDate))
-                        .collect(java.util.stream.Collectors.toList());
-
-                for (int i = days - 1; i >= 0; i--) {
-                    LocalDate date = LocalDate.now().minusDays(i);
-
-                    List<QualityInspection> dayInspections = inspections.stream()
-                            .filter(qi -> qi.getInspectionDate() != null &&
-                                    qi.getInspectionDate().equals(date))
-                            .collect(java.util.stream.Collectors.toList());
-
-                    double passRate = dayInspections.isEmpty() ? 0.0 :
-                            dayInspections.stream()
-                                    .filter(qi -> "合格".equals(qi.getResult()) || "通过".equals(qi.getResult()))
-                                    .count() * 100.0 / dayInspections.size();
-
-                    Map<String, Object> point = new java.util.HashMap<>();
-                    point.put("date", date.toString());
-                    point.put("value", Math.round(passRate * 100.0) / 100.0);
-                    point.put("target", 98.0); // 目标合格率
-                    dataPoints.add(point);
-                }
-                break;
-
-            case "equipment":
-                // 查询设备告警率趋势（告警数量越少越好）
-                List<EquipmentAlert> alerts = equipmentAlertRepository.findByFactoryIdOrderByTriggeredAtDesc(factoryId).stream()
-                        .filter(a -> a.getTriggeredAt() != null && a.getTriggeredAt().isAfter(startDate))
-                        .collect(java.util.stream.Collectors.toList());
-
-                for (int i = days - 1; i >= 0; i--) {
-                    LocalDate date = LocalDate.now().minusDays(i);
-                    LocalDateTime dayStart = date.atStartOfDay();
-                    LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
-
-                    long alertCount = alerts.stream()
-                            .filter(a -> a.getTriggeredAt() != null &&
-                                    !a.getTriggeredAt().isBefore(dayStart) &&
-                                    a.getTriggeredAt().isBefore(dayEnd))
-                            .count();
-
-                    Map<String, Object> point = new java.util.HashMap<>();
-                    point.put("date", date.toString());
-                    point.put("value", alertCount);
-                    point.put("target", 2); // 目标：每天不超过2个告警
-                    dataPoints.add(point);
-                }
-                break;
-
-            case "cost":
-                // 查询成本趋势（暂时返回占位数据，需要实际成本表）
-                for (int i = days - 1; i >= 0; i--) {
-                    LocalDate date = LocalDate.now().minusDays(i);
-                    Map<String, Object> point = new java.util.HashMap<>();
-                    point.put("date", date.toString());
-                    point.put("value", 0);
-                    point.put("target", 5000);
-                    point.put("note", "成本数据需要集成实际成本管理模块");
-                    dataPoints.add(point);
-                }
-                break;
-
-            default:
-                log.warn("未知的metric类型: {}", metric);
-        }
-
-        trends.put("metric", metric);
-        trends.put("period", period);
-        trends.put("dataPoints", dataPoints);
-
-        // 统计摘要
-        Map<String, Object> summary = new java.util.HashMap<>();
-        if (!dataPoints.isEmpty()) {
-            summary.put("average", dataPoints.stream()
-                    .mapToDouble(p -> ((Number) p.get("value")).doubleValue())
-                    .average().orElse(0.0));
-            summary.put("max", dataPoints.stream()
-                    .mapToDouble(p -> ((Number) p.get("value")).doubleValue())
-                    .max().orElse(0.0));
-            summary.put("min", dataPoints.stream()
-                    .mapToDouble(p -> ((Number) p.get("value")).doubleValue())
-                    .min().orElse(0.0));
-        } else {
-            summary.put("average", 0.0);
-            summary.put("max", 0.0);
-            summary.put("min", 0.0);
-        }
-        trends.put("summary", summary);
-        trends.put("generatedAt", LocalDateTime.now());
-
-        return ApiResponse.success(trends);
-    }
+    // ========== 仪表盘接口已迁移 (2025-12-22) ==========
+    // Dashboard 端点已迁移到 ReportController: /api/mobile/{factoryId}/reports/dashboard/*
+    // 包括: overview, production, quality, equipment, alerts, trends
 
     // ========== AI接口已全部迁移 ==========
     // 所有AI相关功能（成本分析、配额查询、报告管理、对话历史）已迁移到统一接口
     // 新接口位置: AIController (/api/mobile/{factoryId}/ai/*)
     // 详见: com.cretas.aims.controller.AIController
+
+    // ========== 加工环节记录接口 ==========
+
+    /**
+     * 创建加工环节记录
+     */
+    @PostMapping("/batches/{batchId}/stages")
+    @Operation(summary = "创建加工环节记录", description = "为生产批次创建加工环节记录")
+    public ApiResponse<ProcessingStageRecordDTO> createStageRecord(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") Long batchId,
+            @RequestBody @Valid @Parameter(description = "环节记录") ProcessingStageRecordDTO dto) {
+        log.info("创建加工环节记录: factoryId={}, batchId={}, stageType={}", factoryId, batchId, dto.getStageType());
+        dto.setProductionBatchId(batchId);
+        ProcessingStageRecordDTO result = stageRecordService.create(factoryId, dto);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 批量创建加工环节记录
+     */
+    @PostMapping("/batches/{batchId}/stages/batch")
+    @Operation(summary = "批量创建环节记录", description = "为生产批次批量创建加工环节记录")
+    public ApiResponse<List<ProcessingStageRecordDTO>> batchCreateStageRecords(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") Long batchId,
+            @RequestBody @Valid @Parameter(description = "环节记录列表") List<ProcessingStageRecordDTO> dtos) {
+        log.info("批量创建加工环节记录: factoryId={}, batchId={}, count={}", factoryId, batchId, dtos.size());
+        List<ProcessingStageRecordDTO> results = stageRecordService.batchCreate(factoryId, batchId, dtos);
+        return ApiResponse.success(results);
+    }
+
+    /**
+     * 获取批次的所有环节记录
+     */
+    @GetMapping("/batches/{batchId}/stages")
+    @Operation(summary = "获取批次环节记录", description = "获取生产批次的所有加工环节记录")
+    public ApiResponse<List<ProcessingStageRecordDTO>> getStageRecords(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") Long batchId,
+            @RequestParam(defaultValue = "false") @Parameter(description = "是否包含对比数据") Boolean withComparison) {
+        log.info("获取批次环节记录: factoryId={}, batchId={}, withComparison={}", factoryId, batchId, withComparison);
+        List<ProcessingStageRecordDTO> results;
+        if (withComparison) {
+            results = stageRecordService.getByBatchIdWithComparison(factoryId, batchId);
+        } else {
+            results = stageRecordService.getByBatchId(factoryId, batchId);
+        }
+        return ApiResponse.success(results);
+    }
+
+    /**
+     * 获取单个环节记录
+     */
+    @GetMapping("/stages/{stageId}")
+    @Operation(summary = "获取环节记录详情", description = "获取单个加工环节记录详情")
+    public ApiResponse<ProcessingStageRecordDTO> getStageRecord(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "环节记录ID") Long stageId) {
+        log.info("获取环节记录详情: factoryId={}, stageId={}", factoryId, stageId);
+        ProcessingStageRecordDTO result = stageRecordService.getById(factoryId, stageId);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 更新环节记录
+     */
+    @PutMapping("/stages/{stageId}")
+    @Operation(summary = "更新环节记录", description = "更新加工环节记录")
+    public ApiResponse<ProcessingStageRecordDTO> updateStageRecord(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "环节记录ID") Long stageId,
+            @RequestBody @Valid @Parameter(description = "环节记录") ProcessingStageRecordDTO dto) {
+        log.info("更新环节记录: factoryId={}, stageId={}", factoryId, stageId);
+        ProcessingStageRecordDTO result = stageRecordService.update(factoryId, stageId, dto);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 删除环节记录
+     */
+    @DeleteMapping("/stages/{stageId}")
+    @Operation(summary = "删除环节记录", description = "删除加工环节记录")
+    public ApiResponse<Void> deleteStageRecord(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "环节记录ID") Long stageId) {
+        log.info("删除环节记录: factoryId={}, stageId={}", factoryId, stageId);
+        stageRecordService.delete(factoryId, stageId);
+        return ApiResponse.success();
+    }
+
+    /**
+     * 按环节类型查询记录
+     */
+    @GetMapping("/stages/by-type/{stageType}")
+    @Operation(summary = "按类型查询环节记录", description = "按环节类型查询加工记录")
+    public ApiResponse<List<ProcessingStageRecordDTO>> getStageRecordsByType(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "环节类型") ProcessingStageType stageType) {
+        log.info("按类型查询环节记录: factoryId={}, stageType={}", factoryId, stageType);
+        List<ProcessingStageRecordDTO> results = stageRecordService.getByStageType(factoryId, stageType);
+        return ApiResponse.success(results);
+    }
+
+    /**
+     * 获取环节统计数据 (用于AI分析)
+     */
+    @GetMapping("/stages/statistics")
+    @Operation(summary = "获取环节统计", description = "获取各环节的统计数据，用于AI分析对比")
+    public ApiResponse<Map<ProcessingStageType, Map<String, Object>>> getStageStatistics(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+        log.info("获取环节统计: factoryId={}", factoryId);
+        Map<ProcessingStageType, Map<String, Object>> stats = stageRecordService.getStageStatistics(factoryId);
+        return ApiResponse.success(stats);
+    }
+
+    /**
+     * 获取批次环节数据 (AI分析格式)
+     */
+    @GetMapping("/batches/{batchId}/stages/ai-format")
+    @Operation(summary = "获取AI分析格式数据", description = "获取批次环节数据，格式化为AI分析所需的格式")
+    public ApiResponse<Map<String, String>> getStageRecordsForAI(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") Long batchId) {
+        log.info("获取AI分析格式数据: factoryId={}, batchId={}", factoryId, batchId);
+        Map<String, String> result = stageRecordService.formatForAIAnalysis(factoryId, batchId);
+        return ApiResponse.success(result);
+    }
 
 }

@@ -196,7 +196,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
 
             {!isSufficient && shortage > 0 && (
               <>
-                <List.Icon icon="alert" color="#F44336" size={20} />
+                <List.Icon icon="alert" color="#F44336" />
                 <View style={styles.statItem}>
                   <Text variant="labelSmall" style={styles.statLabel}>还需</Text>
                   <Text variant="titleMedium" style={[styles.statValue, styles.statInsufficient]}>

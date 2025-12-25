@@ -30,7 +30,7 @@ public class Session extends BaseEntity {
     @Column(name = "id", nullable = false)
     private String id;
     @Column(name = "user_id", nullable = false)
-    private Integer userId;
+    private Long userId;
     @Column(name = "factory_id")
     private String factoryId;
     @Column(name = "token", nullable = false, unique = true, length = 500)

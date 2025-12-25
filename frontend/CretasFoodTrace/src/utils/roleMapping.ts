@@ -51,9 +51,24 @@ function generatePermissionsFromRole(role: string): string[] {
 export function transformBackendUser(backendUser: any): User {
   console.log('🔄 transformBackendUser - Input:', JSON.stringify(backendUser, null, 2));
 
-  // 如果已经是前端格式，直接返回
+  // 如果已经是前端格式，检查 permissions 是否需要补充
   if (backendUser.userType && (backendUser.platformUser || backendUser.factoryUser)) {
-    console.log('✅ Already in frontend format');
+    console.log('🔄 Already in frontend format, checking permissions...');
+
+    // 检查工厂用户的权限
+    if (backendUser.factoryUser && (!backendUser.factoryUser.permissions || backendUser.factoryUser.permissions.length === 0)) {
+      const role = backendUser.factoryUser.role || 'viewer';
+      backendUser.factoryUser.permissions = generatePermissionsFromRole(role);
+      console.log('✅ Generated permissions for factory user:', backendUser.factoryUser.permissions);
+    }
+
+    // 检查平台用户的权限
+    if (backendUser.platformUser && (!backendUser.platformUser.permissions || backendUser.platformUser.permissions.length === 0)) {
+      const role = backendUser.platformUser.role || 'platform_admin';
+      backendUser.platformUser.permissions = generatePermissionsFromRole(role);
+      console.log('✅ Generated permissions for platform user:', backendUser.platformUser.permissions);
+    }
+
     return backendUser as User;
   }
 
@@ -84,7 +99,9 @@ export function transformBackendUser(backendUser: any): User {
       userType: 'platform' as const,
       platformUser: {
         role: role === 'developer' ? 'platform_admin' : role,
-        permissions: backendUser.permissions || generatePermissionsFromRole(role),
+        permissions: backendUser.permissions?.length > 0
+          ? backendUser.permissions
+          : generatePermissionsFromRole(role),
       },
     };
     console.log('✅ Created platform user:', JSON.stringify(user, null, 2));
@@ -100,7 +117,9 @@ export function transformBackendUser(backendUser: any): User {
       factoryId: backendUser.factoryId || '',
       department: backendUser.department,
       position: backendUser.position,
-      permissions: backendUser.permissions || generatePermissionsFromRole(role),
+      permissions: backendUser.permissions?.length > 0
+        ? backendUser.permissions
+        : generatePermissionsFromRole(role),
     },
   };
 
@@ -127,15 +146,8 @@ export function getUserRole(user: User): string | null {
  * 获取用户显示名称
  */
 export function getUserDisplayName(user: User): string {
-  if (user.userType === 'platform' && user.platformUser) {
-    return user.platformUser.fullName || user.username;
-  }
-
-  if (user.userType === 'factory' && user.factoryUser) {
-    return user.factoryUser.fullName || user.username;
-  }
-
-  return user.username;
+  // fullName 在 BaseUser 中定义，直接使用
+  return user.fullName || user.username;
 }
 
 /**

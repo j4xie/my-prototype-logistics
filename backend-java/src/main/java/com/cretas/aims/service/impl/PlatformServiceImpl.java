@@ -6,9 +6,10 @@ import com.cretas.aims.dto.platform.PlatformStatisticsDTO;
 import com.cretas.aims.entity.Factory;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.entity.enums.ProductionBatchStatus;
 import com.cretas.aims.repository.AIUsageLogRepository;
 import com.cretas.aims.repository.FactoryRepository;
-import com.cretas.aims.repository.ProcessingBatchRepository;
+import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.PlatformService;
 import lombok.RequiredArgsConstructor;
@@ -41,13 +42,14 @@ public class PlatformServiceImpl implements PlatformService {
     private final FactoryRepository factoryRepository;
     private final AIUsageLogRepository aiUsageLogRepository;
     private final UserRepository userRepository;
-    private final ProcessingBatchRepository processingBatchRepository;
+    private final ProductionBatchRepository productionBatchRepository;
 
     @Override
     public List<FactoryAIQuotaDTO> getAllFactoryAIQuotas() {
         log.info("获取所有工厂AI配额");
 
-        List<Factory> factories = factoryRepository.findAll();
+        // 只查询激活的工厂，避免加载已停用的工厂
+        List<Factory> factories = factoryRepository.findByIsActiveTrue();
 
         return factories.stream()
                 .map(factory -> {
@@ -99,7 +101,8 @@ public class PlatformServiceImpl implements PlatformService {
         String currentWeek = getCurrentWeekNumber();
         log.debug("当前周次: {}", currentWeek);
 
-        List<Factory> factories = factoryRepository.findAll();
+        // 只统计激活工厂的AI使用情况
+        List<Factory> factories = factoryRepository.findByIsActiveTrue();
 
         long totalUsed = 0;
         List<PlatformAIUsageStatsDTO.FactoryUsageInfo> factoryUsages = new java.util.ArrayList<>();
@@ -173,8 +176,8 @@ public class PlatformServiceImpl implements PlatformService {
         log.debug("用户统计: 总数={}, 活跃={}", totalUsers, activeUsers);
 
         // 3. 统计批次
-        long totalBatches = processingBatchRepository.count();
-        long completedBatches = processingBatchRepository.countByStatus("COMPLETED");
+        long totalBatches = productionBatchRepository.count();
+        long completedBatches = productionBatchRepository.countByStatus(ProductionBatchStatus.COMPLETED);
 
         log.debug("批次统计: 总数={}, 已完成={}", totalBatches, completedBatches);
 
@@ -183,10 +186,10 @@ public class PlatformServiceImpl implements PlatformService {
         java.time.LocalDateTime startOfDay = today.atStartOfDay();
         java.time.LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
 
-        Double todayProduction = processingBatchRepository
+        Double todayProduction = productionBatchRepository
                 .findByCreatedAtBetween(startOfDay, endOfDay)
                 .stream()
-                .filter(batch -> "COMPLETED".equalsIgnoreCase(batch.getStatus()))
+                .filter(batch -> ProductionBatchStatus.COMPLETED.equals(batch.getStatus()))
                 .filter(batch -> batch.getQuantity() != null)
                 .mapToDouble(batch -> batch.getQuantity().doubleValue())
                 .sum();
@@ -203,10 +206,8 @@ public class PlatformServiceImpl implements PlatformService {
             log.warn("获取AI使用量失败: {}", e.getMessage());
         }
 
-        // 总配额 = 所有工厂的周配额之和
-        Integer aiQuotaLimit = factoryRepository.findAll().stream()
-                .mapToInt(f -> f.getAiWeeklyQuota() != null ? f.getAiWeeklyQuota() : 50)
-                .sum();
+        // 总配额 = 激活工厂的周配额之和（使用数据库聚合查询，避免加载所有工厂）
+        Integer aiQuotaLimit = factoryRepository.sumActiveFactoriesAIQuota();
 
         log.debug("AI配额: 已使用={}, 总限制={}", aiQuotaUsed, aiQuotaLimit);
 

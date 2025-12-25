@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "whitelist",
+@Table(name = "whitelists",
        uniqueConstraints = {
            @UniqueConstraint(columnNames = {"factory_id", "phone_number"})
        },
@@ -60,7 +60,7 @@ public class Whitelist extends BaseEntity {
     private LocalDateTime expiresAt;
 
     @Column(name = "added_by", nullable = false)
-    private Integer addedBy;
+    private Long addedBy;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;

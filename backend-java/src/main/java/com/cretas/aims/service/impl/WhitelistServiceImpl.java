@@ -45,7 +45,7 @@ public class WhitelistServiceImpl implements WhitelistService {
 
     @Override
     @Transactional
-    public WhitelistDTO.BatchResult batchAdd(String factoryId, Integer userId, WhitelistDTO.BatchAddRequest request) {
+    public WhitelistDTO.BatchResult batchAdd(String factoryId, Long userId, WhitelistDTO.BatchAddRequest request) {
         log.info("批量添加白名单: factoryId={}, count={}", factoryId, request.getEntries().size());
         WhitelistDTO.BatchResult result = WhitelistDTO.BatchResult.builder()
                 .successCount(0)
@@ -53,7 +53,7 @@ public class WhitelistServiceImpl implements WhitelistService {
                 .successPhones(new ArrayList<>())
                 .failedEntries(new ArrayList<>())
                 .build();
-        Integer currentUserId = userId;//SecurityUtils.getCurrentUserId();
+        Long currentUserId = userId;//SecurityUtils.getCurrentUserId();
         for (WhitelistDTO.WhitelistEntry entry : request.getEntries()) {
             try {
                 // 检查是否已存在
@@ -382,7 +382,7 @@ public class WhitelistServiceImpl implements WhitelistService {
                 .build();
 
         String[] lines = csvData.split("\n");
-        Integer currentUserId = SecurityUtils.getCurrentUserId();
+        Long currentUserId = SecurityUtils.getCurrentUserId();
 
         // 跳过标题行
         for (int i = 1; i < lines.length; i++) {

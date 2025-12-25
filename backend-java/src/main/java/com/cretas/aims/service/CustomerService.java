@@ -18,7 +18,7 @@ public interface CustomerService {
     /**
      * 创建客户
      */
-    CustomerDTO createCustomer(String factoryId, CreateCustomerRequest request, Integer userId);
+    CustomerDTO createCustomer(String factoryId, CreateCustomerRequest request, Long userId);
      /**
      * 更新客户
       */
@@ -96,7 +96,7 @@ public interface CustomerService {
      /**
      * 批量导入客户
       */
-    List<CustomerDTO> importCustomers(String factoryId, List<CreateCustomerRequest> requests, Integer userId);
+    List<CustomerDTO> importCustomers(String factoryId, List<CreateCustomerRequest> requests, Long userId);
      /**
      * 获取客户评级分布
       */
