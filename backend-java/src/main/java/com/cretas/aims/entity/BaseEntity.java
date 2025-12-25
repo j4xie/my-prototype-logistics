@@ -1,6 +1,9 @@
 package com.cretas.aims.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.springframework.data.annotation.CreatedDate;
@@ -29,6 +32,9 @@ import java.time.LocalDateTime;
 @SQLDelete(sql = "UPDATE {h-domain} SET deleted_at = NOW() WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
 @Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 public abstract class BaseEntity implements Serializable {
     @CreatedDate
     @Column(name = "created_at", updatable = false, nullable = false)

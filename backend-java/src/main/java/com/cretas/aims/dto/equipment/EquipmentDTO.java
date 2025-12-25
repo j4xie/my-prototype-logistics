@@ -1,5 +1,6 @@
 package com.cretas.aims.dto.equipment;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +20,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EquipmentDTO {
-    private String id;  // 修改为String，与FactoryEquipment.id一致
+    private String id;  // API层使用String，Service层进行Long↔String转换（FactoryEquipment.id是Long类型）
     private String factoryId;
     private String equipmentCode;
     private String name;
@@ -55,6 +56,44 @@ public class EquipmentDTO {
     private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private Integer createdBy;
+    private Long createdBy;
     private String createdByName;
+
+    // ==================== 前端字段别名 ====================
+
+    /**
+     * equipmentName 别名（兼容前端）
+     * 前端使用 equipmentName，后端使用 name
+     */
+    @JsonProperty("equipmentName")
+    public String getEquipmentName() {
+        return name;
+    }
+
+    /**
+     * equipmentType 别名（兼容前端）
+     * 前端使用 equipmentType，后端使用 type
+     */
+    @JsonProperty("equipmentType")
+    public String getEquipmentType() {
+        return type;
+    }
+
+    /**
+     * code 别名（兼容前端）
+     * 前端使用 code，后端使用 equipmentCode
+     */
+    @JsonProperty("code")
+    public String getCode() {
+        return equipmentCode;
+    }
+
+    /**
+     * maintenanceInterval 别名（兼容前端）
+     * 前端使用 maintenanceInterval，后端使用 maintenanceIntervalHours
+     */
+    @JsonProperty("maintenanceInterval")
+    public Integer getMaintenanceInterval() {
+        return maintenanceIntervalHours;
+    }
 }

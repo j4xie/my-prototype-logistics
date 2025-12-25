@@ -109,10 +109,11 @@ export const useCostData = (batchId: string | number): UseCostDataReturn => {
         forceRefresh,
       });
 
-      const response = await processingApiClient.getBatchCostAnalysis(batchId);
+      // ✅ 修复: 使用增强版API，返回完整的costBreakdown结构 (2025-12-23)
+      const response = await processingApiClient.getEnhancedBatchCostAnalysis(batchId);
 
       if (response.success && response.data) {
-        // ✅ 修复: 使用类型断言，API返回的数据结构与BatchCostAnalysis一致 (2025-11-20)
+        // 增强版API返回的数据结构与BatchCostAnalysis一致
         setCostData(response.data as unknown as BatchCostAnalysis);
 
         // 更新缓存

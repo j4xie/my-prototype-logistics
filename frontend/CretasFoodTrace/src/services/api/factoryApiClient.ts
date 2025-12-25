@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
+import { getErrorMsg } from '../../utils/errorHandler';
 
 /**
  * 工厂设置API客户端
@@ -88,7 +89,7 @@ class FactoryApiClient {
     factoryId?: string
   ): Promise<{ success: boolean; data: FactorySettingsResponse; message: string }> {
     const response = await apiClient.get(this.getPath(factoryId));
-    return response.data;
+    return (response as any).data;
   }
 
   /**
@@ -100,7 +101,7 @@ class FactoryApiClient {
     factoryId?: string
   ): Promise<{ success: boolean; data: FactorySettingsResponse; message: string }> {
     const response = await apiClient.put(this.getPath(factoryId), request);
-    return response.data;
+    return (response as any).data;
   }
 }
 

@@ -132,7 +132,7 @@ public class SystemServiceImpl implements SystemService {
 
     @Override
     @Transactional
-    public void createAuditLog(String factoryId, String module, String action, String message, Integer userId) {
+    public void createAuditLog(String factoryId, String module, String action, String message, Long userId) {
         SystemLog log = new SystemLog();
         log.setFactoryId(factoryId);
         log.setLogType("AUDIT");

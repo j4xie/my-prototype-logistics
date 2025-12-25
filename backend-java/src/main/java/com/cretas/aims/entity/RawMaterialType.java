@@ -211,9 +211,10 @@ public class RawMaterialType extends BaseEntity {
     /**
      * 创建者ID
      * <p>外键关联 users 表，记录创建此原材料类型的用户</p>
+     * <p>类型为 Long，与 User.id 保持一致</p>
      */
     @Column(name = "created_by", nullable = false)
-    private Integer createdBy;
+    private Long createdBy;
 
     // ========== 关联关系 ==========
 

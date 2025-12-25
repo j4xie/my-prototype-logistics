@@ -1,9 +1,9 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { WorkStackParamList } from '../types/navigation';
+// import { WorkStackParamList } from '../types/navigation';
 import { WorkTypeListScreen, WorkTypeFormScreen } from '../screens/work';
 
-const Stack = createNativeStackNavigator<WorkStackParamList>();
+const Stack = createNativeStackNavigator<any>();
 
 /**
  * 工作模块导航器
@@ -38,7 +38,7 @@ export function WorkStackNavigator() {
         name="WorkTypeForm"
         component={WorkTypeFormScreen}
         options={({ route }) => ({
-          title: route.params.workTypeName || '工作记录',
+          title: route.params?.workTypeName || '工作记录',
         })}
       />
     </Stack.Navigator>

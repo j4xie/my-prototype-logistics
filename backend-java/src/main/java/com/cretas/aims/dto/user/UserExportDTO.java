@@ -30,7 +30,7 @@ public class UserExportDTO {
 
     @ExcelProperty(value = "用户ID", index = 0)
     @ColumnWidth(10)
-    private Integer id;
+    private Long id;
 
     @ExcelProperty(value = "用户名", index = 1)
     @ColumnWidth(15)

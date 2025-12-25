@@ -114,9 +114,85 @@ Page({
   shoppingCartEdit(parm){
     app.api.shoppingCartEdit(parm)
   },
-  //收藏
-  userCollectAdd(){
-    
+  //收藏 - 将选中的商品移入收藏夹
+  userCollectAdd() {
+    let selectValue = this.data.selectValue
+    let shoppingCartData = this.data.shoppingCartData
+
+    if (selectValue.length <= 0) {
+      wx.showToast({
+        title: '请先选择商品',
+        icon: 'none'
+      })
+      return
+    }
+
+    // 获取已收藏的商品
+    let collections = wx.getStorageSync('userCollections') || []
+    let addCount = 0
+
+    // 将选中商品添加到收藏
+    shoppingCartData.forEach((shoppingCart) => {
+      if (selectValue.indexOf(shoppingCart.id) > -1 && shoppingCart.goodsSpu) {
+        const goods = shoppingCart.goodsSpu
+        // 检查是否已收藏
+        const existIndex = collections.findIndex(item => item.spuId === goods.id)
+        if (existIndex === -1) {
+          // 添加到收藏
+          collections.unshift({
+            spuId: goods.id,
+            spuName: goods.name,
+            picUrl: goods.picUrls ? goods.picUrls[0] : '',
+            salesPrice: goods.salesPrice,
+            collectTime: new Date().getTime()
+          })
+          addCount++
+        }
+      }
+    })
+
+    // 限制收藏数量最多100个
+    if (collections.length > 100) {
+      collections = collections.slice(0, 100)
+    }
+
+    // 保存到本地存储
+    wx.setStorageSync('userCollections', collections)
+
+    if (addCount > 0) {
+      let that = this
+      wx.showModal({
+        title: '收藏成功',
+        content: `已将${addCount}件商品移入收藏夹，是否从购物车删除？`,
+        confirmText: '删除',
+        cancelText: '保留',
+        success: (res) => {
+          if (res.confirm) {
+            // 删除购物车中的选中商品
+            app.api.shoppingCartDel(selectValue)
+              .then(() => {
+                that.setData({
+                  selectValue: [],
+                  isAllSelect: false,
+                  settlePrice: 0
+                })
+                that.shoppingCartPage()
+              })
+          } else {
+            that.setData({
+              selectValue: [],
+              isAllSelect: false
+            })
+            that.checkboxHandle([])
+          }
+        }
+      })
+    } else {
+      wx.showToast({
+        title: '已在收藏夹中',
+        icon: 'none'
+      })
+    }
   },
   shoppingCartDel(){
     let selectValue = this.data.selectValue
@@ -298,7 +374,7 @@ Page({
       data: params
     })
     wx.navigateTo({
-      url: '/pages/order/order-confirm/index'
+      url: '/pages/orders/checkout/index'
     })
   }
 })

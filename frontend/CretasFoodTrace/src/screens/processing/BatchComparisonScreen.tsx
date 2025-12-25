@@ -25,7 +25,7 @@ import { processingApiClient, BatchResponse } from '../../services/api/processin
 import { aiApiClient } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { AIQuota } from '../../types/processing';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建BatchComparison专用logger
@@ -94,12 +94,14 @@ export default function BatchComparisonScreen() {
 
       // 兼容不同的响应格式
       let batchList: BatchResponse[] = [];
-      if (result.data?.batches) {
-        batchList = result.data.batches;
-      } else if (result.batches) {
-        batchList = result.batches;
-      } else if (result.data) {
-        batchList = result.data;
+      if (result.data) {
+        const data: any = result.data;
+        // 检查是否是PagedResponse格式 (有content属性)
+        if (data.content && Array.isArray(data.content)) {
+          batchList = data.content;
+        } else if (Array.isArray(data)) {
+          batchList = data;
+        }
       } else if (Array.isArray(result)) {
         batchList = result;
       }
@@ -113,7 +115,7 @@ export default function BatchComparisonScreen() {
       batchComparisonLogger.error('获取批次列表失败', error as Error, {
         factoryId: user?.factoryUser?.factoryId,
       });
-      Alert.alert('加载失败', error.response?.data?.message || error.message || '请稍后重试');
+      Alert.alert('加载失败', getErrorMsg(error) || '请稍后重试');
       setBatches([]);
     } finally {
       setLoading(false);
@@ -128,9 +130,17 @@ export default function BatchComparisonScreen() {
       const factoryId = user?.factoryUser?.factoryId;
       if (!factoryId) return;
 
-      const response = await aiApiClient.getQuotaInfo(factoryId);
-      if (response && response.data) {
-        setAiQuota(response.data);
+      // getQuotaInfo 直接返回 AIQuotaInfo，需要转换为 AIQuota 格式
+      const quotaInfo = await aiApiClient.getQuotaInfo(factoryId);
+      if (quotaInfo) {
+        // 转换 AIQuotaInfo -> AIQuota
+        setAiQuota({
+          used: quotaInfo.usedQuota,
+          limit: quotaInfo.weeklyQuota,
+          remaining: quotaInfo.remainingQuota,
+          period: 'weekly',
+          resetDate: quotaInfo.resetDate,
+        });
       }
     } catch (error) {
       batchComparisonLogger.warn('加载AI配额失败', {
@@ -192,13 +202,19 @@ export default function BatchComparisonScreen() {
         enableThinking, // 思考模式开关
       }, factoryId);
 
-      if (response && response.data) {
-        setAiAnalysis(response.data.analysis || '');
-        setSessionId(response.data.session_id || '');
+      if (response && response.success) {
+        setAiAnalysis(response.analysis || '');
+        setSessionId(response.session_id || '');
 
-        // 更新配额信息
-        if (response.data.quota) {
-          setAiQuota(response.data.quota);
+        // 更新配额信息 - 转换 AIQuotaInfo -> AIQuota
+        if (response.quota) {
+          setAiQuota({
+            used: response.quota.usedQuota,
+            limit: response.quota.weeklyQuota,
+            remaining: response.quota.remainingQuota,
+            period: 'weekly',
+            resetDate: response.quota.resetDate,
+          });
         }
 
         // 清空自定义问题输入
@@ -209,7 +225,7 @@ export default function BatchComparisonScreen() {
           batchCount: selectedBatches.size,
           dimension,
           hasQuestion: !!question,
-          sessionId: response.data.session_id,
+          sessionId: response.session_id,
           factoryId,
         });
       }
@@ -219,7 +235,7 @@ export default function BatchComparisonScreen() {
         dimension,
         factoryId: user?.factoryUser?.factoryId,
       });
-      Alert.alert('AI分析失败', error.response?.data?.message || error.message || '请稍后重试');
+      Alert.alert('AI分析失败', getErrorMsg(error) || '请稍后重试');
       setAiAnalysis('');
     } finally {
       setAiLoading(false);

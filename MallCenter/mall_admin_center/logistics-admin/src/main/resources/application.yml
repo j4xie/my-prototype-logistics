@@ -15,8 +15,8 @@ joolun:
 
 # 开发环境配置
 server:
-  # 服务器的HTTP端口，默认为8083
-  port: 8083
+  # 服务器的HTTP端口，小程序使用7500
+  port: 7500
   servlet:
     # 应用的访问路径
     context-path: /
@@ -154,8 +154,8 @@ wx:
   # 小程序配置
   ma:
     configs:
-      - appId: xxxxxxxxxxxxxxxx
-        secret: xxxxxxxxxxxxx
+      - appId: wxf8e90943620b4080
+        secret: ea1be8e6df8c378a3239341296f4be84
         # 微信支付商户号，请去微信支付平台申请
         mchId: 1588227511
         # 微信支付商户APIv2密钥，请去微信支付平台申请
@@ -166,3 +166,18 @@ wx:
 mall:
   # 支付、物流回调地址，即后台服务7500端口的外网访问域名，要保证外网能访问，如：https://后台地址/prod-api
   notify-host: http://xx.xxxx.com
+
+# 短信服务配置 (阿里云)
+sms:
+  # 是否启用短信服务
+  enabled: false
+  # 每商户每日发送限额
+  daily-limit: 100
+  aliyun:
+    # 阿里云AccessKey (需要在阿里云控制台申请)
+    access-key:
+    access-secret:
+    # 短信签名名称 (需要在阿里云短信服务申请)
+    sign-name: 白垩纪食品
+    # API端点
+    endpoint: dysmsapi.aliyuncs.com

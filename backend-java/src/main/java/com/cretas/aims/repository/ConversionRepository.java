@@ -21,7 +21,7 @@ import java.util.Optional;
  * @since 2025-01-09
  */
 @Repository
-public interface ConversionRepository extends JpaRepository<MaterialProductConversion, Integer> {
+public interface ConversionRepository extends JpaRepository<MaterialProductConversion, String> {
 
     /**
      * 根据工厂ID查找所有转换率配置
@@ -81,7 +81,7 @@ public interface ConversionRepository extends JpaRepository<MaterialProductConve
     @Query("UPDATE MaterialProductConversion c SET c.isActive = :isActive " +
            "WHERE c.factoryId = :factoryId AND c.id IN :ids")
     void updateActiveStatus(@Param("factoryId") String factoryId,
-                           @Param("ids") List<Integer> ids,
+                           @Param("ids") List<String> ids,
                            @Param("isActive") Boolean isActive);
 
     /**

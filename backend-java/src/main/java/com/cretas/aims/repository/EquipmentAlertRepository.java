@@ -38,13 +38,14 @@ public interface EquipmentAlertRepository extends JpaRepository<EquipmentAlert, 
 
     /**
      * 根据设备ID查询告警
+     * equipmentId 类型改为 Long，与 FactoryEquipment.id 一致
      */
-    List<EquipmentAlert> findByEquipmentIdOrderByTriggeredAtDesc(Integer equipmentId);
+    List<EquipmentAlert> findByEquipmentIdOrderByTriggeredAtDesc(Long equipmentId);
 
     /**
      * 根据设备ID和状态查询告警
      */
-    List<EquipmentAlert> findByEquipmentIdAndStatusOrderByTriggeredAtDesc(Integer equipmentId, AlertStatus status);
+    List<EquipmentAlert> findByEquipmentIdAndStatusOrderByTriggeredAtDesc(Long equipmentId, AlertStatus status);
 
     /**
      * 根据工厂ID分页查询告警

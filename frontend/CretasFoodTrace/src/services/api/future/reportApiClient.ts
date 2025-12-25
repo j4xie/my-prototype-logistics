@@ -1,5 +1,5 @@
-import { apiClient } from './apiClient';
-import { DEFAULT_FACTORY_ID } from '../../constants/config';
+import { apiClient } from '../apiClient';
+import { DEFAULT_FACTORY_ID } from '../../../constants/config';
 
 /**
  * 报表统计管理API客户端

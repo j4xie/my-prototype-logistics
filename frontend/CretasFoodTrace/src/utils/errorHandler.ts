@@ -309,3 +309,22 @@ export function showConfirm(
     ]
   );
 }
+
+/**
+ * 从 unknown 类型的 error 中提取错误消息
+ * 用于 catch 块中安全地访问 error.message
+ * @param error catch 块捕获的 unknown 类型错误
+ * @returns 错误消息字符串
+ */
+export function getErrorMsg(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return '未知错误';
+}

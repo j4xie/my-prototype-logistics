@@ -14,7 +14,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { materialBatchApiClient } from '../../services/api/materialBatchApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建InventoryStatistics专用logger
@@ -62,21 +62,21 @@ export default function InventoryStatisticsScreen() {
       ]);
 
       // 更新状态
-      setStatistics(statsResponse.data);
-      setValuation(valuationResponse.data);
-      setLowStockBatches(Array.isArray(lowStockResponse.data) ? lowStockResponse.data : []);
+      setStatistics((statsResponse as any).data);
+      setValuation((valuationResponse as any).data);
+      setLowStockBatches(Array.isArray((lowStockResponse as any).data) ? (lowStockResponse as any).data : []);
 
       inventoryStatsLogger.info('库存统计数据加载成功', {
         factoryId,
-        hasStatistics: !!statsResponse.data,
-        hasValuation: !!valuationResponse.data,
-        lowStockCount: Array.isArray(lowStockResponse.data) ? lowStockResponse.data.length : 0,
+        hasStatistics: !!(statsResponse as any).data,
+        hasValuation: !!(valuationResponse as any).data,
+        lowStockCount: Array.isArray((lowStockResponse as any).data) ? (lowStockResponse as any).data.length : 0,
       });
     } catch (error) {
       inventoryStatsLogger.error('加载库存统计数据失败', error as Error, {
         factoryId,
       });
-      const errorMessage = error.response?.data?.message || error.message || '无法加载库存数据，请稍后重试';
+      const errorMessage = getErrorMsg(error) || '无法加载库存数据，请稍后重试';
       Alert.alert('加载失败', errorMessage);
 
       // 清空数据（不降级）
@@ -316,26 +316,26 @@ export default function InventoryStatisticsScreen() {
               </DataTable.Header>
 
               {lowStockBatches.slice(0, 10).map((batch, index) => (
-                <DataTable.Row key={batch.id || index}>
+                <DataTable.Row key={(batch as any).id || index}>
                   <DataTable.Cell>
                     <Text variant="bodySmall" numberOfLines={1}>
-                      {batch.batchNumber}
+                      {(batch as any).batchNumber}
                     </Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
                     <Text variant="bodySmall" numberOfLines={1}>
-                      {batch.materialType || batch.materialTypeId}
+                      {(batch as any).materialType || (batch as any).materialTypeId}
                     </Text>
                   </DataTable.Cell>
                   <DataTable.Cell numeric>
                     <Text
                       variant="bodySmall"
                       style={{
-                        color: batch.remainingQuantity < 10 ? '#F44336' : '#FF9800',
+                        color: (batch as any).remainingQuantity < 10 ? '#F44336' : '#FF9800',
                         fontWeight: 'bold',
                       }}
                     >
-                      {batch.remainingQuantity?.toFixed(1) || 0}
+                      {(batch as any).remainingQuantity?.toFixed(1) || 0}
                     </Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
@@ -343,14 +343,14 @@ export default function InventoryStatisticsScreen() {
                       mode="flat"
                       compact
                       style={{
-                        backgroundColor: batch.remainingQuantity < 10 ? '#FFEBEE' : '#FFF3E0',
+                        backgroundColor: (batch as any).remainingQuantity < 10 ? '#FFEBEE' : '#FFF3E0',
                       }}
                       textStyle={{
-                        color: batch.remainingQuantity < 10 ? '#F44336' : '#FF9800',
+                        color: (batch as any).remainingQuantity < 10 ? '#F44336' : '#FF9800',
                         fontSize: 11,
                       }}
                     >
-                      {batch.remainingQuantity < 10 ? '紧急' : '预警'}
+                      {(batch as any).remainingQuantity < 10 ? '紧急' : '预警'}
                     </Chip>
                   </DataTable.Cell>
                 </DataTable.Row>

@@ -47,8 +47,8 @@ public class ReworkRecord extends BaseEntity {
     /**
      * 质检记录ID（关联到触发返工的质检记录）
      */
-    @Column(name = "quality_inspection_id")
-    private Long qualityInspectionId;
+    @Column(name = "quality_inspection_id", length = 191)
+    private String qualityInspectionId;
 
     /**
      * 生产批次ID（针对成品返工）
@@ -59,8 +59,8 @@ public class ReworkRecord extends BaseEntity {
     /**
      * 原材料批次ID（针对原料返工）
      */
-    @Column(name = "material_batch_id")
-    private Integer materialBatchId;
+    @Column(name = "material_batch_id", length = 191)
+    private String materialBatchId;
 
     /**
      * 返工数量
@@ -141,7 +141,7 @@ public class ReworkRecord extends BaseEntity {
      * 负责人ID
      */
     @Column(name = "supervisor_id")
-    private Integer supervisorId;
+    private Long supervisorId;
 
     /**
      * 负责人姓名

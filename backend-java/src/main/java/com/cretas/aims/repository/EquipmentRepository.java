@@ -21,12 +21,12 @@ import java.util.Optional;
  * @since 2025-01-09
  */
 @Repository
-public interface EquipmentRepository extends JpaRepository<FactoryEquipment, String> {
+public interface EquipmentRepository extends JpaRepository<FactoryEquipment, Long> {
 
     /**
      * 根据ID和工厂ID查找设备
      */
-    Optional<FactoryEquipment> findByIdAndFactoryId(String id, String factoryId);
+    Optional<FactoryEquipment> findByIdAndFactoryId(Long id, String factoryId);
 
     /**
      * 根据工厂ID查找设备（分页）
@@ -45,9 +45,10 @@ public interface EquipmentRepository extends JpaRepository<FactoryEquipment, Str
 
     /**
      * 根据名称搜索设备
+     * 注意：equipmentName/model使用双向模糊（无法使用索引），equipmentCode使用右模糊（可使用索引）
      */
     @Query("SELECT e FROM FactoryEquipment e WHERE e.factoryId = :factoryId " +
-           "AND (e.equipmentName LIKE %:keyword% OR e.equipmentCode LIKE %:keyword% OR e.model LIKE %:keyword%)")
+           "AND (e.equipmentName LIKE CONCAT('%', :keyword, '%') OR e.equipmentCode LIKE CONCAT(:keyword, '%') OR e.model LIKE CONCAT('%', :keyword, '%'))")
     List<FactoryEquipment> searchByKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
 
     /**
@@ -128,7 +129,7 @@ public interface EquipmentRepository extends JpaRepository<FactoryEquipment, Str
      * 检查设备是否有关联的使用记录
      */
     @Query("SELECT COUNT(u) > 0 FROM BatchEquipmentUsage u WHERE u.equipmentId = :equipmentId")
-    boolean hasUsageRecords(@Param("equipmentId") String equipmentId);
+    boolean hasUsageRecords(@Param("equipmentId") Long equipmentId);
 
     /**
      * 统计工厂的设备总数

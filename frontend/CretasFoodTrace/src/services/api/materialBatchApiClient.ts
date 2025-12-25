@@ -11,6 +11,10 @@ export interface MaterialBatch {
   batchNumber: string;
   factoryId: string;
   materialTypeId: string;
+  materialName?: string;        // 原料名称
+  materialCode?: string;        // 原料代码
+  materialCategory?: string;    // 原料类别
+  storageType?: 'fresh' | 'frozen' | 'dry';  // 存储类型(来自原料类型)
   inboundQuantity: number;
   remainingQuantity: number;
   reservedQuantity: number;
@@ -18,6 +22,7 @@ export interface MaterialBatch {
   unitPrice: number;
   totalCost: number;
   supplierId: string;
+  supplierName?: string;        // 供应商名称
   inboundDate: string;
   expiryDate?: string;
   productionDate?: string;
@@ -27,6 +32,7 @@ export interface MaterialBatch {
   notes?: string;
   createdAt: string;
   updatedAt?: string;
+  createdByName?: string;       // 创建人姓名
 }
 
 export interface ConvertToFrozenRequest {
@@ -128,7 +134,9 @@ class MaterialBatchApiClient {
 
   // 13. 按状态获取批次
   async getBatchesByStatus(status: string, factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/status/${status}`);
+    // 后端枚举使用大写，需要转换
+    const upperStatus = status.toUpperCase();
+    return await apiClient.get(`${this.getPath(factoryId)}/status/${upperStatus}`);
   }
 
   // 14. 获取FIFO批次（先进先出）

@@ -23,13 +23,15 @@ class FactorySettingsApiClient {
   // ===== 基础设置 (2个API) =====
 
   // 1. 获取工厂基本设置
+  // 后端端点: GET /api/mobile/{factoryId}/settings (根路径)
   async getBasicSettings(factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/basic`);
+    return await apiClient.get(`${this.getPath(factoryId)}`);
   }
 
   // 2. 更新工厂基本设置
+  // 后端端点: PUT /api/mobile/{factoryId}/settings (根路径)
   async updateBasicSettings(data: any, factoryId?: string) {
-    return await apiClient.put(`${this.getPath(factoryId)}/basic`, data);
+    return await apiClient.put(`${this.getPath(factoryId)}`, data);
   }
 
   // ===== AI设置 (2个API) =====

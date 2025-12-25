@@ -180,7 +180,7 @@ export const dashboardAPI = {
       success: boolean;
       data: DashboardOverviewData;
       message?: string;
-    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/overview`, {
+    }>(`/api/mobile/${currentFactoryId}/reports/dashboard/overview`, {
       params: { period },
     });
     return response;
@@ -208,7 +208,7 @@ export const dashboardAPI = {
       success: boolean;
       data: ProductionStatisticsData;
       message?: string;
-    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/production`, {
+    }>(`/api/mobile/${currentFactoryId}/reports/dashboard/production`, {
       params,
     });
     return response;
@@ -228,7 +228,7 @@ export const dashboardAPI = {
       success: boolean;
       data: EquipmentDashboardData;
       message?: string;
-    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/equipment`);
+    }>(`/api/mobile/${currentFactoryId}/reports/dashboard/equipment`);
     return response;
   },
 
@@ -250,7 +250,7 @@ export const dashboardAPI = {
       success: boolean;
       data: QualityDashboardData;
       message?: string;
-    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/quality`, {
+    }>(`/api/mobile/${currentFactoryId}/reports/dashboard/quality`, {
       params: { period },
     });
     return response;
@@ -274,7 +274,7 @@ export const dashboardAPI = {
       success: boolean;
       data: AlertsDashboardData;
       message?: string;
-    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/alerts`, {
+    }>(`/api/mobile/${currentFactoryId}/reports/dashboard/alerts`, {
       params: { period },
     });
     return response;
@@ -301,7 +301,7 @@ export const dashboardAPI = {
       success: boolean;
       data: TrendAnalysisData;
       message?: string;
-    }>(`/api/mobile/${currentFactoryId}/processing/dashboard/trends`, {
+    }>(`/api/mobile/${currentFactoryId}/reports/dashboard/trends`, {
       params,
     });
     return response;

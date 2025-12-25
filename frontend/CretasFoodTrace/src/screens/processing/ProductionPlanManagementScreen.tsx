@@ -16,10 +16,10 @@ import {
   List,
   SegmentedButtons,
 } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Picker } from '@react-native-picker/picker';
-import { productionPlanApiClient, ProductionPlan as ApiProductionPlan } from '../../services/api/productionPlanApiClient';
+import { productionPlanApiClient, ProductionPlan as ApiProductionPlan, StockWithConversion } from '../../services/api/productionPlanApiClient';
 import { productTypeApiClient } from '../../services/api/productTypeApiClient';
 import { customerApiClient } from '../../services/api/customerApiClient';
 import { conversionApiClient } from '../../services/api/conversionApiClient';
@@ -28,13 +28,31 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { ProductTypeSelector } from '../../components/common/ProductTypeSelector';
 import { CustomerSelector } from '../../components/common/CustomerSelector';
 import { MaterialBatchSelector, SelectedBatch, AvailableBatch } from '../../components/common/MaterialBatchSelector';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建ProductionPlanManagement专用logger
 const productionPlanLogger = logger.createContextLogger('ProductionPlanManagement');
 
-type ProductionPlan = ApiProductionPlan;
+// Extended ProductionPlan with populated fields from backend
+interface ExtendedProductionPlan extends ApiProductionPlan {
+  productType?: {
+    id: string;
+    name: string;
+    productCode: string;
+  };
+  customer?: {
+    id: string;
+    name: string;
+  };
+  estimatedMaterialUsage?: number;
+  // 未来计划匹配相关字段
+  allocatedQuantity?: number;
+  isFullyMatched?: boolean;
+  matchingProgress?: number;
+}
+
+type ProductionPlan = ExtendedProductionPlan;
 type NavigationProp = NativeStackNavigationProp<ProcessingStackParamList>;
 
 /**
@@ -51,7 +69,7 @@ export default function ProductionPlanManagementScreen() {
   // 权限控制
   const userType = user?.userType || 'factory';
   // 修复：优先使用 factoryUser.role，然后是 roleCode
-  const roleCode = user?.factoryUser?.role || user?.factoryUser?.roleCode || user?.roleCode || 'viewer';
+  const roleCode = user?.factoryUser?.role || user?.roleCode || 'viewer';
 
   // 平台管理员只读权限
   const isReadOnly = userType === 'platform';
@@ -73,13 +91,23 @@ export default function ProductionPlanManagementScreen() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [availableStock, setAvailableStock] = useState<any[]>([]);
 
+  // 计算明天的日期作为默认预计完成日期
+  const getDefaultCompletionDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0]; // 格式: YYYY-MM-DD
+  };
+
   const [formData, setFormData] = useState({
+    planType: 'FROM_INVENTORY' as 'FUTURE' | 'FROM_INVENTORY',
     productTypeId: '',
     productTypeName: '',
     productTypeCode: '',
     customerId: '',
     customerName: '',
     plannedQuantity: '',
+    plannedDate: new Date().toISOString().split('T')[0], // 今天
+    expectedCompletionDate: getDefaultCompletionDate(),   // 明天 (默认+1天)
     notes: '',
   });
 
@@ -91,6 +119,16 @@ export default function ProductionPlanManagementScreen() {
   const [estimatedUsage, setEstimatedUsage] = useState<number | null>(null);
   const [conversionRate, setConversionRate] = useState<number | null>(null);
   const [wastageRate, setWastageRate] = useState<number | null>(null);
+
+  // 库存加载状态
+  const [stockLoading, setStockLoading] = useState(false);
+  const [stockError, setStockError] = useState<string | null>(null);
+
+  // 完成生产对话框状态
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [completingPlan, setCompletingPlan] = useState<ProductionPlan | null>(null);
+  const [actualQuantity, setActualQuantity] = useState('');
+  const [completeLoading, setCompleteLoading] = useState(false);
 
   useEffect(() => {
     loadPlans();
@@ -130,20 +168,20 @@ export default function ProductionPlanManagementScreen() {
       setLoading(true);
       const response = await productionPlanApiClient.getProductionPlans({
         page: 1,
-        limit: 100,
+        size: 100,
         ...(filterStatus !== 'all' && { status: filterStatus }),
       });
 
-      if (response.success && response.data) {
-        // 安全地访问 plans 数组
-        const plansData = response.data.plans || response.data || [];
+      if ((response as any).success && (response as any).data) {
+        // 后端返回分页格式: { content: [...], totalElements, ... }
+        const plansData = (response as any).data.content || (response as any).data || [];
         setPlans(Array.isArray(plansData) ? plansData : []);
       } else {
         setPlans([]);
       }
     } catch (error) {
       productionPlanLogger.error('加载生产计划失败', error, { filterStatus });
-      Alert.alert('错误', error.response?.data?.message || '加载生产计划失败');
+      Alert.alert('错误', getErrorMsg(error) || '加载生产计划失败');
       setPlans([]);
     } finally {
       setLoading(false);
@@ -158,27 +196,29 @@ export default function ProductionPlanManagementScreen() {
         productionPlanApiClient.getAvailableStock(),
       ]);
 
-      if (productsRes.success && productsRes.data) {
-        const productTypesData = productsRes.data.productTypes || productsRes.data || [];
-        setProductTypes(Array.isArray(productTypesData) ? productTypesData : []);
+      // ProductTypes response is { data: ProductType[] }
+      if (productsRes.data) {
+        const productTypesData = Array.isArray(productsRes.data) ? productsRes.data : [];
+        setProductTypes(productTypesData);
       }
 
-      if (customersRes.success && customersRes.data) {
-        const customersData = customersRes.data.customers || customersRes.data || [];
-        setCustomers(Array.isArray(customersData) ? customersData : []);
+      // Customers response is { data: Customer[] }
+      if (customersRes.data) {
+        const customersData = Array.isArray(customersRes.data) ? customersRes.data : [];
+        setCustomers(customersData);
       }
 
-      if (stockRes.success && stockRes.data) {
-        // 转换库存汇总数据为界面需要的格式
-        const summary = stockRes.data.summary || [];
-        const summaryData = Array.isArray(summary) 
-          ? summary.map(item => ({
-              category: item.category,
-              available: item.totalAvailable,
-              batchCount: item.batchCount,
-            }))
-          : [];
-        setAvailableStock(summaryData);
+      // StockSummary response
+      if ((stockRes as any).success && (stockRes as any).data) {
+        const stockData = (stockRes as any).data as any;
+        if (stockData.summary && Array.isArray(stockData.summary)) {
+          const summaryData = stockData.summary.map((item: any) => ({
+            category: item.materialTypeName || item.category,
+            available: item.totalQuantity || item.totalAvailable || 0,
+            batchCount: item.batchCount || 0,
+          }));
+          setAvailableStock(summaryData);
+        }
       }
     } catch (error) {
       productionPlanLogger.error('加载选项失败', error);
@@ -187,13 +227,16 @@ export default function ProductionPlanManagementScreen() {
 
   // 加载原料库存（当产品类型变化时）
   const loadMaterialStock = async (productTypeId: string) => {
+    setStockLoading(true);
+    setStockError(null);
     try {
       productionPlanLogger.debug('加载产品对应的原料库存', { productTypeId });
 
       const stockRes = await productionPlanApiClient.getAvailableStock({ productTypeId });
 
-      if (stockRes.success && stockRes.data) {
-        const { materialType, batches, totalAvailable, conversionRate, wastageRate } = stockRes.data;
+      if ((stockRes as any).success && (stockRes as any).data) {
+        const stockData = (stockRes as any).data as StockWithConversion;
+        const { materialType, batches, totalAvailable, conversionRate, wastageRate } = stockData;
 
         if (materialType) {
           setMaterialTypeId(materialType.id);
@@ -235,12 +278,19 @@ export default function ProductionPlanManagementScreen() {
           setMaterialTypeName('');
           setAvailableBatches([]);
           setAvailableStock([]);
-          Alert.alert('提示', '该产品未配置转换率，请先在转换率管理中配置');
+          // 不再弹Alert，改为在UI中显示状态
+          productionPlanLogger.warn('该产品未配置转换率', { productTypeId });
         }
       }
     } catch (error) {
       productionPlanLogger.error('加载原料库存失败', error, { productTypeId });
-      Alert.alert('错误', error.response?.data?.message || '加载原料库存失败');
+      setStockError(getErrorMsg(error) || '加载原料库存失败');
+      setMaterialTypeId('');
+      setMaterialTypeName('');
+      setAvailableBatches([]);
+      setAvailableStock([]);
+    } finally {
+      setStockLoading(false);
     }
   };
 
@@ -256,16 +306,16 @@ export default function ProductionPlanManagementScreen() {
         plannedQuantity: parseFloat(formData.plannedQuantity),
       });
 
-      if (result.success && result.data) {
-        setEstimatedUsage(result.data.estimatedUsage);
-        setConversionRate(result.data.conversionRate);
-        setWastageRate(result.data.wastageRate);
+      if ((result as any).success && (result as any).data) {
+        setEstimatedUsage((result as any).data.estimatedUsage);
+        setConversionRate((result as any).data.conversionRate);
+        setWastageRate((result as any).data.wastageRate);
 
         productionPlanLogger.info('预估计算完成', {
-          plannedQuantity: result.data.plannedQuantity,
-          conversionRate: `${result.data.conversionRate}%`,
-          wastageRate: `${result.data.wastageRate}%`,
-          estimatedUsage: `${result.data.estimatedUsage}kg`,
+          plannedQuantity: (result as any).data.plannedQuantity,
+          conversionRate: `${(result as any).data.conversionRate}%`,
+          wastageRate: `${(result as any).data.wastageRate}%`,
+          estimatedUsage: `${(result as any).data.estimatedUsage}kg`,
         });
       }
     } catch (error) {
@@ -284,12 +334,15 @@ export default function ProductionPlanManagementScreen() {
 
   const handleAdd = () => {
     setFormData({
+      planType: 'FROM_INVENTORY',
       productTypeId: '',
       productTypeName: '',
       productTypeCode: '',
       customerId: '',
       customerName: '',
       plannedQuantity: '',
+      plannedDate: new Date().toISOString().split('T')[0],
+      expectedCompletionDate: getDefaultCompletionDate(),
       notes: '',
     });
     // 清空批次选择相关数据
@@ -331,18 +384,16 @@ export default function ProductionPlanManagementScreen() {
 
     try {
       const response = await productionPlanApiClient.createProductionPlan({
+        planType: formData.planType,
         productTypeId: formData.productTypeId,
         customerId: formData.customerId,
         plannedQuantity: parseFloat(formData.plannedQuantity),
-        selectedBatches: selectedBatches.length > 0 ? selectedBatches.map(b => ({
-          batchId: b.id,
-          quantity: b.allocatedQuantity,
-          unitPrice: b.unitPrice,
-        })) : undefined,
+        plannedDate: formData.plannedDate,
+        expectedCompletionDate: formData.expectedCompletionDate,
         notes: formData.notes || undefined,
-      });
+      } as any);
 
-      if (response.success) {
+      if ((response as any).success) {
         Alert.alert('成功', `生产计划创建成功${selectedBatches.length > 0 ? `\n已预留${selectedBatches.length}个批次的库存` : ''}`);
         setModalVisible(false);
         loadPlans();
@@ -354,7 +405,7 @@ export default function ProductionPlanManagementScreen() {
         plannedQuantity: formData.plannedQuantity,
         selectedBatchCount: selectedBatches.length,
       });
-      Alert.alert('错误', error.response?.data?.message || '创建失败');
+      Alert.alert('错误', getErrorMsg(error) || '创建失败');
     }
   };
 
@@ -369,13 +420,13 @@ export default function ProductionPlanManagementScreen() {
           onPress: async () => {
             try {
               const response = await productionPlanApiClient.startProduction(planId);
-              if (response.success) {
+              if ((response as any).success) {
                 Alert.alert('成功', '生产已开始');
                 loadPlans();
               }
             } catch (error) {
               productionPlanLogger.error('开始生产失败', error, { planId });
-              Alert.alert('错误', error.response?.data?.message || '操作失败');
+              Alert.alert('错误', getErrorMsg(error) || '操作失败');
             }
           },
         },
@@ -383,8 +434,51 @@ export default function ProductionPlanManagementScreen() {
     );
   };
 
+  // 打开完成生产对话框
+  const openCompleteDialog = (plan: ProductionPlan) => {
+    setCompletingPlan(plan);
+    setActualQuantity(plan.plannedQuantity?.toString() || '');
+    setShowCompleteDialog(true);
+  };
+
+  // 处理完成生产
+  const handleCompleteProduction = async () => {
+    if (!completingPlan) return;
+
+    const actualQty = parseFloat(actualQuantity);
+    if (isNaN(actualQty) || actualQty <= 0) {
+      Alert.alert('错误', '请输入有效的实际产量');
+      return;
+    }
+
+    try {
+      setCompleteLoading(true);
+      const response = await productionPlanApiClient.completeProduction(
+        completingPlan.id,
+        actualQty
+      );
+
+      if ((response as any).success) {
+        Alert.alert('成功', `生产已完成，实际产量: ${actualQty} kg`);
+        setShowCompleteDialog(false);
+        setCompletingPlan(null);
+        setActualQuantity('');
+        loadPlans();
+      }
+    } catch (error) {
+      productionPlanLogger.error('完成生产失败', error, {
+        planId: completingPlan.id,
+        actualQuantity: actualQty,
+      });
+      Alert.alert('错误', getErrorMsg(error) || '操作失败');
+    } finally {
+      setCompleteLoading(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const s = status?.toLowerCase();
+    switch (s) {
       case 'pending': return '#FFA726';
       case 'in_progress': return '#2196F3';
       case 'completed': return '#66BB6A';
@@ -395,13 +489,30 @@ export default function ProductionPlanManagementScreen() {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
+    const s = status?.toLowerCase();
+    switch (s) {
       case 'pending': return '待生产';
       case 'in_progress': return '生产中';
       case 'completed': return '已完成';
       case 'shipped': return '已出货';
       case 'cancelled': return '已取消';
       default: return '未知';
+    }
+  };
+
+  const getPlanTypeText = (planType?: string) => {
+    switch (planType) {
+      case 'FUTURE': return '未来计划';
+      case 'FROM_INVENTORY': return '基于库存';
+      default: return '基于库存';
+    }
+  };
+
+  const getPlanTypeColor = (planType?: string) => {
+    switch (planType) {
+      case 'FUTURE': return '#9C27B0';
+      case 'FROM_INVENTORY': return '#4CAF50';
+      default: return '#4CAF50';
     }
   };
 
@@ -444,13 +555,13 @@ export default function ProductionPlanManagementScreen() {
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {plans.filter(p => p.status === 'in_progress').length}
+                  {plans.filter(p => p.status?.toLowerCase() === 'in_progress').length}
                 </Text>
                 <Text style={styles.statLabel}>生产中</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {plans.filter(p => p.status === 'completed').length}
+                  {plans.filter(p => p.status?.toLowerCase() === 'completed').length}
                 </Text>
                 <Text style={styles.statLabel}>已完成</Text>
               </View>
@@ -479,18 +590,53 @@ export default function ProductionPlanManagementScreen() {
                 {/* Header */}
                 <View style={styles.planHeader}>
                   <View style={styles.planTitleRow}>
-                    <Text style={styles.planNumber}>{plan.planNumber}</Text>
-                    <Chip
-                      mode="flat"
-                      compact
-                      style={[
-                        styles.statusChip,
-                        { backgroundColor: `${getStatusColor(plan.status)}20` },
-                      ]}
-                      textStyle={{ color: getStatusColor(plan.status) }}
-                    >
-                      {getStatusText(plan.status)}
-                    </Chip>
+                    <View style={styles.planTitleLeft}>
+                      <Text style={styles.planNumber}>{plan.planNumber}</Text>
+                      {/* 计划类型标签 */}
+                      <Chip
+                        mode="flat"
+                        compact
+                        style={[
+                          styles.planTypeChip,
+                          { backgroundColor: `${getPlanTypeColor(plan.planType)}15` },
+                        ]}
+                        textStyle={{ color: getPlanTypeColor(plan.planType), fontSize: 10 }}
+                      >
+                        {getPlanTypeText(plan.planType)}
+                      </Chip>
+                    </View>
+                    <View style={styles.planTitleRight}>
+                      {/* 转换率配置状态 */}
+                      <Chip
+                        mode="flat"
+                        compact
+                        icon={plan.conversionRateConfigured ? 'check-circle' : 'alert-circle'}
+                        style={[
+                          styles.conversionChip,
+                          { backgroundColor: plan.conversionRateConfigured ? '#E8F5E920' : '#FFF3E020' },
+                        ]}
+                        textStyle={{
+                          color: plan.conversionRateConfigured ? '#4CAF50' : '#FF9800',
+                          fontSize: 11,
+                        }}
+                      >
+                        {plan.conversionRateConfigured
+                          ? `${((plan.conversionRate ?? 0) * 100).toFixed(0)}%`
+                          : '未配置'}
+                      </Chip>
+                      {/* 状态标签 */}
+                      <Chip
+                        mode="flat"
+                        compact
+                        style={[
+                          styles.statusChip,
+                          { backgroundColor: `${getStatusColor(plan.status)}20` },
+                        ]}
+                        textStyle={{ color: getStatusColor(plan.status) }}
+                      >
+                        {getStatusText(plan.status)}
+                      </Chip>
+                    </View>
                   </View>
                 </View>
 
@@ -502,7 +648,9 @@ export default function ProductionPlanManagementScreen() {
                     <List.Icon icon="package-variant" style={styles.icon} />
                     <View style={styles.infoContent}>
                       <Text style={styles.infoLabel}>产品</Text>
-                      <Text style={styles.infoValue}>{plan.productType.name}</Text>
+                      <Text style={styles.infoValue}>
+                        {plan.productName || plan.productType?.name || plan.productTypeId}
+                      </Text>
                     </View>
                   </View>
 
@@ -513,6 +661,28 @@ export default function ProductionPlanManagementScreen() {
                       <Text style={styles.infoValue}>{plan.customer?.name || '未指定'}</Text>
                     </View>
                   </View>
+
+                  <View style={styles.infoRow}>
+                    <List.Icon icon="calendar" style={styles.icon} />
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>创建日期</Text>
+                      <Text style={styles.infoValue}>
+                        {plan.createdAt ? plan.createdAt.split('T')[0] : '-'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {plan.expectedCompletionDate && (
+                    <View style={styles.infoRow}>
+                      <List.Icon icon="calendar-check" style={styles.icon} />
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>预计完成</Text>
+                        <Text style={[styles.infoValue, { color: '#4CAF50' }]}>
+                          {plan.expectedCompletionDate}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                 </View>
 
                 <Divider style={styles.divider} />
@@ -526,12 +696,14 @@ export default function ProductionPlanManagementScreen() {
                     </Text>
                   </View>
 
-                  <View style={styles.quantityItem}>
-                    <Text style={styles.quantityLabel}>预估原料</Text>
-                    <Text style={styles.quantityValue}>
-                      {plan.estimatedMaterialUsage}kg
-                    </Text>
-                  </View>
+                  {plan.estimatedMaterialUsage && (
+                    <View style={styles.quantityItem}>
+                      <Text style={styles.quantityLabel}>预估原料</Text>
+                      <Text style={styles.quantityValue}>
+                        {plan.estimatedMaterialUsage}kg
+                      </Text>
+                    </View>
+                  )}
 
                   {plan.actualQuantity && (
                     <View style={styles.quantityItem}>
@@ -543,8 +715,47 @@ export default function ProductionPlanManagementScreen() {
                   )}
                 </View>
 
+                {/* 未来计划匹配进度 */}
+                {plan.planType === 'FUTURE' && plan.status?.toLowerCase() === 'pending' && (
+                  <Card style={styles.matchingProgressCard}>
+                    <Card.Content>
+                      <View style={styles.matchingProgressHeader}>
+                        <List.Icon
+                          icon={plan.isFullyMatched ? 'check-circle' : 'clock-outline'}
+                          color={plan.isFullyMatched ? '#4CAF50' : '#9C27B0'}
+                        />
+                        <Text style={[
+                          styles.matchingProgressTitle,
+                          { color: plan.isFullyMatched ? '#4CAF50' : '#9C27B0' }
+                        ]}>
+                          {plan.isFullyMatched ? '原料已完全匹配' : '等待原料入库'}
+                        </Text>
+                      </View>
+                      <View style={styles.matchingProgressBar}>
+                        <View
+                          style={[
+                            styles.matchingProgressFill,
+                            { width: `${plan.matchingProgress ?? 0}%` }
+                          ]}
+                        />
+                      </View>
+                      <View style={styles.matchingProgressDetails}>
+                        <Text style={styles.matchingProgressText}>
+                          已分配: {plan.allocatedQuantity ?? 0}kg / {plan.plannedQuantity}kg
+                        </Text>
+                        <Text style={[
+                          styles.matchingProgressPercent,
+                          { color: plan.isFullyMatched ? '#4CAF50' : '#9C27B0' }
+                        ]}>
+                          {plan.matchingProgress ?? 0}%
+                        </Text>
+                      </View>
+                    </Card.Content>
+                  </Card>
+                )}
+
                 {/* Actions */}
-                {!isReadOnly && plan.status === 'pending' && (
+                {!isReadOnly && plan.status?.toLowerCase() === 'pending' && (
                   <Button
                     mode="contained"
                     icon="play"
@@ -555,30 +766,20 @@ export default function ProductionPlanManagementScreen() {
                   </Button>
                 )}
 
-                {!isReadOnly && plan.status === 'in_progress' && (
+                {!isReadOnly && plan.status?.toLowerCase() === 'in_progress' && (
                   <View style={styles.actionRow}>
-                    <Button
-                      mode="outlined"
-                      icon="package-down"
-                      onPress={() => Alert.alert('提示', '记录原料消耗功能')}
-                      style={styles.smallActionButton}
-                      compact
-                    >
-                      记录消耗
-                    </Button>
                     <Button
                       mode="contained"
                       icon="check"
-                      onPress={() => Alert.alert('提示', '完成生产功能')}
-                      style={styles.smallActionButton}
-                      compact
+                      onPress={() => openCompleteDialog(plan)}
+                      style={styles.actionButton}
                     >
                       完成生产
                     </Button>
                   </View>
                 )}
 
-                {!isReadOnly && plan.status === 'completed' && (
+                {!isReadOnly && plan.status?.toLowerCase() === 'completed' && (
                   <Button
                     mode="contained"
                     icon="truck-delivery"
@@ -617,6 +818,35 @@ export default function ProductionPlanManagementScreen() {
           <ScrollView>
             <Text style={styles.modalTitle}>创建生产计划</Text>
 
+            {/* 计划类型选择 */}
+            <View style={styles.planTypeSection}>
+              <Text style={styles.sectionLabel}>计划类型</Text>
+              <SegmentedButtons
+                value={formData.planType}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, planType: value as 'FUTURE' | 'FROM_INVENTORY' })
+                }
+                buttons={[
+                  {
+                    value: 'FROM_INVENTORY',
+                    label: '基于库存',
+                    icon: 'package-variant-closed',
+                  },
+                  {
+                    value: 'FUTURE',
+                    label: '未来计划',
+                    icon: 'calendar-clock',
+                  },
+                ]}
+                style={styles.planTypeButtons}
+              />
+              <Text style={styles.planTypeHint}>
+                {formData.planType === 'FROM_INVENTORY'
+                  ? '根据当前可用库存创建计划，需选择原材料批次'
+                  : '预先规划的生产计划，可暂不指定具体批次'}
+              </Text>
+            </View>
+
             {/* 产品类型选择 */}
             <ProductTypeSelector
               value={formData.productTypeName}
@@ -642,6 +872,35 @@ export default function ProductionPlanManagementScreen() {
               keyboardType="decimal-pad"
               placeholder="例如: 100"
             />
+
+            {/* Date Fields */}
+            <View style={styles.dateRow}>
+              <View style={styles.dateField}>
+                <TextInput
+                  label="计划日期"
+                  value={formData.plannedDate}
+                  onChangeText={(text) => setFormData({ ...formData, plannedDate: text })}
+                  mode="outlined"
+                  style={styles.dateInput}
+                  placeholder="YYYY-MM-DD"
+                  right={<TextInput.Icon icon="calendar" />}
+                />
+              </View>
+              <View style={styles.dateField}>
+                <TextInput
+                  label="预计完成"
+                  value={formData.expectedCompletionDate}
+                  onChangeText={(text) => setFormData({ ...formData, expectedCompletionDate: text })}
+                  mode="outlined"
+                  style={styles.dateInput}
+                  placeholder="YYYY-MM-DD"
+                  right={<TextInput.Icon icon="calendar-check" />}
+                />
+              </View>
+            </View>
+            <Text style={styles.dateHint}>
+              💡 预计完成日期默认为计划日期+1天，可手动修改
+            </Text>
 
             {/* Estimated Material Usage */}
             {estimatedUsage !== null && (
@@ -691,47 +950,118 @@ export default function ProductionPlanManagementScreen() {
               placeholder="选择客户"
             />
 
-            {/* 批次选择器 */}
-            {materialTypeId && availableBatches.length > 0 && estimatedUsage && estimatedUsage > 0 && (
-              <MaterialBatchSelector
-                availableBatches={availableBatches}
-                requiredQuantity={estimatedUsage}
-                selectedBatches={selectedBatches}
-                onSelect={setSelectedBatches}
-                mode="fifo"
-              />
-            )}
+            {/* 原材料批次区域 - 仅基于库存类型显示 */}
+            {formData.planType === 'FROM_INVENTORY' ? (
+            <Card style={styles.batchSectionCard}>
+              <Card.Content>
+                <Text style={styles.batchSectionTitle}>原材料批次</Text>
 
-            {/* 未配置转换率或无库存提示 */}
-            {materialTypeId && availableBatches.length === 0 && (
-              <Card style={styles.warningCard}>
-                <Card.Content>
-                  <View style={styles.warningContent}>
+                {/* 状态1: 加载中 */}
+                {stockLoading && (
+                  <View style={styles.batchStatusRow}>
+                    <ActivityIndicator size="small" color="#1976D2" />
+                    <Text style={styles.batchStatusText}>加载库存中...</Text>
+                  </View>
+                )}
+
+                {/* 状态2: 加载错误 */}
+                {!stockLoading && stockError && (
+                  <View style={styles.batchStatusRow}>
+                    <List.Icon icon="alert-circle" color="#F44336" />
+                    <Text style={styles.batchErrorText}>{stockError}</Text>
+                  </View>
+                )}
+
+                {/* 状态3: 未选择产品 */}
+                {!stockLoading && !stockError && !formData.productTypeId && (
+                  <View style={styles.batchStatusRow}>
+                    <List.Icon icon="information-outline" color="#9E9E9E" />
+                    <Text style={styles.batchHintText}>请先选择产品类型</Text>
+                  </View>
+                )}
+
+                {/* 状态4: 未配置转换率 */}
+                {!stockLoading && !stockError && formData.productTypeId && !materialTypeId && (
+                  <View style={styles.batchWarningContainer}>
+                    <View style={styles.batchWarningRow}>
+                      <List.Icon icon="alert-circle-outline" color="#FF9800" />
+                      <View style={styles.batchWarningTextContainer}>
+                        <Text style={styles.batchWarningTitle}>未配置转换率</Text>
+                        <Text style={styles.batchWarningHint}>
+                          请先在转换率管理中配置该产品的转换率
+                        </Text>
+                      </View>
+                    </View>
+                    <Button
+                      mode="contained"
+                      compact
+                      onPress={() => {
+                        setModalVisible(false);
+                        navigation.dispatch(
+                          CommonActions.navigate({
+                            name: 'Main',
+                            params: {
+                              screen: 'ManagementTab',
+                              params: {
+                                screen: 'ConversionRate',
+                              },
+                            },
+                          })
+                        );
+                      }}
+                      style={styles.configButton}
+                    >
+                      去配置
+                    </Button>
+                  </View>
+                )}
+
+                {/* 状态5: 无可用库存 */}
+                {!stockLoading && !stockError && materialTypeId && availableBatches.length === 0 && (
+                  <View style={styles.batchWarningRow}>
                     <List.Icon icon="alert" color="#F44336" />
                     <View>
-                      <Text variant="bodyMedium" style={styles.warningTitle}>
+                      <Text style={styles.batchWarningTitle}>
                         无可用{materialTypeName}库存
                       </Text>
-                      <Text variant="bodySmall" style={styles.warningHint}>
+                      <Text style={styles.batchWarningHint}>
                         请先入库{materialTypeName}原料
                       </Text>
                     </View>
                   </View>
-                </Card.Content>
-              </Card>
-            )}
+                )}
 
-            {!materialTypeId && formData.productTypeId && (
-              <Card style={styles.warningCard}>
+                {/* 状态6: 等待输入计划产量 */}
+                {!stockLoading && !stockError && materialTypeId && availableBatches.length > 0 && !estimatedUsage && (
+                  <View style={styles.batchStatusRow}>
+                    <List.Icon icon="calculator-variant-outline" color="#1976D2" />
+                    <Text style={styles.batchHintText}>请输入计划产量以计算所需原料</Text>
+                  </View>
+                )}
+
+                {/* 状态7: 显示批次选择器 */}
+                {!stockLoading && !stockError && materialTypeId && availableBatches.length > 0 && estimatedUsage && estimatedUsage > 0 && (
+                  <MaterialBatchSelector
+                    availableBatches={availableBatches}
+                    requiredQuantity={estimatedUsage}
+                    selectedBatches={selectedBatches}
+                    onSelect={setSelectedBatches}
+                    mode="fifo"
+                  />
+                )}
+              </Card.Content>
+            </Card>
+            ) : (
+              /* 未来计划类型 - 显示自动匹配说明 */
+              <Card style={styles.futurePlanInfoCard}>
                 <Card.Content>
-                  <View style={styles.warningContent}>
-                    <List.Icon icon="alert-circle-outline" color="#FF9800" />
-                    <View>
-                      <Text variant="bodyMedium" style={styles.warningTitle}>
-                        未配置转换率
-                      </Text>
-                      <Text variant="bodySmall" style={styles.warningHint}>
-                        请先在转换率管理中配置该产品的转换率
+                  <View style={styles.futurePlanInfoRow}>
+                    <List.Icon icon="calendar-clock" color="#9C27B0" />
+                    <View style={styles.futurePlanInfoContent}>
+                      <Text style={styles.futurePlanInfoTitle}>自动匹配原料</Text>
+                      <Text style={styles.futurePlanInfoText}>
+                        未来计划创建后，当新原料入库时系统将自动匹配到此计划。
+                        您可以在计划列表中查看匹配进度。
                       </Text>
                     </View>
                   </View>
@@ -768,6 +1098,77 @@ export default function ProductionPlanManagementScreen() {
               </Button>
             </View>
           </ScrollView>
+        </Modal>
+      </Portal>
+
+      {/* 完成生产对话框 */}
+      <Portal>
+        <Modal
+          visible={showCompleteDialog}
+          onDismiss={() => {
+            setShowCompleteDialog(false);
+            setCompletingPlan(null);
+            setActualQuantity('');
+          }}
+          contentContainerStyle={styles.completeModalContent}
+        >
+          <Text style={styles.modalTitle}>完成生产</Text>
+
+          {completingPlan && (
+            <View style={styles.completeInfo}>
+              <Text style={styles.completeInfoLabel}>产品类型:</Text>
+              <Text style={styles.completeInfoValue}>
+                {completingPlan.productType?.name || completingPlan.productTypeId}
+              </Text>
+
+              <Text style={styles.completeInfoLabel}>计划产量:</Text>
+              <Text style={styles.completeInfoValue}>
+                {completingPlan.plannedQuantity} kg
+              </Text>
+            </View>
+          )}
+
+          <TextInput
+            label="实际产量 (kg) *"
+            value={actualQuantity}
+            onChangeText={setActualQuantity}
+            mode="outlined"
+            style={styles.input}
+            keyboardType="decimal-pad"
+            placeholder="输入实际完成的产量"
+          />
+
+          {completingPlan && parseFloat(actualQuantity) > 0 && (
+            <View style={styles.yieldInfo}>
+              <Text style={styles.yieldInfoText}>
+                完成率: {((parseFloat(actualQuantity) / (completingPlan.plannedQuantity || 1)) * 100).toFixed(1)}%
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.modalActions}>
+            <Button
+              mode="outlined"
+              onPress={() => {
+                setShowCompleteDialog(false);
+                setCompletingPlan(null);
+                setActualQuantity('');
+              }}
+              style={styles.modalButton}
+              disabled={completeLoading}
+            >
+              取消
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleCompleteProduction}
+              style={styles.modalButton}
+              loading={completeLoading}
+              disabled={completeLoading || !actualQuantity}
+            >
+              确认完成
+            </Button>
+          </View>
         </Modal>
       </Portal>
 
@@ -861,11 +1262,32 @@ const styles = StyleSheet.create({
   planTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  planTitleLeft: {
+    flexDirection: 'column',
+    gap: 4,
+    flex: 1,
+  },
+  planTitleRight: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 4,
   },
   planNumber: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  planTypeChip: {
+    height: 24,
+    alignSelf: 'flex-start',
+    flexShrink: 0,
+    minWidth: 90,
+  },
+  conversionChip: {
+    height: 26,
+    minWidth: 70,
+    flexShrink: 0,
   },
   statusChip: {
     height: 28,
@@ -941,6 +1363,41 @@ const styles = StyleSheet.create({
     margin: 20,
     borderRadius: 8,
     maxHeight: '90%',
+  },
+  completeModalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 20,
+    borderRadius: 8,
+  },
+  completeInfo: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+  },
+  completeInfoLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  completeInfoValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 12,
+  },
+  yieldInfo: {
+    padding: 12,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  yieldInfoText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1976D2',
   },
   modalTitle: {
     fontSize: 20,
@@ -1089,5 +1546,174 @@ const styles = StyleSheet.create({
   },
   warningHint: {
     color: '#F57C00',
+  },
+  warningTextContainer: {
+    flex: 1,
+  },
+  configButton: {
+    backgroundColor: '#FF9800',
+  },
+  // 批次区域样式
+  batchSectionCard: {
+    marginVertical: 12,
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  batchSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  batchStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  batchStatusText: {
+    fontSize: 14,
+    color: '#1976D2',
+  },
+  batchErrorText: {
+    fontSize: 14,
+    color: '#F44336',
+    flex: 1,
+  },
+  batchHintText: {
+    fontSize: 14,
+    color: '#757575',
+  },
+  batchWarningContainer: {
+    paddingVertical: 8,
+  },
+  batchWarningRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 8,
+  },
+  batchWarningTextContainer: {
+    flex: 1,
+  },
+  batchWarningTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#E65100',
+    marginBottom: 4,
+  },
+  batchWarningHint: {
+    fontSize: 13,
+    color: '#F57C00',
+  },
+  // 计划类型选择样式
+  planTypeSection: {
+    marginBottom: 20,
+    backgroundColor: '#F5F5F5',
+    padding: 16,
+    borderRadius: 8,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  planTypeButtons: {
+    marginBottom: 8,
+  },
+  planTypeHint: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  // 日期字段样式
+  dateRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 4,
+  },
+  dateField: {
+    flex: 1,
+  },
+  dateInput: {
+    fontSize: 14,
+  },
+  dateHint: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  // 未来计划信息卡片样式
+  futurePlanInfoCard: {
+    marginVertical: 12,
+    backgroundColor: '#F3E5F5',
+    borderWidth: 1,
+    borderColor: '#CE93D8',
+  },
+  futurePlanInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  futurePlanInfoContent: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  futurePlanInfoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#7B1FA2',
+    marginBottom: 4,
+  },
+  futurePlanInfoText: {
+    fontSize: 13,
+    color: '#9C27B0',
+    lineHeight: 18,
+  },
+  // 匹配进度卡片样式
+  matchingProgressCard: {
+    marginTop: 12,
+    backgroundColor: '#F3E5F5',
+    borderWidth: 1,
+    borderColor: '#CE93D8',
+  },
+  matchingProgressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  matchingProgressTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  matchingProgressBar: {
+    height: 8,
+    backgroundColor: '#E1BEE7',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  matchingProgressFill: {
+    height: '100%',
+    backgroundColor: '#9C27B0',
+    borderRadius: 4,
+  },
+  matchingProgressDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  matchingProgressText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  matchingProgressPercent: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

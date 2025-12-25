@@ -2,8 +2,11 @@ package com.cretas.aims.service;
 
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.ConversionDTO;
+import com.cretas.aims.dto.ConversionChangeHistoryDTO;
+import com.cretas.aims.dto.ConversionHistoryAnalysisDTO;
 import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 /**
  * 转换率管理服务接口
@@ -20,15 +23,15 @@ public interface ConversionService {
      /**
      * 更新转换率配置
       */
-    ConversionDTO updateConversion(String factoryId, Integer id, ConversionDTO dto);
+    ConversionDTO updateConversion(String factoryId, String id, ConversionDTO dto);
      /**
      * 删除转换率配置
       */
-    void deleteConversion(String factoryId, Integer id);
+    void deleteConversion(String factoryId, String id);
      /**
      * 获取转换率详情
       */
-    ConversionDTO getConversion(String factoryId, Integer id);
+    ConversionDTO getConversion(String factoryId, String id);
      /**
      * 分页查询转换率配置
       */
@@ -65,7 +68,7 @@ public interface ConversionService {
      /**
      * 批量更新激活状态
       */
-    void updateActiveStatus(String factoryId, List<Integer> ids, Boolean isActive);
+    void updateActiveStatus(String factoryId, List<String> ids, Boolean isActive);
      /**
      * 导入转换率配置
       */
@@ -82,6 +85,15 @@ public interface ConversionService {
      * 获取转换率统计信息
       */
     ConversionStatistics getStatistics(String factoryId);
+
+    /**
+     * 基于历史生产数据建议转换率
+     * @param factoryId 工厂ID
+     * @param materialTypeId 原材料类型ID
+     * @param productTypeId 产品类型ID
+     * @return 建议的转换率配置
+     */
+    SuggestedConversion suggestConversionFromHistory(String factoryId, String materialTypeId, String productTypeId);
      /**
      * 原材料需求
       */
@@ -171,4 +183,71 @@ public interface ConversionService {
         public BigDecimal getAverageWastageRate() { return averageWastageRate; }
         public void setAverageWastageRate(BigDecimal averageWastageRate) { this.averageWastageRate = averageWastageRate; }
     }
+
+    /**
+     * 建议的转换率配置（基于历史数据计算）
+     */
+    class SuggestedConversion {
+        private boolean hasData;                    // 是否有历史数据
+        private int sampleCount;                    // 样本数量（已完成批次数）
+        private BigDecimal suggestedRate;           // 建议转换率
+        private BigDecimal suggestedWastageRate;    // 建议损耗率
+        private BigDecimal totalMaterialConsumed;   // 总消耗原料量
+        private BigDecimal totalProductOutput;      // 总产出量
+        private String confidence;                  // 置信度: HIGH(>=5批次), MEDIUM(3-4批次), LOW(<3批次)
+        private String message;                     // 提示信息
+
+        public boolean isHasData() { return hasData; }
+        public void setHasData(boolean hasData) { this.hasData = hasData; }
+        public int getSampleCount() { return sampleCount; }
+        public void setSampleCount(int sampleCount) { this.sampleCount = sampleCount; }
+        public BigDecimal getSuggestedRate() { return suggestedRate; }
+        public void setSuggestedRate(BigDecimal suggestedRate) { this.suggestedRate = suggestedRate; }
+        public BigDecimal getSuggestedWastageRate() { return suggestedWastageRate; }
+        public void setSuggestedWastageRate(BigDecimal suggestedWastageRate) { this.suggestedWastageRate = suggestedWastageRate; }
+        public BigDecimal getTotalMaterialConsumed() { return totalMaterialConsumed; }
+        public void setTotalMaterialConsumed(BigDecimal totalMaterialConsumed) { this.totalMaterialConsumed = totalMaterialConsumed; }
+        public BigDecimal getTotalProductOutput() { return totalProductOutput; }
+        public void setTotalProductOutput(BigDecimal totalProductOutput) { this.totalProductOutput = totalProductOutput; }
+        public String getConfidence() { return confidence; }
+        public void setConfidence(String confidence) { this.confidence = confidence; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+    }
+
+    // ========== 变更历史相关方法 ==========
+
+    /**
+     * 获取单个转换率配置的变更历史
+     * @param factoryId 工厂ID
+     * @param conversionId 转换率配置ID
+     * @param pageable 分页参数
+     * @return 变更历史分页数据
+     */
+    PageResponse<ConversionChangeHistoryDTO> getChangeHistory(String factoryId, String conversionId, Pageable pageable);
+
+    /**
+     * 获取某原料类型的所有转换率变更历史
+     * @param factoryId 工厂ID
+     * @param materialTypeId 原料类型ID
+     * @param pageable 分页参数
+     * @return 变更历史分页数据
+     */
+    PageResponse<ConversionChangeHistoryDTO> getMaterialHistory(String factoryId, String materialTypeId, Pageable pageable);
+
+    /**
+     * 获取指定时间段内的变更历史分析数据（AI分析用）
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 分析数据
+     */
+    ConversionHistoryAnalysisDTO getHistoryForAnalysis(String factoryId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 获取转换率的变更次数
+     * @param conversionId 转换率配置ID
+     * @return 变更次数
+     */
+    long getChangeCount(String conversionId);
 }

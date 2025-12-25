@@ -58,10 +58,10 @@ public class CustomerController {
 
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
 
         log.info("创建客户: factoryId={}, name={}", factoryId, request.getName());
-        CustomerDTO customer = customerService.createCustomer(factoryId, request, userId);
+        CustomerDTO customer = customerService.createCustomer(factoryId, request, userId.longValue());
         return ApiResponse.success("客户创建成功", customer);
     }
 
@@ -187,6 +187,9 @@ public class CustomerController {
 
     /**
      * 切换客户状态
+     * 支持两种参数格式：
+     * 1. URL参数: PUT /{customerId}/status?isActive=true
+     * 2. Request Body: PUT /{customerId}/status {"isActive": true}
      */
     @PutMapping("/{customerId}/status")
     @Operation(summary = "切换客户状态")
@@ -195,12 +198,23 @@ public class CustomerController {
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "客户ID", required = true)
             @PathVariable @NotBlank String customerId,
-            @Parameter(description = "激活状态", required = true)
-            @RequestParam @NotNull Boolean isActive) {
+            @Parameter(description = "激活状态 (URL参数)")
+            @RequestParam(required = false) Boolean isActive,
+            @Parameter(description = "激活状态 (Body参数)")
+            @RequestBody(required = false) Map<String, Boolean> body) {
+
+        // 优先使用URL参数，如果没有则从body获取
+        Boolean activeStatus = isActive;
+        if (activeStatus == null && body != null) {
+            activeStatus = body.get("isActive");
+        }
+        if (activeStatus == null) {
+            return ApiResponse.error("参数错误: isActive 是必需的");
+        }
 
         log.info("切换客户状态: factoryId={}, customerId={}, isActive={}",
-                factoryId, customerId, isActive);
-        CustomerDTO customer = customerService.toggleCustomerStatus(factoryId, customerId, isActive);
+                factoryId, customerId, activeStatus);
+        CustomerDTO customer = customerService.toggleCustomerStatus(factoryId, customerId, activeStatus);
         return ApiResponse.success("客户状态更新成功", customer);
     }
 
@@ -418,10 +432,10 @@ public class CustomerController {
 
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
 
         log.info("批量导入客户(JSON): factoryId={}, count={}", factoryId, requests.size());
-        List<CustomerDTO> customers = customerService.importCustomers(factoryId, requests, userId);
+        List<CustomerDTO> customers = customerService.importCustomers(factoryId, requests, userId.longValue());
         return ApiResponse.success(String.format("成功导入%d个客户", customers.size()), customers);
     }
 

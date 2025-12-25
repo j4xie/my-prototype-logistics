@@ -104,5 +104,40 @@ public interface TimeClockRecordRepository extends JpaRepository<TimeClockRecord
             @Param("userId") Long userId,
             Pageable pageable
     );
+
+    /**
+     * 批量查询多个用户在日期范围内的打卡记录（解决N+1查询问题）
+     * 一次查询获取所有用户的记录，然后在Java中按userId分组
+     *
+     * @param factoryId 工厂ID
+     * @param userIds 用户ID列表
+     * @param start 开始时间
+     * @param end 结束时间
+     * @return 所有用户的打卡记录列表
+     */
+    @Query("SELECT t FROM TimeClockRecord t WHERE t.factoryId = :factoryId AND t.userId IN :userIds " +
+           "AND t.clockInTime >= :start AND t.clockInTime < :end ORDER BY t.userId, t.clockInTime DESC")
+    List<TimeClockRecord> findByFactoryIdAndUserIdInAndClockDateBetween(
+            @Param("factoryId") String factoryId,
+            @Param("userIds") List<Long> userIds,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+    /**
+     * 查询工厂在日期范围内的所有打卡记录（用于统计）
+     *
+     * @param factoryId 工厂ID
+     * @param start 开始时间
+     * @param end 结束时间
+     * @return 所有打卡记录
+     */
+    @Query("SELECT t FROM TimeClockRecord t WHERE t.factoryId = :factoryId " +
+           "AND t.clockInTime >= :start AND t.clockInTime < :end ORDER BY t.clockInTime DESC")
+    List<TimeClockRecord> findByFactoryIdAndClockDateBetween(
+            @Param("factoryId") String factoryId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }
 

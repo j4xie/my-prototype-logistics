@@ -18,7 +18,7 @@ import { factorySettingsApiClient } from '../../services/api/factorySettingsApiC
 import { useAuthStore } from '../../store/authStore';
 import type { AISettings, AISettingsResponse, AIUsageStats } from '../../types/processing';
 import { AI_TONE_OPTIONS, AI_GOAL_OPTIONS, AI_DETAIL_OPTIONS } from '../../types/processing';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建AISettings专用logger
@@ -91,8 +91,9 @@ export default function AISettingsScreen() {
     } catch (error) {
       aiSettingsLogger.error('加载AI设置失败', error as Error, { factoryId });
       // 如果API不存在，使用默认设置，不显示错误提示
-      if (error.response?.status !== 404) {
-        Alert.alert('错误', error.response?.data?.message || '加载设置失败');
+      const apiError = error as any;
+      if (apiError.response?.status !== 404) {
+        Alert.alert('错误', getErrorMsg(error) || '加载设置失败');
       }
     } finally {
       setLoading(false);
@@ -111,14 +112,17 @@ export default function AISettingsScreen() {
       if (response && response.success && response.data) {
         // 适配后端返回的数据结构
         const backendData = response.data;
-        setUsageStats({
+        const stats: AIUsageStats = {
+          period: 'weekly',
           totalCalls: backendData.weeklyUsed || 0,
           byType: {
             analysis: backendData.weeklyUsed || 0,
             question: 0,
           },
           byUser: {},
-        });
+          recentLogs: [],
+        };
+        setUsageStats(stats);
         if (backendData.weeklyQuota) {
           setWeeklyQuota(backendData.weeklyQuota);
         }

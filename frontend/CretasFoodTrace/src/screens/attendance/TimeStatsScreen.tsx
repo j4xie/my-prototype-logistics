@@ -15,7 +15,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { timeStatsApiClient } from '../../services/api/timeStatsApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建TimeStats专用logger
@@ -53,16 +53,16 @@ export default function TimeStatsScreen() {
   /**
    * 获取日期参数
    */
-  const getDateParams = () => {
+  const getDateParams = (): { today: string; weekStart: string; year: number; month: number } => {
     const now = new Date();
-    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const today = now.toISOString().split('T')[0] as string; // YYYY-MM-DD
 
     // 获取本周一
     const dayOfWeek = now.getDay();
     const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 周日特殊处理
     const monday = new Date(now);
     monday.setDate(now.getDate() + diff);
-    const weekStart = monday.toISOString().split('T')[0];
+    const weekStart = monday.toISOString().split('T')[0] as string;
 
     // 获取当前年月
     const year = now.getFullYear();
@@ -89,18 +89,27 @@ export default function TimeStatsScreen() {
       });
 
       // 并行加载所有统计数据
+      if (!factoryId) {
+        console.error('❌ Factory ID not found');
+        setLoading(false);
+        return;
+      }
+
+      // Narrow the type to string
+      const validFactoryId: string = factoryId;
+
       const [dailyResponse, weeklyResponse, monthlyResponse, performersResponse, efficiencyResponse] =
         await Promise.all([
           // API 1: 日统计
-          timeStatsApiClient.getDailyStats(today, factoryId).catch(() => ({ data: null })),
+          timeStatsApiClient.getDailyStats(today, validFactoryId).catch(() => ({ data: null })),
           // API 2: 周统计
-          timeStatsApiClient.getWeeklyStats(weekStart, factoryId).catch(() => ({ data: null })),
+          timeStatsApiClient.getWeeklyStats(weekStart, validFactoryId).catch(() => ({ data: null })),
           // API 3: 月统计
-          timeStatsApiClient.getMonthlyStats(year, month, factoryId).catch(() => ({ data: null })),
+          timeStatsApiClient.getMonthlyStats(year, month, validFactoryId).catch(() => ({ data: null })),
           // API 4: 绩效排行
-          timeStatsApiClient.getTopPerformers(10, factoryId).catch(() => ({ data: [] })),
+          timeStatsApiClient.getTopPerformers(10, validFactoryId).catch(() => ({ data: [] })),
           // API 5: 效率报告
-          timeStatsApiClient.getEfficiencyReport(undefined, factoryId).catch(() => ({ data: null })),
+          timeStatsApiClient.getEfficiencyReport(undefined, validFactoryId).catch(() => ({ data: null })),
         ]);
 
       timeStatsLogger.info('工时统计数据加载成功', {
@@ -124,7 +133,7 @@ export default function TimeStatsScreen() {
         factoryId,
         timeRange,
       });
-      const errorMessage = error.response?.data?.message || error.message || '无法加载工时统计，请稍后重试';
+      const errorMessage = getErrorMsg(error) || '无法加载工时统计，请稍后重试';
       Alert.alert('加载失败', errorMessage);
 
       // 清空数据（不使用降级）

@@ -19,7 +19,7 @@ public interface EquipmentService {
     /**
      * 创建设备
      */
-    EquipmentDTO createEquipment(String factoryId, CreateEquipmentRequest request, Integer userId);
+    EquipmentDTO createEquipment(String factoryId, CreateEquipmentRequest request, Long userId);
      /**
      * 更新设备
       */
@@ -101,7 +101,7 @@ public interface EquipmentService {
      /**
      * 批量导入设备
       */
-    List<EquipmentDTO> importEquipment(String factoryId, List<CreateEquipmentRequest> requests, Integer userId);
+    List<EquipmentDTO> importEquipment(String factoryId, List<CreateEquipmentRequest> requests, Long userId);
      /**
      * 导出设备列表
       */

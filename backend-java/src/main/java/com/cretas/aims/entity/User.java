@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.Department;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -20,6 +21,7 @@ import java.util.List;
 @ToString(exclude = {"factory", "sessions", "workSessions", "materialConsumptions", "batchWorkSessions"})
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "users",
        uniqueConstraints = {
@@ -35,7 +37,7 @@ public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
-    private Integer id;
+    private Long id;
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
     @Column(name = "username", nullable = false)
