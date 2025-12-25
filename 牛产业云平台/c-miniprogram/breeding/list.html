@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>育种种牛 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+    }
+
+    /* 顶部搜索栏 - 紫色主题 */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      padding: 12px 16px;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .back-btn {
+      color: white;
+      font-size: 20px;
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .search-input-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 20px;
+      padding: 0 16px;
+      height: 40px;
+    }
+
+    .search-input-wrap input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      background: transparent;
+    }
+
+    .search-input-wrap .search-icon {
+      color: #9E9E9E;
+      margin-right: 8px;
+    }
+
+    .search-input-wrap .clear-btn {
+      color: #9E9E9E;
+      cursor: pointer;
+      display: none;
+    }
+
+    .search-input-wrap .clear-btn.show {
+      display: block;
+    }
+
+    /* 筛选工具栏 */
+    .filter-toolbar {
+      position: fixed;
+      top: 64px;
+      left: 0;
+      right: 0;
+      z-index: 99;
+      background: white;
+      border-bottom: 1px solid #E0E0E0;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .filter-tabs {
+      display: flex;
+      height: 44px;
+    }
+
+    .filter-tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 14px;
+      color: #616161;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .filter-tab.active {
+      color: #7B1FA2;
+      border-bottom-color: #7B1FA2;
+    }
+
+    .filter-tab .arrow {
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+
+    .filter-tab.active .arrow {
+      transform: rotate(180deg);
+    }
+
+    /* 快捷筛选条 */
+    .quick-filters {
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px;
+      overflow-x: auto;
+      background: #FAFAFA;
+    }
+
+    .quick-filters::-webkit-scrollbar {
+      display: none;
+    }
+
+    .quick-filter-tag {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      background: white;
+      color: #616161;
+      border: 1px solid #E0E0E0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-filter-tag.active {
+      background: #F3E5F5;
+      color: #7B1FA2;
+      border-color: #7B1FA2;
+    }
+
+    /* 筛选下拉面板 */
+    .filter-dropdown {
+      position: fixed;
+      top: 108px;
+      left: 0;
+      right: 0;
+      background: white;
+      z-index: 98;
+      max-height: 60vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      display: none;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .filter-dropdown.show {
+      display: block;
+    }
+
+    .filter-dropdown-mask {
+      position: fixed;
+      top: 108px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 97;
+      display: none;
+    }
+
+    .filter-dropdown-mask.show {
+      display: block;
+    }
+
+    .filter-section {
+      padding: 16px;
+      border-bottom: 1px solid #F0F0F0;
+    }
+
+    .filter-section:last-child {
+      border-bottom: none;
+    }
+
+    .filter-section-title {
+      font-size: 13px;
+      color: #9E9E9E;
+      margin-bottom: 12px;
+    }
+
+    .filter-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-option {
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #F5F5F5;
+      color: #424242;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-option.active {
+      background: #7B1FA2;
+      color: white;
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      border-top: 1px solid #E0E0E0;
+    }
+
+    .filter-actions button {
+      flex: 1;
+      height: 44px;
+      border-radius: 22px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-actions .reset-btn {
+      background: #F5F5F5;
+      border: none;
+      color: #616161;
+    }
+
+    .filter-actions .confirm-btn {
+      background: #7B1FA2;
+      border: none;
+      color: white;
+    }
+
+    /* 主内容区 */
+    .main-content {
+      margin-top: 152px;
+      padding: 12px;
+    }
+
+    /* 育种介绍横幅 */
+    .breeding-banner {
+      background: linear-gradient(135deg, #9C27B0 0%, #6A1B9A 100%);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .breeding-banner-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .breeding-banner-content h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .breeding-banner-content p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    /* 结果统计 */
+    .result-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 4px;
+      font-size: 13px;
+      color: #9E9E9E;
+    }
+
+    .result-stats .count {
+      color: #7B1FA2;
+      font-weight: 600;
+    }
+
+    .result-stats .sort-select {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #616161;
+      cursor: pointer;
+    }
+
+    /* 列表卡片 */
+    .breeding-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .breeding-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: flex;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .breeding-card:active {
+      transform: scale(0.98);
+    }
+
+    .breeding-card-image {
+      width: 120px;
+      height: 140px;
+      flex-shrink: 0;
+      background: #F3E5F5;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .breeding-card-image .placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: #CE93D8;
+    }
+
+    .breeding-card-image .tag {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      color: white;
+    }
+
+    .breeding-card-image .tag.elite {
+      background: #7B1FA2;
+    }
+
+    .breeding-card-image .tag.certified {
+      background: #FF6F00;
+    }
+
+    .breeding-card-image .tag.imported {
+      background: #1565C0;
+    }
+
+    .breeding-card-info {
+      flex: 1;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .breeding-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #212121;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .breeding-card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .breeding-card-tags span {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      background: #F5F5F5;
+      color: #757575;
+    }
+
+    .breeding-card-tags span.highlight {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .breeding-card-specs {
+      font-size: 12px;
+      color: #9E9E9E;
+      margin-bottom: 4px;
+    }
+
+    .breeding-card-genetic {
+      font-size: 11px;
+      color: #7B1FA2;
+      background: #F3E5F5;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .breeding-card-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: auto;
+    }
+
+    .breeding-card-price {
+      font-size: 18px;
+      font-weight: 700;
+      color: #E53935;
+    }
+
+    .breeding-card-price .unit {
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .breeding-card-location {
+      font-size: 11px;
+      color: #9E9E9E;
+    }
+
+    /* 加载更多 */
+    .load-more {
+      text-align: center;
+      padding: 20px;
+      color: #9E9E9E;
+      font-size: 13px;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-state .icon {
+      font-size: 64px;
+      color: #CE93D8;
+      margin-bottom: 16px;
+    }
+
+    .empty-state .title {
+      font-size: 16px;
+      color: #424242;
+      margin-bottom: 8px;
+    }
+
+    .empty-state .desc {
+      font-size: 14px;
+      color: #9E9E9E;
+    }
+
+    /* 浮动按钮 */
+    .fab-filter {
+      position: fixed;
+      right: max(16px, calc(50% - 198px));
+      bottom: 90px;
+      width: 48px;
+      height: 48px;
+      background: #7B1FA2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(123, 31, 162, 0.3);
+      cursor: pointer;
+      z-index: 90;
+    }
+
+    .fab-filter .badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 18px;
+      height: 18px;
+      background: #E53935;
+      border-radius: 50%;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      display: none;
+    }
+
+    .fab-filter .badge.show {
+      display: flex;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* MDI 图标标准化 */
+    .mdi {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .nav-item .icon,
+    .nav-icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body class="theme-green has-bottom-nav">
+  <!-- 顶部搜索栏 -->
+  <header class="header">
+    <div class="search-bar">
+      <div class="back-btn" onclick="goBack()"><i class="mdi mdi-arrow-left"></i></div>
+      <div class="search-input-wrap">
+        <span class="search-icon"><i class="mdi mdi-magnify"></i></span>
+        <input type="text" id="searchInput" placeholder="搜索种牛、血统、基因信息...">
+        <span class="clear-btn" id="clearSearchBtn" onclick="clearSearch()"><i class="mdi mdi-close"></i></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 筛选工具栏 -->
+  <div class="filter-toolbar">
+    <div class="filter-tabs">
+      <div class="filter-tab" data-filter="breed" onclick="toggleFilter('breed')">
+        <span>品种</span>
+        <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+      </div>
+      <div class="filter-tab" data-filter="quality" onclick="toggleFilter('quality')">
+        <span>等级</span>
+        <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+      </div>
+      <div class="filter-tab" data-filter="gender" onclick="toggleFilter('gender')">
+        <span>性别</span>
+        <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+      </div>
+      <div class="filter-tab" data-filter="more" onclick="toggleFilter('more')">
+        <span>更多</span>
+        <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+      </div>
+    </div>
+    <div class="quick-filters" id="quickFilters">
+      <!-- 快捷筛选标签动态生成 -->
+    </div>
+  </div>
+
+  <!-- 筛选下拉面板 -->
+  <div class="filter-dropdown-mask" id="filterMask" onclick="closeFilterDropdown()"></div>
+  <div class="filter-dropdown" id="filterDropdown">
+    <!-- 品种筛选 -->
+    <div id="breedFilter" class="filter-panel" style="display: none;">
+      <div class="filter-section">
+        <div class="filter-section-title">选择品种</div>
+        <div class="filter-options" id="breedOptions">
+          <div class="filter-option active" data-value="" onclick="selectBreed(this)">全部</div>
+          <div class="filter-option" data-value="SIMMENTAL" onclick="selectBreed(this)">西门塔尔</div>
+          <div class="filter-option" data-value="CHAROLAIS" onclick="selectBreed(this)">夏洛莱</div>
+          <div class="filter-option" data-value="ANGUS" onclick="selectBreed(this)">安格斯</div>
+          <div class="filter-option" data-value="LIMOUSIN" onclick="selectBreed(this)">利木赞</div>
+          <div class="filter-option" data-value="WAGYU" onclick="selectBreed(this)">和牛</div>
+          <div class="filter-option" data-value="HEREFORD" onclick="selectBreed(this)">海福特</div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="reset-btn" onclick="resetFilter('breed')">重置</button>
+        <button class="confirm-btn" onclick="confirmFilter('breed')">确定</button>
+      </div>
+    </div>
+
+    <!-- 等级筛选 -->
+    <div id="qualityFilter" class="filter-panel" style="display: none;">
+      <div class="filter-section">
+        <div class="filter-section-title">育种等级</div>
+        <div class="filter-options">
+          <div class="filter-option active" data-value="" onclick="selectQuality(this)">全部</div>
+          <div class="filter-option" data-value="elite" onclick="selectQuality(this)">精英级</div>
+          <div class="filter-option" data-value="premium" onclick="selectQuality(this)">优良级</div>
+          <div class="filter-option" data-value="standard" onclick="selectQuality(this)">标准级</div>
+        </div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-section-title">认证状态</div>
+        <div class="filter-options">
+          <div class="filter-option" data-value="certified" onclick="selectCert(this)">已认证</div>
+          <div class="filter-option" data-value="imported" onclick="selectCert(this)">进口种牛</div>
+          <div class="filter-option" data-value="pedigree" onclick="selectCert(this)">有血统证书</div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="reset-btn" onclick="resetFilter('quality')">重置</button>
+        <button class="confirm-btn" onclick="confirmFilter('quality')">确定</button>
+      </div>
+    </div>
+
+    <!-- 性别筛选 -->
+    <div id="genderFilter" class="filter-panel" style="display: none;">
+      <div class="filter-section">
+        <div class="filter-section-title">选择性别</div>
+        <div class="filter-options">
+          <div class="filter-option active" data-value="" onclick="selectGender(this)">全部</div>
+          <div class="filter-option" data-value="male" onclick="selectGender(this)">种公牛</div>
+          <div class="filter-option" data-value="female" onclick="selectGender(this)">繁殖母牛</div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="reset-btn" onclick="resetFilter('gender')">重置</button>
+        <button class="confirm-btn" onclick="confirmFilter('gender')">确定</button>
+      </div>
+    </div>
+
+    <!-- 更多筛选 -->
+    <div id="moreFilter" class="filter-panel" style="display: none;">
+      <div class="filter-section">
+        <div class="filter-section-title">产地</div>
+        <div class="filter-options">
+          <div class="filter-option" data-value="内蒙古" onclick="selectRegion(this)">内蒙古</div>
+          <div class="filter-option" data-value="新疆" onclick="selectRegion(this)">新疆</div>
+          <div class="filter-option" data-value="山东" onclick="selectRegion(this)">山东</div>
+          <div class="filter-option" data-value="河北" onclick="selectRegion(this)">河北</div>
+          <div class="filter-option" data-value="吉林" onclick="selectRegion(this)">吉林</div>
+          <div class="filter-option" data-value="进口" onclick="selectRegion(this)">进口</div>
+        </div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-section-title">价格区间</div>
+        <div class="filter-options">
+          <div class="filter-option" data-value="0-50000" onclick="selectPrice(this)">5万以下</div>
+          <div class="filter-option" data-value="50000-100000" onclick="selectPrice(this)">5-10万</div>
+          <div class="filter-option" data-value="100000-200000" onclick="selectPrice(this)">10-20万</div>
+          <div class="filter-option" data-value="200000-0" onclick="selectPrice(this)">20万以上</div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="reset-btn" onclick="resetFilter('more')">重置</button>
+        <button class="confirm-btn" onclick="confirmFilter('more')">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <div class="main-content">
+    <!-- 育种介绍横幅 -->
+    <div class="breeding-banner">
+      <div class="breeding-banner-icon">
+        <i class="mdi mdi-dna"></i>
+      </div>
+      <div class="breeding-banner-content">
+        <h3>优质种牛 基因传承</h3>
+        <p>精选高品质种牛，助力牧场繁殖升级</p>
+      </div>
+    </div>
+
+    <!-- 结果统计 -->
+    <div class="result-stats">
+      <span>共 <span class="count" id="resultCount">0</span> 条结果</span>
+      <div class="sort-select" onclick="toggleSortMenu()">
+        <span id="currentSort">综合推荐</span>
+        <span><i class="mdi mdi-menu-down"></i></span>
+      </div>
+    </div>
+
+    <!-- 列表 -->
+    <div class="breeding-list" id="breedingList">
+      <!-- 动态生成 -->
+    </div>
+
+    <!-- 加载更多 -->
+    <div class="load-more" id="loadMore">下拉加载更多</div>
+  </div>
+
+  <!-- 筛选浮动按钮 -->
+  <div class="fab-filter" onclick="openFullFilter()">
+    <span><i class="mdi mdi-filter-variant"></i></span>
+    <span class="badge" id="filterBadge">0</span>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="../home/home.html" class="nav-item">
+      <span class="nav-icon mdi mdi-home"></span>
+      <span>首页</span>
+    </a>
+    <a href="publish.html" class="nav-item">
+      <span class="nav-icon mdi mdi-plus-circle"></span>
+      <span>发布</span>
+    </a>
+    <a href="../ai-rag/chat.html" class="nav-item">
+      <span class="nav-icon mdi mdi-robot"></span>
+      <span>AI</span>
+    </a>
+    <a href="../enterprise/messages.html" class="nav-item">
+      <span class="nav-icon mdi mdi-bell"></span>
+      <span>消息</span>
+    </a>
+    <a href="../enterprise/center.html" class="nav-item">
+      <span class="nav-icon mdi mdi-account"></span>
+      <span>我的</span>
+    </a>
+  </nav>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- JS 框架 -->
+  <script src="../../assets/js/utils.js"></script>
+  <script src="../../assets/js/stateManager.js"></script>
+  <script src="../../assets/js/dictionaries.js"></script>
+  <script src="../../assets/js/mockData.js"></script>
+
+  <script>
+    // ==================== 状态管理 ====================
+    const filterState = {
+      breed: null,
+      quality: null,
+      certification: null,
+      gender: null,
+      region: null,
+      priceRange: null,
+      keyword: '',
+      sort: 'recommend'
+    };
+
+    let currentPage = 1;
+    const pageSize = 10;
+    let isLoading = false;
+    let hasMore = true;
+    let allListings = [];
+
+    // ==================== Mock 种牛数据 ====================
+    const breedingCattleData = [
+      {
+        id: 'BR001',
+        title: '精英级西门塔尔种公牛 血统纯正',
+        breed: 'SIMMENTAL',
+        gender: 'male',
+        quality: 'elite',
+        age: 36,
+        weight: 1200,
+        price: 180000,
+        location: { province: '内蒙古', city: '通辽市' },
+        genetic: '父系: 加拿大进口 | 母系: 国内精选',
+        certification: ['certified', 'pedigree'],
+        featured: true
+      },
+      {
+        id: 'BR002',
+        title: '进口澳洲安格斯种公牛 高端繁殖',
+        breed: 'ANGUS',
+        gender: 'male',
+        quality: 'elite',
+        age: 42,
+        weight: 1100,
+        price: 250000,
+        location: { province: '山东', city: '济南市' },
+        genetic: '纯进口血统 | 基因检测合格',
+        certification: ['imported', 'certified', 'pedigree'],
+        featured: true
+      },
+      {
+        id: 'BR003',
+        title: '优良级夏洛莱繁殖母牛 已配种',
+        breed: 'CHAROLAIS',
+        gender: 'female',
+        quality: 'premium',
+        age: 30,
+        weight: 850,
+        price: 45000,
+        location: { province: '新疆', city: '乌鲁木齐市' },
+        genetic: '优质母系 | 产仔记录良好',
+        certification: ['certified'],
+        featured: false
+      },
+      {
+        id: 'BR004',
+        title: '日本和牛F1代种公牛 稀缺品种',
+        breed: 'WAGYU',
+        gender: 'male',
+        quality: 'elite',
+        age: 28,
+        weight: 900,
+        price: 380000,
+        location: { province: '吉林', city: '长春市' },
+        genetic: '和牛血统50% | 雪花纹理基因',
+        certification: ['imported', 'pedigree'],
+        featured: true
+      },
+      {
+        id: 'BR005',
+        title: '利木赞种公牛 肉用型优选',
+        breed: 'LIMOUSIN',
+        gender: 'male',
+        quality: 'premium',
+        age: 32,
+        weight: 1050,
+        price: 120000,
+        location: { province: '河北', city: '张家口市' },
+        genetic: '法系血统 | 出肉率高',
+        certification: ['certified', 'pedigree'],
+        featured: false
+      },
+      {
+        id: 'BR006',
+        title: '西门塔尔繁殖母牛群 10头起售',
+        breed: 'SIMMENTAL',
+        gender: 'female',
+        quality: 'standard',
+        age: 24,
+        weight: 750,
+        price: 28000,
+        location: { province: '内蒙古', city: '赤峰市' },
+        genetic: '本地优选 | 适应性强',
+        certification: [],
+        featured: false
+      },
+      {
+        id: 'BR007',
+        title: '海福特种公牛 适合杂交改良',
+        breed: 'HEREFORD',
+        gender: 'male',
+        quality: 'premium',
+        age: 38,
+        weight: 1150,
+        price: 95000,
+        location: { province: '山东', city: '青岛市' },
+        genetic: '英系血统 | 耐粗饲',
+        certification: ['certified'],
+        featured: false
+      },
+      {
+        id: 'BR008',
+        title: '安格斯繁殖母牛 已产两胎',
+        breed: 'ANGUS',
+        gender: 'female',
+        quality: 'premium',
+        age: 48,
+        weight: 680,
+        price: 52000,
+        location: { province: '新疆', city: '伊犁州' },
+        genetic: '优质母牛 | 繁殖性能好',
+        certification: ['certified', 'pedigree'],
+        featured: false
+      }
+    ];
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', function () {
+      initQuickFilters();
+      initSearch();
+      loadListings();
+    });
+
+    // 初始化快捷筛选
+    function initQuickFilters() {
+      const quickFilters = document.getElementById('quickFilters');
+      const hotTags = ['精英级', '种公牛', '繁殖母牛', '进口血统', '西门塔尔', '安格斯', '和牛'];
+
+      hotTags.forEach(tag => {
+        const el = document.createElement('div');
+        el.className = 'quick-filter-tag';
+        el.textContent = tag;
+        el.onclick = function () { applyQuickFilter(this, tag); };
+        quickFilters.appendChild(el);
+      });
+    }
+
+    // 初始化搜索
+    function initSearch() {
+      const searchInput = document.getElementById('searchInput');
+      const clearBtn = document.getElementById('clearSearchBtn');
+
+      searchInput.addEventListener('input', function () {
+        clearBtn.classList.toggle('show', this.value.length > 0);
+      });
+
+      searchInput.addEventListener('keyup', function (e) {
+        if (e.key === 'Enter') {
+          filterState.keyword = this.value.trim();
+          currentPage = 1;
+          loadListings();
+        }
+      });
+    }
+
+    // ==================== 筛选相关 ====================
+    let activeFilter = null;
+
+    function toggleFilter(type) {
+      const tabs = document.querySelectorAll('.filter-tab');
+      const dropdown = document.getElementById('filterDropdown');
+      const mask = document.getElementById('filterMask');
+      const panels = document.querySelectorAll('.filter-panel');
+
+      if (activeFilter === type) {
+        closeFilterDropdown();
+        return;
+      }
+
+      panels.forEach(p => p.style.display = 'none');
+      document.getElementById(type + 'Filter').style.display = 'block';
+
+      tabs.forEach(t => t.classList.remove('active'));
+      document.querySelector(`.filter-tab[data-filter="${type}"]`).classList.add('active');
+
+      dropdown.classList.add('show');
+      mask.classList.add('show');
+      activeFilter = type;
+    }
+
+    function closeFilterDropdown() {
+      const tabs = document.querySelectorAll('.filter-tab');
+      const dropdown = document.getElementById('filterDropdown');
+      const mask = document.getElementById('filterMask');
+
+      tabs.forEach(t => t.classList.remove('active'));
+      dropdown.classList.remove('show');
+      mask.classList.remove('show');
+      activeFilter = null;
+    }
+
+    function selectBreed(el) {
+      const options = el.parentElement.querySelectorAll('.filter-option');
+      options.forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      filterState.breed = el.dataset.value || null;
+    }
+
+    function selectQuality(el) {
+      const options = el.parentElement.querySelectorAll('.filter-option');
+      options.forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      filterState.quality = el.dataset.value || null;
+    }
+
+    function selectCert(el) {
+      el.classList.toggle('active');
+      // 收集所有选中的认证
+      const selected = el.parentElement.querySelectorAll('.filter-option.active');
+      filterState.certification = Array.from(selected).map(s => s.dataset.value);
+    }
+
+    function selectGender(el) {
+      const options = el.parentElement.querySelectorAll('.filter-option');
+      options.forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      filterState.gender = el.dataset.value || null;
+    }
+
+    function selectRegion(el) {
+      const options = el.parentElement.querySelectorAll('.filter-option');
+      options.forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      filterState.region = el.dataset.value || null;
+    }
+
+    function selectPrice(el) {
+      const options = el.parentElement.querySelectorAll('.filter-option');
+      options.forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      filterState.priceRange = el.dataset.value;
+    }
+
+    function resetFilter(type) {
+      switch (type) {
+        case 'breed':
+          filterState.breed = null;
+          document.querySelectorAll('#breedOptions .filter-option').forEach((o, i) => {
+            o.classList.toggle('active', i === 0);
+          });
+          break;
+        case 'quality':
+          filterState.quality = null;
+          filterState.certification = null;
+          document.querySelectorAll('#qualityFilter .filter-option').forEach(o => {
+            o.classList.remove('active');
+          });
+          document.querySelector('#qualityFilter .filter-option[data-value=""]').classList.add('active');
+          break;
+        case 'gender':
+          filterState.gender = null;
+          document.querySelectorAll('#genderFilter .filter-option').forEach((o, i) => {
+            o.classList.toggle('active', i === 0);
+          });
+          break;
+        case 'more':
+          filterState.region = null;
+          filterState.priceRange = null;
+          document.querySelectorAll('#moreFilter .filter-option').forEach(o => {
+            o.classList.remove('active');
+          });
+          break;
+      }
+    }
+
+    function confirmFilter(type) {
+      closeFilterDropdown();
+      currentPage = 1;
+      loadListings();
+      updateFilterBadge();
+    }
+
+    function applyQuickFilter(el, tag) {
+      el.classList.toggle('active');
+
+      if (el.classList.contains('active')) {
+        filterState.keyword = tag;
+        document.getElementById('searchInput').value = tag;
+      } else {
+        filterState.keyword = '';
+        document.getElementById('searchInput').value = '';
+      }
+
+      document.querySelectorAll('.quick-filter-tag').forEach(t => {
+        if (t !== el) t.classList.remove('active');
+      });
+
+      currentPage = 1;
+      loadListings();
+    }
+
+    function updateFilterBadge() {
+      let count = 0;
+      if (filterState.breed) count++;
+      if (filterState.quality) count++;
+      if (filterState.gender) count++;
+      if (filterState.region || filterState.priceRange) count++;
+
+      const badge = document.getElementById('filterBadge');
+      badge.textContent = count;
+      badge.classList.toggle('show', count > 0);
+    }
+
+    // ==================== 数据加载 ====================
+    function loadListings() {
+      if (isLoading) return;
+      isLoading = true;
+
+      const loadMore = document.getElementById('loadMore');
+      loadMore.textContent = '加载中';
+
+      setTimeout(() => {
+        let data = [...breedingCattleData];
+
+        // 关键词筛选
+        if (filterState.keyword) {
+          const kw = filterState.keyword.toLowerCase();
+          data = data.filter(item =>
+            item.title.toLowerCase().includes(kw) ||
+            item.genetic.toLowerCase().includes(kw) ||
+            getBreedName(item.breed).includes(kw) ||
+            (item.quality === 'elite' && kw.includes('精英')) ||
+            (item.gender === 'male' && kw.includes('种公')) ||
+            (item.gender === 'female' && kw.includes('母牛')) ||
+            (item.certification.includes('imported') && kw.includes('进口'))
+          );
+        }
+
+        // 品种筛选
+        if (filterState.breed) {
+          data = data.filter(item => item.breed === filterState.breed);
+        }
+
+        // 等级筛选
+        if (filterState.quality) {
+          data = data.filter(item => item.quality === filterState.quality);
+        }
+
+        // 性别筛选
+        if (filterState.gender) {
+          data = data.filter(item => item.gender === filterState.gender);
+        }
+
+        // 地区筛选
+        if (filterState.region) {
+          if (filterState.region === '进口') {
+            data = data.filter(item => item.certification.includes('imported'));
+          } else {
+            data = data.filter(item => item.location.province === filterState.region);
+          }
+        }
+
+        // 价格筛选
+        if (filterState.priceRange) {
+          const [min, max] = filterState.priceRange.split('-').map(Number);
+          data = data.filter(item => {
+            if (max === 0) return item.price >= min;
+            if (min === 0) return item.price <= max;
+            return item.price >= min && item.price <= max;
+          });
+        }
+
+        // 排序
+        switch (filterState.sort) {
+          case 'price_asc':
+            data.sort((a, b) => a.price - b.price);
+            break;
+          case 'price_desc':
+            data.sort((a, b) => b.price - a.price);
+            break;
+          default:
+            // 推荐排序：精英在前，featured 在前
+            data.sort((a, b) => {
+              if (a.featured !== b.featured) return b.featured - a.featured;
+              if (a.quality === 'elite' && b.quality !== 'elite') return -1;
+              if (b.quality === 'elite' && a.quality !== 'elite') return 1;
+              return 0;
+            });
+        }
+
+        allListings = data;
+        hasMore = false; // 示例数据较少
+
+        renderListings(data, currentPage === 1);
+        document.getElementById('resultCount').textContent = data.length;
+
+        loadMore.textContent = '没有更多了';
+        isLoading = false;
+      }, 500);
+    }
+
+    function renderListings(data, replace = false) {
+      const container = document.getElementById('breedingList');
+
+      if (replace) {
+        container.innerHTML = '';
+      }
+
+      if (data.length === 0 && replace) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon"><i class="mdi mdi-dna"></i></div>
+            <div class="title">暂无符合条件的种牛</div>
+            <div class="desc">试试调整筛选条件</div>
+          </div>
+        `;
+        return;
+      }
+
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'breeding-card';
+        card.onclick = () => goToDetail(item.id);
+
+        // 标签
+        let tagHtml = '';
+        if (item.quality === 'elite') {
+          tagHtml = '<span class="tag elite">精英级</span>';
+        } else if (item.certification.includes('imported')) {
+          tagHtml = '<span class="tag imported">进口</span>';
+        } else if (item.certification.includes('certified')) {
+          tagHtml = '<span class="tag certified">认证</span>';
+        }
+
+        const breedName = getBreedName(item.breed);
+        const genderText = item.gender === 'male' ? '种公牛' : '繁殖母牛';
+
+        card.innerHTML = `
+          <div class="breeding-card-image">
+            <div class="placeholder"><i class="mdi mdi-cow"></i></div>
+            ${tagHtml}
+          </div>
+          <div class="breeding-card-info">
+            <div class="breeding-card-title">${item.title}</div>
+            <div class="breeding-card-tags">
+              <span class="highlight">${breedName}</span>
+              <span>${genderText}</span>
+              <span>${item.age}月龄</span>
+            </div>
+            <div class="breeding-card-specs">${item.weight}斤</div>
+            <div class="breeding-card-genetic">
+              <i class="mdi mdi-dna"></i>
+              ${item.genetic}
+            </div>
+            <div class="breeding-card-bottom">
+              <div class="breeding-card-price">${formatPrice(item.price)}<span class="unit">元/头</span></div>
+              <div class="breeding-card-location">${item.location.province}</div>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    // ==================== 排序 ====================
+    function toggleSortMenu() {
+      const sortOptions = ['综合推荐', '价格最低', '价格最高'];
+      const sortValues = ['recommend', 'price_asc', 'price_desc'];
+
+      const current = sortValues.indexOf(filterState.sort);
+      const next = (current + 1) % sortValues.length;
+
+      filterState.sort = sortValues[next];
+      document.getElementById('currentSort').textContent = sortOptions[next];
+
+      currentPage = 1;
+      loadListings();
+    }
+
+    // ==================== 工具函数 ====================
+    function goBack() {
+      window.history.back();
+    }
+
+    function goToDetail(id) {
+      window.location.href = `detail.html?id=${id}`;
+    }
+
+    function clearSearch() {
+      const searchInput = document.getElementById('searchInput');
+      searchInput.value = '';
+      document.getElementById('clearSearchBtn').classList.remove('show');
+      filterState.keyword = '';
+      currentPage = 1;
+      loadListings();
+    }
+
+    function openFullFilter() {
+      toggleFilter('more');
+    }
+
+    function getBreedName(code) {
+      const breeds = {
+        'SIMMENTAL': '西门塔尔',
+        'CHAROLAIS': '夏洛莱',
+        'ANGUS': '安格斯',
+        'LIMOUSIN': '利木赞',
+        'WAGYU': '和牛',
+        'HEREFORD': '海福特'
+      };
+      return breeds[code] || code;
+    }
+
+    function formatPrice(price) {
+      if (price >= 10000) {
+        return (price / 10000).toFixed(1) + '万';
+      }
+      return price.toLocaleString();
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+
+</html>

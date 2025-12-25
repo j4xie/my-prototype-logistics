@@ -14,7 +14,7 @@ export function wait(ms: number): Promise<void> {
  * 创建Mock函数并跟踪调用
  */
 export function createMockFn<T extends (...args: any[]) => any>(): jest.MockedFunction<T> {
-  return jest.fn() as jest.MockedFunction<T>;
+  return jest.fn() as unknown as jest.MockedFunction<T>;
 }
 
 /**

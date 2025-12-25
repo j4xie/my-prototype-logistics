@@ -44,9 +44,10 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
 
     /**
      * 根据名称搜索客户
+     * 注意：name使用双向模糊匹配（无法使用索引），customerCode使用右模糊（可使用索引）
      */
     @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId " +
-           "AND (c.name LIKE %:keyword% OR c.customerCode LIKE %:keyword%)")
+           "AND (c.name LIKE CONCAT('%', :keyword, '%') OR c.customerCode LIKE CONCAT(:keyword, '%'))")
     List<Customer> searchByName(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
 
     /**

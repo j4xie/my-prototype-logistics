@@ -89,7 +89,7 @@ export function useLogin(options?: UseLoginOptions): UseLoginReturn {
 
       if (result.success && result.user && result.tokens) {
         setAuthState(result.user, {
-          accessToken: result.tokens.accessToken || result.tokens.token || '',
+          accessToken: result.tokens.accessToken || '',
           refreshToken: result.tokens.refreshToken || '',
           expiresIn: result.tokens.expiresIn || 86400,
           tokenType: result.tokens.tokenType || 'Bearer',

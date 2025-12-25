@@ -23,7 +23,7 @@ interface AuthState {
   updateUser: (updates: Partial<User>) => void;
   
   // Getters
-  getUserId: () => string | null;
+  getUserId: () => number | null;
   getUserRole: () => string | null;
   getUserType: () => 'platform' | 'factory' | null;
 }
@@ -76,7 +76,7 @@ export const useAuthStore = create<AuthState>()(
 
       updateUser: (updates) =>
         set((state) => ({
-          user: state.user ? { ...state.user, ...updates } : null,
+          user: state.user ? { ...state.user, ...updates } as User : null,
         })),
 
       // Getters

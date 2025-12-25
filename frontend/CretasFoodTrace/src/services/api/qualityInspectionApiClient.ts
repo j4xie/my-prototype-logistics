@@ -291,12 +291,62 @@ class QualityInspectionApiClient {
    * @returns 质量趋势数据数组
    */
   async getTrends(
-    days: number = 30,
+    days: number | string = 30,
     factoryId?: string
   ): Promise<ApiResponse<QualityTrendPoint[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/trends`, {
-      params: { days },
+      params: { days: typeof days === 'string' ? parseInt(days) : days },
     });
+  }
+
+  /**
+   * 5. 获取单个质检记录详情
+   * GET /api/mobile/{factoryId}/processing/quality/inspections/{id}
+   *
+   * @param id - 质检记录ID
+   * @param factoryId - 工厂ID（可选）
+   * @returns 质检记录详情
+   */
+  async getInspectionById(
+    id: string,
+    factoryId?: string
+  ): Promise<ApiResponse<QualityInspection>> {
+    return await apiClient.get(`${this.getPath(factoryId)}/inspections/${id}`);
+  }
+
+  /**
+   * 6. 更新质检记录
+   * PUT /api/mobile/{factoryId}/processing/quality/inspections/{id}
+   *
+   * @param id - 质检记录ID
+   * @param inspection - 更新的质检数据
+   * @param factoryId - 工厂ID（可选）
+   * @returns 更新后的质检记录
+   */
+  async updateInspection(
+    id: string,
+    inspection: Partial<QualityInspection>,
+    factoryId?: string
+  ): Promise<ApiResponse<QualityInspection>> {
+    return await apiClient.put(
+      `${this.getPath(factoryId)}/inspections/${id}`,
+      inspection
+    );
+  }
+
+  /**
+   * 7. 删除质检记录
+   * DELETE /api/mobile/{factoryId}/processing/quality/inspections/{id}
+   *
+   * @param id - 质检记录ID
+   * @param factoryId - 工厂ID（可选）
+   * @returns 删除结果
+   */
+  async deleteInspection(
+    id: string,
+    factoryId?: string
+  ): Promise<ApiResponse<void>> {
+    return await apiClient.delete(`${this.getPath(factoryId)}/inspections/${id}`);
   }
 }
 

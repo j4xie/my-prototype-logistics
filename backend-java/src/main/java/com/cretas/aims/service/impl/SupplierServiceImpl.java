@@ -43,7 +43,7 @@ public class SupplierServiceImpl implements SupplierService {
 
     @Override
     @Transactional
-    public SupplierDTO createSupplier(String factoryId, CreateSupplierRequest request, Integer userId) {
+    public SupplierDTO createSupplier(String factoryId, CreateSupplierRequest request, Long userId) {
         log.info("创建供应商: factoryId={}, name={}", factoryId, request.getName());
         // 检查供应商名称是否重复
         if (supplierRepository.existsByFactoryIdAndName(factoryId, request.getName())) {
@@ -250,7 +250,7 @@ public class SupplierServiceImpl implements SupplierService {
                 .collect(Collectors.toList());
 
         // 生成Excel文件
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] excelBytes = excelUtil.exportToExcel(
                 exportDTOs,
                 com.cretas.aims.dto.supplier.SupplierExportDTO.class,
@@ -266,7 +266,7 @@ public class SupplierServiceImpl implements SupplierService {
         log.info("生成供应商导入模板");
 
         // 使用ExcelUtil生成空模板
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] templateBytes = excelUtil.generateTemplate(
                 com.cretas.aims.dto.supplier.SupplierExportDTO.class,
                 "供应商导入模板"
@@ -284,7 +284,7 @@ public class SupplierServiceImpl implements SupplierService {
         log.info("开始从Excel批量导入供应商: factoryId={}", factoryId);
 
         // 1. 解析Excel文件
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         List<com.cretas.aims.dto.supplier.SupplierExportDTO> excelData;
         try {
             excelData = excelUtil.importFromExcel(inputStream,
@@ -369,7 +369,7 @@ public class SupplierServiceImpl implements SupplierService {
         supplier.setCurrentBalance(BigDecimal.ZERO);
         supplier.setRating(dto.getRating());
         supplier.setIsActive("启用".equals(dto.getStatus()));
-        supplier.setCreatedBy(1); // 系统导入，使用默认用户ID
+        supplier.setCreatedBy(1L); // 系统导入，使用默认用户ID
         return supplier;
     }
 
@@ -388,7 +388,7 @@ public class SupplierServiceImpl implements SupplierService {
     @Override
     @Transactional
     public List<SupplierDTO> importSuppliers(String factoryId, List<CreateSupplierRequest> requests,
-                                            Integer userId) {
+                                            Long userId) {
         log.info("批量导入供应商: factoryId={}, count={}", factoryId, requests.size());
         List<SupplierDTO> importedSuppliers = new ArrayList<>();
         for (CreateSupplierRequest request : requests) {

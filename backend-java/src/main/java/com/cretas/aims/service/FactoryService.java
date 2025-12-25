@@ -3,6 +3,8 @@ package com.cretas.aims.service;
 import com.cretas.aims.dto.platform.CreateFactoryRequest;
 import com.cretas.aims.dto.platform.FactoryDTO;
 import com.cretas.aims.dto.platform.UpdateFactoryRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -17,11 +19,21 @@ import java.util.List;
 public interface FactoryService {
 
     /**
-     * 获取所有工厂列表
+     * 获取所有工厂列表（不推荐，仅兼容旧接口）
      *
      * @return 工厂列表
+     * @deprecated 使用 {@link #getAllFactories(Pageable)} 分页版本
      */
+    @Deprecated
     List<FactoryDTO> getAllFactories();
+
+    /**
+     * 分页获取所有工厂列表
+     *
+     * @param pageable 分页参数
+     * @return 工厂分页列表
+     */
+    Page<FactoryDTO> getAllFactories(Pageable pageable);
 
     /**
      * 根据ID获取工厂详情

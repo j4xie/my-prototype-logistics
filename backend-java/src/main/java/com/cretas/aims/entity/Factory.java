@@ -1,5 +1,7 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import java.util.List;
 @ToString(exclude = {"users", "suppliers", "customers", "productionPlans", "materialBatches"})
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "factories",
        uniqueConstraints = {
@@ -70,23 +73,40 @@ public class Factory extends BaseEntity {
     private Integer sequenceNumber;
     @Column(name = "ai_weekly_quota", nullable = false)
     private Integer aiWeeklyQuota = 20;
-    // 关联关系
-    @OneToMany(mappedBy = "factory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // 关联关系 (使用 CascadeType.PERSIST 防止级联删除，使用 @JsonIgnore 防止循环引用)
+    @JsonIgnore
+    @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<User> users = new ArrayList<>();
-    @OneToMany(mappedBy = "factory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<Supplier> suppliers = new ArrayList<>();
-    @OneToMany(mappedBy = "factory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<Customer> customers = new ArrayList<>();
-    @OneToMany(mappedBy = "factory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<ProductionPlan> productionPlans = new ArrayList<>();
-    @OneToMany(mappedBy = "factory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<MaterialBatch> materialBatches = new ArrayList<>();
-    @OneToMany(mappedBy = "factory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<RawMaterialType> rawMaterialTypes = new ArrayList<>();
-    @OneToMany(mappedBy = "factory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<ProductType> productTypes = new ArrayList<>();
-    @OneToMany(mappedBy = "factory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<WorkType> workTypes = new ArrayList<>();
-    @OneToMany(mappedBy = "factory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<FactoryEquipment> equipment = new ArrayList<>();
 }

@@ -59,7 +59,7 @@ public class EquipmentController {
             @Valid @RequestBody CreateEquipmentRequest request) {
 
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
 
         log.info("创建设备: factoryId={}, name={}", factoryId, request.getName());
         EquipmentDTO equipment = equipmentService.createEquipment(factoryId, request, userId);
@@ -227,6 +227,9 @@ public class EquipmentController {
 
     /**
      * 记录设备维护
+     * 兼容两种参数格式：
+     * 1. RequestBody: {"maintenanceDate": "2025-01-01", "cost": 100, "description": "..."}
+     * 2. URL Params: ?maintenanceDate=2025-01-01&cost=100&description=...
      */
     @PostMapping("/{equipmentId}/maintenance")
     @Operation(summary = "记录设备维护")
@@ -235,15 +238,44 @@ public class EquipmentController {
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "设备ID", required = true)
             @PathVariable @NotBlank String equipmentId,
-            @Parameter(description = "维护日期", required = true)
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate maintenanceDate,
-            @Parameter(description = "维护费用")
+            @Parameter(description = "维护日期 (URL参数)", hidden = true)
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate maintenanceDate,
+            @Parameter(description = "维护费用 (URL参数)", hidden = true)
             @RequestParam(required = false) BigDecimal cost,
-            @Parameter(description = "维护描述")
-            @RequestParam(required = false) String description) {
+            @Parameter(description = "维护描述 (URL参数)", hidden = true)
+            @RequestParam(required = false) String description,
+            @RequestBody(required = false) java.util.Map<String, Object> body) {
 
-        log.info("记录设备维护: factoryId={}, equipmentId={}, date={}", factoryId, equipmentId, maintenanceDate);
-        EquipmentDTO equipment = equipmentService.recordMaintenance(factoryId, equipmentId, maintenanceDate, cost, description);
+        // 兼容URL参数和RequestBody两种格式
+        LocalDate actualDate = maintenanceDate;
+        BigDecimal actualCost = cost;
+        String actualDescription = description;
+
+        if (body != null) {
+            // 解析RequestBody中的maintenanceDate
+            if (body.get("maintenanceDate") != null && actualDate == null) {
+                String dateStr = body.get("maintenanceDate").toString();
+                actualDate = LocalDate.parse(dateStr);
+            }
+            // 解析RequestBody中的cost
+            if (body.get("cost") != null && actualCost == null) {
+                Object costObj = body.get("cost");
+                if (costObj instanceof Number) {
+                    actualCost = new BigDecimal(costObj.toString());
+                }
+            }
+            // 解析RequestBody中的description
+            if (body.get("description") != null && actualDescription == null) {
+                actualDescription = body.get("description").toString();
+            }
+        }
+
+        if (actualDate == null) {
+            return ApiResponse.error(400, "维护日期不能为空");
+        }
+
+        log.info("记录设备维护: factoryId={}, equipmentId={}, date={}", factoryId, equipmentId, actualDate);
+        EquipmentDTO equipment = equipmentService.recordMaintenance(factoryId, equipmentId, actualDate, actualCost, actualDescription);
         return ApiResponse.success("维护记录成功", equipment);
     }
 

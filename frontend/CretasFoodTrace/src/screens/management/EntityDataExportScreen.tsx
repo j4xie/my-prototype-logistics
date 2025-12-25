@@ -19,9 +19,9 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useAuthStore } from '../../store/authStore';
-import { API_CONFIG } from '../../constants/config';
+import { API_BASE_URL } from '../../constants/config';
 import { getFactoryId } from '../../types/auth';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建EntityDataExport专用logger
@@ -156,7 +156,7 @@ export default function EntityDataExportScreen() {
     setLoading(true);
 
     try {
-      const apiUrl = `${API_CONFIG.BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/export`;
+      const apiUrl = `${API_BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/export`;
       entityExportLogger.info('导出数据', { entityType, endpoint: currentEntity.endpoint });
 
       // 生成文件名
@@ -180,9 +180,10 @@ export default function EntityDataExportScreen() {
       const isAvailable = await Sharing.isAvailableAsync();
 
       if (isAvailable) {
+        const fileSize = (fileInfo.exists && 'size' in fileInfo) ? fileInfo.size : 0;
         Alert.alert(
           '导出成功',
-          `${currentEntity.label}数据已导出\n\n文件大小：${((fileInfo.size || 0) / 1024).toFixed(2)} KB`,
+          `${currentEntity.label}数据已导出\n\n文件大小：${(fileSize / 1024).toFixed(2)} KB`,
           [
             {
               text: '稍后查看',
@@ -210,7 +211,7 @@ export default function EntityDataExportScreen() {
       }
     } catch (error) {
       entityExportLogger.error('导出失败', error, { entityType });
-      Alert.alert('导出失败', error.message || '导出数据时出现错误，请重试');
+      Alert.alert('导出失败', getErrorMsg(error) || '导出数据时出现错误，请重试');
     } finally {
       setLoading(false);
     }
@@ -232,7 +233,7 @@ export default function EntityDataExportScreen() {
     setLoading(true);
 
     try {
-      const apiUrl = `${API_CONFIG.BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/export/template`;
+      const apiUrl = `${API_BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/export/template`;
       entityExportLogger.info('下载模板', { entityType, endpoint: currentEntity.endpoint });
 
       // 生成文件名
@@ -282,7 +283,7 @@ export default function EntityDataExportScreen() {
       }
     } catch (error) {
       entityExportLogger.error('下载模板失败', error, { entityType });
-      Alert.alert('下载失败', error.message || '下载模板时出现错误，请重试');
+      Alert.alert('下载失败', getErrorMsg(error) || '下载模板时出现错误，请重试');
     } finally {
       setLoading(false);
     }
@@ -312,7 +313,12 @@ export default function EntityDataExportScreen() {
         return;
       }
 
-      const file = result.assets[0];
+      const file = result.assets?.[0];
+      if (!file) {
+        Alert.alert('错误', '未选择文件');
+        return;
+      }
+
       entityExportLogger.info('选择导入文件', {
         fileName: file.name,
         fileSize: `${((file.size || 0) / 1024).toFixed(2)}KB`
@@ -335,7 +341,7 @@ export default function EntityDataExportScreen() {
       };
       formData.append('file', fileData as any as Blob);
 
-      const apiUrl = `${API_CONFIG.BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/import`;
+      const apiUrl = `${API_BASE_URL}/api/mobile/${factoryId}/${currentEntity.endpoint}/import`;
       entityExportLogger.info('上传导入文件', { entityType, endpoint: currentEntity.endpoint });
 
       // 发送请求
@@ -372,7 +378,7 @@ export default function EntityDataExportScreen() {
       }
     } catch (error) {
       entityExportLogger.error('导入失败', error, { entityType });
-      Alert.alert('导入失败', error.message || '导入数据时出现错误，请重试');
+      Alert.alert('导入失败', getErrorMsg(error) || '导入数据时出现错误，请重试');
     } finally {
       setLoading(false);
     }

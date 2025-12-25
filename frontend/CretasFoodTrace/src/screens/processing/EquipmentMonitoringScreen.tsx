@@ -23,7 +23,7 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { equipmentApiClient, type EquipmentStatistics } from '../../services/api/equipmentApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { Alert } from 'react-native';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建EquipmentMonitoring专用logger
@@ -76,19 +76,19 @@ export default function EquipmentMonitoringScreen() {
 
       equipmentMonitoringLogger.info('设备统计数据加载成功', {
         factoryId,
-        totalCount: response.data.totalCount,
-        activeCount: response.data.activeCount,
-        maintenanceCount: response.data.maintenanceCount,
+        totalCount: (response as any).data.totalCount,
+        activeCount: (response as any).data.activeCount,
+        maintenanceCount: (response as any).data.maintenanceCount,
       });
 
-      setStatistics(response.data);
+      setStatistics((response as any).data);
 
     } catch (error) {
       equipmentMonitoringLogger.error('获取设备统计失败', error as Error, {
         factoryId,
       });
 
-      const errorMessage = error.response?.data?.message || error.message || '无法加载设备统计，请稍后重试';
+      const errorMessage = getErrorMsg(error) || '无法加载设备统计，请稍后重试';
       Alert.alert('加载失败', errorMessage);
 
       // 不降级到mock数据，设置为null触发错误UI
@@ -154,7 +154,7 @@ export default function EquipmentMonitoringScreen() {
         <Appbar.Content title="设备监控" />
         <Appbar.Action
           icon="cog"
-          onPress={() => navigation.navigate('EquipmentManagement', {})}
+          onPress={() => navigation.navigate('EquipmentManagement')}
         />
         <Appbar.Action
           icon="bell"
@@ -218,7 +218,7 @@ export default function EquipmentMonitoringScreen() {
               </Text>
             </View>
             <ProgressBar
-              progress={statistics.activeCount / statistics.totalCount}
+              progress={statistics.totalCount > 0 ? statistics.activeCount / statistics.totalCount : 0}
               color="#4CAF50"
               style={styles.progressBar}
             />
@@ -235,7 +235,7 @@ export default function EquipmentMonitoringScreen() {
               </Text>
             </View>
             <ProgressBar
-              progress={statistics.maintenanceCount / statistics.totalCount}
+              progress={statistics.totalCount > 0 ? statistics.maintenanceCount / statistics.totalCount : 0}
               color="#FF9800"
               style={styles.progressBar}
             />
@@ -255,7 +255,7 @@ export default function EquipmentMonitoringScreen() {
               </Text>
             </View>
             <ProgressBar
-              progress={(statistics.inactiveCount + statistics.scrappedCount) / statistics.totalCount}
+              progress={statistics.totalCount > 0 ? (statistics.inactiveCount + statistics.scrappedCount) / statistics.totalCount : 0}
               color="#9E9E9E"
               style={styles.progressBar}
             />
@@ -287,7 +287,7 @@ export default function EquipmentMonitoringScreen() {
           <View style={styles.depreciationInfo}>
             <Text style={styles.depreciationLabel}>资产保值率</Text>
             <Text style={styles.depreciationValue}>
-              {((statistics.depreciatedValue / statistics.totalValue) * 100).toFixed(1)}%
+              {statistics.totalValue > 0 ? ((statistics.depreciatedValue / statistics.totalValue) * 100).toFixed(1) : '0.0'}%
             </Text>
           </View>
         </Surface>
@@ -350,7 +350,7 @@ export default function EquipmentMonitoringScreen() {
           <Button
             mode="contained"
             icon="wrench"
-            onPress={() => navigation.navigate('EquipmentManagement', {})}
+            onPress={() => navigation.navigate('EquipmentManagement')}
             style={styles.actionButton}
           >
             设备管理

@@ -61,7 +61,7 @@ public class SupplierMapper {
     /**
      * CreateRequest 转 Entity
      */
-    public Supplier toEntity(CreateSupplierRequest request, String factoryId, Integer createdBy) {
+    public Supplier toEntity(CreateSupplierRequest request, String factoryId, Long createdBy) {
         if (request == null) {
             return null;
         }

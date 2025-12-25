@@ -4,6 +4,7 @@
  */
 
 import MockAdapter from 'axios-mock-adapter';
+import { AxiosInstance } from 'axios';
 import { apiClient } from '../../services/api/apiClient';
 
 /**
@@ -12,7 +13,8 @@ import { apiClient } from '../../services/api/apiClient';
  * @returns MockAdapter实例
  */
 export function createApiMock(delayResponse = false): MockAdapter {
-  const mock = new MockAdapter(apiClient, { delayResponse: delayResponse ? 100 : 0 });
+  // Cast apiClient to AxiosInstance for MockAdapter compatibility
+  const mock = new MockAdapter(apiClient as unknown as AxiosInstance, { delayResponse: delayResponse ? 100 : 0 });
   return mock;
 }
 
@@ -31,7 +33,8 @@ export function mockSuccessResponse(
   responseData: any,
   status = 200
 ): void {
-  const handler = mock[`on${method.charAt(0).toUpperCase()}${method.slice(1)}`].bind(mock);
+  const methodName = `on${method.charAt(0).toUpperCase()}${method.slice(1)}` as keyof MockAdapter;
+  const handler = (mock[methodName] as (url: string | RegExp) => { reply: (status: number, data: any) => void }).bind(mock);
   handler(url).reply(status, responseData);
 }
 
@@ -50,7 +53,8 @@ export function mockErrorResponse(
   errorMessage: string,
   status = 500
 ): void {
-  const handler = mock[`on${method.charAt(0).toUpperCase()}${method.slice(1)}`].bind(mock);
+  const methodName = `on${method.charAt(0).toUpperCase()}${method.slice(1)}` as keyof MockAdapter;
+  const handler = (mock[methodName] as (url: string | RegExp) => { reply: (status: number, data: any) => void }).bind(mock);
   handler(url).reply(status, {
     success: false,
     message: errorMessage,
@@ -69,7 +73,8 @@ export function mockNetworkError(
   method: 'get' | 'post' | 'put' | 'delete',
   url: string | RegExp
 ): void {
-  const handler = mock[`on${method.charAt(0).toUpperCase()}${method.slice(1)}`].bind(mock);
+  const methodName = `on${method.charAt(0).toUpperCase()}${method.slice(1)}` as keyof MockAdapter;
+  const handler = (mock[methodName] as (url: string | RegExp) => { networkError: () => void }).bind(mock);
   handler(url).networkError();
 }
 
@@ -84,7 +89,8 @@ export function mockTimeoutError(
   method: 'get' | 'post' | 'put' | 'delete',
   url: string | RegExp
 ): void {
-  const handler = mock[`on${method.charAt(0).toUpperCase()}${method.slice(1)}`].bind(mock);
+  const methodName = `on${method.charAt(0).toUpperCase()}${method.slice(1)}` as keyof MockAdapter;
+  const handler = (mock[methodName] as (url: string | RegExp) => { timeout: () => void }).bind(mock);
   handler(url).timeout();
 }
 
@@ -130,7 +136,9 @@ export function expectApiCall(
 
   if (data !== undefined) {
     const lastCall = matchingCalls[matchingCalls.length - 1];
-    expect(JSON.parse(lastCall.data || '{}')).toEqual(data);
+    if (lastCall) {
+      expect(JSON.parse(lastCall.data || '{}')).toEqual(data);
+    }
   }
 }
 

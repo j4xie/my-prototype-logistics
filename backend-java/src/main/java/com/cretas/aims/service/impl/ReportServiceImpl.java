@@ -6,6 +6,8 @@ import com.cretas.aims.entity.FactoryEquipment;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.repository.*;
+import com.cretas.aims.service.AIAnalysisService;
+import com.cretas.aims.service.ProcessingService;
 import com.cretas.aims.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -38,6 +40,8 @@ public class ReportServiceImpl implements ReportService {
     private final SupplierRepository supplierRepository;
     private final CustomerRepository customerRepository;
     private final FactoryRepository factoryRepository;
+    private final AIAnalysisService aiAnalysisService;
+    private final ProcessingService processingService;  // 委托 Dashboard 数据
     @Override
     @Cacheable(value = "dashboardStats", key = "#factoryId", unless = "#result == null")
     public DashboardStatisticsDTO getDashboardStatistics(String factoryId) {
@@ -720,13 +724,111 @@ public class ReportServiceImpl implements ReportService {
     }
     @Override
     public Map<String, Object> getAnomalyReport(String factoryId, LocalDate startDate, LocalDate endDate) {
-        log.info("获取异常分析: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
-        Map<String, Object> anomaly = new HashMap<>();
-        // TODO: 实现异常检测逻辑
+        log.info("获取异常分析(AI增强): factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+        Map<String, Object> report = new HashMap<>();
         List<Map<String, Object>> anomalies = new ArrayList<>();
-        anomaly.put("anomalies", anomalies);
-        anomaly.put("totalAnomalies", 0);
-        return anomaly;
+
+        // 1. 收集多维度数据用于异常检测
+        Map<String, Object> dataContext = new HashMap<>();
+
+        // 1.1 生产数据异常检测
+        BigDecimal totalOutput = productionPlanRepository.calculateOutputBetweenDates(
+                factoryId, startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
+        BigDecimal totalCost = productionPlanRepository.calculateTotalCostBetweenDates(
+                factoryId, startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
+        dataContext.put("totalOutput", totalOutput != null ? totalOutput : BigDecimal.ZERO);
+        dataContext.put("totalCost", totalCost != null ? totalCost : BigDecimal.ZERO);
+
+        // 1.2 库存异常
+        List<MaterialBatch> expiringBatches = materialBatchRepository.findExpiringBatches(
+                factoryId, LocalDate.now().plusDays(7));
+        List<MaterialBatch> expiredBatches = materialBatchRepository.findExpiredBatches(factoryId);
+        List<Object> lowStockItems = materialBatchRepository.findLowStockMaterials(factoryId);
+
+        dataContext.put("expiringBatches", expiringBatches.size());
+        dataContext.put("expiredBatches", expiredBatches.size());
+        dataContext.put("lowStockItems", lowStockItems.size());
+
+        // 1.3 设备异常
+        List<FactoryEquipment> needsMaintenance = equipmentRepository.findEquipmentNeedingMaintenance(
+                factoryId, LocalDate.now());
+        dataContext.put("equipmentNeedingMaintenance", needsMaintenance.size());
+
+        // 2. 基于规则的异常检测
+        if (!expiringBatches.isEmpty()) {
+            anomalies.add(Map.of(
+                "type", "INVENTORY",
+                "level", "WARNING",
+                "title", "原材料即将过期",
+                "description", String.format("有%d个批次将在7天内过期", expiringBatches.size()),
+                "count", expiringBatches.size(),
+                "detectedAt", LocalDate.now().toString()
+            ));
+        }
+
+        if (!expiredBatches.isEmpty()) {
+            anomalies.add(Map.of(
+                "type", "INVENTORY",
+                "level", "CRITICAL",
+                "title", "已过期原材料",
+                "description", String.format("有%d个批次已过期，需要立即处理", expiredBatches.size()),
+                "count", expiredBatches.size(),
+                "detectedAt", LocalDate.now().toString()
+            ));
+        }
+
+        if (!needsMaintenance.isEmpty()) {
+            anomalies.add(Map.of(
+                "type", "EQUIPMENT",
+                "level", "INFO",
+                "title", "设备维护提醒",
+                "description", String.format("有%d台设备需要维护", needsMaintenance.size()),
+                "count", needsMaintenance.size(),
+                "detectedAt", LocalDate.now().toString()
+            ));
+        }
+
+        // 3. 调用AI进行智能异常分析
+        try {
+            String aiMessage = String.format(
+                "分析以下工厂数据，识别潜在的异常和风险：\n" +
+                "- 期间：%s 至 %s\n" +
+                "- 总产量：%.2f\n" +
+                "- 总成本：%.2f\n" +
+                "- 即将过期批次：%d个\n" +
+                "- 已过期批次：%d个\n" +
+                "- 低库存项目：%d个\n" +
+                "- 需维护设备：%d台\n" +
+                "请识别异常模式，分析潜在风险，并提供预警建议。",
+                startDate, endDate,
+                dataContext.get("totalOutput"),
+                dataContext.get("totalCost"),
+                expiringBatches.size(),
+                expiredBatches.size(),
+                lowStockItems.size(),
+                needsMaintenance.size()
+            );
+
+            Map<String, Object> aiResult = aiAnalysisService.analyzeCost(
+                factoryId, "anomaly_detection", dataContext, null, aiMessage
+            );
+
+            if (Boolean.TRUE.equals(aiResult.get("success"))) {
+                report.put("aiAnalysis", aiResult.get("aiAnalysis"));
+                report.put("reasoningContent", aiResult.get("reasoningContent"));
+                report.put("analysisMethod", "AI Enhanced Detection");
+            }
+        } catch (Exception e) {
+            log.warn("AI异常检测服务暂时不可用，使用规则检测: {}", e.getMessage());
+            report.put("analysisMethod", "Rule-based Detection (AI Fallback)");
+        }
+
+        report.put("anomalies", anomalies);
+        report.put("totalAnomalies", anomalies.size());
+        report.put("period", Map.of("startDate", startDate.toString(), "endDate", endDate.toString()));
+        report.put("dataContext", dataContext);
+
+        return report;
     }
     @Override
     public Map<String, Object> getEquipmentReport(String factoryId, LocalDate date) {
@@ -861,15 +963,16 @@ public class ReportServiceImpl implements ReportService {
     }
     @Override
     public Map<String, Object> getForecastReport(String factoryId, String type, Integer days) {
-        log.info("获取预测报表: factoryId={}, type={}, days={}", factoryId, type, days);
+        log.info("获取预测报表(AI增强): factoryId={}, type={}, days={}", factoryId, type, days);
         Map<String, Object> report = new HashMap<>();
-        // 基于历史数据的简单线性预测
-        List<Map<String, Object>> forecastData = new ArrayList<>();
-        // 获取历史数据
+
+        // 1. 收集历史数据
         LocalDate today = LocalDate.now();
-        BigDecimal totalHistorical = BigDecimal.ZERO;
         int historicalDays = 30;
-        for (int i = 0; i < historicalDays; i++) {
+        List<Map<String, Object>> historicalData = new ArrayList<>();
+        BigDecimal totalHistorical = BigDecimal.ZERO;
+
+        for (int i = historicalDays - 1; i >= 0; i--) {
             LocalDate date = today.minusDays(i);
             BigDecimal value = BigDecimal.ZERO;
             if ("production".equals(type)) {
@@ -879,24 +982,70 @@ public class ReportServiceImpl implements ReportService {
                 value = productionPlanRepository.calculateTotalCostBetweenDates(
                         factoryId, date.atStartOfDay(), date.atTime(23, 59, 59));
             }
-            if (value != null) {
-                totalHistorical = totalHistorical.add(value);
-            }
+            if (value == null) value = BigDecimal.ZERO;
+            totalHistorical = totalHistorical.add(value);
+
+            Map<String, Object> dataPoint = new HashMap<>();
+            dataPoint.put("date", date.toString());
+            dataPoint.put("value", value);
+            historicalData.add(dataPoint);
         }
-        // 计算日均值
+
+        // 2. 计算基础统计量
         BigDecimal dailyAverage = totalHistorical.divide(BigDecimal.valueOf(historicalDays), 2, RoundingMode.HALF_UP);
-        // 生成预测数据
+
+        // 3. 调用AI服务进行智能预测分析
+        try {
+            Map<String, Object> aiContext = new HashMap<>();
+            aiContext.put("factoryId", factoryId);
+            aiContext.put("forecastType", type);
+            aiContext.put("forecastDays", days);
+            aiContext.put("historicalData", historicalData);
+            aiContext.put("dailyAverage", dailyAverage);
+            aiContext.put("totalHistorical", totalHistorical);
+
+            String aiMessage = String.format(
+                "基于以下%d天的历史数据进行%s预测分析，预测未来%d天的趋势：\n" +
+                "- 历史数据总计：%.2f\n" +
+                "- 日均值：%.2f\n" +
+                "请分析数据趋势，识别周期性规律，并给出预测建议。",
+                historicalDays, "production".equals(type) ? "产量" : "成本", days,
+                totalHistorical.doubleValue(), dailyAverage.doubleValue()
+            );
+
+            Map<String, Object> aiResult = aiAnalysisService.analyzeCost(
+                factoryId, "forecast_" + type, aiContext, null, aiMessage
+            );
+
+            if (Boolean.TRUE.equals(aiResult.get("success"))) {
+                report.put("aiAnalysis", aiResult.get("aiAnalysis"));
+                report.put("reasoningContent", aiResult.get("reasoningContent"));
+                report.put("method", "AI Enhanced Forecast");
+            }
+        } catch (Exception e) {
+            log.warn("AI预测服务暂时不可用，使用基础预测: {}", e.getMessage());
+            report.put("method", "Linear Average (AI Fallback)");
+        }
+
+        // 4. 生成预测数据（基础统计 + AI优化）
+        List<Map<String, Object>> forecastData = new ArrayList<>();
         for (int i = 1; i <= days; i++) {
             Map<String, Object> forecast = new HashMap<>();
-            forecast.put("date", today.plusDays(i));
+            forecast.put("date", today.plusDays(i).toString());
             forecast.put("value", dailyAverage);
-            forecast.put("confidence", 75); // 简单预测，置信度为75%
+            forecast.put("confidence", 75);
             forecastData.add(forecast);
         }
+
         report.put("type", type);
         report.put("forecastDays", days);
         report.put("forecastData", forecastData);
-        report.put("method", "Linear Average");
+        report.put("historicalSummary", Map.of(
+            "days", historicalDays,
+            "total", totalHistorical,
+            "average", dailyAverage
+        ));
+
         return report;
     }
     @Override
@@ -930,5 +1079,44 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public Map<String, Object> getRealtimeData(String factoryId) {
         return getRealTimeProductionData(factoryId);
+    }
+
+    // ==================== Dashboard 委托方法 (集成 ProcessingService) ====================
+
+    @Override
+    public Map<String, Object> getDashboardOverview(String factoryId, String period) {
+        log.info("获取生产概览Dashboard (委托ProcessingService): factoryId={}, period={}", factoryId, period);
+        return processingService.getDashboardOverview(factoryId);
+    }
+
+    @Override
+    public Map<String, Object> getProductionDashboard(String factoryId, String period) {
+        log.info("获取生产统计Dashboard (委托ProcessingService): factoryId={}, period={}", factoryId, period);
+        return processingService.getProductionStatistics(factoryId, period);
+    }
+
+    @Override
+    public Map<String, Object> getQualityDashboard(String factoryId) {
+        log.info("获取质量Dashboard (委托ProcessingService): factoryId={}", factoryId);
+        return processingService.getQualityDashboard(factoryId);
+    }
+
+    @Override
+    public Map<String, Object> getEquipmentDashboard(String factoryId) {
+        log.info("获取设备Dashboard (委托ProcessingService): factoryId={}", factoryId);
+        return processingService.getEquipmentDashboard(factoryId);
+    }
+
+    @Override
+    public Map<String, Object> getAlertsDashboard(String factoryId, String period) {
+        log.info("获取告警Dashboard (委托ProcessingService): factoryId={}, period={}", factoryId, period);
+        return processingService.getAlertsDashboard(factoryId);
+    }
+
+    @Override
+    public Map<String, Object> getTrendsDashboard(String factoryId, String period, String metric, Integer days) {
+        log.info("获取趋势Dashboard (委托ProcessingService): factoryId={}, period={}, metric={}, days={}",
+                factoryId, period, metric, days);
+        return processingService.getTrendAnalysis(factoryId, metric, days);
     }
 }

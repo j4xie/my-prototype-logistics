@@ -15,7 +15,7 @@ import java.util.Optional;
  * @since 2025-01-09
  */
 @Repository
-public interface PlatformAdminRepository extends JpaRepository<PlatformAdmin, Integer> {
+public interface PlatformAdminRepository extends JpaRepository<PlatformAdmin, Long> {
     /**
      * 根据用户名查找平台管理员
      */

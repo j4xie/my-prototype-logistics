@@ -5,6 +5,7 @@ import {
   ScrollView,
   RefreshControl,
   Dimensions,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -24,8 +25,9 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { requireFactoryId } from '../../utils/factoryIdHelper';
 
 // 创建CostComparison专用logger
 const costComparisonLogger = logger.createContextLogger('CostComparison');
@@ -87,8 +89,7 @@ export default function CostComparisonScreen() {
   const fetchComparisonData = async () => {
     setLoading(true);
     try {
-      const { user } = useAuthStore.getState();
-      const factoryId = user?.factoryId || user?.platformUser?.factoryId || 'CRETAS_2024_001';
+      const factoryId = requireFactoryId();
 
       costComparisonLogger.debug('获取成本对比数据', { batchIds, factoryId, batchCount: batchIds.length });
 
@@ -108,10 +109,9 @@ export default function CostComparisonScreen() {
       }
     } catch (error) {
       costComparisonLogger.error('获取成本对比数据失败', error as Error, {
-        factoryId: useAuthStore.getState().user?.factoryId,
         batchIds,
       });
-      const errorMessage = error.response?.data?.message || error.message || '加载成本对比数据失败';
+      const errorMessage = getErrorMsg(error) || '加载成本对比数据失败';
       Alert.alert('加载失败', errorMessage);
       setBatchesData([]);
     } finally {
@@ -167,6 +167,32 @@ export default function CostComparisonScreen() {
   };
 
   const screenWidth = Dimensions.get('window').width - 32;
+
+  // Helper: format cost with appropriate units
+  const formatCost = (cost: number): string => {
+    if (cost === undefined || cost === null || isNaN(cost)) return '--';
+    if (cost >= 10000) {
+      return (cost / 10000).toFixed(2) + '万';
+    } else if (cost >= 1000) {
+      return cost.toFixed(0);
+    } else {
+      return cost.toFixed(2);
+    }
+  };
+
+  // Helper: format date
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '--';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  };
 
   // Loading state
   if (loading) {
@@ -273,89 +299,193 @@ export default function CostComparisonScreen() {
           <View style={styles.rangeRow}>
             <Text style={styles.rangeLabel}>成本差异</Text>
             <Text style={styles.rangeValue}>
-              ¥{(maxUnitCost - minUnitCost).toFixed(2)}/kg (
-              {((maxUnitCost - minUnitCost) / minUnitCost * 100).toFixed(1)}%)
+              ¥{(maxUnitCost - minUnitCost).toFixed(2)}/kg
+              {minUnitCost > 0 && (
+                <Text> ({((maxUnitCost - minUnitCost) / minUnitCost * 100).toFixed(1)}%)</Text>
+              )}
             </Text>
           </View>
         </Surface>
 
         {/* Table or Chart View */}
         {viewMode === 'table' ? (
-          <Surface style={styles.section} elevation={1}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
+          <View>
+            <Text variant="titleMedium" style={styles.cardSectionTitle}>
               成本明细对比
             </Text>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-              <DataTable>
-                <DataTable.Header>
-                  <DataTable.Title style={styles.tableHeaderCell}>
-                    批次
-                  </DataTable.Title>
-                  <DataTable.Title numeric style={styles.tableCell}>
-                    总成本
-                  </DataTable.Title>
-                  <DataTable.Title numeric style={styles.tableCell}>
-                    人工
-                  </DataTable.Title>
-                  <DataTable.Title numeric style={styles.tableCell}>
-                    原料
-                  </DataTable.Title>
-                  <DataTable.Title numeric style={styles.tableCell}>
-                    设备
-                  </DataTable.Title>
-                  <DataTable.Title numeric style={styles.tableCell}>
-                    其他
-                  </DataTable.Title>
-                  <DataTable.Title numeric style={styles.tableCell}>
-                    单位成本
-                  </DataTable.Title>
-                </DataTable.Header>
+            {/* Batch Cards */}
+            {batchesData.map((batch, index) => {
+              const isLowest = batch.unitCost === minUnitCost;
+              const isHighest = batch.unitCost === maxUnitCost;
+              const diffFromAvg = avgUnitCost > 0
+                ? ((batch.unitCost - avgUnitCost) / avgUnitCost * 100)
+                : 0;
 
-                {batchesData.map((batch) => (
-                  <DataTable.Row key={batch.batchId}>
-                    <DataTable.Cell style={styles.tableHeaderCell}>
-                      <Text style={styles.batchNumberCell}>
-                        {batch.batchNumber.slice(-7)}
+              return (
+                <Surface
+                  key={batch.batchId}
+                  style={[
+                    styles.batchCard,
+                    isLowest && styles.batchCardBest,
+                    isHighest && styles.batchCardWorst,
+                  ]}
+                  elevation={1}
+                >
+                  {/* Header */}
+                  <View style={styles.batchCardHeader}>
+                    <View style={styles.batchCardHeaderLeft}>
+                      <Text style={styles.batchCardNumber}>
+                        {batch.batchNumber || `批次 ${index + 1}`}
                       </Text>
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric style={styles.tableCell}>
-                      ¥{(batch.totalCost / 1000).toFixed(1)}k
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric style={styles.tableCell}>
-                      ¥{(batch.laborCost / 1000).toFixed(1)}k
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric style={styles.tableCell}>
-                      ¥{(batch.materialCost / 1000).toFixed(1)}k
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric style={styles.tableCell}>
-                      ¥{(batch.equipmentCost / 1000).toFixed(1)}k
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric style={styles.tableCell}>
-                      ¥{(batch.otherCost / 1000).toFixed(1)}k
-                    </DataTable.Cell>
-                    <DataTable.Cell numeric style={styles.tableCell}>
+                      {batch.productType && (
+                        <Chip
+                          mode="outlined"
+                          compact
+                          style={styles.productTypeChip}
+                          textStyle={styles.productTypeChipText}
+                        >
+                          {batch.productType}
+                        </Chip>
+                      )}
+                    </View>
+                    {isLowest && (
+                      <Chip mode="flat" style={styles.bestBadge} textStyle={styles.bestBadgeText} icon="trophy">
+                        最优
+                      </Chip>
+                    )}
+                    {isHighest && (
+                      <Chip mode="flat" style={styles.worstBadge} textStyle={styles.worstBadgeText} icon="alert">
+                        待优化
+                      </Chip>
+                    )}
+                  </View>
+
+                  {/* Meta Info */}
+                  <View style={styles.batchCardMeta}>
+                    {batch.date && (
+                      <View style={styles.metaItem}>
+                        <Text style={styles.metaLabel}>日期</Text>
+                        <Text style={styles.metaValue}>{formatDate(batch.date)}</Text>
+                      </View>
+                    )}
+                    <View style={styles.metaItem}>
+                      <Text style={styles.metaLabel}>数量</Text>
+                      <Text style={styles.metaValue}>{batch.quantity?.toFixed(1) || '--'} kg</Text>
+                    </View>
+                  </View>
+
+                  <Divider style={styles.batchCardDivider} />
+
+                  {/* Cost Grid */}
+                  <View style={styles.costGrid}>
+                    <View style={styles.costGridItem}>
+                      <Text style={styles.costGridLabel}>总成本</Text>
+                      <Text style={styles.costGridValue}>¥{formatCost(batch.totalCost)}</Text>
+                    </View>
+                    <View style={styles.costGridItem}>
+                      <View style={[styles.costGridDot, { backgroundColor: '#2196F3' }]} />
+                      <Text style={styles.costGridLabel}>人工</Text>
+                      <Text style={styles.costGridValue}>¥{formatCost(batch.laborCost)}</Text>
+                    </View>
+                    <View style={styles.costGridItem}>
+                      <View style={[styles.costGridDot, { backgroundColor: '#4CAF50' }]} />
+                      <Text style={styles.costGridLabel}>原料</Text>
+                      <Text style={styles.costGridValue}>¥{formatCost(batch.materialCost)}</Text>
+                    </View>
+                    <View style={styles.costGridItem}>
+                      <View style={[styles.costGridDot, { backgroundColor: '#FF9800' }]} />
+                      <Text style={styles.costGridLabel}>设备</Text>
+                      <Text style={styles.costGridValue}>¥{formatCost(batch.equipmentCost)}</Text>
+                    </View>
+                    <View style={styles.costGridItem}>
+                      <View style={[styles.costGridDot, { backgroundColor: '#9E9E9E' }]} />
+                      <Text style={styles.costGridLabel}>其他</Text>
+                      <Text style={styles.costGridValue}>¥{formatCost(batch.otherCost)}</Text>
+                    </View>
+                  </View>
+
+                  {/* Cost Bar */}
+                  <View style={styles.costBarContainer}>
+                    <View style={styles.costBar}>
+                      <View
+                        style={[
+                          styles.costBarSegment,
+                          { width: `${(batch.laborCost / batch.totalCost) * 100}%`, backgroundColor: '#2196F3' },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.costBarSegment,
+                          { width: `${(batch.materialCost / batch.totalCost) * 100}%`, backgroundColor: '#4CAF50' },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.costBarSegment,
+                          { width: `${(batch.equipmentCost / batch.totalCost) * 100}%`, backgroundColor: '#FF9800' },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.costBarSegment,
+                          { width: `${(batch.otherCost / batch.totalCost) * 100}%`, backgroundColor: '#9E9E9E' },
+                        ]}
+                      />
+                    </View>
+                  </View>
+
+                  <Divider style={styles.batchCardDivider} />
+
+                  {/* Unit Cost - Highlighted */}
+                  <View style={styles.unitCostRow}>
+                    <Text style={styles.unitCostLabel}>单位成本</Text>
+                    <View style={styles.unitCostRight}>
                       <Text
                         style={[
-                          styles.unitCostCell,
-                          {
-                            color:
-                              batch.unitCost === minUnitCost
-                                ? '#4CAF50'
-                                : batch.unitCost === maxUnitCost
-                                ? '#F44336'
-                                : '#212121',
-                          },
+                          styles.unitCostValue,
+                          isLowest && styles.unitCostBest,
+                          isHighest && styles.unitCostWorst,
                         ]}
                       >
-                        ¥{batch.unitCost.toFixed(2)}
+                        ¥{batch.unitCost.toFixed(2)}/kg
                       </Text>
-                    </DataTable.Cell>
-                  </DataTable.Row>
-                ))}
-              </DataTable>
-            </ScrollView>
-          </Surface>
+                      {avgUnitCost > 0 && (
+                        <Text
+                          style={[
+                            styles.unitCostDiff,
+                            diffFromAvg < 0 ? styles.unitCostDiffGood : styles.unitCostDiffBad,
+                          ]}
+                        >
+                          {diffFromAvg > 0 ? '+' : ''}{diffFromAvg.toFixed(1)}%
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </Surface>
+              );
+            })}
+
+            {/* Cost Legend */}
+            <View style={styles.cardLegend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: '#2196F3' }]} />
+                <Text style={styles.legendText}>人工</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
+                <Text style={styles.legendText}>原料</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
+                <Text style={styles.legendText}>设备</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: '#9E9E9E' }]} />
+                <Text style={styles.legendText}>其他</Text>
+              </View>
+            </View>
+          </View>
         ) : (
           <>
             {/* Total Cost Chart */}
@@ -645,18 +775,181 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FF9800',
   },
-  tableHeaderCell: {
-    minWidth: 80,
+  // Card-based table styles
+  cardSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#212121',
   },
-  tableCell: {
-    minWidth: 70,
+  batchCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#E0E0E0',
   },
-  batchNumberCell: {
+  batchCardBest: {
+    borderLeftColor: '#4CAF50',
+    backgroundColor: '#FAFFF8',
+  },
+  batchCardWorst: {
+    borderLeftColor: '#F44336',
+    backgroundColor: '#FFFAFA',
+  },
+  batchCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  batchCardHeaderLeft: {
+    flex: 1,
+    gap: 6,
+  },
+  batchCardNumber: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#212121',
+  },
+  productTypeChip: {
+    alignSelf: 'flex-start',
+    height: 24,
+    borderColor: '#E0E0E0',
+  },
+  productTypeChipText: {
+    fontSize: 11,
+    color: '#666',
+  },
+  bestBadge: {
+    backgroundColor: '#E8F5E9',
+  },
+  bestBadgeText: {
+    color: '#4CAF50',
     fontSize: 11,
     fontWeight: '600',
   },
-  unitCostCell: {
+  worstBadge: {
+    backgroundColor: '#FFEBEE',
+  },
+  worstBadgeText: {
+    color: '#F44336',
+    fontSize: 11,
     fontWeight: '600',
+  },
+  batchCardMeta: {
+    flexDirection: 'row',
+    gap: 24,
+    marginBottom: 12,
+  },
+  metaItem: {
+    gap: 2,
+  },
+  metaLabel: {
+    fontSize: 11,
+    color: '#9E9E9E',
+  },
+  metaValue: {
+    fontSize: 13,
+    color: '#424242',
+    fontWeight: '500',
+  },
+  batchCardDivider: {
+    marginVertical: 12,
+  },
+  costGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  costGridItem: {
+    minWidth: '18%',
+    flexDirection: 'column',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+  },
+  costGridDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  costGridLabel: {
+    fontSize: 10,
+    color: '#757575',
+    marginBottom: 4,
+  },
+  costGridValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#212121',
+  },
+  costBarContainer: {
+    marginBottom: 4,
+  },
+  costBar: {
+    flexDirection: 'row',
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    backgroundColor: '#E0E0E0',
+  },
+  costBarSegment: {
+    height: '100%',
+  },
+  unitCostRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  unitCostLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  unitCostRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  unitCostValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#212121',
+  },
+  unitCostBest: {
+    color: '#4CAF50',
+  },
+  unitCostWorst: {
+    color: '#F44336',
+  },
+  unitCostDiff: {
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  unitCostDiffGood: {
+    backgroundColor: '#E8F5E9',
+    color: '#4CAF50',
+  },
+  unitCostDiffBad: {
+    backgroundColor: '#FFEBEE',
+    color: '#F44336',
+  },
+  cardLegend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    marginBottom: 16,
   },
   chart: {
     marginVertical: 8,

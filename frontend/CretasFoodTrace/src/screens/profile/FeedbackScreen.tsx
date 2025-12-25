@@ -17,7 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { feedbackApiClient } from '../../services/api/feedbackApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError , getErrorMsg} from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建Feedback专用logger
@@ -235,7 +235,7 @@ export default function FeedbackScreen() {
       });
       Alert.alert(
         '提交失败',
-        error.response?.data?.message || error.message || '提交反馈时出现错误，请重试'
+        getErrorMsg(error) || '提交反馈时出现错误，请重试'
       );
     } finally {
       setLoading(false);

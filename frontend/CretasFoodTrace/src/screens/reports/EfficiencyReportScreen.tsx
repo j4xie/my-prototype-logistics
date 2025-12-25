@@ -15,7 +15,7 @@ import { useAuthStore } from '../../store/authStore';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
 import { getFactoryId } from '../../types/auth';
-import { handleError } from '../../utils/errorHandler';
+import { handleError , getErrorMsg} from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建EfficiencyReport专用logger
@@ -61,7 +61,7 @@ export default function EfficiencyReportScreen() {
         if (equipmentStatsResponse.success && equipmentStatsResponse.data) {
           const stats = equipmentStatsResponse.data;
           const newEfficiencyStats = {
-            equipmentOEE: stats.averageOEE || 75, // 示例值
+            equipmentOEE: (stats as any).averageOEE || 75, // 示例值
             equipmentUtilization: stats.activeCount && stats.totalCount
               ? (stats.activeCount / stats.totalCount) * 100
               : 80,
@@ -94,7 +94,7 @@ export default function EfficiencyReportScreen() {
         factoryId: getFactoryId(user),
         timeRange,
       });
-      Alert.alert('加载失败', error.response?.data?.message || error.message || '加载效率数据失败');
+      Alert.alert('加载失败', getErrorMsg(error) || '加载效率数据失败');
       setEfficiencyStats(null);
     } finally {
       setLoading(false);

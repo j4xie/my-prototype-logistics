@@ -15,12 +15,37 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { aiApiClient } from '../../services/api/aiApiClient';
-import type { BatchCostAnalysis, AIQuota } from '../../types/processing';
+import type { AIQuota } from '../../types/processing';
 import { handleError } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建CostAnalysisDashboard专用logger
 const costAnalysisLogger = logger.createContextLogger('CostAnalysisDashboard');
+
+// 后端实际返回的数据结构
+interface BackendBatchCostData {
+  batch: {
+    batchNumber: string;
+    productName: string;
+    actualQuantity?: number;
+    goodQuantity?: number;
+    defectQuantity?: number;
+    yieldRate?: number;
+    startTime?: string;
+    endTime?: string;
+    status?: string;
+  };
+  materialCost: number;
+  laborCost: number;
+  equipmentCost: number;
+  otherCost: number;
+  totalCost: number;
+  unitCost: number;
+  materialCostRatio?: number;
+  laborCostRatio?: number;
+  equipmentCostRatio?: number;
+  otherCostRatio?: number;
+}
 
 type CostAnalysisDashboardProps = ProcessingScreenProps<'CostAnalysisDashboard'>;
 
@@ -32,8 +57,8 @@ export default function CostAnalysisDashboard() {
   const route = useRoute<CostAnalysisDashboardProps['route']>();
   const { batchId } = route.params || {};
 
-  // 成本数据状态
-  const [costData, setCostData] = useState<BatchCostAnalysis | null>(null);
+  // 成本数据状态 - 使用后端实际返回的数据结构
+  const [costData, setCostData] = useState<BackendBatchCostData | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -65,9 +90,9 @@ export default function CostAnalysisDashboard() {
     try {
       setLoading(true);
       const response = await processingApiClient.getBatchCostAnalysis(batchId);
-      if (response.success) {
-        // ✅ 修复: 类型断言 (2025-11-20)
-        setCostData(response.data as unknown as BatchCostAnalysis);
+      if (response.success && response.data) {
+        // 后端返回的是扁平结构，直接使用
+        setCostData(response.data as unknown as BackendBatchCostData);
       }
     } catch (error) {
       costAnalysisLogger.error('加载成本数据失败', error, { batchId });
@@ -205,7 +230,17 @@ export default function CostAnalysisDashboard() {
     );
   }
 
-  const { batch, laborStats, equipmentStats, costBreakdown, profitAnalysis } = costData;
+  // 从后端扁平结构中提取数据
+  const { batch } = costData;
+  const materialCost = costData.materialCost ?? 0;
+  const laborCost = costData.laborCost ?? 0;
+  const equipmentCost = costData.equipmentCost ?? 0;
+  const otherCost = costData.otherCost ?? 0;
+  const totalCost = costData.totalCost ?? 0;
+  const unitCost = costData.unitCost ?? 0;
+  const materialCostRatio = costData.materialCostRatio ?? 0;
+  const laborCostRatio = costData.laborCostRatio ?? 0;
+  const equipmentCostRatio = costData.equipmentCostRatio ?? 0;
 
   return (
     <View style={styles.container}>
@@ -231,17 +266,17 @@ export default function CostAnalysisDashboard() {
                   {batch.batchNumber}
                 </Text>
               </View>
-              <Chip mode="flat">{batch.status}</Chip>
+              <Chip mode="flat">{batch.status ?? '进行中'}</Chip>
             </View>
             <Text variant="bodyMedium" style={styles.productInfo}>
-              {batch.productType} • {batch.rawMaterialCategory}
+              {batch.productName}
             </Text>
           </Card.Content>
         </Card>
 
         {/* 成本概览 - 4格网格 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="💰 成本概览" />
+          <Card.Title title="成本概览" />
           <Card.Content>
             <View style={styles.costGrid}>
               <View style={[styles.costItem, { backgroundColor: '#FFEBEE' }]}>
@@ -249,10 +284,10 @@ export default function CostAnalysisDashboard() {
                   原材料成本
                 </Text>
                 <Text variant="titleMedium" style={[styles.costValue, { color: '#D32F2F' }]}>
-                  ¥{costBreakdown.rawMaterialCost.toFixed(2)}
+                  ¥{materialCost.toFixed(2)}
                 </Text>
                 <Text variant="bodySmall" style={styles.costPercentage}>
-                  {costBreakdown.rawMaterialPercentage}
+                  {materialCostRatio.toFixed(1)}%
                 </Text>
               </View>
 
@@ -261,10 +296,10 @@ export default function CostAnalysisDashboard() {
                   人工成本
                 </Text>
                 <Text variant="titleMedium" style={[styles.costValue, { color: '#1976D2' }]}>
-                  ¥{costBreakdown.laborCost.toFixed(2)}
+                  ¥{laborCost.toFixed(2)}
                 </Text>
                 <Text variant="bodySmall" style={styles.costPercentage}>
-                  {costBreakdown.laborPercentage}
+                  {laborCostRatio.toFixed(1)}%
                 </Text>
               </View>
 
@@ -273,10 +308,10 @@ export default function CostAnalysisDashboard() {
                   设备成本
                 </Text>
                 <Text variant="titleMedium" style={[styles.costValue, { color: '#7B1FA2' }]}>
-                  ¥{costBreakdown.equipmentCost.toFixed(2)}
+                  ¥{equipmentCost.toFixed(2)}
                 </Text>
                 <Text variant="bodySmall" style={styles.costPercentage}>
-                  {costBreakdown.equipmentPercentage}
+                  {equipmentCostRatio.toFixed(1)}%
                 </Text>
               </View>
 
@@ -285,7 +320,7 @@ export default function CostAnalysisDashboard() {
                   总成本
                 </Text>
                 <Text variant="titleLarge" style={[styles.costValue, { color: '#388E3C' }]}>
-                  ¥{costBreakdown.totalCost.toFixed(2)}
+                  ¥{totalCost.toFixed(2)}
                 </Text>
                 <Text variant="bodySmall" style={styles.costPercentage}>
                   100%
@@ -295,45 +330,29 @@ export default function CostAnalysisDashboard() {
           </Card.Content>
         </Card>
 
-        {/* 人工详情 */}
+        {/* 成本明细 */}
         <Card style={styles.card} mode="elevated">
           <Card.Title
-            title="👥 人工详情"
-            subtitle={`${laborStats.totalSessions}人 • 总工时${Math.floor(laborStats.totalMinutes / 60)}h`}
+            title="成本明细"
+            subtitle={`单位成本: ¥${unitCost.toFixed(2)}`}
           />
           <Card.Content>
             <View style={styles.detailRow}>
-              <Text variant="bodyMedium">已完成工时：</Text>
-              <Text variant="bodyMedium" style={styles.detailValue}>
-                {laborStats.completedSessions}人次
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text variant="bodyMedium">总人工成本：</Text>
+              <Text variant="bodyMedium">人工成本：</Text>
               <Text variant="titleMedium" style={[styles.detailValue, { color: '#1976D2' }]}>
-                ¥{laborStats.totalLaborCost.toFixed(2)}
-              </Text>
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* 设备详情 */}
-        <Card style={styles.card} mode="elevated">
-          <Card.Title
-            title="⚙️ 设备详情"
-            subtitle={`${equipmentStats.totalUsages}台 • 总时长${Math.floor(equipmentStats.totalDuration / 60)}h`}
-          />
-          <Card.Content>
-            <View style={styles.detailRow}>
-              <Text variant="bodyMedium">已完成使用：</Text>
-              <Text variant="bodyMedium" style={styles.detailValue}>
-                {equipmentStats.completedUsages}次
+                ¥{laborCost.toFixed(2)}
               </Text>
             </View>
             <View style={styles.detailRow}>
-              <Text variant="bodyMedium">总设备成本：</Text>
+              <Text variant="bodyMedium">设备成本：</Text>
               <Text variant="titleMedium" style={[styles.detailValue, { color: '#7B1FA2' }]}>
-                ¥{equipmentStats.totalEquipmentCost.toFixed(2)}
+                ¥{equipmentCost.toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text variant="bodyMedium">其他成本：</Text>
+              <Text variant="titleMedium" style={[styles.detailValue, { color: '#616161' }]}>
+                ¥{otherCost.toFixed(2)}
               </Text>
             </View>
           </Card.Content>
@@ -345,7 +364,7 @@ export default function CostAnalysisDashboard() {
             <View style={styles.aiHeader}>
               <View style={styles.aiTitleRow}>
                 <Text variant="titleMedium" style={styles.aiTitle}>
-                  🤖 AI智能分析
+                  AI智能分析
                 </Text>
                 {quota && (
                   <View style={styles.quotaBadge}>
@@ -399,7 +418,7 @@ export default function CostAnalysisDashboard() {
                   <>
                     <View style={styles.aiResultCard}>
                       <Text variant="titleSmall" style={styles.aiResultTitle}>
-                        📋 分析结果
+                        分析结果
                       </Text>
                       <Divider style={styles.aiDivider} />
                       <Text variant="bodyMedium" style={styles.aiResultText}>
@@ -433,7 +452,7 @@ export default function CostAnalysisDashboard() {
                     {/* 快速提问 */}
                     <View style={styles.quickQuestions}>
                       <Text variant="bodySmall" style={styles.quickQuestionsTitle}>
-                        💬 快速提问:
+                        快速提问:
                       </Text>
                       {quickQuestions.map((q, index) => (
                         <Button
@@ -504,38 +523,38 @@ export default function CostAnalysisDashboard() {
           </Card.Content>
         </Card>
 
-        {/* 利润分析（如果有） */}
-        {profitAnalysis.expectedRevenue && (
+        {/* 批次产量信息（如果有） */}
+        {batch.actualQuantity && batch.actualQuantity > 0 && (
           <Card style={styles.card} mode="elevated">
-            <Card.Title title="📈 利润分析" />
+            <Card.Title title="产量信息" />
             <Card.Content>
               <View style={styles.detailRow}>
-                <Text variant="bodyMedium">预期收入：</Text>
+                <Text variant="bodyMedium">实际产量：</Text>
                 <Text variant="titleMedium" style={[styles.detailValue, { color: '#388E3C' }]}>
-                  ¥{profitAnalysis.expectedRevenue.toFixed(2)}
+                  {batch.actualQuantity} 件
                 </Text>
               </View>
-              {profitAnalysis.profitMargin !== undefined && (
+              {batch.goodQuantity !== undefined && (
                 <View style={styles.detailRow}>
-                  <Text variant="bodyMedium">利润：</Text>
-                  <Text
-                    variant="titleMedium"
-                    style={[
-                      styles.detailValue,
-                      { color: profitAnalysis.profitMargin >= 0 ? '#388E3C' : '#D32F2F' },
-                    ]}
-                  >
-                    ¥{profitAnalysis.profitMargin.toFixed(2)}
-                    {profitAnalysis.profitRate !== undefined &&
-                      ` (${profitAnalysis.profitRate.toFixed(1)}%)`}
+                  <Text variant="bodyMedium">良品数量：</Text>
+                  <Text variant="titleMedium" style={[styles.detailValue, { color: '#388E3C' }]}>
+                    {batch.goodQuantity} 件
                   </Text>
                 </View>
               )}
-              {profitAnalysis.breakEvenPrice && (
+              {batch.defectQuantity !== undefined && batch.defectQuantity > 0 && (
                 <View style={styles.detailRow}>
-                  <Text variant="bodyMedium">盈亏平衡价：</Text>
+                  <Text variant="bodyMedium">次品数量：</Text>
+                  <Text variant="titleMedium" style={[styles.detailValue, { color: '#D32F2F' }]}>
+                    {batch.defectQuantity} 件
+                  </Text>
+                </View>
+              )}
+              {batch.yieldRate !== undefined && (
+                <View style={styles.detailRow}>
+                  <Text variant="bodyMedium">良品率：</Text>
                   <Text variant="bodyMedium" style={styles.detailValue}>
-                    ¥{profitAnalysis.breakEvenPrice}/kg
+                    {(batch.yieldRate * 100).toFixed(1)}%
                   </Text>
                 </View>
               )}

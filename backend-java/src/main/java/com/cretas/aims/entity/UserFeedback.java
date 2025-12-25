@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -42,7 +43,7 @@ public class UserFeedback extends BaseEntity {
      * 用户ID
      */
     @Column(name = "user_id")
-    private Integer userId;
+    private Long userId;
 
     /**
      * 反馈类型
@@ -107,4 +108,17 @@ public class UserFeedback extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
+
+    // ===================================================================
+    // 前端字段别名（兼容前端）
+    // ===================================================================
+
+    /**
+     * feedbackId 别名（兼容前端）
+     * 前端使用 feedbackId，后端使用 id
+     */
+    @JsonProperty("feedbackId")
+    public String getFeedbackId() {
+        return id != null ? String.valueOf(id) : null;
+    }
 }

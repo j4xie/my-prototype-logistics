@@ -1,5 +1,6 @@
 package com.cretas.aims.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -98,6 +99,50 @@ public class TimeStatsDTO {
 
         @Schema(description = "出勤率", example = "96.5")
         private BigDecimal attendanceRate;
+
+        @Schema(description = "优秀员工列表")
+        private List<TopPerformer> topPerformers;
+
+        // ==================== 前端字段别名 ====================
+
+        /**
+         * totalEmployees 别名（兼容前端）
+         * 前端使用 totalEmployees，后端使用 workerCount
+         */
+        @JsonProperty("totalEmployees")
+        public Integer getTotalEmployees() {
+            return workerCount;
+        }
+
+        /**
+         * department 别名（兼容前端）
+         * 前端使用 department，后端使用 departmentName
+         */
+        @JsonProperty("department")
+        public String getDepartment() {
+            return departmentName;
+        }
+    }
+
+    /**
+     * 优秀员工
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class TopPerformer {
+        @Schema(description = "员工ID", example = "1")
+        private Integer employeeId;
+
+        @Schema(description = "员工姓名", example = "张三")
+        private String employeeName;
+
+        @Schema(description = "工作效率", example = "95.5")
+        private BigDecimal efficiency;
+
+        @Schema(description = "总工时", example = "180.0")
+        private BigDecimal totalHours;
     }
 
     /**
@@ -158,6 +203,17 @@ public class TimeStatsDTO {
 
         @Schema(description = "是否工作日", example = "true")
         private Boolean isWorkday;
+
+        // ==================== 前端字段别名 ====================
+
+        /**
+         * employeeCount 别名（兼容前端）
+         * 前端使用 employeeCount，后端使用 activeWorkers
+         */
+        @JsonProperty("employeeCount")
+        public Integer getEmployeeCount() {
+            return activeWorkers;
+        }
     }
 
     /**
@@ -242,5 +298,55 @@ public class TimeStatsDTO {
 
         @Schema(description = "排名", example = "5")
         private Integer ranking;
+
+        @Schema(description = "工作效率", example = "92.5")
+        private BigDecimal efficiency;
+
+        @Schema(description = "统计周期")
+        private Period period;
+
+        // ==================== 前端字段别名 ====================
+
+        /**
+         * employeeId 别名（兼容前端）
+         * 前端使用 employeeId，后端使用 workerId
+         */
+        @JsonProperty("employeeId")
+        public Integer getEmployeeId() {
+            return workerId;
+        }
+
+        /**
+         * employeeName 别名（兼容前端）
+         * 前端使用 employeeName，后端使用 workerName
+         */
+        @JsonProperty("employeeName")
+        public String getEmployeeName() {
+            return workerName;
+        }
+
+        /**
+         * workDays 别名（兼容前端）
+         * 前端使用 workDays，后端使用 attendanceDays
+         */
+        @JsonProperty("workDays")
+        public Integer getWorkDays() {
+            return attendanceDays;
+        }
+    }
+
+    /**
+     * 统计周期
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Period {
+        @Schema(description = "开始日期")
+        private LocalDate startDate;
+
+        @Schema(description = "结束日期")
+        private LocalDate endDate;
     }
 }

@@ -18,7 +18,7 @@ export interface WhitelistDTO {
   realName: string;
   role: string;
   department?: string;
-  status: 'PENDING' | 'ACTIVE' | 'EXPIRED' | 'LIMIT_REACHED';
+  status: 'PENDING' | 'ACTIVE' | 'DISABLED' | 'EXPIRED' | 'LIMIT_REACHED' | 'DELETED';
   maxUsageCount?: number;
   usedCount: number;
   expiresAt?: string;
@@ -57,12 +57,12 @@ export interface PageResponse<T> {
 // ========== API客户端类 ==========
 
 class WhitelistApiClient {
-  private getFactoryPath(factoryId?: string) {
+  private getPath(factoryId?: string) {
     const currentFactoryId = getCurrentFactoryId(factoryId);
     if (!currentFactoryId) {
       throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
     }
-    return `/api/mobile/${currentFactoryId}`;
+    return `/api/mobile/${currentFactoryId}/whitelist`;
   }
 
   /**
@@ -83,7 +83,7 @@ class WhitelistApiClient {
     const { factoryId, ...queryParams } = params || {};
     // apiClient拦截器已统一返回data
     return await apiClient.get<PageResponse<WhitelistDTO>>(
-      `${this.getFactoryPath(factoryId)}/whitelist`,
+      this.getPath(factoryId),
       { params: queryParams }
     );
   }
@@ -93,7 +93,7 @@ class WhitelistApiClient {
    * DELETE /api/{factoryId}/whitelist/{id}
    */
   async deleteWhitelist(id: number, factoryId?: string): Promise<void> {
-    await apiClient.delete(`${this.getFactoryPath(factoryId)}/whitelist/${id}`);
+    await apiClient.delete(`${this.getPath(factoryId)}/${id}`);
   }
 
   /**
@@ -106,7 +106,7 @@ class WhitelistApiClient {
   ): Promise<BatchResult> {
     // apiClient拦截器已统一返回data
     return await apiClient.post<BatchResult>(
-      `${this.getFactoryPath(factoryId)}/whitelist/batch`,
+      `${this.getPath(factoryId)}/batch`,
       request
     );
   }
@@ -121,14 +121,14 @@ class WhitelistApiClient {
   ): Promise<BatchResult> {
     // apiClient拦截器已统一返回data
     return await apiClient.delete<BatchResult>(
-      `${this.getFactoryPath(factoryId)}/whitelist/batch`,
+      `${this.getPath(factoryId)}/batch`,
       { data: { ids } }
     );
   }
 
   /**
    * 5. 验证手机号是否在白名单中（注册时检查）
-   * GET /api/{factoryId}/whitelist/check?phoneNumber=X
+   * GET /api/{factoryId}/whitelist/validate/{phoneNumber}
    */
   async validatePhoneNumber(
     phoneNumber: string,
@@ -138,39 +138,210 @@ class WhitelistApiClient {
     whitelist?: WhitelistDTO;
     message?: string;
   }> {
-    // apiClient拦截器已统一返回data
     return await apiClient.get<{
       isValid: boolean;
       whitelist?: WhitelistDTO;
       message?: string;
     }>(
-      `${this.getFactoryPath(factoryId)}/whitelist/check`,
-      { params: { phoneNumber } }
+      `${this.getPath(factoryId)}/validate/${encodeURIComponent(phoneNumber)}`
     );
   }
 
-  // ===== 以下方法在MVP中暂不使用，已注释保留供后续版本使用 =====
+  // ===== 新增功能 (Phase 3) =====
 
+  /**
+   * 6. 获取白名单详情
+   * GET /api/{factoryId}/whitelist/{id}
+   */
+  async getWhitelistById(
+    id: number,
+    factoryId?: string
+  ): Promise<WhitelistDTO> {
+    return await apiClient.get<WhitelistDTO>(
+      `${this.getPath(factoryId)}/${id}`
+    );
+  }
+
+  /**
+   * 7. 更新白名单
+   * PUT /api/{factoryId}/whitelist/{id}
+   */
+  async updateWhitelist(
+    id: number,
+    request: Partial<CreateWhitelistRequest>,
+    factoryId?: string
+  ): Promise<WhitelistDTO> {
+    return await apiClient.put<WhitelistDTO>(
+      `${this.getPath(factoryId)}/${id}`,
+      request
+    );
+  }
+
+  /**
+   * 8. 获取白名单统计信息
+   * GET /api/{factoryId}/whitelist/stats
+   */
+  async getWhitelistStats(factoryId?: string): Promise<{
+    total: number;
+    pending: number;
+    active: number;
+    disabled: number;
+    expired: number;
+    limitReached: number;
+  }> {
+    return await apiClient.get<{
+      total: number;
+      pending: number;
+      active: number;
+      disabled: number;
+      expired: number;
+      limitReached: number;
+    }>(
+      `${this.getPath(factoryId)}/stats`
+    );
+  }
+
+  /**
+   * 9. 更新过期状态
+   * PUT /api/{factoryId}/whitelist/expired
+   */
+  async updateExpiredStatus(factoryId?: string): Promise<{ updated: number }> {
+    return await apiClient.put<{ updated: number }>(
+      `${this.getPath(factoryId)}/expired`
+    );
+  }
+
+  /**
+   * 10. 搜索白名单
+   * GET /api/{factoryId}/whitelist/search
+   */
+  async searchWhitelist(params: {
+    keyword: string;
+    page?: number;
+    size?: number;
+    factoryId?: string;
+  }): Promise<PageResponse<WhitelistDTO>> {
+    const { factoryId, ...queryParams } = params;
+    return await apiClient.get<PageResponse<WhitelistDTO>>(
+      `${this.getPath(factoryId)}/search`,
+      { params: queryParams }
+    );
+  }
+
+  /**
+   * 11. 获取即将过期的白名单
+   * GET /api/{factoryId}/whitelist/expiring
+   */
+  async getExpiringSoon(params?: {
+    days?: number;
+    factoryId?: string;
+  }): Promise<WhitelistDTO[]> {
+    const { factoryId, ...queryParams } = params || {};
+    return await apiClient.get<WhitelistDTO[]>(
+      `${this.getPath(factoryId)}/expiring`,
+      { params: queryParams }
+    );
+  }
+
+  /**
+   * 12. 获取最活跃用户
+   * GET /api/{factoryId}/whitelist/most-active
+   */
+  async getMostActiveUsers(params?: {
+    limit?: number;
+    factoryId?: string;
+  }): Promise<WhitelistDTO[]> {
+    const { factoryId, ...queryParams } = params || {};
+    return await apiClient.get<WhitelistDTO[]>(
+      `${this.getPath(factoryId)}/most-active`,
+      { params: queryParams }
+    );
+  }
+
+  /**
+   * 13. 获取最近使用
+   * GET /api/{factoryId}/whitelist/recently-used
+   */
+  async getRecentlyUsed(params?: {
+    limit?: number;
+    factoryId?: string;
+  }): Promise<WhitelistDTO[]> {
+    const { factoryId, ...queryParams } = params || {};
+    return await apiClient.get<WhitelistDTO[]>(
+      `${this.getPath(factoryId)}/recently-used`,
+      { params: queryParams }
+    );
+  }
+
+  /**
+   * 14. 导出白名单
+   * GET /api/{factoryId}/whitelist/export
+   */
+  async exportWhitelist(params?: {
+    status?: string;
+    factoryId?: string;
+  }): Promise<Blob> {
+    const { factoryId, ...queryParams } = params || {};
+    return await apiClient.get<Blob>(
+      `${this.getPath(factoryId)}/export`,
+      {
+        params: queryParams,
+        responseType: 'blob'
+      }
+    );
+  }
+
+  /**
+   * 15. 导入白名单
+   * POST /api/{factoryId}/whitelist/import
+   */
+  async importWhitelist(
+    csvData: string,
+    factoryId?: string
+  ): Promise<BatchResult> {
+    return await apiClient.post<BatchResult>(
+      `${this.getPath(factoryId)}/import`,
+      { csvData }
+    );
+  }
+
+  /**
+   * 16. 清理已删除的记录
+   * DELETE /api/{factoryId}/whitelist/cleanup
+   */
+  async cleanupDeleted(params?: {
+    daysOld?: number;
+    factoryId?: string;
+  }): Promise<{ deleted: number }> {
+    const { factoryId, ...queryParams } = params || {};
+    return await apiClient.delete<{ deleted: number }>(
+      `${this.getPath(factoryId)}/cleanup`,
+      { params: queryParams }
+    );
+  }
+
+  /**
+   * 17. 延长有效期
+   * PUT /api/{factoryId}/whitelist/{id}/extend
+   */
+  async extendExpiration(params: {
+    id: number;
+    days: number;
+    factoryId?: string;
+  }): Promise<WhitelistDTO> {
+    const { factoryId, id, days } = params;
+    return await apiClient.put<WhitelistDTO>(
+      `${this.getPath(factoryId)}/${id}/extend`,
+      { days }
+    );
+  }
+
+  // ===== 不实现的功能 (详见 .claude/rules/unused-api-endpoints.md) =====
   /*
-   * MVP暂不使用的功能（15个方法）：
-   *
-   * 1. getWhitelistById - 获取详情（MVP不需要详情页）
-   * 2. updateWhitelist - 更新白名单（MVP直接删除重建）
-   * 3. searchWhitelist - 搜索（列表API的keyword参数已足够）
-   * 4. getWhitelistStats - 统计信息（后期添加）
-   * 5. getExpiringWhitelist - 即将过期（MVP暂不做过期管理）
-   * 6. getMostActiveWhitelist - 最活跃用户（统计功能）
-   * 7. getRecentlyUsedWhitelist - 最近使用（统计功能）
-   * 8. incrementUsage - 增加使用次数（后端自动处理）
-   * 9. extendExpiry - 延长有效期（MVP暂不需要）
-   * 10. resetUsage - 重置使用次数（MVP暂不需要）
-   * 11. updateExpiredStatus - 更新过期状态（后端定时任务处理）
-   * 12. updateLimitReachedStatus - 更新达限状态（后端定时任务处理）
-   * 13. cleanupDeleted - 清理已删除记录（后端定时任务处理）
-   * 14. exportWhitelist - 导出白名单（MVP数据量小，不需要导出）
-   * 15. importWhitelist - 导入白名单（批量添加API已足够）
-   *
-   * 如需使用这些功能，请查看Git历史或参考完整版API文档
+   * 以下功能由后端自动处理，前端不需要调用：
+   * - resetUsageCount - 重置使用次数 (PUT /{id}/reset-usage)
+   * - incrementUsage - 增加使用次数 (PUT /usage/{phoneNumber})
+   * - updateLimitReached - 更新达限状态 (PUT /limit-reached)
    */
 }
 

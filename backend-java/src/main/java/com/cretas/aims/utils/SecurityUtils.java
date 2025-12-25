@@ -14,19 +14,22 @@ public class SecurityUtils {
      *
      * @return 用户ID
      */
-    public static Integer getCurrentUserId() {
+    public static Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }
         Object principal = authentication.getPrincipal();
-        if (principal instanceof Integer) {
-            return (Integer) principal;
+        if (principal instanceof Long) {
+            return (Long) principal;
         }
-        // 如果是字符串，尝试解析为整数
+        if (principal instanceof Integer) {
+            return ((Integer) principal).longValue();
+        }
+        // 如果是字符串，尝试解析为长整数
         if (principal instanceof String) {
             try {
-                return Integer.parseInt((String) principal);
+                return Long.parseLong((String) principal);
             } catch (NumberFormatException e) {
                 return null;
             }

@@ -22,17 +22,17 @@ public interface UserService {
     /**
      * 更新用户信息
      */
-    UserDTO updateUser(String factoryId, Integer userId, CreateUserRequest request);
+    UserDTO updateUser(String factoryId, Long userId, CreateUserRequest request);
 
     /**
      * 删除用户
      */
-    void deleteUser(String factoryId, Integer userId);
+    void deleteUser(String factoryId, Long userId);
 
     /**
      * 获取用户详情
      */
-    UserDTO getUserById(String factoryId, Integer userId);
+    UserDTO getUserById(String factoryId, Long userId);
 
     /**
      * 获取用户列表(分页)
@@ -47,17 +47,17 @@ public interface UserService {
     /**
      * 激活用户
      */
-    void activateUser(String factoryId, Integer userId);
+    void activateUser(String factoryId, Long userId);
 
     /**
      * 停用用户
      */
-    void deactivateUser(String factoryId, Integer userId);
+    void deactivateUser(String factoryId, Long userId);
 
     /**
      * 更新用户角色
      */
-    void updateUserRole(String factoryId, Integer userId, FactoryUserRole newRole);
+    void updateUserRole(String factoryId, Long userId, FactoryUserRole newRole);
 
     /**
      * 检查用户名是否存在

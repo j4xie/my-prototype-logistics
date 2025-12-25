@@ -4,4 +4,4 @@
  */
 
 export { WorkTypeListScreen } from './WorkTypeListScreen';
-export { WorkTypeFormScreen } from './WorkTypeFormScreen';
+export { default as WorkTypeFormScreen } from './WorkTypeFormScreen';

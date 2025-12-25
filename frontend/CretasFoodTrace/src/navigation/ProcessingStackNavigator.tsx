@@ -51,6 +51,16 @@ import InventoryCheckScreen from '../screens/processing/InventoryCheckScreen';
 // Phase 3 P2 - 异常预警
 import ExceptionAlertScreen from '../screens/alerts/ExceptionAlertScreen';
 
+// 原材料消耗记录
+import MaterialConsumptionHistoryScreen from '../screens/processing/MaterialConsumptionHistoryScreen';
+
+// 溯源功能 - Phase 3
+import {
+  TraceabilityScreen,
+  TraceabilityDetailScreen,
+  PublicTraceScreen,
+} from '../screens/traceability';
+
 const Stack = createNativeStackNavigator<ProcessingStackParamList>();
 
 /**
@@ -191,6 +201,26 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="ExceptionAlert"
         component={ExceptionAlertScreen}
+      />
+
+      {/* 原材料消耗记录 */}
+      <Stack.Screen
+        name="MaterialConsumptionHistory"
+        component={MaterialConsumptionHistoryScreen}
+      />
+
+      {/* 溯源功能 - Phase 3 */}
+      <Stack.Screen
+        name="Traceability"
+        component={TraceabilityScreen}
+      />
+      <Stack.Screen
+        name="TraceabilityDetail"
+        component={TraceabilityDetailScreen}
+      />
+      <Stack.Screen
+        name="PublicTrace"
+        component={PublicTraceScreen}
       />
     </Stack.Navigator>
   );

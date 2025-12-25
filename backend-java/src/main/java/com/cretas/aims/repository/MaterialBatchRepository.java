@@ -120,10 +120,13 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
      * @param pageable 分页参数
      * @return 分页的批次列表
      */
+    /**
+     * 注意：batchNumber使用右模糊（可使用索引），name使用双向模糊（无法使用索引）
+     */
     @Query("SELECT m FROM MaterialBatch m " +
            "LEFT JOIN m.materialType mt " +
            "WHERE m.factoryId = :factoryId " +
-           "AND (m.batchNumber LIKE CONCAT('%', :keyword, '%') OR mt.name LIKE CONCAT('%', :keyword, '%'))")
+           "AND (m.batchNumber LIKE CONCAT(:keyword, '%') OR mt.name LIKE CONCAT('%', :keyword, '%'))")
     Page<MaterialBatch> searchByKeyword(@Param("factoryId") String factoryId,
                                         @Param("keyword") String keyword,
                                         Pageable pageable);
@@ -275,4 +278,22 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
            "AND m.status = 'AVAILABLE'")
     List<MaterialBatch> findExpiringSoon(@Param("factoryId") String factoryId,
                                          @Param("warningDate") LocalDate warningDate);
+
+    /**
+     * 查找所有工厂中已过期且状态为AVAILABLE的批次（定时任务用）
+     * 用于自动更新过期批次状态，避免全表扫描后过滤
+     * @param currentDate 当前日期
+     * @return 已过期的可用批次列表
+     */
+    @Query("SELECT m FROM MaterialBatch m WHERE m.status = 'AVAILABLE' AND m.expireDate IS NOT NULL AND m.expireDate < :currentDate")
+    List<MaterialBatch> findAllExpiredAvailableBatches(@Param("currentDate") LocalDate currentDate);
+
+    /**
+     * 统计指定日期之后入库的批次数量
+     * @param factoryId 工厂ID
+     * @param dateTime 起始日期时间
+     * @return 批次数量
+     */
+    @Query("SELECT COUNT(m) FROM MaterialBatch m WHERE m.factoryId = :factoryId AND m.createdAt >= :dateTime")
+    long countByFactoryIdAndReceiptDateAfter(@Param("factoryId") String factoryId, @Param("dateTime") java.time.LocalDateTime dateTime);
 }

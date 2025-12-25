@@ -15,8 +15,10 @@ import {
   useTheme,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { WorkStackParamList } from '../../types/navigation';
 
 /**
  * 工作类型接口
@@ -74,8 +76,8 @@ const mockWorkTypes: WorkType[] = [
 /**
  * 工作类型图标映射
  */
-const getWorkTypeIcon = (code: string): string => {
-  const iconMap: Record<string, string> = {
+const getWorkTypeIcon = (code: string): keyof typeof Icon.glyphMap => {
+  const iconMap: Record<string, keyof typeof Icon.glyphMap> = {
     'WT-RECEIVE': 'truck-delivery',
     'WT-INSPECT': 'magnify-scan',
     'WT-PROCESS': 'cog-outline',
@@ -89,9 +91,11 @@ const getWorkTypeIcon = (code: string): string => {
  * 工作类型列表页面
  * operator专用 - 显示所有可用的工作类型
  */
+type WorkNavigationProp = NativeStackNavigationProp<WorkStackParamList>;
+
 export function WorkTypeListScreen() {
   const theme = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<WorkNavigationProp>();
 
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [filteredWorkTypes, setFilteredWorkTypes] = useState<WorkType[]>([]);

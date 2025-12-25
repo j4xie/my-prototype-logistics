@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { userApiClient, UserDTO, CreateUserRequest } from '../../services/api/userApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { NotImplementedError } from '../../errors';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 import { canManageUsers, getPermissionDebugInfo, getFactoryId } from '../../utils/permissionHelper';
 
@@ -84,7 +84,6 @@ export default function UserManagementScreen() {
   // 部门选项
   const departmentOptions = [
     { label: '加工部', value: 'processing' },
-    { label: '养殖部', value: 'farming' },
     { label: '物流部', value: 'logistics' },
     { label: '质检部', value: 'quality' },
     { label: '管理层', value: 'management' },
@@ -104,7 +103,7 @@ export default function UserManagementScreen() {
       });
       console.log("response=", response);
       // 处理分页响应 - userApiClient.getUsers 返回 PageResponse<UserDTO>
-      const userData = response.data.content;
+      const userData = response.content;
 
       userManagementLogger.info('用户列表加载成功', {
         userCount: userData.length,
@@ -316,7 +315,6 @@ export default function UserManagementScreen() {
   const getDepartmentName = (dept?: string) => {
     switch (dept) {
       case 'processing': return '加工部';
-      case 'farming': return '养殖部';
       case 'logistics': return '物流部';
       case 'quality': return '质检部';
       case 'management': return '管理层';
