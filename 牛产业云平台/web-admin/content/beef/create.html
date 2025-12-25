@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布牛肉产品 - 牛产业云平台</title>
+    <link rel="stylesheet" href="../../assets/css/variables.css">
+    <link rel="stylesheet" href="../../assets/css/desktop.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+    <style>
+        /* ========== 页面布局 ========== */
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+            background: var(--bg-gray);
+        }
+
+        /* ========== 侧边栏 ========== */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #1B5E20 0%, #2E7D32 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .sidebar-logo .mdi {
+            font-size: 32px;
+        }
+
+        .sidebar-nav {
+            padding: 16px 0;
+        }
+
+        .nav-group {
+            margin-bottom: 8px;
+        }
+
+        .nav-group-title {
+            padding: 12px 24px;
+            font-size: 12px;
+            text-transform: uppercase;
+            opacity: 0.7;
+            letter-spacing: 1px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border-left: 3px solid white;
+        }
+
+        .nav-item .mdi {
+            font-size: 20px;
+            width: 24px;
+        }
+
+        .nav-sub-menu {
+            display: none;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .nav-sub-menu.expanded {
+            display: block;
+        }
+
+        .nav-sub-menu .nav-item {
+            padding-left: 60px;
+            font-size: 14px;
+        }
+
+        /* ========== 主内容区 ========== */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 24px;
+        }
+
+        /* ========== 面包屑 ========== */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        /* ========== 页面头部 ========== */
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* ========== 表单容器 ========== */
+        .form-container {
+            max-width: 1000px;
+        }
+
+        /* ========== 表单卡片 ========== */
+        .form-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 24px;
+        }
+
+        .form-card-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-card-header .mdi {
+            color: var(--primary-color);
+        }
+
+        .form-card-body {
+            padding: 24px;
+        }
+
+        /* ========== 表单网格 ========== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group.full-width {
+            grid-column: span 3;
+        }
+
+        .form-group.span-2 {
+            grid-column: span 2;
+        }
+
+        .form-label {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .form-label .required {
+            color: var(--danger-color);
+            margin-left: 2px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ========== 图片上传 ========== */
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: var(--primary-light);
+        }
+
+        .upload-area .mdi {
+            font-size: 48px;
+            color: var(--text-muted);
+        }
+
+        .upload-area p {
+            margin-top: 12px;
+            color: var(--text-secondary);
+        }
+
+        .upload-preview {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .preview-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .preview-item .remove-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ========== 来源选择 ========== */
+        .source-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .source-card {
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .source-card:hover {
+            border-color: var(--primary-color);
+        }
+
+        .source-card.selected {
+            border-color: var(--primary-color);
+            background: var(--primary-light);
+        }
+
+        .source-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .source-card-header .icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: var(--bg-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--primary-color);
+        }
+
+        .source-card-header .title {
+            font-weight: 600;
+        }
+
+        .source-card-content {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* ========== 切割部位选择 ========== */
+        .cut-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .cut-option {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cut-option:hover {
+            border-color: var(--primary-color);
+        }
+
+        .cut-option.selected {
+            border-color: var(--primary-color);
+            background: var(--primary-light);
+        }
+
+        .cut-option .mdi {
+            font-size: 24px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .cut-option .name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* ========== 冷链设置 ========== */
+        .cold-chain-config {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .cold-chain-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .cold-chain-header .mdi {
+            font-size: 28px;
+            color: #1565C0;
+        }
+
+        .cold-chain-header h4 {
+            font-size: 16px;
+            color: #1565C0;
+        }
+
+        .cold-chain-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .cold-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .cold-input-group label {
+            font-size: 13px;
+            color: #1565C0;
+        }
+
+        .cold-input-group input,
+        .cold-input-group select {
+            padding: 10px 14px;
+            border: 1px solid #90CAF9;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+        }
+
+        /* ========== 规格参数表 ========== */
+        .spec-form {
+            width: 100%;
+        }
+
+        .spec-row {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .spec-label {
+            padding: 10px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* ========== 操作栏 ========== */
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            padding: 20px 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-outline {
+            background: white;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-secondary {
+            background: var(--bg-gray);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <span class="mdi mdi-cow"></span>
+                    <span>牛产业云平台</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <a href="../../dashboard/overview.html" class="nav-item">
+                        <span class="mdi mdi-view-dashboard"></span>
+                        <span>数据概览</span>
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">企业管理</div>
+                    <a href="../../enterprise/list.html" class="nav-item">
+                        <span class="mdi mdi-domain"></span>
+                        <span>企业列表</span>
+                    </a>
+                    <a href="../../enterprise/review.html" class="nav-item">
+                        <span class="mdi mdi-clipboard-check"></span>
+                        <span>企业审核</span>
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">内容管理</div>
+                    <div class="nav-item" onclick="toggleSubMenu(this)">
+                        <span class="mdi mdi-package-variant"></span>
+                        <span>商品管理</span>
+                        <span class="mdi mdi-chevron-down" style="margin-left:auto"></span>
+                    </div>
+                    <div class="nav-sub-menu expanded">
+                        <a href="../cattle/list.html" class="nav-item">
+                            <span>活牛信息</span>
+                        </a>
+                        <a href="../breeding/list.html" class="nav-item">
+                            <span>育种种牛</span>
+                        </a>
+                        <a href="../beef/list.html" class="nav-item active">
+                            <span>牛肉产品</span>
+                        </a>
+                        <a href="../feed/list.html" class="nav-item">
+                            <span>饲料产品</span>
+                        </a>
+                        <a href="../equipment/list.html" class="nav-item">
+                            <span>设备管理</span>
+                        </a>
+                        <a href="../farm/list.html" class="nav-item">
+                            <span>养殖场</span>
+                        </a>
+                        <a href="../slaughter/list.html" class="nav-item">
+                            <span>屠宰场</span>
+                        </a>
+                    </div>
+                    <a href="../review-queue.html" class="nav-item">
+                        <span class="mdi mdi-clipboard-check-outline"></span>
+                        <span>审核队列</span>
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">系统设置</div>
+                    <a href="../../settings/dictionary.html" class="nav-item">
+                        <span class="mdi mdi-book-alphabet"></span>
+                        <span>字典管理</span>
+                    </a>
+                    <a href="../../settings/category-manage.html" class="nav-item">
+                        <span class="mdi mdi-shape"></span>
+                        <span>分类管理</span>
+                    </a>
+                    <a href="../../settings/banner-manage.html" class="nav-item">
+                        <span class="mdi mdi-image-multiple"></span>
+                        <span>Banner管理</span>
+                    </a>
+                    <a href="../../settings/user-manage.html" class="nav-item">
+                        <span class="mdi mdi-account-group"></span>
+                        <span>用户管理</span>
+                    </a>
+                    <a href="../../settings/system-config.html" class="nav-item">
+                        <span class="mdi mdi-cog"></span>
+                        <span>系统配置</span>
+                    </a>
+                    <a href="../../settings/permission-settings.html" class="nav-item">
+                        <span class="mdi mdi-shield-account"></span>
+                        <span>权限设置</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="breadcrumb">
+                <a href="list.html">牛肉产品</a>
+                <span class="mdi mdi-chevron-right"></span>
+                <span id="pageMode">发布产品</span>
+            </div>
+
+            <div class="page-header">
+                <h1 class="page-title" id="pageTitle">发布牛肉产品</h1>
+            </div>
+
+            <div class="form-container">
+                <!-- 基本信息 -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="mdi mdi-information"></span>
+                        基本信息
+                    </div>
+                    <div class="form-card-body">
+                        <div class="form-grid">
+                            <div class="form-group span-2">
+                                <label class="form-label">产品名称<span class="required">*</span></label>
+                                <input type="text" class="form-input" placeholder="如：精选和牛菲力牛排">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">产品等级<span class="required">*</span></label>
+                                <select class="form-select">
+                                    <option value="">请选择等级</option>
+                                    <option value="premium">精选级</option>
+                                    <option value="standard">标准级</option>
+                                    <option value="economy">经济级</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">规格重量<span class="required">*</span></label>
+                                <input type="text" class="form-input" placeholder="如：500g/份">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">销售价格<span class="required">*</span></label>
+                                <input type="number" class="form-input" placeholder="请输入价格">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">库存数量</label>
+                                <input type="number" class="form-input" placeholder="请输入库存">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 切割部位 -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="mdi mdi-knife"></span>
+                        切割部位
+                    </div>
+                    <div class="form-card-body">
+                        <div class="cut-options">
+                            <div class="cut-option" onclick="selectCut(this)">
+                                <span class="mdi mdi-star"></span>
+                                <div class="name">菲力/里脊</div>
+                            </div>
+                            <div class="cut-option" onclick="selectCut(this)">
+                                <span class="mdi mdi-star-half-full"></span>
+                                <div class="name">肋眼</div>
+                            </div>
+                            <div class="cut-option" onclick="selectCut(this)">
+                                <span class="mdi mdi-star-outline"></span>
+                                <div class="name">西冷</div>
+                            </div>
+                            <div class="cut-option" onclick="selectCut(this)">
+                                <span class="mdi mdi-food-steak"></span>
+                                <div class="name">T骨</div>
+                            </div>
+                            <div class="cut-option" onclick="selectCut(this)">
+                                <span class="mdi mdi-food"></span>
+                                <div class="name">牛腩</div>
+                            </div>
+                            <div class="cut-option" onclick="selectCut(this)">
+                                <span class="mdi mdi-food-variant"></span>
+                                <div class="name">牛腱</div>
+                            </div>
+                            <div class="cut-option" onclick="selectCut(this)">
+                                <span class="mdi mdi-food-drumstick"></span>
+                                <div class="name">牛舌</div>
+                            </div>
+                            <div class="cut-option" onclick="selectCut(this)">
+                                <span class="mdi mdi-dots-horizontal"></span>
+                                <div class="name">其他部位</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 来源溯源 -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="mdi mdi-link-variant"></span>
+                        来源溯源
+                    </div>
+                    <div class="form-card-body">
+                        <div class="source-selector">
+                            <div class="source-card selected" onclick="selectSource(this, 'cattle')">
+                                <div class="source-card-header">
+                                    <div class="icon">
+                                        <span class="mdi mdi-cow"></span>
+                                    </div>
+                                    <div class="title">关联活牛</div>
+                                </div>
+                                <div class="source-card-content">
+                                    从已审核通过的活牛信息中选择，自动继承养殖溯源信息
+                                </div>
+                            </div>
+                            <div class="source-card" onclick="selectSource(this, 'batch')">
+                                <div class="source-card-header">
+                                    <div class="icon">
+                                        <span class="mdi mdi-package-variant-closed"></span>
+                                    </div>
+                                    <div class="title">屠宰批次</div>
+                                </div>
+                                <div class="source-card-content">
+                                    按屠宰批次关联，适合批量生产的标准化产品
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2" style="margin-top: 20px;">
+                            <div class="form-group">
+                                <label class="form-label">来源活牛编号</label>
+                                <select class="form-select">
+                                    <option value="">请选择来源活牛</option>
+                                    <option value="CT20251220001">CT20251220001 - 西门塔尔公牛 28月龄</option>
+                                    <option value="CT20251220002">CT20251220002 - 安格斯公牛 26月龄</option>
+                                    <option value="CT20251220003">CT20251220003 - 和牛F1代 30月龄</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">屠宰场</label>
+                                <select class="form-select">
+                                    <option value="">请选择屠宰场</option>
+                                    <option value="SL001">锡林浩特第一屠宰场</option>
+                                    <option value="SL002">呼和浩特新华屠宰场</option>
+                                    <option value="SL003">通辽绿色食品加工厂</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">屠宰日期<span class="required">*</span></label>
+                                <input type="date" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">检疫证号<span class="required">*</span></label>
+                                <input type="text" class="form-input" placeholder="请输入检疫证号">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 冷链配置 -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="mdi mdi-snowflake"></span>
+                        冷链配置
+                    </div>
+                    <div class="form-card-body">
+                        <div class="cold-chain-config">
+                            <div class="cold-chain-header">
+                                <span class="mdi mdi-thermometer-low"></span>
+                                <h4>冷链温度要求</h4>
+                            </div>
+                            <div class="cold-chain-grid">
+                                <div class="cold-input-group">
+                                    <label>存储温度</label>
+                                    <select>
+                                        <option value="-18">-18°C (冷冻)</option>
+                                        <option value="-4">0~4°C (冷藏)</option>
+                                        <option value="-25">-25°C (超低温)</option>
+                                    </select>
+                                </div>
+                                <div class="cold-input-group">
+                                    <label>温度上限</label>
+                                    <input type="number" value="-15" placeholder="°C">
+                                </div>
+                                <div class="cold-input-group">
+                                    <label>温度下限</label>
+                                    <input type="number" value="-22" placeholder="°C">
+                                </div>
+                                <div class="cold-input-group">
+                                    <label>保质期</label>
+                                    <input type="text" value="12个月" placeholder="保质期">
+                                </div>
+                                <div class="cold-input-group">
+                                    <label>包装方式</label>
+                                    <select>
+                                        <option value="vacuum">真空包装</option>
+                                        <option value="modified">气调包装</option>
+                                        <option value="normal">普通包装</option>
+                                    </select>
+                                </div>
+                                <div class="cold-input-group">
+                                    <label>物流方式</label>
+                                    <select>
+                                        <option value="cold">冷链物流</option>
+                                        <option value="express">冷藏快递</option>
+                                        <option value="self">自提</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 产品图片 -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="mdi mdi-image-multiple"></span>
+                        产品图片
+                    </div>
+                    <div class="form-card-body">
+                        <div class="upload-area" onclick="document.getElementById('imageUpload').click()">
+                            <span class="mdi mdi-cloud-upload"></span>
+                            <p>点击或拖拽上传产品图片</p>
+                            <p style="font-size: 12px; color: var(--text-muted);">支持 JPG、PNG 格式，单张最大 5MB，最多 8 张</p>
+                            <input type="file" id="imageUpload" hidden multiple accept="image/*">
+                        </div>
+                        <div class="upload-preview" id="imagePreview">
+                            <div class="preview-item">
+                                <img src="https://via.placeholder.com/100" alt="">
+                                <button class="remove-btn"><span class="mdi mdi-close"></span></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 规格参数 -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="mdi mdi-format-list-bulleted"></span>
+                        规格参数
+                    </div>
+                    <div class="form-card-body">
+                        <div class="spec-form">
+                            <div class="spec-row">
+                                <div class="spec-label">产地</div>
+                                <input type="text" class="form-input" placeholder="如：内蒙古锡林郭勒盟">
+                            </div>
+                            <div class="spec-row">
+                                <div class="spec-label">牛种</div>
+                                <input type="text" class="form-input" placeholder="如：和牛 F1代">
+                            </div>
+                            <div class="spec-row">
+                                <div class="spec-label">饲养方式</div>
+                                <input type="text" class="form-input" placeholder="如：草原放养 + 谷饲育肥">
+                            </div>
+                            <div class="spec-row">
+                                <div class="spec-label">谷饲天数</div>
+                                <input type="text" class="form-input" placeholder="如：120天以上">
+                            </div>
+                            <div class="spec-row">
+                                <div class="spec-label">屠宰月龄</div>
+                                <input type="text" class="form-input" placeholder="如：24-30月龄">
+                            </div>
+                            <div class="spec-row">
+                                <div class="spec-label">保存方式</div>
+                                <input type="text" class="form-input" placeholder="如：冷冻保存 -18°C以下">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 产品描述 -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="mdi mdi-text"></span>
+                        产品描述
+                    </div>
+                    <div class="form-card-body">
+                        <div class="form-group">
+                            <label class="form-label">详细描述</label>
+                            <textarea class="form-textarea" placeholder="请输入产品详细描述，包括特点、烹饪建议等..."></textarea>
+                            <span class="form-hint">建议 100-500 字，详细描述有助于提高产品吸引力</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作栏 -->
+                <div class="action-bar">
+                    <button class="btn btn-outline" onclick="saveDraft()">
+                        <span class="mdi mdi-content-save-outline"></span>
+                        保存草稿
+                    </button>
+                    <button class="btn btn-secondary" onclick="previewProduct()">
+                        <span class="mdi mdi-eye"></span>
+                        预览
+                    </button>
+                    <button class="btn btn-primary" onclick="submitProduct()">
+                        <span class="mdi mdi-send"></span>
+                        提交审核
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 切换子菜单
+        function toggleSubMenu(el) {
+            const subMenu = el.nextElementSibling;
+            if (subMenu && subMenu.classList.contains('nav-sub-menu')) {
+                subMenu.classList.toggle('expanded');
+                const chevron = el.querySelector('.mdi-chevron-down');
+                if (chevron) {
+                    chevron.style.transform = subMenu.classList.contains('expanded') ? 'rotate(180deg)' : '';
+                }
+            }
+        }
+
+        // 选择切割部位
+        function selectCut(el) {
+            document.querySelectorAll('.cut-option').forEach(opt => opt.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        // 选择来源类型
+        function selectSource(el, type) {
+            document.querySelectorAll('.source-card').forEach(card => card.classList.remove('selected'));
+            el.classList.add('selected');
+            console.log('Selected source type:', type);
+        }
+
+        // 保存草稿
+        function saveDraft() {
+            alert('草稿已保存');
+        }
+
+        // 预览产品
+        function previewProduct() {
+            alert('预览功能开发中...');
+        }
+
+        // 提交审核
+        function submitProduct() {
+            if (confirm('确定要提交审核吗？提交后将进入审核队列。')) {
+                alert('提交成功，等待审核');
+                window.location.href = 'list.html';
+            }
+        }
+
+        // 检查编辑模式
+        function checkEditMode() {
+            const params = new URLSearchParams(window.location.search);
+            const mode = params.get('mode');
+            const id = params.get('id');
+
+            if (mode === 'edit' && id) {
+                document.getElementById('pageMode').textContent = '编辑产品';
+                document.getElementById('pageTitle').textContent = '编辑牛肉产品';
+                // 加载产品数据...
+            }
+        }
+
+        // 初始化
+        checkEditMode();
+    </script>
+</body>
+</html>

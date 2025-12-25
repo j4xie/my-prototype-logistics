@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>设备详情 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      padding-bottom: 70px;
+    }
+
+    /* 顶部导航 */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: transparent;
+      transition: background 0.3s;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .header.scrolled {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .header-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .header.scrolled .header-btn {
+      background: #F5F5F5;
+      color: #424242;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* 图片轮播 */
+    .image-gallery {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      background: #E3F2FD;
+      overflow: hidden;
+    }
+
+    .gallery-slides {
+      display: flex;
+      height: 100%;
+      transition: transform 0.3s ease;
+    }
+
+    .gallery-slide {
+      flex-shrink: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gallery-slide .placeholder {
+      font-size: 120px;
+      color: #90CAF9;
+    }
+
+    .gallery-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-dots {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+    }
+
+    .gallery-dots .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      transition: all 0.2s;
+    }
+
+    .gallery-dots .dot.active {
+      width: 18px;
+      border-radius: 3px;
+      background: white;
+    }
+
+    .gallery-count {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 12px;
+    }
+
+    .gallery-video-tag {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: #1976D2;
+      color: white;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .gallery-condition-tag {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .gallery-condition-tag.new {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .gallery-condition-tag.used {
+      background: #FF9800;
+      color: white;
+    }
+
+    /* 价格区域 */
+    .price-section {
+      background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+      color: white;
+      padding: 16px;
+    }
+
+    .price-main {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .price-main .symbol {
+      font-size: 16px;
+    }
+
+    .price-main .value {
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .price-main .unit {
+      font-size: 14px;
+    }
+
+    .price-original {
+      font-size: 13px;
+      opacity: 0.7;
+      margin-top: 4px;
+      text-decoration: line-through;
+    }
+
+    .price-tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .price-tags span {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* 基本信息 */
+    .info-card {
+      background: white;
+      margin-top: 12px;
+      padding: 16px;
+    }
+
+    .info-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #212121;
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+
+    .info-specs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .spec-item {
+      text-align: center;
+    }
+
+    .spec-item .value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #212121;
+    }
+
+    .spec-item .label {
+      font-size: 12px;
+      color: #9E9E9E;
+      margin-top: 4px;
+    }
+
+    /* 卖家信息 */
+    .seller-card {
+      background: white;
+      margin-top: 12px;
+      padding: 16px;
+    }
+
+    .seller-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .seller-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #E3F2FD;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #1976D2;
+    }
+
+    .seller-info {
+      flex: 1;
+    }
+
+    .seller-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #212121;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .seller-name .verified {
+      font-size: 12px;
+      color: #1976D2;
+      background: #E3F2FD;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .seller-meta {
+      font-size: 12px;
+      color: #9E9E9E;
+      margin-top: 4px;
+    }
+
+    .seller-action {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      background: #F5F5F5;
+      color: #424242;
+      border: none;
+      cursor: pointer;
+    }
+
+    .seller-stats {
+      display: flex;
+      gap: 24px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #F0F0F0;
+    }
+
+    .seller-stat {
+      text-align: center;
+    }
+
+    .seller-stat .value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1976D2;
+    }
+
+    .seller-stat .label {
+      font-size: 12px;
+      color: #9E9E9E;
+      margin-top: 2px;
+    }
+
+    /* 详细信息 */
+    .detail-card {
+      background: white;
+      margin-top: 12px;
+      padding: 16px;
+    }
+
+    .detail-card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #212121;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #F0F0F0;
+    }
+
+    .detail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .detail-item {
+      display: flex;
+      font-size: 14px;
+    }
+
+    .detail-item .label {
+      width: 80px;
+      color: #9E9E9E;
+      flex-shrink: 0;
+    }
+
+    .detail-item .value {
+      color: #424242;
+      flex: 1;
+    }
+
+    /* 描述 */
+    .description-card {
+      background: white;
+      margin-top: 12px;
+      padding: 16px;
+    }
+
+    .description-text {
+      font-size: 14px;
+      color: #424242;
+      line-height: 1.8;
+    }
+
+    /* 服务保障 */
+    .service-card {
+      background: white;
+      margin-top: 12px;
+      padding: 16px;
+    }
+
+    .service-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .service-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #E3F2FD;
+      font-size: 13px;
+      color: #1976D2;
+    }
+
+    .service-item .icon {
+      font-size: 16px;
+    }
+
+    /* 相关推荐 */
+    .recommend-card {
+      background: white;
+      margin-top: 12px;
+      padding: 16px;
+    }
+
+    .recommend-list {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .recommend-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .recommend-item {
+      flex-shrink: 0;
+      width: 140px;
+      cursor: pointer;
+    }
+
+    .recommend-item-image {
+      width: 140px;
+      height: 100px;
+      background: #E3F2FD;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: #90CAF9;
+    }
+
+    .recommend-item-title {
+      font-size: 13px;
+      color: #424242;
+      margin-top: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .recommend-item-price {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1976D2;
+      margin-top: 4px;
+    }
+
+    /* 底部操作栏 */
+    .bottom-action {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      height: 64px;
+      background: white;
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      gap: 12px;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+      z-index: 100;
+    }
+
+    .action-icons {
+      display: flex;
+      gap: 20px;
+    }
+
+    .action-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+    }
+
+    .action-icon .icon {
+      font-size: 20px;
+      color: #757575;
+    }
+
+    .action-icon .icon.active {
+      color: #E53935;
+    }
+
+    .action-icon span {
+      font-size: 10px;
+      color: #9E9E9E;
+    }
+
+    .action-btns {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 22px;
+      font-size: 15px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-btn.secondary {
+      background: #F5F5F5;
+      color: #424242;
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, #42A5F5 0%, #1976D2 100%);
+      color: white;
+    }
+
+    /* 分享面板 */
+    .share-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-radius: 16px 16px 0 0;
+      padding: 20px;
+      transform: translateY(100%);
+      transition: transform 0.3s;
+      z-index: 200;
+    }
+
+    .share-panel.show {
+      transform: translateY(0);
+    }
+
+    .share-panel-mask {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 199;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .share-panel-mask.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .share-panel-title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: #212121;
+      margin-bottom: 20px;
+    }
+
+    .share-options {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+    }
+
+    .share-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .share-option .icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .share-option.wechat .icon {
+      background: #07C160;
+      color: white;
+    }
+
+    .share-option.moments .icon {
+      background: #1976D2;
+      color: white;
+    }
+
+    .share-option.link .icon {
+      background: #1976D2;
+      color: white;
+    }
+
+    .share-option span {
+      font-size: 12px;
+      color: #757575;
+    }
+
+    .share-cancel {
+      margin-top: 20px;
+      padding: 16px;
+      text-align: center;
+      font-size: 15px;
+      color: #757575;
+      cursor: pointer;
+      border-top: 1px solid #F0F0F0;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* 联系弹窗 */
+    .contact-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .contact-modal.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .contact-modal-content {
+      background: white;
+      border-radius: 16px;
+      width: 85%;
+      max-width: 320px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .contact-modal h3 {
+      font-size: 18px;
+      color: #212121;
+      margin-bottom: 16px;
+    }
+
+    .contact-modal .phone {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1976D2;
+      margin-bottom: 24px;
+    }
+
+    .contact-modal .btns {
+      display: flex;
+      gap: 12px;
+    }
+
+    .contact-modal .btns button {
+      flex: 1;
+      height: 44px;
+      border-radius: 22px;
+      font-size: 15px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .contact-modal .btns .cancel {
+      background: #F5F5F5;
+      color: #757575;
+    }
+
+    .contact-modal .btns .call {
+      background: #1976D2;
+      color: white;
+    }
+
+    /* MDI 图标标准化 */
+    .mdi {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .header-btn {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-btn .mdi {
+      font-size: inherit;
+    }
+
+    .seller-avatar {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .action-icon .icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 顶部导航 -->
+  <header class="header" id="header">
+    <div class="header-btn" onclick="goBack()"><i class="mdi mdi-arrow-left"></i></div>
+    <div class="header-actions">
+      <div class="header-btn" onclick="toggleShare()"><i class="mdi mdi-share-variant"></i></div>
+      <div class="header-btn" onclick="showMore()"><i class="mdi mdi-dots-horizontal"></i></div>
+    </div>
+  </header>
+
+  <!-- 图片轮播 -->
+  <div class="image-gallery" id="imageGallery">
+    <div class="gallery-slides" id="gallerySlides">
+      <div class="gallery-slide">
+        <div class="placeholder"><i class="mdi mdi-cog"></i></div>
+      </div>
+      <div class="gallery-slide">
+        <div class="placeholder"><i class="mdi mdi-cog"></i></div>
+      </div>
+      <div class="gallery-slide">
+        <div class="placeholder"><i class="mdi mdi-cog"></i></div>
+      </div>
+    </div>
+    <div class="gallery-dots" id="galleryDots">
+      <div class="dot active"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+    <div class="gallery-count"><span id="currentSlide">1</span>/3</div>
+    <div class="gallery-condition-tag new" id="conditionTag">全新</div>
+    <div class="gallery-video-tag" id="videoTag" style="display: none;">
+      <span><i class="mdi mdi-play"></i></span>
+      <span>视频</span>
+    </div>
+  </div>
+
+  <!-- 价格区域 -->
+  <div class="price-section">
+    <div class="price-main">
+      <span class="symbol">¥</span>
+      <span class="value" id="priceValue">185,000</span>
+      <span class="unit" id="priceUnit">元/台</span>
+    </div>
+    <div class="price-original" id="originalPrice" style="display: none;">原价 ¥200,000</div>
+    <div class="price-tags">
+      <span id="warrantyTag">整机保修1年</span>
+      <span>支持分期</span>
+      <span>可试机</span>
+    </div>
+  </div>
+
+  <!-- 基本信息 -->
+  <div class="info-card">
+    <h1 class="info-title" id="equipmentTitle">全自动TMR饲料搅拌车 12立方</h1>
+    <div class="info-specs">
+      <div class="spec-item">
+        <div class="value" id="specBrand">牧康</div>
+        <div class="label">品牌</div>
+      </div>
+      <div class="spec-item">
+        <div class="value" id="specModel">MK-TMR-12</div>
+        <div class="label">型号</div>
+      </div>
+      <div class="spec-item">
+        <div class="value" id="specCondition">全新</div>
+        <div class="label">新旧</div>
+      </div>
+      <div class="spec-item">
+        <div class="value" id="specType">饲料加工</div>
+        <div class="label">类型</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 卖家信息 -->
+  <div class="seller-card">
+    <div class="seller-header">
+      <div class="seller-avatar"><i class="mdi mdi-store"></i></div>
+      <div class="seller-info">
+        <div class="seller-name">
+          <span id="sellerName">青岛牧康机械</span>
+          <span class="verified">设备商</span>
+        </div>
+        <div class="seller-meta" id="sellerMeta">山东 · 青岛 · 活跃1小时前</div>
+      </div>
+      <button class="seller-action" onclick="goToSeller()">进店</button>
+    </div>
+    <div class="seller-stats">
+      <div class="seller-stat">
+        <div class="value" id="sellerListings">56</div>
+        <div class="label">在售</div>
+      </div>
+      <div class="seller-stat">
+        <div class="value" id="sellerDeals">128</div>
+        <div class="label">成交</div>
+      </div>
+      <div class="seller-stat">
+        <div class="value" id="sellerRating">4.9</div>
+        <div class="label">评分</div>
+      </div>
+      <div class="seller-stat">
+        <div class="value" id="sellerYears">8年</div>
+        <div class="label">店龄</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 详细信息 -->
+  <div class="detail-card">
+    <div class="detail-card-title">设备参数</div>
+    <div class="detail-list">
+      <div class="detail-item">
+        <span class="label">设备类型</span>
+        <span class="value" id="detailType">饲料加工设备</span>
+      </div>
+      <div class="detail-item">
+        <span class="label">品牌</span>
+        <span class="value" id="detailBrand">牧康</span>
+      </div>
+      <div class="detail-item">
+        <span class="label">型号</span>
+        <span class="value" id="detailModel">MK-TMR-12</span>
+      </div>
+      <div class="detail-item">
+        <span class="label">新旧程度</span>
+        <span class="value" id="detailCondition">全新</span>
+      </div>
+      <div class="detail-item">
+        <span class="label">保修期</span>
+        <span class="value" id="detailWarranty">整机保修1年</span>
+      </div>
+      <div class="detail-item">
+        <span class="label">发布时间</span>
+        <span class="value" id="detailTime">2024-12-25 10:30</span>
+      </div>
+      <div class="detail-item">
+        <span class="label">所在地</span>
+        <span class="value" id="detailLocation">山东 青岛市</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 描述 -->
+  <div class="description-card">
+    <div class="detail-card-title">设备描述</div>
+    <div class="description-text" id="description">
+      TMR全混合日粮饲料搅拌车，容量12立方米，适用于中大型养殖场。采用卧式双螺旋搅拌结构，搅拌均匀，出料快速。配备电子称重系统，精确配料。
+    </div>
+  </div>
+
+  <!-- 服务保障 -->
+  <div class="service-card">
+    <div class="detail-card-title">服务保障</div>
+    <div class="service-list">
+      <div class="service-item">
+        <span class="icon"><i class="mdi mdi-check-circle"></i></span>
+        <span>正品保障</span>
+      </div>
+      <div class="service-item">
+        <span class="icon"><i class="mdi mdi-check-circle"></i></span>
+        <span>厂家直供</span>
+      </div>
+      <div class="service-item">
+        <span class="icon"><i class="mdi mdi-check-circle"></i></span>
+        <span>上门安装</span>
+      </div>
+      <div class="service-item">
+        <span class="icon"><i class="mdi mdi-check-circle"></i></span>
+        <span>技术培训</span>
+      </div>
+      <div class="service-item">
+        <span class="icon"><i class="mdi mdi-check-circle"></i></span>
+        <span>售后无忧</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 相关推荐 -->
+  <div class="recommend-card">
+    <div class="detail-card-title">相关推荐</div>
+    <div class="recommend-list" id="recommendList">
+      <!-- 动态生成 -->
+    </div>
+  </div>
+
+  <!-- 底部操作栏 -->
+  <div class="bottom-action">
+    <div class="action-icons">
+      <div class="action-icon" onclick="toggleFavorite()">
+        <span class="icon" id="favoriteIcon"><i class="mdi mdi-heart-outline"></i></span>
+        <span>收藏</span>
+      </div>
+      <div class="action-icon" onclick="openChat()">
+        <span class="icon"><i class="mdi mdi-message-processing"></i></span>
+        <span>咨询</span>
+      </div>
+    </div>
+    <div class="action-btns">
+      <button class="action-btn secondary" onclick="showContact()">电话询价</button>
+      <button class="action-btn primary" onclick="placeOrder()">立即购买</button>
+    </div>
+  </div>
+
+  <!-- 分享面板 -->
+  <div class="share-panel-mask" id="shareMask" onclick="toggleShare()"></div>
+  <div class="share-panel" id="sharePanel">
+    <div class="share-panel-title">分享到</div>
+    <div class="share-options">
+      <div class="share-option wechat" onclick="shareTo('wechat')">
+        <div class="icon"><i class="mdi mdi-wechat"></i></div>
+        <span>微信好友</span>
+      </div>
+      <div class="share-option moments" onclick="shareTo('moments')">
+        <div class="icon"><i class="mdi mdi-google-circles-communities"></i></div>
+        <span>朋友圈</span>
+      </div>
+      <div class="share-option link" onclick="shareTo('link')">
+        <div class="icon"><i class="mdi mdi-link-variant"></i></div>
+        <span>复制链接</span>
+      </div>
+    </div>
+    <div class="share-cancel" onclick="toggleShare()">取消</div>
+  </div>
+
+  <!-- 联系弹窗 -->
+  <div class="contact-modal" id="contactModal">
+    <div class="contact-modal-content">
+      <h3>联系卖家</h3>
+      <div class="phone" id="sellerPhone">138****8001</div>
+      <div class="btns">
+        <button class="cancel" onclick="closeContactModal()">取消</button>
+        <button class="call" onclick="callSeller()">立即拨打</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- JS 框架 -->
+  <script src="../../assets/js/utils.js"></script>
+  <script src="../../assets/js/stateManager.js"></script>
+  <script src="../../assets/js/dictionaries.js"></script>
+  <script src="../../assets/js/mockData.js"></script>
+
+  <script>
+    // ==================== 状态 ====================
+    let currentEquipment = null;
+    let isFavorite = false;
+    let currentSlideIndex = 0;
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', function () {
+      // 获取URL参数
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('id');
+
+      if (id) {
+        loadEquipmentDetail(id);
+      } else {
+        // 默认加载第一条
+        loadEquipmentDetail(MockData.EQUIPMENT_LISTINGS[0].id);
+      }
+
+      initGallerySwipe();
+      initScrollHeader();
+      loadRecommendations();
+    });
+
+    // 加载详情数据
+    function loadEquipmentDetail(id) {
+      const listing = MockData.EQUIPMENT_LISTINGS.find(e => e.id === id);
+
+      if (!listing) {
+        showToast('设备信息不存在');
+        setTimeout(() => goBack(), 1000);
+        return;
+      }
+
+      currentEquipment = listing;
+
+      // 获取卖家信息
+      const seller = MockData.ENTERPRISES.find(e => e.id === listing.enterpriseId);
+
+      // 填充价格
+      document.getElementById('priceValue').textContent = formatPrice(listing.price);
+      document.getElementById('priceUnit').textContent = listing.priceUnit || '元/台';
+
+      // 保修标签
+      if (listing.warranty) {
+        document.getElementById('warrantyTag').textContent = listing.warranty;
+      }
+
+      // 标题
+      document.getElementById('equipmentTitle').textContent = listing.title;
+
+      // 规格信息
+      document.getElementById('specBrand').textContent = listing.brand || '-';
+      document.getElementById('specModel').textContent = listing.model || '-';
+      document.getElementById('specCondition').textContent = listing.condition || '全新';
+
+      // 设备类型
+      const typeInfo = Dictionaries.EQUIPMENT_TYPES.find(t => t.code === listing.equipmentType);
+      const typeName = typeInfo ? typeInfo.name : listing.equipmentType;
+      document.getElementById('specType').textContent = typeName;
+
+      // 新旧标签
+      const conditionTag = document.getElementById('conditionTag');
+      if (listing.condition === '二手' || listing.condition === '9成新') {
+        conditionTag.textContent = listing.condition;
+        conditionTag.classList.remove('new');
+        conditionTag.classList.add('used');
+      } else {
+        conditionTag.textContent = '全新';
+        conditionTag.classList.remove('used');
+        conditionTag.classList.add('new');
+      }
+
+      // 卖家信息
+      if (seller) {
+        document.getElementById('sellerName').textContent = seller.name;
+        document.getElementById('sellerMeta').textContent =
+          `${seller.province} · ${seller.city} · 活跃${formatActiveTime(seller.lastActiveTime)}`;
+        document.getElementById('sellerListings').textContent = seller.totalListings || 0;
+        document.getElementById('sellerDeals').textContent = seller.totalDeals || 0;
+        document.getElementById('sellerRating').textContent = seller.rating || 4.5;
+        document.getElementById('sellerYears').textContent = (seller.yearsInBusiness || 1) + '年';
+        document.getElementById('sellerPhone').textContent = maskPhone(seller.contactPhone);
+      } else if (listing.contactName || listing.contactPhone) {
+        // 使用listing自带的联系人信息
+        document.getElementById('sellerName').textContent = listing.enterpriseName || listing.contactName || '设备商';
+        document.getElementById('sellerMeta').textContent =
+          `${listing.location?.province || ''} · ${listing.location?.city || ''}`;
+        document.getElementById('sellerPhone').textContent = maskPhone(listing.contactPhone);
+      }
+
+      // 详细信息
+      document.getElementById('detailType').textContent = typeInfo ? typeInfo.name : listing.equipmentType;
+      document.getElementById('detailBrand').textContent = listing.brand || '-';
+      document.getElementById('detailModel').textContent = listing.model || '-';
+      document.getElementById('detailCondition').textContent = listing.condition || '全新';
+      document.getElementById('detailWarranty').textContent = listing.warranty || '-';
+      document.getElementById('detailTime').textContent = formatDateTime(listing.createdAt);
+
+      // 位置
+      const locationText = listing.location
+        ? `${listing.location.province} ${listing.location.city}`
+        : '';
+      document.getElementById('detailLocation').textContent = locationText;
+
+      // 描述
+      if (listing.description) {
+        document.getElementById('description').textContent = listing.description;
+      }
+
+      // 视频标签
+      if (listing.video) {
+        document.getElementById('videoTag').style.display = 'flex';
+      }
+
+      // 检查是否已收藏
+      checkFavoriteStatus();
+    }
+
+    // 初始化图片轮播滑动
+    function initGallerySwipe() {
+      const gallery = document.getElementById('imageGallery');
+      const slides = document.getElementById('gallerySlides');
+      const dots = document.querySelectorAll('.gallery-dots .dot');
+
+      let startX = 0;
+      let isDragging = false;
+
+      gallery.addEventListener('touchstart', function (e) {
+        startX = e.touches[0].clientX;
+        isDragging = true;
+      });
+
+      gallery.addEventListener('touchend', function (e) {
+        if (!isDragging) return;
+        isDragging = false;
+
+        const endX = e.changedTouches[0].clientX;
+        const diff = startX - endX;
+
+        if (Math.abs(diff) > 50) {
+          if (diff > 0 && currentSlideIndex < 2) {
+            currentSlideIndex++;
+          } else if (diff < 0 && currentSlideIndex > 0) {
+            currentSlideIndex--;
+          }
+          updateGallery();
+        }
+      });
+
+      function updateGallery() {
+        slides.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === currentSlideIndex);
+        });
+        document.getElementById('currentSlide').textContent = currentSlideIndex + 1;
+      }
+    }
+
+    // 滚动时改变header样式
+    function initScrollHeader() {
+      window.addEventListener('scroll', function () {
+        const header = document.getElementById('header');
+        if (window.scrollY > 50) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+      });
+    }
+
+    // 加载推荐
+    function loadRecommendations() {
+      const container = document.getElementById('recommendList');
+      const recommendations = MockData.EQUIPMENT_LISTINGS.slice(0, 6);
+
+      recommendations.forEach(item => {
+        if (currentEquipment && item.id === currentEquipment.id) return;
+
+        const el = document.createElement('div');
+        el.className = 'recommend-item';
+        el.onclick = () => window.location.href = `detail.html?id=${item.id}`;
+
+        el.innerHTML = `
+          <div class="recommend-item-image"><i class="mdi mdi-cog"></i></div>
+          <div class="recommend-item-title">${item.title}</div>
+          <div class="recommend-item-price">¥${formatPrice(item.price)}</div>
+        `;
+
+        container.appendChild(el);
+      });
+    }
+
+    // ==================== 操作函数 ====================
+    function goBack() {
+      window.history.back();
+    }
+
+    function toggleShare() {
+      const panel = document.getElementById('sharePanel');
+      const mask = document.getElementById('shareMask');
+      panel.classList.toggle('show');
+      mask.classList.toggle('show');
+    }
+
+    function shareTo(platform) {
+      toggleShare();
+      switch (platform) {
+        case 'wechat':
+          showToast('请在微信中打开分享');
+          break;
+        case 'moments':
+          showToast('请在微信中打开分享');
+          break;
+        case 'link':
+          copyToClipboard(window.location.href);
+          showToast('链接已复制');
+          break;
+      }
+    }
+
+    function showMore() {
+      showToast('更多功能开发中');
+    }
+
+    function toggleFavorite() {
+      isFavorite = !isFavorite;
+      const icon = document.getElementById('favoriteIcon');
+
+      if (isFavorite) {
+        icon.innerHTML = '<i class="mdi mdi-heart"></i>';
+        icon.classList.add('active');
+        showToast('已收藏');
+
+        // 保存收藏状态
+        let favorites = globalState.get('equipment_favorites') || [];
+        if (!favorites.includes(currentEquipment.id)) {
+          favorites.push(currentEquipment.id);
+          globalState.set('equipment_favorites', favorites);
+        }
+      } else {
+        icon.innerHTML = '<i class="mdi mdi-heart-outline"></i>';
+        icon.classList.remove('active');
+        showToast('已取消收藏');
+
+        let favorites = globalState.get('equipment_favorites') || [];
+        favorites = favorites.filter(id => id !== currentEquipment.id);
+        globalState.set('equipment_favorites', favorites);
+      }
+    }
+
+    function checkFavoriteStatus() {
+      const favorites = globalState.get('equipment_favorites') || [];
+      if (currentEquipment && favorites.includes(currentEquipment.id)) {
+        isFavorite = true;
+        const icon = document.getElementById('favoriteIcon');
+        icon.innerHTML = '<i class="mdi mdi-heart"></i>';
+        icon.classList.add('active');
+      }
+    }
+
+    function openChat() {
+      // 检查登录状态
+      if (!globalState.get('auth.isLoggedIn')) {
+        showToast('请先登录');
+        setTimeout(() => {
+          window.location.href = '../auth/login.html?redirect=' + encodeURIComponent(window.location.href);
+        }, 1000);
+        return;
+      }
+      showToast('聊天功能开发中');
+    }
+
+    function showContact() {
+      // 检查登录状态
+      if (!globalState.get('auth.isLoggedIn')) {
+        showToast('请先登录');
+        setTimeout(() => {
+          window.location.href = '../auth/login.html?redirect=' + encodeURIComponent(window.location.href);
+        }, 1000);
+        return;
+      }
+
+      document.getElementById('contactModal').classList.add('show');
+    }
+
+    function closeContactModal() {
+      document.getElementById('contactModal').classList.remove('show');
+    }
+
+    function callSeller() {
+      let phone = null;
+
+      const seller = MockData.ENTERPRISES.find(e => e.id === currentEquipment.enterpriseId);
+      if (seller) {
+        phone = seller.contactPhone;
+      } else if (currentEquipment.contactPhone) {
+        phone = currentEquipment.contactPhone;
+      }
+
+      if (phone) {
+        window.location.href = 'tel:' + phone;
+      }
+      closeContactModal();
+    }
+
+    function placeOrder() {
+      // 检查登录状态
+      if (!globalState.get('auth.isLoggedIn')) {
+        showToast('请先登录');
+        setTimeout(() => {
+          window.location.href = '../auth/login.html?redirect=' + encodeURIComponent(window.location.href);
+        }, 1000);
+        return;
+      }
+      showToast('购买功能开发中');
+    }
+
+    function goToSeller() {
+      window.location.href = 'shop.html';
+    }
+
+    // ==================== 工具函数 ====================
+    function formatPrice(price) {
+      if (price >= 10000) {
+        return (price / 10000).toFixed(1) + '万';
+      }
+      return price.toLocaleString();
+    }
+
+    function formatActiveTime(time) {
+      if (!time) return '未知';
+      const diff = Date.now() - new Date(time).getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      if (hours < 1) return '刚刚';
+      if (hours < 24) return hours + '小时前';
+      const days = Math.floor(hours / 24);
+      if (days < 30) return days + '天前';
+      return '一个月前';
+    }
+
+    function formatDateTime(time) {
+      if (!time) return '';
+      const date = new Date(time);
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function maskPhone(phone) {
+      if (!phone) return '***';
+      return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+    }
+
+    function copyToClipboard(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+
+</html>

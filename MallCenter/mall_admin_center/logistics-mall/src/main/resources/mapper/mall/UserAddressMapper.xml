@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.UserAddressMapper">
+    <!--
+        UserAddressMapper extends BaseMapper<UserAddress>
+        MyBatis-Plus 自动提供基本CRUD操作
+        无需定义额外的XML方法
+    -->
+</mapper>

@@ -1,0 +1,94 @@
+<!--
+  登录页面
+-->
+<view class="login-container">
+  <!-- Logo区域 -->
+  <view class="login-header">
+    <view class="login-logo">
+      <image src="/public/img/logo.png" mode="aspectFit" class="logo-image"></image>
+    </view>
+    <text class="login-title">溯源商城</text>
+    <text class="login-subtitle">全程可追溯 · 品质有保障</text>
+  </view>
+
+  <!-- 登录卡片 -->
+  <view class="login-card">
+    <!-- 微信一键登录 -->
+    <button class="wechat-btn" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">
+      <text class="cuIcon-weixin"></text>
+      <text>微信一键登录</text>
+    </button>
+
+    <!-- 分隔线 -->
+    <view class="divider">
+      <view class="divider-line"></view>
+      <text class="divider-text">其他登录方式</text>
+      <view class="divider-line"></view>
+    </view>
+
+    <!-- 手机号登录 -->
+    <button class="phone-btn" bindtap="goPhoneLogin">
+      手机号登录
+    </button>
+
+    <!-- 用户协议 -->
+    <view class="agreement">
+      <checkbox-group bindchange="onAgreementChange">
+        <label class="agreement-label">
+          <checkbox value="agree" checked="{{agreed}}" color="#52c41a"/>
+          <text class="agreement-text">
+            登录即表示同意
+            <text class="agreement-link" bindtap="showUserAgreement">《用户协议》</text>
+            和
+            <text class="agreement-link" bindtap="showPrivacyPolicy">《隐私政策》</text>
+          </text>
+        </label>
+      </checkbox-group>
+    </view>
+  </view>
+
+  <!-- 特性展示 -->
+  <view class="features">
+    <view class="feature-item">
+      <text class="feature-icon cuIcon-scan"></text>
+      <text class="feature-label">扫码溯源</text>
+    </view>
+    <view class="feature-item">
+      <text class="feature-icon cuIcon-creativefill"></text>
+      <text class="feature-label">AI智能</text>
+    </view>
+    <view class="feature-item">
+      <text class="feature-icon cuIcon-safe"></text>
+      <text class="feature-label">品质保证</text>
+    </view>
+  </view>
+
+  <!-- 跳过登录 -->
+  <view class="skip-login" bindtap="skipLogin">
+    <text>暂不登录，先逛逛</text>
+    <text class="cuIcon-right"></text>
+  </view>
+</view>
+
+<!-- 授权弹窗 -->
+<view class="cu-modal {{showAuthModal ? 'show' : ''}}">
+  <view class="cu-dialog">
+    <view class="cu-bar bg-white justify-end">
+      <view class="content">微信授权</view>
+      <view class="action" bindtap="hideAuthModal">
+        <text class="cuIcon-close text-gray"></text>
+      </view>
+    </view>
+    <view class="padding-xl text-center">
+      <text class="cuIcon-weixin" style="font-size: 80rpx; color: #07c160;"></text>
+      <view class="margin-top text-lg text-bold">微信授权登录</view>
+      <view class="margin-top-sm text-gray text-sm">
+        溯源商城将获取你的微信昵称、头像等公开信息
+      </view>
+    </view>
+    <view class="cu-bar bg-white">
+      <view class="action margin-0 flex-sub text-gray" bindtap="hideAuthModal">取消</view>
+      <view class="action margin-0 flex-sub text-green solid-left" bindtap="confirmAuth">确认授权</view>
+    </view>
+  </view>
+</view>

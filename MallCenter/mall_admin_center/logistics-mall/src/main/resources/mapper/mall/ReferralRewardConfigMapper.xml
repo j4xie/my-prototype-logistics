@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.ReferralRewardConfigMapper">
+    
+    <resultMap id="referralRewardConfigMap" type="com.joolun.mall.entity.ReferralRewardConfig">
+        <id column="id" property="id"/>
+        <result column="config_name" property="configName"/>
+        <result column="referral_type" property="referralType"/>
+        <result column="reward_type" property="rewardType"/>
+        <result column="referrer_reward" property="referrerReward"/>
+        <result column="referee_reward" property="refereeReward"/>
+        <result column="coupon_id" property="couponId"/>
+        <result column="min_order_amount" property="minOrderAmount"/>
+        <result column="reward_rate" property="rewardRate"/>
+        <result column="max_reward" property="maxReward"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="status" property="status"/>
+        <result column="priority" property="priority"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List">
+        id, config_name, referral_type, reward_type, referrer_reward, referee_reward, coupon_id,
+        min_order_amount, reward_rate, max_reward, start_time, end_time, status, priority,
+        remark, create_time, update_time, del_flag
+    </sql>
+    
+    <!-- 查询有效的奖励配置 -->
+    <select id="selectActiveConfigs" resultMap="referralRewardConfigMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM referral_reward_config
+        WHERE del_flag = 0 AND status = 1
+              AND (start_time IS NULL OR start_time &lt;= NOW())
+              AND (end_time IS NULL OR end_time &gt;= NOW())
+        ORDER BY priority DESC
+    </select>
+    
+    <!-- 根据推荐类型查询配置 -->
+    <select id="selectByReferralType" resultMap="referralRewardConfigMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM referral_reward_config
+        WHERE del_flag = 0 AND status = 1 AND referral_type = #{referralType}
+              AND (start_time IS NULL OR start_time &lt;= NOW())
+              AND (end_time IS NULL OR end_time &gt;= NOW())
+        ORDER BY priority DESC
+        LIMIT 1
+    </select>
+    
+</mapper>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.AiQaPairMapper">
+    
+    <resultMap id="aiQaPairMap" type="com.joolun.mall.entity.AiQaPair">
+        <id column="id" property="id"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="question" property="question"/>
+        <result column="answer" property="answer"/>
+        <result column="keywords" property="keywords"/>
+        <result column="hit_count" property="hitCount"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="dislike_count" property="dislikeCount"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List">
+        id, category_id, question, answer, keywords, hit_count, like_count, dislike_count, status, create_time, update_time, del_flag
+    </sql>
+    
+    <!-- 根据分类ID查询问答对 -->
+    <select id="selectByCategoryId" resultMap="aiQaPairMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ai_qa_pair
+        WHERE del_flag = 0 AND category_id = #{categoryId}
+        ORDER BY hit_count DESC, create_time DESC
+    </select>
+    
+    <!-- 搜索问答（问题、关键词匹配） -->
+    <select id="searchQaPairs" resultMap="aiQaPairMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ai_qa_pair
+        WHERE del_flag = 0 AND status = 1
+        <if test="keyword != null and keyword != ''">
+            AND (question LIKE CONCAT('%', #{keyword}, '%') 
+                 OR keywords LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="categoryId != null">
+            AND category_id = #{categoryId}
+        </if>
+        ORDER BY hit_count DESC
+        LIMIT 10
+    </select>
+    
+    <!-- 增加命中次数 -->
+    <update id="incrementHitCount">
+        UPDATE ai_qa_pair 
+        SET hit_count = hit_count + 1 
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 点赞 -->
+    <update id="incrementLikeCount">
+        UPDATE ai_qa_pair 
+        SET like_count = like_count + 1 
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 踩 -->
+    <update id="incrementDislikeCount">
+        UPDATE ai_qa_pair 
+        SET dislike_count = dislike_count + 1 
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 查询热门问答 -->
+    <select id="selectHotQaPairs" resultMap="aiQaPairMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ai_qa_pair
+        WHERE del_flag = 0 AND status = 1
+        ORDER BY hit_count DESC
+        LIMIT #{limit}
+    </select>
+    
+</mapper>

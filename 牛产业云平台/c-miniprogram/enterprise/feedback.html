@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>意见反馈 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+
+    /* 顶部Header */
+    .header {
+      background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+      padding: 48px 16px 20px;
+      color: white;
+    }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-btn {
+      font-size: 22px;
+      text-decoration: none;
+      color: white;
+      padding: 4px;
+    }
+
+    .header-title {
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .header-action {
+      font-size: 14px;
+      color: white;
+      text-decoration: none;
+    }
+
+    /* 反馈类型 */
+    .section {
+      background: white;
+      margin: 16px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .section-label {
+      font-size: 15px;
+      font-weight: 500;
+      color: #212121;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .section-label .required {
+      color: #C62828;
+    }
+
+    .type-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .type-option {
+      padding: 10px 16px;
+      background: #F5F5F5;
+      border: 1px solid #E0E0E0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #424242;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .type-option.active {
+      background: #E8F5E9;
+      border-color: #4CAF50;
+      color: #2E7D32;
+      font-weight: 500;
+    }
+
+    .type-option i {
+      margin-right: 6px;
+    }
+
+    /* 反馈内容 */
+    .content-textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 12px;
+      border: 1px solid #E0E0E0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #212121;
+      resize: none;
+      line-height: 1.6;
+    }
+
+    .content-textarea:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+
+    .content-textarea::placeholder {
+      color: #BDBDBD;
+    }
+
+    .char-count {
+      text-align: right;
+      font-size: 12px;
+      color: #9E9E9E;
+      margin-top: 8px;
+    }
+
+    /* 图片上传 */
+    .image-upload {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .upload-item {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .upload-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .upload-item .delete-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .upload-add {
+      width: 80px;
+      height: 80px;
+      border: 1px dashed #BDBDBD;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: #FAFAFA;
+    }
+
+    .upload-add i {
+      font-size: 24px;
+      color: #9E9E9E;
+      margin-bottom: 4px;
+    }
+
+    .upload-add span {
+      font-size: 11px;
+      color: #9E9E9E;
+    }
+
+    .upload-tip {
+      font-size: 12px;
+      color: #9E9E9E;
+      margin-top: 10px;
+    }
+
+    /* 联系方式 */
+    .contact-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #E0E0E0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #212121;
+    }
+
+    .contact-input:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+
+    .contact-input::placeholder {
+      color: #BDBDBD;
+    }
+
+    .contact-tip {
+      font-size: 12px;
+      color: #9E9E9E;
+      margin-top: 8px;
+    }
+
+    /* 历史反馈 */
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      margin: 16px 0 12px;
+    }
+
+    .history-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #212121;
+    }
+
+    .history-more {
+      font-size: 13px;
+      color: #9E9E9E;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .history-list {
+      padding: 0 16px;
+    }
+
+    .history-item {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .history-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .history-type {
+      padding: 4px 10px;
+      background: #E8F5E9;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #2E7D32;
+    }
+
+    .history-type.bug {
+      background: #FFEBEE;
+      color: #C62828;
+    }
+
+    .history-type.complaint {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .history-status {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .history-status.replied {
+      color: #4CAF50;
+    }
+
+    .history-status.pending {
+      color: #FF9800;
+    }
+
+    .history-content {
+      font-size: 14px;
+      color: #212121;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .history-time {
+      font-size: 12px;
+      color: #9E9E9E;
+    }
+
+    /* 提交按钮 */
+    .submit-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      background: white;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      z-index: 100;
+      box-sizing: border-box;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .submit-btn:disabled {
+      background: #BDBDBD;
+      cursor: not-allowed;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="theme-green">
+  <!-- 顶部Header -->
+  <header class="header">
+    <div class="header-bar">
+      <a href="center.html" class="back-btn"><i class="mdi mdi-arrow-left"></i></a>
+      <span class="header-title">意见反馈</span>
+      <a href="#" class="header-action" onclick="showHistory()">历史反馈</a>
+    </div>
+  </header>
+
+  <!-- 反馈类型 -->
+  <div class="section">
+    <div class="section-label">反馈类型<span class="required">*</span></div>
+    <div class="type-options">
+      <div class="type-option active" onclick="selectType(this, 'suggestion')">
+        <i class="mdi mdi-lightbulb-outline"></i>功能建议
+      </div>
+      <div class="type-option" onclick="selectType(this, 'bug')">
+        <i class="mdi mdi-bug-outline"></i>问题反馈
+      </div>
+      <div class="type-option" onclick="selectType(this, 'complaint')">
+        <i class="mdi mdi-emoticon-sad-outline"></i>投诉举报
+      </div>
+      <div class="type-option" onclick="selectType(this, 'other')">
+        <i class="mdi mdi-dots-horizontal"></i>其他
+      </div>
+    </div>
+  </div>
+
+  <!-- 反馈内容 -->
+  <div class="section">
+    <div class="section-label">反馈内容<span class="required">*</span></div>
+    <textarea class="content-textarea" id="contentInput" placeholder="请详细描述您的问题或建议，以便我们更好地为您服务..." maxlength="500" oninput="updateCharCount()"></textarea>
+    <div class="char-count"><span id="charCount">0</span>/500</div>
+  </div>
+
+  <!-- 图片上传 -->
+  <div class="section">
+    <div class="section-label">上传图片<span style="font-weight: normal; color: #9E9E9E;">（选填）</span></div>
+    <div class="image-upload" id="imageUpload">
+      <div class="upload-item" id="image1" style="display: none;">
+        <img src="" alt="">
+        <div class="delete-btn" onclick="deleteImage(1)"><i class="mdi mdi-close"></i></div>
+      </div>
+      <div class="upload-item" id="image2" style="display: none;">
+        <img src="" alt="">
+        <div class="delete-btn" onclick="deleteImage(2)"><i class="mdi mdi-close"></i></div>
+      </div>
+      <div class="upload-item" id="image3" style="display: none;">
+        <img src="" alt="">
+        <div class="delete-btn" onclick="deleteImage(3)"><i class="mdi mdi-close"></i></div>
+      </div>
+      <div class="upload-add" onclick="addImage()">
+        <i class="mdi mdi-plus"></i>
+        <span>添加图片</span>
+      </div>
+    </div>
+    <div class="upload-tip">最多上传3张图片，每张不超过5MB</div>
+  </div>
+
+  <!-- 联系方式 -->
+  <div class="section">
+    <div class="section-label">联系方式<span style="font-weight: normal; color: #9E9E9E;">（选填）</span></div>
+    <input type="text" class="contact-input" placeholder="请输入手机号或邮箱，方便我们联系您">
+    <div class="contact-tip">如不填写，我们将通过站内消息回复您</div>
+  </div>
+
+  <!-- 历史反馈 -->
+  <div class="history-header">
+    <span class="history-title">最近反馈</span>
+    <span class="history-more" onclick="showAllHistory()">查看全部 <i class="mdi mdi-chevron-right"></i></span>
+  </div>
+  <div class="history-list">
+    <div class="history-item" onclick="viewFeedback(1)">
+      <div class="history-top">
+        <span class="history-type">功能建议</span>
+        <span class="history-status replied"><i class="mdi mdi-check-circle"></i>已回复</span>
+      </div>
+      <div class="history-content">建议增加批量发布功能，目前每次只能发布一条信息，效率较低...</div>
+      <div class="history-time">2024-12-20 提交</div>
+    </div>
+
+    <div class="history-item" onclick="viewFeedback(2)">
+      <div class="history-top">
+        <span class="history-type bug">问题反馈</span>
+        <span class="history-status pending"><i class="mdi mdi-clock-outline"></i>处理中</span>
+      </div>
+      <div class="history-content">iOS端在上传图片时偶尔会闪退，尤其是选择多张图片的时候...</div>
+      <div class="history-time">2024-12-18 提交</div>
+    </div>
+  </div>
+
+  <!-- 提交按钮 -->
+  <div class="submit-bar">
+    <button class="submit-btn" onclick="submitFeedback()">提交反馈</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let currentType = 'suggestion';
+    let imageCount = 0;
+
+    function selectType(element, type) {
+      document.querySelectorAll('.type-option').forEach(option => {
+        option.classList.remove('active');
+      });
+      element.classList.add('active');
+      currentType = type;
+    }
+
+    function updateCharCount() {
+      const input = document.getElementById('contentInput');
+      const count = document.getElementById('charCount');
+      count.textContent = input.value.length;
+    }
+
+    function addImage() {
+      if (imageCount >= 3) {
+        showToast('最多上传3张图片');
+        return;
+      }
+
+      // 模拟选择图片
+      imageCount++;
+      const imageDiv = document.getElementById('image' + imageCount);
+      imageDiv.style.display = 'block';
+      imageDiv.querySelector('img').src = 'https://via.placeholder.com/80';
+
+      if (imageCount >= 3) {
+        document.querySelector('.upload-add').style.display = 'none';
+      }
+
+      showToast('图片添加成功');
+    }
+
+    function deleteImage(index) {
+      const imageDiv = document.getElementById('image' + index);
+      imageDiv.style.display = 'none';
+      imageCount--;
+
+      document.querySelector('.upload-add').style.display = 'flex';
+    }
+
+    function submitFeedback() {
+      const content = document.getElementById('contentInput').value.trim();
+
+      if (!content) {
+        showToast('请输入反馈内容');
+        return;
+      }
+
+      if (content.length < 10) {
+        showToast('反馈内容不能少于10个字');
+        return;
+      }
+
+      showToast('反馈提交成功');
+      setTimeout(() => {
+        window.location.href = 'center.html';
+      }, 1500);
+    }
+
+    function showHistory() {
+      showToast('查看历史反馈');
+    }
+
+    function showAllHistory() {
+      showToast('查看全部历史反馈');
+    }
+
+    function viewFeedback(id) {
+      showToast('查看反馈详情');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+
+</html>
