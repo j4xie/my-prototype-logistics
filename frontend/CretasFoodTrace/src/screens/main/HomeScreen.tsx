@@ -26,7 +26,9 @@ export default function HomeScreen() {
   // Module Configuration
   const modules: ModuleConfig[] = useMemo(() => {
     if (!user) return [];
-    const userPermissions = user?.permissions || {};
+    const userPermissions = (user.userType === 'platform'
+      ? user.platformUser?.permissions
+      : user.factoryUser?.permissions) || [];
 
     const allModules: ModuleConfig[] = [
       {
@@ -39,15 +41,6 @@ export default function HomeScreen() {
         requiredPermissions: ['processing_access'],
         route: 'ProcessingTab',
         color: '#1890FF', // Neo Blue
-      },
-      {
-        id: 'farming',
-        name: '养殖模块',
-        icon: 'fishbowl-outline',
-        description: '养殖管理、饲料投喂',
-        status: 'coming_soon',
-        requiredPermissions: ['farming_access'],
-        color: '#52C41A', // Neo Green
       },
       {
         id: 'logistics',

@@ -1,11 +1,11 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Icon } from 'react-native-paper';
-import { OperatorTabParamList } from '../types/navigation';
+// import { OperatorTabParamList } from '../types/navigation';
 import AttendanceStackNavigator from './AttendanceStackNavigator';
 import WorkStackNavigator from './WorkStackNavigator';
 
-const Tab = createBottomTabNavigator<OperatorTabParamList>();
+const Tab = createBottomTabNavigator<any>();
 
 /**
  * Operator专用底部Tab导航器

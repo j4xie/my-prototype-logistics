@@ -23,7 +23,7 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { equipmentApiClient, type Equipment, type MaintenanceRecord as APIMaintenanceRecord } from '../../services/api/equipmentApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { Alert } from 'react-native';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建EquipmentDetail专用logger
@@ -145,11 +145,11 @@ export default function EquipmentDetailScreen() {
 
       equipmentDetailLogger.info('设备详情加载成功', {
         equipmentId,
-        name: equipmentResponse.data.name,
-        status: equipmentResponse.data.status,
+        name: (equipmentResponse as any).data.name,
+        status: (equipmentResponse as any).data.status,
       });
 
-      const eq: Equipment = equipmentResponse.data;
+      const eq: Equipment = (equipmentResponse as any).data;
 
       // Map Equipment status to EquipmentStatus
       const mapStatus = (status: string): EquipmentStatus => {
@@ -188,7 +188,7 @@ export default function EquipmentDetailScreen() {
       setParameters({});
 
       // Transform maintenance history
-      const history: APIMaintenanceRecord[] = maintenanceHistoryResponse.data || [];
+      const history: APIMaintenanceRecord[] = (maintenanceHistoryResponse as any).data || [];
       const records: MaintenanceRecord[] = history.map((record) => ({
         id: String(record.id),
         date: record.maintenanceDate,
@@ -201,32 +201,32 @@ export default function EquipmentDetailScreen() {
       setMaintenanceRecords(records);
 
       // Set performance metrics
-      if (oeeResponse.data) {
-        setOeeData(oeeResponse.data);
+      if ((oeeResponse as any).data) {
+        setOeeData((oeeResponse as any).data);
         equipmentDetailLogger.info('OEE数据加载成功', {
-          oee: (oeeResponse.data.oee * 100).toFixed(1) + '%',
+          oee: ((oeeResponse as any).data.oee * 100).toFixed(1) + '%',
         });
       }
 
-      if (depreciatedValueResponse.data) {
-        setDepreciatedValue(depreciatedValueResponse.data.depreciatedValue || depreciatedValueResponse.data);
+      if ((depreciatedValueResponse as any).data) {
+        setDepreciatedValue((depreciatedValueResponse as any).data.depreciatedValue || (depreciatedValueResponse as any).data);
         equipmentDetailLogger.info('折旧价值加载成功', {
-          value: depreciatedValueResponse.data.depreciatedValue || depreciatedValueResponse.data,
+          value: (depreciatedValueResponse as any).data.depreciatedValue || (depreciatedValueResponse as any).data,
         });
       }
 
-      if (usageStatsResponse.data) {
-        setUsageStats(usageStatsResponse.data);
+      if ((usageStatsResponse as any).data) {
+        setUsageStats((usageStatsResponse as any).data);
         equipmentDetailLogger.info('使用统计加载成功', {
-          utilizationRate: usageStatsResponse.data.utilizationRate,
+          utilizationRate: (usageStatsResponse as any).data.utilizationRate,
         });
       }
 
       // Calculate uptime from efficiency report or OEE data
-      if (usageStatsResponse.data?.utilizationRate !== undefined) {
-        setUptime(usageStatsResponse.data.utilizationRate);
-      } else if (oeeResponse.data?.availability !== undefined) {
-        setUptime(oeeResponse.data.availability * 100);
+      if ((usageStatsResponse as any).data?.utilizationRate !== undefined) {
+        setUptime((usageStatsResponse as any).data.utilizationRate);
+      } else if ((oeeResponse as any).data?.availability !== undefined) {
+        setUptime((oeeResponse as any).data.availability * 100);
       } else {
         setUptime(eq.status === 'active' ? 95 : 0);
       }
@@ -239,8 +239,8 @@ export default function EquipmentDetailScreen() {
         ]);
 
         const totalAlerts =
-          (maintenanceAlerts.data || []).filter((e: Equipment) => String(e.id) === equipmentId).length +
-          (warrantyAlerts.data || []).filter((e: Equipment) => String(e.id) === equipmentId).length;
+          ((maintenanceAlerts as any).data || []).filter((e: Equipment) => String(e.id) === String(equipmentId)).length +
+          ((warrantyAlerts as any).data || []).filter((e: Equipment) => String(e.id) === String(equipmentId)).length;
 
         setActiveAlertsCount(totalAlerts);
       } catch (alertError) {
@@ -338,7 +338,7 @@ export default function EquipmentDetailScreen() {
         <Appbar.Content title={equipment.name} />
         <Appbar.Action
           icon="bell"
-          onPress={() => navigation.navigate('EquipmentAlerts', { equipmentId })}
+          onPress={() => navigation.navigate('EquipmentAlerts', { equipmentId: String(equipmentId) })}
         />
       </Appbar.Header>
 
@@ -674,7 +674,7 @@ export default function EquipmentDetailScreen() {
           <Button
             mode="outlined"
             icon="bell"
-            onPress={() => navigation.navigate('EquipmentAlerts', { equipmentId })}
+            onPress={() => navigation.navigate('EquipmentAlerts', { equipmentId: String(equipmentId) })}
             style={styles.actionButton}
           >
             查看告警

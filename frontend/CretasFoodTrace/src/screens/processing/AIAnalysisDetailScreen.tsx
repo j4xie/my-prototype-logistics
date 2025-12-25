@@ -20,8 +20,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, AICostAnalysisResponse } from '../../services/api/aiApiClient';
+import { MarkdownRenderer } from '../../components/common/MarkdownRenderer';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { getFactoryId } from '../../types/auth';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建AIAnalysisDetail专用logger
@@ -46,8 +48,60 @@ export default function AIAnalysisDetailScreen() {
   const navigation = useNavigation<AIAnalysisDetailScreenProps['navigation']>();
   const route = useRoute<AIAnalysisDetailScreenProps['route']>();
   const { user } = useAuthStore();
+  const factoryId = getFactoryId(user);
 
   const { reportId, reportType, title } = route.params;
+
+  /**
+   * 从Markdown内容提取干净的标题
+   */
+  const extractCleanTitle = (rawTitle: string | undefined): string => {
+    if (!rawTitle) {
+      const defaultTitles: Record<string, string> = {
+        batch: '批次成本分析报告',
+        weekly: '周度成本分析报告',
+        monthly: '月度成本分析报告',
+        custom: '自定义分析报告',
+      };
+      return defaultTitles[reportType] || 'AI分析报告';
+    }
+
+    // 移除 Markdown 标记
+    let cleanTitle = rawTitle
+      .replace(/^#+\s*/gm, '')           // 移除 ### 标题标记
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // 移除粗体标记
+      .replace(/\*([^*]+)\*/g, '$1')     // 移除斜体标记
+      .replace(/>\s*/g, '')              // 移除引用标记
+      .replace(/[🎯📊💡🔴🔍📈✅❌⚠️🔧📋]/g, '') // 移除常用emoji
+      .trim();
+
+    // 提取第一行有意义的内容
+    const lines = cleanTitle.split('\n').filter(line => line.trim().length > 0);
+    if (lines.length > 0 && lines[0]) {
+      cleanTitle = lines[0].trim();
+    }
+
+    // 如果标题太长，截断
+    if (cleanTitle.length > 25) {
+      cleanTitle = cleanTitle.substring(0, 25) + '...';
+    }
+
+    // 如果标题为空或无意义，返回默认
+    if (!cleanTitle || cleanTitle.length < 2) {
+      const defaultTitles: Record<string, string> = {
+        batch: '批次成本分析报告',
+        weekly: '周度成本分析报告',
+        monthly: '月度成本分析报告',
+        custom: '自定义分析报告',
+      };
+      return defaultTitles[reportType] || 'AI分析报告';
+    }
+
+    return cleanTitle;
+  };
+
+  // 计算清理后的标题
+  const cleanedTitle = extractCleanTitle(title);
 
   // 状态管理
   const [report, setReport] = useState<AICostAnalysisResponse | null>(null);
@@ -90,10 +144,10 @@ export default function AIAnalysisDetailScreen() {
       aiAnalysisLogger.error('获取AI报表详情失败', error as Error, {
         reportId,
         reportType,
-        factoryId,
+        factoryId: factoryId,
         errorStatus: (error as any).response?.status,
       });
-      Alert.alert('加载失败', error.response?.data?.message || error.message || '请稍后重试');
+      Alert.alert('加载失败', getErrorMsg(error) || '请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -191,7 +245,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
       {/* 顶部导航栏 */}
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title={title || 'AI分析报告'} />
+        <Appbar.Content title={cleanedTitle} />
         <Menu
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
@@ -222,7 +276,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
             <Card.Content>
               <View style={styles.metadataHeader}>
                 <Text variant="titleLarge" style={styles.reportTitle} numberOfLines={2}>
-                  {title}
+                  {cleanedTitle}
                 </Text>
                 {getReportTypeChip(reportType)}
               </View>
@@ -326,9 +380,9 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
 
               <Divider style={styles.divider} />
 
-              <Text variant="bodyMedium" style={styles.analysisText}>
-                {report.analysis}
-              </Text>
+              {/* 使用 Markdown 渲染器显示 AI 分析结果 */}
+              {/* 优先使用 analysis，如果为空则使用 title（title 可能包含完整分析内容）*/}
+              <MarkdownRenderer content={report.analysis || title || ''} />
             </Card.Content>
           </Card>
 
@@ -353,7 +407,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                 <View style={styles.quotaRow}>
                   <Text variant="bodyMedium" style={styles.quotaLabel}>AI配额</Text>
                   <Text variant="bodyMedium" style={styles.quotaValue}>
-                    已使用 {report.quota.used}/{report.quota.limit} 次
+                    已使用 {report.quota.usedQuota}/{report.quota.weeklyQuota} 次
                   </Text>
                 </View>
                 <View style={styles.quotaProgressBar}>
@@ -361,8 +415,8 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                     style={[
                       styles.quotaProgress,
                       {
-                        width: `${(report.quota.used / report.quota.limit) * 100}%`,
-                        backgroundColor: report.quota.remaining > 0 ? '#4CAF50' : '#F44336',
+                        width: `${report.quota.usagePercentage}%`,
+                        backgroundColor: report.quota.remainingQuota > 0 ? '#4CAF50' : '#F44336',
                       },
                     ]}
                   />

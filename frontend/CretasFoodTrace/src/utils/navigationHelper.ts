@@ -121,13 +121,6 @@ function getDepartmentAdminRoute(department?: string): NavigationRoute {
         },
       };
 
-    case 'farming':
-      // 养殖部门 → 主页(养殖模块未开发)
-      return {
-        screen: 'Main',
-        params: { screen: 'HomeTab' },
-      };
-
     case 'logistics':
       // 物流部门 → 主页(物流模块未开发)
       return {

@@ -19,6 +19,8 @@ import {
   AuthTokens,
   BiometricAuthOptions,
   UserRole,
+  FactoryRole,
+  PlatformRole,
   Department,
   USER_ROLES,
   PLATFORM_ROLES,
@@ -83,7 +85,7 @@ export class AuthService {
 
         // 使用TokenManager保存认证信息
         const tokenData = {
-          accessToken: response.tokens.token ?? response.tokens.accessToken,
+          accessToken: response.tokens.accessToken,
           refreshToken: response.tokens.refreshToken,
           tempToken: response.tokens.tempToken,
           expiresAt: Date.now() + (response.tokens.expiresIn ?? 86400) * 1000, // 默认24小时
@@ -99,7 +101,7 @@ export class AuthService {
           if (canUseBiometric) {
             await BiometricManager.saveBiometricCredentials({
               username: credentials.username,
-              encryptedToken: response.tokens.token ?? response.tokens.accessToken,
+              encryptedToken: response.tokens.accessToken,
               deviceInfo: credentials.deviceInfo
             });
           }
@@ -198,7 +200,7 @@ export class AuthService {
 
       if (userType === 'factory') {
         user = {
-          id: String(backendUser.id),
+          id: typeof backendUser.id === 'string' ? parseInt(backendUser.id, 10) : backendUser.id,
           username: backendUser.username,
           email: backendUser.email || '',
           phone: backendUser.phone,
@@ -208,18 +210,22 @@ export class AuthService {
           createdAt: backendUser.createdAt,
           updatedAt: backendUser.updatedAt,
           isActive: backendUser.isActive,
+          factoryId: backendUser.factoryId,
+          department: backendUser.department as Department,
+          position: backendUser.position,
+          roleCode: backendUser.roleCode as FactoryRole,
           userType: 'factory',
           factoryUser: {
             role: backendUser.roleCode as FactoryRole,
-            factoryId: backendUser.factoryId,
+            factoryId: backendUser.factoryId!,
             department: backendUser.department as Department,
             position: backendUser.position,
             permissions: backendUser.permissions?.features ?? []
           }
-        } as User;
+        } as FactoryUser;
       } else {
         user = {
-          id: String(backendUser.id),
+          id: typeof backendUser.id === 'string' ? parseInt(backendUser.id, 10) : backendUser.id,
           username: backendUser.username,
           email: backendUser.email || '',
           phone: backendUser.phone,
@@ -229,24 +235,36 @@ export class AuthService {
           createdAt: backendUser.createdAt,
           updatedAt: backendUser.updatedAt,
           isActive: backendUser.isActive,
+          roleCode: backendUser.role as PlatformRole,
           userType: 'platform',
           platformUser: {
             role: backendUser.role as PlatformRole,
             permissions: backendUser.permissions?.features ?? []
           }
-        } as User;
+        } as PlatformUser;
       }
 
       // 添加权限信息到user对象顶级属性（用于后续权限检查）
       const permissionsData = backendUser.permissions ?? {};
       const userWithPermissions = user as User & { permissions: UserPermissions };
       userWithPermissions.permissions = {
-        modules: permissionsData.modules ?? {},
+        modules: {
+          farming_access: permissionsData.modules?.farming_access ?? false,
+          processing_access: permissionsData.modules?.processing_access ?? false,
+          logistics_access: permissionsData.modules?.logistics_access ?? false,
+          trace_access: permissionsData.modules?.trace_access ?? false,
+          admin_access: permissionsData.modules?.admin_access ?? false,
+          platform_access: permissionsData.modules?.platform_access ?? false,
+          debug_access: permissionsData.modules?.debug_access,
+          system_config: permissionsData.modules?.system_config,
+        },
         features: permissionsData.features ?? [],
         role: permissionsData.role ?? backendUser.roleCode ?? backendUser.role ?? '',
         userType: user.userType,
         level: permissionsData.roleLevel ?? 0,
-        departments: user.userType === 'factory' ? [(user as FactoryUser).factoryUser.department] : undefined
+        departments: user.userType === 'factory' && (user as FactoryUser).factoryUser.department
+          ? [(user as FactoryUser).factoryUser.department] as string[]
+          : undefined
       };
 
       // 转换用户数据（如果需要进一步处理）
@@ -505,7 +523,7 @@ export class AuthService {
 
         if (userType === 'factory') {
           user = {
-            id: String(backendUser.id),
+            id: backendUser.id,
             username: backendUser.username,
             email: backendUser.email || '',
             phone: backendUser.phone,
@@ -515,18 +533,22 @@ export class AuthService {
             createdAt: backendUser.createdAt,
             updatedAt: backendUser.updatedAt,
             isActive: backendUser.isActive,
+            factoryId: backendUser.factoryId,
+            department: backendUser.department as Department,
+            position: backendUser.position,
+            roleCode: backendUser.roleCode as FactoryRole,
             userType: 'factory',
             factoryUser: {
-              role: backendUser.roleCode as FACTORY_ROLES,
+              role: backendUser.roleCode as FactoryRole,
               factoryId: backendUser.factoryId || '',
               department: backendUser.department as Department,
               position: backendUser.position,
               permissions: []
             }
-          } as User;
+          } as FactoryUser;
         } else {
           user = {
-            id: String(backendUser.id),
+            id: backendUser.id,
             username: backendUser.username,
             email: backendUser.email || '',
             phone: backendUser.phone,
@@ -536,23 +558,33 @@ export class AuthService {
             createdAt: backendUser.createdAt,
             updatedAt: backendUser.updatedAt,
             isActive: backendUser.isActive,
+            roleCode: backendUser.roleCode as PlatformRole,
             userType: 'platform',
             platformUser: {
-              role: backendUser.roleCode as PLATFORM_ROLES,
+              role: backendUser.roleCode as PlatformRole,
               permissions: []
             }
-          } as User;
+          } as PlatformUser;
         }
 
         // 添加权限信息到user对象顶级属性（用于后续权限检查）
         const userWithPermissions = user as User & { permissions: UserPermissions };
         userWithPermissions.permissions = {
-          modules: {},
+          modules: {
+            farming_access: false,
+            processing_access: false,
+            logistics_access: false,
+            trace_access: false,
+            admin_access: false,
+            platform_access: false,
+          },
           features: [],
           role: backendUser.roleCode ?? '',
           userType: user.userType,
           level: 0,
-          departments: user.userType === 'factory' ? [(user as FactoryUser).factoryUser.department] : undefined
+          departments: user.userType === 'factory' && (user as FactoryUser).factoryUser.department
+            ? [(user as FactoryUser).factoryUser.department] as string[]
+            : undefined
         };
 
         // 转换用户数据（如果需要进一步处理）
@@ -925,7 +957,11 @@ export class AuthService {
       if (!userInfo) return false;
 
       const user = JSON.parse(userInfo) as User;
-      return user.permissions.features.includes(permission);
+      // 根据用户类型获取权限列表
+      const permissions = user.userType === 'platform'
+        ? user.platformUser.permissions
+        : user.factoryUser.permissions;
+      return permissions.includes(permission);
     } catch (error) {
       authLogger.error('权限检查失败', error);
       return false;

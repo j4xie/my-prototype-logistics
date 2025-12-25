@@ -53,12 +53,12 @@ export interface PageResponse<T> {
 // ========== API客户端类 ==========
 
 class CustomerApiClient {
-  private getFactoryPath(factoryId?: string) {
+  private getPath(factoryId?: string) {
     const currentFactoryId = getCurrentFactoryId(factoryId);
     if (!currentFactoryId) {
       throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
     }
-    return `/api/mobile/${currentFactoryId}`;
+    return `/api/mobile/${currentFactoryId}/customers`;
   }
 
   /**
@@ -77,7 +77,7 @@ class CustomerApiClient {
     const { factoryId, ...queryParams } = params || {};
     // apiClient拦截器已统一返回data
     const apiResponse = await apiClient.get<any>(
-      `${this.getFactoryPath(factoryId)}/customers`,
+      `${this.getPath(factoryId)}`,
       { params: queryParams }
     );
 
@@ -112,7 +112,7 @@ class CustomerApiClient {
   ): Promise<{data: Customer}> {
     // apiClient拦截器已统一返回data
     const apiData = await apiClient.post<Customer>(
-      `${this.getFactoryPath(factoryId)}/customers`,
+      `${this.getPath(factoryId)}`,
       request
     );
     return { data: apiData };
@@ -125,7 +125,7 @@ class CustomerApiClient {
   async getCustomerById(customerId: string, factoryId?: string): Promise<Customer> {
     // apiClient拦截器已统一返回data
     return await apiClient.get<Customer>(
-      `${this.getFactoryPath(factoryId)}/customers/${customerId}`
+      `${this.getPath(factoryId)}/${customerId}`
     );
   }
 
@@ -138,10 +138,9 @@ class CustomerApiClient {
     request: Partial<CreateCustomerRequest>,
     factoryId?: string
   ): Promise<Customer> {
-    console.log("----update", request)
     // apiClient拦截器已统一返回data
     return await apiClient.put<Customer>(
-      `${this.getFactoryPath(factoryId)}/customers/${customerId}`,
+      `${this.getPath(factoryId)}/${customerId}`,
       request
     );
   }
@@ -151,7 +150,7 @@ class CustomerApiClient {
    * DELETE /api/mobile/{factoryId}/customers/{customerId}
    */
   async deleteCustomer(customerId: string, factoryId?: string): Promise<void> {
-    await apiClient.delete(`${this.getFactoryPath(factoryId)}/customers/${customerId}`);
+    await apiClient.delete(`${this.getPath(factoryId)}/${customerId}`);
   }
 
   /**
@@ -161,7 +160,7 @@ class CustomerApiClient {
   async getActiveCustomers(factoryId?: string): Promise<Customer[]> {
     // apiClient拦截器已统一返回data
     return await apiClient.get<Customer[]>(
-      `${this.getFactoryPath(factoryId)}/customers/active`
+      `${this.getPath(factoryId)}/active`
     );
   }
 
@@ -179,7 +178,7 @@ class CustomerApiClient {
     const { factoryId, ...queryParams } = params;
     // apiClient拦截器已统一返回data
     return await apiClient.get<Customer[]>(
-      `${this.getFactoryPath(factoryId)}/customers/search`,
+      `${this.getPath(factoryId)}/search`,
       { params: queryParams }
     );
   }
@@ -195,8 +194,9 @@ class CustomerApiClient {
   ): Promise<Customer> {
     // apiClient拦截器已统一返回data
     return await apiClient.put<Customer>(
-      `${this.getFactoryPath(factoryId)}/customers/${customerId}/status`,
-      {},{ params: {isActive: isActive} }
+      `${this.getPath(factoryId)}/${customerId}/status`,
+      {},
+      { params: { isActive: isActive } }
     );
   }
 

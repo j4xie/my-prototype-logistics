@@ -18,7 +18,7 @@ public interface SupplierService {
     /**
      * 创建供应商
      */
-    SupplierDTO createSupplier(String factoryId, CreateSupplierRequest request, Integer userId);
+    SupplierDTO createSupplier(String factoryId, CreateSupplierRequest request, Long userId);
      /**
      * 更新供应商
       */
@@ -87,7 +87,7 @@ public interface SupplierService {
      /**
      * 批量导入供应商
       */
-    List<SupplierDTO> importSuppliers(String factoryId, List<CreateSupplierRequest> requests, Integer userId);
+    List<SupplierDTO> importSuppliers(String factoryId, List<CreateSupplierRequest> requests, Long userId);
      /**
      * 获取供应商评级分布
       */

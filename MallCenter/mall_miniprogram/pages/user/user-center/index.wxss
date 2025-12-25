@@ -60,3 +60,82 @@ page{
 .text-black{
   color: #000 !important;
 }
+
+/* 商家工作台卡片 - 黑金风格 */
+.merchant-card {
+  margin: 30rpx;
+  background: linear-gradient(135deg, #2c3e50 0%, #1a1a1a 100%);
+  border-radius: 24rpx;
+  padding: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.merchant-card-active {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
+
+.merchant-card-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  z-index: 1;
+}
+
+.merchant-card-icon {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid rgba(212, 175, 55, 0.3);
+}
+
+.merchant-card-icon text {
+  font-size: 48rpx;
+  color: #D4AF37;
+}
+
+.merchant-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.merchant-card-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #D4AF37;
+}
+
+.merchant-card-subtitle {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.merchant-card-arrow {
+  z-index: 1;
+}
+
+.merchant-card-arrow text {
+  font-size: 40rpx;
+  color: #D4AF37;
+}
+
+.merchant-card-watermark {
+  position: absolute;
+  right: -20rpx;
+  bottom: -30rpx;
+  font-size: 80rpx;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.03);
+  letter-spacing: 4rpx;
+  pointer-events: none;
+}

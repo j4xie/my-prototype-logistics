@@ -30,6 +30,7 @@ export default function ManagementScreen() {
         { id: 'material-types', title: '原材料类型', desc: '配置鲈鱼、带鱼等原料', icon: 'food-drumstick', route: 'MaterialTypeManagement' },
         { id: 'conversion-rates', title: '转换率', desc: '配置原料到产品转换率', icon: 'swap-horizontal', route: 'ConversionRate' },
         { id: 'work-types', title: '工作类型', desc: '配置工种和时薪', icon: 'account-hard-hat', route: 'WorkTypeManagement', adminOnly: true },
+        { id: 'disposal-records', title: '报废记录', desc: '管理废弃和报废记录', icon: 'delete-forever', route: 'DisposalRecordManagement', adminOnly: true },
       ],
     },
     {
@@ -39,6 +40,7 @@ export default function ManagementScreen() {
         { id: 'departments', title: '部门管理', desc: '组织架构和部门信息', icon: 'office-building', route: 'DepartmentManagement', adminOnly: true },
         { id: 'users', title: '用户管理', desc: '用户、角色和权限', icon: 'account-cog', route: 'UserManagement', adminOnly: true },
         { id: 'whitelist', title: '白名单', desc: '管理注册手机号', icon: 'shield-check', route: 'WhitelistManagement', adminOnly: true },
+        { id: 'work-sessions', title: '工作会话', desc: '员工工时和人工成本', icon: 'clock-outline', route: 'WorkSessionManagement', adminOnly: true },
       ],
     },
     {
@@ -47,6 +49,7 @@ export default function ManagementScreen() {
         items: [
             { id: 'suppliers', title: '供应商管理', desc: '管理供应商信息', icon: 'truck-delivery', route: 'SupplierManagement' },
             { id: 'customers', title: '客户管理', desc: '管理客户信息', icon: 'store', route: 'CustomerManagement' },
+            { id: 'shipments', title: '出货管理', desc: '物流发货和配送记录', icon: 'truck-fast', route: 'ShipmentManagement' },
         ]
     },
     {

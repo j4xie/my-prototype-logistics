@@ -33,7 +33,32 @@ public class PageRequest {
     @Schema(description = "搜索关键词")
     private String keyword;
 
+    @Schema(description = "状态过滤", example = "PENDING")
+    private String status;
+
     public Integer getOffset() {
         return (page - 1) * size;
+    }
+
+    /**
+     * 创建分页请求
+     */
+    public static PageRequest of(int page, int size) {
+        PageRequest request = new PageRequest();
+        request.setPage(page);
+        request.setSize(size);
+        return request;
+    }
+
+    /**
+     * 创建带排序的分页请求
+     */
+    public static PageRequest of(int page, int size, String sortBy, String sortDirection) {
+        PageRequest request = new PageRequest();
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortBy(sortBy);
+        request.setSortDirection(sortDirection);
+        return request;
     }
 }

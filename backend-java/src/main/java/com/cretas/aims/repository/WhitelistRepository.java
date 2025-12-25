@@ -113,12 +113,13 @@ public interface WhitelistRepository extends JpaRepository<Whitelist, Integer> {
 
     /**
      * 搜索白名单（模糊查询）
+     * 注意：phoneNumber使用右模糊（可使用索引），其他字段使用双向模糊（无法使用索引）
      */
     @Query("SELECT w FROM Whitelist w WHERE w.factoryId = :factoryId " +
-           "AND (w.phoneNumber LIKE %:keyword% " +
-           "OR w.name LIKE %:keyword% " +
-           "OR w.department LIKE %:keyword% " +
-           "OR w.position LIKE %:keyword%)")
+           "AND (w.phoneNumber LIKE CONCAT(:keyword, '%') " +
+           "OR w.name LIKE CONCAT('%', :keyword, '%') " +
+           "OR w.department LIKE CONCAT('%', :keyword, '%') " +
+           "OR w.position LIKE CONCAT('%', :keyword, '%'))")
     Page<Whitelist> search(@Param("factoryId") String factoryId,
                           @Param("keyword") String keyword,
                           Pageable pageable);

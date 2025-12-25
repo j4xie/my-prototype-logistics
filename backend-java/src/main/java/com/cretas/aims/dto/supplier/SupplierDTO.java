@@ -1,5 +1,6 @@
 package com.cretas.aims.dto.supplier;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -50,6 +51,19 @@ public class SupplierDTO {
     // 审计信息
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private Integer createdBy;
+    private Long createdBy;
     private String createdByName;
+
+    // ===================================================================
+    // 前端字段别名（兼容前端）
+    // ===================================================================
+
+    /**
+     * code 别名（兼容前端）
+     * 前端使用 code，后端使用 supplierCode
+     */
+    @JsonProperty("code")
+    public String getCode() {
+        return supplierCode;
+    }
 }

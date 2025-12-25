@@ -5,6 +5,7 @@ import {
   ManagementScreen,
   ProductTypeManagementScreen,
   ConversionRateScreen,
+  MaterialConversionDetailScreen,
   UserManagementScreen,
   WhitelistManagementScreen,
   SupplierManagementScreen,
@@ -12,6 +13,9 @@ import {
   MaterialTypeManagementScreen,
   WorkTypeManagementScreen,
   DepartmentManagementScreen,
+  ShipmentManagementScreen,
+  DisposalRecordManagementScreen,
+  WorkSessionManagementScreen,
 } from '../screens/management';
 import AISettingsScreen from '../screens/management/AISettingsScreen';
 
@@ -51,6 +55,11 @@ export function ManagementStackNavigator() {
         component={ConversionRateScreen}
       />
       <Stack.Screen
+        name="MaterialConversionDetail"
+        component={MaterialConversionDetailScreen}
+        options={{ title: '原料转换率详情' }}
+      />
+      <Stack.Screen
         name="WorkTypeManagement"
         component={WorkTypeManagementScreen}
         options={{ title: '工作类型管理' }}
@@ -84,6 +93,21 @@ export function ManagementStackNavigator() {
         name="CustomerManagement"
         component={CustomerManagementScreen}
         options={{ title: '客户管理' }}
+      />
+      <Stack.Screen
+        name="ShipmentManagement"
+        component={ShipmentManagementScreen}
+        options={{ title: '出货管理' }}
+      />
+      <Stack.Screen
+        name="DisposalRecordManagement"
+        component={DisposalRecordManagementScreen}
+        options={{ title: '报废记录管理' }}
+      />
+      <Stack.Screen
+        name="WorkSessionManagement"
+        component={WorkSessionManagementScreen}
+        options={{ title: '工作会话管理' }}
       />
 
       {/* Phase 3 P2 - 工厂设置 */}

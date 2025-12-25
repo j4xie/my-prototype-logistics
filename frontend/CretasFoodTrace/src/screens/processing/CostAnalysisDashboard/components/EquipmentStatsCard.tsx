@@ -16,7 +16,7 @@ export const EquipmentStatsCard = React.memo<EquipmentStatsCardProps>(({ equipme
   return (
     <Card style={styles.card} mode="elevated">
       <Card.Title
-        title="⚙️ 设备详情"
+        title="设备详情"
         subtitle={`${equipmentStats.totalUsages}次使用 • 运行${Math.floor(equipmentStats.totalDuration / 60)}h`}
       />
       <Card.Content>

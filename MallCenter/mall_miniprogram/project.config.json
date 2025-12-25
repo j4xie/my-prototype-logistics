@@ -40,11 +40,15 @@
     "showES6CompileOption": false,
     "useCompilerPlugins": false,
     "minifyWXML": true,
-    "condition": false
+    "condition": false,
+    "compileWorklet": false,
+    "localPlugins": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
   "libVersion": "2.19.6",
-  "appid": "wx0877cb082fa521bf",
+  "appid": "wxf8e90943620b4080",
   "projectname": "joolun-wx-ma",
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { forgotPasswordAPI } from '../../services/api/forgotPasswordApiClient';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
+import { getErrorMsg } from '../../utils/errorHandler';
 
 type Step = 'phone' | 'verify' | 'reset';
 
@@ -82,7 +83,7 @@ export default function ForgotPasswordScreen() {
         }
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || '发送验证码失败';
+      const errorMessage = getErrorMsg(error) || '发送验证码失败';
       setPhoneError(errorMessage);
     } finally {
       setLoading(false);
@@ -110,7 +111,7 @@ export default function ForgotPasswordScreen() {
         setCodeError(response.data.message || '验证码错误');
       }
     } catch (error) {
-      setCodeError(error.response?.data?.message || '验证码错误');
+      setCodeError(getErrorMsg(error) || '验证码错误');
     } finally {
       setLoading(false);
     }
@@ -126,15 +127,15 @@ export default function ForgotPasswordScreen() {
     if (/[a-z]/.test(pwd)) score++;
     if (/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) score++;
 
-    const normalizedScore = Math.min(Math.floor(score / 1.5), 4);
-    const strengthMap = [
+    const normalizedScore = Math.min(Math.max(Math.floor(score / 1.5), 0), 4);
+    const strengthMap: PasswordStrength[] = [
       { score: 0, label: '弱', color: theme.colors.error },
       { score: 1, label: '较弱', color: '#FF9800' },
       { score: 2, label: '中等', color: '#FFC107' },
       { score: 3, label: '强', color: theme.colors.success },
       { score: 4, label: '很强', color: '#2E7D32' },
     ];
-    return strengthMap[normalizedScore];
+    return strengthMap[normalizedScore] ?? { score: 0, label: '弱', color: theme.colors.error };
   };
 
   const passwordStrength = calculatePasswordStrength(newPassword);
@@ -173,7 +174,7 @@ export default function ForgotPasswordScreen() {
         Alert.alert('失败', response.data.message || '重置失败');
       }
     } catch (error) {
-      Alert.alert('失败', error.response?.data?.message || '重置失败');
+      Alert.alert('失败', getErrorMsg(error) || '重置失败');
     } finally {
       setLoading(false);
     }

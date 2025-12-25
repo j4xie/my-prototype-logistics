@@ -158,7 +158,7 @@ public class MaterialBatchController {
 
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
 
         log.info("创建原材料批次: factoryId={}, materialTypeId={}", factoryId, request.getMaterialTypeId());
         MaterialBatchDTO batch = materialBatchService.createMaterialBatch(factoryId, request, userId);
@@ -354,17 +354,25 @@ public class MaterialBatchController {
      * @return FIFO推荐的批次列表
      */
     @GetMapping("/fifo/{materialTypeId}")
-    @Operation(summary = "获取FIFO批次（先进先出）", 
+    @Operation(summary = "获取FIFO批次（先进先出）",
                description = "根据先进先出原则获取指定材料类型的批次，用于生产消耗推荐")
     public ApiResponse<List<MaterialBatchDTO>> getFIFOBatches(
             @Parameter(description = "工厂ID", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "材料类型ID", required = true)
             @PathVariable @NotBlank String materialTypeId,
-            @Parameter(description = "需求数量", required = true)
-            @RequestParam @NotNull BigDecimal requiredQuantity) {
+            @Parameter(description = "需求数量 (兼容: quantity 或 requiredQuantity)")
+            @RequestParam(required = false) BigDecimal requiredQuantity,
+            @Parameter(description = "需求数量 (前端兼容参数名)", hidden = true)
+            @RequestParam(required = false) BigDecimal quantity) {
 
-        List<MaterialBatchDTO> batches = materialBatchService.getFIFOBatches(factoryId, materialTypeId, requiredQuantity);
+        // 兼容前端发送的 quantity 参数和后端的 requiredQuantity 参数
+        BigDecimal actualQuantity = requiredQuantity != null ? requiredQuantity : quantity;
+        if (actualQuantity == null) {
+            return ApiResponse.error(400, "需求数量参数不能为空 (quantity 或 requiredQuantity)");
+        }
+
+        List<MaterialBatchDTO> batches = materialBatchService.getFIFOBatches(factoryId, materialTypeId, actualQuantity);
         return ApiResponse.success(batches);
     }
 
@@ -398,6 +406,9 @@ public class MaterialBatchController {
 
     /**
      * 使用批次材料
+     * 兼容两种参数格式：
+     * 1. RequestBody: {"quantity": 100, "productionPlanId": "xxx"}
+     * 2. URL Params: ?quantity=100&productionPlanId=xxx
      */
     @PostMapping("/{batchId}/use")
     @Operation(summary = "使用批次材料")
@@ -406,15 +417,39 @@ public class MaterialBatchController {
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "批次ID")
             @PathVariable @NotBlank String batchId,
-            @Valid @RequestBody UseMaterialBatchRequest request) {
+            @Parameter(description = "使用数量 (URL参数)", hidden = true)
+            @RequestParam(required = false) BigDecimal quantity,
+            @Parameter(description = "生产计划ID (URL参数)", hidden = true)
+            @RequestParam(required = false) String productionPlanId,
+            @RequestBody(required = false) UseMaterialBatchRequest request) {
 
-        log.info("使用批次材料: factoryId={}, batchId={}, quantity={}", factoryId, batchId, request.getQuantity());
-        MaterialBatchDTO batch = materialBatchService.useBatchMaterial(factoryId, batchId, request.getQuantity(), request.getProductionPlanId());
+        // 兼容URL参数和RequestBody两种格式
+        BigDecimal actualQuantity = quantity;
+        String actualPlanId = productionPlanId;
+
+        if (request != null) {
+            if (request.getQuantity() != null) {
+                actualQuantity = request.getQuantity();
+            }
+            if (request.getProductionPlanId() != null) {
+                actualPlanId = request.getProductionPlanId();
+            }
+        }
+
+        if (actualQuantity == null) {
+            return ApiResponse.error(400, "使用数量不能为空");
+        }
+
+        log.info("使用批次材料: factoryId={}, batchId={}, quantity={}", factoryId, batchId, actualQuantity);
+        MaterialBatchDTO batch = materialBatchService.useBatchMaterial(factoryId, batchId, actualQuantity, actualPlanId);
         return ApiResponse.success("材料使用成功", batch);
     }
 
     /**
      * 调整批次数量
+     * 支持两种参数传递方式：
+     * 1. URL参数：newQuantity, reason（前端当前使用）
+     * 2. RequestBody：quantity, reason, adjustmentType
      */
     @PostMapping("/{batchId}/adjust")
     @Operation(summary = "调整批次数量")
@@ -425,15 +460,34 @@ public class MaterialBatchController {
             @PathVariable @NotBlank String batchId,
             @Parameter(description = "访问令牌")
             @RequestHeader("Authorization") String authorization,
-            @Valid @RequestBody AdjustMaterialBatchRequest request) {
+            @Parameter(description = "新数量（URL参数，与RequestBody二选一）")
+            @RequestParam(required = false) BigDecimal newQuantity,
+            @Parameter(description = "调整原因（URL参数）")
+            @RequestParam(required = false) String reason,
+            @RequestBody(required = false) AdjustMaterialBatchRequest request) {
 
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
+
+        // 优先使用URL参数，其次使用RequestBody
+        BigDecimal actualQuantity = newQuantity;
+        String actualReason = reason;
+
+        if (actualQuantity == null && request != null) {
+            actualQuantity = request.getQuantity();
+        }
+        if (actualReason == null && request != null) {
+            actualReason = request.getReason();
+        }
+
+        if (actualQuantity == null) {
+            return ApiResponse.error("调整数量不能为空");
+        }
 
         log.info("调整批次数量: factoryId={}, batchId={}, quantity={}, reason={}",
-                factoryId, batchId, request.getQuantity(), request.getReason());
-        MaterialBatchDTO batch = materialBatchService.adjustBatchQuantity(factoryId, batchId, request.getQuantity(), request.getReason(), userId);
+                factoryId, batchId, actualQuantity, actualReason);
+        MaterialBatchDTO batch = materialBatchService.adjustBatchQuantity(factoryId, batchId, actualQuantity, actualReason, userId);
         return ApiResponse.success("批次数量调整成功", batch);
     }
 
@@ -457,6 +511,9 @@ public class MaterialBatchController {
 
     /**
      * 预留批次材料
+     * 兼容两种参数格式：
+     * 1. RequestBody: {"quantity": 100, "planId": "xxx"}
+     * 2. URL Params: ?quantity=100&productionPlanId=xxx
      */
     @PostMapping("/{batchId}/reserve")
     @Operation(summary = "预留批次材料")
@@ -465,18 +522,42 @@ public class MaterialBatchController {
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "批次ID")
             @PathVariable @NotBlank String batchId,
-            @Valid @RequestBody ReserveMaterialBatchRequest request) {
+            @Parameter(description = "预留数量 (URL参数)", hidden = true)
+            @RequestParam(required = false) BigDecimal quantity,
+            @Parameter(description = "生产计划ID (URL参数)", hidden = true)
+            @RequestParam(required = false) String productionPlanId,
+            @RequestBody(required = false) ReserveMaterialBatchRequest request) {
 
-        // 使用planId或productionBatchId作为生产计划ID
-        String productionPlanId = request.getPlanId() != null ? request.getPlanId() : request.getProductionBatchId();
+        // 兼容URL参数和RequestBody两种格式
+        BigDecimal actualQuantity = quantity;
+        String actualPlanId = productionPlanId;
+
+        if (request != null) {
+            if (request.getQuantity() != null) {
+                actualQuantity = request.getQuantity();
+            }
+            if (request.getPlanId() != null) {
+                actualPlanId = request.getPlanId();
+            } else if (request.getProductionBatchId() != null) {
+                actualPlanId = request.getProductionBatchId();
+            }
+        }
+
+        if (actualQuantity == null) {
+            return ApiResponse.error(400, "预留数量不能为空");
+        }
+
         log.info("预留批次材料: factoryId={}, batchId={}, quantity={}, productionPlanId={}",
-                factoryId, batchId, request.getQuantity(), productionPlanId);
-        materialBatchService.reserveBatchMaterial(factoryId, batchId, request.getQuantity(), productionPlanId);
+                factoryId, batchId, actualQuantity, actualPlanId);
+        materialBatchService.reserveBatchMaterial(factoryId, batchId, actualQuantity, actualPlanId);
         return ApiResponse.success("材料预留成功", null);
     }
 
     /**
      * 释放预留材料
+     * 兼容两种参数格式：
+     * 1. RequestBody: {"quantity": 100, "productionPlanId": "xxx"}
+     * 2. URL Params: ?quantity=100&productionPlanId=xxx
      */
     @PostMapping("/{batchId}/release")
     @Operation(summary = "释放预留材料")
@@ -485,17 +566,40 @@ public class MaterialBatchController {
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "批次ID")
             @PathVariable @NotBlank String batchId,
-            @Valid @RequestBody ReleaseMaterialBatchRequest request) {
+            @Parameter(description = "释放数量 (URL参数)", hidden = true)
+            @RequestParam(required = false) BigDecimal quantity,
+            @Parameter(description = "生产计划ID (URL参数)", hidden = true)
+            @RequestParam(required = false) String productionPlanId,
+            @RequestBody(required = false) ReleaseMaterialBatchRequest request) {
 
-        log.info("释放预留材料: factoryId={}, batchId={}, quantity={}",
-                factoryId, batchId, request.getQuantity());
-        // 注意: Service方法需要planId参数，但测试脚本不提供，需要修改Service或使用null
-        materialBatchService.releaseBatchReservation(factoryId, batchId, request.getQuantity(), null);
+        // 兼容URL参数和RequestBody两种格式
+        BigDecimal actualQuantity = quantity;
+        String actualPlanId = productionPlanId;
+
+        if (request != null) {
+            if (request.getQuantity() != null) {
+                actualQuantity = request.getQuantity();
+            }
+            if (request.getProductionPlanId() != null) {
+                actualPlanId = request.getProductionPlanId();
+            }
+        }
+
+        if (actualQuantity == null) {
+            return ApiResponse.error(400, "释放数量不能为空");
+        }
+
+        log.info("释放预留材料: factoryId={}, batchId={}, quantity={}, productionPlanId={}",
+                factoryId, batchId, actualQuantity, actualPlanId);
+        materialBatchService.releaseBatchReservation(factoryId, batchId, actualQuantity, actualPlanId);
         return ApiResponse.success("预留释放成功", null);
     }
 
     /**
      * 消耗批次材料
+     * 兼容两种参数格式：
+     * 1. RequestBody: {"quantity": 100, "processId": "xxx"}
+     * 2. URL Params: ?quantity=100&processId=xxx
      */
     @PostMapping("/{batchId}/consume")
     @Operation(summary = "消耗批次材料")
@@ -504,11 +608,32 @@ public class MaterialBatchController {
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "批次ID")
             @PathVariable @NotBlank String batchId,
-            @Valid @RequestBody ConsumeMaterialBatchRequest request) {
+            @Parameter(description = "消耗数量 (URL参数)", hidden = true)
+            @RequestParam(required = false) BigDecimal quantity,
+            @Parameter(description = "加工流程ID (URL参数)", hidden = true)
+            @RequestParam(required = false) String processId,
+            @RequestBody(required = false) ConsumeMaterialBatchRequest request) {
+
+        // 兼容URL参数和RequestBody两种格式
+        BigDecimal actualQuantity = quantity;
+        String actualProcessId = processId;
+
+        if (request != null) {
+            if (request.getQuantity() != null) {
+                actualQuantity = request.getQuantity();
+            }
+            if (request.getProcessId() != null) {
+                actualProcessId = request.getProcessId();
+            }
+        }
+
+        if (actualQuantity == null) {
+            return ApiResponse.error(400, "消耗数量不能为空");
+        }
 
         log.info("消耗批次材料: factoryId={}, batchId={}, quantity={}, processId={}",
-                factoryId, batchId, request.getQuantity(), request.getProcessId());
-        materialBatchService.consumeBatchMaterial(factoryId, batchId, request.getQuantity(), request.getProcessId());
+                factoryId, batchId, actualQuantity, actualProcessId);
+        materialBatchService.consumeBatchMaterial(factoryId, batchId, actualQuantity, actualProcessId);
         return ApiResponse.success("材料消耗成功", null);
     }
 
@@ -722,7 +847,7 @@ public class MaterialBatchController {
 
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
 
         log.info("批量创建材料批次: factoryId={}, count={}", factoryId, requests.size());
         List<MaterialBatchDTO> batches = materialBatchService.batchCreateMaterialBatches(factoryId, requests, userId);
