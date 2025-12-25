@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>种牛详情 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../../assets/css/desktop.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font-family); background: var(--bg-gray); }
+
+    .breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 14px; }
+    .breadcrumb a { color: #666; text-decoration: none; }
+    .breadcrumb a:hover { color: var(--primary-color); }
+    .breadcrumb span { color: #999; }
+    .breadcrumb .current { color: #1a1a1a; }
+
+    .detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+
+    .detail-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      margin-bottom: 20px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .card-title { font-size: 16px; font-weight: 600; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
+    .card-title i { color: var(--primary-color); }
+    .card-body { padding: 24px; }
+
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .info-item { display: flex; flex-direction: column; gap: 6px; }
+    .info-label { font-size: 13px; color: #666; }
+    .info-value { font-size: 15px; color: #1a1a1a; font-weight: 500; }
+    .info-value.price { color: #e53935; font-size: 24px; }
+
+    .gene-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .gene-badge.premium { background: #e8f5e9; color: #2e7d32; }
+    .gene-badge.excellent { background: #e3f2fd; color: #1976d2; }
+
+    .status-tag {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .status-tag.available { background: #e6f7e6; color: #52c41a; }
+    .status-tag.reserved { background: #fff3e0; color: #ff8f00; }
+
+    .image-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .gallery-item {
+      aspect-ratio: 4/3;
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: var(--primary-color);
+      cursor: pointer;
+    }
+    .gallery-item:hover { opacity: 0.9; }
+
+    /* 系谱图 */
+    .pedigree-tree { padding: 20px; }
+    .pedigree-level { display: flex; justify-content: center; gap: 40px; margin-bottom: 30px; position: relative; }
+    .pedigree-node {
+      background: #fff;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 16px 20px;
+      text-align: center;
+      min-width: 140px;
+      position: relative;
+    }
+    .pedigree-node.current { border-color: var(--primary-color); background: #f0fdf4; }
+    .pedigree-node.male { border-color: #1976d2; }
+    .pedigree-node.female { border-color: #e91e63; }
+    .pedigree-node h4 { font-size: 14px; color: #1a1a1a; margin-bottom: 4px; }
+    .pedigree-node p { font-size: 12px; color: #666; }
+    .pedigree-node .gender-icon {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #fff;
+    }
+    .pedigree-node .gender-icon.male { background: #1976d2; }
+    .pedigree-node .gender-icon.female { background: #e91e63; }
+
+    .pedigree-connector {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      width: 2px;
+      height: 30px;
+      background: #e0e0e0;
+    }
+
+    /* 繁殖记录 */
+    .record-list { list-style: none; }
+    .record-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .record-item:last-child { border-bottom: none; }
+    .record-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #e8f5e9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-color);
+      flex-shrink: 0;
+    }
+    .record-content { flex: 1; }
+    .record-title { font-size: 14px; color: #1a1a1a; margin-bottom: 4px; }
+    .record-meta { font-size: 12px; color: #999; }
+    .record-result {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .record-result.success { background: #e8f5e9; color: #2e7d32; }
+    .record-result.pending { background: #fff3e0; color: #ff8f00; }
+
+    /* 基因检测 */
+    .gene-report {
+      background: #fafafa;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .gene-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px dashed #e0e0e0;
+    }
+    .gene-item:last-child { border-bottom: none; }
+    .gene-name { font-size: 14px; color: #333; }
+    .gene-score {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 24px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .action-bar .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .action-bar .btn-default { background: #fff; border: 1px solid #e0e0e0; color: #666; }
+    .action-bar .btn-default:hover { border-color: #999; }
+    .action-bar .btn-primary { background: var(--primary-color); color: #fff; }
+    .action-bar .btn-primary:hover { background: var(--primary-dark); }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../../dashboard/overview.html" class="nav-item">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../cattle/list.html" class="nav-sub-item">活牛信息</a>
+            <a href="list.html" class="nav-sub-item active">育种种牛</a>
+            <a href="../beef/list.html" class="nav-sub-item">牛肉产品</a>
+            <a href="../feed/list.html" class="nav-sub-item">饲料产品</a>
+            <a href="../equipment/list.html" class="nav-sub-item">设备管理</a>
+            <a href="../farm/list.html" class="nav-sub-item">养殖场</a>
+            <a href="../slaughter/list.html" class="nav-sub-item">屠宰场</a>
+            <a href="../review-queue.html" class="nav-sub-item">审核队列</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+            <a href="../../settings/category-manage.html" class="nav-sub-item">分类管理</a>
+            <a href="../../settings/banner-manage.html" class="nav-sub-item">Banner管理</a>
+            <a href="../../settings/user-manage.html" class="nav-sub-item">用户管理</a>
+            <a href="../../settings/system-config.html" class="nav-sub-item">系统配置</a>
+            <a href="../../settings/permission-settings.html" class="nav-sub-item">权限设置</a>
+          </div>
+        </div>
+        <a href="../../../index.html" class="nav-item" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="desktop-main">
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <h1 class="desktop-header-title">种牛详情</h1>
+        </div>
+        <div class="desktop-header-right">
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="desktop-content">
+        <div class="breadcrumb">
+          <a href="list.html">育种种牛管理</a>
+          <span>/</span>
+          <span class="current">种牛详情</span>
+        </div>
+
+        <div class="detail-grid">
+          <!-- 左侧主要信息 -->
+          <div class="left-column">
+            <!-- 基本信息 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <div class="card-title"><i class="mdi mdi-dna"></i> 基本信息</div>
+                <span class="status-tag available">可配种</span>
+              </div>
+              <div class="card-body">
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">种牛名称</span>
+                    <span class="info-value">锡盟一号</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">种牛编号</span>
+                    <span class="info-value">SN-2024-001</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">品种</span>
+                    <span class="info-value">西门塔尔</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">性别</span>
+                    <span class="info-value"><i class="mdi mdi-gender-male" style="color: #1976d2;"></i> 公牛</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">出生日期</span>
+                    <span class="info-value">2021-06-15</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">月龄</span>
+                    <span class="info-value">36 个月</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">体重</span>
+                    <span class="info-value">1,250 公斤</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">基因等级</span>
+                    <span class="gene-badge premium">特级</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">报价</span>
+                    <span class="info-value price">¥85,000</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">发布企业</span>
+                    <span class="info-value">内蒙古种牛繁育中心</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 系谱图 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <div class="card-title"><i class="mdi mdi-family-tree"></i> 系谱信息</div>
+              </div>
+              <div class="card-body">
+                <div class="pedigree-tree">
+                  <!-- 祖代 -->
+                  <div class="pedigree-level">
+                    <div class="pedigree-node male">
+                      <div class="gender-icon male"><i class="mdi mdi-gender-male"></i></div>
+                      <h4>祖父</h4>
+                      <p>SN-2015-088</p>
+                    </div>
+                    <div class="pedigree-node female">
+                      <div class="gender-icon female"><i class="mdi mdi-gender-female"></i></div>
+                      <h4>祖母</h4>
+                      <p>SN-2016-112</p>
+                    </div>
+                    <div class="pedigree-node male">
+                      <div class="gender-icon male"><i class="mdi mdi-gender-male"></i></div>
+                      <h4>外祖父</h4>
+                      <p>SN-2014-056</p>
+                    </div>
+                    <div class="pedigree-node female">
+                      <div class="gender-icon female"><i class="mdi mdi-gender-female"></i></div>
+                      <h4>外祖母</h4>
+                      <p>SN-2015-078</p>
+                    </div>
+                  </div>
+                  <!-- 父代 -->
+                  <div class="pedigree-level">
+                    <div class="pedigree-node male">
+                      <div class="gender-icon male"><i class="mdi mdi-gender-male"></i></div>
+                      <h4>父亲：草原雄狮</h4>
+                      <p>SN-2018-023 · 特级</p>
+                    </div>
+                    <div class="pedigree-node female">
+                      <div class="gender-icon female"><i class="mdi mdi-gender-female"></i></div>
+                      <h4>母亲：锡盟之星</h4>
+                      <p>SN-2018-045 · 优良</p>
+                    </div>
+                  </div>
+                  <!-- 本牛 -->
+                  <div class="pedigree-level">
+                    <div class="pedigree-node current male">
+                      <div class="gender-icon male"><i class="mdi mdi-gender-male"></i></div>
+                      <h4>锡盟一号</h4>
+                      <p>SN-2024-001 · 特级</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 图片 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <div class="card-title"><i class="mdi mdi-image-multiple"></i> 图片信息</div>
+              </div>
+              <div class="card-body">
+                <div class="image-gallery">
+                  <div class="gallery-item"><i class="mdi mdi-cow"></i></div>
+                  <div class="gallery-item"><i class="mdi mdi-cow"></i></div>
+                  <div class="gallery-item"><i class="mdi mdi-cow"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧附加信息 -->
+          <div class="right-column">
+            <!-- 基因检测 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <div class="card-title"><i class="mdi mdi-dna"></i> 基因检测</div>
+              </div>
+              <div class="card-body">
+                <div class="gene-report">
+                  <div class="gene-item">
+                    <span class="gene-name">生长速度</span>
+                    <span class="gene-score">A+</span>
+                  </div>
+                  <div class="gene-item">
+                    <span class="gene-name">肉质评分</span>
+                    <span class="gene-score">A</span>
+                  </div>
+                  <div class="gene-item">
+                    <span class="gene-name">繁殖能力</span>
+                    <span class="gene-score">A+</span>
+                  </div>
+                  <div class="gene-item">
+                    <span class="gene-name">抗病能力</span>
+                    <span class="gene-score">A</span>
+                  </div>
+                  <div class="gene-item">
+                    <span class="gene-name">综合评级</span>
+                    <span class="gene-score" style="color: #ff8f00;">特级</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 繁殖记录 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <div class="card-title"><i class="mdi mdi-heart"></i> 繁殖记录</div>
+              </div>
+              <div class="card-body">
+                <ul class="record-list">
+                  <li class="record-item">
+                    <div class="record-icon"><i class="mdi mdi-heart"></i></div>
+                    <div class="record-content">
+                      <div class="record-title">配种：母牛 SN-2023-156</div>
+                      <div class="record-meta">2024-03-15 · 人工授精</div>
+                    </div>
+                    <span class="record-result success">成功</span>
+                  </li>
+                  <li class="record-item">
+                    <div class="record-icon"><i class="mdi mdi-heart"></i></div>
+                    <div class="record-content">
+                      <div class="record-title">配种：母牛 SN-2023-089</div>
+                      <div class="record-meta">2024-01-20 · 人工授精</div>
+                    </div>
+                    <span class="record-result success">成功</span>
+                  </li>
+                  <li class="record-item">
+                    <div class="record-icon"><i class="mdi mdi-heart"></i></div>
+                    <div class="record-content">
+                      <div class="record-title">配种：母牛 SN-2022-234</div>
+                      <div class="record-meta">2023-10-08 · 自然配种</div>
+                    </div>
+                    <span class="record-result success">成功</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 联系信息 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <div class="card-title"><i class="mdi mdi-account-box"></i> 联系信息</div>
+              </div>
+              <div class="card-body">
+                <div class="info-item" style="margin-bottom: 16px;">
+                  <span class="info-label">发布企业</span>
+                  <span class="info-value">内蒙古种牛繁育中心</span>
+                </div>
+                <div class="info-item" style="margin-bottom: 16px;">
+                  <span class="info-label">联系人</span>
+                  <span class="info-value">张主任</span>
+                </div>
+                <div class="info-item" style="margin-bottom: 16px;">
+                  <span class="info-label">联系电话</span>
+                  <span class="info-value">138****8888</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">地址</span>
+                  <span class="info-value">内蒙古锡林郭勒盟</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-default" onclick="location.href='list.html'"><i class="mdi mdi-arrow-left"></i> 返回列表</button>
+          <button class="btn btn-primary" onclick="location.href='create.html?id=SN-2024-001&mode=edit'"><i class="mdi mdi-pencil"></i> 编辑信息</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => title.parentElement.classList.toggle('expanded'));
+    });
+    console.log('种牛详情页加载完成');
+  </script>
+</body>
+</html>

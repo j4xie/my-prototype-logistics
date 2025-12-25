@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据仪表板 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gray);
+    }
+
+    /* 双列图表布局 */
+    .charts-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    /* 活动列表 */
+    .activity-section {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+
+    .activity-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .activity-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .activity-list {
+      list-style: none;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .activity-icon.new {
+      background: #e6f7e6;
+    }
+
+    .activity-icon.review {
+      background: #e6f7ff;
+    }
+
+    .activity-icon.alert {
+      background: #fff2e8;
+    }
+
+    .activity-icon.success {
+      background: #f6ffed;
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-title {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .activity-time {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* 快捷操作 */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .quick-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px;
+      background: #f8f9fa;
+      border: 1px solid #e8e8e8;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      color: #333;
+    }
+
+    .quick-action-btn:hover {
+      background: #e8f5e9;
+      border-color: var(--primary-color);
+    }
+
+    .quick-action-btn span:first-child {
+      font-size: 20px;
+    }
+
+    /* 实时数据指示器 */
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #52c41a;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #52c41a;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    /* 顶部欢迎区 */
+    .welcome-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .welcome-text h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .welcome-text p {
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .date-range {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .date-btn {
+      padding: 8px 16px;
+      border: 1px solid #e0e0e0;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .date-btn.active {
+      background: var(--primary-color);
+      color: #fff;
+      border-color: var(--primary-color);
+    }
+
+    .date-btn:hover:not(.active) {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    /* ==================== MDI 图标标准化 ==================== */
+    .mdi {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .sidebar-logo {
+      display: flex !important;
+      align-items: center;
+    }
+
+    .nav-item {
+      display: flex !important;
+      align-items: center;
+    }
+
+    .nav-item .icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .title-wrap {
+      display: flex !important;
+      align-items: center;
+    }
+
+    .title-wrap .icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .activity-icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .quick-action-btn {
+      display: flex !important;
+      align-items: center;
+    }
+
+    .welcome-bar h1 {
+      display: flex !important;
+      align-items: center;
+    }
+
+    .activity-card h3 {
+      display: flex !important;
+      align-items: center;
+    }
+
+    .chart-container h3 {
+      display: flex !important;
+      align-items: center;
+      gap: 8px;
+      /* Added gap for better spacing */
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <!-- 侧边栏 -->
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <!-- 数据概览 -->
+        <a href="overview.html" class="nav-item active">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+
+        <!-- 企业管理 -->
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+
+        <!-- 内容管理 -->
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../content/cattle-manage.html" class="nav-sub-item">活牛信息</a>
+            <a href="../content/review-queue.html" class="nav-sub-item">审核队列</a>
+          </div>
+        </div>
+
+        <!-- 系统设置 -->
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+          </div>
+        </div>
+
+        <!-- 返回首页 -->
+        <a href="../../index.html" class="nav-item"
+          style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="desktop-main">
+      <!-- 顶部栏 -->
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <div class="live-indicator">
+            <span class="live-dot"></span>
+            <span>实时数据</span>
+          </div>
+        </div>
+        <div class="desktop-header-right">
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- 内容区 -->
+      <div class="desktop-content">
+        <!-- 欢迎区 -->
+        <div class="welcome-bar">
+          <div class="welcome-text">
+            <h1>数据概览</h1>
+            <p>欢迎回来，这是今日平台运营数据</p>
+          </div>
+          <div class="date-range">
+            <button class="date-btn active">今日</button>
+            <button class="date-btn">本周</button>
+            <button class="date-btn">本月</button>
+            <button class="date-btn">自定义</button>
+          </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #e8f5e9;"><i class="mdi mdi-office-building"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">1,256</div>
+              <div class="stat-label">入驻企业</div>
+            </div>
+            <div class="stat-trend trend-up">+12%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fff3e0;"><i class="mdi mdi-cow"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">8,432</div>
+              <div class="stat-label">活牛发布</div>
+            </div>
+            <div class="stat-trend trend-up">+8%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #e3f2fd;"><i class="mdi mdi-cash"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">¥2.8亿</div>
+              <div class="stat-label">交易总额</div>
+            </div>
+            <div class="stat-trend trend-up">+15%</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fce4ec;"><i class="mdi mdi-phone"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">3,567</div>
+              <div class="stat-label">今日询价</div>
+            </div>
+            <div class="stat-trend trend-down">-3%</div>
+          </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="charts-row">
+          <div class="chart-container">
+            <h3><i class="mdi mdi-chart-line"></i> 交易趋势</h3>
+            <div class="chart-placeholder">
+              <div style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;"><i class="mdi mdi-chart-bar"></i></div>
+                <div>交易趋势图表区域</div>
+                <div style="font-size: 12px; color: #999; margin-top: 5px;">近30天交易数据</div>
+              </div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h3><i class="mdi mdi-map"></i> 区域分布</h3>
+            <div class="chart-placeholder">
+              <div style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;"><i class="mdi mdi-map"></i></div>
+                <div>区域分布图表区域</div>
+                <div style="font-size: 12px; color: #999; margin-top: 5px;">企业/交易地区分布</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 活动和快捷操作 -->
+        <div class="activity-section">
+          <!-- 最新动态 -->
+          <div class="activity-card">
+            <h3><i class="mdi mdi-bell"></i> 最新动态</h3>
+            <ul class="activity-list">
+              <li class="activity-item">
+                <div class="activity-icon new"><i class="mdi mdi-office-building"></i></div>
+                <div class="activity-content">
+                  <div class="activity-title"><strong>内蒙古草原牧业有限公司</strong> 提交了入驻申请</div>
+                  <div class="activity-time">3分钟前</div>
+                </div>
+              </li>
+              <li class="activity-item">
+                <div class="activity-icon review"><i class="mdi mdi-file-document-edit"></i></div>
+                <div class="activity-content">
+                  <div class="activity-title">有 <strong>12条</strong> 新发布信息待审核</div>
+                  <div class="activity-time">15分钟前</div>
+                </div>
+              </li>
+              <li class="activity-item">
+                <div class="activity-icon success"><i class="mdi mdi-check-circle"></i></div>
+                <div class="activity-content">
+                  <div class="activity-title"><strong>吉林省长白山养殖场</strong> 完成企业认证</div>
+                  <div class="activity-time">1小时前</div>
+                </div>
+              </li>
+              <li class="activity-item">
+                <div class="activity-icon alert"><i class="mdi mdi-alert"></i></div>
+                <div class="activity-content">
+                  <div class="activity-title">发现 <strong>3条</strong> 疑似违规信息</div>
+                  <div class="activity-time">2小时前</div>
+                </div>
+              </li>
+              <li class="activity-item">
+                <div class="activity-icon new"><i class="mdi mdi-cow"></i></div>
+                <div class="activity-content">
+                  <div class="activity-title"><strong>河北承德农牧</strong> 发布了50头西门塔尔牛</div>
+                  <div class="activity-time">3小时前</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 快捷操作 -->
+          <div class="activity-card">
+            <h3><i class="mdi mdi-lightning-bolt"></i> 快捷操作</h3>
+            <div class="quick-actions">
+              <a href="../enterprise/review.html" class="quick-action-btn">
+                <span><i class="mdi mdi-office-building"></i></span>
+                <span>审核企业</span>
+              </a>
+              <a href="../content/review-queue.html" class="quick-action-btn">
+                <span><i class="mdi mdi-file-document-edit"></i></span>
+                <span>审核内容</span>
+              </a>
+              <a href="../enterprise/list.html" class="quick-action-btn">
+                <span><i class="mdi mdi-clipboard-list"></i></span>
+                <span>企业列表</span>
+              </a>
+              <a href="../content/cattle-manage.html" class="quick-action-btn">
+                <span><i class="mdi mdi-cow"></i></span>
+                <span>活牛管理</span>
+              </a>
+              <a href="../settings/dictionary.html" class="quick-action-btn">
+                <span><i class="mdi mdi-cog"></i></span>
+                <span>字典配置</span>
+              </a>
+              <a href="#" class="quick-action-btn">
+                <span><i class="mdi mdi-chart-bar"></i></span>
+                <span>导出报表</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script>
+    // 侧边栏折叠功能
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => {
+        const group = title.parentElement;
+        group.classList.toggle('expanded');
+      });
+    });
+
+    // 日期按钮切换
+    document.querySelectorAll('.date-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // 模拟实时数据更新
+    function updateStats() {
+      const values = document.querySelectorAll('.stat-value');
+      values.forEach(v => {
+        const text = v.textContent;
+        if (text.includes('¥')) return;
+        const num = parseInt(text.replace(/,/g, ''));
+        if (!isNaN(num)) {
+          const change = Math.floor(Math.random() * 10) - 3;
+          v.textContent = (num + change).toLocaleString();
+        }
+      });
+    }
+
+    // 每30秒更新一次
+    setInterval(updateStats, 30000);
+
+    console.log('数据仪表板加载完成');
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,125 @@
+<!--
+  AI智能问答页面
+-->
+<view class="container">
+  <!-- 欢迎区域 -->
+  <view class="welcome-section" wx:if="{{messages.length === 0}}">
+    <view class="welcome-icon">
+      <text class="cuIcon-creativefill"></text>
+    </view>
+    <text class="welcome-title">AI智能助手</text>
+    <text class="welcome-subtitle">我可以帮您解答关于产品溯源、质检、订购等问题</text>
+
+    <!-- 快捷问题 -->
+    <view class="quick-questions">
+      <view class="quick-question-btn" wx:for="{{quickQuestions}}" wx:key="index" bindtap="askQuickQuestion" data-question="{{item}}">
+        <text class="cuIcon-message"></text>
+        <text>{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 聊天消息区域 -->
+  <scroll-view
+    class="chat-scroll"
+    scroll-y
+    scroll-into-view="{{scrollToMessage}}"
+    wx:if="{{messages.length > 0}}"
+  >
+    <view class="messages-list">
+      <view
+        class="message {{item.sender === 'user' ? 'user' : 'ai'}}"
+        wx:for="{{messages}}"
+        wx:key="id"
+        id="msg-{{item.id}}"
+      >
+        <!-- 头像 -->
+        <view class="message-avatar">
+          <text wx:if="{{item.sender === 'ai'}}" class="cuIcon-creativefill"></text>
+          <text wx:else class="cuIcon-people"></text>
+        </view>
+
+        <!-- 消息内容 -->
+        <view class="message-content">
+          <view class="message-bubble">
+            <text>{{item.text}}</text>
+          </view>
+
+          <!-- 商品推荐卡片列表 -->
+          <scroll-view class="product-cards-scroll" scroll-x wx:if="{{item.sender === 'ai' && item.products && item.products.length > 0}}">
+            <view class="product-cards">
+              <view class="product-card" wx:for="{{item.products}}" wx:for-item="product" wx:key="id" bindtap="goToProduct" data-id="{{product.id}}">
+                <image class="product-image" src="{{product.picUrl || product.coverImg}}" mode="aspectFill"></image>
+                <view class="product-info">
+                  <text class="product-name">{{product.name}}</text>
+                  <view class="product-price">
+                    <text class="price-symbol">¥</text>
+                    <text class="price-value">{{product.salesPrice || product.price}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </scroll-view>
+
+          <!-- AI来源标签 -->
+          <view class="message-sources" wx:if="{{item.sender === 'ai' && item.sources.length > 0}}">
+            <view class="source-tag" wx:for="{{item.sources}}" wx:for-item="source" wx:key="*this">
+              <text class="cuIcon-read"></text>
+              <text>{{source}}</text>
+            </view>
+          </view>
+
+          <text class="message-time">{{item.timeStr}}</text>
+        </view>
+      </view>
+
+      <!-- 输入中指示器 -->
+      <view class="message ai" wx:if="{{isTyping}}">
+        <view class="message-avatar">
+          <text class="cuIcon-creativefill"></text>
+        </view>
+        <view class="message-content">
+          <view class="typing-indicator">
+            <view class="typing-dot"></view>
+            <view class="typing-dot"></view>
+            <view class="typing-dot"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部占位 -->
+    <view style="height: 140rpx;" id="msg-bottom"></view>
+  </scroll-view>
+
+  <!-- 输入区域 -->
+  <view class="input-area">
+    <view class="input-wrapper">
+      <input
+        class="input-field"
+        type="text"
+        placeholder="输入您的问题..."
+        value="{{inputText}}"
+        bindinput="onInputChange"
+        bindconfirm="sendMessage"
+        confirm-type="send"
+        disabled="{{isTyping}}"
+      />
+      <button class="send-btn {{!inputText ? 'disabled' : ''}}" bindtap="sendMessage" disabled="{{!inputText || isTyping}}">
+        <text class="cuIcon-send"></text>
+      </button>
+    </view>
+
+    <!-- 功能按钮 -->
+    <view class="action-bar">
+      <view class="action-btn" bindtap="goHistory">
+        <text class="cuIcon-time"></text>
+        <text>历史记录</text>
+      </view>
+      <view class="action-btn" bindtap="clearChat">
+        <text class="cuIcon-delete"></text>
+        <text>清空对话</text>
+      </view>
+    </view>
+  </view>
+</view>

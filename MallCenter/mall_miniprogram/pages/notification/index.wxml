@@ -1,0 +1,91 @@
+<!--
+  消息通知中心页面
+-->
+<view class="container">
+  <!-- 顶部操作栏 -->
+  <view class="header-bar">
+    <view class="unread-info" wx:if="{{unreadCount > 0}}">
+      <text class="unread-count">{{unreadCount}}</text>
+      <text class="unread-text">条未读</text>
+    </view>
+    <view class="unread-info" wx:else>
+      <text class="unread-text">暂无未读消息</text>
+    </view>
+    <view class="mark-all-btn" bindtap="markAllAsRead" wx:if="{{unreadCount > 0}}">
+      <text class="cuIcon-check"></text>
+      <text>全部已读</text>
+    </view>
+  </view>
+
+  <!-- 分类筛选 -->
+  <scroll-view class="category-scroll" scroll-x>
+    <view class="category-list">
+      <view
+        class="category-item {{currentCategory === item.key ? 'active' : ''}}"
+        wx:for="{{categories}}"
+        wx:key="key"
+        bindtap="switchCategory"
+        data-category="{{item.key}}"
+      >
+        {{item.name}}
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 通知列表 -->
+  <view class="notification-list" wx:if="{{notifications.length > 0}}">
+    <view
+      class="notification-item {{item.isUnread ? 'unread' : ''}}"
+      wx:for="{{notifications}}"
+      wx:key="id"
+      bindtap="tapNotification"
+      data-item="{{item}}"
+    >
+      <!-- 未读标记 -->
+      <view class="unread-dot" wx:if="{{item.isUnread}}"></view>
+
+      <!-- 图标 -->
+      <view class="notification-icon {{item.category}}">
+        <text class="cuIcon-{{item.category === 'product_found' ? 'cart' : item.category === 'promotion' ? 'gift' : 'notification'}}"></text>
+      </view>
+
+      <!-- 内容 -->
+      <view class="notification-content">
+        <view class="notification-header">
+          <text class="notification-category">{{item.categoryName}}</text>
+          <text class="notification-time">{{item.timeStr}}</text>
+        </view>
+        <text class="notification-title">{{item.title}}</text>
+        <text class="notification-desc" wx:if="{{item.content}}">{{item.content}}</text>
+
+        <!-- 关联商品预览 -->
+        <view class="related-products" wx:if="{{item.category === 'product_found' && item.relatedKeyword}}">
+          <view class="product-tag">
+            <text class="cuIcon-search"></text>
+            <text>{{item.relatedKeyword}}</text>
+          </view>
+          <text class="cuIcon-right"></text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && notifications.length === 0}}">
+    <view class="empty-icon">
+      <text class="cuIcon-notification" style="font-size: 120rpx; color: #ddd;"></text>
+    </view>
+    <text class="empty-title">暂无消息</text>
+    <text class="empty-desc">您的通知消息将会显示在这里</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="cu-load loading"></view>
+  </view>
+
+  <!-- 加载更多 -->
+  <view class="load-more" wx:if="{{notifications.length > 0}}">
+    <view class="cu-load {{loadingMore ? 'loading' : noMore ? 'over' : ''}}"></view>
+  </view>
+</view>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.GoodsPriceTierMapper">
+    <resultMap id="tierMap" type="com.joolun.mall.entity.GoodsPriceTier">
+        <id property="id" column="id"/>
+        <result property="spuId" column="spu_id"/>
+        <result property="minQuantity" column="min_quantity"/>
+        <result property="maxQuantity" column="max_quantity"/>
+        <result property="price" column="price"/>
+        <result property="discountRate" column="discount_rate"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="tierSql">
+        gpt.`id`,
+        gpt.`spu_id`,
+        gpt.`min_quantity`,
+        gpt.`max_quantity`,
+        gpt.`price`,
+        gpt.`discount_rate`,
+        gpt.`sort_order`,
+        gpt.`create_time`,
+        gpt.`update_time`
+    </sql>
+
+    <select id="selectBySpuId" resultMap="tierMap">
+        SELECT
+        <include refid="tierSql"/>
+        FROM goods_price_tier gpt
+        WHERE gpt.`spu_id` = #{spuId}
+        ORDER BY gpt.`min_quantity` ASC
+    </select>
+
+    <delete id="deleteBySpuId">
+        DELETE FROM goods_price_tier WHERE spu_id = #{spuId}
+    </delete>
+</mapper>

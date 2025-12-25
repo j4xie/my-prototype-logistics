@@ -1,0 +1,357 @@
+/* 产品分析报告页面样式 */
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 140rpx;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}
+
+.loading-spinner {
+  width: 80rpx;
+  height: 80rpx;
+  border: 6rpx solid #f3f3f3;
+  border-top: 6rpx solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 30rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 产品头部 */
+.product-header {
+  background: #fff;
+  padding: 30rpx;
+  display: flex;
+  gap: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.product-image {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+}
+
+.product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.product-name {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.product-category {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 16rpx;
+}
+
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.rating-stars {
+  color: #ffc107;
+  font-size: 28rpx;
+}
+
+.rating-score {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.rating-count {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* 核心指标网格 */
+.score-grid {
+  background: #fff;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+}
+
+.score-item {
+  text-align: center;
+  padding: 24rpx;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+}
+
+.score-value {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 8rpx;
+}
+
+.score-label {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* 分析区块 */
+.analysis-section {
+  background: #fff;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.section-icon {
+  font-size: 36rpx;
+}
+
+/* 进度条 */
+.progress-item {
+  margin-bottom: 28rpx;
+}
+
+.progress-item:last-child {
+  margin-bottom: 0;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.progress-label {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.progress-value {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.progress-bar {
+  height: 16rpx;
+  background: #f0f0f0;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8rpx;
+  transition: width 0.5s ease;
+}
+
+/* 对比表格 */
+.comparison-table {
+  border-radius: 12rpx;
+  overflow: hidden;
+  border: 1rpx solid #eee;
+}
+
+.table-header {
+  display: flex;
+  background: #f8f9fa;
+  padding: 20rpx;
+}
+
+.table-row {
+  display: flex;
+  padding: 20rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell {
+  flex: 1;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.table-header .table-cell {
+  font-weight: 600;
+  color: #333;
+}
+
+.table-cell.better {
+  color: #52c41a;
+  font-weight: 600;
+}
+
+.table-cell.worse {
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+/* 用户评价 */
+.review-card {
+  background: #f8f9fa;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.review-card:last-child {
+  margin-bottom: 0;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.review-user {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.review-date {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.review-stars {
+  display: block;
+  color: #ffc107;
+  font-size: 24rpx;
+  margin-bottom: 12rpx;
+}
+
+.review-content {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* 标签列表 */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.tag {
+  padding: 12rpx 24rpx;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+}
+
+/* AI建议 */
+.ai-suggestion {
+  background: #f8f9fa;
+  padding: 24rpx;
+  border-radius: 16rpx;
+}
+
+.suggestion-block {
+  margin-bottom: 24rpx;
+}
+
+.suggestion-block:last-child {
+  margin-bottom: 0;
+}
+
+.suggestion-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.suggestion-item {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.8;
+  padding-left: 8rpx;
+}
+
+/* AI声明 */
+.ai-disclaimer {
+  padding: 30rpx;
+  text-align: center;
+}
+
+.ai-disclaimer text {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* 底部操作栏 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 20rpx 40rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  width: 100%;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-radius: 48rpx;
+  font-size: 30rpx;
+  border: none;
+}
+
+.share-btn::after {
+  border: none;
+}
