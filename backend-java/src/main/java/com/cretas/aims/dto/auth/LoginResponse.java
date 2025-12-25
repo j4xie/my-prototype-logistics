@@ -1,6 +1,7 @@
 package com.cretas.aims.dto.auth;
 
 import com.cretas.aims.dto.user.UserDTO;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -69,13 +70,28 @@ public class LoginResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ModulePermissions {
+        @JsonProperty("farming_access")
         private Boolean farmingAccess;
+
+        @JsonProperty("processing_access")
         private Boolean processingAccess;
+
+        @JsonProperty("logistics_access")
         private Boolean logisticsAccess;
+
+        @JsonProperty("trace_access")
         private Boolean traceAccess;
+
+        @JsonProperty("admin_access")
         private Boolean adminAccess;
+
+        @JsonProperty("platform_access")
         private Boolean platformAccess;
+
+        @JsonProperty("debug_access")
         private Boolean debugAccess;
+
+        @JsonProperty("system_config")
         private Boolean systemConfig;
     }
 }

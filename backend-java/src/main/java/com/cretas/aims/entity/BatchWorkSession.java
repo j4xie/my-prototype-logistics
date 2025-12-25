@@ -27,11 +27,11 @@ public class BatchWorkSession extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;  // 统一为 Long
     @Column(name = "batch_id", nullable = false)
-    private Long batchId;  // 统一为 Long，与 ProcessingBatch.id 类型一致
+    private Long batchId;  // 统一为 Long，与 ProductionBatch.id 类型一致
     @Column(name = "work_session_id", nullable = false)
-    private Integer workSessionId;
+    private Long workSessionId;
     @Column(name = "employee_id", nullable = false)
-    private Integer employeeId;
+    private Long employeeId;
     @Column(name = "work_minutes", nullable = false)
     private Integer workMinutes;
     @Column(name = "labor_cost", nullable = false, precision = 10, scale = 2)
@@ -39,7 +39,7 @@ public class BatchWorkSession extends BaseEntity {
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "batch_id", referencedColumnName = "id", insertable = false, updatable = false)
-    private ProcessingBatch batch;
+    private ProductionBatch batch;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "work_session_id", referencedColumnName = "id", insertable = false, updatable = false)
     private EmployeeWorkSession workSession;

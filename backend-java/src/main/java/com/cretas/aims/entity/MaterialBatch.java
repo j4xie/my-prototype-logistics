@@ -43,6 +43,10 @@ public class MaterialBatch extends BaseEntity {
     private String supplierId;  // 修改为String类型以匹配Supplier的UUID
     @Column(name = "inbound_date", nullable = false)
     private LocalDate receiptDate;  // 映射到inbound_date (入库日期)
+
+    @Column(name = "production_date")
+    private LocalDate productionDate;  // 生产日期
+
     @Column(name = "purchase_date")
     private LocalDate purchaseDate;
     @Column(name = "expire_date")
@@ -78,7 +82,7 @@ public class MaterialBatch extends BaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
     @Column(name = "created_by", nullable = false)
-    private Integer createdBy;
+    private Long createdBy;
     @Column(name = "last_used_at")
     private LocalDateTime lastUsedAt;
     // 关联关系

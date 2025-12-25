@@ -2,6 +2,7 @@ package com.cretas.aims.repository;
 
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
+import com.cretas.aims.entity.enums.ProductionPlanType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -39,6 +40,11 @@ public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, 
      * 根据状态查找生产计划
      */
     List<ProductionPlan> findByFactoryIdAndStatus(String factoryId, ProductionPlanStatus status);
+
+    /**
+     * 根据状态查找生产计划（分页）
+     */
+    Page<ProductionPlan> findByFactoryIdAndStatus(String factoryId, ProductionPlanStatus status, Pageable pageable);
 
     /**
      * 查找指定日期范围内的生产计划
@@ -99,6 +105,24 @@ public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, 
      * 统计工厂的生产计划数量
      */
     long countByFactoryId(String factoryId);
+
+    /**
+     * 查找待匹配的未来计划
+     * 条件：PENDING状态 + FUTURE类型 + 指定产品类型 + 创建时间早于批次入库时间 + 未完全匹配
+     */
+    @Query("SELECT p FROM ProductionPlan p WHERE p.factoryId = :factoryId " +
+           "AND p.planType = :planType " +
+           "AND p.status = :status " +
+           "AND p.productTypeId IN :productTypeIds " +
+           "AND p.createdAt < :batchCreatedAt " +
+           "AND (p.isFullyMatched = false OR p.isFullyMatched IS NULL) " +
+           "ORDER BY p.createdAt ASC")
+    List<ProductionPlan> findPendingFuturePlansForMatching(
+            @Param("factoryId") String factoryId,
+            @Param("planType") ProductionPlanType planType,
+            @Param("status") ProductionPlanStatus status,
+            @Param("productTypeIds") List<String> productTypeIds,
+            @Param("batchCreatedAt") LocalDateTime batchCreatedAt);
 
     /**
      * 统计工厂指定状态的生产计划数量

@@ -65,7 +65,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserDTO updateUser(String factoryId, Integer userId, CreateUserRequest request) {
+    public UserDTO updateUser(String factoryId, Long userId, CreateUserRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
 
@@ -90,7 +90,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUser(String factoryId, Integer userId) {
+    public void deleteUser(String factoryId, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
 
@@ -111,7 +111,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDTO getUserById(String factoryId, Integer userId) {
+    public UserDTO getUserById(String factoryId, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
 
@@ -162,7 +162,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void activateUser(String factoryId, Integer userId) {
+    public void activateUser(String factoryId, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
 
@@ -179,7 +179,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deactivateUser(String factoryId, Integer userId) {
+    public void deactivateUser(String factoryId, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
 
@@ -203,7 +203,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void updateUserRole(String factoryId, Integer userId, FactoryUserRole newRole) {
+    public void updateUserRole(String factoryId, Long userId, FactoryUserRole newRole) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
 
@@ -293,7 +293,7 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
 
         // 生成Excel文件
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] excelBytes = excelUtil.exportToExcel(
                 exportDTOs,
                 com.cretas.aims.dto.user.UserExportDTO.class,
@@ -309,7 +309,7 @@ public class UserServiceImpl implements UserService {
         log.info("生成用户导入模板");
 
         // 使用ExcelUtil生成空模板
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] templateBytes = excelUtil.generateTemplate(
                 com.cretas.aims.dto.user.UserExportDTO.class,
                 "用户导入模板"
@@ -327,7 +327,7 @@ public class UserServiceImpl implements UserService {
         log.info("开始从Excel批量导入用户: factoryId={}", factoryId);
 
         // 1. 解析Excel文件
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         List<com.cretas.aims.dto.user.UserExportDTO> excelData;
         try {
             excelData = excelUtil.importFromExcel(inputStream,

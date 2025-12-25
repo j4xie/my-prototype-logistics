@@ -44,7 +44,7 @@ public interface SystemService {
      /**
      * 记录审计日志
       */
-    void createAuditLog(String factoryId, String module, String action, String message, Integer userId);
+    void createAuditLog(String factoryId, String module, String action, String message, Long userId);
      /**
      * 记录错误日志
       */

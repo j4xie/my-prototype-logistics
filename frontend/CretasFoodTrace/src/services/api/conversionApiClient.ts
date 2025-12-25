@@ -1,9 +1,10 @@
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
+import { getErrorMsg } from '../../utils/errorHandler';
 
 /**
  * 转换率管理API客户端
- * 总计15个API - 路径：/api/mobile/{factoryId}/conversions/*
+ * 总计16个API - 路径：/api/mobile/{factoryId}/conversions/*
  */
 
 export interface ConversionRate {
@@ -17,6 +18,20 @@ export interface ConversionRate {
   notes?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+/**
+ * 建议的转换率配置（基于历史数据计算）
+ */
+export interface SuggestedConversion {
+  hasData: boolean;                    // 是否有历史数据
+  sampleCount: number;                 // 样本数量（已完成批次数）
+  suggestedRate?: number;              // 建议转换率
+  suggestedWastageRate?: number;       // 建议损耗率
+  totalMaterialConsumed?: number;      // 总消耗原料量
+  totalProductOutput?: number;         // 总产出量
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';  // 置信度
+  message: string;                     // 提示信息
 }
 
 class ConversionApiClient {
@@ -109,7 +124,19 @@ class ConversionApiClient {
     return await apiClient.get(`${this.getPath(factoryId)}/statistics`);
   }
 
-  // 14. 导出转换率配置
+  // 14. 基于历史数据获取建议的转换率
+  async getSuggestedConversion(params: {
+    materialTypeId: string;
+    productTypeId: string;
+    factoryId?: string;
+  }): Promise<{ success: boolean; data?: SuggestedConversion; message?: string }> {
+    const { factoryId, materialTypeId, productTypeId } = params;
+    return await apiClient.get(`${this.getPath(factoryId)}/suggest`, {
+      params: { materialTypeId, productTypeId }
+    });
+  }
+
+  // 15. 导出转换率配置
   async exportConversionRates(params?: { factoryId?: string; [key: string]: any }) {
     const { factoryId, ...query } = params || {};
     return await apiClient.get(`${this.getPath(factoryId)}/export`, {
@@ -141,8 +168,8 @@ class ConversionApiClient {
     });
 
     // 转换返回格式以匹配前端期望
-    if (result.success && result.data) {
-      const materialReq = Array.isArray(result.data) ? result.data[0] : result.data;
+    if ((result as any).success && (result as any).data) {
+      const materialReq = Array.isArray((result as any).data) ? (result as any).data[0] : (result as any).data;
       return {
         success: true,
         data: {

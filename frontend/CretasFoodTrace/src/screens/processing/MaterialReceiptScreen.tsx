@@ -15,7 +15,7 @@ import { Picker } from '@react-native-picker/picker';
 import { materialBatchApiClient } from '../../services/api/materialBatchApiClient';
 import { supplierApiClient } from '../../services/api/supplierApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建MaterialReceipt专用logger
@@ -86,9 +86,10 @@ export default function MaterialReceiptScreen() {
       const shelfLifeDays = parseInt(formData.shelfLife);
       if (!isNaN(shelfLifeDays)) {
         const expiryDate = new Date(today.getTime() + shelfLifeDays * 24 * 60 * 60 * 1000);
+        const expiryDateStr = expiryDate.toISOString().split('T')[0] as string;
         setFormData(prev => ({
           ...prev,
-          expiryDate: expiryDate.toISOString().split('T')[0]
+          expiryDate: expiryDateStr
         }));
       }
     }
@@ -143,10 +144,16 @@ export default function MaterialReceiptScreen() {
     try {
       setLoading(true);
 
+      // 自动生成批次号: MB-{工厂ID}-{时间戳}
+      const factoryId = user?.factoryId || 'F001';
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const batchNumber = `MB-${factoryId}-${timestamp}`;
+
       const batchData = {
+        batchNumber, // 必填字段
         supplierId: formData.supplierId,
         materialTypeId: formData.materialTypeId,
-        inboundQuantity: parseFloat(formData.quantity),
+        receiptQuantity: parseFloat(formData.quantity), // 后端字段名
         unitPrice: parseFloat(formData.unitPrice),
         totalCost: parseFloat(formData.totalAmount),
         storageType: formData.storageType,
@@ -161,7 +168,7 @@ export default function MaterialReceiptScreen() {
         notes: formData.notes || undefined,
       };
 
-      await materialBatchApiClient.createBatch(batchData, user?.factoryId);
+      await materialBatchApiClient.createBatch(batchData, factoryId);
 
       materialReceiptLogger.info('原材料入库成功', {
         factoryId: user?.factoryId,
@@ -203,7 +210,7 @@ export default function MaterialReceiptScreen() {
         supplierId: formData.supplierId,
         materialType: formData.materialTypeId,
       });
-      Alert.alert('错误', error.response?.data?.message || '入库操作失败');
+      Alert.alert('错误', getErrorMsg(error) || '入库操作失败');
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -31,11 +32,11 @@ public class EmployeeWorkSession extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
-    private Integer id;
+    private Long id;
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
     @Column(name = "user_id", nullable = false)
-    private Integer userId;
+    private Long userId;
     @Column(name = "work_type_id", nullable = false)
     private Integer workTypeId;
     @Column(name = "start_time", nullable = false)
@@ -54,16 +55,23 @@ public class EmployeeWorkSession extends BaseEntity {
     private BigDecimal laborCost;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
-    // 关联关系
+    // 关联关系 (使用 @JsonIgnore 避免循环引用)
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id", insertable = false, updatable = false)
     private User user;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "work_type_id", referencedColumnName = "id", insertable = false, updatable = false)
     private WorkType workType;
+
+    @JsonIgnore
     @OneToMany(mappedBy = "workSession", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BatchWorkSession> batchWorkSessions = new ArrayList<>();
 }

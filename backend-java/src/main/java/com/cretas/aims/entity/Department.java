@@ -42,7 +42,7 @@ public class Department extends BaseEntity {
     private String description;
 
     @Column(name = "manager_user_id")
-    private Integer managerUserId;
+    private Long managerUserId;
 
     @Column(name = "parent_department_id")
     private Integer parentDepartmentId;

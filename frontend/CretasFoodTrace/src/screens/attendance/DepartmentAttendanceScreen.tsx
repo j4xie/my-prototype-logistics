@@ -16,7 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
 import { getFactoryId } from '../../types/auth';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建DepartmentAttendance专用logger
@@ -66,7 +66,6 @@ export default function DepartmentAttendanceScreen() {
     { value: 'PROCESSING', label: '加工部', code: 'PROCESSING' },
     { value: 'QUALITY', label: '质检部', code: 'QUALITY' },
     { value: 'LOGISTICS', label: '物流部', code: 'LOGISTICS' },
-    { value: 'FARMING', label: '养殖部', code: 'FARMING' },
     { value: 'MANAGEMENT', label: '管理部门', code: 'MANAGEMENT' },
   ];
 
@@ -100,7 +99,7 @@ export default function DepartmentAttendanceScreen() {
         setAttendanceData(response.data);
 
         // 提取员工记录列表
-        const records = response.data.records || response.data.employees || [];
+        const records = response.data.records || (response.data as any).employees || [];
         setAttendanceRecords(Array.isArray(records) ? records : []);
 
         deptAttendanceLogger.info('部门考勤数据加载成功', {
@@ -125,8 +124,7 @@ export default function DepartmentAttendanceScreen() {
         date: formatDate(selectedDate),
         factoryId: getFactoryId(user),
       });
-      const errorMessage =
-        error.response?.data?.message || error.message || '加载部门考勤失败，请稍后重试';
+      const errorMessage = getErrorMsg(error) || '加载部门考勤失败，请稍后重试';
       Alert.alert('加载失败', errorMessage);
       setAttendanceData(null);
       setAttendanceRecords([]);
@@ -168,16 +166,16 @@ export default function DepartmentAttendanceScreen() {
       on_leave: { label: '请假', color: '#2196F3', bgColor: '#E3F2FD' },
     };
 
-    const config = statusMap[status] || statusMap['absent'];
+    const config = statusMap[status] ?? statusMap['absent'];
 
     return (
       <Chip
         mode="flat"
         compact
-        style={{ backgroundColor: config.bgColor }}
-        textStyle={{ color: config.color, fontSize: 12 }}
+        style={{ backgroundColor: config?.bgColor ?? '#FFF3E0' }}
+        textStyle={{ color: config?.color ?? '#FF9800', fontSize: 12 }}
       >
-        {config.label}
+        {config?.label ?? '缺勤'}
       </Chip>
     );
   };

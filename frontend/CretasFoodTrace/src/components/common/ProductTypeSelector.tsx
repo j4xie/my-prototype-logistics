@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity } from 'react-native';
-import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator } from 'react-native-paper';
+import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, Chip } from 'react-native-paper';
 import { productTypeApiClient } from '../../services/api/productTypeApiClient';
+import { conversionApiClient } from '../../services/api/conversionApiClient';
 
 interface ProductType {
   id: string;
@@ -9,6 +10,7 @@ interface ProductType {
   code: string;
   category?: string;
   description?: string;
+  hasConversionRate?: boolean;  // 是否已配置转换率
 }
 
 interface ProductTypeSelectorProps {
@@ -45,8 +47,26 @@ export const ProductTypeSelector: React.FC<ProductTypeSelectorProps> = ({
     try {
       setLoading(true);
       const result = await productTypeApiClient.getProductTypes({ isActive: true, limit: 100 });
-      console.log('✅ Product types loaded:', result.data.productTypes.length);
-      setProductTypes(result.data.productTypes);
+      const productTypesList: ProductType[] = Array.isArray(result.data) ? result.data : (result.data as any)?.productTypes || [];
+      console.log('✅ Product types loaded:', productTypesList.length);
+
+      // 批量检查每个产品的转换率配置状态
+      const productTypesWithConversionStatus = await Promise.all(
+        productTypesList.map(async (product) => {
+          try {
+            const conversionRes = await conversionApiClient.getConversionsByProduct(product.id);
+            const hasConversion = (conversionRes as any)?.success &&
+              Array.isArray((conversionRes as any)?.data) &&
+              (conversionRes as any)?.data.length > 0;
+            return { ...product, hasConversionRate: hasConversion };
+          } catch {
+            // 如果查询失败，假设未配置
+            return { ...product, hasConversionRate: false };
+          }
+        })
+      );
+
+      setProductTypes(productTypesWithConversionStatus);
     } catch (error) {
       console.error('❌ Failed to fetch product types:', error);
       setProductTypes([]);
@@ -126,7 +146,25 @@ export const ProductTypeSelector: React.FC<ProductTypeSelectorProps> = ({
                       title={item.name}
                       description={`SKU: ${item.code}${item.category ? ' • ' + item.category : ''}`}
                       onPress={() => handleSelect(item)}
-                      right={props => value === item.name ? <List.Icon {...props} icon="check" color="#2196F3" /> : null}
+                      right={props => (
+                        <View style={styles.rightContainer}>
+                          {/* 转换率配置状态指示器 */}
+                          <Chip
+                            mode="flat"
+                            compact
+                            icon={item.hasConversionRate ? 'check-circle' : 'alert-circle'}
+                            style={[
+                              styles.conversionChip,
+                              item.hasConversionRate ? styles.configuredChip : styles.notConfiguredChip
+                            ]}
+                            textStyle={styles.chipText}
+                          >
+                            {item.hasConversionRate ? '已配置' : '未配置'}
+                          </Chip>
+                          {/* 选中图标 */}
+                          {value === item.name && <List.Icon {...props} icon="check" color="#2196F3" />}
+                        </View>
+                      )}
                     />
                     <Divider />
                   </>
@@ -166,6 +204,26 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 12,
     marginBottom: 8,
+  },
+  rightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  conversionChip: {
+    height: 26,
+    minWidth: 70,
+    flexShrink: 0,
+  },
+  configuredChip: {
+    backgroundColor: '#E8F5E9',
+  },
+  notConfiguredChip: {
+    backgroundColor: '#FFF3E0',
+  },
+  chipText: {
+    fontSize: 11,
   },
   modalContainer: {
     flex: 1,

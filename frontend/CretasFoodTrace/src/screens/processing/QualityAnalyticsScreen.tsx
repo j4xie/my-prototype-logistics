@@ -17,7 +17,7 @@ import {
   type QualityTrendPoint,
 } from '../../services/api/qualityInspectionApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建QualityAnalytics专用logger
@@ -67,24 +67,24 @@ export default function QualityAnalyticsScreen() {
     }
 
     return {
-      startDate: startDate.toISOString().split('T')[0], // YYYY-MM-DD
-      endDate: endDate.toISOString().split('T')[0],
+      startDate: startDate.toISOString().split('T')[0] as string, // YYYY-MM-DD
+      endDate: endDate.toISOString().split('T')[0] as string,
     };
   };
 
   /**
    * 计算趋势天数
    */
-  const getTrendDays = () => {
+  const getTrendDays = (): string => {
     switch (timeRange) {
       case 'week':
-        return 7;
+        return '7';
       case 'month':
-        return 30;
+        return '30';
       case 'quarter':
-        return 90;
+        return '90';
       default:
-        return 30;
+        return '30';
     }
   };
 
@@ -136,7 +136,7 @@ export default function QualityAnalyticsScreen() {
         factoryId,
         timeRange,
       });
-      const errorMessage = error.response?.data?.message || error.message || '无法加载质检统计，请稍后重试';
+      const errorMessage = getErrorMsg(error) || '无法加载质检统计，请稍后重试';
       Alert.alert('加载失败', errorMessage);
 
       // Clear data on error
@@ -175,7 +175,7 @@ export default function QualityAnalyticsScreen() {
     const labels = sortedTrends.map((trend, index) => {
       const date = new Date(trend.date);
       if (timeRange === 'week') {
-        return date.toLocaleDateString('zh-CN', { month: 'M', day: 'D' });
+        return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
       } else if (timeRange === 'month') {
         const weekNum = Math.floor(index / 7) + 1;
         return `第${weekNum}周`;

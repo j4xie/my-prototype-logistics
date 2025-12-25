@@ -52,15 +52,16 @@ export default function ProfileScreen() {
 
       if (response.success && response.data) {
         const data = response.data;
-        setStats({
+        const newStats = {
           totalFactories: data.totalFactories || 0,
           totalUsers: data.totalUsers || 0,
           totalBatches: data.totalBatches || 0,
-          completedBatches: data.completedBatches || 0,
-          aiUsageThisWeek: data.totalAIRequests || data.totalAIQuotaUsed || 0,
-          todayProduction: data.totalProductionToday || 0,
-        });
-        profileLogger.info('个人中心统计数据加载成功', { stats });
+          completedBatches: 0, // 后端暂未返回此字段
+          aiUsageThisWeek: data.totalAIRequests || 0,
+          todayProduction: 0, // 后端暂未返回此字段
+        };
+        setStats(newStats);
+        profileLogger.info('个人中心统计数据加载成功', { stats: newStats });
       }
     } catch (error) {
       profileLogger.error('加载统计数据失败', error as Error);
@@ -111,7 +112,7 @@ export default function ProfileScreen() {
   };
 
   const displayName = user?.fullName || user?.username || '未知用户';
-  const roleCode = user?.userType === 'platform' ? user?.platformUser?.role : (user?.factoryUser?.roleCode || user?.roleCode);
+  const roleCode = user?.userType === 'platform' ? user?.platformUser?.role : user?.factoryUser?.role;
 
   const getRoleName = (role: string | undefined) => {
     const roleMap: Record<string, string> = {
@@ -293,7 +294,13 @@ export default function ProfileScreen() {
             <Divider style={styles.divider} />
 
             {/* 意见反馈 */}
-            <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('Feedback')}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => {
+                profileLogger.info('打开意见反馈');
+                Alert.alert('意见反馈', '请通过邮件或电话联系我们提交反馈');
+              }}
+            >
                 <View style={styles.settingLeft}>
                     <List.Icon icon="message-alert-outline" color="#00BCD4" />
                     <Text style={styles.settingText}>意见反馈</Text>

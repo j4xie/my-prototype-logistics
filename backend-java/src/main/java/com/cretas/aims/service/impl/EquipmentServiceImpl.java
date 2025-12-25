@@ -4,9 +4,13 @@ import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.equipment.CreateEquipmentRequest;
 import com.cretas.aims.dto.equipment.EquipmentDTO;
+import com.cretas.aims.entity.BatchEquipmentUsage;
+import com.cretas.aims.entity.EquipmentMaintenance;
 import com.cretas.aims.entity.FactoryEquipment;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.repository.BatchEquipmentUsageRepository;
+import com.cretas.aims.repository.EquipmentMaintenanceRepository;
 import com.cretas.aims.repository.EquipmentRepository;
 import com.cretas.aims.service.EquipmentService;
 import lombok.RequiredArgsConstructor;
@@ -38,15 +42,23 @@ public class EquipmentServiceImpl implements EquipmentService {
 
     private static final Logger log = LoggerFactory.getLogger(EquipmentServiceImpl.class);
 
+    // 设备状态常量
+    private static final String STATUS_ACTIVE = "active";
+    private static final String STATUS_INACTIVE = "inactive";
+    private static final String STATUS_MAINTENANCE = "maintenance";
+    private static final String STATUS_SCRAPPED = "scrapped";
+
     private final EquipmentRepository equipmentRepository;
+    private final EquipmentMaintenanceRepository maintenanceRepository;
+    private final BatchEquipmentUsageRepository usageRepository;
 
     @Override
     @Transactional
-    public EquipmentDTO createEquipment(String factoryId, CreateEquipmentRequest request, Integer userId) {
+    public EquipmentDTO createEquipment(String factoryId, CreateEquipmentRequest request, Long userId) {
         log.info("创建设备: factoryId={}, name={}", factoryId, request.getName());
 
         FactoryEquipment equipment = new FactoryEquipment();
-        equipment.setId(java.util.UUID.randomUUID().toString());
+        // id 现在是 Long 类型，由数据库自动生成，无需手动设置
         equipment.setFactoryId(factoryId);
 
         // 使用用户提供的code，如果没有则自动生成
@@ -102,7 +114,8 @@ public class EquipmentServiceImpl implements EquipmentService {
     public EquipmentDTO updateEquipment(String factoryId, String equipmentId, CreateEquipmentRequest request) {
         log.info("更新设备: factoryId={}, equipmentId={}", factoryId, equipmentId);
 
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
         if (request.getName() != null) equipment.setEquipmentName(request.getName());
@@ -131,11 +144,12 @@ public class EquipmentServiceImpl implements EquipmentService {
     public void deleteEquipment(String factoryId, String equipmentId) {
         log.info("删除设备: factoryId={}, equipmentId={}", factoryId, equipmentId);
 
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
         // 检查是否有使用记录
-        if (equipmentRepository.hasUsageRecords(equipmentId)) {
+        if (equipmentRepository.hasUsageRecords(equipmentIdLong)) {
             throw new BusinessException("设备有使用记录，无法删除");
         }
 
@@ -145,7 +159,8 @@ public class EquipmentServiceImpl implements EquipmentService {
 
     @Override
     public EquipmentDTO getEquipmentById(String factoryId, String equipmentId) {
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
         return toDTO(equipment);
     }
@@ -204,7 +219,8 @@ public class EquipmentServiceImpl implements EquipmentService {
     public EquipmentDTO updateEquipmentStatus(String factoryId, String equipmentId, String status) {
         log.info("更新设备状态: factoryId={}, equipmentId={}, status={}", factoryId, equipmentId, status);
 
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
         equipment.setStatus(status);
@@ -220,7 +236,8 @@ public class EquipmentServiceImpl implements EquipmentService {
     public EquipmentDTO startEquipment(String factoryId, String equipmentId) {
         log.info("启动设备: factoryId={}, equipmentId={}", factoryId, equipmentId);
 
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
         if ("active".equals(equipment.getStatus())) {
@@ -244,7 +261,8 @@ public class EquipmentServiceImpl implements EquipmentService {
     public EquipmentDTO stopEquipment(String factoryId, String equipmentId, Integer runningHours) {
         log.info("停止设备: factoryId={}, equipmentId={}, runningHours={}", factoryId, equipmentId, runningHours);
 
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
         if (!"active".equals(equipment.getStatus())) {
@@ -268,7 +286,8 @@ public class EquipmentServiceImpl implements EquipmentService {
                                          BigDecimal cost, String description) {
         log.info("记录设备维护: factoryId={}, equipmentId={}, date={}", factoryId, equipmentId, maintenanceDate);
 
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
         equipment.setLastMaintenanceDate(maintenanceDate);
@@ -279,7 +298,16 @@ public class EquipmentServiceImpl implements EquipmentService {
         equipment.setUpdatedAt(LocalDateTime.now());
         equipment = equipmentRepository.save(equipment);
 
-        // TODO: 保存维护记录到EquipmentMaintenance表
+        // 保存维护记录到EquipmentMaintenance表
+        EquipmentMaintenance maintenance = new EquipmentMaintenance();
+        maintenance.setEquipmentId(equipmentIdLong);  // 使用 Long 类型
+        maintenance.setMaintenanceType("routine");
+        maintenance.setMaintenanceDate(maintenanceDate);
+        maintenance.setCost(cost);
+        maintenance.setDescription(description);
+        maintenance.setNextMaintenanceDate(equipment.getNextMaintenanceDate());
+        maintenanceRepository.save(maintenance);
+        log.info("维护记录已保存: equipmentId={}", equipmentId);
 
         log.info("设备维护记录成功: id={}", equipment.getId());
         return toDTO(equipment);
@@ -305,7 +333,8 @@ public class EquipmentServiceImpl implements EquipmentService {
 
     @Override
     public BigDecimal calculateDepreciatedValue(String factoryId, String equipmentId) {
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
         if (equipment.getPurchasePrice() == null || equipment.getDepreciationYears() == null ||
@@ -329,7 +358,8 @@ public class EquipmentServiceImpl implements EquipmentService {
 
     @Override
     public Map<String, Object> getEquipmentStatistics(String factoryId, String equipmentId) {
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
         Map<String, Object> statistics = new HashMap<>();
@@ -353,21 +383,64 @@ public class EquipmentServiceImpl implements EquipmentService {
 
     @Override
     public List<Map<String, Object>> getEquipmentUsageHistory(String factoryId, String equipmentId) {
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
-        // TODO: 从BatchEquipmentUsage表获取使用历史
         List<Map<String, Object>> history = new ArrayList<>();
+
+        // equipmentId 使用 Long 类型
+        List<BatchEquipmentUsage> usages = usageRepository.findByEquipmentIdOrderByStartTimeDesc(equipmentIdLong);
+
+        for (BatchEquipmentUsage usage : usages) {
+            Map<String, Object> record = new HashMap<>();
+            record.put("id", usage.getId());
+            record.put("batchId", usage.getBatchId());
+            record.put("startTime", usage.getStartTime());
+            record.put("endTime", usage.getEndTime());
+            record.put("usageHours", usage.getUsageHours());
+            record.put("powerConsumption", usage.getPowerConsumption());
+            record.put("equipmentCost", usage.getEquipmentCost());
+            history.add(record);
+        }
+
+        // 注: 移除了不必要的 try-catch，因为 equipmentId 已是 String 类型
+        if (history.isEmpty()) {
+            log.debug("设备使用历史为空: equipmentId={}", equipmentId);
+        }
+
         return history;
     }
 
     @Override
     public List<Map<String, Object>> getEquipmentMaintenanceHistory(String factoryId, String equipmentId) {
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
-        // TODO: 从EquipmentMaintenance表获取维护历史
         List<Map<String, Object>> history = new ArrayList<>();
+
+        try {
+            List<EquipmentMaintenance> maintenances = maintenanceRepository.findByEquipmentIdOrderByMaintenanceDateDesc(equipmentIdLong);
+
+            for (EquipmentMaintenance maintenance : maintenances) {
+                Map<String, Object> record = new HashMap<>();
+                record.put("id", maintenance.getId());
+                record.put("maintenanceType", maintenance.getMaintenanceType());
+                record.put("maintenanceDate", maintenance.getMaintenanceDate());
+                record.put("startTime", maintenance.getStartTime());
+                record.put("endTime", maintenance.getEndTime());
+                record.put("description", maintenance.getDescription());
+                record.put("cost", maintenance.getCost());
+                record.put("performedBy", maintenance.getPerformedBy());
+                record.put("nextMaintenanceDate", maintenance.getNextMaintenanceDate());
+                record.put("notes", maintenance.getNotes());
+                history.add(record);
+            }
+        } catch (NumberFormatException e) {
+            log.warn("设备ID非整数格式，无法查询维护历史: equipmentId={}", equipmentId);
+        }
+
         return history;
     }
 
@@ -414,7 +487,8 @@ public class EquipmentServiceImpl implements EquipmentService {
     @Override
     public Map<String, Object> getEquipmentEfficiencyReport(String factoryId, String equipmentId,
                                                            LocalDate startDate, LocalDate endDate) {
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
         Map<String, Object> report = new HashMap<>();
@@ -423,19 +497,40 @@ public class EquipmentServiceImpl implements EquipmentService {
         report.put("startDate", startDate);
         report.put("endDate", endDate);
 
-        // TODO: 从使用记录计算实际效率数据
-        report.put("utilizationRate", 0.0);
-        report.put("availability", 0.0);
-        report.put("performance", 0.0);
-        report.put("quality", 0.0);
-        report.put("oee", 0.0);
+        // 计算时间段内的天数
+        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        double plannedHours = daysBetween * 8.0; // 假设每天工作8小时
+
+        // 计算可用率（Availability）
+        double actualRunningHours = equipment.getTotalRunningHours() != null
+                ? equipment.getTotalRunningHours() : 0.0;
+        double availability = plannedHours > 0 ? Math.min(actualRunningHours / plannedHours, 1.0) : 0.0;
+
+        // 计算利用率（Utilization Rate）
+        double totalAvailableHours = daysBetween * 24.0;
+        double utilizationRate = totalAvailableHours > 0 ? actualRunningHours / totalAvailableHours : 0.0;
+
+        // 性能率和质量率（基础估算值，实际需要产量数据）
+        double performance = 0.85; // 默认85%性能率
+        double quality = 0.95;     // 默认95%质量率
+
+        // OEE = 可用率 × 性能率 × 质量率
+        double oee = availability * performance * quality;
+
+        report.put("utilizationRate", Math.round(utilizationRate * 10000) / 100.0); // 百分比
+        report.put("availability", Math.round(availability * 10000) / 100.0);
+        report.put("performance", Math.round(performance * 10000) / 100.0);
+        report.put("quality", Math.round(quality * 10000) / 100.0);
+        report.put("oee", Math.round(oee * 10000) / 100.0);
+        report.put("actualRunningHours", actualRunningHours);
+        report.put("plannedHours", plannedHours);
 
         return report;
     }
 
     @Override
     @Transactional
-    public List<EquipmentDTO> importEquipment(String factoryId, List<CreateEquipmentRequest> requests, Integer userId) {
+    public List<EquipmentDTO> importEquipment(String factoryId, List<CreateEquipmentRequest> requests, Long userId) {
         log.info("批量导入设备: factoryId={}, count={}", factoryId, requests.size());
 
         List<EquipmentDTO> importedEquipment = new ArrayList<>();
@@ -470,7 +565,7 @@ public class EquipmentServiceImpl implements EquipmentService {
                 .collect(Collectors.toList());
 
         // 生成Excel文件
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] excelBytes = excelUtil.exportToExcel(
                 exportDTOs,
                 com.cretas.aims.dto.equipment.EquipmentExportDTO.class,
@@ -486,7 +581,7 @@ public class EquipmentServiceImpl implements EquipmentService {
         log.info("生成设备导入模板");
 
         // 使用ExcelUtil生成空模板
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] templateBytes = excelUtil.generateTemplate(
                 com.cretas.aims.dto.equipment.EquipmentExportDTO.class,
                 "设备导入模板"
@@ -504,7 +599,7 @@ public class EquipmentServiceImpl implements EquipmentService {
         log.info("开始从Excel批量导入设备: factoryId={}", factoryId);
 
         // 1. 解析Excel文件
-        com.cretas.aims.util.ExcelUtil excelUtil = new com.cretas.aims.util.ExcelUtil();
+        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         List<com.cretas.aims.dto.equipment.EquipmentExportDTO> excelData;
         try {
             excelData = excelUtil.importFromExcel(inputStream,
@@ -566,7 +661,7 @@ public class EquipmentServiceImpl implements EquipmentService {
      */
     private FactoryEquipment convertFromExportDTO(com.cretas.aims.dto.equipment.EquipmentExportDTO dto, String factoryId) {
         FactoryEquipment equipment = new FactoryEquipment();
-        equipment.setId(java.util.UUID.randomUUID().toString());
+        // id 现在是 Long 类型，由数据库自动生成
         equipment.setFactoryId(factoryId);
         equipment.setEquipmentCode(dto.getEquipmentCode() != null ? dto.getEquipmentCode() : generateEquipmentCode());
         equipment.setCode(equipment.getEquipmentCode()); // code字段使用equipmentCode
@@ -601,7 +696,17 @@ public class EquipmentServiceImpl implements EquipmentService {
             }
         }
 
-        equipment.setCreatedBy(1); // 系统导入，使用默认用户ID
+        // 尝试从当前登录用户获取ID，失败则使用系统默认用户
+        Long currentUserId = 1L;
+        try {
+            Long securityUserId = com.cretas.aims.utils.SecurityUtils.getCurrentUserId();
+            if (securityUserId != null) {
+                currentUserId = securityUserId;
+            }
+        } catch (Exception e) {
+            log.debug("无法获取当前用户ID，使用默认值: {}", e.getMessage());
+        }
+        equipment.setCreatedBy(currentUserId);
         equipment.setCreatedAt(LocalDateTime.now());
         return equipment;
     }
@@ -623,27 +728,52 @@ public class EquipmentServiceImpl implements EquipmentService {
     public EquipmentDTO scrapEquipment(String factoryId, String equipmentId, String reason) {
         log.info("报废设备: factoryId={}, equipmentId={}, reason={}", factoryId, equipmentId, reason);
 
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
-        equipment.setStatus("inactive");  // 报废设备标记为inactive
+        equipment.setStatus(STATUS_SCRAPPED);  // 报废设备标记为scrapped
         equipment.setNotes(equipment.getNotes() != null ?
                 equipment.getNotes() + "\n报废原因: " + reason : "报废原因: " + reason);
         equipment.setUpdatedAt(LocalDateTime.now());
         equipment = equipmentRepository.save(equipment);
 
-        log.info("设备报废成功: id={}", equipment.getId());
+        log.info("设备报废成功: id={}, status={}", equipment.getId(), STATUS_SCRAPPED);
         return toDTO(equipment);
     }
 
     @Override
     public Double calculateOEE(String factoryId, String equipmentId, LocalDate startDate, LocalDate endDate) {
-        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
+        Long equipmentIdLong = Long.parseLong(equipmentId);
+        FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
 
-        // TODO: 实现OEE计算
         // OEE = Availability × Performance × Quality
-        return 0.0;
+
+        // 计算时间段内的天数
+        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        double plannedHours = daysBetween * 8.0; // 假设每天计划工作8小时
+
+        // 可用率（Availability）= 实际运行时间 / 计划运行时间
+        double actualRunningHours = equipment.getTotalRunningHours() != null
+                ? equipment.getTotalRunningHours() : 0.0;
+        double availability = plannedHours > 0 ? Math.min(actualRunningHours / plannedHours, 1.0) : 0.0;
+
+        // 性能率（Performance）- 基于设计产能vs实际产能
+        // 暂用默认值，实际需要产量数据支持
+        double performance = 0.85;
+
+        // 质量率（Quality）= 合格品数量 / 总产量
+        // 暂用默认值，实际需要质检数据支持
+        double quality = 0.95;
+
+        // OEE = A × P × Q
+        double oee = availability * performance * quality;
+
+        log.debug("OEE计算: equipmentId={}, availability={}, performance={}, quality={}, oee={}",
+                equipmentId, availability, performance, quality, oee);
+
+        return Math.round(oee * 10000) / 100.0; // 返回百分比值
     }
 
     /**
@@ -651,7 +781,7 @@ public class EquipmentServiceImpl implements EquipmentService {
      */
     private EquipmentDTO toDTO(FactoryEquipment equipment) {
         EquipmentDTO dto = EquipmentDTO.builder()
-                .id(equipment.getId())
+                .id(String.valueOf(equipment.getId()))  // Long -> String 转换
                 .factoryId(equipment.getFactoryId())
                 .equipmentCode(equipment.getEquipmentCode())
                 .name(equipment.getEquipmentName())
@@ -678,7 +808,7 @@ public class EquipmentServiceImpl implements EquipmentService {
                 .build();
 
         // 计算当前价值
-        dto.setCurrentValue(calculateDepreciatedValue(equipment.getFactoryId(), equipment.getId()));
+        dto.setCurrentValue(calculateDepreciatedValue(equipment.getFactoryId(), String.valueOf(equipment.getId())));
 
         // 计算是否需要维护
         if (equipment.getNextMaintenanceDate() != null) {

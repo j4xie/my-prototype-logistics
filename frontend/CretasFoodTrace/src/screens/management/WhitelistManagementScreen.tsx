@@ -19,7 +19,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { whitelistApiClient, WhitelistDTO, CreateWhitelistRequest } from '../../services/api/whitelistApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建WhitelistManagement专用logger
@@ -45,7 +45,7 @@ export default function WhitelistManagementScreen() {
 
   // 权限控制
   const userType = user?.userType || 'factory';
-  const roleCode = user?.factoryUser?.role || user?.factoryUser?.roleCode || user?.roleCode || 'viewer';
+  const roleCode = user?.factoryUser?.role || user?.roleCode || 'viewer';
   const isPlatformAdmin = userType === 'platform';
   const isSuperAdmin = roleCode === 'factory_super_admin';
   const isPermissionAdmin = roleCode === 'permission_admin';
@@ -66,7 +66,6 @@ export default function WhitelistManagementScreen() {
 
   const departmentOptions = [
     { label: '加工部', value: 'processing' },
-    { label: '养殖部', value: 'farming' },
     { label: '物流部', value: 'logistics' },
     { label: '质检部', value: 'quality' },
   ];
@@ -86,19 +85,17 @@ export default function WhitelistManagementScreen() {
 
       // 📊 调试日志：查看API响应结构
       whitelistLogger.debug('API响应结构', {
-        hasData: !!response.data,
-        dataType: typeof response.data,
-        hasContent: !!(response.data && response.data.content),
-        isContentArray: response.data && Array.isArray(response.data.content),
-        contentLength: response.data && response.data.content ? response.data.content.length : 0,
+        hasContent: !!response.content,
+        isContentArray: Array.isArray(response.content),
+        contentLength: response.content ? response.content.length : 0,
       });
 
-      // ✅ 正确的数据访问：response.data.content
-      if (response.data && response.data.content) {
-        setWhitelist(response.data.content);
+      // ✅ 正确的数据访问：response.content (PageResponse)
+      if (response.content) {
+        setWhitelist(response.content);
         whitelistLogger.info('白名单列表加载成功', {
           factoryId: user?.factoryId,
-          count: response.data.content.length,
+          count: response.content.length,
         });
       } else {
         whitelistLogger.warn('API返回空数据', { response });
@@ -176,7 +173,7 @@ export default function WhitelistManagementScreen() {
         factoryId: user?.factoryId,
         phoneCount: phoneLines.length,
       });
-      Alert.alert('错误', error.response?.data?.message || '批量添加失败');
+      Alert.alert('错误', getErrorMsg(error) || '批量添加失败');
     }
   };
 
@@ -205,7 +202,7 @@ export default function WhitelistManagementScreen() {
                 whitelistId: id,
                 phoneNumber,
               });
-              Alert.alert('错误', error.response?.data?.message || '删除失败');
+              Alert.alert('错误', getErrorMsg(error) || '删除失败');
             }
           },
         },
@@ -245,7 +242,6 @@ export default function WhitelistManagementScreen() {
   const getDepartmentName = (dept?: string) => {
     switch (dept) {
       case 'processing': return '加工部';
-      case 'farming': return '养殖部';
       case 'logistics': return '物流部';
       case 'quality': return '质检部';
       default: return dept || '未分配';
@@ -679,10 +675,6 @@ const styles = StyleSheet.create({
     margin: 0,
     marginRight: 4,
     width: 28,
-  },
-  infoText: {
-    fontSize: 13,
-    color: '#666',
   },
   actionRow: {
     flexDirection: 'row',

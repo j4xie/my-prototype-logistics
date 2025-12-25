@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
@@ -82,7 +82,34 @@ export interface ReportGenerationRequest {
 }
 
 /**
- * AI成本分析响应
+ * 通用API响应包装格式
+ */
+interface ApiResponseWrapper<T> {
+  success: boolean;
+  code: number;
+  message: string;
+  data: T;
+  timestamp?: string;
+}
+
+/**
+ * AI成本分析响应 - 后端原始格式
+ */
+interface AICostAnalysisResponseBackend {
+  success: boolean;
+  analysis: string;
+  session_id?: string;
+  messageCount?: number;
+  quota?: AIQuotaInfoBackend;
+  cacheHit?: boolean;
+  processingTimeMs?: number;  // 后端使用 processingTimeMs
+  errorMessage?: string;
+  generatedAt?: string;
+  expiresAt?: string;
+}
+
+/**
+ * AI成本分析响应 - 前端使用格式
  */
 export interface AICostAnalysisResponse {
   success: boolean;
@@ -91,23 +118,76 @@ export interface AICostAnalysisResponse {
   messageCount?: number;
   quota?: AIQuotaInfo;
   cacheHit?: boolean;
-  responseTimeMs?: number;
+  responseTimeMs?: number;  // 前端使用 responseTimeMs
   errorMessage?: string;
   generatedAt?: string;
   expiresAt?: string;
 }
 
 /**
- * AI配额信息
+ * AI配额信息 - 后端实际返回格式
+ */
+export interface AIQuotaInfoBackend {
+  total: number;
+  used: number;
+  remaining: number;
+  usageRate: number;
+  resetDate: string;
+  exceeded: boolean;
+}
+
+/**
+ * AI配额信息 - 前端使用格式
  */
 export interface AIQuotaInfo {
-  factoryId: string;
   weeklyQuota: number;
   usedQuota: number;
   remainingQuota: number;
   resetDate: string;
   usagePercentage: number;
   status: 'active' | 'warning' | 'exhausted' | 'expired';
+}
+
+/**
+ * 转换后端配额响应为前端格式
+ */
+function transformQuotaResponse(backendQuota: AIQuotaInfoBackend | null | undefined): AIQuotaInfo | undefined {
+  if (!backendQuota) return undefined;
+
+  // 计算状态
+  let status: AIQuotaInfo['status'] = 'active';
+  if (backendQuota.exceeded) {
+    status = 'exhausted';
+  } else if (backendQuota.usageRate > 80) {
+    status = 'warning';
+  }
+
+  return {
+    weeklyQuota: backendQuota.total ?? 100,
+    usedQuota: backendQuota.used ?? 0,
+    remainingQuota: backendQuota.remaining ?? 100,
+    resetDate: backendQuota.resetDate ?? '',
+    usagePercentage: backendQuota.usageRate ?? 0,
+    status,
+  };
+}
+
+/**
+ * 转换后端分析响应为前端格式
+ */
+function transformAnalysisResponse(backendResponse: AICostAnalysisResponseBackend): AICostAnalysisResponse {
+  return {
+    success: backendResponse.success,
+    analysis: backendResponse.analysis,
+    session_id: backendResponse.session_id,
+    messageCount: backendResponse.messageCount,
+    quota: transformQuotaResponse(backendResponse.quota),
+    cacheHit: backendResponse.cacheHit,
+    responseTimeMs: backendResponse.processingTimeMs, // 字段名映射
+    errorMessage: backendResponse.errorMessage,
+    generatedAt: backendResponse.generatedAt,
+    expiresAt: backendResponse.expiresAt,
+  };
 }
 
 /**
@@ -205,11 +285,13 @@ class AIApiClient {
     request: BatchCostAnalysisRequest,
     factoryId?: string
   ): Promise<AICostAnalysisResponse> {
-    const response = await apiClient.post(
+    // API返回格式: { code, message, data: AICostAnalysisResponseBackend, ... }
+    const response = await apiClient.post<ApiResponseWrapper<AICostAnalysisResponseBackend>>(
       `${this.getBasePath(factoryId)}/analysis/cost/batch`,
       request
     );
-    return response.data;
+    // 从响应包装中提取实际数据并转换为前端格式
+    return transformAnalysisResponse(response.data);
   }
 
   /**
@@ -224,11 +306,13 @@ class AIApiClient {
     request: TimeRangeCostAnalysisRequest,
     factoryId?: string
   ): Promise<AICostAnalysisResponse> {
-    const response = await apiClient.post(
+    // API返回格式: { code, message, data: AICostAnalysisResponseBackend, ... }
+    const response = await apiClient.post<ApiResponseWrapper<AICostAnalysisResponseBackend>>(
       `${this.getBasePath(factoryId)}/analysis/cost/time-range`,
       request
     );
-    return response.data;
+    // 从响应包装中提取实际数据并转换为前端格式
+    return transformAnalysisResponse(response.data);
   }
 
   /**
@@ -243,11 +327,13 @@ class AIApiClient {
     request: ComparativeCostAnalysisRequest,
     factoryId?: string
   ): Promise<AICostAnalysisResponse> {
-    const response = await apiClient.post(
+    // API返回格式: { code, message, data: AICostAnalysisResponseBackend, ... }
+    const response = await apiClient.post<ApiResponseWrapper<AICostAnalysisResponseBackend>>(
       `${this.getBasePath(factoryId)}/analysis/cost/compare`,
       request
     );
-    return response.data;
+    // 从响应包装中提取实际数据并转换为前端格式
+    return transformAnalysisResponse(response.data);
   }
 
   // ========== 配额管理接口 ==========
@@ -260,10 +346,16 @@ class AIApiClient {
    * @param factoryId 工厂ID（可选）
    */
   async getQuotaInfo(factoryId?: string): Promise<AIQuotaInfo> {
-    const response = await apiClient.get(
+    // API返回格式: { code, message, data: AIQuotaInfoBackend, ... }
+    const response = await apiClient.get<ApiResponseWrapper<AIQuotaInfoBackend>>(
       `${this.getBasePath(factoryId)}/quota`
     );
-    return response.data;
+    // 从响应包装中提取实际数据并转换为前端格式
+    const transformed = transformQuotaResponse(response.data);
+    if (!transformed) {
+      throw new Error('无法获取配额信息');
+    }
+    return transformed;
   }
 
   /**
@@ -296,10 +388,9 @@ class AIApiClient {
     sessionId: string,
     factoryId?: string
   ): Promise<ConversationResponse> {
-    const response = await apiClient.get(
+    return await apiClient.get<ConversationResponse>(
       `${this.getBasePath(factoryId)}/conversations/${sessionId}`
     );
-    return response.data;
   }
 
   /**
@@ -312,11 +403,13 @@ class AIApiClient {
     request: ConversationRequest,
     factoryId?: string
   ): Promise<AICostAnalysisResponse> {
-    const response = await apiClient.post(
+    // API返回格式: { code, message, data: AICostAnalysisResponseBackend, ... }
+    const response = await apiClient.post<ApiResponseWrapper<AICostAnalysisResponseBackend>>(
       `${this.getBasePath(factoryId)}/conversations/continue`,
       request
     );
-    return response.data;
+    // 从响应包装中提取实际数据并转换为前端格式
+    return transformAnalysisResponse(response.data);
   }
 
   /**
@@ -352,11 +445,36 @@ class AIApiClient {
     },
     factoryId?: string
   ): Promise<ReportListResponse> {
-    const response = await apiClient.get(
+    const response = await apiClient.get<any>(
       `${this.getBasePath(factoryId)}/reports`,
       { params }
     );
-    return response.data;
+
+    // 后端返回格式与前端类型不匹配，需要转换字段名
+    const backendData = response.data;
+    if (backendData && Array.isArray(backendData.reports)) {
+      const transformedReports: ReportSummary[] = backendData.reports.map((report: any) => ({
+        reportId: report.id,
+        reportType: report.reportType,
+        title: report.summaryText?.substring(0, 100) || `${report.reportType === 'weekly' ? '周报' : report.reportType === 'monthly' ? '月报' : '报告'} - ${new Date(report.createdAt).toLocaleDateString('zh-CN')}`,
+        createdAt: report.createdAt,
+        batchId: report.batchId,
+        batchNumber: report.batchNumber,
+        startDate: report.periodStart,
+        endDate: report.periodEnd,
+        totalCost: report.totalCost,
+        keyFindingsCount: report.keyFindingsCount,
+        suggestionsCount: report.suggestionsCount,
+      }));
+      return {
+        reports: transformedReports,
+        total: backendData.total ?? transformedReports.length,
+        page: backendData.page,
+        pageSize: backendData.pageSize,
+      };
+    }
+
+    return { reports: [], total: 0 };
   }
 
   /**
@@ -369,10 +487,17 @@ class AIApiClient {
     reportId: number,
     factoryId?: string
   ): Promise<AICostAnalysisResponse> {
-    const response = await apiClient.get(
+    // API返回格式: { code, message, data: AICostAnalysisResponseBackend, ... }
+    // apiClient.get 返回的是axios response.data，即整个响应体
+    const response = await apiClient.get<ApiResponseWrapper<AICostAnalysisResponseBackend>>(
       `${this.getBasePath(factoryId)}/reports/${reportId}`
     );
-    return response.data;
+
+    // 从响应包装中提取实际数据
+    const backendData = response.data;
+
+    // 转换后端响应为前端格式
+    return transformAnalysisResponse(backendData);
   }
 
   /**
@@ -385,11 +510,13 @@ class AIApiClient {
     request: ReportGenerationRequest,
     factoryId?: string
   ): Promise<AICostAnalysisResponse> {
-    const response = await apiClient.post(
+    // API返回格式: { code, message, data: AICostAnalysisResponseBackend, ... }
+    const response = await apiClient.post<ApiResponseWrapper<AICostAnalysisResponseBackend>>(
       `${this.getBasePath(factoryId)}/reports/generate`,
       request
     );
-    return response.data;
+    // 从响应包装中提取实际数据并转换为前端格式
+    return transformAnalysisResponse(response.data);
   }
 
   // ========== 健康检查接口 ==========
@@ -402,10 +529,9 @@ class AIApiClient {
    * @param factoryId 工厂ID（可选）
    */
   async checkHealth(factoryId?: string): Promise<HealthCheckResponse> {
-    const response = await apiClient.get(
+    return await apiClient.get<HealthCheckResponse>(
       `${this.getBasePath(factoryId)}/health`
     );
-    return response.data;
   }
 }
 

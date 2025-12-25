@@ -287,13 +287,13 @@ export default function FactoryManagementScreen() {
             {/* 工厂详情 */}
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
-                <List.Icon icon="domain" size={20} />
+                <List.Icon icon="domain" />
                 <Text variant="bodySmall" style={styles.detailText}>
                   {factory.industry}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <List.Icon icon="map-marker" size={20} />
+                <List.Icon icon="map-marker" />
                 <Text variant="bodySmall" style={styles.detailText}>
                   {factory.region}
                 </Text>
@@ -302,13 +302,13 @@ export default function FactoryManagementScreen() {
 
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
-                <List.Icon icon="account-group" size={20} />
+                <List.Icon icon="account-group" />
                 <Text variant="bodySmall" style={styles.detailText}>
                   {factory.totalUsers} 用户
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <List.Icon icon="robot" size={20} />
+                <List.Icon icon="robot" />
                 <Text variant="bodySmall" style={styles.detailText}>
                   {factory.aiQuota}次/周
                 </Text>

@@ -177,16 +177,16 @@ export default function QualityReportScreen() {
       conditional: { label: '待定', color: '#FF9800', bgColor: '#FFF3E0' },
     };
 
-    const config = resultMap[result] || resultMap['CONDITIONAL'];
+    const config = resultMap[result] ?? resultMap['CONDITIONAL'];
 
     return (
       <Chip
         mode="flat"
         compact
-        style={{ backgroundColor: config.bgColor }}
-        textStyle={{ color: config.color, fontSize: 12 }}
+        style={{ backgroundColor: config?.bgColor ?? '#FFF3E0' }}
+        textStyle={{ color: config?.color ?? '#FF9800', fontSize: 12 }}
       >
-        {config.label}
+        {config?.label ?? '待定'}
       </Chip>
     );
   };

@@ -16,7 +16,7 @@ export interface BaseApiResponse<T = any> {
 
 // 统一登录API响应数据
 export interface UnifiedLoginResponseData {
-  userId: number | string;
+  userId: number;  // Backend uses Long, always returns number
   username: string;
   role: string;
   roleCode?: string;

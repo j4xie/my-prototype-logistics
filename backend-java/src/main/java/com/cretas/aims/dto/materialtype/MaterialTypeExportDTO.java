@@ -4,7 +4,7 @@ import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.write.style.ColumnWidth;
 import com.alibaba.excel.annotation.write.style.ContentRowHeight;
 import com.alibaba.excel.annotation.write.style.HeadRowHeight;
-import com.cretas.aims.entity.MaterialType;
+import com.cretas.aims.entity.RawMaterialType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -61,22 +61,22 @@ public class MaterialTypeExportDTO {
     private String createdAt;
 
     /**
-     * 从MaterialType转换为MaterialTypeExportDTO
+     * 从RawMaterialType转换为MaterialTypeExportDTO
      */
-    public static MaterialTypeExportDTO fromMaterialType(MaterialType materialType) {
-        if (materialType == null) {
+    public static MaterialTypeExportDTO fromRawMaterialType(RawMaterialType rawMaterialType) {
+        if (rawMaterialType == null) {
             return null;
         }
 
         return MaterialTypeExportDTO.builder()
-                .materialCode(materialType.getMaterialCode())
-                .name(materialType.getName())
-                .category(materialType.getCategory())
-                .unit(materialType.getUnit())
-                .storageType(materialType.getStorageType())
-                .description(materialType.getDescription())
-                .status(Boolean.TRUE.equals(materialType.getIsActive()) ? "启用" : "停用")
-                .createdAt(formatDateTime(materialType.getCreatedAt()))
+                .materialCode(rawMaterialType.getCode())
+                .name(rawMaterialType.getName())
+                .category(rawMaterialType.getCategory())
+                .unit(rawMaterialType.getUnit())
+                .storageType(rawMaterialType.getStorageType())
+                .description(rawMaterialType.getNotes())
+                .status(Boolean.TRUE.equals(rawMaterialType.getIsActive()) ? "启用" : "停用")
+                .createdAt(formatDateTime(rawMaterialType.getCreatedAt()))
                 .build();
     }
 

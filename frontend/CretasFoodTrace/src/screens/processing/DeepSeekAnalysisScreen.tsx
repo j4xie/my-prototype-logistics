@@ -6,7 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
 import { aiApiClient, type AICostAnalysisResponse } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建DeepSeekAnalysis专用logger
@@ -96,7 +96,7 @@ function parseAnalysisText(text: string): ParsedAnalysis {
 
       // 提取评分（如果有百分比）
       const percentageMatch = relevantLines[0]?.match(/(\d+\.?\d*)%/);
-      if (percentageMatch) {
+      if (percentageMatch && percentageMatch[1]) {
         const percentage = parseFloat(percentageMatch[1]);
         dimension.score = percentage;
         dimension.status = getStatusFromScore(percentage);
@@ -120,7 +120,7 @@ function parseAnalysisText(text: string): ParsedAnalysis {
 
   // 提取节省金额
   const savingsMatch = text.match(/节省[约大概]?[¥￥]?([\d,]+)/);
-  if (savingsMatch) {
+  if (savingsMatch && savingsMatch[1]) {
     parsed.totalSavings = parseFloat(savingsMatch[1].replace(/,/g, ''));
   }
 
@@ -246,27 +246,27 @@ export default function DeepSeekAnalysisScreen() {
 
       deepSeekLogger.info('AI分析加载成功', {
         batchId,
-        sessionId: response.session_id,
-        hasAnalysis: !!response.analysis,
-        quotaRemaining: response.quota?.remaining,
+        sessionId: (response as any).session_id,
+        hasAnalysis: !!(response as any).analysis,
+        quotaRemaining: (response as any).quota?.remaining,
       });
 
       setAnalysisResponse(response);
-      setSessionId(response.session_id || '');
+      setSessionId((response as any).session_id || '');
     } catch (error) {
       deepSeekLogger.error('加载AI分析失败', error, {
         batchId,
         factoryId,
-        errorStatus: error.response?.status,
+        errorStatus: (error as any).response?.status,
       });
 
       // Handle specific errors
-      if (error.response?.status === 429) {
-        Alert.alert('配额不足', error.response?.data?.message || '本周AI分析次数已达上限，请下周一再试');
-      } else if (error.response?.status === 403) {
+      if ((error as any).response?.status === 429) {
+        Alert.alert('配额不足', getErrorMsg(error) || '本周AI分析次数已达上限，请下周一再试');
+      } else if ((error as any).response?.status === 403) {
         Alert.alert('功能已禁用', 'AI分析功能已被管理员禁用');
       } else {
-        const errorMessage = error.response?.data?.message || error.message || '加载AI分析失败，请稍后重试';
+        const errorMessage = getErrorMsg(error) || '加载AI分析失败，请稍后重试';
         Alert.alert('加载失败', errorMessage);
       }
     } finally {
@@ -308,7 +308,7 @@ export default function DeepSeekAnalysisScreen() {
       deepSeekLogger.info('AI追问回答成功', {
         batchId,
         sessionId,
-        hasAnalysis: !!response.analysis,
+        hasAnalysis: !!(response as any).analysis,
       });
 
       setAnalysisResponse(response);
@@ -316,7 +316,7 @@ export default function DeepSeekAnalysisScreen() {
       setShowQuestionInput(false);
     } catch (error) {
       deepSeekLogger.error('AI追问失败', error, { batchId, sessionId });
-      const errorMessage = error.response?.data?.message || error.message || '追问失败，请稍后重试';
+      const errorMessage = getErrorMsg(error) || '追问失败，请稍后重试';
       Alert.alert('追问失败', errorMessage);
     } finally {
       setAiLoading(false);

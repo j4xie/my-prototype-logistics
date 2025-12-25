@@ -1,7 +1,6 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
-import com.cretas.aims.dto.report.DashboardStatisticsDTO;
 import com.cretas.aims.service.ReportService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,34 +30,87 @@ public class ReportController {
 
     private final ReportService reportService;
 
+    // ============================================================
+    // Dashboard 统一入口 (委托 ProcessingService)
+    // 这是 ReportController 作为报表/Dashboard 统一入口的实现
+    // ProcessingController 的 dashboard 端点已标记为 @Deprecated
+    // ============================================================
+
     /**
-     * 获取报表仪表盘统计数据
+     * 获取生产概览 Dashboard
      */
-    @GetMapping("/dashboard")
-    @Operation(summary = "获取报表仪表盘统计", description = "获取工厂的综合报表统计数据")
-    public ApiResponse<DashboardStatisticsDTO> getReportDashboardStatistics(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
-        log.info("获取报表仪表盘统计数据: factoryId={}", factoryId);
-        DashboardStatisticsDTO statistics = reportService.getDashboardStatistics(factoryId);
-        return ApiResponse.success(statistics);
+    @GetMapping("/dashboard/overview")
+    @Operation(summary = "生产概览Dashboard", description = "获取生产概览数据 (委托ProcessingService)")
+    public ApiResponse<Map<String, Object>> getDashboardOverview(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(defaultValue = "today") @Parameter(description = "时间周期: today, week, month") String period) {
+        log.info("获取生产概览Dashboard: factoryId={}, period={}", factoryId, period);
+        return ApiResponse.success(reportService.getDashboardOverview(factoryId, period));
     }
 
     /**
-     * 获取生产报表
+     * 获取生产统计 Dashboard
      */
-    @GetMapping("/production")
-    @Operation(summary = "获取生产报表", description = "获取指定日期范围的生产报表")
-    public ApiResponse<Map<String, Object>> getProductionReport(
+    @GetMapping("/dashboard/production")
+    @Operation(summary = "生产统计Dashboard", description = "获取生产统计数据 (委托ProcessingService)")
+    public ApiResponse<Map<String, Object>> getProductionDashboard(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "开始日期") LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "结束日期") LocalDate endDate) {
-        log.info("获取生产报表: factoryId={}, startDate={}, endDate={}",
-                factoryId, startDate, endDate);
-        Map<String, Object> report = reportService.getProductionReport(factoryId, startDate, endDate);
-        return ApiResponse.success(report);
+            @RequestParam(defaultValue = "today") @Parameter(description = "时间周期: today, week, month") String period) {
+        log.info("获取生产统计Dashboard: factoryId={}, period={}", factoryId, period);
+        return ApiResponse.success(reportService.getProductionDashboard(factoryId, period));
     }
+
+    /**
+     * 获取质量 Dashboard
+     */
+    @GetMapping("/dashboard/quality")
+    @Operation(summary = "质量Dashboard", description = "获取质量统计数据 (委托ProcessingService)")
+    public ApiResponse<Map<String, Object>> getQualityDashboard(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+        log.info("获取质量Dashboard: factoryId={}", factoryId);
+        return ApiResponse.success(reportService.getQualityDashboard(factoryId));
+    }
+
+    /**
+     * 获取设备 Dashboard
+     */
+    @GetMapping("/dashboard/equipment")
+    @Operation(summary = "设备Dashboard", description = "获取设备统计数据 (委托ProcessingService)")
+    public ApiResponse<Map<String, Object>> getEquipmentDashboard(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+        log.info("获取设备Dashboard: factoryId={}", factoryId);
+        return ApiResponse.success(reportService.getEquipmentDashboard(factoryId));
+    }
+
+    /**
+     * 获取告警 Dashboard
+     */
+    @GetMapping("/dashboard/alerts")
+    @Operation(summary = "告警Dashboard", description = "获取告警统计数据 (委托ProcessingService)")
+    public ApiResponse<Map<String, Object>> getAlertsDashboard(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(defaultValue = "week") @Parameter(description = "时间周期: today, week, month") String period) {
+        log.info("获取告警Dashboard: factoryId={}, period={}", factoryId, period);
+        return ApiResponse.success(reportService.getAlertsDashboard(factoryId, period));
+    }
+
+    /**
+     * 获取趋势分析 Dashboard
+     */
+    @GetMapping("/dashboard/trends")
+    @Operation(summary = "趋势分析Dashboard", description = "获取趋势分析数据 (委托ProcessingService)")
+    public ApiResponse<Map<String, Object>> getTrendsDashboard(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(defaultValue = "month") @Parameter(description = "时间周期: week, month, quarter, year") String period,
+            @RequestParam(defaultValue = "production") @Parameter(description = "趋势类型: production, quality, equipment, cost") String metric,
+            @RequestParam(defaultValue = "30") @Parameter(description = "趋势天数") Integer days) {
+        log.info("获取趋势分析Dashboard: factoryId={}, period={}, metric={}, days={}", factoryId, period, metric, days);
+        return ApiResponse.success(reportService.getTrendsDashboard(factoryId, period, metric, days));
+    }
+
+    // ============================================================
+    // 报表功能端点
+    // ============================================================
 
     /**
      * 获取库存报表
@@ -92,37 +144,7 @@ public class ReportController {
         return ApiResponse.success(report);
     }
 
-    /**
-     * 获取质量报表
-     */
-    @GetMapping("/quality")
-    @Operation(summary = "获取质量报表", description = "获取指定日期范围的质量报表")
-    public ApiResponse<Map<String, Object>> getQualityReport(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "开始日期") LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "结束日期") LocalDate endDate) {
-        log.info("获取质量报表: factoryId={}, startDate={}, endDate={}",
-                factoryId, startDate, endDate);
-        Map<String, Object> report = reportService.getQualityReport(factoryId, startDate, endDate);
-        return ApiResponse.success(report);
-    }
-
-    /**
-     * 获取设备报表
-     */
-    @GetMapping("/equipment")
-    @Operation(summary = "获取设备报表", description = "获取设备运行统计报表")
-    public ApiResponse<Map<String, Object>> getEquipmentReport(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "报表日期") LocalDate date) {
-        log.info("获取设备报表: factoryId={}, date={}", factoryId, date);
-        LocalDate reportDate = date != null ? date : LocalDate.now();
-        Map<String, Object> report = reportService.getEquipmentReport(factoryId, reportDate);
-        return ApiResponse.success(report);
-    }
+    // quality 和 equipment 报表已移至 ProcessingController
 
     /**
      * 获取人员报表
@@ -156,22 +178,7 @@ public class ReportController {
         return ApiResponse.success(report);
     }
 
-    /**
-     * 获取成本分析报表
-     */
-    @GetMapping("/cost-analysis")
-    @Operation(summary = "获取成本分析报表", description = "分析指定日期范围的成本构成")
-    public ApiResponse<Map<String, Object>> getCostAnalysisReport(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "开始日期") LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "结束日期") LocalDate endDate) {
-        log.info("获取成本分析报表: factoryId={}, startDate={}, endDate={}",
-                factoryId, startDate, endDate);
-        Map<String, Object> report = reportService.getCostAnalysisReport(factoryId, startDate, endDate);
-        return ApiResponse.success(report);
-    }
+    // cost-analysis 已移至 AIController (通过 Python AI 服务计算)
 
     /**
      * 获取效率分析报表
@@ -190,20 +197,7 @@ public class ReportController {
         return ApiResponse.success(report);
     }
 
-    /**
-     * 获取趋势分析报表
-     */
-    @GetMapping("/trend-analysis")
-    @Operation(summary = "获取趋势分析报表", description = "分析生产经营趋势")
-    public ApiResponse<Map<String, Object>> getTrendAnalysisReport(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "分析类型") String type,
-            @RequestParam @Parameter(description = "时间周期(天)") Integer period) {
-        log.info("获取趋势分析报表: factoryId={}, type={}, period={}",
-                factoryId, type, period);
-        Map<String, Object> report = reportService.getTrendAnalysisReport(factoryId, type, period);
-        return ApiResponse.success(report);
-    }
+    // trend-analysis 已移至 ProcessingController
 
     /**
      * 获取KPI指标

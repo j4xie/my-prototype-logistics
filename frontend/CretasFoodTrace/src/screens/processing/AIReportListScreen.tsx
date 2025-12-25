@@ -16,12 +16,14 @@ import {
   ActivityIndicator,
   IconButton,
   Divider,
+  FAB,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, ReportSummary } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { getFactoryId } from '../../types/auth';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建AIReportList专用logger
@@ -45,6 +47,7 @@ type AIReportListScreenProps = ProcessingScreenProps<'AIReportList'>;
 export default function AIReportListScreen() {
   const navigation = useNavigation<AIReportListScreenProps['navigation']>();
   const { user } = useAuthStore();
+  const factoryId = getFactoryId(user);
 
   // 状态管理
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -92,10 +95,10 @@ export default function AIReportListScreen() {
       }
     } catch (error) {
       aiReportListLogger.error('获取AI报告列表失败', error as Error, {
-        factoryId,
+        factoryId: factoryId,
         selectedType,
       });
-      Alert.alert('加载失败', error.response?.data?.message || error.message || '请稍后重试');
+      Alert.alert('加载失败', getErrorMsg(error) || '请稍后重试');
       setReports([]);
     } finally {
       setLoading(false);
@@ -120,6 +123,77 @@ export default function AIReportListScreen() {
       reportType: report.reportType,
       title: report.title,
     });
+  };
+
+  /**
+   * 从Markdown内容提取干净的标题
+   * 移除 ### 标记、emoji等，返回可读标题
+   */
+  const extractCleanTitle = (title: string, reportType: string): string => {
+    if (!title) {
+      // 根据报告类型返回默认标题
+      const defaultTitles: Record<string, string> = {
+        batch: '批次成本分析报告',
+        weekly: '周度成本分析报告',
+        monthly: '月度成本分析报告',
+        custom: '自定义分析报告',
+      };
+      return defaultTitles[reportType] || 'AI分析报告';
+    }
+
+    // 移除 Markdown 标记
+    let cleanTitle = title
+      .replace(/^#+\s*/gm, '')           // 移除 ### 标题标记
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // 移除粗体标记
+      .replace(/\*([^*]+)\*/g, '$1')     // 移除斜体标记
+      .replace(/>\s*/g, '')              // 移除引用标记
+      .replace(/[🎯📊💡🔴🔍📈✅❌⚠️🔧📋]/g, '') // 移除常用emoji
+      .trim();
+
+    // 提取第一行有意义的内容
+    const lines = cleanTitle.split('\n').filter(line => line.trim().length > 0);
+    if (lines.length > 0 && lines[0]) {
+      cleanTitle = lines[0].trim();
+    }
+
+    // 如果标题太长，截断
+    if (cleanTitle.length > 30) {
+      cleanTitle = cleanTitle.substring(0, 30) + '...';
+    }
+
+    // 如果标题为空或无意义，返回默认
+    if (!cleanTitle || cleanTitle.length < 2) {
+      const defaultTitles: Record<string, string> = {
+        batch: '批次成本分析报告',
+        weekly: '周度成本分析报告',
+        monthly: '月度成本分析报告',
+        custom: '自定义分析报告',
+      };
+      return defaultTitles[reportType] || 'AI分析报告';
+    }
+
+    return cleanTitle;
+  };
+
+  /**
+   * 提取报告摘要（用于预览）
+   */
+  const extractSummary = (title: string): string | null => {
+    if (!title) return null;
+
+    // 尝试提取引用块内容作为摘要
+    const quoteMatch = title.match(/>\s*(.+)/);
+    if (quoteMatch && quoteMatch[1]) {
+      let summary = quoteMatch[1]
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .trim();
+      if (summary.length > 50) {
+        summary = summary.substring(0, 50) + '...';
+      }
+      return summary;
+    }
+
+    return null;
   };
 
   /**
@@ -174,28 +248,39 @@ export default function AIReportListScreen() {
   /**
    * 渲染报告卡片
    */
-  const renderReportCard = ({ item }: { item: ReportSummary }) => (
-    <TouchableOpacity
-      onPress={() => handleViewReport(item)}
-      activeOpacity={0.7}
-    >
-      <Card style={styles.reportCard} mode="elevated">
-        <Card.Content>
-          {/* 报告头部 */}
-          <View style={styles.cardHeader}>
-            <View style={styles.titleContainer}>
-              <Text variant="titleMedium" style={styles.reportTitle} numberOfLines={1}>
-                {item.title}
-              </Text>
-              {getReportTypeChip(item.reportType)}
+  const renderReportCard = ({ item }: { item: ReportSummary }) => {
+    const cleanTitle = extractCleanTitle(item.title, item.reportType);
+    const summary = extractSummary(item.title);
+
+    return (
+      <TouchableOpacity
+        onPress={() => handleViewReport(item)}
+        activeOpacity={0.7}
+      >
+        <Card style={styles.reportCard} mode="elevated">
+          <Card.Content>
+            {/* 报告头部 */}
+            <View style={styles.cardHeader}>
+              <View style={styles.titleContainer}>
+                <Text variant="titleMedium" style={styles.reportTitle} numberOfLines={1}>
+                  {cleanTitle}
+                </Text>
+                {getReportTypeChip(item.reportType)}
+              </View>
+              <IconButton
+                icon="chevron-right"
+                size={24}
+                iconColor="#9E9E9E"
+                onPress={() => handleViewReport(item)}
+              />
             </View>
-            <IconButton
-              icon="chevron-right"
-              size={24}
-              iconColor="#9E9E9E"
-              onPress={() => handleViewReport(item)}
-            />
-          </View>
+
+            {/* 报告摘要预览 */}
+            {summary && (
+              <Text variant="bodySmall" style={styles.summaryText} numberOfLines={2}>
+                {summary}
+              </Text>
+            )}
 
           {/* 报告元数据 */}
           <View style={styles.metadataContainer}>
@@ -262,7 +347,8 @@ export default function AIReportListScreen() {
         </Card.Content>
       </Card>
     </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -307,12 +393,21 @@ export default function AIReportListScreen() {
                 暂无AI分析报告
               </Text>
               <Text variant="bodyMedium" style={styles.emptyHint}>
-                使用AI成本分析功能后，报告将显示在这里
+                点击右下角按钮，开始生成新的AI分析报告
               </Text>
             </View>
           }
         />
       )}
+
+      {/* 浮动按钮 - 生成新报告 */}
+      <FAB
+        icon="plus"
+        label="生成新报告"
+        style={styles.fab}
+        onPress={() => navigation.navigate('TimeRangeCostAnalysis' as never)}
+        color="#FFFFFF"
+      />
     </View>
   );
 }
@@ -357,6 +452,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#212121',
     flex: 1,
+  },
+  summaryText: {
+    color: '#616161',
+    marginTop: 4,
+    marginBottom: 8,
+    lineHeight: 18,
   },
   typeChip: {
     alignSelf: 'flex-start',
@@ -425,5 +526,12 @@ const styles = StyleSheet.create({
   emptyHint: {
     color: '#BDBDBD',
     textAlign: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#9C27B0',
   },
 });

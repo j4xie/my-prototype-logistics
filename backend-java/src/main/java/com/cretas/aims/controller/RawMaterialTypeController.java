@@ -49,7 +49,7 @@ public class RawMaterialTypeController {
         log.info("创建原材料类型: factoryId={}, code={}", factoryId, dto.getCode());
 
         // 获取当前用户ID
-        Integer userId = null;
+        Long userId = null;
         if (authorization != null && !authorization.trim().isEmpty()) {
             try {
                 String token = TokenUtils.extractToken(authorization);

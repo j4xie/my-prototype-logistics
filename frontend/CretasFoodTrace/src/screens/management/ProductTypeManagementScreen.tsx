@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import {
   Text,
   Appbar,
@@ -13,6 +13,7 @@ import {
   TextInput,
   Button,
   ActivityIndicator,
+  Menu,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { productTypeApiClient } from '../../services/api/productTypeApiClient';
@@ -24,12 +25,16 @@ import { canManageBasicData, getPermissionDebugInfo } from '../../utils/permissi
 // 创建ProductTypeManagement专用logger
 const productTypeLogger = logger.createContextLogger('ProductTypeManagement');
 
+// 下拉选项常量
+const UNIT_OPTIONS = ['kg', '件', '盒', '包', '条', '桶'] as const;
+const CATEGORY_OPTIONS = ['海鲜', '冷冻水产', '加工成品', '半成品'] as const;
+
 interface ProductType {
   id: string;
   name: string;
   code: string;
   category?: string;
-  description?: string;
+  unit?: string;
   isActive: boolean;
   createdAt: string;
 }
@@ -46,6 +51,10 @@ export default function ProductTypeManagementScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<ProductType | null>(null);
 
+  // 下拉菜单可见状态
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
+  const [unitMenuVisible, setUnitMenuVisible] = useState(false);
+
   // 权限检查
   const canManage = canManageBasicData(user);
 
@@ -58,12 +67,11 @@ export default function ProductTypeManagementScreen() {
     });
   }, [user]);
 
-  // 表单状态
+  // 表单状态 (简化: 只需名称、单位、分类)
   const [formData, setFormData] = useState({
     name: '',
-    code: '',
-    category: '',
-    description: '',
+    unit: 'kg',      // 默认单位
+    category: '海鲜', // 默认分类
   });
 
   useEffect(() => {
@@ -94,7 +102,7 @@ export default function ProductTypeManagementScreen() {
           name: item.name,
           code: item.productCode || item.code || '',
           category: item.category || undefined,
-          description: item.description || undefined,
+          unit: item.unit || 'kg',
           isActive: item.isActive !== false,
           createdAt: item.createdAt || new Date().toISOString(),
         }));
@@ -115,7 +123,7 @@ export default function ProductTypeManagementScreen() {
 
   const handleAdd = () => {
     setEditingItem(null);
-    setFormData({ name: '', code: '', category: '', description: '' });
+    setFormData({ name: '', unit: 'kg', category: '海鲜' });
     setModalVisible(true);
   };
 
@@ -123,26 +131,25 @@ export default function ProductTypeManagementScreen() {
     setEditingItem(item);
     setFormData({
       name: item.name,
-      code: item.code,
-      category: item.category || '',
-      description: item.description || '',
+      unit: item.unit || 'kg',
+      category: item.category || '海鲜',
     });
     setModalVisible(true);
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.code) {
-      Alert.alert('提示', '产品名称和代码不能为空');
+    if (!formData.name.trim()) {
+      Alert.alert('提示', '产品名称不能为空');
       return;
     }
 
     try {
       // 映射前端字段到后端期望的字段格式
+      // 注意: productCode 不传，后端自动生成 SKU
       const requestData = {
-        name: formData.name,
-        productCode: formData.code,  // 前端code → 后端productCode
-        category: formData.category || undefined,
-        description: formData.description || undefined,
+        name: formData.name.trim(),
+        unit: formData.unit,
+        category: formData.category,
       };
 
       if (editingItem) {
@@ -151,7 +158,7 @@ export default function ProductTypeManagementScreen() {
         Alert.alert('成功', '产品类型更新成功');
         productTypeLogger.info('产品类型更新成功', { id: editingItem.id, name: formData.name });
       } else {
-        // 创建
+        // 创建 (后端会自动生成 SKU)
         await productTypeApiClient.createProductType(requestData, factoryId);
         Alert.alert('成功', '产品类型创建成功');
         productTypeLogger.info('产品类型创建成功', { name: formData.name });
@@ -312,15 +319,18 @@ export default function ProductTypeManagementScreen() {
                   </View>
                 </View>
 
-                {item.category && (
-                  <Chip mode="outlined" compact style={styles.categoryChip}>
-                    {item.category}
-                  </Chip>
-                )}
-
-                {item.description && (
-                  <Text style={styles.itemDescription}>{item.description}</Text>
-                )}
+                <View style={styles.chipRow}>
+                  {item.category && (
+                    <Chip mode="outlined" compact style={styles.categoryChip}>
+                      {item.category}
+                    </Chip>
+                  )}
+                  {item.unit && (
+                    <Chip mode="outlined" compact style={styles.unitChip}>
+                      单位: {item.unit}
+                    </Chip>
+                  )}
+                </View>
 
                 <View style={styles.itemFooter}>
                   <Chip
@@ -357,44 +367,89 @@ export default function ProductTypeManagementScreen() {
             {editingItem ? '编辑产品类型' : '添加产品类型'}
           </Text>
 
+          {/* 产品名称 */}
           <TextInput
             label="产品名称 *"
             value={formData.name}
             onChangeText={(text) => setFormData({ ...formData, name: text })}
             mode="outlined"
             style={styles.input}
-            placeholder="例如: 鱼片"
+            placeholder="例如: 带鱼"
           />
 
-          <TextInput
-            label="产品代码 *"
-            value={formData.code}
-            onChangeText={(text) => setFormData({ ...formData, code: text.toUpperCase() })}
-            mode="outlined"
-            style={styles.input}
-            placeholder="例如: YP001"
-            autoCapitalize="characters"
-          />
+          {/* 编辑时显示产品代码(只读) */}
+          {editingItem && (
+            <TextInput
+              label="产品代码 (自动生成)"
+              value={editingItem.code}
+              mode="outlined"
+              style={styles.input}
+              disabled
+            />
+          )}
 
-          <TextInput
-            label="产品分类"
-            value={formData.category}
-            onChangeText={(text) => setFormData({ ...formData, category: text })}
-            mode="outlined"
-            style={styles.input}
-            placeholder="例如: 主产品"
-          />
+          {/* 单位下拉菜单 */}
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>单位</Text>
+            <Menu
+              visible={unitMenuVisible}
+              onDismiss={() => setUnitMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setUnitMenuVisible(true)}
+                >
+                  <Text style={styles.dropdownButtonText}>{formData.unit}</Text>
+                  <List.Icon icon="chevron-down" />
+                </TouchableOpacity>
+              }
+            >
+              {UNIT_OPTIONS.map((unit) => (
+                <Menu.Item
+                  key={unit}
+                  onPress={() => {
+                    setFormData({ ...formData, unit });
+                    setUnitMenuVisible(false);
+                  }}
+                  title={unit}
+                />
+              ))}
+            </Menu>
+          </View>
 
-          <TextInput
-            label="产品描述"
-            value={formData.description}
-            onChangeText={(text) => setFormData({ ...formData, description: text })}
-            mode="outlined"
-            style={styles.input}
-            multiline
-            numberOfLines={3}
-            placeholder="产品详细描述"
-          />
+          {/* 分类下拉菜单 */}
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownLabel}>分类</Text>
+            <Menu
+              visible={categoryMenuVisible}
+              onDismiss={() => setCategoryMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setCategoryMenuVisible(true)}
+                >
+                  <Text style={styles.dropdownButtonText}>{formData.category}</Text>
+                  <List.Icon icon="chevron-down" />
+                </TouchableOpacity>
+              }
+            >
+              {CATEGORY_OPTIONS.map((category) => (
+                <Menu.Item
+                  key={category}
+                  onPress={() => {
+                    setFormData({ ...formData, category });
+                    setCategoryMenuVisible(false);
+                  }}
+                  title={category}
+                />
+              ))}
+            </Menu>
+          </View>
+
+          {/* 提示信息 */}
+          {!editingItem && (
+            <Text style={styles.hintText}>产品代码将自动生成</Text>
+          )}
 
           <View style={styles.modalActions}>
             <Button
@@ -530,15 +585,18 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     marginTop: 22,
   },
-  categoryChip: {
-    alignSelf: 'flex-start',
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 8,
   },
-  itemDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-    marginBottom: 12,
+  categoryChip: {
+    height: 31,
+  },
+  unitChip: {
+    height: 31,
+    backgroundColor: '#E3F2FD',
   },
   itemFooter: {
     flexDirection: 'row',
@@ -566,6 +624,35 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 16,
+  },
+  dropdownContainer: {
+    marginBottom: 16,
+  },
+  dropdownLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#999',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  hintText: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+    marginBottom: 12,
   },
   modalActions: {
     flexDirection: 'row',

@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
 import { useAuthStore } from '../../store/authStore';
 import { dashboardAPI } from '../../services/api/dashboardApiClient';
+import { processingApiClient, ProcessingBatch } from '../../services/api/processingApiClient';
 import { handleError } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
@@ -22,6 +23,22 @@ interface ErrorState {
   canRetry: boolean;
 }
 
+
+interface DashboardOverviewData {
+  inProgressBatches?: number;
+  activeBatches?: number;
+  todayBatches?: number;
+  totalBatches?: number;
+  completedBatches?: number;
+  qualityInspections?: number;
+  onDutyWorkers?: number;
+  totalWorkers?: number;
+  monthlyOutput?: number;
+  monthlyYieldRate?: number;
+  lowStockMaterials?: number;
+  summary?: DashboardOverviewData;
+}
+
 /**
  * 生产仪表板 - 生产模块入口页
  */
@@ -33,6 +50,7 @@ export default function ProcessingDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ErrorState | null>(null);
   const [costAnalysisDialogVisible, setCostAnalysisDialogVisible] = useState(false);
+  const [recentBatches, setRecentBatches] = useState<ProcessingBatch[]>([]);
   const [dashboardData, setDashboardData] = useState({
     inProgressBatches: 0,
     totalBatches: 0,
@@ -52,7 +70,7 @@ export default function ProcessingDashboard() {
     userType,
     isPlatformAdmin,
     canOperate,
-    roleCode: user?.roleCode || user?.factoryUser?.roleCode,
+    roleCode: user?.roleCode,
   });
 
   // 加载仪表板数据
@@ -72,19 +90,27 @@ export default function ProcessingDashboard() {
       dashboardLogger.debug('仪表板数据响应', { success: overviewRes.success });
 
       // 提取数据 - 后端返回格式是 { success: true, data: {...}, message: "..." }
-      const overview = overviewRes.data;
-      dashboardLogger.debug('解析后数据', { hasSummary: !!overview?.summary });
+      const overview = overviewRes.data as DashboardOverviewData | undefined;
+      dashboardLogger.debug('解析后数据', { overview });
 
-      if (overview.summary) {
-        const { summary } = overview;
+      // 支持两种格式：
+      // 1. 有 summary 包装: { summary: { activeBatches, ... } }
+      // 2. 扁平结构: { inProgressBatches, todayBatches, ... }
+      const data = overview?.summary || overview;
 
+      if (data) {
         const newDashboardData = {
-          inProgressBatches: summary.activeBatches ?? 0,
-          totalBatches: summary.totalBatches ?? 0,
-          completedBatches: summary.completedBatches ?? 0,
-          pendingInspection: summary.qualityInspections ?? 0,
-          onDutyWorkers: summary.onDutyWorkers ?? 0,
-          totalWorkers: summary.totalWorkers ?? 0,
+          // 兼容两种字段名格式
+          inProgressBatches: data.inProgressBatches ?? data.activeBatches ?? 0,
+          totalBatches: data.todayBatches ?? data.totalBatches ?? 0,
+          completedBatches: data.completedBatches ?? 0,
+          pendingInspection: data.qualityInspections ?? 0,
+          onDutyWorkers: data.onDutyWorkers ?? 0,
+          totalWorkers: data.totalWorkers ?? 0,
+          // 额外字段（后端新返回的）
+          monthlyOutput: data.monthlyOutput ?? 0,
+          monthlyYieldRate: data.monthlyYieldRate ?? 0,
+          lowStockMaterials: data.lowStockMaterials ?? 0,
         };
 
         dashboardLogger.info('统计结果', newDashboardData);
@@ -110,6 +136,44 @@ export default function ProcessingDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 加载最近批次数据（用于成本对比）
+  const loadRecentBatches = async () => {
+    try {
+      dashboardLogger.debug('开始加载最近批次数据');
+      const result = await processingApiClient.getBatches({ size: 5 });
+
+      // 解析响应，支持多种格式
+      let batches: ProcessingBatch[] = [];
+      if (result.data?.content) {
+        batches = result.data.content;
+      } else if (Array.isArray(result.data)) {
+        batches = result.data;
+      }
+
+      dashboardLogger.info('最近批次加载成功', { batchCount: batches.length });
+      setRecentBatches(batches.slice(0, 5));
+    } catch (error) {
+      dashboardLogger.error('加载最近批次失败', error);
+      // 不显示错误，批次加载失败不影响其他功能
+    }
+  };
+
+  // 同时加载仪表板数据和批次数据
+  useEffect(() => {
+    loadRecentBatches();
+  }, []);
+
+  // 处理成本对比按钮点击
+  const handleCostComparisonPress = () => {
+    if (recentBatches.length < 2) {
+      Alert.alert('提示', '需要至少2个批次才能进行对比分析，请先创建生产批次');
+      return;
+    }
+    navigation.navigate('CostComparison', {
+      batchIds: recentBatches.slice(0, 3).map(b => String(b.id))
+    });
   };
 
   return (
@@ -207,9 +271,12 @@ export default function ProcessingDashboard() {
             {/* 平台管理员提示 */}
             {isPlatformAdmin && (
               <View style={styles.platformAdminNotice}>
-                <Text variant="bodyMedium" style={styles.noticeText}>
-                  👁️ 您是平台管理员，只能查看数据
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <IconButton icon="eye" iconColor="#E65100" size={20} style={{ margin: 0, padding: 0, height: 20, width: 20, marginRight: 8 }} />
+                  <Text variant="bodyMedium" style={styles.noticeText}>
+                    您是平台管理员，只能查看数据
+                  </Text>
+                </View>
                 <Text variant="bodySmall" style={styles.noticeHint}>
                   原材料入库和生产计划管理仅限工厂用户使用
                 </Text>
@@ -276,11 +343,27 @@ export default function ProcessingDashboard() {
               </Button>
               <Button
                 mode="outlined"
+                icon="package-down"
+                onPress={() => navigation.navigate('MaterialConsumptionHistory', {})}
+                style={styles.actionButton}
+              >
+                消耗记录
+              </Button>
+              <Button
+                mode="outlined"
                 icon="alert-circle"
                 onPress={() => navigation.navigate('ExceptionAlert')}
                 style={styles.actionButton}
               >
                 异常预警
+              </Button>
+              <Button
+                mode="outlined"
+                icon="qrcode-scan"
+                onPress={() => navigation.navigate('Traceability')}
+                style={styles.actionButton}
+              >
+                产品溯源
               </Button>
             </View>
           </Card.Content>
@@ -291,7 +374,6 @@ export default function ProcessingDashboard() {
           <Card.Title
             title="AI智能分析"
             subtitle="DeepSeek驱动的智能成本分析"
-            left={(props) => <Card.Title {...props} titleStyle={{}} />}
           />
           <Card.Content>
             <View style={styles.actionsGrid}>
@@ -307,9 +389,7 @@ export default function ProcessingDashboard() {
               <Button
                 mode="contained"
                 icon="compare"
-                onPress={() => navigation.navigate('CostComparison', {
-                  batchIds: ['BATCH_001', 'BATCH_002', 'BATCH_003']
-                })}
+                onPress={handleCostComparisonPress}
                 style={styles.actionButton}
                 buttonColor="#FF9800"
               >
@@ -329,11 +409,41 @@ export default function ProcessingDashboard() {
 
         {/* 最近批次 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="最近批次" />
+          <Card.Title
+            title="最近批次"
+            right={(props) => (
+              <Button
+                compact
+                onPress={() => navigation.navigate('BatchList', {})}
+              >
+                查看全部
+              </Button>
+            )}
+          />
           <Card.Content>
-            <Text variant="bodyMedium" style={styles.placeholder}>
-              暂无批次数据
-            </Text>
+            {recentBatches.length > 0 ? (
+              <View>
+                {recentBatches.slice(0, 3).map((batch) => (
+                  <View key={batch.id} style={styles.batchItem}>
+                    <View style={styles.batchInfo}>
+                      <Text variant="bodyMedium" style={styles.batchNumber}>
+                        {batch.batchNumber}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.batchMeta}>
+                        {batch.productType} · {batch.status === 'in_progress' ? '进行中' : batch.status === 'completed' ? '已完成' : batch.status}
+                      </Text>
+                    </View>
+                    <Text variant="bodySmall" style={styles.batchQuantity}>
+                      {batch.actualQuantity ?? batch.targetQuantity ?? '-'} 件
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text variant="bodyMedium" style={styles.placeholder}>
+                暂无批次数据
+              </Text>
+            )}
           </Card.Content>
         </Card>
       </ScrollView>
@@ -351,9 +461,7 @@ export default function ProcessingDashboard() {
               icon="clipboard-list"
               onPress={() => {
                 setCostAnalysisDialogVisible(false);
-                navigation.navigate('BatchList', {
-                  showCostAnalysis: true
-                });
+                navigation.navigate('BatchList', {});
               }}
               style={styles.dialogButton}
             >
@@ -465,5 +573,28 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     borderColor: '#F44336',
+  },
+  batchItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  batchInfo: {
+    flex: 1,
+  },
+  batchNumber: {
+    fontWeight: '500',
+    color: '#212121',
+  },
+  batchMeta: {
+    color: '#757575',
+    marginTop: 2,
+  },
+  batchQuantity: {
+    color: '#1976D2',
+    fontWeight: '500',
   },
 });
