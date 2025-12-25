@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>饲料审核 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../../assets/css/desktop.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gray);
+    }
+
+    /* 审核布局 */
+    .review-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 20px;
+    }
+
+    .review-main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .review-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* 卡片 */
+    .review-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header h3 {
+      font-size: 15px;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* 产品预览 */
+    .product-preview {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .preview-image {
+      width: 200px;
+      height: 150px;
+      background: linear-gradient(135deg, #fff8e1, #ffecb3);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      color: #ff8f00;
+      flex-shrink: 0;
+    }
+
+    .preview-info {
+      flex: 1;
+    }
+
+    .preview-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+    }
+
+    .preview-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .meta-tag {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .meta-tag i {
+      color: var(--primary-color);
+    }
+
+    .preview-price {
+      font-size: 24px;
+      font-weight: 700;
+      color: #e53935;
+    }
+
+    .preview-price span {
+      font-size: 14px;
+      color: #999;
+      font-weight: 400;
+      margin-left: 8px;
+    }
+
+    /* 审核状态 */
+    .review-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .review-status.pending {
+      background: #fff8e1;
+      color: #ff8f00;
+    }
+
+    .review-status.approved {
+      background: #e8f5e9;
+      color: #4caf50;
+    }
+
+    .review-status.rejected {
+      background: #ffebee;
+      color: #e53935;
+    }
+
+    /* 信息表格 */
+    .info-table {
+      width: 100%;
+    }
+
+    .info-table tr {
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .info-table th {
+      width: 120px;
+      padding: 12px 0;
+      text-align: left;
+      font-weight: 500;
+      font-size: 14px;
+      color: #999;
+      vertical-align: top;
+    }
+
+    .info-table td {
+      padding: 12px 0;
+      font-size: 14px;
+      color: #333;
+    }
+
+    /* 成分表格 */
+    .component-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .component-table th,
+    .component-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+    }
+
+    .component-table th {
+      background: #fafafa;
+      font-weight: 600;
+      color: #666;
+    }
+
+    .component-table td {
+      color: #333;
+    }
+
+    /* 图片画廊 */
+    .image-gallery {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .gallery-item {
+      aspect-ratio: 4/3;
+      background: #f5f5f5;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.05);
+    }
+
+    .gallery-item i {
+      font-size: 24px;
+      color: #bbb;
+    }
+
+    /* 审核历史 */
+    .review-history {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .history-item {
+      display: flex;
+      gap: 12px;
+    }
+
+    .history-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .history-icon.submit {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .history-icon.pending {
+      background: #fff8e1;
+      color: #ff8f00;
+    }
+
+    .history-icon.approved {
+      background: #e8f5e9;
+      color: #4caf50;
+    }
+
+    .history-icon.rejected {
+      background: #ffebee;
+      color: #e53935;
+    }
+
+    .history-content {
+      flex: 1;
+      padding-bottom: 16px;
+      border-bottom: 1px dashed #e0e0e0;
+    }
+
+    .history-item:last-child .history-content {
+      border-bottom: none;
+    }
+
+    .history-content h5 {
+      font-size: 14px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .history-content p {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .history-content .reason {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* 审核表单 */
+    .review-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .form-group textarea {
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    /* 审核选项 */
+    .review-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .review-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .review-option:hover {
+      background: #fafafa;
+    }
+
+    .review-option.selected {
+      border-color: var(--primary-color);
+      background: #f0f4ff;
+    }
+
+    .review-option.approve.selected {
+      border-color: #4caf50;
+      background: #e8f5e9;
+    }
+
+    .review-option.reject.selected {
+      border-color: #e53935;
+      background: #ffebee;
+    }
+
+    .review-option input {
+      display: none;
+    }
+
+    .option-radio {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .review-option.selected .option-radio {
+      border-color: var(--primary-color);
+    }
+
+    .review-option.approve.selected .option-radio {
+      border-color: #4caf50;
+    }
+
+    .review-option.reject.selected .option-radio {
+      border-color: #e53935;
+    }
+
+    .review-option.selected .option-radio::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: var(--primary-color);
+      border-radius: 50%;
+    }
+
+    .review-option.approve.selected .option-radio::after {
+      background: #4caf50;
+    }
+
+    .review-option.reject.selected .option-radio::after {
+      background: #e53935;
+    }
+
+    .option-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .option-icon.approve {
+      background: #e8f5e9;
+      color: #4caf50;
+    }
+
+    .option-icon.reject {
+      background: #ffebee;
+      color: #e53935;
+    }
+
+    .option-info h4 {
+      font-size: 15px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .option-info p {
+      font-size: 13px;
+      color: #999;
+    }
+
+    /* 驳回原因 */
+    .reject-reasons {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .reject-reasons.show {
+      display: flex;
+    }
+
+    .reason-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #f5f5f5;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .reason-chip:hover {
+      background: #ffebee;
+      color: #e53935;
+    }
+
+    .reason-chip.selected {
+      background: #e53935;
+      color: #fff;
+    }
+
+    /* 提交按钮 */
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .submit-btn.approve {
+      background: #4caf50;
+      color: #fff;
+    }
+
+    .submit-btn.approve:hover {
+      background: #388e3c;
+    }
+
+    .submit-btn.reject {
+      background: #e53935;
+      color: #fff;
+    }
+
+    .submit-btn.reject:hover {
+      background: #c62828;
+    }
+
+    .submit-btn:disabled {
+      background: #e0e0e0;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    /* 供应商信息 */
+    .supplier-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+
+    .supplier-avatar {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 20px;
+    }
+
+    .supplier-detail h4 {
+      font-size: 15px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .supplier-detail p {
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* 认证标签 */
+    .cert-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .cert-tag {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #e8f5e9;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #4caf50;
+    }
+
+    .cert-tag i {
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <!-- 侧边栏 -->
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../../dashboard/overview.html" class="nav-item">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../cattle/list.html" class="nav-sub-item">活牛信息</a>
+            <a href="../breeding/list.html" class="nav-sub-item">育种种牛</a>
+            <a href="../beef/list.html" class="nav-sub-item">牛肉产品</a>
+            <a href="list.html" class="nav-sub-item active">饲料产品</a>
+            <a href="../equipment/list.html" class="nav-sub-item">设备管理</a>
+            <a href="../farm/list.html" class="nav-sub-item">养殖场</a>
+            <a href="../slaughter/list.html" class="nav-sub-item">屠宰场</a>
+            <a href="../review-queue.html" class="nav-sub-item">审核队列</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+            <a href="../../settings/category-manage.html" class="nav-sub-item">分类管理</a>
+            <a href="../../settings/banner-manage.html" class="nav-sub-item">Banner管理</a>
+            <a href="../../settings/user-manage.html" class="nav-sub-item">用户管理</a>
+            <a href="../../settings/system-config.html" class="nav-sub-item">系统配置</a>
+            <a href="../../settings/permission-settings.html" class="nav-sub-item">权限设置</a>
+          </div>
+        </div>
+
+        <a href="../../../index.html" class="nav-item"
+          style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="desktop-main">
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <button class="btn btn-outline" onclick="history.back()">
+            <i class="mdi mdi-arrow-left"></i> 返回
+          </button>
+          <h1 class="desktop-header-title">饲料产品审核</h1>
+          <span class="review-status pending">
+            <i class="mdi mdi-clock-outline"></i> 待审核
+          </span>
+        </div>
+        <div class="desktop-header-right">
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="desktop-content">
+        <div class="review-layout">
+          <!-- 左侧主内容 -->
+          <div class="review-main">
+            <!-- 产品预览 -->
+            <div class="review-card">
+              <div class="product-preview">
+                <div class="preview-image">
+                  <i class="mdi mdi-food-variant"></i>
+                </div>
+                <div class="preview-info">
+                  <h1 class="preview-title">复合维生素预混料</h1>
+                  <div class="preview-meta">
+                    <span class="meta-tag"><i class="mdi mdi-tag"></i> 帝斯曼</span>
+                    <span class="meta-tag"><i class="mdi mdi-package-variant"></i> 25kg/袋</span>
+                    <span class="meta-tag"><i class="mdi mdi-domain"></i> 帝斯曼中国</span>
+                    <span class="meta-tag"><i class="mdi mdi-calendar"></i> 2024-06-21 提交</span>
+                  </div>
+                  <div class="preview-price">
+                    ¥680 <span>/ 袋</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 产品详情 -->
+            <div class="review-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-information"></i> 产品信息</h3>
+              </div>
+              <div class="card-body">
+                <table class="info-table">
+                  <tr>
+                    <th>产品编号</th>
+                    <td>FEED-2024-002156</td>
+                  </tr>
+                  <tr>
+                    <th>产品类型</th>
+                    <td>预混料</td>
+                  </tr>
+                  <tr>
+                    <th>品牌名称</th>
+                    <td>帝斯曼 DSM</td>
+                  </tr>
+                  <tr>
+                    <th>规格包装</th>
+                    <td>25kg/编织袋</td>
+                  </tr>
+                  <tr>
+                    <th>保质期</th>
+                    <td>12个月</td>
+                  </tr>
+                  <tr>
+                    <th>适用对象</th>
+                    <td>肉牛、奶牛通用</td>
+                  </tr>
+                  <tr>
+                    <th>储存条件</th>
+                    <td>阴凉干燥处，密封保存，避免阳光直射</td>
+                  </tr>
+                  <tr>
+                    <th>产品描述</th>
+                    <td>本产品是针对牛群设计的复合维生素预混料，富含维生素A、D3、E、K3及B族维生素等多种营养元素，可有效提高牛群免疫力，促进生长发育，提高饲料转化率。</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- 营养成分 -->
+            <div class="review-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-flask"></i> 营养成分</h3>
+              </div>
+              <table class="component-table">
+                <thead>
+                  <tr>
+                    <th>成分名称</th>
+                    <th>含量</th>
+                    <th>单位</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>维生素A</td>
+                    <td>500,000</td>
+                    <td>IU/kg</td>
+                  </tr>
+                  <tr>
+                    <td>维生素D3</td>
+                    <td>100,000</td>
+                    <td>IU/kg</td>
+                  </tr>
+                  <tr>
+                    <td>维生素E</td>
+                    <td>5,000</td>
+                    <td>IU/kg</td>
+                  </tr>
+                  <tr>
+                    <td>维生素K3</td>
+                    <td>500</td>
+                    <td>mg/kg</td>
+                  </tr>
+                  <tr>
+                    <td>维生素B1</td>
+                    <td>200</td>
+                    <td>mg/kg</td>
+                  </tr>
+                  <tr>
+                    <td>维生素B2</td>
+                    <td>600</td>
+                    <td>mg/kg</td>
+                  </tr>
+                  <tr>
+                    <td>烟酸</td>
+                    <td>2,000</td>
+                    <td>mg/kg</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 产品图片 -->
+            <div class="review-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-image-multiple"></i> 产品图片</h3>
+              </div>
+              <div class="card-body">
+                <div class="image-gallery">
+                  <div class="gallery-item" style="background: linear-gradient(135deg, #fff8e1, #ffecb3);">
+                    <i class="mdi mdi-food-variant" style="font-size: 40px; color: #ff8f00;"></i>
+                  </div>
+                  <div class="gallery-item">
+                    <i class="mdi mdi-package-variant"></i>
+                  </div>
+                  <div class="gallery-item">
+                    <i class="mdi mdi-certificate"></i>
+                  </div>
+                  <div class="gallery-item">
+                    <i class="mdi mdi-text-box"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧审核面板 -->
+          <div class="review-sidebar">
+            <!-- 供应商信息 -->
+            <div class="review-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-domain"></i> 供应商信息</h3>
+              </div>
+              <div class="card-body">
+                <div class="supplier-info">
+                  <div class="supplier-avatar">
+                    <i class="mdi mdi-domain"></i>
+                  </div>
+                  <div class="supplier-detail">
+                    <h4>帝斯曼中国</h4>
+                    <p>上海市浦东新区</p>
+                  </div>
+                </div>
+                <table class="info-table" style="margin-top: 16px;">
+                  <tr>
+                    <th>联系人</th>
+                    <td>李经理</td>
+                  </tr>
+                  <tr>
+                    <th>联系电话</th>
+                    <td>139****8888</td>
+                  </tr>
+                  <tr>
+                    <th>入驻时间</th>
+                    <td>2023-03-15</td>
+                  </tr>
+                  <tr>
+                    <th>已发布</th>
+                    <td>56 个产品</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- 资质认证 -->
+            <div class="review-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-certificate"></i> 资质认证</h3>
+              </div>
+              <div class="card-body">
+                <div class="cert-tags">
+                  <span class="cert-tag"><i class="mdi mdi-check-circle"></i> ISO9001</span>
+                  <span class="cert-tag"><i class="mdi mdi-check-circle"></i> 饲料生产许可</span>
+                  <span class="cert-tag"><i class="mdi mdi-check-circle"></i> HACCP</span>
+                  <span class="cert-tag"><i class="mdi mdi-check-circle"></i> GMP认证</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 审核历史 -->
+            <div class="review-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-history"></i> 审核历史</h3>
+              </div>
+              <div class="card-body">
+                <div class="review-history">
+                  <div class="history-item">
+                    <div class="history-icon pending">
+                      <i class="mdi mdi-clock-outline"></i>
+                    </div>
+                    <div class="history-content">
+                      <h5>等待审核</h5>
+                      <p>2024-06-21 16:45</p>
+                    </div>
+                  </div>
+                  <div class="history-item">
+                    <div class="history-icon submit">
+                      <i class="mdi mdi-file-send"></i>
+                    </div>
+                    <div class="history-content">
+                      <h5>提交审核</h5>
+                      <p>帝斯曼中国 · 2024-06-21 16:45</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 审核操作 -->
+            <div class="review-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-gavel"></i> 审核操作</h3>
+              </div>
+              <div class="card-body">
+                <form class="review-form" onsubmit="return handleReview(event)">
+                  <div class="review-options">
+                    <label class="review-option approve" onclick="selectOption(this, 'approve')">
+                      <input type="radio" name="reviewResult" value="approve">
+                      <div class="option-radio"></div>
+                      <div class="option-icon approve">
+                        <i class="mdi mdi-check"></i>
+                      </div>
+                      <div class="option-info">
+                        <h4>通过审核</h4>
+                        <p>产品将立即上架</p>
+                      </div>
+                    </label>
+                    <label class="review-option reject" onclick="selectOption(this, 'reject')">
+                      <input type="radio" name="reviewResult" value="reject">
+                      <div class="option-radio"></div>
+                      <div class="option-icon reject">
+                        <i class="mdi mdi-close"></i>
+                      </div>
+                      <div class="option-info">
+                        <h4>驳回申请</h4>
+                        <p>需填写驳回原因</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div class="reject-reasons" id="rejectReasons">
+                    <label style="font-size: 13px; color: #666; margin-bottom: 4px;">快捷选择驳回原因：</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                      <span class="reason-chip" onclick="selectReason(this)">信息不完整</span>
+                      <span class="reason-chip" onclick="selectReason(this)">图片不清晰</span>
+                      <span class="reason-chip" onclick="selectReason(this)">资质不符</span>
+                      <span class="reason-chip" onclick="selectReason(this)">价格异常</span>
+                      <span class="reason-chip" onclick="selectReason(this)">成分标注错误</span>
+                      <span class="reason-chip" onclick="selectReason(this)">违反规定</span>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>审核备注</label>
+                    <textarea id="reviewComment" placeholder="请输入审核备注（选填）"></textarea>
+                  </div>
+
+                  <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                    <i class="mdi mdi-check"></i> 提交审核结果
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let currentAction = null;
+
+    // 选择审核选项
+    function selectOption(element, action) {
+      document.querySelectorAll('.review-option').forEach(opt => opt.classList.remove('selected'));
+      element.classList.add('selected');
+      currentAction = action;
+
+      const rejectReasons = document.getElementById('rejectReasons');
+      const submitBtn = document.getElementById('submitBtn');
+
+      if (action === 'reject') {
+        rejectReasons.classList.add('show');
+        submitBtn.className = 'submit-btn reject';
+        submitBtn.innerHTML = '<i class="mdi mdi-close"></i> 确认驳回';
+      } else {
+        rejectReasons.classList.remove('show');
+        submitBtn.className = 'submit-btn approve';
+        submitBtn.innerHTML = '<i class="mdi mdi-check"></i> 确认通过';
+      }
+
+      submitBtn.disabled = false;
+    }
+
+    // 选择驳回原因
+    function selectReason(element) {
+      element.classList.toggle('selected');
+      const comment = document.getElementById('reviewComment');
+      const selected = document.querySelectorAll('.reason-chip.selected');
+      const reasons = Array.from(selected).map(chip => chip.textContent);
+      comment.value = reasons.join('；');
+    }
+
+    // 提交审核
+    function handleReview(event) {
+      event.preventDefault();
+      const comment = document.getElementById('reviewComment').value;
+
+      if (currentAction === 'approve') {
+        if (confirm('确定通过该产品的审核吗？')) {
+          alert('审核已通过！产品已上架。');
+          location.href = 'list.html';
+        }
+      } else if (currentAction === 'reject') {
+        if (!comment) {
+          alert('请填写驳回原因');
+          return false;
+        }
+        if (confirm('确定驳回该产品吗？')) {
+          alert('已驳回！已通知供应商。');
+          location.href = 'list.html';
+        }
+      }
+      return false;
+    }
+
+    // 侧边栏
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => title.parentElement.classList.toggle('expanded'));
+    });
+
+    console.log('饲料审核页加载完成');
+  </script>
+</body>
+
+</html>

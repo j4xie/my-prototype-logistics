@@ -1,0 +1,2912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>种牛详情 - 牛产业云平台</title>
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* 移动端框架 */
+    .mobile-frame {
+      max-width: 428px;
+      margin: 0 auto;
+      background: #F5F5F5;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* 顶部导航 */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      height: 56px;
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(123, 31, 162, 0.3);
+    }
+
+    .header-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+
+    .header-btn:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .header-title {
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    /* 主内容区 */
+    .main-content {
+      padding-top: 56px;
+    }
+
+    /* 图片画廊 */
+    .image-gallery {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #E1BEE7;
+      overflow: hidden;
+    }
+
+    .gallery-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.3s ease;
+    }
+
+    .gallery-item {
+      flex-shrink: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #7B1FA2;
+    }
+
+    .gallery-placeholder i {
+      font-size: 80px;
+      margin-bottom: 16px;
+    }
+
+    .gallery-placeholder span {
+      font-size: 16px;
+      color: #9C27B0;
+    }
+
+    .gallery-indicators {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+    }
+
+    .indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.5);
+      transition: all 0.3s;
+    }
+
+    .indicator.active {
+      width: 24px;
+      background: white;
+    }
+
+    .gallery-counter {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    /* 品质标签 */
+    .quality-badge {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .badge {
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-elite {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+      color: #5D4037;
+    }
+
+    .badge-premium {
+      background: linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%);
+      color: #424242;
+    }
+
+    .badge-certified {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+    }
+
+    .badge-pedigree {
+      background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+      color: white;
+    }
+
+    /* 价格区域 */
+    .price-section {
+      background: white;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .current-price {
+      font-size: 28px;
+      font-weight: 700;
+      color: #D32F2F;
+    }
+
+    .price-unit {
+      font-size: 14px;
+      color: #D32F2F;
+    }
+
+    .original-price {
+      font-size: 14px;
+      color: #999;
+      text-decoration: line-through;
+    }
+
+    .price-tag {
+      background: #FCE4EC;
+      color: #C2185B;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .cattle-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .info-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .info-tag {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #F3E5F5;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #7B1FA2;
+    }
+
+    .info-tag i {
+      font-size: 14px;
+    }
+
+    /* 遗传信息卡片 */
+    .genetic-card {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .genetic-header {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .genetic-header i {
+      font-size: 20px;
+      color: white;
+    }
+
+    .genetic-header span {
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .genetic-content {
+      padding: 16px;
+    }
+
+    .pedigree-tree {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .pedigree-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pedigree-label {
+      width: 60px;
+      font-size: 12px;
+      color: #666;
+      flex-shrink: 0;
+    }
+
+    .pedigree-value {
+      flex: 1;
+      background: #F3E5F5;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #4A148C;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pedigree-value i {
+      font-size: 18px;
+      color: #7B1FA2;
+    }
+
+    .genetic-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #F0F0F0;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #7B1FA2;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* 规格信息 */
+    .specs-card {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title i {
+      color: #7B1FA2;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .spec-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #FAFAFA;
+      border-radius: 8px;
+    }
+
+    .spec-label {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .spec-value {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    /* 认证信息 */
+    .cert-card {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .cert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cert-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
+      border-radius: 10px;
+    }
+
+    .cert-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .cert-icon.gold {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+      color: #5D4037;
+    }
+
+    .cert-icon.purple {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+    }
+
+    .cert-icon.blue {
+      background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+      color: white;
+    }
+
+    .cert-icon.green {
+      background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+      color: white;
+    }
+
+    .cert-info {
+      flex: 1;
+    }
+
+    .cert-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .cert-desc {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .cert-badge {
+      padding: 4px 8px;
+      background: #7B1FA2;
+      color: white;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    /* 卖家信息 */
+    .seller-card {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .seller-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .seller-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+    }
+
+    .seller-details {
+      flex: 1;
+    }
+
+    .seller-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .verified-badge {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+      color: #5D4037;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .seller-meta {
+      display: flex;
+      gap: 12px;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .seller-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .seller-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .seller-btn {
+      flex: 1;
+      height: 36px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .seller-btn.primary {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+    }
+
+    .seller-btn.secondary {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    /* 详情描述 */
+    .desc-card {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .desc-text {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.8;
+    }
+
+    .desc-images {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .desc-img {
+      aspect-ratio: 1;
+      background: #F3E5F5;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #7B1FA2;
+      font-size: 24px;
+    }
+
+    /* 服务保障 */
+    .service-card {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .service-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .service-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: #F3E5F5;
+      border-radius: 8px;
+    }
+
+    .service-item i {
+      font-size: 20px;
+      color: #7B1FA2;
+    }
+
+    .service-item span {
+      font-size: 13px;
+      color: #333;
+    }
+
+    /* 溯源信息 */
+    .trace-card {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .trace-header {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .trace-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .trace-header i {
+      font-size: 22px;
+      color: white;
+    }
+
+    .trace-header span {
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .trace-id {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: white;
+    }
+
+    .trace-content {
+      padding: 16px;
+    }
+
+    .trace-timeline {
+      position: relative;
+      padding-left: 24px;
+    }
+
+    .trace-timeline::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(to bottom, #7B1FA2, #E1BEE7);
+    }
+
+    .trace-item {
+      position: relative;
+      padding-bottom: 20px;
+    }
+
+    .trace-item:last-child {
+      padding-bottom: 0;
+    }
+
+    .trace-dot {
+      position: absolute;
+      left: -24px;
+      top: 4px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid #7B1FA2;
+    }
+
+    .trace-item.current .trace-dot {
+      background: #7B1FA2;
+      box-shadow: 0 0 0 4px rgba(123, 31, 162, 0.2);
+    }
+
+    .trace-item.current .trace-dot::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+    }
+
+    .trace-time {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 4px;
+    }
+
+    .trace-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .trace-desc {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .trace-location {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #7B1FA2;
+      margin-top: 6px;
+    }
+
+    .trace-tags {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .trace-tag {
+      padding: 3px 8px;
+      background: #F3E5F5;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #7B1FA2;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .trace-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #F0F0F0;
+    }
+
+    .trace-btn {
+      flex: 1;
+      height: 40px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .trace-btn.primary {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+    }
+
+    .trace-btn.secondary {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    /* 健康档案 */
+    .health-card {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .health-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .health-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: #F3E5F5;
+      border-radius: 10px;
+    }
+
+    .health-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .health-icon.vaccine {
+      background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+      color: white;
+    }
+
+    .health-icon.check {
+      background: linear-gradient(135deg, #2196F3 0%, #1565C0 100%);
+      color: white;
+    }
+
+    .health-icon.gene {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+    }
+
+    .health-icon.record {
+      background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+      color: white;
+    }
+
+    .health-info {
+      flex: 1;
+    }
+
+    .health-label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .health-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-top: 2px;
+    }
+
+    /* 繁殖记录 */
+    .breeding-record {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .record-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .record-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+      border-radius: 10px;
+      border-left: 3px solid #7B1FA2;
+    }
+
+    .record-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #7B1FA2;
+    }
+
+    .record-info {
+      flex: 1;
+    }
+
+    .record-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .record-meta {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .record-status {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .record-status.success {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .record-status.pending {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    /* 推荐种牛 */
+    .recommend-section {
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .recommend-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .recommend-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .recommend-item {
+      flex-shrink: 0;
+      width: 140px;
+    }
+
+    .recommend-img {
+      width: 140px;
+      height: 105px;
+      background: #F3E5F5;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #7B1FA2;
+      font-size: 32px;
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    .recommend-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+      color: #5D4037;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .recommend-title {
+      font-size: 13px;
+      color: #333;
+      line-height: 1.4;
+      height: 36px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .recommend-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: #D32F2F;
+      margin-top: 4px;
+    }
+
+    /* 底部操作栏 */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      height: 70px;
+      background: white;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+    }
+
+    .bar-left {
+      display: flex;
+      gap: 20px;
+    }
+
+    .bar-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      color: #666;
+      font-size: 20px;
+    }
+
+    .bar-icon span {
+      font-size: 10px;
+    }
+
+    .bar-icon.active {
+      color: #D32F2F;
+    }
+
+    .bar-right {
+      flex: 1;
+      display: flex;
+      gap: 10px;
+      margin-left: 20px;
+    }
+
+    .action-btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .action-btn.consult {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .action-btn.buy {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+    }
+
+    /* 浮动按钮 */
+    .float-btn {
+      position: fixed;
+      bottom: 90px;
+      right: max(16px, calc(50% - 198px));
+      width: 50px;
+      height: 50px;
+      border-radius: 25px;
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 12px rgba(123, 31, 162, 0.4);
+      z-index: 90;
+      transition: transform 0.2s;
+    }
+
+    .float-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 分享面板 */
+    .share-panel {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 100%;
+      max-width: 428px;
+      background: white;
+      border-radius: 16px 16px 0 0;
+      padding: 20px;
+      z-index: 200;
+      transition: transform 0.3s ease;
+    }
+
+    .share-panel.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .share-title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .share-options {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+
+    .share-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .share-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .share-icon.wechat {
+      background: #07C160;
+      color: white;
+    }
+
+    .share-icon.moments {
+      background: #07C160;
+      color: white;
+    }
+
+    .share-icon.qq {
+      background: #12B7F5;
+      color: white;
+    }
+
+    .share-icon.link {
+      background: #F5F5F5;
+      color: #666;
+    }
+
+    .share-label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .share-cancel {
+      width: 100%;
+      height: 48px;
+      background: #F5F5F5;
+      border-radius: 24px;
+      font-size: 16px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 遮罩层 */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 150;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 300;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* 咨询弹窗 */
+    .contact-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: calc(100% - 64px);
+      max-width: 320px;
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .contact-modal.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .modal-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .contact-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .contact-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      background: #F3E5F5;
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+
+    .contact-option:active {
+      background: #E1BEE7;
+    }
+
+    .contact-option i {
+      font-size: 24px;
+      color: #7B1FA2;
+    }
+
+    .contact-option span {
+      flex: 1;
+      font-size: 15px;
+      color: #333;
+    }
+
+    .contact-option .mdi-chevron-right {
+      color: #999;
+    }
+
+    .modal-close {
+      margin-top: 16px;
+      width: 100%;
+      height: 44px;
+      background: #F5F5F5;
+      border-radius: 22px;
+      font-size: 15px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ==================== 溯源弹窗样式 ==================== */
+
+    /* 溯源二维码弹窗 */
+    .trace-qr-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: calc(100% - 48px);
+      max-width: 340px;
+      background: white;
+      border-radius: 16px;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+      overflow: hidden;
+    }
+
+    .trace-qr-modal.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .qr-modal-header {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .qr-modal-header i {
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .qr-modal-body {
+      padding: 24px;
+    }
+
+    .qr-code-wrapper {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .qr-code-placeholder {
+      width: 160px;
+      height: 160px;
+      background: #F5F5F5;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      border: 2px dashed #E0E0E0;
+    }
+
+    .qr-id {
+      font-size: 14px;
+      color: #7B1FA2;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .qr-tips {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .qr-tips p {
+      font-size: 13px;
+      color: #666;
+      margin: 4px 0;
+    }
+
+    .qr-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .qr-btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 22px;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .qr-btn.save {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+    }
+
+    .qr-btn.share {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .qr-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 健康档案详情弹窗 */
+    .health-detail-modal {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 100%;
+      max-width: 428px;
+      max-height: 70vh;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      z-index: 200;
+      transition: transform 0.3s ease;
+      overflow: hidden;
+    }
+
+    .health-detail-modal.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .health-detail-modal .modal-header {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-icon {
+      font-size: 24px;
+    }
+
+    .modal-title-text {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .health-detail-modal .modal-header i {
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .health-detail-modal .modal-body {
+      padding: 16px;
+      max-height: calc(70vh - 60px);
+      overflow-y: auto;
+    }
+
+    .health-records-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .health-record-item {
+      background: #FAFAFA;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      gap: 14px;
+    }
+
+    .health-record-item .record-date {
+      flex-shrink: 0;
+      width: 90px;
+      color: #7B1FA2;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .health-record-item .record-info {
+      flex: 1;
+    }
+
+    .health-record-item .record-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .health-record-item .record-batch,
+    .health-record-item .record-operator,
+    .health-record-item .record-lab,
+    .health-record-item .record-result {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .health-record-item .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 2px 0;
+    }
+
+    .health-record-item .info-row span {
+      color: #666;
+    }
+
+    .health-record-item .info-row strong {
+      color: #333;
+    }
+
+    .text-success {
+      color: #2E7D32 !important;
+    }
+
+    /* 繁殖记录详情弹窗 */
+    .breeding-detail-modal {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 100%;
+      max-width: 428px;
+      max-height: 80vh;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      z-index: 200;
+      transition: transform 0.3s ease;
+      overflow: hidden;
+    }
+
+    .breeding-detail-modal.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .breeding-detail-modal .modal-header {
+      background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .breeding-detail-modal .modal-header i {
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .breeding-detail-modal .modal-body {
+      padding: 16px;
+      max-height: calc(80vh - 60px);
+      overflow-y: auto;
+    }
+
+    .breeding-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .breeding-stats-grid .stat-item {
+      background: #F3E5F5;
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+
+    .breeding-stats-grid .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #7B1FA2;
+      margin-bottom: 4px;
+    }
+
+    .breeding-stats-grid .stat-label {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      padding-left: 8px;
+      border-left: 3px solid #7B1FA2;
+    }
+
+    .breeding-records-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .breeding-record-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #FAFAFA;
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    .breeding-record-item .record-date {
+      flex-shrink: 0;
+      font-size: 12px;
+      color: #7B1FA2;
+      font-weight: 500;
+    }
+
+    .breeding-record-item .record-info {
+      flex: 1;
+    }
+
+    .breeding-record-item .record-farm {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .breeding-record-item .record-method {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .breeding-record-item .record-status {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .breeding-record-item .record-status.success {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .breeding-record-item .record-status.pending {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    /* 后代列表 */
+    .offspring-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .offspring-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #FAFAFA;
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    .offspring-id {
+      font-size: 13px;
+      font-weight: 600;
+      color: #7B1FA2;
+      flex-shrink: 0;
+      width: 70px;
+    }
+
+    .offspring-info {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .offspring-grade {
+      padding: 4px 10px;
+      background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+      color: #5D4037;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* 冻精批次列表 */
+    .semen-batches-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .semen-batch-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #FAFAFA;
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    .batch-info {
+      flex-shrink: 0;
+      width: 100px;
+    }
+
+    .batch-id {
+      font-size: 13px;
+      font-weight: 600;
+      color: #7B1FA2;
+    }
+
+    .batch-date {
+      font-size: 11px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .batch-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .batch-status {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .batch-status.in-stock {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .batch-status.sold {
+      background: #E3F2FD;
+      color: #1565C0;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-frame">
+    <!-- 顶部导航 -->
+    <div class="header">
+      <div class="header-btn" onclick="goBack()">
+        <i class="mdi mdi-arrow-left"></i>
+      </div>
+      <span class="header-title">种牛详情</span>
+      <div class="header-actions">
+        <div class="header-btn" onclick="toggleShare()">
+          <i class="mdi mdi-share-variant"></i>
+        </div>
+        <div class="header-btn" onclick="goToHome()">
+          <i class="mdi mdi-home-outline"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+      <!-- 图片画廊 -->
+      <div class="image-gallery" id="imageGallery">
+        <div class="quality-badge">
+          <span class="badge badge-elite">
+            <i class="mdi mdi-crown"></i>
+            精英级
+          </span>
+          <span class="badge badge-pedigree">
+            <i class="mdi mdi-certificate"></i>
+            系谱认证
+          </span>
+        </div>
+        <div class="gallery-container" id="galleryContainer">
+          <div class="gallery-item">
+            <div class="gallery-placeholder">
+              <i class="mdi mdi-dna"></i>
+              <span>精选种牛</span>
+            </div>
+          </div>
+          <div class="gallery-item">
+            <div class="gallery-placeholder">
+              <i class="mdi mdi-certificate-outline"></i>
+              <span>认证证书</span>
+            </div>
+          </div>
+          <div class="gallery-item">
+            <div class="gallery-placeholder">
+              <i class="mdi mdi-file-document-outline"></i>
+              <span>系谱档案</span>
+            </div>
+          </div>
+        </div>
+        <div class="gallery-indicators" id="galleryIndicators">
+          <div class="indicator active"></div>
+          <div class="indicator"></div>
+          <div class="indicator"></div>
+        </div>
+        <div class="gallery-counter">1/3</div>
+      </div>
+
+      <!-- 价格区域 -->
+      <div class="price-section">
+        <div class="price-row">
+          <span class="current-price">¥180,000</span>
+          <span class="price-unit">/头</span>
+          <span class="original-price">¥200,000</span>
+          <span class="price-tag">种牛特价</span>
+        </div>
+        <h1 class="cattle-title">精英级西门塔尔种公牛 加拿大进口血统 系谱认证 繁殖性能优异</h1>
+        <div class="info-tags">
+          <span class="info-tag"><i class="mdi mdi-gender-male"></i> 种公牛</span>
+          <span class="info-tag"><i class="mdi mdi-cow"></i> 西门塔尔</span>
+          <span class="info-tag"><i class="mdi mdi-weight-kilogram"></i> 1200kg</span>
+          <span class="info-tag"><i class="mdi mdi-calendar"></i> 36月龄</span>
+          <span class="info-tag"><i class="mdi mdi-map-marker"></i> 内蒙古通辽</span>
+        </div>
+      </div>
+
+      <!-- 遗传信息 -->
+      <div class="genetic-card">
+        <div class="genetic-header">
+          <i class="mdi mdi-dna"></i>
+          <span>血统与遗传信息</span>
+        </div>
+        <div class="genetic-content">
+          <div class="pedigree-tree">
+            <div class="pedigree-row">
+              <span class="pedigree-label">父系血统</span>
+              <div class="pedigree-value">
+                <i class="mdi mdi-crown"></i>
+                加拿大AVALANCHE冻精后代 | 精液编号: CA-2021-0892
+              </div>
+            </div>
+            <div class="pedigree-row">
+              <span class="pedigree-label">母系血统</span>
+              <div class="pedigree-value">
+                <i class="mdi mdi-star"></i>
+                国内精选母牛 | 繁殖评分: A+ | 产奶量: 8500kg/年
+              </div>
+            </div>
+            <div class="pedigree-row">
+              <span class="pedigree-label">祖代信息</span>
+              <div class="pedigree-value">
+                <i class="mdi mdi-family-tree"></i>
+                三代系谱可追溯 | 无近亲繁殖记录
+              </div>
+            </div>
+          </div>
+          <div class="genetic-stats">
+            <div class="stat-item">
+              <div class="stat-value">A+</div>
+              <div class="stat-label">综合评级</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">98%</div>
+              <div class="stat-label">受胎率</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">156</div>
+              <div class="stat-label">后代数量</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 规格信息 -->
+      <div class="specs-card">
+        <div class="card-title">
+          <i class="mdi mdi-clipboard-list-outline"></i>
+          规格信息
+        </div>
+        <div class="specs-grid">
+          <div class="spec-item">
+            <span class="spec-label">品种</span>
+            <span class="spec-value">西门塔尔</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">性别</span>
+            <span class="spec-value">种公牛</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">月龄</span>
+            <span class="spec-value">36个月</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">体重</span>
+            <span class="spec-value">1200kg</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">胸围</span>
+            <span class="spec-value">245cm</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">体高</span>
+            <span class="spec-value">158cm</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">日增重</span>
+            <span class="spec-value">1.8kg</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">采精量</span>
+            <span class="spec-value">8-12ml</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 认证信息 -->
+      <div class="cert-card">
+        <div class="card-title">
+          <i class="mdi mdi-shield-check"></i>
+          资质认证
+        </div>
+        <div class="cert-list">
+          <div class="cert-item">
+            <div class="cert-icon gold">
+              <i class="mdi mdi-certificate"></i>
+            </div>
+            <div class="cert-info">
+              <div class="cert-name">种畜禽生产经营许可证</div>
+              <div class="cert-desc">证书编号: NM-2023-BRD-0156</div>
+            </div>
+            <span class="cert-badge">已验证</span>
+          </div>
+          <div class="cert-item">
+            <div class="cert-icon purple">
+              <i class="mdi mdi-family-tree"></i>
+            </div>
+            <div class="cert-info">
+              <div class="cert-name">系谱证书</div>
+              <div class="cert-desc">三代血统可追溯认证</div>
+            </div>
+            <span class="cert-badge">已验证</span>
+          </div>
+          <div class="cert-item">
+            <div class="cert-icon blue">
+              <i class="mdi mdi-hospital-box"></i>
+            </div>
+            <div class="cert-info">
+              <div class="cert-name">动物检疫合格证</div>
+              <div class="cert-desc">有效期至 2025年12月</div>
+            </div>
+            <span class="cert-badge">已验证</span>
+          </div>
+          <div class="cert-item">
+            <div class="cert-icon green">
+              <i class="mdi mdi-dna"></i>
+            </div>
+            <div class="cert-info">
+              <div class="cert-name">遗传评估报告</div>
+              <div class="cert-desc">国家肉牛遗传评估中心出具</div>
+            </div>
+            <span class="cert-badge">已验证</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 卖家信息 -->
+      <div class="seller-card">
+        <div class="card-title">
+          <i class="mdi mdi-store"></i>
+          卖家信息
+        </div>
+        <div class="seller-info">
+          <div class="seller-avatar">
+            <i class="mdi mdi-barn"></i>
+          </div>
+          <div class="seller-details">
+            <div class="seller-name">
+              内蒙古科尔沁种牛繁育中心
+              <span class="verified-badge">金牌</span>
+            </div>
+            <div class="seller-meta">
+              <span><i class="mdi mdi-star"></i> 4.9分</span>
+              <span><i class="mdi mdi-cow"></i> 种牛128头</span>
+              <span><i class="mdi mdi-account-group"></i> 粉丝2.3万</span>
+            </div>
+          </div>
+        </div>
+        <div class="seller-actions">
+          <div class="seller-btn secondary" onclick="goToShop()">
+            <i class="mdi mdi-store-outline"></i>
+            进入店铺
+          </div>
+          <div class="seller-btn primary" onclick="followSeller()">
+            <i class="mdi mdi-heart-outline"></i>
+            关注
+          </div>
+        </div>
+      </div>
+
+      <!-- 详情描述 -->
+      <div class="desc-card">
+        <div class="card-title">
+          <i class="mdi mdi-text-box-outline"></i>
+          详情描述
+        </div>
+        <div class="desc-text">
+          本牛场专注西门塔尔种牛繁育20余年，是内蒙古自治区重点种畜场。本头种公牛为加拿大进口冻精后代，父系为北美著名种公牛AVALANCHE，遗传性状优异。
+          <br><br>
+          该牛体型高大匀称，被毛光亮，四肢端正，睾丸发育良好。已完成多次采精，精液品质优良，活力达85%以上。后代表现优异，平均日增重达1.6kg以上。
+          <br><br>
+          购买本种牛可获得完整系谱档案、遗传评估报告、检疫证明等全套资料。提供专业运输服务，确保种牛安全到达。
+        </div>
+        <div class="desc-images">
+          <div class="desc-img"><i class="mdi mdi-cow"></i></div>
+          <div class="desc-img"><i class="mdi mdi-certificate"></i></div>
+          <div class="desc-img"><i class="mdi mdi-file-document"></i></div>
+          <div class="desc-img"><i class="mdi mdi-barn"></i></div>
+          <div class="desc-img"><i class="mdi mdi-truck"></i></div>
+          <div class="desc-img"><i class="mdi mdi-video"></i></div>
+        </div>
+      </div>
+
+      <!-- 服务保障 -->
+      <div class="service-card">
+        <div class="card-title">
+          <i class="mdi mdi-shield-star"></i>
+          服务保障
+        </div>
+        <div class="service-list">
+          <div class="service-item">
+            <i class="mdi mdi-certificate"></i>
+            <span>系谱保真</span>
+          </div>
+          <div class="service-item">
+            <i class="mdi mdi-hospital-box"></i>
+            <span>健康保障</span>
+          </div>
+          <div class="service-item">
+            <i class="mdi mdi-truck-delivery"></i>
+            <span>专业运输</span>
+          </div>
+          <div class="service-item">
+            <i class="mdi mdi-headset"></i>
+            <span>技术指导</span>
+          </div>
+          <div class="service-item">
+            <i class="mdi mdi-refresh"></i>
+            <span>30天质保</span>
+          </div>
+          <div class="service-item">
+            <i class="mdi mdi-cash-refund"></i>
+            <span>先验后付</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 溯源追踪 -->
+      <div class="trace-card">
+        <div class="trace-header">
+          <div class="trace-header-left">
+            <i class="mdi mdi-qrcode-scan"></i>
+            <span>溯源追踪</span>
+          </div>
+          <div class="trace-id">溯源码: BR2022NM001256</div>
+        </div>
+        <div class="trace-content">
+          <div class="trace-timeline">
+            <div class="trace-item current">
+              <div class="trace-dot"></div>
+              <div class="trace-time">2025-12-20 09:30</div>
+              <div class="trace-title">在售中 - 等待买家</div>
+              <div class="trace-desc">种牛已完成所有检疫流程，系谱认证通过，等待有缘买家</div>
+              <div class="trace-location">
+                <i class="mdi mdi-map-marker"></i>
+                内蒙古·通辽市·科尔沁种牛繁育中心
+              </div>
+              <div class="trace-tags">
+                <span class="trace-tag"><i class="mdi mdi-shield-check"></i>检疫合格</span>
+                <span class="trace-tag"><i class="mdi mdi-certificate"></i>系谱认证</span>
+              </div>
+            </div>
+            <div class="trace-item">
+              <div class="trace-dot"></div>
+              <div class="trace-time">2025-11-15 14:00</div>
+              <div class="trace-title">遗传评估完成</div>
+              <div class="trace-desc">完成国家肉牛遗传评估中心评估，综合评级A+</div>
+              <div class="trace-location">
+                <i class="mdi mdi-map-marker"></i>
+                北京·国家肉牛遗传评估中心
+              </div>
+            </div>
+            <div class="trace-item">
+              <div class="trace-dot"></div>
+              <div class="trace-time">2025-06-20 10:00</div>
+              <div class="trace-title">首次采精成功</div>
+              <div class="trace-desc">完成首次采精，精液品质优良，活力达87%，已入库保存</div>
+              <div class="trace-location">
+                <i class="mdi mdi-map-marker"></i>
+                内蒙古·通辽市·科尔沁冻精站
+              </div>
+            </div>
+            <div class="trace-item">
+              <div class="trace-dot"></div>
+              <div class="trace-time">2024-08-10 08:00</div>
+              <div class="trace-title">断奶转群</div>
+              <div class="trace-desc">完成断奶，转入后备种公牛群，开始培育</div>
+              <div class="trace-location">
+                <i class="mdi mdi-map-marker"></i>
+                内蒙古·通辽市·科尔沁种牛繁育中心
+              </div>
+            </div>
+            <div class="trace-item">
+              <div class="trace-dot"></div>
+              <div class="trace-time">2022-12-15 06:30</div>
+              <div class="trace-title">出生登记</div>
+              <div class="trace-desc">顺产出生，体重48kg，公犊，父系为加拿大AVALANCHE冻精</div>
+              <div class="trace-location">
+                <i class="mdi mdi-map-marker"></i>
+                内蒙古·通辽市·科尔沁种牛繁育中心
+              </div>
+              <div class="trace-tags">
+                <span class="trace-tag"><i class="mdi mdi-tag"></i>耳标号: NM2022121501</span>
+              </div>
+            </div>
+          </div>
+          <div class="trace-actions">
+            <div class="trace-btn secondary" onclick="showTraceQR()">
+              <i class="mdi mdi-qrcode"></i>
+              查看溯源码
+            </div>
+            <div class="trace-btn primary" onclick="showFullTrace()">
+              <i class="mdi mdi-file-document-outline"></i>
+              完整档案
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 健康档案 -->
+      <div class="health-card">
+        <div class="card-title">
+          <i class="mdi mdi-hospital-box"></i>
+          健康档案
+        </div>
+        <div class="health-grid">
+          <div class="health-item" onclick="showHealthDetail('vaccine')">
+            <div class="health-icon vaccine">
+              <i class="mdi mdi-needle"></i>
+            </div>
+            <div class="health-info">
+              <div class="health-label">疫苗接种</div>
+              <div class="health-value">12次 已完成</div>
+            </div>
+          </div>
+          <div class="health-item" onclick="showHealthDetail('check')">
+            <div class="health-icon check">
+              <i class="mdi mdi-stethoscope"></i>
+            </div>
+            <div class="health-info">
+              <div class="health-label">健康检查</div>
+              <div class="health-value">8次 全部合格</div>
+            </div>
+          </div>
+          <div class="health-item" onclick="showHealthDetail('gene')">
+            <div class="health-icon gene">
+              <i class="mdi mdi-dna"></i>
+            </div>
+            <div class="health-info">
+              <div class="health-label">基因检测</div>
+              <div class="health-value">无遗传缺陷</div>
+            </div>
+          </div>
+          <div class="health-item" onclick="showHealthDetail('record')">
+            <div class="health-icon record">
+              <i class="mdi mdi-clipboard-text"></i>
+            </div>
+            <div class="health-info">
+              <div class="health-label">精液检测</div>
+              <div class="health-value">活力87%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 繁殖记录 -->
+      <div class="breeding-record">
+        <div class="card-title">
+          <i class="mdi mdi-heart-multiple"></i>
+          繁殖记录
+        </div>
+        <div class="record-list">
+          <div class="record-item" onclick="showBreedingDetail(1)">
+            <div class="record-icon">
+              <i class="mdi mdi-gender-male-female"></i>
+            </div>
+            <div class="record-info">
+              <div class="record-title">2025年度配种任务</div>
+              <div class="record-meta">已完成 156 次人工授精 | 受胎率 98%</div>
+            </div>
+            <span class="record-status success">优秀</span>
+          </div>
+          <div class="record-item" onclick="showBreedingDetail(2)">
+            <div class="record-icon">
+              <i class="mdi mdi-baby-carriage"></i>
+            </div>
+            <div class="record-info">
+              <div class="record-title">后代繁殖情况</div>
+              <div class="record-meta">累计后代 156 头 | 优良率 92%</div>
+            </div>
+            <span class="record-status success">达标</span>
+          </div>
+          <div class="record-item" onclick="showBreedingDetail(3)">
+            <div class="record-icon">
+              <i class="mdi mdi-test-tube"></i>
+            </div>
+            <div class="record-info">
+              <div class="record-title">冻精生产情况</div>
+              <div class="record-meta">已生产冻精 2,850 支 | 库存 1,200 支</div>
+            </div>
+            <span class="record-status pending">生产中</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 推荐种牛 -->
+      <div class="recommend-section">
+        <div class="card-title">
+          <i class="mdi mdi-thumb-up"></i>
+          优选种牛推荐
+        </div>
+        <div class="recommend-scroll">
+          <div class="recommend-item" onclick="showToast('查看其他种牛')">
+            <div class="recommend-img">
+              <span class="recommend-badge">精英</span>
+              <i class="mdi mdi-dna"></i>
+            </div>
+            <div class="recommend-title">精英级安格斯种公牛 澳洲血统</div>
+            <div class="recommend-price">¥220,000</div>
+          </div>
+          <div class="recommend-item" onclick="showToast('查看其他种牛')">
+            <div class="recommend-img">
+              <span class="recommend-badge">优选</span>
+              <i class="mdi mdi-dna"></i>
+            </div>
+            <div class="recommend-title">优选级利木赞繁殖母牛 高产奶</div>
+            <div class="recommend-price">¥85,000</div>
+          </div>
+          <div class="recommend-item" onclick="showToast('查看其他种牛')">
+            <div class="recommend-img">
+              <span class="recommend-badge">进口</span>
+              <i class="mdi mdi-dna"></i>
+            </div>
+            <div class="recommend-title">进口夏洛莱种公牛 纯种认证</div>
+            <div class="recommend-price">¥280,000</div>
+          </div>
+          <div class="recommend-item" onclick="showToast('查看其他种牛')">
+            <div class="recommend-img">
+              <span class="recommend-badge">热销</span>
+              <i class="mdi mdi-dna"></i>
+            </div>
+            <div class="recommend-title">西门塔尔繁殖母牛 A+级</div>
+            <div class="recommend-price">¥75,000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 浮动客服按钮 -->
+    <div class="float-btn" onclick="showContact()">
+      <i class="mdi mdi-headset"></i>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-bar">
+      <div class="bar-left">
+        <div class="bar-icon" onclick="goToShop()">
+          <i class="mdi mdi-store-outline"></i>
+          <span>店铺</span>
+        </div>
+        <div class="bar-icon" id="favoriteBtn" onclick="toggleFavorite()">
+          <i class="mdi mdi-heart-outline"></i>
+          <span>收藏</span>
+        </div>
+        <div class="bar-icon" onclick="showContact()">
+          <i class="mdi mdi-message-text-outline"></i>
+          <span>咨询</span>
+        </div>
+      </div>
+      <div class="bar-right">
+        <div class="action-btn consult" onclick="showContact()">
+          <i class="mdi mdi-phone"></i>
+          立即咨询
+        </div>
+        <div class="action-btn buy" onclick="buyNow()">
+          <i class="mdi mdi-cart"></i>
+          立即预订
+        </div>
+      </div>
+    </div>
+
+    <!-- 分享面板 -->
+    <div class="share-panel" id="sharePanel">
+      <div class="share-title">分享给好友</div>
+      <div class="share-options">
+        <div class="share-option" onclick="shareTo('wechat')">
+          <div class="share-icon wechat">
+            <i class="mdi mdi-wechat"></i>
+          </div>
+          <span class="share-label">微信</span>
+        </div>
+        <div class="share-option" onclick="shareTo('moments')">
+          <div class="share-icon moments">
+            <i class="mdi mdi-camera"></i>
+          </div>
+          <span class="share-label">朋友圈</span>
+        </div>
+        <div class="share-option" onclick="shareTo('qq')">
+          <div class="share-icon qq">
+            <i class="mdi mdi-qqchat"></i>
+          </div>
+          <span class="share-label">QQ</span>
+        </div>
+        <div class="share-option" onclick="shareTo('link')">
+          <div class="share-icon link">
+            <i class="mdi mdi-link-variant"></i>
+          </div>
+          <span class="share-label">复制链接</span>
+        </div>
+      </div>
+      <div class="share-cancel" onclick="toggleShare()">取消</div>
+    </div>
+
+    <!-- 联系弹窗 -->
+    <div class="contact-modal" id="contactModal">
+      <div class="modal-title">联系卖家</div>
+      <div class="contact-options">
+        <div class="contact-option" onclick="callSeller()">
+          <i class="mdi mdi-phone"></i>
+          <span>电话咨询</span>
+          <i class="mdi mdi-chevron-right"></i>
+        </div>
+        <div class="contact-option" onclick="chatSeller()">
+          <i class="mdi mdi-message-text"></i>
+          <span>在线咨询</span>
+          <i class="mdi mdi-chevron-right"></i>
+        </div>
+        <div class="contact-option" onclick="videoCall()">
+          <i class="mdi mdi-video"></i>
+          <span>视频看牛</span>
+          <i class="mdi mdi-chevron-right"></i>
+        </div>
+        <div class="contact-option" onclick="requestVisit()">
+          <i class="mdi mdi-calendar-check"></i>
+          <span>预约实地考察</span>
+          <i class="mdi mdi-chevron-right"></i>
+        </div>
+      </div>
+      <div class="modal-close" onclick="hideContact()">取消</div>
+    </div>
+
+    <!-- 溯源二维码弹窗 -->
+    <div class="trace-qr-modal" id="traceQRModal">
+      <div class="qr-modal-header">
+        <span>溯源二维码</span>
+        <i class="mdi mdi-close" onclick="hideTraceQR()"></i>
+      </div>
+      <div class="qr-modal-body">
+        <div class="qr-code-wrapper">
+          <div class="qr-code-placeholder">
+            <i class="mdi mdi-qrcode" style="font-size: 120px; color: #333;"></i>
+          </div>
+          <div class="qr-id">CATTLE-2024-001</div>
+        </div>
+        <div class="qr-tips">
+          <p>扫描二维码可查看完整溯源信息</p>
+          <p>包含出生、成长、健康、繁殖全过程</p>
+        </div>
+        <div class="qr-actions">
+          <button class="qr-btn save" onclick="showToast('二维码已保存到相册')">
+            <i class="mdi mdi-download"></i> 保存图片
+          </button>
+          <button class="qr-btn share" onclick="showToast('分享功能开发中')">
+            <i class="mdi mdi-share-variant"></i> 分享
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 健康档案详情弹窗 -->
+    <div class="health-detail-modal" id="healthDetailModal">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <span class="modal-icon" id="healthDetailIcon">💉</span>
+          <span class="modal-title-text" id="healthDetailTitle">疫苗接种记录</span>
+        </div>
+        <i class="mdi mdi-close" onclick="hideHealthDetail()"></i>
+      </div>
+      <div class="modal-body">
+        <div class="health-records-list" id="healthDetailRecords">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 繁殖记录详情弹窗 -->
+    <div class="breeding-detail-modal" id="breedingDetailModal">
+      <div class="modal-header">
+        <span class="modal-title-text" id="breedingDetailTitle">繁殖记录详情</span>
+        <i class="mdi mdi-close" onclick="hideBreedingDetail()"></i>
+      </div>
+      <div class="modal-body">
+        <div class="breeding-detail-content" id="breedingDetailContent">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 遮罩层 -->
+    <div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    // 获取URL参数
+    function getUrlParam(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+
+    // 图片画廊
+    let currentIndex = 0;
+    const totalImages = 3;
+    let startX = 0;
+    let isDragging = false;
+
+    const gallery = document.getElementById('imageGallery');
+    const container = document.getElementById('galleryContainer');
+    const indicators = document.getElementById('galleryIndicators');
+
+    gallery.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isDragging = true;
+    });
+
+    gallery.addEventListener('touchend', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+
+      const endX = e.changedTouches[0].clientX;
+      const diff = startX - endX;
+
+      if (Math.abs(diff) > 50) {
+        if (diff > 0 && currentIndex < totalImages - 1) {
+          currentIndex++;
+        } else if (diff < 0 && currentIndex > 0) {
+          currentIndex--;
+        }
+        updateGallery();
+      }
+    });
+
+    function updateGallery() {
+      container.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+      const dots = indicators.querySelectorAll('.indicator');
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentIndex);
+      });
+
+      document.querySelector('.gallery-counter').textContent = `${currentIndex + 1}/${totalImages}`;
+    }
+
+    // 导航
+    function goBack() {
+      if (document.referrer && document.referrer.includes(window.location.hostname)) {
+        window.history.back();
+      } else {
+        window.location.href = 'list.html';
+      }
+    }
+
+    function goToHome() {
+      window.location.href = '../home/home.html';
+    }
+
+    function goToShop() {
+      window.location.href = 'shop.html';
+    }
+
+    // 分享
+    function toggleShare() {
+      const panel = document.getElementById('sharePanel');
+      const overlay = document.getElementById('overlay');
+      panel.classList.toggle('show');
+      overlay.classList.toggle('show');
+    }
+
+    function shareTo(platform) {
+      const platforms = {
+        wechat: '微信',
+        moments: '朋友圈',
+        qq: 'QQ',
+        link: '链接已复制'
+      };
+      showToast(`分享到${platforms[platform]}`);
+      toggleShare();
+    }
+
+    // 收藏
+    let isFavorite = false;
+    function toggleFavorite() {
+      isFavorite = !isFavorite;
+      const btn = document.getElementById('favoriteBtn');
+      if (isFavorite) {
+        btn.classList.add('active');
+        btn.innerHTML = '<i class="mdi mdi-heart"></i><span>已收藏</span>';
+        showToast('已添加到收藏');
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '<i class="mdi mdi-heart-outline"></i><span>收藏</span>';
+        showToast('已取消收藏');
+      }
+    }
+
+    // 联系弹窗
+    function showContact() {
+      document.getElementById('contactModal').classList.add('show');
+      document.getElementById('overlay').classList.add('show');
+    }
+
+    function hideContact() {
+      document.getElementById('contactModal').classList.remove('show');
+      document.getElementById('overlay').classList.remove('show');
+    }
+
+    function callSeller() {
+      showToast('拨打电话: 138-0000-8888');
+      hideContact();
+    }
+
+    function chatSeller() {
+      showToast('正在连接客服...');
+      hideContact();
+    }
+
+    function videoCall() {
+      showToast('正在发起视频通话...');
+      hideContact();
+    }
+
+    function requestVisit() {
+      showToast('预约考察申请已提交');
+      hideContact();
+    }
+
+    // 关注卖家
+    function followSeller() {
+      showToast('已关注该牛场');
+    }
+
+    // 购买
+    function buyNow() {
+      showToast('正在提交预订...');
+    }
+
+    // 关闭所有弹窗
+    function closeAll() {
+      document.getElementById('sharePanel').classList.remove('show');
+      document.getElementById('contactModal').classList.remove('show');
+      document.getElementById('overlay').classList.remove('show');
+      // 关闭溯源相关弹窗
+      const traceModal = document.getElementById('traceQRModal');
+      if (traceModal) traceModal.classList.remove('show');
+      const healthModal = document.getElementById('healthDetailModal');
+      if (healthModal) healthModal.classList.remove('show');
+      const breedingModal = document.getElementById('breedingDetailModal');
+      if (breedingModal) breedingModal.classList.remove('show');
+    }
+
+    // ==================== 溯源相关功能 ====================
+
+    // 显示溯源二维码
+    function showTraceQR() {
+      document.getElementById('traceQRModal').classList.add('show');
+      document.getElementById('overlay').classList.add('show');
+    }
+
+    // 隐藏溯源二维码
+    function hideTraceQR() {
+      document.getElementById('traceQRModal').classList.remove('show');
+      document.getElementById('overlay').classList.remove('show');
+    }
+
+    // 查看完整溯源记录
+    function showFullTrace() {
+      showToast('正在加载完整溯源记录...');
+      // 跳转到溯源详情页
+      setTimeout(() => {
+        window.location.href = '../trace/detail.html?id=CATTLE-2024-001';
+      }, 500);
+    }
+
+    // 健康档案详情数据
+    const healthData = {
+      vaccine: {
+        title: '疫苗接种记录',
+        icon: '💉',
+        records: [
+          { date: '2025-01-15', name: '口蹄疫疫苗', batch: 'FMD-2025-001', operator: '李兽医' },
+          { date: '2024-10-20', name: '布病疫苗', batch: 'BRU-2024-088', operator: '王兽医' },
+          { date: '2024-07-08', name: '炭疽疫苗', batch: 'ANT-2024-045', operator: '李兽医' },
+          { date: '2024-04-12', name: '口蹄疫疫苗', batch: 'FMD-2024-102', operator: '张兽医' },
+          { date: '2024-01-18', name: '结核病检测', batch: 'TB-2024-015', operator: '李兽医' }
+        ]
+      },
+      checkup: {
+        title: '健康检查记录',
+        icon: '🏥',
+        records: [
+          { date: '2025-01-10', name: '月度健康检查', result: '全部正常', operator: '王兽医' },
+          { date: '2024-12-10', name: '月度健康检查', result: '全部正常', operator: '李兽医' },
+          { date: '2024-11-10', name: '月度健康检查', result: '全部正常', operator: '王兽医' },
+          { date: '2024-10-10', name: '月度健康检查', result: '全部正常', operator: '李兽医' }
+        ]
+      },
+      genetic: {
+        title: '基因检测报告',
+        icon: '🧬',
+        records: [
+          { date: '2023-06-15', name: '全基因组测序', result: '无遗传缺陷', lab: '国家肉牛遗传评估中心' },
+          { date: '2023-06-15', name: '产肉性状基因', result: 'AA/AB型 (优良)', lab: '国家肉牛遗传评估中心' },
+          { date: '2023-06-15', name: '繁殖力基因', result: '高繁殖力基因型', lab: '国家肉牛遗传评估中心' }
+        ]
+      },
+      semen: {
+        title: '精液检测记录',
+        icon: '🔬',
+        records: [
+          { date: '2025-01-18', activity: '87%', density: '12亿/ml', abnormal: '8%', result: '优秀' },
+          { date: '2025-01-04', activity: '85%', density: '11.5亿/ml', abnormal: '9%', result: '优秀' },
+          { date: '2024-12-21', activity: '88%', density: '12.2亿/ml', abnormal: '7%', result: '优秀' }
+        ]
+      }
+    };
+
+    // 显示健康档案详情
+    function showHealthDetail(type) {
+      const data = healthData[type];
+      if (!data) {
+        showToast('暂无数据');
+        return;
+      }
+
+      let recordsHtml = '';
+      if (type === 'semen') {
+        recordsHtml = data.records.map(r => `
+          <div class="health-record-item">
+            <div class="record-date">${r.date}</div>
+            <div class="record-info">
+              <div class="info-row"><span>活力:</span><strong>${r.activity}</strong></div>
+              <div class="info-row"><span>密度:</span><strong>${r.density}</strong></div>
+              <div class="info-row"><span>畸形率:</span><strong>${r.abnormal}</strong></div>
+              <div class="info-row"><span>评级:</span><strong class="text-success">${r.result}</strong></div>
+            </div>
+          </div>
+        `).join('');
+      } else if (type === 'genetic') {
+        recordsHtml = data.records.map(r => `
+          <div class="health-record-item">
+            <div class="record-date">${r.date}</div>
+            <div class="record-info">
+              <div class="record-name">${r.name}</div>
+              <div class="record-result">${r.result}</div>
+              <div class="record-lab">${r.lab}</div>
+            </div>
+          </div>
+        `).join('');
+      } else if (type === 'checkup') {
+        recordsHtml = data.records.map(r => `
+          <div class="health-record-item">
+            <div class="record-date">${r.date}</div>
+            <div class="record-info">
+              <div class="record-name">${r.name}</div>
+              <div class="record-result text-success">${r.result}</div>
+              <div class="record-operator">检查员: ${r.operator}</div>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        recordsHtml = data.records.map(r => `
+          <div class="health-record-item">
+            <div class="record-date">${r.date}</div>
+            <div class="record-info">
+              <div class="record-name">${r.name}</div>
+              <div class="record-batch">批次: ${r.batch}</div>
+              <div class="record-operator">操作员: ${r.operator}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('healthDetailTitle').textContent = data.title;
+      document.getElementById('healthDetailIcon').textContent = data.icon;
+      document.getElementById('healthDetailRecords').innerHTML = recordsHtml;
+      document.getElementById('healthDetailModal').classList.add('show');
+      document.getElementById('overlay').classList.add('show');
+    }
+
+    // 隐藏健康档案详情
+    function hideHealthDetail() {
+      document.getElementById('healthDetailModal').classList.remove('show');
+      document.getElementById('overlay').classList.remove('show');
+    }
+
+    // 繁殖记录详情数据
+    const breedingData = {
+      1: {
+        title: '2025年度配种任务',
+        stats: [
+          { label: '总配种次数', value: '156次' },
+          { label: '人工授精', value: '142次' },
+          { label: '自然交配', value: '14次' },
+          { label: '受胎率', value: '98%' },
+          { label: '产犊率', value: '95%' }
+        ],
+        recentRecords: [
+          { date: '2025-01-18', farm: '新希望牧场', method: '人工授精', status: '待确认' },
+          { date: '2025-01-15', farm: '草原红牛场', method: '人工授精', status: '已受孕' },
+          { date: '2025-01-12', farm: '金牛繁育中心', method: '人工授精', status: '已受孕' }
+        ]
+      },
+      2: {
+        title: '后代繁殖情况',
+        stats: [
+          { label: '总后代数', value: '156头' },
+          { label: '优良率', value: '92%' },
+          { label: '公牛后代', value: '78头' },
+          { label: '母牛后代', value: '78头' },
+          { label: '平均出生重', value: '42kg' }
+        ],
+        offspring: [
+          { id: 'OFF-001', birth: '2024-12-20', gender: '公', weight: '44kg', grade: '特级' },
+          { id: 'OFF-002', birth: '2024-12-15', gender: '母', weight: '40kg', grade: '优良' },
+          { id: 'OFF-003', birth: '2024-12-08', gender: '公', weight: '43kg', grade: '特级' }
+        ]
+      },
+      3: {
+        title: '冻精生产情况',
+        stats: [
+          { label: '总生产量', value: '2,850支' },
+          { label: '当前库存', value: '1,200支' },
+          { label: '已销售', value: '1,450支' },
+          { label: '送检合格', value: '200支' },
+          { label: '平均活力', value: '86%' }
+        ],
+        batches: [
+          { batch: 'FS-2025-001', date: '2025-01-10', quantity: '120支', activity: '88%', status: '在库' },
+          { batch: 'FS-2024-088', date: '2024-12-25', quantity: '150支', activity: '85%', status: '已售' },
+          { batch: 'FS-2024-087', date: '2024-12-10', quantity: '130支', activity: '87%', status: '在库' }
+        ]
+      }
+    };
+
+    // 显示繁殖记录详情
+    function showBreedingDetail(id) {
+      const data = breedingData[id];
+      if (!data) {
+        showToast('暂无数据');
+        return;
+      }
+
+      let contentHtml = '';
+
+      // 统计数据
+      contentHtml += '<div class="breeding-stats-grid">';
+      data.stats.forEach(stat => {
+        contentHtml += `
+          <div class="stat-item">
+            <div class="stat-value">${stat.value}</div>
+            <div class="stat-label">${stat.label}</div>
+          </div>
+        `;
+      });
+      contentHtml += '</div>';
+
+      // 根据类型显示不同内容
+      if (id === 1 && data.recentRecords) {
+        contentHtml += '<div class="section-title">近期配种记录</div>';
+        contentHtml += '<div class="breeding-records-list">';
+        data.recentRecords.forEach(r => {
+          const statusClass = r.status === '已受孕' ? 'success' : 'pending';
+          contentHtml += `
+            <div class="breeding-record-item">
+              <div class="record-date">${r.date}</div>
+              <div class="record-info">
+                <div class="record-farm">${r.farm}</div>
+                <div class="record-method">${r.method}</div>
+              </div>
+              <div class="record-status ${statusClass}">${r.status}</div>
+            </div>
+          `;
+        });
+        contentHtml += '</div>';
+      } else if (id === 2 && data.offspring) {
+        contentHtml += '<div class="section-title">优秀后代</div>';
+        contentHtml += '<div class="offspring-list">';
+        data.offspring.forEach(o => {
+          contentHtml += `
+            <div class="offspring-item">
+              <div class="offspring-id">${o.id}</div>
+              <div class="offspring-info">
+                <span>出生: ${o.birth}</span>
+                <span>性别: ${o.gender}</span>
+                <span>体重: ${o.weight}</span>
+              </div>
+              <div class="offspring-grade">${o.grade}</div>
+            </div>
+          `;
+        });
+        contentHtml += '</div>';
+      } else if (id === 3 && data.batches) {
+        contentHtml += '<div class="section-title">冻精批次</div>';
+        contentHtml += '<div class="semen-batches-list">';
+        data.batches.forEach(b => {
+          const statusClass = b.status === '在库' ? 'in-stock' : 'sold';
+          contentHtml += `
+            <div class="semen-batch-item">
+              <div class="batch-info">
+                <div class="batch-id">${b.batch}</div>
+                <div class="batch-date">${b.date}</div>
+              </div>
+              <div class="batch-details">
+                <span>数量: ${b.quantity}</span>
+                <span>活力: ${b.activity}</span>
+              </div>
+              <div class="batch-status ${statusClass}">${b.status}</div>
+            </div>
+          `;
+        });
+        contentHtml += '</div>';
+      }
+
+      document.getElementById('breedingDetailTitle').textContent = data.title;
+      document.getElementById('breedingDetailContent').innerHTML = contentHtml;
+      document.getElementById('breedingDetailModal').classList.add('show');
+      document.getElementById('overlay').classList.add('show');
+    }
+
+    // 隐藏繁殖记录详情
+    function hideBreedingDetail() {
+      document.getElementById('breedingDetailModal').classList.remove('show');
+      document.getElementById('overlay').classList.remove('show');
+    }
+
+    // Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      const cattleId = getUrlParam('id');
+      if (cattleId) {
+        console.log('Loading cattle:', cattleId);
+        // 这里可以根据ID加载不同的种牛数据
+      }
+    });
+  </script>
+</body>
+</html>

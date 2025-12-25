@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI智能助手 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      padding-bottom: 70px;
+    }
+
+    /* 顶部Header */
+    .header {
+      background: linear-gradient(135deg, #1565C0 0%, #42A5F5 100%);
+      padding: 48px 16px 16px;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-btn {
+      font-size: 22px;
+      text-decoration: none;
+      color: white;
+      padding: 4px;
+    }
+
+    .header-title {
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-title i {
+      font-size: 20px;
+    }
+
+    .header-action {
+      font-size: 20px;
+      color: white;
+      padding: 4px;
+    }
+
+    /* 聊天区域 */
+    .chat-container {
+      flex: 1;
+      padding: 16px 16px 200px;
+      overflow-y: auto;
+    }
+
+    /* AI介绍卡片 */
+    .ai-intro {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .ai-avatar {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #1565C0 0%, #42A5F5 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+
+    .ai-avatar i {
+      font-size: 36px;
+      color: white;
+    }
+
+    .ai-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #212121;
+      margin-bottom: 4px;
+    }
+
+    .ai-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: linear-gradient(135deg, #1565C0 0%, #42A5F5 100%);
+      border-radius: 10px;
+      font-size: 11px;
+      color: white;
+      margin-bottom: 12px;
+    }
+
+    .ai-desc {
+      font-size: 14px;
+      color: #757575;
+      line-height: 1.6;
+    }
+
+    /* 快捷问题 */
+    .quick-questions {
+      margin-bottom: 20px;
+    }
+
+    .quick-title {
+      font-size: 13px;
+      color: #9E9E9E;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .quick-title i {
+      font-size: 16px;
+    }
+
+    .quick-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .quick-item {
+      padding: 10px 14px;
+      background: white;
+      border: 1px solid #E0E0E0;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #424242;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-item:active {
+      background: #E3F2FD;
+      border-color: #1565C0;
+      color: #1565C0;
+    }
+
+    /* 消息列表 */
+    .message-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      display: flex;
+      gap: 10px;
+      max-width: 85%;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .message.ai .message-avatar {
+      background: linear-gradient(135deg, #1565C0 0%, #42A5F5 100%);
+      color: white;
+    }
+
+    .message.user .message-avatar {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .message-avatar i {
+      font-size: 18px;
+    }
+
+    .message-content {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .message.ai .message-content {
+      background: white;
+      color: #212121;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.user .message-content {
+      background: linear-gradient(135deg, #1565C0 0%, #42A5F5 100%);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message-time {
+      font-size: 11px;
+      color: #9E9E9E;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .message.user .message-time {
+      text-align: left;
+    }
+
+    /* 打字指示器 */
+    .typing-indicator {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      max-width: 85%;
+    }
+
+    .typing-indicator.show {
+      display: flex;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+    }
+
+    .typing-dots span {
+      width: 8px;
+      height: 8px;
+      background: #BDBDBD;
+      border-radius: 50%;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 60%, 100% {
+        transform: translateY(0);
+        background: #BDBDBD;
+      }
+      30% {
+        transform: translateY(-8px);
+        background: #1565C0;
+      }
+    }
+
+    /* 输入区域 */
+    .input-bar {
+      position: fixed;
+      bottom: 65px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      padding: 10px 16px 12px;
+      background: white;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      z-index: 100;
+      box-sizing: border-box;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      background: #F5F5F5;
+      border-radius: 24px;
+      padding: 8px 8px 8px 16px;
+    }
+
+    .input-wrapper textarea {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 15px;
+      color: #212121;
+      resize: none;
+      max-height: 100px;
+      line-height: 1.4;
+      padding: 6px 0;
+    }
+
+    .input-wrapper textarea::placeholder {
+      color: #9E9E9E;
+    }
+
+    .send-btn {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #1565C0 0%, #42A5F5 100%);
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .send-btn i {
+      font-size: 20px;
+      color: white;
+    }
+
+    .send-btn:disabled {
+      background: #BDBDBD;
+    }
+
+    /* 功能按钮 */
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 10px 8px;
+      background: #F5F5F5;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #616161;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      min-height: 40px;
+    }
+
+    .action-btn i {
+      font-size: 16px;
+    }
+
+    .action-btn:active {
+      background: #E0E0E0;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+  </style>
+</head>
+
+<body>
+  <!-- 顶部Header -->
+  <header class="header">
+    <div class="header-bar">
+      <a href="javascript:void(0)" class="back-btn" onclick="showChatHistory()"><i class="mdi mdi-history"></i></a>
+      <span class="header-title"><i class="mdi mdi-robot"></i> AI智能助手</span>
+      <a href="javascript:void(0)" class="header-action" onclick="clearChat()"><i class="mdi mdi-delete-outline"></i></a>
+    </div>
+  </header>
+
+  <!-- 聊天区域 -->
+  <div class="chat-container" id="chatContainer">
+    <!-- AI介绍 -->
+    <div class="ai-intro">
+      <div class="ai-avatar">
+        <i class="mdi mdi-robot"></i>
+      </div>
+      <div class="ai-name">牛产业AI助手</div>
+      <div class="ai-badge">DeepSeek 驱动</div>
+      <div class="ai-desc">
+        您好！我是牛产业智能助手，基于DeepSeek大模型，专注于牛产业领域知识。
+        我可以帮您解答养殖、交易、溯源、市场分析等问题。
+      </div>
+    </div>
+
+    <!-- 快捷问题 -->
+    <div class="quick-questions">
+      <div class="quick-title"><i class="mdi mdi-lightbulb-outline"></i> 猜你想问</div>
+      <div class="quick-list">
+        <div class="quick-item" onclick="askQuestion('最近牛肉市场行情如何？')">
+          牛肉市场行情
+        </div>
+        <div class="quick-item" onclick="askQuestion('如何提高肉牛的出栏率？')">
+          提高出栏率
+        </div>
+        <div class="quick-item" onclick="askQuestion('牛的常见疾病如何预防？')">
+          疾病预防
+        </div>
+        <div class="quick-item" onclick="askQuestion('如何进行牛肉溯源？')">
+          溯源查询
+        </div>
+        <div class="quick-item" onclick="askQuestion('活牛运输有哪些注意事项？')">
+          运输注意事项
+        </div>
+        <div class="quick-item" onclick="askQuestion('饲料配比的最佳方案是什么？')">
+          饲料配比
+        </div>
+      </div>
+    </div>
+
+    <!-- 消息列表 -->
+    <div class="message-list" id="messageList">
+      <!-- 消息会动态添加到这里 -->
+    </div>
+
+    <!-- 打字指示器 -->
+    <div class="typing-indicator" id="typingIndicator">
+      <div class="message-avatar">
+        <i class="mdi mdi-robot"></i>
+      </div>
+      <div class="typing-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 输入区域 -->
+  <div class="input-bar">
+    <div class="input-wrapper">
+      <textarea id="messageInput" placeholder="输入您的问题..." rows="1" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <i class="mdi mdi-send"></i>
+      </button>
+    </div>
+    <div class="action-buttons">
+      <button class="action-btn" onclick="voiceInput()">
+        <i class="mdi mdi-microphone"></i> 语音
+      </button>
+      <button class="action-btn" onclick="showHistory()">
+        <i class="mdi mdi-history"></i> 历史
+      </button>
+      <button class="action-btn" onclick="generateReport()">
+        <i class="mdi mdi-file-document"></i> 报告
+      </button>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="../home/home.html" class="nav-item">
+      <span class="nav-icon mdi mdi-home"></span>
+      <span>首页</span>
+    </a>
+    <a href="../cattle/publish.html" class="nav-item">
+      <span class="nav-icon mdi mdi-plus-circle"></span>
+      <span>发布</span>
+    </a>
+    <a href="chat.html" class="nav-item active">
+      <span class="nav-icon mdi mdi-robot"></span>
+      <span>AI</span>
+    </a>
+    <a href="../enterprise/messages.html" class="nav-item">
+      <span class="nav-icon mdi mdi-bell"></span>
+      <span>消息</span>
+    </a>
+    <a href="../enterprise/center.html" class="nav-item">
+      <span class="nav-icon mdi mdi-account"></span>
+      <span>我的</span>
+    </a>
+  </nav>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // 模拟AI回复
+    const aiResponses = {
+      '市场行情': '根据最新市场数据分析，当前活牛价格整体保持稳定，育肥牛均价约18-20元/斤。\n\n📊 **市场趋势**\n- 东北地区：价格略有上涨，涨幅约2%\n- 华北地区：供需平衡，价格稳定\n- 西南地区：需求增加，价格小幅上扬\n\n💡 **建议**\n近期可关注优质育肥牛的采购，预计春节前价格将有所上涨。',
+      '出栏率': '提高肉牛出栏率的关键措施：\n\n🥩 **饲养管理**\n1. 科学配比日粮，保证营养均衡\n2. 分阶段育肥，精准控制料肉比\n3. 定期称重，监控生长曲线\n\n🏠 **环境控制**\n1. 保持圈舍清洁干燥\n2. 合理密度，减少应激\n3. 适宜温度控制（15-20℃最佳）\n\n💉 **疫病防控**\n1. 严格执行免疫程序\n2. 定期驱虫，每季度一次\n3. 隔离观察新进牛只',
+      '疾病预防': '肉牛常见疾病预防指南：\n\n⚠️ **重点防控疾病**\n1. **口蹄疫** - 每年接种2-3次疫苗\n2. **布病** - 定期检测，阳性牛淘汰\n3. **牛肺疫** - 接种菌苗，隔离病牛\n\n🛡️ **日常防护措施**\n- 进场消毒，车辆/人员均需消毒\n- 保持饮水清洁，定期清洗水槽\n- 观察牛只精神状态，早发现早治疗\n\n📋 **免疫程序建议**\n春季：口蹄疫 + 牛肺疫\n秋季：口蹄疫 + 炭疽',
+      '溯源': '牛肉溯源系统使用指南：\n\n📱 **扫码溯源**\n1. 打开首页"溯源查询"功能\n2. 扫描牛肉包装上的二维码\n3. 查看完整溯源信息\n\n📋 **可查询信息**\n- 🐄 养殖场信息：养殖地点、饲养周期\n- 🔪 屠宰信息：屠宰日期、检疫证号\n- 🚚 物流信息：运输路线、冷链记录\n- ✅ 检验报告：质检结果、等级评定\n\n💡 每头牛都有唯一溯源码，确保从牧场到餐桌全程可追溯。',
+      '运输': '活牛运输注意事项：\n\n🚚 **运输前准备**\n1. 停食6-12小时，停水2-3小时\n2. 检查健康状况，病牛不得运输\n3. 准备检疫证明和产地证明\n\n📦 **装载要求**\n- 密度控制：每头牛需1.5-2平方米\n- 分隔装载：公母分开，大小分开\n- 防护措施：铺设防滑垫料\n\n🌡️ **途中管理**\n- 夏季运输选择凉爽时段（早晚）\n- 冬季注意保暖防风\n- 每4-6小时检查一次牛只状态\n- 途中可少量饮水，禁止喂料',
+      '饲料': '肉牛育肥期饲料配比方案：\n\n📊 **日粮配方（育肥期）**\n- 玉米：45-50%\n- 豆粕：15-18%\n- 麸皮：10-12%\n- 青贮/干草：20-25%\n- 预混料：2-3%\n\n⏰ **饲喂管理**\n- 每日饲喂2-3次\n- 精料定量，粗料自由采食\n- 干物质摄入量约为体重的2.5-3%\n\n💡 **优化建议**\n1. 根据牛只体重调整配方\n2. 添加瘤胃调控剂提高消化率\n3. 适当添加脂肪（棉籽、菜籽饼）增加能量'
+    };
+
+    function askQuestion(question) {
+      document.getElementById('messageInput').value = question;
+      sendMessage();
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+
+      if (!message) return;
+
+      // 添加用户消息
+      addMessage(message, 'user');
+      input.value = '';
+      autoResize(input);
+
+      // 显示打字指示器
+      showTyping();
+
+      // 模拟AI回复延迟
+      setTimeout(() => {
+        hideTyping();
+        const response = getAIResponse(message);
+        addMessage(response, 'ai');
+        scrollToBottom();
+      }, 1500);
+    }
+
+    function getAIResponse(message) {
+      // 简单关键词匹配
+      if (message.includes('行情') || message.includes('价格') || message.includes('市场')) {
+        return aiResponses['市场行情'];
+      } else if (message.includes('出栏') || message.includes('育肥') || message.includes('增重')) {
+        return aiResponses['出栏率'];
+      } else if (message.includes('疾病') || message.includes('预防') || message.includes('疫苗')) {
+        return aiResponses['疾病预防'];
+      } else if (message.includes('溯源') || message.includes('追溯') || message.includes('查询')) {
+        return aiResponses['溯源'];
+      } else if (message.includes('运输') || message.includes('物流') || message.includes('装车')) {
+        return aiResponses['运输'];
+      } else if (message.includes('饲料') || message.includes('配比') || message.includes('喂养')) {
+        return aiResponses['饲料'];
+      } else {
+        return '感谢您的提问！\n\n我正在学习更多牛产业知识。针对您的问题，建议：\n\n1. 📞 联系平台客服获取专业解答\n2. 📚 查阅平台帮助中心\n3. 💬 在交流社区与同行探讨\n\n如有其他问题，请随时提问！';
+      }
+    }
+
+    function addMessage(content, type) {
+      const messageList = document.getElementById('messageList');
+      const now = new Date();
+      const time = now.getHours().toString().padStart(2, '0') + ':' +
+                   now.getMinutes().toString().padStart(2, '0');
+
+      const messageHtml = `
+        <div class="message ${type}">
+          <div class="message-avatar">
+            <i class="mdi mdi-${type === 'ai' ? 'robot' : 'account'}"></i>
+          </div>
+          <div>
+            <div class="message-content">${formatMessage(content)}</div>
+            <div class="message-time">${time}</div>
+          </div>
+        </div>
+      `;
+
+      messageList.insertAdjacentHTML('beforeend', messageHtml);
+      scrollToBottom();
+    }
+
+    function formatMessage(text) {
+      // 简单的Markdown格式化
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+    }
+
+    function showTyping() {
+      document.getElementById('typingIndicator').classList.add('show');
+      scrollToBottom();
+    }
+
+    function hideTyping() {
+      document.getElementById('typingIndicator').classList.remove('show');
+    }
+
+    function scrollToBottom() {
+      const container = document.getElementById('chatContainer');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function autoResize(textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+    }
+
+    function clearChat() {
+      if (confirm('确定清空聊天记录吗？')) {
+        document.getElementById('messageList').innerHTML = '';
+        showToast('聊天记录已清空');
+      }
+    }
+
+    function voiceInput() {
+      showToast('语音输入功能即将上线');
+    }
+
+    function showHistory() {
+      showToast('历史记录功能即将上线');
+    }
+
+    function showChatHistory() {
+      // TODO: 跳转到AI对话历史页面
+      showToast('AI对话历史功能即将上线');
+    }
+
+    function generateReport() {
+      showToast('AI正在生成分析报告...');
+      setTimeout(() => {
+        showToast('报告已生成，可在企业中心查看');
+      }, 2000);
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // 回车发送消息
+    document.getElementById('messageInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+
+</html>

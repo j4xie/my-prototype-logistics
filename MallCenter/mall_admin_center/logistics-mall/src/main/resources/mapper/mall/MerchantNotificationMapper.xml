@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.MerchantNotificationMapper">
+    <resultMap id="notificationMap" type="com.joolun.mall.entity.MerchantNotification">
+        <id property="id" column="id"/>
+        <result property="merchantId" column="merchant_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="phone" column="phone"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="summary" column="summary"/>
+        <result property="category" column="category"/>
+        <result property="subCategory" column="sub_category"/>
+        <result property="priority" column="priority"/>
+        <result property="relatedKeyword" column="related_keyword"/>
+        <result property="relatedProductIds" column="related_product_ids"/>
+        <result property="relatedOrderId" column="related_order_id"/>
+        <result property="relatedLink" column="related_link"/>
+        <result property="inAppStatus" column="in_app_status"/>
+        <result property="inAppSentTime" column="in_app_sent_time"/>
+        <result property="inAppReadTime" column="in_app_read_time"/>
+        <result property="smsEnabled" column="sms_enabled"/>
+        <result property="smsStatus" column="sms_status"/>
+        <result property="smsSentTime" column="sms_sent_time"/>
+        <result property="smsResult" column="sms_result"/>
+        <result property="smsTemplateId" column="sms_template_id"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdByName" column="created_by_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="notificationSql">
+        n.`id`,
+        n.`merchant_id`,
+        n.`user_id`,
+        n.`phone`,
+        n.`title`,
+        n.`content`,
+        n.`summary`,
+        n.`category`,
+        n.`sub_category`,
+        n.`priority`,
+        n.`related_keyword`,
+        n.`related_product_ids`,
+        n.`related_order_id`,
+        n.`related_link`,
+        n.`in_app_status`,
+        n.`in_app_sent_time`,
+        n.`in_app_read_time`,
+        n.`sms_enabled`,
+        n.`sms_status`,
+        n.`sms_sent_time`,
+        n.`sms_result`,
+        n.`sms_template_id`,
+        n.`created_by`,
+        n.`created_by_name`,
+        n.`create_time`,
+        n.`update_time`
+    </sql>
+
+    <select id="selectPage1" resultMap="notificationMap">
+        SELECT
+        <include refid="notificationSql"/>
+        FROM merchant_notification n
+        <where>
+            n.`in_app_status` != 3
+            <if test="query.merchantId != null">
+                AND n.`merchant_id` = #{query.merchantId}
+            </if>
+            <if test="query.category != null and query.category != ''">
+                AND n.`category` = #{query.category}
+            </if>
+            <if test="query.inAppStatus != null">
+                AND n.`in_app_status` = #{query.inAppStatus}
+            </if>
+        </where>
+        ORDER BY n.`create_time` DESC
+    </select>
+
+    <select id="selectUnreadByMerchantId" resultMap="notificationMap">
+        SELECT
+        <include refid="notificationSql"/>
+        FROM merchant_notification n
+        WHERE n.`merchant_id` = #{merchantId}
+          AND n.`in_app_status` = 1
+        ORDER BY n.`create_time` DESC
+    </select>
+
+    <select id="countUnreadByMerchantId" resultType="int">
+        SELECT COUNT(*)
+        FROM merchant_notification
+        WHERE merchant_id = #{merchantId}
+          AND in_app_status = 1
+    </select>
+
+    <update id="batchMarkRead">
+        UPDATE merchant_notification
+        SET in_app_status = 2, in_app_read_time = NOW(), update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectPendingSms" resultMap="notificationMap">
+        SELECT
+        <include refid="notificationSql"/>
+        FROM merchant_notification n
+        WHERE n.`sms_enabled` = 1
+          AND n.`sms_status` = 1
+          AND n.`phone` IS NOT NULL
+        ORDER BY n.`create_time` ASC
+        LIMIT 100
+    </select>
+
+    <update id="updateSmsStatus">
+        UPDATE merchant_notification
+        SET sms_status = #{status}, sms_result = #{result}, sms_sent_time = NOW(), update_time = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper>

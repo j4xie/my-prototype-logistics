@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.SmsSendRecordMapper">
+    <resultMap id="recordMap" type="com.joolun.mall.entity.SmsSendRecord">
+        <id property="id" column="id"/>
+        <result property="phone" column="phone"/>
+        <result property="templateId" column="template_id"/>
+        <result property="templateParams" column="template_params"/>
+        <result property="content" column="content"/>
+        <result property="status" column="status"/>
+        <result property="sendTime" column="send_time"/>
+        <result property="resultCode" column="result_code"/>
+        <result property="resultMessage" column="result_message"/>
+        <result property="bizId" column="biz_id"/>
+        <result property="notificationId" column="notification_id"/>
+        <result property="merchantId" column="merchant_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="feeCount" column="fee_count"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <select id="selectPage1" resultMap="recordMap">
+        SELECT * FROM sms_send_record
+        <where>
+            <if test="query.phone != null and query.phone != ''">
+                AND phone = #{query.phone}
+            </if>
+            <if test="query.merchantId != null">
+                AND merchant_id = #{query.merchantId}
+            </if>
+            <if test="query.status != null">
+                AND status = #{query.status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="countTodaySendByMerchant" resultType="int">
+        SELECT COUNT(*)
+        FROM sms_send_record
+        WHERE merchant_id = #{merchantId}
+          AND DATE(create_time) = #{date}
+          AND status IN (1, 2)
+    </select>
+
+    <select id="selectPendingSend" resultMap="recordMap">
+        SELECT * FROM sms_send_record
+        WHERE status = 0
+        ORDER BY create_time ASC
+        LIMIT 100
+    </select>
+
+    <update id="updateSendStatus">
+        UPDATE sms_send_record
+        SET status = #{status},
+            result_code = #{resultCode},
+            result_message = #{resultMessage},
+            biz_id = #{bizId},
+            send_time = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper>

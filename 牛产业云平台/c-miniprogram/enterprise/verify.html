@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>认证管理 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+    }
+
+    /* 顶部Header */
+    .header {
+      background: white;
+      padding: 48px 16px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-btn {
+      font-size: 22px;
+      text-decoration: none;
+      color: #212121;
+      padding: 4px;
+    }
+
+    .header-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #212121;
+    }
+
+    .header-action {
+      font-size: 14px;
+      color: #757575;
+      text-decoration: none;
+    }
+
+    /* 认证状态卡片 */
+    .status-card {
+      margin: 16px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .status-card.verified {
+      background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+    }
+
+    .status-card.pending {
+      background: linear-gradient(135deg, #F57C00 0%, #FF9800 100%);
+    }
+
+    .status-card.unverified {
+      background: linear-gradient(135deg, #757575 0%, #9E9E9E 100%);
+    }
+
+    .status-content {
+      padding: 24px;
+      color: white;
+    }
+
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .status-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .status-info h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .status-info p {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .status-progress {
+      margin-bottom: 16px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: white;
+      border-radius: 3px;
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .status-benefits {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .benefit-tag {
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+      font-size: 12px;
+    }
+
+    /* 认证项目列表 */
+    .cert-section {
+      background: white;
+      margin: 16px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .section-title {
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #212121;
+      border-bottom: 1px solid #F0F0F0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-weight: 400;
+    }
+
+    .section-badge.complete {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .section-badge.incomplete {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .cert-list {
+      padding: 0 16px;
+    }
+
+    .cert-item {
+      display: flex;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid #F5F5F5;
+      gap: 12px;
+    }
+
+    .cert-item:last-child {
+      border-bottom: none;
+    }
+
+    .cert-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .cert-icon.verified {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .cert-icon.pending {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .cert-icon.unverified {
+      background: #F5F5F5;
+      color: #9E9E9E;
+    }
+
+    .cert-info {
+      flex: 1;
+    }
+
+    .cert-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #212121;
+      margin-bottom: 4px;
+    }
+
+    .cert-desc {
+      font-size: 12px;
+      color: #9E9E9E;
+    }
+
+    .cert-status {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .cert-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 10px;
+    }
+
+    .cert-tag.verified {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .cert-tag.pending {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .cert-tag.unverified {
+      background: #F5F5F5;
+      color: #757575;
+    }
+
+    .cert-tag.expired {
+      background: #FFEBEE;
+      color: #C62828;
+    }
+
+    .cert-expire {
+      font-size: 11px;
+      color: #9E9E9E;
+    }
+
+    .cert-arrow {
+      font-size: 20px;
+      color: #BDBDBD;
+    }
+
+    /* 帮助提示 */
+    .help-card {
+      background: white;
+      margin: 16px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .help-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #212121;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .help-title i {
+      color: #2E7D32;
+    }
+
+    .help-list {
+      list-style: none;
+    }
+
+    .help-list li {
+      font-size: 13px;
+      color: #757575;
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #F5F5F5;
+    }
+
+    .help-list li:last-child {
+      border-bottom: none;
+    }
+
+    .help-list li i {
+      color: #4CAF50;
+      font-size: 16px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="theme-green">
+  <!-- 顶部Header -->
+  <header class="header">
+    <div class="header-bar">
+      <a href="center.html" class="back-btn"><i class="mdi mdi-arrow-left"></i></a>
+      <span class="header-title">认证管理</span>
+      <a href="#" class="header-action" onclick="showHistory()">认证记录</a>
+    </div>
+  </header>
+
+  <!-- 认证状态卡片 -->
+  <div class="status-card verified">
+    <div class="status-content">
+      <div class="status-header">
+        <div class="status-icon"><i class="mdi mdi-shield-check"></i></div>
+        <div class="status-info">
+          <h3>企业认证已通过</h3>
+          <p>您已完成企业实名认证，享有全部平台权益</p>
+        </div>
+      </div>
+      <div class="status-progress">
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 75%;"></div>
+        </div>
+        <div class="progress-text">
+          <span>认证完成度</span>
+          <span>75%（6/8）</span>
+        </div>
+      </div>
+      <div class="status-benefits">
+        <span class="benefit-tag"><i class="mdi mdi-check"></i> 发布信息</span>
+        <span class="benefit-tag"><i class="mdi mdi-check"></i> 在线交易</span>
+        <span class="benefit-tag"><i class="mdi mdi-check"></i> 信用担保</span>
+        <span class="benefit-tag"><i class="mdi mdi-check"></i> 优先推荐</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 基础认证 -->
+  <div class="cert-section">
+    <div class="section-title">
+      基础认证
+      <span class="section-badge complete">已完成</span>
+    </div>
+    <div class="cert-list">
+      <div class="cert-item" onclick="viewCert('phone')">
+        <div class="cert-icon verified"><i class="mdi mdi-cellphone"></i></div>
+        <div class="cert-info">
+          <div class="cert-name">手机认证</div>
+          <div class="cert-desc">139****1234</div>
+        </div>
+        <div class="cert-status">
+          <span class="cert-tag verified">已认证</span>
+        </div>
+        <i class="mdi mdi-chevron-right cert-arrow"></i>
+      </div>
+      <div class="cert-item" onclick="viewCert('realname')">
+        <div class="cert-icon verified"><i class="mdi mdi-account-check"></i></div>
+        <div class="cert-info">
+          <div class="cert-name">实名认证</div>
+          <div class="cert-desc">王**</div>
+        </div>
+        <div class="cert-status">
+          <span class="cert-tag verified">已认证</span>
+        </div>
+        <i class="mdi mdi-chevron-right cert-arrow"></i>
+      </div>
+      <div class="cert-item" onclick="viewCert('enterprise')">
+        <div class="cert-icon verified"><i class="mdi mdi-domain"></i></div>
+        <div class="cert-info">
+          <div class="cert-name">企业认证</div>
+          <div class="cert-desc">草原牧业有限公司</div>
+        </div>
+        <div class="cert-status">
+          <span class="cert-tag verified">已认证</span>
+        </div>
+        <i class="mdi mdi-chevron-right cert-arrow"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- 资质认证 -->
+  <div class="cert-section">
+    <div class="section-title">
+      资质认证
+      <span class="section-badge incomplete">3/5</span>
+    </div>
+    <div class="cert-list">
+      <div class="cert-item" onclick="viewCert('license')">
+        <div class="cert-icon verified"><i class="mdi mdi-certificate"></i></div>
+        <div class="cert-info">
+          <div class="cert-name">营业执照</div>
+          <div class="cert-desc">91150100MA0NXXXXXX</div>
+        </div>
+        <div class="cert-status">
+          <span class="cert-tag verified">已认证</span>
+          <span class="cert-expire">2028-03-15到期</span>
+        </div>
+        <i class="mdi mdi-chevron-right cert-arrow"></i>
+      </div>
+      <div class="cert-item" onclick="viewCert('animal')">
+        <div class="cert-icon verified"><i class="mdi mdi-shield-check"></i></div>
+        <div class="cert-info">
+          <div class="cert-name">动物防疫条件合格证</div>
+          <div class="cert-desc">畜牧养殖、销售</div>
+        </div>
+        <div class="cert-status">
+          <span class="cert-tag verified">已认证</span>
+          <span class="cert-expire">2025-06-30到期</span>
+        </div>
+        <i class="mdi mdi-chevron-right cert-arrow"></i>
+      </div>
+      <div class="cert-item" onclick="viewCert('breed')">
+        <div class="cert-icon verified"><i class="mdi mdi-cow"></i></div>
+        <div class="cert-info">
+          <div class="cert-name">种畜禽经营许可证</div>
+          <div class="cert-desc">种牛繁育、销售</div>
+        </div>
+        <div class="cert-status">
+          <span class="cert-tag verified">已认证</span>
+          <span class="cert-expire">2026-12-31到期</span>
+        </div>
+        <i class="mdi mdi-chevron-right cert-arrow"></i>
+      </div>
+      <div class="cert-item" onclick="applyCert('food')">
+        <div class="cert-icon unverified"><i class="mdi mdi-food-apple"></i></div>
+        <div class="cert-info">
+          <div class="cert-name">食品经营许可证</div>
+          <div class="cert-desc">销售牛肉产品需要此证</div>
+        </div>
+        <div class="cert-status">
+          <span class="cert-tag unverified">待上传</span>
+        </div>
+        <i class="mdi mdi-chevron-right cert-arrow"></i>
+      </div>
+      <div class="cert-item" onclick="applyCert('organic')">
+        <div class="cert-icon unverified"><i class="mdi mdi-leaf"></i></div>
+        <div class="cert-info">
+          <div class="cert-name">有机产品认证</div>
+          <div class="cert-desc">获得更高曝光和信任度</div>
+        </div>
+        <div class="cert-status">
+          <span class="cert-tag unverified">待上传</span>
+        </div>
+        <i class="mdi mdi-chevron-right cert-arrow"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- 帮助提示 -->
+  <div class="help-card">
+    <div class="help-title"><i class="mdi mdi-lightbulb-on"></i> 认证须知</div>
+    <ul class="help-list">
+      <li><i class="mdi mdi-check-circle"></i> 完成认证后可发布供应和求购信息</li>
+      <li><i class="mdi mdi-check-circle"></i> 认证企业在搜索结果中优先展示</li>
+      <li><i class="mdi mdi-check-circle"></i> 认证信息审核时间约1-3个工作日</li>
+      <li><i class="mdi mdi-check-circle"></i> 资质到期前30天系统会发送提醒</li>
+    </ul>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function showHistory() {
+      showToast('认证记录');
+    }
+
+    function viewCert(type) {
+      const names = {
+        'phone': '手机认证',
+        'realname': '实名认证',
+        'enterprise': '企业认证',
+        'license': '营业执照',
+        'animal': '动物防疫证',
+        'breed': '种畜经营证'
+      };
+      showToast('查看: ' + names[type]);
+    }
+
+    function applyCert(type) {
+      const names = {
+        'food': '食品经营许可证',
+        'organic': '有机产品认证'
+      };
+      showToast('上传: ' + names[type]);
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+
+</html>

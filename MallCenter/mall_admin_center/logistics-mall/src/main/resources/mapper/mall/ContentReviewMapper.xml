@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.ContentReviewMapper">
+    
+    <resultMap id="contentReviewMap" type="com.joolun.mall.entity.ContentReview">
+        <id column="id" property="id"/>
+        <result column="content_type" property="contentType"/>
+        <result column="content_id" property="contentId"/>
+        <result column="content_title" property="contentTitle"/>
+        <result column="content_detail" property="contentDetail"/>
+        <result column="submitter_id" property="submitterId"/>
+        <result column="submitter_name" property="submitterName"/>
+        <result column="merchant_id" property="merchantId"/>
+        <result column="merchant_name" property="merchantName"/>
+        <result column="status" property="status"/>
+        <result column="priority" property="priority"/>
+        <result column="reviewer_id" property="reviewerId"/>
+        <result column="reviewer_name" property="reviewerName"/>
+        <result column="review_time" property="reviewTime"/>
+        <result column="review_remark" property="reviewRemark"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="ai_result" property="aiResult"/>
+        <result column="ai_score" property="aiScore"/>
+        <result column="skip_ai" property="skipAi"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List">
+        id, content_type, content_id, content_title, content_detail, submitter_id, submitter_name,
+        merchant_id, merchant_name, status, priority, reviewer_id, reviewer_name, review_time,
+        review_remark, reject_reason, ai_result, ai_score, skip_ai, create_time, update_time, del_flag
+    </sql>
+    
+    <!-- 分页查询待审核内容 -->
+    <select id="selectPendingReviews" resultMap="contentReviewMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM content_review
+        WHERE del_flag = 0 AND status = 0
+        <if test="contentType != null">
+            AND content_type = #{contentType}
+        </if>
+        <if test="merchantId != null">
+            AND merchant_id = #{merchantId}
+        </if>
+        ORDER BY priority DESC, create_time ASC
+    </select>
+    
+    <!-- 根据内容类型和内容ID查询 -->
+    <select id="selectByContentTypeAndId" resultMap="contentReviewMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM content_review
+        WHERE del_flag = 0 AND content_type = #{contentType} AND content_id = #{contentId}
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+    
+    <!-- 统计各状态数量 -->
+    <select id="countByStatus" resultType="map">
+        SELECT status, COUNT(*) as count
+        FROM content_review
+        WHERE del_flag = 0
+        <if test="contentType != null">
+            AND content_type = #{contentType}
+        </if>
+        GROUP BY status
+    </select>
+    
+    <!-- 查询商户的审核记录 -->
+    <select id="selectByMerchantId" resultMap="contentReviewMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM content_review
+        WHERE del_flag = 0 AND merchant_id = #{merchantId}
+        ORDER BY create_time DESC
+    </select>
+    
+</mapper>

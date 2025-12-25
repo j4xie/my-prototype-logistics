@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "数据统计",
+  "navigationBarBackgroundColor": "#1A1A1A",
+  "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": true,
+  "usingComponents": {}
+}
+
+
+
+

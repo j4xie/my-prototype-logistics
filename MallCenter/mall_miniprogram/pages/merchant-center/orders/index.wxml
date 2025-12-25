@@ -1,0 +1,78 @@
+<!--
+  商家订单管理页面
+-->
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input" bindtap="searchOrders">
+      <text class="cuIcon-search"></text>
+      <text class="placeholder">搜索订单号/商品名称</text>
+    </view>
+  </view>
+
+  <!-- Tab栏 -->
+  <scroll-view class="tab-scroll" scroll-x>
+    <view class="tab-bar">
+      <view class="tab-item {{currentTab === item.key ? 'active' : ''}}" 
+            wx:for="{{tabs}}" wx:key="key"
+            bindtap="switchTab" data-tab="{{item.key}}">
+        <text>{{item.title}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 订单列表 -->
+  <view class="orders-list">
+    <view class="order-card" wx:for="{{orders}}" wx:key="id">
+      <view class="order-header">
+        <text class="order-no">{{item.orderNo}}</text>
+        <text class="order-status {{item.status === '待发货' ? 'pending' : ''}}">{{item.status}}</text>
+      </view>
+      
+      <view class="order-customer">
+        <text class="cuIcon-people"></text>
+        <text>{{item.customerName}}</text>
+        <text class="phone">{{item.customerPhone}}</text>
+      </view>
+
+      <view class="order-goods">
+        <view class="goods-item" wx:for="{{item.goods}}" wx:for-item="goods" wx:key="name">
+          <text class="goods-name">{{goods.name}}</text>
+          <text class="goods-info">x{{goods.quantity}} ¥{{goods.price}}</text>
+        </view>
+      </view>
+
+      <view class="order-footer">
+        <view class="order-amount">
+          <text class="label">实付</text>
+          <text class="amount">¥{{item.totalAmount}}</text>
+        </view>
+        <view class="order-actions">
+          <button class="cu-btn sm" bindtap="contactBuyer" data-phone="{{item.customerPhone}}">联系买家</button>
+          <button class="cu-btn bg-green sm" wx:if="{{item.status === '待发货'}}" bindtap="shipOrder" data-id="{{item.id}}">发货</button>
+          <button class="cu-btn line-black sm" bindtap="viewDetail" data-id="{{item.id}}">详情</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载状态 -->
+    <view class="loading-more" wx:if="{{loading}}">
+      <view class="cu-load loading"></view>
+    </view>
+    
+    <!-- 无更多 -->
+    <view class="no-more" wx:if="{{!hasMore && orders.length > 0}}">
+      <text>没有更多订单了</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && orders.length === 0}}">
+      <text class="cuIcon-news"></text>
+      <text>暂无订单</text>
+    </view>
+  </view>
+</view>
+
+
+
+
