@@ -40,11 +40,15 @@ public class TimeClockController {
     @Operation(summary = "上班打卡", description = "员工上班打卡")
     public ApiResponse<TimeClockRecord> clockIn(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "用户ID") Long userId,
-            @RequestParam(required = false) @Parameter(description = "打卡位置") String location,
-            @RequestParam(required = false) @Parameter(description = "打卡设备") String device) {
-        log.info("上班打卡: factoryId={}, userId={}", factoryId, userId);
-        TimeClockRecord record = timeClockService.clockIn(factoryId, userId, location, device);
+            @RequestAttribute("userId") @Parameter(description = "用户ID (从JWT token获取)") Long userId,
+            @RequestBody(required = false) @Parameter(description = "打卡信息") Map<String, Object> body) {
+        String location = body != null ? (String) body.get("location") : null;
+        String device = body != null ? (String) body.get("device") : null;
+        Double latitude = body != null && body.get("latitude") != null ? ((Number) body.get("latitude")).doubleValue() : null;
+        Double longitude = body != null && body.get("longitude") != null ? ((Number) body.get("longitude")).doubleValue() : null;
+        log.info("上班打卡: factoryId={}, userId={}, location={}, lat={}, lng={}",
+                 factoryId, userId, location, latitude, longitude);
+        TimeClockRecord record = timeClockService.clockIn(factoryId, userId, location, device, latitude, longitude);
         return ApiResponse.success(record);
     }
 
@@ -55,7 +59,7 @@ public class TimeClockController {
     @Operation(summary = "下班打卡", description = "员工下班打卡")
     public ApiResponse<TimeClockRecord> clockOut(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "用户ID") Long userId) {
+            @RequestAttribute("userId") @Parameter(description = "用户ID (从JWT token获取)") Long userId) {
         log.info("下班打卡: factoryId={}, userId={}", factoryId, userId);
         TimeClockRecord record = timeClockService.clockOut(factoryId, userId);
         return ApiResponse.success(record);
@@ -68,7 +72,7 @@ public class TimeClockController {
     @Operation(summary = "开始休息", description = "开始休息时间")
     public ApiResponse<TimeClockRecord> breakStart(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "用户ID") Long userId) {
+            @RequestAttribute("userId") @Parameter(description = "用户ID (从JWT token获取)") Long userId) {
         log.info("开始休息: factoryId={}, userId={}", factoryId, userId);
         TimeClockRecord record = timeClockService.breakStart(factoryId, userId);
         return ApiResponse.success(record);
@@ -81,7 +85,7 @@ public class TimeClockController {
     @Operation(summary = "结束休息", description = "结束休息时间")
     public ApiResponse<TimeClockRecord> breakEnd(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "用户ID") Long userId) {
+            @RequestAttribute("userId") @Parameter(description = "用户ID (从JWT token获取)") Long userId) {
         log.info("结束休息: factoryId={}, userId={}", factoryId, userId);
         TimeClockRecord record = timeClockService.breakEnd(factoryId, userId);
         return ApiResponse.success(record);
@@ -94,7 +98,7 @@ public class TimeClockController {
     @Operation(summary = "获取打卡状态", description = "获取员工当前打卡状态")
     public ApiResponse<Map<String, Object>> getClockStatus(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "用户ID") Long userId) {
+            @RequestAttribute("userId") @Parameter(description = "用户ID (从JWT token获取)") Long userId) {
         log.info("获取打卡状态: factoryId={}, userId={}", factoryId, userId);
         Map<String, Object> status = timeClockService.getClockStatus(factoryId, userId);
         return ApiResponse.success(status);
@@ -107,7 +111,7 @@ public class TimeClockController {
     @Operation(summary = "获取打卡历史", description = "获取员工打卡历史记录")
     public ApiResponse<PageResponse<TimeClockRecord>> getClockHistory(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "用户ID") Long userId,
+            @RequestAttribute("userId") @Parameter(description = "用户ID (从JWT token获取)") Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             @Parameter(description = "开始日期") LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -131,7 +135,7 @@ public class TimeClockController {
     @Operation(summary = "获取今日打卡", description = "获取员工今日打卡记录")
     public ApiResponse<TimeClockRecord> getTodayRecord(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "用户ID") Long userId) {
+            @RequestAttribute("userId") @Parameter(description = "用户ID (从JWT token获取)") Long userId) {
         log.info("获取今日打卡记录: factoryId={}, userId={}", factoryId, userId);
         TimeClockRecord record = timeClockService.getTodayRecord(factoryId, userId);
         return ApiResponse.success(record);
@@ -160,7 +164,7 @@ public class TimeClockController {
     @Operation(summary = "考勤统计", description = "获取员工考勤统计数据")
     public ApiResponse<Map<String, Object>> getAttendanceStatistics(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "用户ID") Long userId,
+            @RequestAttribute("userId") @Parameter(description = "用户ID (从JWT token获取)") Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             @Parameter(description = "开始日期") LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)

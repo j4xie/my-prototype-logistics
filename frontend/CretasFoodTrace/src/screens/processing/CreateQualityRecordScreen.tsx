@@ -35,7 +35,7 @@ import {
 } from '../../services/api/qualityInspectionApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { NotImplementedError } from '../../errors';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建CreateQualityRecord专用logger
@@ -69,12 +69,12 @@ export default function CreateQualityRecordScreen() {
 
   // Get user context
   const { user } = useAuthStore();
-  const factoryId = user?.factoryId || user?.factoryUser?.factoryId;
-  const currentUserId = user?.id || user?.factoryUser?.userId;
+  const factoryId = user?.factoryId;
+  const currentUserId = user?.id;
 
   // Form state (matching backend QualityInspection entity)
-  const [inspectionDate, setInspectionDate] = useState(
-    new Date().toISOString().split('T')[0] // YYYY-MM-DD format
+  const [inspectionDate, setInspectionDate] = useState<string>(
+    new Date().toISOString().split('T')[0]! // YYYY-MM-DD format
   );
 
   // Sample data (matching backend requirements)
@@ -186,7 +186,9 @@ export default function CreateQualityRecordScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newPhotoUri = result.assets[0].uri;
+        const asset = result.assets[0];
+        if (!asset) return;
+        const newPhotoUri = asset.uri;
         qualityRecordLogger.info('图片选择成功', { uri: newPhotoUri.substring(0, 50) + '...' });
 
         // 限制最多6张图片
@@ -199,7 +201,7 @@ export default function CreateQualityRecordScreen() {
       }
     } catch (error) {
       qualityRecordLogger.error('选择图片失败', error);
-      Alert.alert('选择图片失败', error.message || '无法选择图片，请重试');
+      Alert.alert('选择图片失败', (error as any).message || '无法选择图片，请重试');
     }
   };
 
@@ -221,7 +223,9 @@ export default function CreateQualityRecordScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newPhotoUri = result.assets[0].uri;
+        const asset = result.assets[0];
+        if (!asset) return;
+        const newPhotoUri = asset.uri;
         qualityRecordLogger.info('拍照成功', { uri: newPhotoUri.substring(0, 50) + '...' });
 
         // 限制最多6张图片
@@ -234,7 +238,7 @@ export default function CreateQualityRecordScreen() {
       }
     } catch (error) {
       qualityRecordLogger.error('拍照失败', error);
-      Alert.alert('拍照失败', error.message || '无法拍照，请重试');
+      Alert.alert('拍照失败', (error as any).message || '无法拍照，请重试');
     }
   };
 
@@ -309,9 +313,17 @@ export default function CreateQualityRecordScreen() {
               );
             }
 
+            if (!currentUserId) {
+              throw new Error('无法获取用户ID');
+            }
+
+            if (!factoryId) {
+              throw new Error('无法获取工厂ID');
+            }
+
             // Prepare inspection data (matching backend SubmitInspectionRequest)
             const inspectionData: SubmitInspectionRequest = {
-              inspectorId: currentUserId!,
+              inspectorId: currentUserId,
               inspectionDate, // YYYY-MM-DD
               sampleSize: sampleSizeNum,
               passCount: passCountNum,
@@ -331,19 +343,19 @@ export default function CreateQualityRecordScreen() {
 
             // API integration - POST /quality/inspections?batchId={batchId}
             const response = await qualityInspectionApiClient.submitInspection(
-              batchId,
+              Number(batchId),
               inspectionData,
               factoryId
             );
 
-            qualityRecordLogger.info('质检记录提交成功', { batchId, inspectionId: response.id });
+            qualityRecordLogger.info('质检记录提交成功', { batchId, inspectionId: response.data?.id });
 
             Alert.alert('成功', '质检记录已提交', [
               { text: '确定', onPress: () => navigation.goBack() },
             ]);
           } catch (error) {
             qualityRecordLogger.error('提交质检记录失败', error, { batchId });
-            const errorMessage = error.response?.data?.message || error.message || '提交失败，请重试';
+            const errorMessage = getErrorMsg(error) || '提交失败，请重试';
             Alert.alert('提交失败', errorMessage);
           } finally {
             setSubmitting(false);

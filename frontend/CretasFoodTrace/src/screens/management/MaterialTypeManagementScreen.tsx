@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { materialTypeApiClient, MaterialType, CreateMaterialTypeRequest } from '../../services/api/materialTypeApiClient';
 import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../services/api/materialSpecApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 import { canManageBasicData, getPermissionDebugInfo, getFactoryId } from '../../utils/permissionHelper';
 
@@ -77,12 +77,10 @@ export default function MaterialTypeManagementScreen() {
     code: '', // 将由后端自动生成
     name: '',
     category: '',
-    specification: '',
     unit: 'kg',
-    shelfLife: 0,
+    shelfLifeDays: 0,
     storageType: '新鲜',
-    storageConditions: '',
-    description: '',
+    notes: '',
   });
 
   useEffect(() => {
@@ -162,12 +160,10 @@ export default function MaterialTypeManagementScreen() {
       code: '', // 自动生成，不需要用户输入
       name: '',
       category: categoryOptions[0], // 默认选择第一个类别
-      specification: '',
       unit: 'kg',
-      shelfLife: 7, // 默认保质期7天
+      shelfLifeDays: 7, // 默认保质期7天
       storageType: '新鲜',
-      storageConditions: '',
-      description: '',
+      notes: '',
     });
     setCustomSpecMode(false);
     setCustomSpecValue('');
@@ -177,15 +173,13 @@ export default function MaterialTypeManagementScreen() {
   const handleEdit = (item: MaterialType) => {
     setEditingItem(item);
     setFormData({
-      code: item.materialCode,  // 修正：使用 materialCode 而不是 code
+      code: item.code,
       name: item.name,
       category: item.category || '',
-      specification: item.specification || '',
       unit: item.unit,
-      shelfLife: item.shelfLife || 0,
-      storageType: item.storageType,
-      storageConditions: item.storageConditions || '',
-      description: item.description || '',
+      shelfLifeDays: item.shelfLifeDays || 0,
+      storageType: item.storageType || '新鲜',
+      notes: item.notes || '',
     });
     setCustomSpecMode(false);
     setCustomSpecValue('');
@@ -377,7 +371,7 @@ export default function MaterialTypeManagementScreen() {
                     </View>
                     <View style={styles.titleContainer}>
                       <Text style={styles.itemName}>{item.name}</Text>
-                      <Text style={styles.itemCode}>{item.materialCode}</Text>
+                      <Text style={styles.itemCode}>{item.code}</Text>
                     </View>
                   </View>
                   <Chip
@@ -414,9 +408,9 @@ export default function MaterialTypeManagementScreen() {
                       {item.unit}
                     </Chip>
                   )}
-                  {item.shelfLife && item.shelfLife > 0 && (
+                  {item.shelfLifeDays && item.shelfLifeDays > 0 && (
                     <Chip mode="outlined" style={styles.tagChip}>
-                      {item.shelfLife}天
+                      {item.shelfLifeDays}天
                     </Chip>
                   )}
                 </View>
@@ -519,71 +513,6 @@ export default function MaterialTypeManagementScreen() {
               ))}
             </Menu>
 
-            {/* 规格说明 - 动态下拉选择或自定义输入 */}
-            <Menu
-              visible={specMenuVisible}
-              onDismiss={() => setSpecMenuVisible(false)}
-              anchor={
-                <TextInput
-                  label="规格说明"
-                  value={customSpecMode ? customSpecValue : formData.specification}
-                  mode="outlined"
-                  style={styles.input}
-                  editable={customSpecMode}
-                  right={
-                    customSpecMode ? (
-                      <TextInput.Icon
-                        icon="close"
-                        onPress={() => {
-                          setCustomSpecMode(false);
-                          setCustomSpecValue('');
-                        }}
-                      />
-                    ) : (
-                      <TextInput.Icon
-                        icon="menu-down"
-                        onPress={() => setSpecMenuVisible(true)}
-                      />
-                    )
-                  }
-                  onPressIn={() => !customSpecMode && setSpecMenuVisible(true)}
-                  onChangeText={(text) => {
-                    if (customSpecMode) {
-                      setCustomSpecValue(text);
-                      setFormData({ ...formData, specification: text });
-                    }
-                  }}
-                  placeholder={customSpecMode ? '输入自定义规格' : '从列表选择或自定义（可选）'}
-                />
-              }
-            >
-              {/* 当前类别的规格选项 */}
-              {(() => {
-                const category = formData.category || categoryOptions[0] || '其他';
-                const specs = specConfig[category] || [];
-                return specs.map((spec: string) => (
-                  <Menu.Item
-                    key={spec}
-                    title={spec}
-                    onPress={() => {
-                      setFormData({ ...formData, specification: spec });
-                      setSpecMenuVisible(false);
-                      setCustomSpecMode(false);
-                    }}
-                  />
-                ));
-              })()}
-              <Divider />
-              <Menu.Item
-                leadingIcon="pencil"
-                title="➕ 自定义输入"
-                onPress={() => {
-                  setCustomSpecMode(true);
-                  setSpecMenuVisible(false);
-                  setCustomSpecValue(formData.specification || '');
-                }}
-              />
-            </Menu>
 
             {/* 单位下拉选择 */}
             <Menu
@@ -615,8 +544,8 @@ export default function MaterialTypeManagementScreen() {
 
             <TextInput
               label="保质期（天）"
-              value={formData.shelfLife?.toString() || ''}
-              onChangeText={(text) => setFormData({ ...formData, shelfLife: parseInt(text) || 0 })}
+              value={formData.shelfLifeDays?.toString() || ''}
+              onChangeText={(text) => setFormData({ ...formData, shelfLifeDays: parseInt(text) || 0 })}
               mode="outlined"
               style={styles.input}
               keyboardType="numeric"
@@ -652,20 +581,9 @@ export default function MaterialTypeManagementScreen() {
             </Menu>
 
             <TextInput
-              label="储存条件"
-              value={formData.storageConditions}
-              onChangeText={(text) => setFormData({ ...formData, storageConditions: text })}
-              mode="outlined"
-              style={styles.input}
-              multiline
-              numberOfLines={2}
-              placeholder="例如: 0-4℃冷藏"
-            />
-
-            <TextInput
-              label="描述"
-              value={formData.description}
-              onChangeText={(text) => setFormData({ ...formData, description: text })}
+              label="备注"
+              value={formData.notes}
+              onChangeText={(text) => setFormData({ ...formData, notes: text })}
               mode="outlined"
               style={styles.input}
               multiline

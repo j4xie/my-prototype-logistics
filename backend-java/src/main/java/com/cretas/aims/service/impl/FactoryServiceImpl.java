@@ -10,6 +10,9 @@ import com.cretas.aims.service.FactoryService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,13 +35,26 @@ public class FactoryServiceImpl implements FactoryService {
 
     private final FactoryRepository factoryRepository;
 
+    /**
+     * 获取所有工厂列表（不推荐，使用分页版本）
+     * 内部限制最多返回1000条，防止内存溢出
+     */
     @Override
+    @Deprecated
     public List<FactoryDTO> getAllFactories() {
-        log.info("获取所有工厂列表");
-        List<Factory> factories = factoryRepository.findAll();
+        log.warn("使用了无分页的getAllFactories()，建议使用分页版本");
+        // 限制最多返回1000条，防止内存问题
+        Page<Factory> factories = factoryRepository.findAll(PageRequest.of(0, 1000));
         return factories.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<FactoryDTO> getAllFactories(Pageable pageable) {
+        log.info("分页获取工厂列表: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+        Page<Factory> factories = factoryRepository.findAll(pageable);
+        return factories.map(this::convertToDTO);
     }
 
     @Override
@@ -180,18 +196,15 @@ public class FactoryServiceImpl implements FactoryService {
      * @return 工厂ID
      */
     private String generateFactoryId(String industryCode, String regionCode) {
-        // 查找同行业同地区的工厂数量
+        // 使用COUNT查询替代findAll().stream().filter()，避免全表加载
         String prefix = industryCode + "_" + regionCode + "_";
-        List<Factory> existingFactories = factoryRepository.findAll().stream()
-                .filter(f -> f.getId().startsWith(prefix))
-                .collect(Collectors.toList());
+        long existingCount = factoryRepository.countByIdPrefix(prefix);
 
         // 生成序号（001, 002, 003...）
-        int sequence = existingFactories.size() + 1;
-        String factoryId = String.format("%s%s_%s_%03d",
-                industryCode, "_", regionCode, sequence);
+        int sequence = (int) existingCount + 1;
+        String factoryId = String.format("%s_%s_%03d", industryCode, regionCode, sequence);
 
-        log.info("生成工厂ID: {}", factoryId);
+        log.info("生成工厂ID: {}, 现有数量: {}", factoryId, existingCount);
         return factoryId;
     }
 

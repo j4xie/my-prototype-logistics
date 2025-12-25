@@ -38,9 +38,9 @@ import timeStatisticsData from './data/timeStatistics.json';
 // ========== 导出类型化的Mock数据 ==========
 
 export const mockUsers: UserDTO[] = usersData.data;
-export const mockWhitelist: WhitelistDTO[] = whitelistData.data;
+export const mockWhitelist = whitelistData.data as WhitelistDTO[];
 export const mockSuppliers = suppliersData.data;
-export const mockCustomers: Customer[] = customersData.data;
+export const mockCustomers = customersData.data as Customer[];
 export const mockMaterialBatches = materialBatchesData.data;
 export const mockProductTypes = productTypesData.data;
 export const mockMaterialTypes = materialTypesData.data;

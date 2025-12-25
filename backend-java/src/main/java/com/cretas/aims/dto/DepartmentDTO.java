@@ -35,7 +35,7 @@ public class DepartmentDTO {
     @Size(max = 500, message = "描述不能超过500个字符")
     private String description;
 
-    private Integer managerUserId;
+    private Long managerUserId;
 
     private String managerName; // 负责人姓名（关联查询）
 
@@ -54,7 +54,7 @@ public class DepartmentDTO {
     @Size(max = 50, message = "图标名称不能超过50个字符")
     private String icon;
 
-    private Integer createdBy;
+    private Long createdBy;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

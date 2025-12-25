@@ -33,6 +33,11 @@ export interface PagedResponse<T> {
 }
 
 /**
+ * 计划类型
+ */
+export type PlanType = 'FUTURE' | 'FROM_INVENTORY';
+
+/**
  * 生产计划
  */
 export interface ProductionPlan {
@@ -40,15 +45,32 @@ export interface ProductionPlan {
   planNumber: string;
   factoryId: string;
   productTypeId: string;
+  productTypeName?: string;
+  productName?: string;          // 产品名称 (后端 Mapper 映射)
+  productUnit?: string;           // 产品单位 (后端 Mapper 映射)
   customerId: string;
+  customerName?: string;
   plannedQuantity: number;
   actualQuantity?: number;
-  status: 'pending' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
+  status: 'PENDING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+  statusDisplayName?: string;
+  plannedDate?: string;           // 计划日期
   startTime?: string;
   endTime?: string;
+  expectedCompletionDate?: string; // 预计完成日期 (v1.2新增)
   notes?: string;
   createdAt: string;
+  createdByName?: string;         // 创建人姓名
   updatedAt?: string;
+
+  // 计划类型 (v1.1新增)
+  planType?: PlanType;
+  planTypeDisplayName?: string;
+
+  // 转换率配置状态 (v1.1新增)
+  conversionRateConfigured?: boolean;
+  conversionRate?: number;
+  wastageRate?: number;
 }
 
 /**
@@ -228,6 +250,9 @@ class ProductionPlanApiClient {
 
         if (conversionRes.success && conversionRes.data && conversionRes.data.length > 0) {
           const conversion = conversionRes.data[0];
+          if (!conversion) {
+            throw new Error('转换率配置为空');
+          }
           const materialTypeId = conversion.materialTypeId;
 
           // 2. 查询该原料的所有可用批次

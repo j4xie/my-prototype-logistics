@@ -18,9 +18,9 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
-import { timeclockApiClient, ClockRecord, ApiResponse, PagedResponse } from '../../services/api/timeclockApiClient';
+import { timeclockApiClient, ClockRecord, ApiResponse, PagedResponse, AttendanceStatistics } from '../../services/api/timeclockApiClient';
 import { getFactoryId, isPlatformUser, isFactoryUser } from '../../types/auth';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建AttendanceHistory专用logger
@@ -91,14 +91,7 @@ export default function AttendanceHistoryScreen() {
    */
   const getUserId = (): number => {
     if (!user) return 0;
-
-    if (isPlatformUser(user)) {
-      return user.platformUser?.id || 0;
-    }
-    if (isFactoryUser(user)) {
-      return user.factoryUser?.id || 0;
-    }
-    return 0;
+    return user.id || 0;
   };
 
   /**
@@ -270,14 +263,7 @@ export default function AttendanceHistoryScreen() {
   /**
    * 加载考勤统计（使用API）
    */
-  const [apiStats, setApiStats] = useState<{
-    totalWorkDuration?: number;
-    avgWorkDuration?: number;
-    totalOvertimeDuration?: number;
-    attendanceDays?: number;
-    lateDays?: number;
-    earlyLeaveDays?: number;
-  } | null>(null);
+  const [apiStats, setApiStats] = useState<AttendanceStatistics | null>(null);
 
   const loadAttendanceStatistics = async () => {
     try {
@@ -305,9 +291,9 @@ export default function AttendanceHistoryScreen() {
 
       if (response.success && response.data) {
         attendanceLogger.info('考勤统计数据加载成功', {
-          totalWorkDuration: response.data.totalWorkDuration,
-          attendanceDays: response.data.attendanceDays,
-          lateDays: response.data.lateDays,
+          totalWorkHours: response.data.totalWorkHours,
+          totalWorkDays: response.data.totalWorkDays,
+          lateCount: response.data.lateCount,
         });
         setApiStats(response.data);
       }
@@ -324,16 +310,16 @@ export default function AttendanceHistoryScreen() {
   const calculateStats = () => {
     // 如果API统计可用，优先使用API数据
     if (apiStats) {
-      const totalWorkHours = (apiStats.totalWorkDuration || 0) / 60;
-      const totalOvertimeHours = (apiStats.totalOvertimeDuration || 0) / 60;
-      const avgWorkHours = (apiStats.avgWorkDuration || 0) / 60;
+      const totalWorkHours = apiStats.totalWorkHours || 0;
+      const totalOvertimeHours = apiStats.overtimeHours || 0;
+      const avgWorkHours = apiStats.averageWorkHours || 0;
 
       return {
         totalWorkHours,
         totalOvertimeHours,
-        normalDays: apiStats.attendanceDays || 0,
-        lateDays: apiStats.lateDays || 0,
-        absentDays: 0, // API暂不提供
+        normalDays: apiStats.totalWorkDays || 0,
+        lateDays: apiStats.lateCount || 0,
+        absentDays: apiStats.absentCount || 0,
         avgWorkHours,
       };
     }
@@ -432,20 +418,29 @@ export default function AttendanceHistoryScreen() {
       const userId = getUserId();
       const factoryId = getFactoryId(user);
 
+      if (!factoryId) {
+        Alert.alert('错误', '无法获取工厂信息');
+        return;
+      }
+
       // 构建编辑后的时间
       const recordDate = editingRecord.date;
       let clockInTime: string | undefined;
       let clockOutTime: string | undefined;
 
       if (editingClockIn) {
-        const [hour, minute] = editingClockIn.split(':');
+        const parts = editingClockIn.split(':');
+        const hour = parts[0] || '0';
+        const minute = parts[1] || '0';
         const clockInDate = new Date(recordDate);
         clockInDate.setHours(parseInt(hour, 10), parseInt(minute, 10), 0, 0);
         clockInTime = clockInDate.toISOString();
       }
 
       if (editingClockOut) {
-        const [hour, minute] = editingClockOut.split(':');
+        const parts = editingClockOut.split(':');
+        const hour = parts[0] || '0';
+        const minute = parts[1] || '0';
         const clockOutDate = new Date(recordDate);
         clockOutDate.setHours(parseInt(hour, 10), parseInt(minute, 10), 0, 0);
         clockOutTime = clockOutDate.toISOString();
@@ -478,8 +473,7 @@ export default function AttendanceHistoryScreen() {
         clockInTime: editingClockIn,
         clockOutTime: editingClockOut,
       });
-      const errorMessage =
-        error.response?.data?.message || error.message || '修改考勤记录失败，请重试';
+      const errorMessage = getErrorMsg(error) || '修改考勤记录失败，请重试';
       Alert.alert('修改失败', errorMessage);
     } finally {
       setSavingEdit(false);

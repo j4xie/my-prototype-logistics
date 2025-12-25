@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.ProductionBatchStatus;
 import com.cretas.aims.entity.enums.QualityStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Map;
 /**
  * 生产批次实体
  *
@@ -54,10 +56,10 @@ public class ProductionBatch extends BaseEntity {
     @Column(name = "production_plan_id")
     private Integer productionPlanId;
      /**
-      * 产品类型ID
+      * 产品类型ID (关联 ProductType.id，类型为 String)
       */
-    @Column(name = "product_type_id", nullable = false)
-    private Integer productTypeId;
+    @Column(name = "product_type_id", nullable = false, length = 100)
+    private String productTypeId;
      /**
       * 产品名称
       */
@@ -116,10 +118,10 @@ public class ProductionBatch extends BaseEntity {
     @Column(name = "end_time")
     private LocalDateTime endTime;
      /**
-      * 生产线/设备ID
+      * 生产线/设备ID (关联 FactoryEquipment.id，类型为 Long)
       */
     @Column(name = "equipment_id")
-    private Integer equipmentId;
+    private Long equipmentId;
      /**
       * 生产线名称
       */
@@ -129,7 +131,7 @@ public class ProductionBatch extends BaseEntity {
       * 负责人ID
       */
     @Column(name = "supervisor_id")
-    private Integer supervisorId;
+    private Long supervisorId;
      /**
       * 负责人名称
       */
@@ -194,7 +196,7 @@ public class ProductionBatch extends BaseEntity {
       * 创建人ID
       */
     @Column(name = "created_by")
-    private Integer createdBy;
+    private Long createdBy;
 
     // ==========================================
     // 注意: createdAt 和 updatedAt 字段已从 BaseEntity 继承
@@ -227,9 +229,11 @@ public class ProductionBatch extends BaseEntity {
             if (otherCost != null) totalCost = totalCost.add(otherCost);
         }
 
-        // 计算单位成本
-        if (totalCost != null && actualQuantity != null && actualQuantity.compareTo(BigDecimal.ZERO) > 0) {
-            unitCost = totalCost.divide(actualQuantity, 4, RoundingMode.HALF_UP);
+        // 计算单位成本 - 优先使用良品数量，如果没有则使用实际产量
+        BigDecimal quantityForUnitCost = goodQuantity != null && goodQuantity.compareTo(BigDecimal.ZERO) > 0
+                ? goodQuantity : actualQuantity;
+        if (totalCost != null && quantityForUnitCost != null && quantityForUnitCost.compareTo(BigDecimal.ZERO) > 0) {
+            unitCost = totalCost.divide(quantityForUnitCost, 4, RoundingMode.HALF_UP);
         }
 
         // 计算良品率
@@ -248,5 +252,59 @@ public class ProductionBatch extends BaseEntity {
         if (startTime != null && endTime != null) {
             workDurationMinutes = (int) java.time.Duration.between(startTime, endTime).toMinutes();
         }
+    }
+
+    // ==================== 前端字段别名 ====================
+
+    /**
+     * productType 别名（兼容前端）
+     * 前端使用 productType，后端使用 productName
+     */
+    @JsonProperty("productType")
+    public String getProductType() {
+        return productName;
+    }
+
+    /**
+     * targetQuantity 别名（兼容前端）
+     * 前端使用 targetQuantity，后端使用 plannedQuantity
+     */
+    @JsonProperty("targetQuantity")
+    public BigDecimal getTargetQuantity() {
+        return plannedQuantity;
+    }
+
+    /**
+     * startDate 别名（兼容前端）
+     * 前端使用 startDate (ISO日期字符串)，后端使用 startTime (LocalDateTime)
+     */
+    @JsonProperty("startDate")
+    public LocalDate getStartDate() {
+        return startTime != null ? startTime.toLocalDate() : null;
+    }
+
+    /**
+     * endDate 别名（兼容前端）
+     * 前端使用 endDate (ISO日期字符串)，后端使用 endTime (LocalDateTime)
+     */
+    @JsonProperty("endDate")
+    public LocalDate getEndDate() {
+        return endTime != null ? endTime.toLocalDate() : null;
+    }
+
+    /**
+     * supervisor 别名（兼容前端）
+     * 前端期望 { id: number, fullName: string } 对象
+     * 后端只有 supervisorId 和 supervisorName
+     */
+    @JsonProperty("supervisor")
+    public Map<String, Object> getSupervisor() {
+        if (supervisorId == null && supervisorName == null) {
+            return null;
+        }
+        return Map.of(
+            "id", supervisorId != null ? supervisorId : 0,
+            "fullName", supervisorName != null ? supervisorName : ""
+        );
     }
 }

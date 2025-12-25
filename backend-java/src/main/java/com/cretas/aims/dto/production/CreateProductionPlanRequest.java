@@ -1,5 +1,6 @@
 package com.cretas.aims.dto.production;
 
+import com.cretas.aims.entity.enums.ProductionPlanType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -31,6 +32,9 @@ public class CreateProductionPlanRequest {
     @NotNull(message = "计划日期不能为空")
     @FutureOrPresent(message = "计划日期不能是过去")
     private LocalDate plannedDate;
+
+    @Schema(description = "预计完成日期（默认为计划日期+1天）")
+    private LocalDate expectedCompletionDate;
 
     @Schema(description = "客户订单号")
     @Size(max = 100, message = "客户订单号不能超过100个字符")
@@ -66,4 +70,10 @@ public class CreateProductionPlanRequest {
 
     @Schema(description = "原材料批次ID列表")
     private String[] materialBatchIds;
+
+    @Schema(description = "计划类型 (FUTURE=未来计划, FROM_INVENTORY=基于库存)", example = "FROM_INVENTORY")
+    private ProductionPlanType planType = ProductionPlanType.FROM_INVENTORY;
+
+    @Schema(description = "是否使用自动计算转换率")
+    private Boolean autoCalculateConversionRate = false;
 }

@@ -86,11 +86,18 @@ class UserApiClient {
     keyword?: string;
   }): Promise<PageResponse<UserDTO>> {
     const { factoryId, ...queryParams } = params || {};
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<PageResponse<UserDTO>>(
+    // apiClient返回包装格式: {code, data, message, success}
+    const response = await apiClient.get<{
+      code: number;
+      data: PageResponse<UserDTO>;
+      message: string;
+      success: boolean;
+    }>(
       `${this.getFactoryPath(factoryId)}/users`,
       { params: queryParams }
     );
+    // 提取实际数据
+    return response.data || { content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 };
   }
 
   /**

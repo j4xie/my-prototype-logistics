@@ -7,10 +7,11 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { DatePickerModal } from 'react-native-paper-dates';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
-import { aiApiClient } from '../../services/api/aiApiClient';
+import { aiApiClient, AIQuotaInfo } from '../../services/api/aiApiClient';
 import { AIQuota } from '../../types/processing';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { MarkdownRenderer } from '../../components/common/MarkdownRenderer';
 
 // 创建TimeRangeCostAnalysis专用logger
 const timeRangeLogger = logger.createContextLogger('TimeRangeCostAnalysis');
@@ -57,6 +58,7 @@ export default function TimeRangeCostAnalysisScreen() {
 
   // AI分析状态
   const [showAISection, setShowAISection] = useState(false);
+  const [aiQuotaInfo, setAiQuotaInfo] = useState<AIQuotaInfo | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiQuota, setAiQuota] = useState<AIQuota | null>(null);
@@ -115,12 +117,20 @@ export default function TimeRangeCostAnalysisScreen() {
       const factoryId = user?.factoryUser?.factoryId;
       if (!factoryId) return;
 
-      const response = await aiApiClient.getQuotaInfo(factoryId);
-      if (response.success && response.data) {
-        setAiQuota(response.data);
+      // getQuotaInfo 直接返回 AIQuotaInfo，需要转换为 AIQuota 格式
+      const quotaInfo = await aiApiClient.getQuotaInfo(factoryId);
+      if (quotaInfo) {
+        // 转换 AIQuotaInfo -> AIQuota
+        setAiQuota({
+          used: quotaInfo.usedQuota,
+          limit: quotaInfo.weeklyQuota,
+          remaining: quotaInfo.remainingQuota,
+          period: 'weekly',
+          resetDate: quotaInfo.resetDate,
+        });
       }
     } catch (error) {
-      timeRangeLogger.error('加载AI配额失败', error, { factoryId: user?.factoryUser?.factoryId });
+      timeRangeLogger.error('加载AI配额失败', error as Error, { factoryId: user?.factoryUser?.factoryId });
     }
   };
 
@@ -157,7 +167,7 @@ export default function TimeRangeCostAnalysisScreen() {
             rawMaterials: Number(backendData.materialCost || 0),
             labor: Number(backendData.laborCost || 0),
             equipment: Number(backendData.equipmentCost || 0),
-            overhead: Number(backendData.otherCost || 0),
+            overhead: 0, // otherCost not in interface
           },
           batches: [], // 后端未提供批次列表
         };
@@ -212,33 +222,33 @@ export default function TimeRangeCostAnalysisScreen() {
 
       // 调用AI时间范围分析API
       const response = await aiApiClient.analyzeTimeRangeCost({
-        startDate: dateRange.startDate.toISOString().split('T')[0],
-        endDate: dateRange.endDate.toISOString().split('T')[0],
+        startDate: dateRange.startDate.toISOString().split('T')[0] as string,
+        endDate: dateRange.endDate.toISOString().split('T')[0] as string,
         dimension: 'overall', // 可选: daily, weekly, overall
         question: question || undefined,
         enableThinking, // 思考模式开关
       }, factoryId);
 
       timeRangeLogger.info('AI分析完成', {
-        hasAnalysis: !!response.data?.analysis,
-        sessionId: response.data?.session_id,
-        quotaRemaining: response.data?.quota?.remaining,
+        hasAnalysis: !!response.analysis,
+        sessionId: response.session_id,
+        quotaRemaining: response.quota?.remainingQuota,
       });
 
-      if (response.success && response.data) {
-        setAiAnalysis(response.data.analysis || '');
-        setSessionId(response.data.session_id || '');
+      if (response.success) {
+        setAiAnalysis(response.analysis || '');
+        setSessionId(response.session_id || '');
 
         // 更新配额信息
-        if (response.data.quota) {
-          setAiQuota(response.data.quota);
+        if (response.quota) {
+          setAiQuotaInfo(response.quota);
         }
 
         // 清空自定义问题输入
         setCustomQuestion('');
         setShowQuestionInput(false);
       } else {
-        throw new Error(response.data?.errorMessage || 'AI分析失败');
+        throw new Error(response.errorMessage || 'AI分析失败');
       }
     } catch (error) {
       timeRangeLogger.error('AI分析失败', error, {
@@ -247,7 +257,7 @@ export default function TimeRangeCostAnalysisScreen() {
       });
       Alert.alert(
         'AI分析失败',
-        error.response?.data?.message || error.message || '请稍后重试'
+        getErrorMsg(error) || '请稍后重试'
       );
       setAiAnalysis('');
     } finally {
@@ -424,7 +434,7 @@ export default function TimeRangeCostAnalysisScreen() {
                   <View style={styles.aiTitleRow}>
                     <View style={{ flex: 1 }}>
                       <Text variant="titleLarge" style={styles.aiTitle}>
-                        🤖 AI智能分析
+                        AI智能分析
                       </Text>
                       <Text variant="bodySmall" style={{ color: '#64748B', marginTop: 4 }}>
                         基于DeepSeek技术的时间范围成本分析
@@ -434,7 +444,7 @@ export default function TimeRangeCostAnalysisScreen() {
                     {aiQuota && (
                       <View style={styles.quotaBadge}>
                         <Text variant="bodySmall" style={styles.quotaText}>
-                          {aiQuota.remaining}/{aiQuota.total}次
+                          {aiQuota.remaining}/{aiQuota.limit}次
                         </Text>
                         <Text variant="bodySmall" style={styles.resetText}>
                           {getResetText()}
@@ -469,7 +479,7 @@ export default function TimeRangeCostAnalysisScreen() {
                       mode="contained"
                       onPress={() => handleAIAnalysis()}
                       loading={aiLoading}
-                      disabled={aiLoading || isQuotaExceeded}
+                      disabled={aiLoading || (isQuotaExceeded ?? false)}
                       style={styles.aiButton}
                       icon="sparkles"
                     >
@@ -500,7 +510,7 @@ export default function TimeRangeCostAnalysisScreen() {
                     <View style={styles.aiResultCard}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                         <Text variant="titleMedium" style={styles.aiResultTitle}>
-                          💡 AI分析结果
+                          分析结果
                         </Text>
                         <IconButton
                           icon="close"
@@ -512,7 +522,7 @@ export default function TimeRangeCostAnalysisScreen() {
                         />
                       </View>
                       <Divider style={styles.aiDivider} />
-                      <Text style={styles.aiResultText}>{aiAnalysis}</Text>
+                      <MarkdownRenderer content={aiAnalysis} />
                       {sessionId && (
                         <Text variant="bodySmall" style={{ color: '#64748B', marginTop: 12 }}>
                           会话ID: {sessionId.substring(0, 8)}...
@@ -524,7 +534,7 @@ export default function TimeRangeCostAnalysisScreen() {
                     {!isQuotaExceeded && (
                       <View style={styles.quickQuestions}>
                         <Text variant="bodyMedium" style={styles.quickQuestionsTitle}>
-                          💬 继续提问
+                          继续提问
                         </Text>
                         {QUICK_QUESTIONS.map((question, index) => (
                           <Button
@@ -598,7 +608,7 @@ export default function TimeRangeCostAnalysisScreen() {
                     {/* 配额提示 */}
                     {aiQuota && aiQuota.remaining <= 3 && aiQuota.remaining > 0 && (
                       <Text variant="bodySmall" style={{ color: '#F59E0B', marginTop: 12, textAlign: 'center' }}>
-                        ⚠️ 本周还剩 {aiQuota.remaining} 次分析机会
+                        提示: 本周还剩 {aiQuota.remaining} 次分析机会
                       </Text>
                     )}
                   </View>

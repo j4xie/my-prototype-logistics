@@ -12,7 +12,6 @@ import {
   ProgressBar,
   FAB,
   IconButton,
-  Menu,
   Portal,
   Dialog,
   Button,
@@ -23,8 +22,8 @@ import { materialBatchApiClient, MaterialBatch } from '../../services/api/materi
 import { useAuthStore } from '../../store/authStore';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { API_CONFIG } from '../../constants/config';
-import { handleError } from '../../utils/errorHandler';
+import { APP_CONFIG, API_BASE_URL } from '../../constants/config';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建MaterialBatchManagement专用logger
@@ -32,13 +31,15 @@ const materialBatchLogger = logger.createContextLogger('MaterialBatchManagement'
 
 /**
  * 原材料批次管理页面
- * P3-库存: 集成CRUD、导出、批量操作API
+ * P3-库存: 集成CRUD、导出API
  *
  * 功能：
  * - 批次列表、FIFO查询、过期预警、低库存预警
  * - CRUD操作：创建、编辑、删除批次
- * - 批量操作：预留、释放、消耗、调整
  * - 库存导出：Excel格式
+ * - 转冻品/撤销转冻品
+ *
+ * 注：预留/释放/消耗操作已移至生产计划模块
  */
 export default function MaterialBatchManagementScreen() {
   const navigation = useNavigation();
@@ -52,40 +53,14 @@ export default function MaterialBatchManagementScreen() {
 
   // P3-库存: CRUD状态
   const [selectedBatch, setSelectedBatch] = useState<MaterialBatch | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showBatchOpsMenu, setShowBatchOpsMenu] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // P3-库存: 批量操作状态
-  const [showReserveDialog, setShowReserveDialog] = useState(false);
-  const [showReleaseDialog, setShowReleaseDialog] = useState(false);
-  const [showConsumeDialog, setShowConsumeDialog] = useState(false);
-  const [showAdjustDialog, setShowAdjustDialog] = useState(false);
-  const [batchOpsLoading, setBatchOpsLoading] = useState(false);
+  // 转冻品状态
   const [convertingToFrozen, setConvertingToFrozen] = useState(false);
   const [undoingFrozen, setUndoingFrozen] = useState(false);
   const [showUndoDialog, setShowUndoDialog] = useState(false);
   const [undoReason, setUndoReason] = useState('');
-
-  // 批次表单状态
-  const [formData, setFormData] = useState({
-    materialTypeId: '',
-    batchNumber: '',
-    inboundQuantity: '',
-    unitPrice: '',
-    storageLocation: '',
-    qualityGrade: '',
-  });
-
-  // 批量操作表单状态
-  const [batchOpsData, setBatchOpsData] = useState({
-    quantity: '',
-    productionPlanId: '',
-    reason: '',
-    newQuantity: '',
-  });
 
   useEffect(() => {
     loadBatches();
@@ -102,17 +77,17 @@ export default function MaterialBatchManagementScreen() {
         case 'expiring':
           // API: 即将过期批次（7天内）
           response = await materialBatchApiClient.getExpiringBatches(7, user?.factoryId);
-          setBatches(Array.isArray(response.data) ? response.data : response.data?.content || []);
+          setBatches(Array.isArray((response as any).data) ? (response as any).data : (response as any).data?.content || []);
           break;
         case 'expired':
           // API: 已过期批次
           response = await materialBatchApiClient.getExpiredBatches(user?.factoryId);
-          setBatches(Array.isArray(response.data) ? response.data : response.data?.content || []);
+          setBatches(Array.isArray((response as any).data) ? (response as any).data : (response as any).data?.content || []);
           break;
         case 'low_stock':
           // API: 低库存批次
           response = await materialBatchApiClient.getLowStockBatches(user?.factoryId);
-          setBatches(Array.isArray(response.data) ? response.data : response.data?.content || []);
+          setBatches(Array.isArray((response as any).data) ? (response as any).data : (response as any).data?.content || []);
           break;
         default:
           // API: 所有批次
@@ -121,7 +96,7 @@ export default function MaterialBatchManagementScreen() {
             page: 1, // 后端要求 page >= 1
             size: 100,
           });
-          setBatches(Array.isArray(response.data) ? response.data : response.data?.content || []);
+          setBatches(Array.isArray((response as any).data) ? (response as any).data : (response as any).data?.content || []);
       }
 
       materialBatchLogger.info('批次列表加载成功', { count: batches.length });
@@ -140,23 +115,58 @@ export default function MaterialBatchManagementScreen() {
     }
   };
 
+  // 存储类型相关函数 (从原料类型获取)
+  const getStorageTypeText = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'fresh': return '鲜品';
+      case 'frozen': return '冻品';
+      case 'dry': return '干货';
+      default: return '';
+    }
+  };
+
+  const getStorageTypeColor = (type: string) => {
+    switch (type?.toLowerCase()) {
+      case 'fresh': return '#8BC34A';   // 浅绿色
+      case 'frozen': return '#2196F3';  // 蓝色
+      case 'dry': return '#FF9800';     // 橙色
+      default: return '#999999';
+    }
+  };
+
+  // 获取可用状态 (兼容旧数据: FRESH/FROZEN 视为 AVAILABLE)
+  const getAvailabilityStatus = (status: string) => {
+    const lowerStatus = status?.toLowerCase();
+    // FRESH/FROZEN 在 status 中时，视为 AVAILABLE (兼容旧数据)
+    if (lowerStatus === 'fresh' || lowerStatus === 'frozen') {
+      return 'available';
+    }
+    return lowerStatus;
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (getAvailabilityStatus(status)) {
       case 'available': return '#4CAF50';
       case 'reserved': return '#FF9800';
       case 'depleted': return '#9E9E9E';
+      case 'used_up': return '#9E9E9E';
       case 'expired': return '#F44336';
-      default: return '#999';
+      case 'inspecting': return '#2196F3';
+      case 'scrapped': return '#795548';
+      default: return '#999999';
     }
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
+    switch (getAvailabilityStatus(status)) {
       case 'available': return '可用';
       case 'reserved': return '预留';
       case 'depleted': return '耗尽';
+      case 'used_up': return '用完';
       case 'expired': return '过期';
-      default: return status;
+      case 'inspecting': return '质检中';
+      case 'scrapped': return '报废';
+      default: return status || '未知';
     }
   };
 
@@ -185,7 +195,7 @@ export default function MaterialBatchManagementScreen() {
     if (days === 1) return { text: '明天过期', color: '#F44336', level: 'critical' };
     if (days <= 3) return { text: `${days}天后过期`, color: '#F44336', level: 'urgent' };
     if (days <= 7) return { text: `${days}天后过期`, color: '#FF9800', level: 'warning' };
-    return { text: `${days}天后过期`, color: '#666', level: 'normal' };
+    return { text: `${days}天后过期`, color: '#666666', level: 'normal' };
   };
 
   /**
@@ -203,7 +213,7 @@ export default function MaterialBatchManagementScreen() {
       }
 
       // 调用导出API
-      const apiUrl = `${API_CONFIG.BASE_URL}/api/mobile/${factoryId}/material-batches/export`;
+      const apiUrl = `${API_BASE_URL}/api/mobile/${factoryId}/material-batches/export`;
       const timestamp = new Date().getTime();
       const fileName = `inventory_${timestamp}.xlsx`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
@@ -219,12 +229,13 @@ export default function MaterialBatchManagementScreen() {
 
       // 获取文件信息
       const fileInfo = await FileSystem.getInfoAsync(downloadResult.uri);
+      const fileSize = fileInfo.exists && !fileInfo.isDirectory ? (fileInfo as any).size || 0 : 0;
       const isAvailable = await Sharing.isAvailableAsync();
 
       if (isAvailable) {
         Alert.alert(
           '导出成功',
-          `库存数据已导出\n\n文件大小：${((fileInfo.size || 0) / 1024).toFixed(2)} KB`,
+          `库存数据已导出\n\n文件大小：${(fileSize / 1024).toFixed(2)} KB`,
           [
             { text: '稍后查看', style: 'cancel' },
             {
@@ -256,102 +267,6 @@ export default function MaterialBatchManagementScreen() {
   };
 
   /**
-   * P3-库存: 创建批次
-   */
-  const handleCreateBatch = async () => {
-    try {
-      // 验证表单
-      if (!formData.materialTypeId.trim()) {
-        Alert.alert('验证错误', '请输入原料类型ID');
-        return;
-      }
-      if (!formData.batchNumber.trim()) {
-        Alert.alert('验证错误', '请输入批次号');
-        return;
-      }
-      if (!formData.inboundQuantity || Number(formData.inboundQuantity) <= 0) {
-        Alert.alert('验证错误', '请输入有效的入库数量');
-        return;
-      }
-      if (!formData.unitPrice || Number(formData.unitPrice) <= 0) {
-        Alert.alert('验证错误', '请输入有效的单价');
-        return;
-      }
-
-      setLoading(true);
-      materialBatchLogger.info('创建批次', { batchNumber: formData.batchNumber });
-
-      const batchData = {
-        materialTypeId: formData.materialTypeId.trim(),
-        batchNumber: formData.batchNumber.trim(),
-        inboundQuantity: Number(formData.inboundQuantity),
-        unitPrice: Number(formData.unitPrice),
-        storageLocation: formData.storageLocation.trim() || undefined,
-        qualityGrade: formData.qualityGrade.trim() || undefined,
-      };
-
-      const response = await materialBatchApiClient.createBatch(batchData, user?.factoryId);
-      materialBatchLogger.info('批次创建成功', { batchNumber: formData.batchNumber });
-
-      Alert.alert('创建成功', `批次 ${formData.batchNumber} 创建成功！`);
-
-      // 重置表单
-      setFormData({
-        materialTypeId: '',
-        batchNumber: '',
-        inboundQuantity: '',
-        unitPrice: '',
-        storageLocation: '',
-        qualityGrade: '',
-      });
-      setShowCreateDialog(false);
-
-      // 刷新列表
-      await loadBatches();
-    } catch (error) {
-      materialBatchLogger.error('创建批次失败', error);
-      Alert.alert('创建失败', error.response?.data?.message || error.message || '创建批次失败，请重试');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * P3-库存: 更新批次
-   */
-  const handleUpdateBatch = async () => {
-    if (!selectedBatch) return;
-
-    try {
-      setLoading(true);
-      materialBatchLogger.info('更新批次', { batchId: selectedBatch.id });
-
-      const updateData = {
-        materialTypeId: formData.materialTypeId.trim(),
-        storageLocation: formData.storageLocation.trim() || undefined,
-        qualityGrade: formData.qualityGrade.trim() || undefined,
-        unitPrice: Number(formData.unitPrice),
-      };
-
-      const response = await materialBatchApiClient.updateBatch(selectedBatch.id, updateData, user?.factoryId);
-      materialBatchLogger.info('批次更新成功', { batchId: selectedBatch.id });
-
-      Alert.alert('更新成功', '批次信息已更新！');
-
-      setShowEditDialog(false);
-      setSelectedBatch(null);
-
-      // 刷新列表
-      await loadBatches();
-    } catch (error) {
-      materialBatchLogger.error('更新批次失败', error, { batchId: selectedBatch.id });
-      Alert.alert('更新失败', error.response?.data?.message || error.message || '更新批次失败，请重试');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
    * P3-库存: 删除批次
    */
   const handleDeleteBatch = async () => {
@@ -373,26 +288,10 @@ export default function MaterialBatchManagementScreen() {
       await loadBatches();
     } catch (error) {
       materialBatchLogger.error('删除批次失败', error, { batchId: selectedBatch.id });
-      Alert.alert('删除失败', error.response?.data?.message || error.message || '删除批次失败，请重试');
+      Alert.alert('删除失败', getErrorMsg(error) || '删除批次失败，请重试');
     } finally {
       setLoading(false);
     }
-  };
-
-  /**
-   * 打开编辑对话框
-   */
-  const openEditDialog = (batch: MaterialBatch) => {
-    setSelectedBatch(batch);
-    setFormData({
-      materialTypeId: batch.materialTypeId || '',
-      batchNumber: batch.batchNumber,
-      inboundQuantity: batch.inboundQuantity.toString(),
-      unitPrice: batch.unitPrice.toString(),
-      storageLocation: batch.storageLocation || '',
-      qualityGrade: batch.qualityGrade || '',
-    });
-    setShowEditDialog(true);
   };
 
   /**
@@ -403,252 +302,40 @@ export default function MaterialBatchManagementScreen() {
     setShowDeleteDialog(true);
   };
 
-  /**
-   * P3-库存: 预留批次
-   */
-  const handleReserveBatch = async () => {
-    if (!selectedBatch) return;
-
-    try {
-      // 验证
-      if (!batchOpsData.quantity || Number(batchOpsData.quantity) <= 0) {
-        Alert.alert('验证错误', '请输入有效的预留数量');
-        return;
-      }
-      if (Number(batchOpsData.quantity) > selectedBatch.remainingQuantity) {
-        Alert.alert('验证错误', `预留数量不能超过剩余数量 ${selectedBatch.remainingQuantity} kg`);
-        return;
-      }
-      if (!batchOpsData.productionPlanId || Number(batchOpsData.productionPlanId) <= 0) {
-        Alert.alert('验证错误', '请输入有效的生产计划ID');
-        return;
-      }
-
-      setBatchOpsLoading(true);
-      materialBatchLogger.info('预留批次', {
-        batchId: selectedBatch.id,
-        quantity: batchOpsData.quantity
-      });
-
-      await materialBatchApiClient.reserveBatch(
-        selectedBatch.id,
-        Number(batchOpsData.quantity),
-        Number(batchOpsData.productionPlanId),
-        user?.factoryId
-      );
-
-      materialBatchLogger.info('批次预留成功', { batchId: selectedBatch.id });
-      Alert.alert(
-        '预留成功',
-        `已预留批次 ${selectedBatch.batchNumber}\n数量: ${batchOpsData.quantity} kg`
-      );
-
-      setShowReserveDialog(false);
-      setSelectedBatch(null);
-      setBatchOpsData({ quantity: '', productionPlanId: '', reason: '', newQuantity: '' });
-
-      // 刷新列表
-      await loadBatches();
-    } catch (error) {
-      materialBatchLogger.error('预留批次失败', error, { batchId: selectedBatch.id });
-      Alert.alert('预留失败', error.response?.data?.message || error.message || '预留批次失败，请重试');
-    } finally {
-      setBatchOpsLoading(false);
-    }
-  };
-
-  /**
-   * P3-库存: 释放批次
-   */
-  const handleReleaseBatch = async () => {
-    if (!selectedBatch) return;
-
-    try {
-      // 验证
-      if (!batchOpsData.quantity || Number(batchOpsData.quantity) <= 0) {
-        Alert.alert('验证错误', '请输入有效的释放数量');
-        return;
-      }
-      if (Number(batchOpsData.quantity) > selectedBatch.reservedQuantity) {
-        Alert.alert('验证错误', `释放数量不能超过预留数量 ${selectedBatch.reservedQuantity} kg`);
-        return;
-      }
-      if (!batchOpsData.productionPlanId || Number(batchOpsData.productionPlanId) <= 0) {
-        Alert.alert('验证错误', '请输入有效的生产计划ID');
-        return;
-      }
-
-      setBatchOpsLoading(true);
-      materialBatchLogger.info('释放批次', {
-        batchId: selectedBatch.id,
-        quantity: batchOpsData.quantity
-      });
-
-      await materialBatchApiClient.releaseBatch(
-        selectedBatch.id,
-        Number(batchOpsData.quantity),
-        Number(batchOpsData.productionPlanId),
-        user?.factoryId
-      );
-
-      materialBatchLogger.info('批次释放成功', { batchId: selectedBatch.id });
-      Alert.alert(
-        '释放成功',
-        `已释放批次 ${selectedBatch.batchNumber}\n数量: ${batchOpsData.quantity} kg`
-      );
-
-      setShowReleaseDialog(false);
-      setSelectedBatch(null);
-      setBatchOpsData({ quantity: '', productionPlanId: '', reason: '', newQuantity: '' });
-
-      // 刷新列表
-      await loadBatches();
-    } catch (error) {
-      materialBatchLogger.error('释放批次失败', error, { batchId: selectedBatch.id });
-      Alert.alert('释放失败', error.response?.data?.message || error.message || '释放批次失败，请重试');
-    } finally {
-      setBatchOpsLoading(false);
-    }
-  };
-
-  /**
-   * P3-库存: 消耗批次
-   */
-  const handleConsumeBatch = async () => {
-    if (!selectedBatch) return;
-
-    try {
-      // 验证
-      if (!batchOpsData.quantity || Number(batchOpsData.quantity) <= 0) {
-        Alert.alert('验证错误', '请输入有效的消耗数量');
-        return;
-      }
-      if (Number(batchOpsData.quantity) > selectedBatch.remainingQuantity) {
-        Alert.alert('验证错误', `消耗数量不能超过剩余数量 ${selectedBatch.remainingQuantity} kg`);
-        return;
-      }
-      if (!batchOpsData.productionPlanId || Number(batchOpsData.productionPlanId) <= 0) {
-        Alert.alert('验证错误', '请输入有效的生产计划ID');
-        return;
-      }
-
-      setBatchOpsLoading(true);
-      materialBatchLogger.info('消耗批次', {
-        batchId: selectedBatch.id,
-        quantity: batchOpsData.quantity
-      });
-
-      await materialBatchApiClient.consumeBatch(
-        selectedBatch.id,
-        Number(batchOpsData.quantity),
-        Number(batchOpsData.productionPlanId),
-        user?.factoryId
-      );
-
-      materialBatchLogger.info('批次消耗成功', { batchId: selectedBatch.id });
-      Alert.alert(
-        '消耗成功',
-        `已消耗批次 ${selectedBatch.batchNumber}\n数量: ${batchOpsData.quantity} kg`
-      );
-
-      setShowConsumeDialog(false);
-      setSelectedBatch(null);
-      setBatchOpsData({ quantity: '', productionPlanId: '', reason: '', newQuantity: '' });
-
-      // 刷新列表
-      await loadBatches();
-    } catch (error) {
-      materialBatchLogger.error('消耗批次失败', error, { batchId: selectedBatch.id });
-      Alert.alert('消耗失败', error.response?.data?.message || error.message || '消耗批次失败，请重试');
-    } finally {
-      setBatchOpsLoading(false);
-    }
-  };
-
-  /**
-   * P3-库存: 调整批次
-   */
-  const handleAdjustBatch = async () => {
-    if (!selectedBatch) return;
-
-    try {
-      // 验证
-      if (!batchOpsData.newQuantity || Number(batchOpsData.newQuantity) < 0) {
-        Alert.alert('验证错误', '请输入有效的新数量');
-        return;
-      }
-      if (!batchOpsData.reason || !batchOpsData.reason.trim()) {
-        Alert.alert('验证错误', '请输入调整原因');
-        return;
-      }
-
-      setBatchOpsLoading(true);
-      materialBatchLogger.info('调整批次', {
-        batchId: selectedBatch.id,
-        newQuantity: batchOpsData.newQuantity
-      });
-
-      await materialBatchApiClient.adjustBatch(
-        selectedBatch.id,
-        Number(batchOpsData.newQuantity),
-        batchOpsData.reason.trim(),
-        user?.factoryId
-      );
-
-      materialBatchLogger.info('批次调整成功', { batchId: selectedBatch.id });
-      Alert.alert(
-        '调整成功',
-        `已调整批次 ${selectedBatch.batchNumber}\n原数量: ${selectedBatch.remainingQuantity} kg\n新数量: ${batchOpsData.newQuantity} kg`
-      );
-
-      setShowAdjustDialog(false);
-      setSelectedBatch(null);
-      setBatchOpsData({ quantity: '', productionPlanId: '', reason: '', newQuantity: '' });
-
-      // 刷新列表
-      await loadBatches();
-    } catch (error) {
-      materialBatchLogger.error('调整批次失败', error, { batchId: selectedBatch.id });
-      Alert.alert('调整失败', error.response?.data?.message || error.message || '调整批次失败，请重试');
-    } finally {
-      setBatchOpsLoading(false);
-    }
-  };
-
   // P1-006: 转冻品功能
   const handleConvertToFrozen = async (batch: MaterialBatch) => {
     try {
       setConvertingToFrozen(true);
-      materialBatchLogger.info('转为冻品', { batchId: batch.id });
+      materialBatchLogger.info('转为冻品', { batchId: (batch as any).id });
 
       // 获取当前日期
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0] as string;
 
       // 调用API
       await materialBatchApiClient.convertToFrozen(
-        batch.id,
+        String((batch as any).id),
         {
           convertedBy: user?.id ?? 0,
           convertedDate: today,
-          storageLocation: batch.storageLocation || '冷冻库',
-          notes: `批次 ${batch.batchNumber} 转为冻品`,
+          storageLocation: (batch as any).storageLocation || '冷冻库',
+          notes: `批次 ${(batch as any).batchNumber} 转为冻品`,
         },
-        user?.factoryId
+        user?.factoryId ?? ''
       );
 
-      materialBatchLogger.info('转冻品成功', { batchId: batch.id });
+      materialBatchLogger.info('转冻品成功', { batchId: (batch as any).id });
       Alert.alert(
         '转换成功',
-        `批次 ${batch.batchNumber} 已成功转为冻品\n保质期已延长，存储位置已更新`
+        `批次 ${(batch as any).batchNumber} 已成功转为冻品\n保质期已延长，存储位置已更新`
       );
 
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      materialBatchLogger.error('转冻品失败', error, { batchId: batch.id });
+      materialBatchLogger.error('转冻品失败', error, { batchId: (batch as any).id });
       Alert.alert(
         '转换失败',
-        error.response?.data?.message || error.message || '转冻品失败，请重试'
+        getErrorMsg(error) || '转冻品失败，请重试'
       );
     } finally {
       setConvertingToFrozen(false);
@@ -659,11 +346,11 @@ export default function MaterialBatchManagementScreen() {
   const handleUndoFrozen = async (batch: MaterialBatch) => {
     try {
       setUndoingFrozen(true);
-      materialBatchLogger.info('撤销冻品转换', { batchId: batch.id, reason: undoReason });
+      materialBatchLogger.info('撤销冻品转换', { batchId: (batch as any).id, reason: undoReason });
 
       // 调用API
       await materialBatchApiClient.undoFrozen(
-        batch.id,
+        (batch as any).id,
         {
           operatorId: user?.id ?? 0,
           reason: undoReason || '误操作撤销',
@@ -671,10 +358,10 @@ export default function MaterialBatchManagementScreen() {
         user?.factoryId
       );
 
-      materialBatchLogger.info('撤销冻品成功', { batchId: batch.id });
+      materialBatchLogger.info('撤销冻品成功', { batchId: (batch as any).id });
       Alert.alert(
         '撤销成功',
-        `批次 ${batch.batchNumber} 已恢复为鲜品状态`
+        `批次 ${(batch as any).batchNumber} 已恢复为鲜品状态`
       );
 
       // 关闭弹窗并重置
@@ -685,35 +372,11 @@ export default function MaterialBatchManagementScreen() {
       // 刷新列表
       await loadBatches();
     } catch (error) {
-      materialBatchLogger.error('撤销冻品失败', error, { batchId: batch.id });
-      const errorMsg = error.response?.data?.message || error.message || '撤销失败';
+      materialBatchLogger.error('撤销冻品失败', error, { batchId: (batch as any).id });
+      const errorMsg = getErrorMsg(error) || '撤销失败';
       Alert.alert('撤销失败', errorMsg);
     } finally {
       setUndoingFrozen(false);
-    }
-  };
-
-  /**
-   * 打开批量操作对话框
-   */
-  const openBatchOpsDialog = (batch: MaterialBatch, operation: 'reserve' | 'release' | 'consume' | 'adjust') => {
-    setSelectedBatch(batch);
-    setBatchOpsData({ quantity: '', productionPlanId: '', reason: '', newQuantity: '' });
-
-    switch (operation) {
-      case 'reserve':
-        setShowReserveDialog(true);
-        break;
-      case 'release':
-        setShowReleaseDialog(true);
-        break;
-      case 'consume':
-        setShowConsumeDialog(true);
-        break;
-      case 'adjust':
-        setBatchOpsData({ ...batchOpsData, newQuantity: batch.remainingQuantity.toString() });
-        setShowAdjustDialog(true);
-        break;
     }
   };
 
@@ -736,13 +399,17 @@ export default function MaterialBatchManagementScreen() {
   const fifoRecommended = getFIFORecommendation();
 
   const calculateUsagePercentage = (batch: MaterialBatch) => {
-    if (batch.inboundQuantity === 0) return 0;
-    return (batch.usedQuantity / batch.inboundQuantity) * 100;
+    const inbound = (batch as any).inboundQuantity ?? 0;
+    const used = (batch as any).usedQuantity ?? 0;
+    if (inbound === 0) return 0;
+    return (used / inbound) * 100;
   };
 
   const calculateRemainingPercentage = (batch: MaterialBatch) => {
-    if (batch.inboundQuantity === 0) return 0;
-    return (batch.remainingQuantity / batch.inboundQuantity) * 100;
+    const inbound = (batch as any).inboundQuantity ?? 0;
+    const remaining = (batch as any).remainingQuantity ?? 0;
+    if (inbound === 0) return 0;
+    return (remaining / inbound) * 100;
   };
 
   // 筛选批次
@@ -750,9 +417,9 @@ export default function MaterialBatchManagementScreen() {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
-      batch.batchNumber.toLowerCase().includes(query) ||
-      batch.materialTypeId?.toLowerCase().includes(query) ||
-      batch.storageLocation?.toLowerCase().includes(query)
+      (batch as any).batchNumber.toLowerCase().includes(query) ||
+      (batch as any).materialTypeId?.toLowerCase().includes(query) ||
+      (batch as any).storageLocation?.toLowerCase().includes(query)
     );
   });
 
@@ -861,7 +528,7 @@ export default function MaterialBatchManagementScreen() {
                             );
                           } catch (error) {
                             materialBatchLogger.error('处理过期批次失败', error);
-                            Alert.alert('处理失败', error.response?.data?.message || '无法处理过期批次，请稍后重试');
+                            Alert.alert('处理失败', getErrorMsg(error) || '无法处理过期批次，请稍后重试');
                           } finally {
                             setHandlingExpired(false);
                           }
@@ -930,16 +597,16 @@ export default function MaterialBatchManagementScreen() {
           </Card>
         ) : (
           filteredBatches.map((batch) => {
-            const daysUntilExpiry = calculateDaysUntilExpiry(batch.expiryDate);
+            const daysUntilExpiry = calculateDaysUntilExpiry((batch as any).expiryDate);
             const expiryWarning = getExpiryWarning(daysUntilExpiry);
             const usagePercent = calculateUsagePercentage(batch);
             const remainingPercent = calculateRemainingPercentage(batch);
 
-            const isFIFORecommended = fifoRecommended?.id === batch.id;
+            const isFIFORecommended = fifoRecommended?.id === (batch as any).id;
 
             return (
               <Card
-                key={batch.id}
+                key={(batch as any).id}
                 style={[
                   styles.batchCard,
                   isFIFORecommended && styles.fifoRecommendedCard
@@ -951,7 +618,7 @@ export default function MaterialBatchManagementScreen() {
                     <View style={styles.batchTitleRow}>
                       <View style={styles.batchTitleLeft}>
                         <View style={styles.batchNumberRow}>
-                          <Text style={styles.batchNumber}>{batch.batchNumber}</Text>
+                          <Text style={styles.batchNumber}>{(batch as any).batchNumber}</Text>
                           {isFIFORecommended && (
                             <Chip
                               mode="flat"
@@ -965,95 +632,63 @@ export default function MaterialBatchManagementScreen() {
                           )}
                         </View>
                         <Text style={styles.materialType}>
-                          {batch.materialTypeId || '未知原料'}
+                          {(batch as any).materialName || (batch as any).materialTypeId || '未知原料'}
                         </Text>
+                        {(batch as any).supplierName && (
+                          <Text style={styles.supplierText}>
+                            供应商: {(batch as any).supplierName}
+                          </Text>
+                        )}
                       </View>
                       <View style={styles.chips}>
-                        <Chip
-                          mode="flat"
-                          compact
-                          style={[
-                            styles.statusChip,
-                            { backgroundColor: `${getStatusColor(batch.status)}20` }
-                          ]}
-                          textStyle={{ color: getStatusColor(batch.status), fontSize: 11 }}
-                        >
-                          {getStatusText(batch.status)}
-                        </Chip>
-                        {batch.qualityGrade && (
-                          <Chip
-                            mode="flat"
-                            compact
-                            style={[
-                              styles.qualityChip,
-                              { backgroundColor: `${getQualityColor(batch.qualityGrade)}20` }
-                            ]}
-                            textStyle={{ color: getQualityColor(batch.qualityGrade), fontSize: 11 }}
-                          >
-                            {batch.qualityGrade}级
-                          </Chip>
+                        {/* 存储类型 Badge (来自原料类型) */}
+                        {(batch as any).storageType && getStorageTypeText((batch as any).storageType) && (
+                          <View style={[
+                            styles.storageTypeBadge,
+                            { backgroundColor: `${getStorageTypeColor((batch as any).storageType)}20` }
+                          ]}>
+                            <Text style={[
+                              styles.storageTypeBadgeText,
+                              { color: getStorageTypeColor((batch as any).storageType) }
+                            ]}>
+                              {getStorageTypeText((batch as any).storageType)}
+                            </Text>
+                          </View>
+                        )}
+                        {/* 可用状态 Badge */}
+                        <View style={[
+                          styles.statusBadge,
+                          { backgroundColor: `${getStatusColor((batch as any).status)}20` }
+                        ]}>
+                          <Text style={[
+                            styles.statusBadgeText,
+                            { color: getStatusColor((batch as any).status) }
+                          ]}>
+                            {getStatusText((batch as any).status)}
+                          </Text>
+                        </View>
+                        {(batch as any).qualityGrade && (
+                          <View style={[
+                            styles.qualityBadge,
+                            { backgroundColor: `${getQualityColor((batch as any).qualityGrade)}20` }
+                          ]}>
+                            <Text style={[
+                              styles.qualityBadgeText,
+                              { color: getQualityColor((batch as any).qualityGrade) }
+                            ]}>
+                              {(batch as any).qualityGrade}级
+                            </Text>
+                          </View>
                         )}
                       </View>
                     </View>
 
-                    {/* P3-库存: Edit/Delete/BatchOps Actions */}
+                    {/* P3-库存: Edit/Delete Actions (简化版) */}
                     <View style={styles.actionButtons}>
-                      <Menu
-                        visible={showBatchOpsMenu && selectedBatch?.id === batch.id}
-                        onDismiss={() => {
-                          setShowBatchOpsMenu(false);
-                          setSelectedBatch(null);
-                        }}
-                        anchor={
-                          <IconButton
-                            icon="dots-vertical"
-                            size={20}
-                            onPress={() => {
-                              setSelectedBatch(batch);
-                              setShowBatchOpsMenu(true);
-                            }}
-                            style={styles.actionIcon}
-                          />
-                        }
-                      >
-                        <Menu.Item
-                          leadingIcon="lock"
-                          onPress={() => {
-                            setShowBatchOpsMenu(false);
-                            openBatchOpsDialog(batch, 'reserve');
-                          }}
-                          title="预留批次"
-                        />
-                        <Menu.Item
-                          leadingIcon="lock-open"
-                          onPress={() => {
-                            setShowBatchOpsMenu(false);
-                            openBatchOpsDialog(batch, 'release');
-                          }}
-                          title="释放批次"
-                        />
-                        <Menu.Item
-                          leadingIcon="package-variant-closed"
-                          onPress={() => {
-                            setShowBatchOpsMenu(false);
-                            openBatchOpsDialog(batch, 'consume');
-                          }}
-                          title="消耗批次"
-                        />
-                        <Menu.Item
-                          leadingIcon="tune"
-                          onPress={() => {
-                            setShowBatchOpsMenu(false);
-                            openBatchOpsDialog(batch, 'adjust');
-                          }}
-                          title="调整数量"
-                        />
-                      </Menu>
-
                       <IconButton
                         icon="pencil"
                         size={20}
-                        onPress={() => openEditDialog(batch)}
+                        onPress={() => (navigation as any).navigate('EditBatch', { batchId: (batch as any).id })}
                         style={styles.actionIcon}
                       />
                       <IconButton
@@ -1071,7 +706,7 @@ export default function MaterialBatchManagementScreen() {
                     <View style={styles.quantityRow}>
                       <Text style={styles.quantityLabel}>剩余/总量：</Text>
                       <Text style={styles.quantityValue}>
-                        {batch.remainingQuantity.toFixed(2)} / {batch.inboundQuantity.toFixed(2)} kg
+                        {((batch as any).remainingQuantity ?? 0).toFixed(2)} / {((batch as any).inboundQuantity ?? 0).toFixed(2)} kg
                       </Text>
                     </View>
                     <ProgressBar
@@ -1081,11 +716,11 @@ export default function MaterialBatchManagementScreen() {
                     />
                     <View style={styles.quantityDetails}>
                       <Text style={styles.quantityDetailText}>
-                        已用: {batch.usedQuantity.toFixed(2)} kg ({usagePercent.toFixed(1)}%)
+                        已用: {((batch as any).usedQuantity ?? 0).toFixed(2)} kg ({usagePercent.toFixed(1)}%)
                       </Text>
-                      {batch.reservedQuantity > 0 && (
+                      {((batch as any).reservedQuantity ?? 0) > 0 && (
                         <Text style={styles.quantityDetailText}>
-                          预留: {batch.reservedQuantity.toFixed(2)} kg
+                          预留: {((batch as any).reservedQuantity ?? 0).toFixed(2)} kg
                         </Text>
                       )}
                     </View>
@@ -1096,41 +731,41 @@ export default function MaterialBatchManagementScreen() {
                     <View style={styles.infoRow}>
                       <List.Icon icon="calendar-import" style={styles.infoIcon} />
                       <Text style={styles.infoText}>
-                        入库: {new Date(batch.inboundDate).toLocaleDateString()}
+                        入库: {new Date((batch as any).inboundDate).toLocaleDateString()}
                       </Text>
                     </View>
-                    {batch.expiryDate && (
+                    {(batch as any).expiryDate && (
                       <View style={styles.infoRow}>
                         <List.Icon icon="calendar-alert" style={styles.infoIcon} />
                         <Text style={styles.infoText}>
-                          到期: {new Date(batch.expiryDate).toLocaleDateString()}
+                          到期: {new Date((batch as any).expiryDate).toLocaleDateString()}
                         </Text>
                         {expiryWarning && (
-                          <Chip
-                            mode="flat"
-                            compact
-                            style={[
-                              styles.expiryWarningChip,
-                              { backgroundColor: `${expiryWarning.color}20` }
-                            ]}
-                            textStyle={{ color: expiryWarning.color, fontSize: 10 }}
-                          >
-                            {expiryWarning.text}
-                          </Chip>
+                          <View style={[
+                            styles.expiryBadge,
+                            { backgroundColor: `${expiryWarning.color}20` }
+                          ]}>
+                            <Text style={[
+                              styles.expiryBadgeText,
+                              { color: expiryWarning.color }
+                            ]}>
+                              {expiryWarning.text}
+                            </Text>
+                          </View>
                         )}
                       </View>
                     )}
-                    {batch.storageLocation && (
+                    {(batch as any).storageLocation && (
                       <View style={styles.infoRow}>
                         <List.Icon icon="map-marker" style={styles.infoIcon} />
-                        <Text style={styles.infoText}>{batch.storageLocation}</Text>
+                        <Text style={styles.infoText}>{(batch as any).storageLocation}</Text>
                       </View>
                     )}
                     <View style={styles.infoRow}>
                       <List.Icon icon="currency-cny" style={styles.infoIcon} />
                       <Text style={styles.infoText}>
-                        单价: ¥{batch.unitPrice.toFixed(2)}/kg |
-                        总价: ¥{batch.totalCost.toFixed(2)}
+                        单价: ¥{((batch as any).unitPrice || 0).toFixed(2)}/kg |
+                        总价: ¥{((batch as any).totalCost || 0).toFixed(2)}
                       </Text>
                     </View>
                   </View>
@@ -1144,7 +779,7 @@ export default function MaterialBatchManagementScreen() {
                         onPress={() => {
                           Alert.alert(
                             '转为冻品',
-                            `确定将批次 ${batch.batchNumber} 转为冻品吗？\n这将延长保质期并更新库存状态。`,
+                            `确定将批次 ${(batch as any).batchNumber} 转为冻品吗？\n这将延长保质期并更新库存状态。`,
                             [
                               { text: '取消', style: 'cancel' },
                               {
@@ -1166,7 +801,7 @@ export default function MaterialBatchManagementScreen() {
                   )}
 
                   {/* Undo Frozen - P1-007 */}
-                  {batch.status === 'frozen' && (
+                  {(batch as any).status === 'frozen' && (
                     <View style={styles.conversionSection}>
                       <Button
                         mode="outlined"
@@ -1193,116 +828,8 @@ export default function MaterialBatchManagementScreen() {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {/* P3-库存: Create/Edit/Delete Dialogs */}
+      {/* P3-库存: Delete/BatchOps Dialogs (创建和编辑跳转到专用页面) */}
       <Portal>
-        {/* Create Dialog */}
-        <Dialog visible={showCreateDialog} onDismiss={() => setShowCreateDialog(false)}>
-          <Dialog.Title>创建批次</Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              label="原料类型ID *"
-              value={formData.materialTypeId}
-              onChangeText={(text) => setFormData({ ...formData, materialTypeId: text })}
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="批次号 *"
-              value={formData.batchNumber}
-              onChangeText={(text) => setFormData({ ...formData, batchNumber: text })}
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="入库数量 (kg) *"
-              value={formData.inboundQuantity}
-              onChangeText={(text) => setFormData({ ...formData, inboundQuantity: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="单价 (元/kg) *"
-              value={formData.unitPrice}
-              onChangeText={(text) => setFormData({ ...formData, unitPrice: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="储存位置"
-              value={formData.storageLocation}
-              onChangeText={(text) => setFormData({ ...formData, storageLocation: text })}
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="质量等级 (A/B/C)"
-              value={formData.qualityGrade}
-              onChangeText={(text) => setFormData({ ...formData, qualityGrade: text.toUpperCase() })}
-              mode="outlined"
-              style={styles.dialogInput}
-              maxLength={1}
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowCreateDialog(false)}>取消</Button>
-            <Button onPress={handleCreateBatch} loading={loading} disabled={loading}>
-              创建
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        {/* Edit Dialog */}
-        <Dialog visible={showEditDialog} onDismiss={() => setShowEditDialog(false)}>
-          <Dialog.Title>编辑批次</Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              label="批次号"
-              value={formData.batchNumber}
-              editable={false}
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="原料类型ID"
-              value={formData.materialTypeId}
-              onChangeText={(text) => setFormData({ ...formData, materialTypeId: text })}
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="单价 (元/kg)"
-              value={formData.unitPrice}
-              onChangeText={(text) => setFormData({ ...formData, unitPrice: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="储存位置"
-              value={formData.storageLocation}
-              onChangeText={(text) => setFormData({ ...formData, storageLocation: text })}
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="质量等级 (A/B/C)"
-              value={formData.qualityGrade}
-              onChangeText={(text) => setFormData({ ...formData, qualityGrade: text.toUpperCase() })}
-              mode="outlined"
-              style={styles.dialogInput}
-              maxLength={1}
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowEditDialog(false)}>取消</Button>
-            <Button onPress={handleUpdateBatch} loading={loading} disabled={loading}>
-              保存
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-
         {/* Delete Confirmation Dialog */}
         <Dialog visible={showDeleteDialog} onDismiss={() => setShowDeleteDialog(false)}>
           <Dialog.Title>确认删除</Dialog.Title>
@@ -1323,167 +850,6 @@ export default function MaterialBatchManagementScreen() {
               textColor="#F44336"
             >
               删除
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        {/* P3-库存: Reserve Batch Dialog */}
-        <Dialog visible={showReserveDialog} onDismiss={() => setShowReserveDialog(false)}>
-          <Dialog.Title>预留批次</Dialog.Title>
-          <Dialog.Content>
-            <Text variant="bodyMedium" style={{ marginBottom: 16 }}>
-              批次号: <Text style={{ fontWeight: 'bold' }}>{selectedBatch?.batchNumber}</Text>
-            </Text>
-            <Text variant="bodySmall" style={{ marginBottom: 8, color: '#666' }}>
-              剩余数量: {selectedBatch?.remainingQuantity} kg
-            </Text>
-            <TextInput
-              label="预留数量 (kg) *"
-              value={batchOpsData.quantity}
-              onChangeText={(text) => setBatchOpsData({ ...batchOpsData, quantity: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="生产计划ID *"
-              value={batchOpsData.productionPlanId}
-              onChangeText={(text) => setBatchOpsData({ ...batchOpsData, productionPlanId: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-              placeholder="关联的生产计划编号"
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowReserveDialog(false)}>取消</Button>
-            <Button
-              onPress={handleReserveBatch}
-              loading={batchOpsLoading}
-              disabled={batchOpsLoading}
-            >
-              预留
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        {/* P3-库存: Release Batch Dialog */}
-        <Dialog visible={showReleaseDialog} onDismiss={() => setShowReleaseDialog(false)}>
-          <Dialog.Title>释放批次</Dialog.Title>
-          <Dialog.Content>
-            <Text variant="bodyMedium" style={{ marginBottom: 16 }}>
-              批次号: <Text style={{ fontWeight: 'bold' }}>{selectedBatch?.batchNumber}</Text>
-            </Text>
-            <Text variant="bodySmall" style={{ marginBottom: 8, color: '#666' }}>
-              已预留数量: {selectedBatch?.reservedQuantity} kg
-            </Text>
-            <TextInput
-              label="释放数量 (kg) *"
-              value={batchOpsData.quantity}
-              onChangeText={(text) => setBatchOpsData({ ...batchOpsData, quantity: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="生产计划ID *"
-              value={batchOpsData.productionPlanId}
-              onChangeText={(text) => setBatchOpsData({ ...batchOpsData, productionPlanId: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-              placeholder="关联的生产计划编号"
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowReleaseDialog(false)}>取消</Button>
-            <Button
-              onPress={handleReleaseBatch}
-              loading={batchOpsLoading}
-              disabled={batchOpsLoading}
-            >
-              释放
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        {/* P3-库存: Consume Batch Dialog */}
-        <Dialog visible={showConsumeDialog} onDismiss={() => setShowConsumeDialog(false)}>
-          <Dialog.Title>消耗批次</Dialog.Title>
-          <Dialog.Content>
-            <Text variant="bodyMedium" style={{ marginBottom: 16 }}>
-              批次号: <Text style={{ fontWeight: 'bold' }}>{selectedBatch?.batchNumber}</Text>
-            </Text>
-            <Text variant="bodySmall" style={{ marginBottom: 8, color: '#666' }}>
-              剩余数量: {selectedBatch?.remainingQuantity} kg
-            </Text>
-            <TextInput
-              label="消耗数量 (kg) *"
-              value={batchOpsData.quantity}
-              onChangeText={(text) => setBatchOpsData({ ...batchOpsData, quantity: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="生产计划ID *"
-              value={batchOpsData.productionPlanId}
-              onChangeText={(text) => setBatchOpsData({ ...batchOpsData, productionPlanId: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-              placeholder="关联的生产计划编号"
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowConsumeDialog(false)}>取消</Button>
-            <Button
-              onPress={handleConsumeBatch}
-              loading={batchOpsLoading}
-              disabled={batchOpsLoading}
-            >
-              消耗
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        {/* P3-库存: Adjust Batch Dialog */}
-        <Dialog visible={showAdjustDialog} onDismiss={() => setShowAdjustDialog(false)}>
-          <Dialog.Title>调整批次数量</Dialog.Title>
-          <Dialog.Content>
-            <Text variant="bodyMedium" style={{ marginBottom: 16 }}>
-              批次号: <Text style={{ fontWeight: 'bold' }}>{selectedBatch?.batchNumber}</Text>
-            </Text>
-            <Text variant="bodySmall" style={{ marginBottom: 8, color: '#666' }}>
-              当前数量: {selectedBatch?.remainingQuantity} kg
-            </Text>
-            <TextInput
-              label="新数量 (kg) *"
-              value={batchOpsData.newQuantity}
-              onChangeText={(text) => setBatchOpsData({ ...batchOpsData, newQuantity: text })}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              label="调整原因 *"
-              value={batchOpsData.reason}
-              onChangeText={(text) => setBatchOpsData({ ...batchOpsData, reason: text })}
-              mode="outlined"
-              style={styles.dialogInput}
-              placeholder="例如：盘点调整、损耗补充、错误修正"
-              multiline
-              numberOfLines={2}
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowAdjustDialog(false)}>取消</Button>
-            <Button
-              onPress={handleAdjustBatch}
-              loading={batchOpsLoading}
-              disabled={batchOpsLoading}
-            >
-              调整
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -1522,21 +888,11 @@ export default function MaterialBatchManagementScreen() {
         </Dialog>
       </Portal>
 
-      {/* P3-库存: FAB for Creating New Batch */}
+      {/* P3-库存: FAB for Creating New Batch - 跳转到CreateBatch页面 */}
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => {
-          setFormData({
-            materialTypeId: '',
-            batchNumber: '',
-            inboundQuantity: '',
-            unitPrice: '',
-            storageLocation: '',
-            qualityGrade: '',
-          });
-          setShowCreateDialog(true);
-        }}
+        onPress={() => navigation.navigate('CreateBatch' as never)}
         label="创建批次"
       />
     </View>
@@ -1631,6 +987,7 @@ const styles = StyleSheet.create({
   },
   batchTitleLeft: {
     flex: 1,
+    maxWidth: '60%',
   },
   batchNumber: {
     fontSize: 16,
@@ -1641,16 +998,46 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
+  supplierText: {
+    fontSize: 12,
+    color: '#999999',
+    marginTop: 2,
+  },
   chips: {
     flexDirection: 'row',
     gap: 4,
     flexWrap: 'wrap',
+    flexShrink: 0,
   },
-  statusChip: {
-    height: 24,
+  storageTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginRight: 6,
   },
-  qualityChip: {
-    height: 24,
+  storageTypeBadgeText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  qualityBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  qualityBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   quantitySection: {
     marginBottom: 12,
@@ -1702,10 +1089,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     flex: 1,
+    flexShrink: 1,
   },
-  expiryWarningChip: {
-    height: 20,
+  expiryBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
     marginLeft: 8,
+    flexShrink: 0,
+  },
+  expiryBadgeText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   conversionSection: {
     marginTop: 12,

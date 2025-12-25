@@ -70,7 +70,7 @@ public class DeviceActivationDTO {
     private LocalDateTime activatedAt;
 
     @Schema(description = "激活人ID", example = "1")
-    private Integer activatedBy;
+    private Long activatedBy;
 
     @Schema(description = "激活人姓名", example = "张三")
     private String activatedByName;

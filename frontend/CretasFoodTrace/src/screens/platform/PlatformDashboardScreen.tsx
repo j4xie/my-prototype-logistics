@@ -81,21 +81,21 @@ export default function PlatformDashboardScreen() {
         const data = statsResponse.data;
 
         // 后端返回字段映射:
-        // totalAIQuotaUsed -> aiUsageThisWeek
-        // totalAIQuotaLimit -> aiQuotaTotal
+        // totalAIRequests -> aiUsageThisWeek
+        // totalAICost -> aiQuotaTotal
         const newStats = {
           totalFactories: data.totalFactories || 0,
           activeFactories: data.activeFactories || 0,
           totalUsers: data.totalUsers || 0,
-          activeUsers: data.activeUsers || 0,
-          aiUsageThisWeek: data.totalAIRequests || data.totalAIQuotaUsed || 0,
-          aiQuotaTotal: data.totalAICost || data.totalAIQuotaLimit || 0,
-          // 生产相关统计
-          totalProductionToday: data.totalProductionToday || 0,
+          activeUsers: data.totalUsers || 0, // 后端未返回activeUsers，使用totalUsers
+          aiUsageThisWeek: data.totalAIRequests || 0,
+          aiQuotaTotal: data.totalAICost || 0,
+          // 生产相关统计 - 后端暂未返回这些字段
+          totalProductionToday: 0,
           totalBatches: data.totalBatches || 0,
-          completedBatches: data.completedBatches || 0,
-          // 系统健康状态
-          systemHealth: (data.systemHealth || 'healthy') as 'healthy' | 'warning' | 'error',
+          completedBatches: 0,
+          // 系统健康状态 - 后端暂未返回此字段
+          systemHealth: 'healthy' as 'healthy' | 'warning' | 'error',
         };
 
         platformDashboardLogger.info('平台统计数据加载成功', {

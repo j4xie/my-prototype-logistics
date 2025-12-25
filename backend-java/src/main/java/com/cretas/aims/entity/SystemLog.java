@@ -63,7 +63,7 @@ public class SystemLog {
      * 用户ID
      */
     @Column(name = "user_id")
-    private Integer userId;
+    private Long userId;
 
     /**
      * 用户名

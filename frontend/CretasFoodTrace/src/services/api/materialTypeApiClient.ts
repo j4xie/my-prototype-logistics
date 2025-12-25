@@ -3,39 +3,60 @@ import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 原材料类型管理API客户端
- * 总计13个API - 路径：/api/mobile/{factoryId}/materials/types/*
+ * 总计13个API - 路径：/api/mobile/{factoryId}/raw-material-types/*
  */
 
+/**
+ * 原材料类型接口
+ * 字段名与后端 RawMaterialTypeDTO 保持一致
+ *
+ * 注意：后端支持接收旧字段名（通过 @JsonAlias）:
+ * - materialCode -> code
+ * - shelfLife -> shelfLifeDays
+ * - description -> notes
+ */
 export interface MaterialType {
   id: string;
   factoryId: string;
-  materialCode: string;
+  code: string;               // 原材料编码（原 materialCode）
   name: string;
   category?: string;
-  specification?: string;
   unit: string;
-  shelfLife?: number;
-  storageType?: string;
-  storageConditions?: string;
-  description?: string;
+  unitPrice?: number;         // 单价（后端字段）
+  storageType?: string;       // fresh, frozen, dry
+  shelfLifeDays?: number;     // 保质期天数（原 shelfLife）
+  minStock?: number;          // 最低库存（后端字段）
+  maxStock?: number;          // 最高库存（后端字段）
+  currentStock?: number;      // 当前库存（后端字段）
+  totalValue?: number;        // 库存总价值（后端字段）
   isActive: boolean;
+  notes?: string;             // 备注（原 description）
   createdAt: string;
   updatedAt?: string;
+  // 关联信息（后端字段）
+  factoryName?: string;
+  createdByName?: string;
+  totalBatches?: number;
 }
 
 /**
  * 创建原材料类型请求参数
+ * 字段名与后端 RawMaterialTypeDTO 保持一致
+ *
+ * 注意：后端通过 @JsonAlias 也支持旧字段名：
+ * - materialCode, shelfLife, description
  */
 export interface CreateMaterialTypeRequest {
-  code?: string;  // 可选，由后端自动生成或用户提供
+  code?: string;              // 可选，由后端自动生成或用户提供
   name: string;
   category: string;
-  specification?: string;
   unit: string;
-  shelfLife?: number;
-  storageType: string;
-  storageConditions?: string;
-  description?: string;
+  unitPrice?: number;         // 单价
+  storageType: string;        // fresh, frozen, dry
+  shelfLifeDays?: number;     // 保质期天数
+  minStock?: number;          // 最低库存
+  maxStock?: number;          // 最高库存
+  notes?: string;             // 备注
 }
 
 /**
@@ -51,7 +72,7 @@ class MaterialTypeApiClient {
     if (!currentFactoryId) {
       throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
     }
-    return `/api/mobile/${currentFactoryId}/materials/types`;
+    return `/api/mobile/${currentFactoryId}/raw-material-types`;
   }
 
   async getMaterialTypes(params?: { factoryId?: string; isActive?: boolean }): Promise<{ data: MaterialType[] }> {
@@ -91,8 +112,25 @@ class MaterialTypeApiClient {
     return await apiClient.get(`${this.getPath(factoryId)}/search`, { params: { keyword } });
   }
 
+  /**
+   * 检查原材料编码是否已存在
+   * @param code 要检查的编码
+   * @param factoryId 工厂ID（可选）
+   * @param excludeId 排除的ID（用于编辑时）
+   */
+  async checkCodeExists(code: string, factoryId?: string, excludeId?: string): Promise<{ exists: boolean }> {
+    const params: Record<string, string> = { code };
+    if (excludeId) {
+      params.excludeId = excludeId;
+    }
+    return await apiClient.get(`${this.getPath(factoryId)}/check-code`, { params });
+  }
+
+  /**
+   * @deprecated 请使用 checkCodeExists，此方法将在后续版本中移除
+   */
   async checkMaterialCodeExists(materialCode: string, factoryId?: string): Promise<{ exists: boolean }> {
-    return await apiClient.get(`${this.getPath(factoryId)}/check-code`, { params: { materialCode } });
+    return this.checkCodeExists(materialCode, factoryId);
   }
 
   async getCategories(factoryId?: string): Promise<string[]> {

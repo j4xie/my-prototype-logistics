@@ -78,6 +78,10 @@ public interface ProcessingService {
       */
     PageResponse<Map<String, Object>> getInspections(String factoryId, String batchId, PageRequest pageRequest);
      /**
+     * 获取质检详情
+      */
+    Map<String, Object> getInspectionById(String factoryId, String inspectionId);
+     /**
      * 获取质检统计
       */
     Map<String, Object> getQualityStatistics(String factoryId, LocalDate startDate, LocalDate endDate);
@@ -89,7 +93,7 @@ public interface ProcessingService {
      /**
      * 记录设备使用
       */
-    void recordEquipmentUsage(String factoryId, String batchId, Integer equipmentId,
+    void recordEquipmentUsage(String factoryId, String batchId, Long equipmentId,
                              LocalDate startTime, LocalDate endTime);
      /**
      * 获取设备监控数据
@@ -98,11 +102,11 @@ public interface ProcessingService {
      /**
      * 获取设备指标
       */
-    Map<String, Object> getEquipmentMetrics(String factoryId, Integer equipmentId, Integer days);
+    Map<String, Object> getEquipmentMetrics(String factoryId, Long equipmentId, Integer days);
      /**
      * 记录设备维护
       */
-    void recordEquipmentMaintenance(String factoryId, Integer equipmentId, Map<String, Object> maintenance);
+    void recordEquipmentMaintenance(String factoryId, Long equipmentId, Map<String, Object> maintenance);
     // ========== 成本分析 ==========
      /**
      * 获取批次成本分析
@@ -112,6 +116,13 @@ public interface ProcessingService {
      * 重新计算批次成本
       */
     ProductionBatch recalculateBatchCost(String factoryId, String batchId);
+
+    /**
+     * 获取增强版批次成本分析（包含完整costBreakdown结构）
+     * 用于前端CostAnalysisDashboard
+     */
+    Map<String, Object> getEnhancedBatchCostAnalysis(String factoryId, String batchId);
+
      /**
      * AI成本分析建议（旧版本，基于规则）
       */

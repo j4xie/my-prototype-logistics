@@ -4,9 +4,11 @@ import com.cretas.aims.entity.DisposalRecord;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,7 +41,7 @@ public interface DisposalRecordRepository extends JpaRepository<DisposalRecord, 
     /**
      * 根据质检记录ID查询报废记录
      */
-    List<DisposalRecord> findByQualityInspectionId(Long qualityInspectionId);
+    List<DisposalRecord> findByQualityInspectionId(String qualityInspectionId);
 
     /**
      * 根据返工记录ID查询报废记录
@@ -54,7 +56,7 @@ public interface DisposalRecordRepository extends JpaRepository<DisposalRecord, 
     /**
      * 根据原材料批次ID查询报废记录
      */
-    List<DisposalRecord> findByMaterialBatchId(Integer materialBatchId);
+    List<DisposalRecord> findByMaterialBatchId(String materialBatchId);
 
     // ===================================================================
     // 审批相关查询
@@ -222,6 +224,8 @@ public interface DisposalRecordRepository extends JpaRepository<DisposalRecord, 
     /**
      * 批量审批报废记录
      */
+    @Modifying
+    @Transactional
     @Query("UPDATE DisposalRecord d SET d.isApproved = true, " +
            "d.approvedBy = :approverId, d.approvedByName = :approverName, " +
            "d.approvalDate = :approvalDate " +

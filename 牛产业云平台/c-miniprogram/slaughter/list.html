@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>屠宰场服务 - 牛产业云平台</title>
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      /* padding-bottom 由 mobile.css 的 body.has-bottom-nav 统一控制 (75px) */
+    }
+
+    /* 头部 - 棕色主题 */
+    .header {
+      background: linear-gradient(135deg, #5D4037 0%, #3E2723 100%);
+      padding: 12px 16px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .header-title {
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 20px;
+      padding: 8px 16px;
+    }
+
+    .search-bar input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      background: transparent;
+    }
+
+    .search-bar input::placeholder {
+      color: #999;
+    }
+
+    .search-icon {
+      color: #999;
+      margin-right: 8px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* 筛选工具栏 */
+    .filter-toolbar {
+      display: flex;
+      background: white;
+      padding: 12px 16px;
+      margin-top: 98px;
+      border-bottom: 1px solid #eee;
+      position: sticky;
+      top: 98px;
+      z-index: 90;
+    }
+
+    .filter-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #666;
+      padding: 6px;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      color: #5D4037;
+      font-weight: 500;
+    }
+
+    .filter-btn .arrow {
+      margin-left: 4px;
+      font-size: 10px;
+      transition: transform 0.3s;
+    }
+
+    .filter-btn.active .arrow {
+      transform: rotate(180deg);
+    }
+
+    /* 服务分类横向滚动 */
+    .category-bar {
+      background: white;
+      padding: 12px 0;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      border-bottom: 1px solid #eee;
+    }
+
+    .category-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-item {
+      display: inline-block;
+      padding: 6px 16px;
+      margin: 0 6px;
+      font-size: 13px;
+      color: #666;
+      background: #f5f5f5;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .category-item:first-child {
+      margin-left: 16px;
+    }
+
+    .category-item:last-child {
+      margin-right: 16px;
+    }
+
+    .category-item.active {
+      background: #EFEBE9;
+      color: #5D4037;
+      font-weight: 500;
+    }
+
+    /* 筛选面板 */
+    .filter-panel {
+      display: none;
+      background: white;
+      padding: 16px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .filter-panel.show {
+      display: block;
+    }
+
+    .filter-section {
+      margin-bottom: 16px;
+    }
+
+    .filter-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .filter-label {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 10px;
+    }
+
+    .filter-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-option {
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #666;
+      background: #f5f5f5;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .filter-option.active {
+      background: #EFEBE9;
+      color: #5D4037;
+    }
+
+    /* 服务入口卡片 */
+    .service-entry {
+      background: white;
+      margin: 12px;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .service-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #5D4037 0%, #3E2723 100%);
+      border-radius: 12px;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+    }
+
+    .service-info {
+      flex: 1;
+      margin-left: 12px;
+    }
+
+    .service-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .service-desc {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .service-arrow {
+      font-size: 20px;
+      color: #ccc;
+    }
+
+    /* 统计概览 */
+    .stats-overview {
+      display: flex;
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .overview-item {
+      flex: 1;
+      text-align: center;
+    }
+
+    .overview-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #5D4037;
+    }
+
+    .overview-label {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    /* 屠宰场列表 */
+    .slaughter-list {
+      padding: 12px;
+    }
+
+    .slaughter-card {
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .slaughter-banner {
+      height: 120px;
+      background: linear-gradient(135deg, #BCAAA4 0%, #8D6E63 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+      color: white;
+      position: relative;
+    }
+
+    .slaughter-verified {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #5D4037;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .slaughter-capacity {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .slaughter-info {
+      padding: 12px;
+    }
+
+    .slaughter-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .slaughter-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .slaughter-level {
+      font-size: 12px;
+      color: #5D4037;
+      background: #EFEBE9;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .slaughter-location {
+      font-size: 13px;
+      color: #999;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+    }
+
+    .slaughter-location .mdi {
+      margin-right: 4px;
+    }
+
+    /* 服务标签 */
+    .slaughter-services {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .service-tag {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    .service-tag.primary {
+      background: #EFEBE9;
+      color: #5D4037;
+    }
+
+    .service-tag.cert {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .service-tag.training {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .service-tag.cold {
+      background: #E3F2FD;
+      color: #1565C0;
+    }
+
+    /* 能力统计 */
+    .slaughter-stats {
+      display: flex;
+      justify-content: space-around;
+      padding: 12px;
+      border-top: 1px solid #f5f5f5;
+      margin-top: 10px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #5D4037;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .slaughter-actions {
+      display: flex;
+      border-top: 1px solid #f5f5f5;
+    }
+
+    .slaughter-action {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      font-size: 13px;
+      color: #666;
+      text-decoration: none;
+      border-right: 1px solid #f5f5f5;
+    }
+
+    .slaughter-action:last-child {
+      border-right: none;
+    }
+
+    .slaughter-action.primary {
+      color: #5D4037;
+      font-weight: 500;
+    }
+
+    .slaughter-action-icon {
+      margin-right: 4px;
+    }
+
+    /* 加载更多 */
+    .load-more {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      font-size: 14px;
+    }
+
+    /* ==================== MDI 图标标准化 ==================== */
+    .mdi {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .nav-item .icon,
+    .nav-icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-item .mdi,
+    .nav-icon .mdi {
+      width: 100%;
+      height: 100%;
+      font-size: inherit;
+    }
+
+    /* 带教工服务提示 */
+    .training-highlight {
+      background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .training-icon {
+      width: 44px;
+      height: 44px;
+      background: #2E7D32;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 22px;
+    }
+
+    .training-content {
+      flex: 1;
+      margin-left: 12px;
+    }
+
+    .training-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2E7D32;
+    }
+
+    .training-desc {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .training-link {
+      color: #2E7D32;
+      font-size: 12px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body class="theme-brown has-bottom-nav">
+  <!-- 头部 -->
+  <div class="header">
+    <div class="header-title">屠宰场服务</div>
+    <div class="search-bar">
+      <span class="search-icon"><i class="mdi mdi-magnify"></i></span>
+      <input type="text" placeholder="搜索屠宰场名称、地区、服务...">
+    </div>
+  </div>
+
+  <!-- 筛选工具栏 -->
+  <div class="filter-toolbar">
+    <button class="filter-btn active" onclick="toggleFilter('region')">
+      地区 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+    <button class="filter-btn" onclick="toggleFilter('capacity')">
+      屠宰能力 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+    <button class="filter-btn" onclick="toggleFilter('service')">
+      服务类型 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+    <button class="filter-btn" onclick="toggleFilter('more')">
+      更多 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+  </div>
+
+  <!-- 服务分类横向滚动 -->
+  <div class="category-bar">
+    <span class="category-item active">全部服务</span>
+    <span class="category-item">代宰服务</span>
+    <span class="category-item">分割加工</span>
+    <span class="category-item">冷链仓储</span>
+    <span class="category-item">技能培训</span>
+    <span class="category-item">定制加工</span>
+    <span class="category-item">检疫检验</span>
+  </div>
+
+  <!-- 筛选面板 - 地区 -->
+  <div class="filter-panel" id="panel-region">
+    <div class="filter-section">
+      <div class="filter-label">热门地区</div>
+      <div class="filter-options">
+        <span class="filter-option active">全国</span>
+        <span class="filter-option">内蒙古</span>
+        <span class="filter-option">山东</span>
+        <span class="filter-option">河北</span>
+        <span class="filter-option">河南</span>
+        <span class="filter-option">新疆</span>
+        <span class="filter-option">吉林</span>
+        <span class="filter-option">黑龙江</span>
+        <span class="filter-option">陕西</span>
+        <span class="filter-option">四川</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 - 屠宰能力 -->
+  <div class="filter-panel" id="panel-capacity">
+    <div class="filter-section">
+      <div class="filter-label">日屠宰能力</div>
+      <div class="filter-options">
+        <span class="filter-option active">不限</span>
+        <span class="filter-option">100头以下</span>
+        <span class="filter-option">100-300头</span>
+        <span class="filter-option">300-500头</span>
+        <span class="filter-option">500-1000头</span>
+        <span class="filter-option">1000头以上</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">冷库容量</div>
+      <div class="filter-options">
+        <span class="filter-option">不限</span>
+        <span class="filter-option">500吨以下</span>
+        <span class="filter-option">500-1000吨</span>
+        <span class="filter-option">1000-3000吨</span>
+        <span class="filter-option">3000吨以上</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 - 服务类型 -->
+  <div class="filter-panel" id="panel-service">
+    <div class="filter-section">
+      <div class="filter-label">主营服务</div>
+      <div class="filter-options">
+        <span class="filter-option">代宰服务</span>
+        <span class="filter-option">分割加工</span>
+        <span class="filter-option">冷链仓储</span>
+        <span class="filter-option">技能培训</span>
+        <span class="filter-option">定制加工</span>
+        <span class="filter-option">副产品回收</span>
+        <span class="filter-option">检疫服务</span>
+        <span class="filter-option">物流配送</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">培训服务</div>
+      <div class="filter-options">
+        <span class="filter-option">屠宰技术</span>
+        <span class="filter-option">分割技术</span>
+        <span class="filter-option">品控管理</span>
+        <span class="filter-option">安全规范</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 - 更多 -->
+  <div class="filter-panel" id="panel-more">
+    <div class="filter-section">
+      <div class="filter-label">认证资质</div>
+      <div class="filter-options">
+        <span class="filter-option">定点屠宰</span>
+        <span class="filter-option">HACCP认证</span>
+        <span class="filter-option">ISO22000</span>
+        <span class="filter-option">清真认证</span>
+        <span class="filter-option">有机认证</span>
+        <span class="filter-option">出口资质</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">排序</div>
+      <div class="filter-options">
+        <span class="filter-option active">综合排序</span>
+        <span class="filter-option">距离最近</span>
+        <span class="filter-option">产能最大</span>
+        <span class="filter-option">好评最高</span>
+        <span class="filter-option">最新入驻</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 带教工服务提示 -->
+  <div class="training-highlight">
+    <div class="training-icon"><i class="mdi mdi-school"></i></div>
+    <div class="training-content">
+      <div class="training-title">带教工服务 · 技能培训</div>
+      <div class="training-desc">专业屠宰师傅手把手教学，学习分割技术</div>
+    </div>
+    <a href="#" class="training-link">
+      了解更多 <i class="mdi mdi-chevron-right"></i>
+    </a>
+  </div>
+
+  <!-- 统计概览 -->
+  <div class="stats-overview">
+    <div class="overview-item">
+      <div class="overview-value">97</div>
+      <div class="overview-label">入驻屠宰场</div>
+    </div>
+    <div class="overview-item">
+      <div class="overview-value">2.8万</div>
+      <div class="overview-label">日屠宰能力(头)</div>
+    </div>
+    <div class="overview-item">
+      <div class="overview-value">18</div>
+      <div class="overview-label">覆盖省份</div>
+    </div>
+  </div>
+
+  <!-- 地图找场入口 -->
+  <a href="map.html" class="service-entry">
+    <div class="service-icon"><i class="mdi mdi-map-search"></i></div>
+    <div class="service-info">
+      <div class="service-title">地图找屠宰场</div>
+      <div class="service-desc">查看附近屠宰加工企业分布</div>
+    </div>
+    <span class="service-arrow"><i class="mdi mdi-chevron-right"></i></span>
+  </a>
+
+  <!-- 屠宰场列表 -->
+  <div class="slaughter-list">
+    <!-- 屠宰场卡片1 -->
+    <div class="slaughter-card">
+      <a href="detail.html?id=ENT003">
+        <div class="slaughter-banner">
+          <i class="mdi mdi-knife"></i>
+          <span class="slaughter-verified"><i class="mdi mdi-check-decagram"></i> 深度认证</span>
+          <span class="slaughter-capacity"><i class="mdi mdi-cow"></i> 日处理800头</span>
+        </div>
+      </a>
+      <div class="slaughter-info">
+        <div class="slaughter-header">
+          <div class="slaughter-name">北方肉牛屠宰加工有限公司</div>
+          <span class="slaughter-level">大型</span>
+        </div>
+        <div class="slaughter-location"><i class="mdi mdi-map-marker"></i> 内蒙古包头市九原区工业园区</div>
+        <div class="slaughter-services">
+          <span class="service-tag primary">代宰服务</span>
+          <span class="service-tag primary">分割加工</span>
+          <span class="service-tag cold">冷链仓储</span>
+          <span class="service-tag training">技能培训</span>
+          <span class="service-tag cert">HACCP认证</span>
+        </div>
+        <div class="slaughter-stats">
+          <div class="stat-item">
+            <div class="stat-value">800</div>
+            <div class="stat-label">日处理(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">2000</div>
+            <div class="stat-label">冷库(吨)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">15</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">4.8</div>
+            <div class="stat-label">评分</div>
+          </div>
+        </div>
+      </div>
+      <div class="slaughter-actions">
+        <a href="tel:13800137001" class="slaughter-action">
+          <span class="slaughter-action-icon"><i class="mdi mdi-phone"></i></span> 电话咨询
+        </a>
+        <a href="detail.html?id=ENT003" class="slaughter-action primary">
+          <span class="slaughter-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <!-- 屠宰场卡片2 -->
+    <div class="slaughter-card">
+      <a href="detail.html?id=2">
+        <div class="slaughter-banner">
+          <i class="mdi mdi-knife"></i>
+          <span class="slaughter-verified"><i class="mdi mdi-check-circle"></i> 定点屠宰</span>
+          <span class="slaughter-capacity"><i class="mdi mdi-cow"></i> 日处理500头</span>
+        </div>
+      </a>
+      <div class="slaughter-info">
+        <div class="slaughter-header">
+          <div class="slaughter-name">齐鲁肉牛加工中心</div>
+          <span class="slaughter-level">大型</span>
+        </div>
+        <div class="slaughter-location"><i class="mdi mdi-map-marker"></i> 山东菏泽市郓城县食品工业园</div>
+        <div class="slaughter-services">
+          <span class="service-tag primary">代宰服务</span>
+          <span class="service-tag primary">分割加工</span>
+          <span class="service-tag cold">冷链仓储</span>
+          <span class="service-tag cert">ISO22000</span>
+        </div>
+        <div class="slaughter-stats">
+          <div class="stat-item">
+            <div class="stat-value">500</div>
+            <div class="stat-label">日处理(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">1500</div>
+            <div class="stat-label">冷库(吨)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">12</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">4.7</div>
+            <div class="stat-label">评分</div>
+          </div>
+        </div>
+      </div>
+      <div class="slaughter-actions">
+        <a href="tel:13800137002" class="slaughter-action">
+          <span class="slaughter-action-icon"><i class="mdi mdi-phone"></i></span> 电话咨询
+        </a>
+        <a href="detail.html?id=2" class="slaughter-action primary">
+          <span class="slaughter-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <!-- 屠宰场卡片3 - 带教工特色 -->
+    <div class="slaughter-card">
+      <a href="detail.html?id=3">
+        <div class="slaughter-banner" style="background: linear-gradient(135deg, #A5D6A7 0%, #66BB6A 100%);">
+          <i class="mdi mdi-school"></i>
+          <span class="slaughter-verified" style="background: #2E7D32;"><i class="mdi mdi-star"></i> 培训基地</span>
+          <span class="slaughter-capacity"><i class="mdi mdi-cow"></i> 日处理300头</span>
+        </div>
+      </a>
+      <div class="slaughter-info">
+        <div class="slaughter-header">
+          <div class="slaughter-name">草原技能培训屠宰中心</div>
+          <span class="slaughter-level" style="background: #E8F5E9; color: #2E7D32;">培训</span>
+        </div>
+        <div class="slaughter-location"><i class="mdi mdi-map-marker"></i> 内蒙古通辽市科尔沁区</div>
+        <div class="slaughter-services">
+          <span class="service-tag training">带教工培训</span>
+          <span class="service-tag training">分割教学</span>
+          <span class="service-tag training">考证服务</span>
+          <span class="service-tag primary">代宰服务</span>
+          <span class="service-tag cert">培训资质</span>
+        </div>
+        <div class="slaughter-stats">
+          <div class="stat-item">
+            <div class="stat-value">300</div>
+            <div class="stat-label">日处理(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">286</div>
+            <div class="stat-label">培训人次</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">8</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">4.9</div>
+            <div class="stat-label">评分</div>
+          </div>
+        </div>
+      </div>
+      <div class="slaughter-actions">
+        <a href="#" class="slaughter-action" style="color: #2E7D32;">
+          <span class="slaughter-action-icon"><i class="mdi mdi-school"></i></span> 咨询培训
+        </a>
+        <a href="detail.html?id=3" class="slaughter-action primary">
+          <span class="slaughter-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <!-- 屠宰场卡片4 -->
+    <div class="slaughter-card">
+      <a href="detail.html?id=4">
+        <div class="slaughter-banner">
+          <i class="mdi mdi-knife"></i>
+          <span class="slaughter-capacity"><i class="mdi mdi-cow"></i> 日处理200头</span>
+        </div>
+      </a>
+      <div class="slaughter-info">
+        <div class="slaughter-header">
+          <div class="slaughter-name">陇原肉牛屠宰厂</div>
+          <span class="slaughter-level">中型</span>
+        </div>
+        <div class="slaughter-location"><i class="mdi mdi-map-marker"></i> 甘肃平凉市泾川县</div>
+        <div class="slaughter-services">
+          <span class="service-tag primary">代宰服务</span>
+          <span class="service-tag primary">分割加工</span>
+          <span class="service-tag cert">清真认证</span>
+        </div>
+        <div class="slaughter-stats">
+          <div class="stat-item">
+            <div class="stat-value">200</div>
+            <div class="stat-label">日处理(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">500</div>
+            <div class="stat-label">冷库(吨)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">10</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">4.6</div>
+            <div class="stat-label">评分</div>
+          </div>
+        </div>
+      </div>
+      <div class="slaughter-actions">
+        <a href="tel:13800137004" class="slaughter-action">
+          <span class="slaughter-action-icon"><i class="mdi mdi-phone"></i></span> 电话咨询
+        </a>
+        <a href="detail.html?id=4" class="slaughter-action primary">
+          <span class="slaughter-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <!-- 屠宰场卡片5 -->
+    <div class="slaughter-card">
+      <a href="detail.html?id=5">
+        <div class="slaughter-banner">
+          <i class="mdi mdi-knife"></i>
+          <span class="slaughter-verified"><i class="mdi mdi-check-circle"></i> 出口资质</span>
+          <span class="slaughter-capacity"><i class="mdi mdi-cow"></i> 日处理1000头</span>
+        </div>
+      </a>
+      <div class="slaughter-info">
+        <div class="slaughter-header">
+          <div class="slaughter-name">科尔沁牛业集团屠宰中心</div>
+          <span class="slaughter-level">特大型</span>
+        </div>
+        <div class="slaughter-location"><i class="mdi mdi-map-marker"></i> 内蒙古通辽市开发区</div>
+        <div class="slaughter-services">
+          <span class="service-tag primary">代宰服务</span>
+          <span class="service-tag primary">精细分割</span>
+          <span class="service-tag cold">超低温冷库</span>
+          <span class="service-tag cert">HACCP认证</span>
+          <span class="service-tag cert">出口资质</span>
+        </div>
+        <div class="slaughter-stats">
+          <div class="stat-item">
+            <div class="stat-value">1000</div>
+            <div class="stat-label">日处理(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">5000</div>
+            <div class="stat-label">冷库(吨)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">20</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">4.9</div>
+            <div class="stat-label">评分</div>
+          </div>
+        </div>
+      </div>
+      <div class="slaughter-actions">
+        <a href="tel:13800137005" class="slaughter-action">
+          <span class="slaughter-action-icon"><i class="mdi mdi-phone"></i></span> 电话咨询
+        </a>
+        <a href="detail.html?id=5" class="slaughter-action primary">
+          <span class="slaughter-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <div class="load-more">加载更多...</div>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="../home/home.html" class="nav-item">
+      <span class="nav-icon mdi mdi-home"></span>
+      <span>首页</span>
+    </a>
+    <a href="../cattle/publish.html" class="nav-item">
+      <span class="nav-icon mdi mdi-plus-circle"></span>
+      <span>发布</span>
+    </a>
+    <a href="../ai-rag/chat.html" class="nav-item">
+      <span class="nav-icon mdi mdi-robot"></span>
+      <span>AI</span>
+    </a>
+    <a href="../enterprise/messages.html" class="nav-item">
+      <span class="nav-icon mdi mdi-bell"></span>
+      <span>消息</span>
+    </a>
+    <a href="../enterprise/center.html" class="nav-item">
+      <span class="nav-icon mdi mdi-account"></span>
+      <span>我的</span>
+    </a>
+  </nav>
+
+  <script>
+    // 消息提示
+    function showMessage() {
+      alert('消息功能开发中...');
+    }
+
+    // 分类选择
+    document.querySelectorAll('.category-item').forEach(item => {
+      item.addEventListener('click', function () {
+        document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // 筛选面板切换
+    let currentPanel = null;
+    function toggleFilter(type) {
+      const panel = document.getElementById('panel-' + type);
+      const btns = document.querySelectorAll('.filter-btn');
+
+      if (currentPanel === type) {
+        panel.classList.remove('show');
+        btns.forEach(btn => btn.classList.remove('active'));
+        currentPanel = null;
+        return;
+      }
+
+      document.querySelectorAll('.filter-panel').forEach(p => p.classList.remove('show'));
+      btns.forEach(btn => btn.classList.remove('active'));
+
+      panel.classList.add('show');
+      event.target.closest('.filter-btn').classList.add('active');
+      currentPanel = type;
+    }
+
+    // 筛选选项选择
+    document.querySelectorAll('.filter-option').forEach(option => {
+      option.addEventListener('click', function () {
+        const parent = this.closest('.filter-section');
+        const label = parent.querySelector('.filter-label')?.textContent;
+
+        if (label?.includes('排序') || label?.includes('屠宰能力') || label?.includes('冷库')) {
+          parent.querySelectorAll('.filter-option').forEach(o => o.classList.remove('active'));
+          this.classList.add('active');
+        } else {
+          this.classList.toggle('active');
+        }
+      });
+    });
+
+    // 搜索
+    document.querySelector('.search-bar input').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        const keyword = this.value.trim();
+        if (keyword) {
+          alert('搜索: ' + keyword);
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

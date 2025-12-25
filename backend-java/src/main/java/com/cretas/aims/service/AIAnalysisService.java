@@ -4,8 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import javax.annotation.PostConstruct;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -28,13 +31,31 @@ public class AIAnalysisService {
     @Value("${cretas.ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
 
-    @Value("${cretas.ai.service.timeout:30000}")
+    @Value("${cretas.ai.service.timeout:120000}")  // 120秒超时，支持思考模式
     private int timeout;
 
-    private final RestTemplate restTemplate;
+    @Value("${cretas.ai.service.connect-timeout:10000}")  // 10秒连接超时
+    private int connectTimeout;
+
+    private RestTemplate restTemplate;
 
     public AIAnalysisService() {
-        this.restTemplate = new RestTemplate();
+        // 使用默认超时初始化（120秒读取超时，支持思考模式AI分析）
+        this.restTemplate = createRestTemplate(10000, 120000);
+    }
+
+    @PostConstruct
+    public void init() {
+        // @Value 注入后重新配置超时
+        this.restTemplate = createRestTemplate(connectTimeout, timeout);
+        log.info("AI服务RestTemplate已配置: 连接超时={}ms, 读取超时={}ms", connectTimeout, timeout);
+    }
+
+    private RestTemplate createRestTemplate(int connectTimeout, int readTimeout) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(connectTimeout);
+        factory.setReadTimeout(readTimeout);
+        return new RestTemplate(factory);
     }
 
     /**
@@ -278,7 +299,103 @@ public class AIAnalysisService {
             for (int i = 0; i < Math.min(risks.size(), 3); i++) {
                 sb.append("⚠️ ").append(risks.get(i)).append("\n");
             }
+            sb.append("\n");
         }
+
+        // ========== 9. 行业基准对比（核心：辅助AI定位问题维度） ==========
+        sb.append("【行业基准对比】\n");
+        sb.append("以下是食品加工行业标准，用于判断当前数据是否异常：\n\n");
+
+        // 9.1 成本结构基准
+        if (costSummary != null) {
+            sb.append("▶ 成本结构基准：\n");
+            BigDecimal totalCost = getBigDecimalValue(costSummary, "totalCost");
+            BigDecimal materialCostRatio = getBigDecimalValue(costSummary, "materialCostRatio");
+            BigDecimal laborCostRatio = getBigDecimalValue(costSummary, "laborCostRatio");
+            BigDecimal equipmentCostRatio = getBigDecimalValue(costSummary, "equipmentCostRatio");
+
+            if (materialCostRatio.compareTo(BigDecimal.ZERO) > 0) {
+                String status = materialCostRatio.compareTo(new BigDecimal("60")) > 0 ? "⚠️偏高" :
+                               materialCostRatio.compareTo(new BigDecimal("50")) < 0 ? "⚠️偏低" : "✓正常";
+                sb.append("  • 原材料成本占比: ").append(formatPercent(materialCostRatio)).append("% ")
+                  .append("(基准: 50-60%) ").append(status).append("\n");
+            }
+            if (laborCostRatio.compareTo(BigDecimal.ZERO) > 0) {
+                String status = laborCostRatio.compareTo(new BigDecimal("25")) > 0 ? "⚠️偏高" :
+                               laborCostRatio.compareTo(new BigDecimal("15")) < 0 ? "⚠️偏低" : "✓正常";
+                sb.append("  • 人工成本占比: ").append(formatPercent(laborCostRatio)).append("% ")
+                  .append("(基准: 15-25%) ").append(status).append("\n");
+            }
+            if (equipmentCostRatio.compareTo(BigDecimal.ZERO) > 0) {
+                String status = equipmentCostRatio.compareTo(new BigDecimal("15")) > 0 ? "⚠️偏高" :
+                               equipmentCostRatio.compareTo(new BigDecimal("10")) < 0 ? "⚠️偏低" : "✓正常";
+                sb.append("  • 设备成本占比: ").append(formatPercent(equipmentCostRatio)).append("% ")
+                  .append("(基准: 10-15%) ").append(status).append("\n");
+            }
+            sb.append("\n");
+        }
+
+        // 9.2 质量效率基准
+        if (batchInfo != null) {
+            sb.append("▶ 质量效率基准：\n");
+
+            BigDecimal yieldRate = getBigDecimalValue(batchInfo, "yieldRate");
+            if (yieldRate.compareTo(BigDecimal.ZERO) > 0) {
+                String status = yieldRate.compareTo(new BigDecimal("98")) >= 0 ? "✓优秀" :
+                               yieldRate.compareTo(new BigDecimal("95")) >= 0 ? "✓达标" :
+                               yieldRate.compareTo(new BigDecimal("90")) >= 0 ? "⚠️需改进" : "❌严重不足";
+                sb.append("  • 良品率: ").append(formatPercent(yieldRate)).append("% ")
+                  .append("(基准: >95%, 优秀: >98%) ").append(status).append("\n");
+            }
+
+            BigDecimal efficiency = getBigDecimalValue(batchInfo, "efficiency");
+            if (efficiency.compareTo(BigDecimal.ZERO) > 0) {
+                String status = efficiency.compareTo(new BigDecimal("90")) >= 0 ? "✓优秀" :
+                               efficiency.compareTo(new BigDecimal("85")) >= 0 ? "✓达标" :
+                               efficiency.compareTo(new BigDecimal("75")) >= 0 ? "⚠️需改进" : "❌严重不足";
+                sb.append("  • 生产效率(OEE): ").append(formatPercent(efficiency)).append("% ")
+                  .append("(基准: >85%, 优秀: >90%) ").append(status).append("\n");
+            }
+
+            // 计算次品率
+            BigDecimal actualQty = getBigDecimalValue(batchInfo, "actualQuantity");
+            BigDecimal defectQty = getBigDecimalValue(batchInfo, "defectQuantity");
+            if (actualQty.compareTo(BigDecimal.ZERO) > 0 && defectQty.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal defectRate = defectQty.divide(actualQty, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"));
+                String status = defectRate.compareTo(new BigDecimal("1")) <= 0 ? "✓达标" :
+                               defectRate.compareTo(new BigDecimal("3")) <= 0 ? "⚠️需改进" : "❌严重超标";
+                sb.append("  • 次品率: ").append(formatPercent(defectRate)).append("% ")
+                  .append("(基准: <1%, 可接受: <3%) ").append(status).append("\n");
+            }
+            sb.append("\n");
+        }
+
+        // 9.3 人均产能基准
+        Object totalWorkHoursObj = costData.get("totalWorkHours");
+        if (totalWorkHoursObj != null && batchInfo != null) {
+            double totalWorkHours = ((Number) totalWorkHoursObj).doubleValue();
+            BigDecimal actualQty = getBigDecimalValue(batchInfo, "actualQuantity");
+            int workerCount = laborCount > 0 ? laborCount : 1;
+
+            if (totalWorkHours > 0 && actualQty.compareTo(BigDecimal.ZERO) > 0) {
+                double productivity = actualQty.doubleValue() / totalWorkHours;
+                String status = productivity >= 50 ? "✓达标" :
+                               productivity >= 40 ? "⚠️略低" : "❌严重不足";
+                sb.append("▶ 人均产能基准：\n");
+                sb.append("  • 人均产能: ").append(String.format("%.1f", productivity)).append(" kg/人/小时 ")
+                  .append("(基准: >50 kg/人/小时) ").append(status).append("\n\n");
+            }
+        }
+
+        // 9.4 分析指导
+        sb.append("▶ 分析指导：\n");
+        sb.append("  请根据以上数据和基准对比，识别成本问题属于哪个维度：\n");
+        sb.append("  1️⃣ 原材料维度 - 成本占比、损耗率、采购价格\n");
+        sb.append("  2️⃣ 人工维度 - 成本占比、人均产能、工时效率\n");
+        sb.append("  3️⃣ 设备维度 - 成本占比、OEE、停机时间\n");
+        sb.append("  4️⃣ 质量维度 - 良品率、次品率、返工率\n");
+        sb.append("  5️⃣ 时间维度 - 生产周期、瓶颈环节\n");
 
         return sb.toString();
     }

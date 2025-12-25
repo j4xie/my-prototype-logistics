@@ -14,9 +14,15 @@ import java.util.Map;
  */
 public interface TimeClockService {
     /**
-     * 上班打卡
+     * 上班打卡（基本版本）
      */
     TimeClockRecord clockIn(String factoryId, Long userId, String location, String device);
+
+    /**
+     * 上班打卡（带GPS坐标）
+     */
+    TimeClockRecord clockIn(String factoryId, Long userId, String location, String device,
+                            Double latitude, Double longitude);
      /**
      * 下班打卡
       */

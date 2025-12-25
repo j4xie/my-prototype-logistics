@@ -29,10 +29,8 @@ import java.util.*;
 public class TimeStatsServiceImpl implements TimeStatsService {
     private static final Logger log = LoggerFactory.getLogger(TimeStatsServiceImpl.class);
 
-    // TODO: 注入需要的Repository
-    // private final TimeClockRepository timeClockRepository;
-    // private final WorkSessionRepository workSessionRepository;
-    // private final UserRepository userRepository;
+    // TODO: 注入需要的Repository (TimeClockRecordRepository, WorkSessionRepository, UserRepository)
+
     @Override
     @Transactional(readOnly = true)
     public TimeStatsDTO getDailyStats(String factoryId, LocalDate date) {

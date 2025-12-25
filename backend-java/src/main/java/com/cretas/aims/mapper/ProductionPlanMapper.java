@@ -4,6 +4,7 @@ import com.cretas.aims.dto.production.CreateProductionPlanRequest;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
+import com.cretas.aims.entity.enums.ProductionPlanType;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -30,11 +31,15 @@ public class ProductionPlanMapper {
                 .productTypeId(plan.getProductTypeId())
                 .plannedQuantity(plan.getPlannedQuantity())
                 .actualQuantity(plan.getActualQuantity())
-                // .plannedDate(plan.getPlannedDate())  // 暂时注释 - 数据库表中没有此字段
+                // plannedDate 从 startTime 推导，保持API兼容性
+                .plannedDate(plan.getStartTime() != null ? plan.getStartTime().toLocalDate() : null)
                 .startTime(plan.getStartTime())
                 .endTime(plan.getEndTime())
+                .expectedCompletionDate(plan.getExpectedCompletionDate())
                 .status(plan.getStatus())
                 .statusDisplayName(plan.getStatus() != null ? plan.getStatus().getDisplayName() : null)
+                .planType(plan.getPlanType())
+                .planTypeDisplayName(getPlanTypeDisplayName(plan.getPlanType()))
                 .customerOrderNumber(plan.getCustomerOrderNumber())
                 .priority(plan.getPriority())
                 .estimatedMaterialCost(plan.getEstimatedMaterialCost())
@@ -61,23 +66,32 @@ public class ProductionPlanMapper {
         }
         // 计算总成本
         dto.setTotalCost(calculateTotalCost(plan));
+
+        // 设置未来计划匹配相关字段
+        dto.setAllocatedQuantity(plan.getAllocatedQuantity());
+        dto.setIsFullyMatched(plan.getIsFullyMatched());
+        dto.setMatchingProgress(plan.getMatchingProgress());
+        dto.setRemainingQuantity(plan.getRemainingQuantity());
+
         return dto;
     }
 
     /**
      * CreateRequest 转 Entity
      */
-    public ProductionPlan toEntity(CreateProductionPlanRequest request, String factoryId, Integer createdBy) {
+    public ProductionPlan toEntity(CreateProductionPlanRequest request, String factoryId, Long createdBy) {
         if (request == null) {
             return null;
         }
         ProductionPlan plan = new ProductionPlan();
+        plan.setId(UUID.randomUUID().toString());
         plan.setFactoryId(factoryId);
         plan.setPlanNumber(generatePlanNumber());
         plan.setProductTypeId(request.getProductTypeId());
         plan.setPlannedQuantity(request.getPlannedQuantity());
         // plan.setPlannedDate(request.getPlannedDate());  // 暂时注释 - 数据库表中没有此字段
         plan.setStatus(ProductionPlanStatus.PENDING);
+        plan.setPlanType(request.getPlanType() != null ? request.getPlanType() : ProductionPlanType.FROM_INVENTORY);
         plan.setCustomerOrderNumber(request.getCustomerOrderNumber());
         plan.setPriority(request.getPriority() != null ? request.getPriority() : 5);
         plan.setEstimatedMaterialCost(request.getEstimatedMaterialCost());
@@ -86,6 +100,12 @@ public class ProductionPlanMapper {
         plan.setEstimatedOtherCost(request.getEstimatedOtherCost());
         plan.setNotes(request.getNotes());
         plan.setCreatedBy(createdBy);
+        // 设置预计完成日期，默认为计划日期+1天
+        if (request.getExpectedCompletionDate() != null) {
+            plan.setExpectedCompletionDate(request.getExpectedCompletionDate());
+        } else if (request.getPlannedDate() != null) {
+            plan.setExpectedCompletionDate(request.getPlannedDate().plusDays(1));
+        }
         return plan;
     }
 
@@ -123,6 +143,9 @@ public class ProductionPlanMapper {
         if (request.getNotes() != null) {
             plan.setNotes(request.getNotes());
         }
+        if (request.getExpectedCompletionDate() != null) {
+            plan.setExpectedCompletionDate(request.getExpectedCompletionDate());
+        }
     }
 
     /**
@@ -130,6 +153,23 @@ public class ProductionPlanMapper {
      */
     private String generatePlanNumber() {
         return "PLAN-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    /**
+     * 获取计划类型显示名称
+     */
+    private String getPlanTypeDisplayName(ProductionPlanType planType) {
+        if (planType == null) {
+            return null;
+        }
+        switch (planType) {
+            case FUTURE:
+                return "未来计划";
+            case FROM_INVENTORY:
+                return "基于库存";
+            default:
+                return planType.name();
+        }
     }
 
     /**

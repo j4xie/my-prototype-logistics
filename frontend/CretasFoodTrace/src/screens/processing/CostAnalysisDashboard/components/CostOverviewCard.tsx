@@ -17,7 +17,7 @@ interface CostOverviewCardProps {
 export const CostOverviewCard = React.memo<CostOverviewCardProps>(({ costBreakdown }) => {
   return (
     <Card style={styles.card} mode="elevated">
-      <Card.Title title="💰 成本概览" />
+      <Card.Title title="成本概览" />
       <Card.Content>
         <View style={styles.costGrid}>
           {/* 原材料成本 */}

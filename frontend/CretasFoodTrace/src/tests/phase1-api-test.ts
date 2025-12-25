@@ -13,7 +13,7 @@
  * 或在React Native项目中导入并调用测试函数
  */
 
-import { activationApiClient } from '../services/api/activationApiClient';
+import { activationApiClient } from '../services/api/future/activationApiClient';
 import { userApiClient } from '../services/api/userApiClient';
 import { whitelistApiClient } from '../services/api/whitelistApiClient';
 

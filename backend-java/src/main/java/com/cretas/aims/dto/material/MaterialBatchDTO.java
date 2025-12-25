@@ -1,6 +1,7 @@
 package com.cretas.aims.dto.material;
 
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,6 +47,9 @@ public class MaterialBatchDTO {
     @Schema(description = "原材料类别")
     private String materialCategory;
 
+    @Schema(description = "存储类型(来自原材料类型): fresh/frozen/dry")
+    private String storageType;
+
     @Schema(description = "供应商ID")
     private String supplierId;
 
@@ -72,6 +76,12 @@ public class MaterialBatchDTO {
 
     @Schema(description = "当前数量")
     private BigDecimal currentQuantity;
+
+    @Schema(description = "已使用数量")
+    private BigDecimal usedQuantity;
+
+    @Schema(description = "预留数量")
+    private BigDecimal reservedQuantity;
 
     @Schema(description = "单位")
     private String unit;
@@ -101,7 +111,7 @@ public class MaterialBatchDTO {
     private String notes;
 
     @Schema(description = "创建人ID")
-    private Integer createdBy;
+    private Long createdBy;
 
     @Schema(description = "创建人姓名")
     private String createdByName;
@@ -132,5 +142,47 @@ public class MaterialBatchDTO {
         return status == MaterialBatchStatus.USED_UP ||
                status == MaterialBatchStatus.EXPIRED ||
                status == MaterialBatchStatus.SCRAPPED;
+    }
+
+    // ==================== 前端字段别名 ====================
+
+    /**
+     * inboundQuantity 别名（兼容前端）
+     * 前端使用 inboundQuantity，后端使用 receiptQuantity
+     */
+    @JsonProperty("inboundQuantity")
+    @Schema(description = "入库数量(前端别名)")
+    public BigDecimal getInboundQuantity() {
+        return receiptQuantity;
+    }
+
+    /**
+     * inboundDate 别名（兼容前端）
+     * 前端使用 inboundDate，后端使用 receiptDate
+     */
+    @JsonProperty("inboundDate")
+    @Schema(description = "入库日期(前端别名)")
+    public LocalDate getInboundDate() {
+        return receiptDate;
+    }
+
+    /**
+     * expiryDate 别名（兼容前端）
+     * 前端使用 expiryDate，后端使用 expireDate
+     */
+    @JsonProperty("expiryDate")
+    @Schema(description = "到期日期(前端别名)")
+    public LocalDate getExpiryDate() {
+        return expireDate;
+    }
+
+    /**
+     * remainingQuantity 别名（兼容前端）
+     * 前端使用 remainingQuantity，后端使用 currentQuantity
+     */
+    @JsonProperty("remainingQuantity")
+    @Schema(description = "剩余数量(前端别名)")
+    public BigDecimal getRemainingQuantity() {
+        return currentQuantity;
     }
 }

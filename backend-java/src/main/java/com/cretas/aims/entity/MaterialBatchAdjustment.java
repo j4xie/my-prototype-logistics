@@ -43,7 +43,7 @@ public class MaterialBatchAdjustment extends BaseEntity {
     @Column(name = "adjustment_time", nullable = false)
     private LocalDateTime adjustmentTime;
     @Column(name = "adjusted_by", nullable = false)
-    private Integer adjustedBy;
+    private Long adjustedBy;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
     // 关联关系

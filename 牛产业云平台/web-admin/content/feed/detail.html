@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>饲料详情 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../../assets/css/desktop.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gray);
+    }
+
+    /* 详情布局 */
+    .detail-layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+    }
+
+    .detail-main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .detail-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* 卡片 */
+    .detail-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header h3 {
+      font-size: 15px;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* 产品头部 */
+    .product-header {
+      display: flex;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .product-gallery {
+      width: 300px;
+      flex-shrink: 0;
+    }
+
+    .main-image {
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: linear-gradient(135deg, #fff8e1, #ffecb3);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+      color: #ff8f00;
+      margin-bottom: 12px;
+    }
+
+    .thumb-list {
+      display: flex;
+      gap: 8px;
+    }
+
+    .thumb-item {
+      width: 60px;
+      height: 45px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .thumb-item.active {
+      border-color: var(--primary-color);
+    }
+
+    .product-info {
+      flex: 1;
+    }
+
+    .product-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+    }
+
+    .product-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .meta-item i {
+      color: var(--primary-color);
+    }
+
+    .product-price {
+      background: linear-gradient(135deg, #fff8e1, #fffde7);
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .price-label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .price-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #e53935;
+    }
+
+    .price-value span {
+      font-size: 16px;
+    }
+
+    .price-unit {
+      font-size: 14px;
+      color: #999;
+      margin-left: 8px;
+    }
+
+    /* 标签 */
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tag {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .tag.type {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .tag.status {
+      background: #e6f7e6;
+      color: #52c41a;
+    }
+
+    .tag.cert {
+      background: #fce4ec;
+      color: #c2185b;
+    }
+
+    /* 信息表格 */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .info-item.full {
+      grid-column: 1 / -1;
+    }
+
+    .info-label {
+      font-size: 13px;
+      color: #999;
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: #333;
+    }
+
+    /* 成分表 */
+    .component-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .component-table th,
+    .component-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .component-table th {
+      background: #fafafa;
+      font-weight: 600;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .component-table td {
+      font-size: 14px;
+      color: #333;
+    }
+
+    /* 供应商卡片 */
+    .supplier-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+
+    .supplier-avatar {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #fff;
+    }
+
+    .supplier-info h4 {
+      font-size: 15px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .supplier-info p {
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* 操作日志 */
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .log-item {
+      display: flex;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .log-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .log-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e8f5e9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .log-icon i {
+      font-size: 16px;
+      color: #4caf50;
+    }
+
+    .log-content h5 {
+      font-size: 14px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .log-content p {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* 操作按钮 */
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      padding: 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .action-btn.primary {
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+    }
+
+    .action-btn.primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .action-btn.outline {
+      background: #fff;
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+    }
+
+    .action-btn.outline:hover {
+      background: var(--primary-color);
+      color: #fff;
+    }
+
+    .action-btn.danger {
+      background: #fff;
+      color: #ff4d4f;
+      border: 1px solid #ff4d4f;
+    }
+
+    .action-btn.danger:hover {
+      background: #ff4d4f;
+      color: #fff;
+    }
+
+    /* 质量认证 */
+    .cert-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .cert-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+    }
+
+    .cert-item i {
+      color: #4caf50;
+    }
+
+    .cert-item span {
+      font-size: 13px;
+      color: #333;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <!-- 侧边栏 -->
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../../dashboard/overview.html" class="nav-item">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../cattle/list.html" class="nav-sub-item">活牛信息</a>
+            <a href="../breeding/list.html" class="nav-sub-item">育种种牛</a>
+            <a href="../beef/list.html" class="nav-sub-item">牛肉产品</a>
+            <a href="list.html" class="nav-sub-item active">饲料产品</a>
+            <a href="../equipment/list.html" class="nav-sub-item">设备管理</a>
+            <a href="../farm/list.html" class="nav-sub-item">养殖场</a>
+            <a href="../slaughter/list.html" class="nav-sub-item">屠宰场</a>
+            <a href="../review-queue.html" class="nav-sub-item">审核队列</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+            <a href="../../settings/category-manage.html" class="nav-sub-item">分类管理</a>
+            <a href="../../settings/banner-manage.html" class="nav-sub-item">Banner管理</a>
+            <a href="../../settings/user-manage.html" class="nav-sub-item">用户管理</a>
+            <a href="../../settings/system-config.html" class="nav-sub-item">系统配置</a>
+            <a href="../../settings/permission-settings.html" class="nav-sub-item">权限设置</a>
+          </div>
+        </div>
+
+        <a href="../../../index.html" class="nav-item"
+          style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="desktop-main">
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <button class="btn btn-outline" onclick="history.back()">
+            <i class="mdi mdi-arrow-left"></i> 返回
+          </button>
+          <h1 class="desktop-header-title">饲料详情</h1>
+        </div>
+        <div class="desktop-header-right">
+          <button class="btn btn-outline" onclick="location.href='edit.html?id=1'">
+            <i class="mdi mdi-pencil"></i> 编辑
+          </button>
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="desktop-content">
+        <div class="detail-layout">
+          <!-- 左侧主内容 -->
+          <div class="detail-main">
+            <!-- 产品头部 -->
+            <div class="detail-card">
+              <div class="product-header">
+                <div class="product-gallery">
+                  <div class="main-image">
+                    <i class="mdi mdi-food-variant"></i>
+                  </div>
+                  <div class="thumb-list">
+                    <div class="thumb-item active"><i class="mdi mdi-food-variant"></i></div>
+                    <div class="thumb-item"><i class="mdi mdi-package-variant"></i></div>
+                    <div class="thumb-item"><i class="mdi mdi-certificate"></i></div>
+                    <div class="thumb-item"><i class="mdi mdi-text-box"></i></div>
+                  </div>
+                </div>
+                <div class="product-info">
+                  <h1 class="product-title">高蛋白肉牛精饲料</h1>
+                  <div class="product-meta">
+                    <span class="meta-item"><i class="mdi mdi-tag"></i> 品牌：正大康地</span>
+                    <span class="meta-item"><i class="mdi mdi-eye"></i> 浏览：12,456次</span>
+                    <span class="meta-item"><i class="mdi mdi-cart"></i> 销量：892袋</span>
+                  </div>
+                  <div class="tag-row">
+                    <span class="tag type">精饲料</span>
+                    <span class="tag status">已上架</span>
+                    <span class="tag cert">ISO9001</span>
+                    <span class="tag cert">饲料生产许可</span>
+                  </div>
+                  <div class="product-price">
+                    <div class="price-label">销售价格</div>
+                    <div>
+                      <span class="price-value"><span>¥</span>180</span>
+                      <span class="price-unit">/ 40kg/袋</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 产品规格 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-format-list-bulleted"></i> 产品规格</h3>
+              </div>
+              <div class="card-body">
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">产品编号</span>
+                    <span class="info-value">FEED-2024-001256</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">产品类型</span>
+                    <span class="info-value">精饲料 - 蛋白饲料</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">规格包装</span>
+                    <span class="info-value">40kg/编织袋</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">保质期</span>
+                    <span class="info-value">6个月</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">储存条件</span>
+                    <span class="info-value">阴凉干燥处，避免阳光直射</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">生产日期</span>
+                    <span class="info-value">2024-06-15</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">适用对象</span>
+                    <span class="info-value">肉牛育肥期</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">建议用量</span>
+                    <span class="info-value">体重的1.5%-2%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 营养成分 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-flask"></i> 营养成分表</h3>
+              </div>
+              <table class="component-table">
+                <thead>
+                  <tr>
+                    <th>成分名称</th>
+                    <th>含量</th>
+                    <th>单位</th>
+                    <th>标准范围</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>粗蛋白</td>
+                    <td>≥18.0</td>
+                    <td>%</td>
+                    <td>16-20%</td>
+                  </tr>
+                  <tr>
+                    <td>粗脂肪</td>
+                    <td>≥3.5</td>
+                    <td>%</td>
+                    <td>3-5%</td>
+                  </tr>
+                  <tr>
+                    <td>粗纤维</td>
+                    <td>≤8.0</td>
+                    <td>%</td>
+                    <td>5-10%</td>
+                  </tr>
+                  <tr>
+                    <td>粗灰分</td>
+                    <td>≤10.0</td>
+                    <td>%</td>
+                    <td>8-12%</td>
+                  </tr>
+                  <tr>
+                    <td>钙</td>
+                    <td>0.8-1.2</td>
+                    <td>%</td>
+                    <td>0.5-1.5%</td>
+                  </tr>
+                  <tr>
+                    <td>总磷</td>
+                    <td>0.5-0.8</td>
+                    <td>%</td>
+                    <td>0.4-1.0%</td>
+                  </tr>
+                  <tr>
+                    <td>食盐</td>
+                    <td>0.5-1.0</td>
+                    <td>%</td>
+                    <td>0.3-1.5%</td>
+                  </tr>
+                  <tr>
+                    <td>水分</td>
+                    <td>≤13.0</td>
+                    <td>%</td>
+                    <td>≤14%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 产品描述 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-text-box"></i> 产品描述</h3>
+              </div>
+              <div class="card-body">
+                <p style="line-height: 1.8; color: #666;">
+                  本产品是专为肉牛育肥期研发的高蛋白精饲料，采用优质豆粕、玉米、麸皮等原料科学配比而成。产品富含优质蛋白质和多种氨基酸，可有效促进肉牛增重，提高饲料转化率。
+                </p>
+                <br>
+                <p style="line-height: 1.8; color: #666;">
+                  <strong>产品特点：</strong><br>
+                  1. 高蛋白配方，促进肌肉生长<br>
+                  2. 添加益生菌，改善肠道健康<br>
+                  3. 适口性好，采食量大<br>
+                  4. 科学配比，营养全面均衡
+                </p>
+                <br>
+                <p style="line-height: 1.8; color: #666;">
+                  <strong>使用方法：</strong><br>
+                  与粗饲料按3:7比例混合饲喂，每日分2-3次投喂。建议配合充足饮水，保证牛只充分消化吸收。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧边栏 -->
+          <div class="detail-sidebar">
+            <!-- 供应商信息 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-domain"></i> 供应商信息</h3>
+              </div>
+              <div class="card-body">
+                <div class="supplier-card">
+                  <div class="supplier-avatar">
+                    <i class="mdi mdi-domain"></i>
+                  </div>
+                  <div class="supplier-info">
+                    <h4>正大集团</h4>
+                    <p>山东省青岛市</p>
+                  </div>
+                </div>
+                <div class="info-grid" style="margin-top: 16px;">
+                  <div class="info-item">
+                    <span class="info-label">联系人</span>
+                    <span class="info-value">王经理</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">联系电话</span>
+                    <span class="info-value">138****5678</span>
+                  </div>
+                  <div class="info-item full">
+                    <span class="info-label">企业地址</span>
+                    <span class="info-value">山东省青岛市城阳区工业园区正大路88号</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 质量认证 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-certificate"></i> 质量认证</h3>
+              </div>
+              <div class="card-body">
+                <div class="cert-list">
+                  <div class="cert-item">
+                    <i class="mdi mdi-check-circle"></i>
+                    <span>ISO9001质量管理</span>
+                  </div>
+                  <div class="cert-item">
+                    <i class="mdi mdi-check-circle"></i>
+                    <span>饲料生产许可证</span>
+                  </div>
+                  <div class="cert-item">
+                    <i class="mdi mdi-check-circle"></i>
+                    <span>无抗饲料认证</span>
+                  </div>
+                  <div class="cert-item">
+                    <i class="mdi mdi-check-circle"></i>
+                    <span>绿色饲料标识</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 库存信息 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-package-variant"></i> 库存信息</h3>
+              </div>
+              <div class="card-body">
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">当前库存</span>
+                    <span class="info-value" style="color: #4caf50; font-weight: 600;">5,000袋</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">已售数量</span>
+                    <span class="info-value">892袋</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">最低库存</span>
+                    <span class="info-value">500袋</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">库存状态</span>
+                    <span class="info-value" style="color: #4caf50;">充足</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 操作日志 -->
+            <div class="detail-card">
+              <div class="card-header">
+                <h3><i class="mdi mdi-history"></i> 操作日志</h3>
+              </div>
+              <div class="card-body">
+                <div class="log-list">
+                  <div class="log-item">
+                    <div class="log-icon"><i class="mdi mdi-check"></i></div>
+                    <div class="log-content">
+                      <h5>产品上架</h5>
+                      <p>管理员张三 · 2024-06-22 14:30</p>
+                    </div>
+                  </div>
+                  <div class="log-item">
+                    <div class="log-icon" style="background: #e3f2fd;">
+                      <i class="mdi mdi-pencil" style="color: #1976d2;"></i>
+                    </div>
+                    <div class="log-content">
+                      <h5>信息修改</h5>
+                      <p>更新了价格信息 · 2024-06-21 10:15</p>
+                    </div>
+                  </div>
+                  <div class="log-item">
+                    <div class="log-icon" style="background: #fff8e1;">
+                      <i class="mdi mdi-file-document" style="color: #ff8f00;"></i>
+                    </div>
+                    <div class="log-content">
+                      <h5>提交审核</h5>
+                      <p>供应商提交 · 2024-06-20 16:00</p>
+                    </div>
+                  </div>
+                  <div class="log-item">
+                    <div class="log-icon" style="background: #f3e5f5;">
+                      <i class="mdi mdi-plus" style="color: #7b1fa2;"></i>
+                    </div>
+                    <div class="log-content">
+                      <h5>创建产品</h5>
+                      <p>正大集团 · 2024-06-20 14:30</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="detail-card">
+              <div class="action-buttons">
+                <button class="action-btn outline" onclick="location.href='edit.html?id=1'">
+                  <i class="mdi mdi-pencil"></i> 编辑
+                </button>
+                <button class="action-btn danger" onclick="offlineProduct()">
+                  <i class="mdi mdi-arrow-down-bold"></i> 下架
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // 侧边栏展开/收起
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => title.parentElement.classList.toggle('expanded'));
+    });
+
+    // 缩略图切换
+    document.querySelectorAll('.thumb-item').forEach((thumb, index) => {
+      thumb.addEventListener('click', () => {
+        document.querySelectorAll('.thumb-item').forEach(t => t.classList.remove('active'));
+        thumb.classList.add('active');
+      });
+    });
+
+    // 下架产品
+    function offlineProduct() {
+      if (confirm('确定要下架该产品吗？')) {
+        alert('产品已下架');
+        location.href = 'list.html';
+      }
+    }
+
+    console.log('饲料详情页加载完成');
+  </script>
+</body>
+
+</html>

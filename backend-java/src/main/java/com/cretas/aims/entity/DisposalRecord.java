@@ -1,5 +1,6 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -44,8 +45,8 @@ public class DisposalRecord extends BaseEntity {
     /**
      * 质检记录ID（可选，如果是质检后直接报废）
      */
-    @Column(name = "quality_inspection_id")
-    private Long qualityInspectionId;
+    @Column(name = "quality_inspection_id", length = 191)
+    private String qualityInspectionId;
 
     /**
      * 返工记录ID（可选，如果是返工失败后报废）
@@ -62,8 +63,8 @@ public class DisposalRecord extends BaseEntity {
     /**
      * 原材料批次ID（针对原料报废）
      */
-    @Column(name = "material_batch_id")
-    private Integer materialBatchId;
+    @Column(name = "material_batch_id", length = 191)
+    private String materialBatchId;
 
     /**
      * 报废数量
@@ -203,6 +204,45 @@ public class DisposalRecord extends BaseEntity {
     @Transient
     public boolean isRecyclable() {
         return "RECYCLE".equals(disposalType);
+    }
+
+    // ===================================================================
+    // 前端字段别名
+    // ===================================================================
+
+    /**
+     * approverId 别名（兼容前端）
+     * 前端使用 approverId，后端使用 approvedBy
+     */
+    @JsonProperty("approverId")
+    public Integer getApproverId() {
+        return approvedBy;
+    }
+
+    /**
+     * approverName 别名（兼容前端）
+     * 前端使用 approverName，后端使用 approvedByName
+     */
+    @JsonProperty("approverName")
+    public String getApproverName() {
+        return approvedByName;
+    }
+
+    /**
+     * approvedAt 别名（兼容前端）
+     * 前端使用 approvedAt，后端使用 approvalDate
+     */
+    @JsonProperty("approvedAt")
+    public LocalDateTime getApprovedAt() {
+        return approvalDate;
+    }
+
+    /**
+     * isRecyclable 的 JSON 属性（确保序列化）
+     */
+    @JsonProperty("isRecyclable")
+    public Boolean getIsRecyclable() {
+        return isRecyclable();
     }
 
     @PrePersist

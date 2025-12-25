@@ -69,5 +69,5 @@ public interface MaterialConsumptionRepository extends JpaRepository<MaterialCon
     /**
      * 根据生产批次ID查找消耗记录
      */
-    List<MaterialConsumption> findByProductionBatchId(String productionBatchId);
+    List<MaterialConsumption> findByProductionBatchId(Long productionBatchId);
 }

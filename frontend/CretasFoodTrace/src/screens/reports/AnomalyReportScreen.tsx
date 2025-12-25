@@ -29,13 +29,15 @@ export default function AnomalyReportScreen() {
 
       // 尝试加载设备告警（作为异常的一种）
       try {
-        const alertsResponse = await equipmentApiClient.getAlerts(factoryId);
-        if (alertsResponse.success && alertsResponse.data) {
-          const alertData = Array.isArray(alertsResponse.data)
-            ? alertsResponse.data
-            : alertsResponse.data.content || [];
-          setAlerts(alertData.slice(0, 10));
-        }
+        // TODO: equipmentApiClient.getAlerts not implemented yet
+        // const alertsResponse = await equipmentApiClient.getAlerts(factoryId);
+        // if (alertsResponse.success && alertsResponse.data) {
+        //   const alertData = Array.isArray(alertsResponse.data)
+        //     ? alertsResponse.data
+        //     : alertsResponse.data.content || [];
+        //   setAlerts(alertData.slice(0, 10));
+        // }
+        setAlerts([]);
       } catch (error) {
         anomalyReportLogger.warn('告警数据加载失败', {
           factoryId,
@@ -71,11 +73,11 @@ export default function AnomalyReportScreen() {
       MEDIUM: { label: '中', color: '#FF9800', bgColor: '#FFF3E0' },
       LOW: { label: '低', color: '#4CAF50', bgColor: '#E8F5E9' },
     };
-    const config = map[severity] || map.MEDIUM;
+    const config = map[severity] ?? map.MEDIUM;
     return (
-      <Chip mode="flat" compact style={{ backgroundColor: config.bgColor }}
-        textStyle={{ color: config.color, fontSize: 12 }}>
-        {config.label}
+      <Chip mode="flat" compact style={{ backgroundColor: config?.bgColor ?? '#FFF3E0' }}
+        textStyle={{ color: config?.color ?? '#FF9800', fontSize: 12 }}>
+        {config?.label ?? '中'}
       </Chip>
     );
   };

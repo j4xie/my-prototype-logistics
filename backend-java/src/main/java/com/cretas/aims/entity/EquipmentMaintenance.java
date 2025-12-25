@@ -28,9 +28,9 @@ public class EquipmentMaintenance extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
-    private Integer id;
+    private Long id;
     @Column(name = "equipment_id", nullable = false)
-    private Integer equipmentId;
+    private Long equipmentId;  // 改为 Long 类型，与 FactoryEquipment.id 匹配
     @Column(name = "maintenance_type", nullable = false, length = 50)
     private String maintenanceType; // routine, repair, overhaul
     @Column(name = "maintenance_date", nullable = false)
@@ -49,6 +49,12 @@ public class EquipmentMaintenance extends BaseEntity {
     private LocalDate nextMaintenanceDate;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    // 乐观锁版本号
+    @Version
+    @Column(name = "version")
+    private Integer version;
+
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "equipment_id", referencedColumnName = "id", insertable = false, updatable = false)

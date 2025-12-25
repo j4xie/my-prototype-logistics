@@ -207,17 +207,17 @@ export function MainNavigator() {
         userRole === 'permission_admin' ||
         userRole === 'department_admin' ||
         userRole === 'platform_admin') && (
-        <Tab.Screen
-          name="ManagementTab"
-          component={ManagementStackNavigator}
-          options={{
-            title: '管理',
-            tabBarIcon: ({ color, size }) => (
-              <Icon source="cog" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
+          <Tab.Screen
+            name="ManagementTab"
+            component={ManagementStackNavigator}
+            options={{
+              title: '管理',
+              tabBarIcon: ({ color, size }) => (
+                <Icon source="cog" size={size} color={color} />
+              ),
+            }}
+          />
+        )}
 
       {/* 平台管理 - 仅平台管理员可见 */}
       {user?.userType === 'platform' && (
@@ -244,11 +244,6 @@ export function MainNavigator() {
           ),
         }}
       />
-
-      {/*
-        其他模块（农场、物流、溯源等）在 Phase 4+ 中实现
-        详见: docs/prd/PRD-Phase3-完善计划.md
-      */}
     </Tab.Navigator>
   );
 }

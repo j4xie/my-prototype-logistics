@@ -19,7 +19,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, ConversationMessage } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建AIConversationHistory专用logger
@@ -101,7 +101,7 @@ export default function AIConversationHistoryScreen() {
         sessionId,
         factoryId: user?.factoryUser?.factoryId,
       });
-      Alert.alert('加载失败', error.response?.data?.message || error.message || '请稍后重试');
+      Alert.alert('加载失败', getErrorMsg(error) || '请稍后重试');
       setMessages([]);
     } finally {
       setLoading(false);
@@ -150,7 +150,7 @@ export default function AIConversationHistoryScreen() {
         sessionId,
         factoryId: user?.factoryUser?.factoryId,
       });
-      Alert.alert('关闭失败', error.response?.data?.message || error.message || '请稍后重试');
+      Alert.alert('关闭失败', getErrorMsg(error) || '请稍后重试');
     }
   };
 

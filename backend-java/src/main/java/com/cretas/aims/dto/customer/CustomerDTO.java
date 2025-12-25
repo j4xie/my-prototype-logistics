@@ -1,5 +1,7 @@
 package com.cretas.aims.dto.customer;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -49,6 +51,18 @@ public class CustomerDTO {
     // 审计信息
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private Integer createdBy;
+    private Long createdBy;
     private String createdByName;
+
+    // ==================== 前端字段别名 ====================
+
+    /**
+     * customerType 别名（兼容前端）
+     * 前端使用 customerType，后端使用 type
+     */
+    @JsonProperty("customerType")
+    @Schema(description = "客户类型(前端别名)")
+    public String getCustomerType() {
+        return type;
+    }
 }

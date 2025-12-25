@@ -15,7 +15,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { getFactoryId } from '../../types/auth';
-import { handleError } from '../../utils/errorHandler';
+import { handleError , getErrorMsg} from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建CostReport专用logger
@@ -59,13 +59,11 @@ export default function CostReportScreen() {
       costReportLogger.debug('加载成本报表数据', { timeRange, factoryId });
 
       // 加载批次列表（包含成本信息）
-      const batchesResponse = await processingApiClient.getBatches(
-        {
-          page: 0,
-          size: 20,
-        },
-        factoryId
-      );
+      const batchesResponse = await processingApiClient.getBatches({
+        factoryId,
+        page: 0,
+        size: 20
+      });
 
       if (batchesResponse.success && batchesResponse.data) {
         const batches = batchesResponse.data.content || batchesResponse.data || [];
@@ -95,7 +93,7 @@ export default function CostReportScreen() {
         timeRange,
       });
       const errorMessage =
-        error.response?.data?.message || error.message || '加载成本数据失败，请稍后重试';
+        getErrorMsg(error) || '加载成本数据失败，请稍后重试';
       Alert.alert('加载失败', errorMessage);
       setBatchCosts([]);
       setCostStats(null);

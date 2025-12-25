@@ -2,6 +2,7 @@ package com.cretas.aims.dto.user;
 
 import com.cretas.aims.entity.enums.Department;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +27,7 @@ import java.time.LocalDateTime;
 public class UserDTO {
 
     @Schema(description = "用户ID")
-    private Integer id;
+    private Long id;
 
     @Schema(description = "工厂ID")
     private String factoryId;
@@ -78,4 +79,16 @@ public class UserDTO {
 
     @Schema(description = "更新时间")
     private LocalDateTime updatedAt;
+
+    // ==================== 前端字段别名 ====================
+
+    /**
+     * realName 别名（兼容前端）
+     * 前端使用 realName，后端使用 fullName
+     */
+    @JsonProperty("realName")
+    @Schema(description = "真实姓名(前端别名)")
+    public String getRealName() {
+        return fullName;
+    }
 }

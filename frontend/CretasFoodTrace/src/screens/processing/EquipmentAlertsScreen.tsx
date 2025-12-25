@@ -25,7 +25,7 @@ import { alertApiClient } from '../../services/api/alertApiClient';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { Alert } from 'react-native';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建EquipmentAlerts专用logger
@@ -55,9 +55,9 @@ interface EquipmentAlert {
   details?: string;
   triggeredAt: Date;
   acknowledgedAt?: Date;
-  acknowledgedBy?: string;
+  acknowledgedBy?: string | number;
   resolvedAt?: Date;
-  resolvedBy?: string;
+  resolvedBy?: string | number;
 }
 
 /**
@@ -113,15 +113,18 @@ export default function EquipmentAlertsScreen() {
         size: 100,
       });
 
+      // 安全访问 content，处理 API 可能返回 null/undefined 的情况
+      const alertsContent = response?.data?.content ?? [];
+
       equipmentAlertsLogger.info('设备告警加载成功', {
-        alertCount: response.data.content.length,
+        alertCount: alertsContent.length,
       });
 
       // Transform API response to local format
-      const transformedAlerts: EquipmentAlert[] = response.data.content.map((alert) => ({
+      const transformedAlerts: EquipmentAlert[] = alertsContent.map((alert) => ({
         id: String(alert.id),
         equipmentId: String(alert.equipmentId),
-        equipmentName: alert.equipmentName,
+        equipmentName: alert.equipmentName ?? '未知设备',
         alertType: alert.alertType,
         level: alert.level.toLowerCase() as AlertLevel,
         status: alert.status.toLowerCase() as AlertStatus,
@@ -131,7 +134,7 @@ export default function EquipmentAlertsScreen() {
         acknowledgedAt: alert.acknowledgedAt ? new Date(alert.acknowledgedAt) : undefined,
         acknowledgedBy: alert.acknowledgedBy,
         resolvedAt: alert.resolvedAt ? new Date(alert.resolvedAt) : undefined,
-        resolvedBy: alert.resolvedBy,
+        resolvedBy: alert.resolvedBy ?? undefined,
       }));
 
       // Filter by equipmentId if provided
@@ -151,7 +154,7 @@ export default function EquipmentAlertsScreen() {
         factoryId,
         statusFilter,
       });
-      Alert.alert('加载失败', error.response?.data?.message || '无法加载设备告警，请稍后重试');
+      Alert.alert('加载失败', getErrorMsg(error) || '无法加载设备告警，请稍后重试');
       setAlerts([]);
     } finally {
       setLoading(false);
@@ -165,7 +168,7 @@ export default function EquipmentAlertsScreen() {
   };
 
   const handleAlertPress = (alert: EquipmentAlert) => {
-    navigation.navigate('EquipmentDetail', { equipmentId: alert.equipmentId });
+    navigation.navigate('EquipmentDetail', { equipmentId: parseInt(alert.equipmentId, 10) });
   };
 
   const handleAcknowledge = async (alertId: string) => {
@@ -182,7 +185,7 @@ export default function EquipmentAlertsScreen() {
       }
     } catch (error) {
       equipmentAlertsLogger.error('确认告警失败', error, { alertId });
-      const errorMessage = error.response?.data?.message || '确认告警失败，请稍后重试';
+      const errorMessage = getErrorMsg(error) || '确认告警失败，请稍后重试';
       Alert.alert('操作失败', errorMessage);
     }
   };
@@ -216,7 +219,7 @@ export default function EquipmentAlertsScreen() {
               }
             } catch (error) {
               equipmentAlertsLogger.error('解决告警失败', error, { alertId });
-              const errorMessage = error.response?.data?.message || '解决告警失败，请稍后重试';
+              const errorMessage = getErrorMsg(error) || '解决告警失败，请稍后重试';
               Alert.alert('操作失败', errorMessage);
             }
           },

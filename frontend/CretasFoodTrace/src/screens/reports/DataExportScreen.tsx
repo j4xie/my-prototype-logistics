@@ -16,9 +16,9 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useAuthStore } from '../../store/authStore';
-import { API_CONFIG } from '../../constants/config';
+import { APP_CONFIG, API_BASE_URL } from '../../constants/config';
 import { getFactoryId } from '../../types/auth';
-import { handleError } from '../../utils/errorHandler';
+import { handleError , getErrorMsg} from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建DataExport专用logger
@@ -144,7 +144,7 @@ export default function DataExportScreen() {
 
       // 构建API URL - 调用后端的Excel或PDF导出接口
       const exportType = exportFormat === 'excel' ? 'excel' : exportFormat === 'pdf' ? 'pdf' : 'excel';
-      const apiUrl = `${API_CONFIG.BASE_URL}/api/mobile/${factoryId}/reports/export/${exportType}?reportType=${reportType}&startDate=${startDateStr}&endDate=${endDateStr}`;
+      const apiUrl = `${API_BASE_URL}/api/mobile/${factoryId}/reports/export/${exportType}?reportType=${reportType}&startDate=${startDateStr}&endDate=${endDateStr}`;
 
       dataExportLogger.debug('开始导出报表', {
         reportType,
@@ -169,12 +169,13 @@ export default function DataExportScreen() {
 
       // 获取文件信息
       const fileInfo = await FileSystem.getInfoAsync(downloadResult.uri);
+      const fileSize = fileInfo.exists && !fileInfo.isDirectory ? (fileInfo as any).size || 0 : 0;
 
       dataExportLogger.info('报表导出成功', {
         reportType,
         exportFormat,
         fileName,
-        fileSizeKB: ((fileInfo.size || 0) / 1024).toFixed(2),
+        fileSizeKB: (fileSize / 1024).toFixed(2),
         fileUri: downloadResult.uri,
       });
 
@@ -188,7 +189,7 @@ export default function DataExportScreen() {
         // 显示成功消息并提供分享选项
         Alert.alert(
           '导出成功',
-          `${reportTypeLabel} (${formatLabel}) 已生成\n\n日期范围：${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}\n\n文件大小：${((fileInfo.size || 0) / 1024).toFixed(2)} KB`,
+          `${reportTypeLabel} (${formatLabel}) 已生成\n\n日期范围：${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}\n\n文件大小：${(fileSize / 1024).toFixed(2)} KB`,
           [
             {
               text: '稍后查看',
@@ -220,19 +221,19 @@ export default function DataExportScreen() {
         reportType,
         exportFormat,
         dateRange: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
-        errorType: error.message?.includes('Network') ? 'NETWORK' : error.message?.includes('401') || error.message?.includes('403') ? 'AUTH' : 'UNKNOWN',
+        errorType: (error as any).message?.includes('Network') ? 'NETWORK' : (error as any).message?.includes('401') || (error as any).message?.includes('403') ? 'AUTH' : 'UNKNOWN',
       });
 
       let errorMessage = '生成报表时出现错误，请重试';
 
-      if (error.message?.includes('Network request failed')) {
+      if ((error as any).message?.includes('Network request failed')) {
         errorMessage = '网络连接失败，请检查网络设置';
-      } else if (error.message?.includes('401') || error.message?.includes('403')) {
+      } else if ((error as any).message?.includes('401') || (error as any).message?.includes('403')) {
         errorMessage = '权限不足，请重新登录';
-      } else if (error.message?.includes('404')) {
+      } else if ((error as any).message?.includes('404')) {
         errorMessage = '报表服务暂时不可用';
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if ((error as any).message) {
+        errorMessage = (error as any).message;
       }
 
       Alert.alert('导出失败', errorMessage);

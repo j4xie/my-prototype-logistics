@@ -122,4 +122,28 @@ public class PageResponse<T> {
     public void setLast(Boolean last) {
         this.last = last;
     }
+
+    // ==================== 前端字段别名 ====================
+
+    /**
+     * number 别名（兼容前端）
+     * 前端使用 number，后端使用 page
+     * Spring Data JPA 的 Page 对象使用 number 表示当前页（从0开始）
+     * 但我们的 page 是从1开始的，所以这里返回 page - 1 来兼容前端
+     */
+    @JsonProperty("number")
+    @Schema(description = "当前页码(前端别名，从0开始)")
+    public Integer getNumber() {
+        return page != null ? page - 1 : 0;
+    }
+
+    /**
+     * empty 别名（兼容前端）
+     * 表示内容是否为空
+     */
+    @JsonProperty("empty")
+    @Schema(description = "是否为空")
+    public Boolean getEmpty() {
+        return content == null || content.isEmpty();
+    }
 }

@@ -21,7 +21,7 @@ import java.util.Optional;
  * @since 2025-01-09
  */
 @Repository
-public interface UserRepository extends JpaRepository<User, Integer> {
+public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * 根据用户名查找用户（统一登录）
      */
@@ -68,11 +68,12 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     List<User> findByFactoryIdAndPosition(String factoryId, String position);
     /**
      * 模糊搜索用户
+     * 注意：username/phone使用右模糊（可使用索引），fullName使用双向模糊（无法使用索引）
      */
     @Query("SELECT u FROM User u WHERE u.factoryId = :factoryId AND " +
-           "(LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
            "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "u.phone LIKE CONCAT('%', :keyword, '%'))")
+           "u.phone LIKE CONCAT(:keyword, '%'))")
     Page<User> searchUsers(@Param("factoryId") String factoryId,
                           @Param("keyword") String keyword,
                           Pageable pageable);
@@ -81,7 +82,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
      */
     @Modifying
     @Query("UPDATE User u SET u.lastLogin = :lastLogin WHERE u.id = :userId")
-    void updateLastLogin(@Param("userId") Integer userId, @Param("lastLogin") LocalDateTime lastLogin);
+    void updateLastLogin(@Param("userId") Long userId, @Param("lastLogin") LocalDateTime lastLogin);
     /**
      * 统计工厂用户数量
      */
