@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.AiKnowledgeCategoryMapper">
+    
+    <resultMap id="aiKnowledgeCategoryMap" type="com.joolun.mall.entity.AiKnowledgeCategory">
+        <id column="id" property="id"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="category_code" property="categoryCode"/>
+        <result column="description" property="description"/>
+        <result column="icon" property="icon"/>
+        <result column="sort" property="sort"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="del_flag" property="delFlag"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List">
+        id, parent_id, category_name, category_code, description, icon, sort, status, create_time, update_time, del_flag
+    </sql>
+    
+    <!-- 查询所有分类（树形结构用） -->
+    <select id="selectAllCategories" resultMap="aiKnowledgeCategoryMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ai_knowledge_category
+        WHERE del_flag = 0
+        ORDER BY sort ASC, id ASC
+    </select>
+    
+    <!-- 根据父ID查询子分类 -->
+    <select id="selectByParentId" resultMap="aiKnowledgeCategoryMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ai_knowledge_category
+        WHERE del_flag = 0 AND parent_id = #{parentId}
+        ORDER BY sort ASC
+    </select>
+    
+    <!-- 查询顶级分类 -->
+    <select id="selectTopCategories" resultMap="aiKnowledgeCategoryMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ai_knowledge_category
+        WHERE del_flag = 0 AND (parent_id IS NULL OR parent_id = 0)
+        ORDER BY sort ASC
+    </select>
+    
+</mapper>

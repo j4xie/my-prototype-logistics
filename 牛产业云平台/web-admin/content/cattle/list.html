@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>活牛信息管理 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../../assets/css/desktop.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gray);
+    }
+
+    /* 筛选面板 */
+    .filter-panel {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-field label {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .filter-field select,
+    .filter-field input {
+      padding: 10px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .filter-field select:focus,
+    .filter-field input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    /* 表格 */
+    .table-wrap {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .data-table th {
+      background: #fafafa;
+      font-weight: 600;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .data-table td {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .data-table tbody tr:hover {
+      background: #fafafa;
+    }
+
+    /* 牛信息 */
+    .cattle-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cattle-img {
+      width: 60px;
+      height: 45px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .cattle-detail h4 {
+      font-size: 14px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .cattle-detail p {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* 价格 */
+    .price {
+      color: #e53935;
+      font-weight: 600;
+    }
+
+    /* 状态标签 */
+    .status-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-tag.online {
+      background: #e6f7e6;
+      color: #52c41a;
+    }
+
+    .status-tag.pending {
+      background: #e6f7ff;
+      color: #1890ff;
+    }
+
+    .status-tag.offline {
+      background: #f5f5f5;
+      color: #999;
+    }
+
+    .status-tag.violation {
+      background: #fff2f0;
+      color: #ff4d4f;
+    }
+
+    /* 操作按钮 */
+    .row-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .row-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid #e0e0e0;
+      background: #fff;
+      transition: all 0.2s;
+    }
+
+    .row-btn:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .row-btn.danger:hover {
+      border-color: #ff4d4f;
+      color: #ff4d4f;
+    }
+
+    /* 分页 */
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .pagination-info {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .pagination-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .page-btn {
+      padding: 8px 14px;
+      border: 1px solid #e0e0e0;
+      background: #fff;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .page-btn:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .page-btn.active {
+      background: var(--primary-color);
+      color: #fff;
+      border-color: var(--primary-color);
+    }
+
+    /* 批量操作 */
+    .batch-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 20px;
+      background: #e8f5e9;
+      border-bottom: 1px solid #c8e6c9;
+    }
+
+    .batch-actions span {
+      font-size: 14px;
+      color: #1a1a1a;
+    }
+
+    .batch-btn {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid var(--primary-color);
+      background: #fff;
+      color: var(--primary-color);
+      transition: all 0.2s;
+    }
+
+    .batch-btn:hover {
+      background: var(--primary-color);
+      color: #fff;
+    }
+
+    .batch-btn.danger {
+      border-color: #ff4d4f;
+      color: #ff4d4f;
+    }
+
+    .batch-btn.danger:hover {
+      background: #ff4d4f;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <!-- 侧边栏 -->
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../../dashboard/overview.html" class="nav-item">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="list.html" class="nav-sub-item active">活牛信息</a>
+            <a href="../breeding/list.html" class="nav-sub-item">育种种牛</a>
+            <a href="../beef/list.html" class="nav-sub-item">牛肉产品</a>
+            <a href="../feed/list.html" class="nav-sub-item">饲料产品</a>
+            <a href="../equipment/list.html" class="nav-sub-item">设备管理</a>
+            <a href="../farm/list.html" class="nav-sub-item">养殖场</a>
+            <a href="../slaughter/list.html" class="nav-sub-item">屠宰场</a>
+            <a href="../review-queue.html" class="nav-sub-item">审核队列</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+            <a href="../../settings/category-manage.html" class="nav-sub-item">分类管理</a>
+            <a href="../../settings/banner-manage.html" class="nav-sub-item">Banner管理</a>
+            <a href="../../settings/user-manage.html" class="nav-sub-item">用户管理</a>
+            <a href="../../settings/system-config.html" class="nav-sub-item">系统配置</a>
+            <a href="../../settings/permission-settings.html" class="nav-sub-item">权限设置</a>
+          </div>
+        </div>
+
+        <a href="../../../index.html" class="nav-item"
+          style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="desktop-main">
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <h1 class="desktop-header-title">活牛信息管理</h1>
+        </div>
+        <div class="desktop-header-right">
+          <button class="btn btn-primary" onclick="location.href='create.html'">
+            <i class="mdi mdi-plus"></i> 新增活牛
+          </button>
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="desktop-content">
+        <!-- 统计卡片 -->
+        <div class="stats-grid" style="margin-bottom: 20px;">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #e8f5e9;"><i class="mdi mdi-cow"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">8,432</div>
+              <div class="stat-label">总发布数</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #e3f2fd;"><i class="mdi mdi-check-circle"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">7,856</div>
+              <div class="stat-label">已上架</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fff3e0;"><i class="mdi mdi-timer-sand"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">234</div>
+              <div class="stat-label">待审核</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fce4ec;"><i class="mdi mdi-alert"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">18</div>
+              <div class="stat-label">违规下架</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 筛选面板 -->
+        <div class="filter-panel">
+          <div class="filter-field">
+            <label>关键词</label>
+            <input type="text" placeholder="搜索标题/企业" id="searchKeyword">
+          </div>
+          <div class="filter-field">
+            <label>品种</label>
+            <select id="breedFilter">
+              <option value="">全部品种</option>
+              <option value="西门塔尔">西门塔尔</option>
+              <option value="夏洛莱">夏洛莱</option>
+              <option value="利木赞">利木赞</option>
+              <option value="安格斯">安格斯</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>状态</label>
+            <select id="statusFilter">
+              <option value="">全部状态</option>
+              <option value="online">已上架</option>
+              <option value="pending">待审核</option>
+              <option value="offline">已下架</option>
+              <option value="violation">违规</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>发布时间</label>
+            <select id="timeFilter">
+              <option value="">全部时间</option>
+              <option value="today">今天</option>
+              <option value="week">近7天</option>
+              <option value="month">近30天</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>价格区间</label>
+            <select id="priceFilter">
+              <option value="">全部价格</option>
+              <option value="0-10000">1万以下</option>
+              <option value="10000-20000">1-2万</option>
+              <option value="20000-50000">2-5万</option>
+              <option value="50000+">5万以上</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="searchCattle()"><i class="mdi mdi-magnify"></i> 搜索</button>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-wrap">
+          <!-- 批量操作栏 -->
+          <div class="batch-actions" id="batchActions" style="display: none;">
+            <span>已选择 <strong id="selectedCount">0</strong> 条</span>
+            <button class="batch-btn" onclick="batchApprove()"><i class="mdi mdi-check"></i> 批量通过</button>
+            <button class="batch-btn danger" onclick="batchOffline()"><i class="mdi mdi-arrow-down-bold"></i>
+              批量下架</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                <th>信息</th>
+                <th>品种</th>
+                <th>数量</th>
+                <th>价格</th>
+                <th>发布企业</th>
+                <th>状态</th>
+                <th>发布时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="cattleTableBody">
+              <!-- JS动态渲染 -->
+            </tbody>
+          </table>
+
+          <!-- 分页 -->
+          <div class="pagination-bar">
+            <div class="pagination-info">
+              共 <strong>8,432</strong> 条记录，第 <strong>1</strong> / <strong>422</strong> 页
+            </div>
+            <div class="pagination-btns">
+              <button class="page-btn">上一页</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">...</button>
+              <button class="page-btn">422</button>
+              <button class="page-btn">下一页</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script>
+    // 模拟数据
+    const cattleData = [
+      { id: 1, title: '优质西门塔尔牛 500-600斤', breed: '西门塔尔', count: 50, price: 15000, enterprise: '内蒙古草原牧业', status: 'online', time: '2024-06-22 14:30' },
+      { id: 2, title: '精品夏洛莱育肥牛 800斤', breed: '夏洛莱', count: 30, price: 22000, enterprise: '吉林长白山养殖场', status: 'online', time: '2024-06-22 10:15' },
+      { id: 3, title: '利木赞母牛 带犊出售', breed: '利木赞', count: 20, price: 28000, enterprise: '河北承德农牧', status: 'pending', time: '2024-06-21 16:45' },
+      { id: 4, title: '安格斯肉牛 900斤起', breed: '安格斯', count: 15, price: 25000, enterprise: '黑龙江牧原肉牛', status: 'online', time: '2024-06-21 09:20' },
+      { id: 5, title: '西门塔尔母牛 配种成功', breed: '西门塔尔', count: 40, price: 18000, enterprise: '新疆天山牧场', status: 'online', time: '2024-06-20 15:30' },
+      { id: 6, title: '夏洛莱公牛 种牛出售', breed: '夏洛莱', count: 5, price: 45000, enterprise: '山东金牛畜牧', status: 'violation', time: '2024-06-20 11:00' },
+      { id: 7, title: '黄牛架子牛 300斤左右', breed: '鲁西黄牛', count: 100, price: 8000, enterprise: '河南豫牛畜牧', status: 'offline', time: '2024-06-19 14:20' },
+      { id: 8, title: '利木赞育肥牛 700斤', breed: '利木赞', count: 25, price: 19500, enterprise: '内蒙古草原牧业', status: 'online', time: '2024-06-19 10:00' }
+    ];
+
+    // 状态映射
+    const statusMap = {
+      online: { text: '已上架', class: 'online' },
+      pending: { text: '待审核', class: 'pending' },
+      offline: { text: '已下架', class: 'offline' },
+      violation: { text: '违规', class: 'violation' }
+    };
+
+    // 渲染表格
+    function renderTable(data) {
+      const tbody = document.getElementById('cattleTableBody');
+      tbody.innerHTML = data.map(item => `
+        <tr>
+          <td><input type="checkbox" class="row-checkbox" data-id="${item.id}" onchange="updateSelection()"></td>
+          <td>
+            <div class="cattle-info">
+              <div class="cattle-img"><i class="mdi mdi-cow"></i></div>
+              <div class="cattle-detail">
+                <h4>${item.title}</h4>
+                <p>ID: ${item.id}</p>
+              </div>
+            </div>
+          </td>
+          <td>${item.breed}</td>
+          <td>${item.count} 头</td>
+          <td class="price">¥${item.price.toLocaleString()}</td>
+          <td>${item.enterprise}</td>
+          <td><span class="status-tag ${statusMap[item.status].class}">${statusMap[item.status].text}</span></td>
+          <td>${item.time}</td>
+          <td>
+            <div class="row-actions">
+              <button class="row-btn" onclick="viewDetail(${item.id})">查看</button>
+              ${item.status === 'pending' ? `<button class="row-btn" onclick="approveItem(${item.id})">通过</button>` : ''}
+              ${item.status === 'online' ? `<button class="row-btn danger" onclick="offlineItem(${item.id})">下架</button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // 全选
+    function toggleSelectAll() {
+      const selectAll = document.getElementById('selectAll');
+      document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = selectAll.checked;
+      });
+      updateSelection();
+    }
+
+    // 更新选择状态
+    function updateSelection() {
+      const checked = document.querySelectorAll('.row-checkbox:checked');
+      const batchActions = document.getElementById('batchActions');
+      const countSpan = document.getElementById('selectedCount');
+
+      if (checked.length > 0) {
+        batchActions.style.display = 'flex';
+        countSpan.textContent = checked.length;
+      } else {
+        batchActions.style.display = 'none';
+      }
+    }
+
+    // 搜索
+    function searchCattle() {
+      const keyword = document.getElementById('searchKeyword').value.toLowerCase();
+      const breed = document.getElementById('breedFilter').value;
+      const status = document.getElementById('statusFilter').value;
+
+      let filtered = cattleData;
+
+      if (keyword) {
+        filtered = filtered.filter(c => c.title.toLowerCase().includes(keyword) || c.enterprise.toLowerCase().includes(keyword));
+      }
+      if (breed) {
+        filtered = filtered.filter(c => c.breed === breed);
+      }
+      if (status) {
+        filtered = filtered.filter(c => c.status === status);
+      }
+
+      renderTable(filtered);
+    }
+
+    // 操作函数
+    function viewDetail(id) { location.href = `detail.html?id=${id}`; }
+    function approveItem(id) { if (confirm('确定通过审核吗？')) alert('已通过审核: ' + id); }
+    function offlineItem(id) { if (confirm('确定下架该信息吗？')) alert('已下架: ' + id); }
+    function batchApprove() { alert('批量通过'); }
+    function batchOffline() { if (confirm('确定批量下架吗？')) alert('批量下架完成'); }
+
+    // 侧边栏
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => title.parentElement.classList.toggle('expanded'));
+    });
+
+    // 初始化
+    renderTable(cattleData);
+    console.log('活牛信息管理加载完成');
+  </script>
+</body>
+
+</html>

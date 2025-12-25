@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>发布饲料 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* 顶部导航 */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: linear-gradient(135deg, #FF8F00 0%, #F57C00 100%);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .back-btn {
+      color: white;
+      font-size: 20px;
+      text-decoration: none;
+      padding: 8px;
+    }
+
+    .header-title {
+      color: white;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .header-right {
+      width: 36px;
+    }
+
+    /* 表单容器 */
+    .form-container {
+      padding: 68px 16px 16px;
+    }
+
+    /* 表单卡片 */
+    .form-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #212121;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 图片上传 */
+    .image-upload {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .upload-item {
+      width: calc(25% - 8px);
+      aspect-ratio: 1;
+      background: #f5f5f5;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 1px dashed #ddd;
+      position: relative;
+    }
+
+    .upload-item.has-image {
+      border: none;
+    }
+
+    .upload-item .icon {
+      font-size: 24px;
+      color: #999;
+    }
+
+    .upload-item .text {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .upload-item .preview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .upload-item .delete {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      background: #F44336;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    /* 表单项 */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .form-label .required {
+      color: #F44336;
+      margin-left: 4px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #E0E0E0;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: #FF8F00;
+    }
+
+    .form-input::placeholder {
+      color: #bbb;
+    }
+
+    textarea.form-input {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    /* 选择器 */
+    .form-select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #E0E0E0;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    /* 标签选择 */
+    .tag-select {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tag-option {
+      padding: 8px 16px;
+      background: #f5f5f5;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tag-option.active {
+      background: #FFF3E0;
+      color: #FF8F00;
+    }
+
+    /* 价格输入 */
+    .price-input-wrap {
+      display: flex;
+      align-items: center;
+      border: 1px solid #E0E0E0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .price-prefix {
+      padding: 12px;
+      background: #f5f5f5;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .price-input-wrap input {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .price-suffix {
+      padding: 12px;
+      color: #999;
+      font-size: 14px;
+    }
+
+    /* 开关 */
+    .switch-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .switch-row:last-child {
+      border-bottom: none;
+    }
+
+    .switch-label {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .switch-label p {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .switch {
+      width: 44px;
+      height: 24px;
+      background: #E0E0E0;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .switch.active {
+      background: #FF8F00;
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: all 0.3s;
+    }
+
+    .switch.active::after {
+      left: 22px;
+    }
+
+    /* 提示信息 */
+    .tips-box {
+      background: #FFF8E1;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      color: #FF8F00;
+      line-height: 1.6;
+    }
+
+    .tips-box strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* 底部按钮 */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      padding: 12px 16px;
+      background: white;
+      border-top: 1px solid #E0E0E0;
+      display: flex;
+      gap: 12px;
+      box-sizing: border-box;
+    }
+
+    .bottom-btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 22px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .bottom-btn.secondary {
+      background: #f5f5f5;
+      color: #666;
+    }
+
+    .bottom-btn.primary {
+      background: linear-gradient(135deg, #FF8F00 0%, #F57C00 100%);
+      color: white;
+    }
+
+    /* 规格添加 */
+    .spec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .spec-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .spec-row input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #E0E0E0;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .spec-row .delete-btn {
+      width: 32px;
+      height: 32px;
+      background: #ffebee;
+      border: none;
+      border-radius: 6px;
+      color: #F44336;
+      cursor: pointer;
+    }
+
+    .add-spec-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px;
+      background: #FFF3E0;
+      border: 1px dashed #FF8F00;
+      border-radius: 8px;
+      color: #FF8F00;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    /* ==================== MDI 图标标准化 ==================== */
+    .mdi {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .back-btn {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .back-btn .mdi {
+      font-size: inherit;
+    }
+
+    .upload-item .delete {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .upload-item {
+      display: flex !important;
+    }
+
+    .add-spec-btn {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spec-row .delete-btn {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 顶部导航 -->
+  <header class="header">
+    <a href="list.html" class="back-btn"><i class="mdi mdi-arrow-left"></i></a>
+    <span class="header-title">发布饲料</span>
+    <div class="header-right"></div>
+  </header>
+
+  <!-- 表单容器 -->
+  <div class="form-container">
+    <!-- 图片上传 -->
+    <div class="form-card">
+      <div class="card-title"><i class="mdi mdi-camera"></i> 产品图片</div>
+      <div class="image-upload">
+        <div class="upload-item has-image">
+          <div
+            style="width:100%;height:100%;background:#FFF3E0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:48px;">
+            <i class="mdi mdi-barley"></i>
+          </div>
+          <div class="delete"><i class="mdi mdi-close"></i></div>
+        </div>
+        <div class="upload-item" onclick="uploadImage()">
+          <span class="icon"><i class="mdi mdi-camera"></i></span>
+          <span class="text">添加图片</span>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#999;margin-top:10px;">建议上传3-6张产品实拍图，第一张为封面</p>
+    </div>
+
+    <!-- 基本信息 -->
+    <div class="form-card">
+      <div class="card-title"><i class="mdi mdi-pencil-box"></i> 基本信息</div>
+
+      <div class="form-group">
+        <label class="form-label">饲料类型<span class="required">*</span></label>
+        <div class="tag-select">
+          <span class="tag-option active" onclick="selectTag(this)">精饲料</span>
+          <span class="tag-option" onclick="selectTag(this)">粗饲料</span>
+          <span class="tag-option" onclick="selectTag(this)">预混料</span>
+          <span class="tag-option" onclick="selectTag(this)">添加剂</span>
+          <span class="tag-option" onclick="selectTag(this)">全价料</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">产品名称<span class="required">*</span></label>
+        <input type="text" class="form-input" placeholder="如：肉牛育肥专用浓缩料 蛋白含量42%">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">品牌<span class="required">*</span></label>
+        <select class="form-select">
+          <option value="">请选择品牌</option>
+          <option value="zhengda">正大康地</option>
+          <option value="xinxiwang">新希望</option>
+          <option value="haier">海利尔</option>
+          <option value="anqi">安琪酵母</option>
+          <option value="other">其他品牌</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">适用动物</label>
+        <div class="tag-select">
+          <span class="tag-option active" onclick="selectTag(this)">肉牛</span>
+          <span class="tag-option" onclick="selectTag(this)">奶牛</span>
+          <span class="tag-option" onclick="selectTag(this)">牛羊通用</span>
+          <span class="tag-option" onclick="selectTag(this)">犊牛</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">适用阶段</label>
+        <div class="tag-select">
+          <span class="tag-option" onclick="selectTag(this)">哺乳期</span>
+          <span class="tag-option" onclick="selectTag(this)">断奶期</span>
+          <span class="tag-option active" onclick="selectTag(this)">育肥期</span>
+          <span class="tag-option" onclick="selectTag(this)">繁殖期</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 规格参数 -->
+    <div class="form-card">
+      <div class="card-title"><i class="mdi mdi-clipboard-list"></i> 规格参数</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">粗蛋白含量</label>
+          <input type="text" class="form-input" placeholder="如：42%">
+        </div>
+        <div class="form-group">
+          <label class="form-label">水分</label>
+          <input type="text" class="form-input" placeholder="如：≤13%">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">包装规格</label>
+          <input type="text" class="form-input" placeholder="如：40kg/袋">
+        </div>
+        <div class="form-group">
+          <label class="form-label">保质期</label>
+          <input type="text" class="form-input" placeholder="如：6个月">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">自定义参数</label>
+        <div class="spec-list" id="specList">
+          <div class="spec-row">
+            <input type="text" placeholder="参数名">
+            <input type="text" placeholder="参数值">
+            <button class="delete-btn" onclick="deleteSpec(this)"><i class="mdi mdi-delete"></i></button>
+          </div>
+        </div>
+        <div class="add-spec-btn" onclick="addSpec()">
+          <span><i class="mdi mdi-plus"></i></span>
+          <span>添加参数</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 价格库存 -->
+    <div class="form-card">
+      <div class="card-title"><i class="mdi mdi-cash"></i> 价格库存</div>
+
+      <div class="form-group">
+        <label class="form-label">销售价格<span class="required">*</span></label>
+        <div class="price-input-wrap">
+          <span class="price-prefix">¥</span>
+          <input type="number" placeholder="请输入价格">
+          <span class="price-suffix">/吨</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">库存数量<span class="required">*</span></label>
+          <input type="number" class="form-input" placeholder="请输入库存">
+        </div>
+        <div class="form-group">
+          <label class="form-label">最小起订量</label>
+          <input type="number" class="form-input" placeholder="如：1吨">
+        </div>
+      </div>
+    </div>
+
+    <!-- 产品描述 -->
+    <div class="form-card">
+      <div class="card-title"><i class="mdi mdi-file-document-box"></i> 产品描述</div>
+      <div class="form-group">
+        <textarea class="form-input" placeholder="详细描述产品特点、使用方法、注意事项等..."></textarea>
+      </div>
+    </div>
+
+    <!-- 发货信息 -->
+    <div class="form-card">
+      <div class="card-title"><i class="mdi mdi-truck"></i> 发货信息</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">发货地<span class="required">*</span></label>
+          <select class="form-select">
+            <option value="">请选择省份</option>
+            <option value="neimeng">内蒙古</option>
+            <option value="hebei">河北</option>
+            <option value="shandong">山东</option>
+            <option value="henan">河南</option>
+            <option value="sichuan">四川</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">城市</label>
+          <select class="form-select">
+            <option value="">请选择城市</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">运费说明</label>
+        <input type="text" class="form-input" placeholder="如：省内包邮，省外运费另计">
+      </div>
+    </div>
+
+    <!-- 其他设置 -->
+    <div class="form-card">
+      <div class="card-title"><i class="mdi mdi-cog"></i> 其他设置</div>
+
+      <div class="switch-row">
+        <div class="switch-label">
+          <span>接受议价</span>
+          <p>允许买家就价格进行协商</p>
+        </div>
+        <div class="switch active" onclick="toggleSwitch(this)"></div>
+      </div>
+
+      <div class="switch-row">
+        <div class="switch-label">
+          <span>支持样品</span>
+          <p>可提供少量样品供买家测试</p>
+        </div>
+        <div class="switch" onclick="toggleSwitch(this)"></div>
+      </div>
+
+      <div class="switch-row">
+        <div class="switch-label">
+          <span>开具发票</span>
+          <p>可提供增值税发票</p>
+        </div>
+        <div class="switch active" onclick="toggleSwitch(this)"></div>
+      </div>
+    </div>
+
+    <!-- 提示 -->
+    <div class="tips-box">
+      <strong><i class="mdi mdi-lightbulb-outline"></i> 发布提示</strong>
+      1. 请确保产品信息真实准确，虚假信息将被下架<br>
+      2. 图片请使用产品实拍图，禁止使用网络图片<br>
+      3. 饲料产品需提供生产许可证等相关资质
+    </div>
+  </div>
+
+  <!-- 底部按钮 -->
+  <div class="bottom-bar">
+    <button class="bottom-btn secondary" onclick="saveDraft()">存草稿</button>
+    <button class="bottom-btn primary" onclick="submitPublish()">立即发布</button>
+  </div>
+
+  <script>
+    function uploadImage() {
+      alert('选择图片上传');
+    }
+
+    function selectTag(el) {
+      const parent = el.parentElement;
+      parent.querySelectorAll('.tag-option').forEach(tag => tag.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function toggleSwitch(el) {
+      el.classList.toggle('active');
+    }
+
+    function addSpec() {
+      const list = document.getElementById('specList');
+      const row = document.createElement('div');
+      row.className = 'spec-row';
+      row.innerHTML = `
+        <input type="text" placeholder="参数名">
+        <input type="text" placeholder="参数值">
+        <button class="delete-btn" onclick="deleteSpec(this)"><i class="mdi mdi-delete"></i></button>
+      `;
+      list.appendChild(row);
+    }
+
+    function deleteSpec(btn) {
+      const list = document.getElementById('specList');
+      if (list.children.length > 1) {
+        btn.parentElement.remove();
+      }
+    }
+
+    function saveDraft() {
+      alert('草稿已保存');
+    }
+
+    function submitPublish() {
+      if (confirm('确认发布该饲料信息？')) {
+        alert('发布成功！正在跳转...');
+        setTimeout(() => {
+          window.location.href = 'list.html';
+        }, 1000);
+      }
+    }
+
+    console.log('发布饲料页面加载完成');
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.SearchKeywordRecordMapper">
+    <resultMap id="recordMap" type="com.joolun.mall.entity.SearchKeywordRecord">
+        <id property="id" column="id"/>
+        <result property="keyword" column="keyword"/>
+        <result property="normalizedKeyword" column="normalized_keyword"/>
+        <result property="userId" column="user_id"/>
+        <result property="merchantId" column="merchant_id"/>
+        <result property="phone" column="phone"/>
+        <result property="openid" column="openid"/>
+        <result property="resultCount" column="result_count"/>
+        <result property="searchSource" column="search_source"/>
+        <result property="status" column="status"/>
+        <result property="matchedProductIds" column="matched_product_ids"/>
+        <result property="matchedTime" column="matched_time"/>
+        <result property="matchedBy" column="matched_by"/>
+        <result property="notificationId" column="notification_id"/>
+        <result property="notifiedTime" column="notified_time"/>
+        <result property="extraData" column="extra_data"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="recordSql">
+        r.`id`,
+        r.`keyword`,
+        r.`normalized_keyword`,
+        r.`user_id`,
+        r.`merchant_id`,
+        r.`phone`,
+        r.`openid`,
+        r.`result_count`,
+        r.`search_source`,
+        r.`status`,
+        r.`matched_product_ids`,
+        r.`matched_time`,
+        r.`matched_by`,
+        r.`notification_id`,
+        r.`notified_time`,
+        r.`extra_data`,
+        r.`create_time`,
+        r.`update_time`
+    </sql>
+
+    <select id="selectPage1" resultMap="recordMap">
+        SELECT
+        <include refid="recordSql"/>
+        FROM search_keyword_record r
+        <where>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND r.`keyword` LIKE CONCAT('%',#{query.keyword},'%')
+            </if>
+            <if test="query.status != null">
+                AND r.`status` = #{query.status}
+            </if>
+            <if test="query.merchantId != null">
+                AND r.`merchant_id` = #{query.merchantId}
+            </if>
+            <if test="query.resultCount != null">
+                AND r.`result_count` = #{query.resultCount}
+            </if>
+            <if test="query.searchSource != null and query.searchSource != ''">
+                AND r.`search_source` = #{query.searchSource}
+            </if>
+        </where>
+        ORDER BY r.`create_time` DESC
+    </select>
+
+    <select id="selectByKeyword" resultMap="recordMap">
+        SELECT
+        <include refid="recordSql"/>
+        FROM search_keyword_record r
+        WHERE r.`normalized_keyword` = #{keyword}
+        ORDER BY r.`create_time` DESC
+    </select>
+
+    <select id="selectNoResultRecords" resultMap="recordMap">
+        SELECT
+        <include refid="recordSql"/>
+        FROM search_keyword_record r
+        WHERE r.`result_count` = 0
+          AND r.`create_time` BETWEEN #{startTime} AND #{endTime}
+        ORDER BY r.`create_time` DESC
+    </select>
+
+    <select id="countByKeyword" resultType="int">
+        SELECT COUNT(*)
+        FROM search_keyword_record
+        WHERE normalized_keyword = #{keyword}
+    </select>
+
+    <update id="batchUpdateStatus">
+        UPDATE search_keyword_record
+        SET status = #{status}, update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

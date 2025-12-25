@@ -1,0 +1,286 @@
+/* 工厂分析报告页面样式 */
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 140rpx;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}
+
+.loading-spinner {
+  width: 80rpx;
+  height: 80rpx;
+  border: 6rpx solid #f3f3f3;
+  border-top: 6rpx solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 30rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 报告头部 */
+.report-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  padding: 60rpx 30rpx;
+  text-align: center;
+}
+
+.report-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 12rpx;
+}
+
+.report-date {
+  font-size: 26rpx;
+  opacity: 0.9;
+}
+
+/* 综合评分卡片 */
+.score-card {
+  background: #fff;
+  padding: 50rpx 30rpx;
+  text-align: center;
+  margin-bottom: 20rpx;
+}
+
+.score-circle {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 30rpx;
+  box-shadow: 0 10rpx 40rpx rgba(102, 126, 234, 0.3);
+}
+
+.score-number {
+  font-size: 64rpx;
+  font-weight: 700;
+  color: #fff;
+}
+
+.score-label {
+  font-size: 22rpx;
+  color: #fff;
+  opacity: 0.9;
+}
+
+.score-desc {
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 分析区块 */
+.analysis-section {
+  background: #fff;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.section-icon {
+  font-size: 36rpx;
+}
+
+/* 指标网格 */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.metric-card {
+  background: #f8f9fa;
+  padding: 30rpx 20rpx;
+  border-radius: 16rpx;
+  text-align: center;
+}
+
+.metric-value {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 8rpx;
+}
+
+.metric-label {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 图表区域 */
+.chart-section {
+  margin-top: 20rpx;
+}
+
+.chart-title {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 20rpx;
+}
+
+.chart-container {
+  height: 300rpx;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 30rpx 20rpx 50rpx;
+}
+
+.chart-bar {
+  flex: 1;
+  max-width: 60rpx;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8rpx 8rpx 0 0;
+  position: relative;
+  margin: 0 8rpx;
+  min-height: 20rpx;
+}
+
+.chart-label {
+  position: absolute;
+  bottom: -40rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20rpx;
+  color: #999;
+  white-space: nowrap;
+}
+
+/* 标签列表 */
+.badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.strength-badge {
+  padding: 12rpx 24rpx;
+  background: #52c41a;
+  color: #fff;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+}
+
+.weakness-badge {
+  padding: 12rpx 24rpx;
+  background: #faad14;
+  color: #fff;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+}
+
+/* 洞察列表 */
+.insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.insight-item {
+  display: flex;
+  gap: 20rpx;
+  padding: 24rpx;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+}
+
+.insight-icon {
+  font-size: 40rpx;
+  flex-shrink: 0;
+}
+
+.insight-content {
+  flex: 1;
+}
+
+.insight-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.insight-desc {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* AI声明 */
+.ai-disclaimer {
+  padding: 30rpx;
+  text-align: center;
+}
+
+.ai-disclaimer text {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* 底部操作栏 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 20rpx 40rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  width: 100%;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-radius: 48rpx;
+  font-size: 30rpx;
+  border: none;
+}
+
+.share-btn::after {
+  border: none;
+}

@@ -1,0 +1,102 @@
+<!--
+  店铺设置页面
+-->
+<view class="container">
+  <!-- 店铺信息卡片 -->
+  <view class="shop-card">
+    <view class="shop-header">
+      <view class="shop-logo" bindtap="changeLogo">
+        <image src="{{shopInfo.logo || '/public/img/no_pic.png'}}" mode="aspectFill"></image>
+        <view class="logo-edit">
+          <text class="cuIcon-camera"></text>
+        </view>
+      </view>
+      <view class="shop-info">
+        <view class="shop-name-row">
+          <text class="shop-name">{{shopInfo.name}}</text>
+          <text class="cuIcon-edit" bindtap="editShopInfo"></text>
+        </view>
+        <text class="shop-desc">{{shopInfo.description}}</text>
+      </view>
+    </view>
+    <view class="shop-status">
+      <view class="status-info">
+        <text class="status-label">营业状态</text>
+        <text class="status-text {{shopInfo.isOpen ? 'open' : 'closed'}}">
+          {{shopInfo.isOpen ? '营业中' : '已打烊'}}
+        </text>
+      </view>
+      <switch checked="{{shopInfo.isOpen}}" bindchange="toggleOpen" color="#52c41a" />
+    </view>
+  </view>
+
+  <!-- 店铺详情 -->
+  <view class="section">
+    <view class="section-title">店铺信息</view>
+    <view class="info-list">
+      <view class="info-item">
+        <text class="cuIcon-phone info-icon"></text>
+        <text class="info-label">联系电话</text>
+        <text class="info-value">{{shopInfo.phone}}</text>
+      </view>
+      <view class="info-item">
+        <text class="cuIcon-location info-icon"></text>
+        <text class="info-label">店铺地址</text>
+        <text class="info-value">{{shopInfo.address}}</text>
+      </view>
+      <view class="info-item">
+        <text class="cuIcon-time info-icon"></text>
+        <text class="info-label">营业时间</text>
+        <text class="info-value">{{shopInfo.businessHours}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能设置 -->
+  <view class="section">
+    <view class="section-title">功能设置</view>
+    <view class="setting-list">
+      <view class="setting-item" wx:for="{{settingItems}}" wx:key="key"
+            bindtap="goToSetting" data-key="{{item.key}}">
+        <text class="{{item.icon}} setting-icon"></text>
+        <view class="setting-info">
+          <text class="setting-title">{{item.title}}</text>
+          <text class="setting-desc">{{item.desc}}</text>
+        </view>
+        <text class="cuIcon-right text-gray"></text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 其他 -->
+  <view class="section">
+    <view class="section-title">其他</view>
+    <view class="setting-list">
+      <view class="setting-item" bindtap="contactService">
+        <text class="cuIcon-service setting-icon"></text>
+        <view class="setting-info">
+          <text class="setting-title">联系客服</text>
+          <text class="setting-desc">400-888-8888</text>
+        </view>
+        <text class="cuIcon-right text-gray"></text>
+      </view>
+      <view class="setting-item" bindtap="viewHelp">
+        <text class="cuIcon-question setting-icon"></text>
+        <view class="setting-info">
+          <text class="setting-title">帮助中心</text>
+          <text class="setting-desc">常见问题解答</text>
+        </view>
+        <text class="cuIcon-right text-gray"></text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 退出按钮 -->
+  <view class="logout-section">
+    <button class="cu-btn line-red block" bindtap="logout">退出商家中心</button>
+  </view>
+</view>
+
+
+
+

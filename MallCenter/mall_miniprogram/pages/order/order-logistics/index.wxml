@@ -1,0 +1,70 @@
+<!--
+  物流跟踪页面
+-->
+<view class="container">
+  <!-- 物流公司信息 -->
+  <view class="logistics-header">
+    <view class="company-info">
+      <image class="company-logo" src="{{logistics.companyLogo || '/public/img/logistics-default.png'}}" mode="aspectFit"></image>
+      <view class="company-detail">
+        <text class="company-name">{{logistics.companyName || '物流公司'}}</text>
+        <text class="tracking-number">运单号：{{logistics.trackingNumber || '--'}}</text>
+      </view>
+    </view>
+    <view class="copy-btn" bindtap="copyTrackingNumber">复制</view>
+  </view>
+
+  <!-- 物流状态 -->
+  <view class="logistics-status">
+    <view class="status-icon {{logistics.status === 'delivered' ? 'delivered' : ''}}">
+      <text class="iconfont icon-logistics"></text>
+    </view>
+    <view class="status-text">
+      <text class="status-title">{{statusText}}</text>
+      <text class="status-time">{{logistics.estimatedTime || '预计3-5天送达'}}</text>
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载物流信息中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:elif="{{!trackList || trackList.length === 0}}">
+    <text class="empty-icon">📦</text>
+    <text class="empty-text">暂无物流信息</text>
+    <text class="empty-desc">商家正在打包中，请耐心等待</text>
+  </view>
+
+  <!-- 物流轨迹 -->
+  <view class="track-list" wx:else>
+    <view class="track-item {{index === 0 ? 'active' : ''}}" wx:for="{{trackList}}" wx:key="index">
+      <view class="track-dot">
+        <view class="dot {{index === 0 ? 'current' : ''}}"></view>
+        <view class="line" wx:if="{{index < trackList.length - 1}}"></view>
+      </view>
+      <view class="track-content">
+        <text class="track-desc">{{item.desc}}</text>
+        <text class="track-time">{{item.time}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-actions">
+    <view class="action-item" bindtap="callCourier">
+      <text class="action-icon">📞</text>
+      <text class="action-text">联系快递员</text>
+    </view>
+    <view class="action-item" bindtap="viewOrder">
+      <text class="action-icon">📋</text>
+      <text class="action-text">查看订单</text>
+    </view>
+    <view class="action-item" bindtap="refresh">
+      <text class="action-icon">🔄</text>
+      <text class="action-text">刷新物流</text>
+    </view>
+  </view>
+</view>
