@@ -58,6 +58,9 @@ public class EquipmentDTO {
     private LocalDateTime updatedAt;
     private Long createdBy;
     private String createdByName;
+    // 操作员信息
+    private Long operatorId;
+    private String operatorName;
 
     // ==================== 前端字段别名 ====================
 

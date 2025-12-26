@@ -23,6 +23,8 @@ export interface Equipment {
   factoryId: string;
   name: string;
   code: string;
+  equipmentCode?: string; // 后端额外字段
+  equipmentName?: string; // 后端使用 equipmentName 而非 name
   type: EquipmentType;
   model?: string;
   manufacturer?: string;
@@ -33,11 +35,19 @@ export interface Equipment {
   specifications?: string;
   purchasePrice?: number;
   depreciationYears?: number;
-  maintenanceInterval?: number; // days
+  // 成本与能耗 (Phase 4 data integrity)
+  hourlyCost?: number; // 设备每小时成本
+  powerConsumptionKw?: number; // 功耗 (千瓦)
+  totalRunningHours?: number; // 累计运行时长
+  // 维护相关
+  maintenanceInterval?: number; // 前端：天 | 后端 maintenanceIntervalHours: 小时
+  maintenanceIntervalHours?: number; // 后端实际字段 (小时)
   lastMaintenanceDate?: string;
   nextMaintenanceDate?: string;
+  serialNumber?: string; // 设备序列号
   operatorId?: number;
   operatorName?: string;
+  createdBy?: number; // 创建人ID
   notes?: string;
   createdAt?: string;
   updatedAt?: string;

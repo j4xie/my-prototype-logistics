@@ -494,7 +494,7 @@ export default function ShipmentManagementScreen() {
                   <Menu.Item
                     key={customer.id}
                     onPress={() => {
-                      setFormData({ ...formData, customerId: customer.id, deliveryAddress: customer.address || '' });
+                      setFormData({ ...formData, customerId: customer.id, deliveryAddress: customer.shippingAddress || '' });
                       setCustomerMenuVisible(false);
                     }}
                     title={customer.name}

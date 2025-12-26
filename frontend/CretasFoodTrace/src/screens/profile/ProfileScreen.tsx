@@ -327,6 +327,22 @@ export default function ProfileScreen() {
                 </View>
                 <List.Icon icon="chevron-right" color={theme.colors.textTertiary} />
             </TouchableOpacity>
+            <Divider style={styles.divider} />
+
+            {/* 开发者工具 - 服务器连接测试 */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => {
+                profileLogger.info('打开服务器连接测试');
+                (navigation as any).navigate('ServerConnectivityTest');
+              }}
+            >
+                <View style={styles.settingLeft}>
+                    <List.Icon icon="server-network" color="#E91E63" />
+                    <Text style={styles.settingText}>服务器连接测试</Text>
+                </View>
+                <Chip mode="flat" style={{ backgroundColor: '#FFF3E0' }} textStyle={{ fontSize: 10, color: '#FF9800' }}>开发</Chip>
+            </TouchableOpacity>
         </NeoCard>
 
         <NeoButton variant="danger" onPress={handleLogout} style={styles.logoutButton} icon="logout">退出登录</NeoButton>

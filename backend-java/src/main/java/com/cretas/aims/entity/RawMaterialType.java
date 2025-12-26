@@ -1,5 +1,7 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -81,6 +83,7 @@ import java.util.List;
 @ToString(exclude = {"factory", "createdByUser", "materialBatches", "conversions"})
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "raw_material_types",
        uniqueConstraints = {
@@ -230,6 +233,7 @@ public class RawMaterialType extends BaseEntity {
      * 创建者用户
      * <p>多对一关系，延迟加载</p>
      */
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
     private User createdByUser;
@@ -238,6 +242,7 @@ public class RawMaterialType extends BaseEntity {
      * 该类型下的所有批次
      * <p>一对多关系，级联所有操作</p>
      */
+    @JsonIgnore
     @OneToMany(mappedBy = "materialType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatch> materialBatches = new ArrayList<>();
 
@@ -245,6 +250,7 @@ public class RawMaterialType extends BaseEntity {
      * 原材料转换记录
      * <p>一对多关系，记录原材料到产品的转换</p>
      */
+    @JsonIgnore
     @OneToMany(mappedBy = "materialType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialProductConversion> conversions = new ArrayList<>();
 }

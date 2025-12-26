@@ -70,3 +70,4 @@ const useUserStore = defineStore(
   })
 
 export default useUserStore
+export { useUserStore }

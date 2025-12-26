@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>采购员 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor">
+          <path d="M1 4h2v8H1zM5 2h2v10H5zM9 0h2v12H9zM13 3h2v9h-2z"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <path d="M8 2a6 6 0 016 6h-2a4 4 0 00-8 0H2a6 6 0 016-6zm0-2a8 8 0 018 8h-2a6 6 0 00-12 0H0a8 8 0 018-8z"/>
+        </svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+          <rect x="0" y="0" width="22" height="12" rx="3" stroke="currentColor" fill="none"/>
+          <rect x="2" y="2" width="16" height="8" rx="1" fill="currentColor"/>
+          <path d="M23 4v4a2 2 0 002-2 2 2 0 00-2-2z"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 头部 -->
+    <div class="header role-header--procurement">
+      <div class="header-top">
+        <a href="index.html" class="back-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <h1>采购工作台</h1>
+        <button class="icon-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          <span class="badge">2</span>
+        </button>
+      </div>
+      <div class="welcome-section">
+        <div class="welcome-text">
+          <p class="greeting">采购员</p>
+          <h2>王采购 </h2>
+        </div>
+        <div class="avatar">
+          <span>王</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+      <!-- 库存预警卡片 -->
+      <div class="alert-card">
+        <div class="alert-card-header">
+          <div class="alert-card-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            库存预警
+          </div>
+          <span class="alert-count">3 项需处理</span>
+        </div>
+        <div class="alert-items">
+          <div class="alert-item">
+            <div class="alert-item-left">
+              <div class="alert-item-icon"></div>
+              <div class="alert-item-info">
+                <h4>带鱼</h4>
+                <p>安全库存: 200kg</p>
+              </div>
+            </div>
+            <div class="alert-item-right">
+              <div class="alert-item-value">85kg</div>
+              <div class="alert-item-label">当前库存</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-item-left">
+              <div class="alert-item-icon"></div>
+              <div class="alert-item-info">
+                <h4>鲈鱼</h4>
+                <p>安全库存: 150kg</p>
+              </div>
+            </div>
+            <div class="alert-item-right">
+              <div class="alert-item-value">42kg</div>
+              <div class="alert-item-label">当前库存</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今日入库统计 -->
+      <div class="intake-stats">
+        <div class="intake-header">
+          <h3> 今日入库统计</h3>
+          <span class="intake-date">2025-12-26</span>
+        </div>
+        <div class="intake-grid">
+          <div class="intake-item">
+            <div class="intake-item-value">5</div>
+            <div class="intake-item-label">入库批次</div>
+          </div>
+          <div class="intake-item">
+            <div class="intake-item-value">856</div>
+            <div class="intake-item-label">入库数量(kg)</div>
+          </div>
+          <div class="intake-item">
+            <div class="intake-item-value">¥15.8k</div>
+            <div class="intake-item-label">入库金额</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 供应商待付款 -->
+      <div class="payment-section">
+        <div class="payment-header">
+          <h3> 供应商待付款</h3>
+          <span class="payment-total">共 ¥45,800</span>
+        </div>
+        <div class="payment-list">
+          <div class="payment-item">
+            <div class="payment-item-left">
+              <div class="payment-avatar">舟</div>
+              <div class="payment-info">
+                <h4>舟山渔业合作社</h4>
+                <p>5笔待付</p>
+              </div>
+            </div>
+            <div class="payment-amount">
+              <div class="payment-amount-value">¥28,500</div>
+              <div class="payment-amount-date">最早: 12-20</div>
+            </div>
+          </div>
+          <div class="payment-item">
+            <div class="payment-item-left">
+              <div class="payment-avatar">东</div>
+              <div class="payment-info">
+                <h4>东海水产供应商</h4>
+                <p>3笔待付</p>
+              </div>
+            </div>
+            <div class="payment-amount">
+              <div class="payment-amount-value">¥12,300</div>
+              <div class="payment-amount-date">最早: 12-22</div>
+            </div>
+          </div>
+          <div class="payment-item">
+            <div class="payment-item-left">
+              <div class="payment-avatar">南</div>
+              <div class="payment-info">
+                <h4>南通冷链物流</h4>
+                <p>2笔待付</p>
+              </div>
+            </div>
+            <div class="payment-amount">
+              <div class="payment-amount-value">¥5,000</div>
+              <div class="payment-amount-date">最早: 12-24</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近入库记录 -->
+      <div class="recent-section">
+        <div class="recent-header">
+          <h3> 最近入库</h3>
+          <span class="recent-more">查看全部 ></span>
+        </div>
+        <div class="recent-list">
+          <div class="recent-item">
+            <div class="recent-item-left">
+              <div class="recent-icon"></div>
+              <div class="recent-info">
+                <h4>MB-20251226-003</h4>
+                <p>带鱼 · 舟山渔业</p>
+              </div>
+            </div>
+            <div class="recent-item-right">
+              <div class="recent-qty">+150kg</div>
+              <div class="recent-time">10:30</div>
+            </div>
+          </div>
+          <div class="recent-item">
+            <div class="recent-item-left">
+              <div class="recent-icon"></div>
+              <div class="recent-info">
+                <h4>MB-20251226-002</h4>
+                <p>鲈鱼 · 东海水产</p>
+              </div>
+            </div>
+            <div class="recent-item-right">
+              <div class="recent-qty">+200kg</div>
+              <div class="recent-time">09:15</div>
+            </div>
+          </div>
+          <div class="recent-item">
+            <div class="recent-item-left">
+              <div class="recent-icon"></div>
+              <div class="recent-info">
+                <h4>MB-20251226-001</h4>
+                <p>黄鱼 · 舟山渔业</p>
+              </div>
+            </div>
+            <div class="recent-item-right">
+              <div class="recent-qty">+180kg</div>
+              <div class="recent-time">08:45</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="#" class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+          <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <span>入库</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+          <path d="M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span>供应商</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+        </svg>
+        <span>库存</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+
+  <script src="components.js"></script>
+</body>
+</html>

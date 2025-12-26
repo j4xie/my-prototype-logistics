@@ -175,4 +175,20 @@ public class TraceabilityDTO {
         private String qualityStatus;
         private LocalDateTime lastUpdateTime;
     }
+
+    /**
+     * 溯源列表项（列表查询用）
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TraceListItem {
+        private String batchNumber;
+        private String productName;
+        private LocalDateTime productionDate;
+        private String status;
+        private String qualityStatus;
+        private Integer completedQuantity;
+    }
 }

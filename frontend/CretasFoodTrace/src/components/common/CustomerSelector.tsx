@@ -105,8 +105,8 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
         customerCode: `CUST${Date.now()}`,
         name: newCustomerName.trim(),
         contactPerson: newContactPerson.trim() || undefined,
-        contactPhone: newContactPhone.trim() || undefined,
-        address: newAddress.trim() || undefined,
+        phone: newContactPhone.trim() || undefined,
+        shippingAddress: newAddress.trim() || undefined,
         businessType: newBusinessType,
       });
 
@@ -185,7 +185,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                   <>
                     <List.Item
                       title={item.name}
-                      description={`${item.code}${item.contactPerson ? ' • ' + item.contactPerson : ''}${item.contactPhone ? ' • ' + item.contactPhone : ''}`}
+                      description={`${item.code}${item.contactPerson ? ' • ' + item.contactPerson : ''}${item.phone ? ' • ' + item.phone : ''}`}
                       onPress={() => handleSelect(item)}
                       right={props => value === item.name ? <List.Icon {...props} icon="check" color="#2196F3" /> : null}
                     />

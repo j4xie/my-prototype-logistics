@@ -364,9 +364,9 @@ public class ReportServiceImpl implements ReportService {
         report.put("statusDistribution", statusDistribution);
         // 按材料类型统计
         List<Object[]> inventoryByType = materialBatchRepository.sumQuantityByMaterialType(factoryId);
-        Map<Integer, BigDecimal> typeDistribution = new HashMap<>();
+        Map<String, BigDecimal> typeDistribution = new HashMap<>();
         for (Object[] row : inventoryByType) {
-            typeDistribution.put((Integer) row[0], (BigDecimal) row[1]);
+            typeDistribution.put((String) row[0], (BigDecimal) row[1]);
         }
         report.put("typeDistribution", typeDistribution);
         // 库存预警

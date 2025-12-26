@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>白垩纪食品溯源系统 - 原型图</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .page-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .page-header h1 {
+      font-size: 32px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+    }
+
+    .page-header p {
+      font-size: 16px;
+      color: #666;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .role-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: block;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .role-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--card-gradient, linear-gradient(135deg, #1890ff, #36cfc9));
+    }
+
+    .role-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .role-card-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .role-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      background: var(--card-gradient, linear-gradient(135deg, #1890ff, #36cfc9));
+    }
+
+    .role-info h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .role-info .role-code {
+      font-size: 12px;
+      color: #999;
+      font-family: monospace;
+    }
+
+    .role-desc {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .role-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .feature-tag {
+      font-size: 12px;
+      padding: 4px 10px;
+      background: #f0f5ff;
+      color: #1890ff;
+      border-radius: 12px;
+    }
+
+    .role-card[data-role="factory_super_admin"] .feature-tag.ai-tag {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+
+    .footer-info {
+      text-align: center;
+      padding: 24px;
+      color: #999;
+      font-size: 14px;
+    }
+
+    .footer-info a {
+      color: #1890ff;
+      text-decoration: none;
+    }
+
+    .design-principles {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 48px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .design-principles h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .principle-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .principle-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .principle-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #f0f5ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .principle-icon svg {
+      width: 20px;
+      height: 20px;
+      color: #1890ff;
+    }
+
+    .principle-text h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .principle-text p {
+      font-size: 12px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .role-hierarchy {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 48px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .role-hierarchy h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+    }
+
+    .hierarchy-chart {
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 16px;
+      }
+
+      .page-header h1 {
+        font-size: 24px;
+      }
+
+      .role-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .principle-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h1>白垩纪食品溯源系统</h1>
+      <p>10角色权限体系原型图 - B端风格移动端界面设计<br>点击任意角色卡片查看对应原型</p>
+    </div>
+
+    <!-- 设计原则 -->
+    <div class="design-principles">
+      <h2>设计原则</h2>
+      <div class="principle-grid">
+        <div class="principle-item">
+          <div class="principle-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+              <line x1="12" y1="18" x2="12" y2="18"/>
+            </svg>
+          </div>
+          <div class="principle-text">
+            <h4>移动优先</h4>
+            <p>375px 基准宽度，适配各类移动设备</p>
+          </div>
+        </div>
+        <div class="principle-item">
+          <div class="principle-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12" y2="16"/>
+            </svg>
+          </div>
+          <div class="principle-text">
+            <h4>简洁高效</h4>
+            <p>B端风格，无多余UI，指引性强</p>
+          </div>
+        </div>
+        <div class="principle-item">
+          <div class="principle-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div class="principle-text">
+            <h4>角色隔离</h4>
+            <p>每个角色只看到职责范围内的功能</p>
+          </div>
+        </div>
+        <div class="principle-item">
+          <div class="principle-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </div>
+          <div class="principle-text">
+            <h4>AI赋能</h4>
+            <p>管理员专属AI分析，智能决策支持</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 角色层级 -->
+    <div class="role-hierarchy">
+      <h2>角色层级关系</h2>
+      <div class="hierarchy-chart">
+                    ┌─────────────────────────┐
+                    │   工厂管理员 (总监)       │
+                    │   factory_super_admin   │
+                    └───────────┬─────────────┘
+                                │
+        ┌───────────┬───────────┼───────────┬───────────┬───────────┐
+        ↓           ↓           ↓           ↓           ↓           ↓
+   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐
+   │   HR    │ │  采购   │ │  销售   │ │  调度   │ │  仓储   │ │  设备   │
+   │ hr_admin│ │procure- │ │ sales   │ │dispatch-│ │warehouse│ │equipment│
+   └─────────┘ │  ment   │ └─────────┘ │   er    │ └─────────┘ │  _admin │
+               └─────────┘             └────┬────┘             └─────────┘
+                                            │
+                                            ↓
+                                   ┌──────────────┐
+                                   │   车间主任    │
+                                   │   workshop_  │
+                                   │  supervisor  │
+                                   └──────┬───────┘
+                                          │
+                          ┌───────────────┼───────────────┐
+                          ↓               ↓               ↓
+                   ┌───────────┐   ┌───────────┐   ┌───────────┐
+                   │  操作员   │   │  操作员   │   │  质检员   │
+                   │ operator  │   │ operator  │   │ quality_  │
+                   └───────────┘   └───────────┘   │ inspector │
+                                                   └───────────┘</div>
+    </div>
+
+    <!-- 角色卡片网格 -->
+    <div class="role-grid">
+      <!-- 1. 工厂管理员 -->
+      <a href="1-factory-admin.html" class="role-card" data-role="factory_super_admin" style="--card-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--factory">厂</div>
+          <div class="role-info">
+            <h3>工厂管理员</h3>
+            <span class="role-code">factory_super_admin</span>
+          </div>
+        </div>
+        <p class="role-desc">拥有工厂全局管理权限，可查看所有数据和AI智能分析，是工厂级别的最高权限账号。</p>
+        <div class="role-features">
+          <span class="feature-tag">全局Dashboard</span>
+          <span class="feature-tag ai-tag">AI 分析</span>
+          <span class="feature-tag">数据报表</span>
+          <span class="feature-tag">系统配置</span>
+        </div>
+      </a>
+
+      <!-- 2. HR管理员 -->
+      <a href="2-hr-admin.html" class="role-card" data-role="hr_admin" style="--card-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--hr">人</div>
+          <div class="role-info">
+            <h3>HR管理员</h3>
+            <span class="role-code">hr_admin</span>
+          </div>
+        </div>
+        <p class="role-desc">负责人员管理、白名单维护和部门管理，掌控工厂人事相关事务。</p>
+        <div class="role-features">
+          <span class="feature-tag">人员管理</span>
+          <span class="feature-tag">考勤统计</span>
+          <span class="feature-tag">白名单</span>
+          <span class="feature-tag">部门管理</span>
+        </div>
+      </a>
+
+      <!-- 3. 采购员 -->
+      <a href="3-procurement.html" class="role-card" data-role="procurement" style="--card-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--procurement">采</div>
+          <div class="role-info">
+            <h3>采购员</h3>
+            <span class="role-code">procurement</span>
+          </div>
+        </div>
+        <p class="role-desc">负责供应商管理和原材料入库，确保生产原料供应充足。</p>
+        <div class="role-features">
+          <span class="feature-tag">原材料入库</span>
+          <span class="feature-tag">供应商管理</span>
+          <span class="feature-tag">库存查询</span>
+          <span class="feature-tag">采购统计</span>
+        </div>
+      </a>
+
+      <!-- 4. 销售员 -->
+      <a href="4-sales.html" class="role-card" data-role="sales" style="--card-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--sales">销</div>
+          <div class="role-info">
+            <h3>销售员</h3>
+            <span class="role-code">sales</span>
+          </div>
+        </div>
+        <p class="role-desc">负责客户管理和订单跟进，维护客户关系并提供溯源查询服务。</p>
+        <div class="role-features">
+          <span class="feature-tag">客户管理</span>
+          <span class="feature-tag">订单管理</span>
+          <span class="feature-tag">溯源查询</span>
+          <span class="feature-tag">销售统计</span>
+        </div>
+      </a>
+
+      <!-- 5. 调度员 -->
+      <a href="5-dispatcher.html" class="role-card" data-role="dispatcher" style="--card-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--dispatch">调</div>
+          <div class="role-info">
+            <h3>调度员</h3>
+            <span class="role-code">dispatcher</span>
+          </div>
+        </div>
+        <p class="role-desc">负责生产调度、任务分配和人员调动，协调各车间生产工作。</p>
+        <div class="role-features">
+          <span class="feature-tag">生产计划</span>
+          <span class="feature-tag">任务分配</span>
+          <span class="feature-tag">人员调动</span>
+          <span class="feature-tag">进度监控</span>
+        </div>
+      </a>
+
+      <!-- 6. 车间主任 -->
+      <a href="6-workshop-supervisor.html" class="role-card" data-role="workshop_supervisor" style="--card-gradient: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--workshop">间</div>
+          <div class="role-info">
+            <h3>车间主任</h3>
+            <span class="role-code">workshop_supervisor</span>
+          </div>
+        </div>
+        <p class="role-desc">负责车间生产执行、消耗录入和自检，管理本车间的日常生产工作。</p>
+        <div class="role-features">
+          <span class="feature-tag">生产执行</span>
+          <span class="feature-tag">消耗录入</span>
+          <span class="feature-tag">自检管理</span>
+          <span class="feature-tag">人员管理</span>
+        </div>
+      </a>
+
+      <!-- 7. 操作员 -->
+      <a href="7-operator.html" class="role-card" data-role="operator" style="--card-gradient: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--operator">操</div>
+          <div class="role-info">
+            <h3>操作员</h3>
+            <span class="role-code">operator</span>
+          </div>
+        </div>
+        <p class="role-desc">执行生产任务，记录生产数据，是生产一线的核心执行者。</p>
+        <div class="role-features">
+          <span class="feature-tag">任务执行</span>
+          <span class="feature-tag">数据录入</span>
+          <span class="feature-tag">打卡考勤</span>
+        </div>
+      </a>
+
+      <!-- 8. 仓储/物流 -->
+      <a href="8-warehouse.html" class="role-card" data-role="warehouse" style="--card-gradient: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--warehouse">仓</div>
+          <div class="role-info">
+            <h3>仓储/物流</h3>
+            <span class="role-code">warehouse</span>
+          </div>
+        </div>
+        <p class="role-desc">负责出货管理、物流追踪和库存盘点，确保产品顺利出库配送。</p>
+        <div class="role-features">
+          <span class="feature-tag">入库确认</span>
+          <span class="feature-tag">出货管理</span>
+          <span class="feature-tag">物流追踪</span>
+          <span class="feature-tag">库存盘点</span>
+        </div>
+      </a>
+
+      <!-- 9. 质检员 -->
+      <a href="9-quality-inspector.html" class="role-card" data-role="quality_inspector" style="--card-gradient: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--quality">检</div>
+          <div class="role-info">
+            <h3>质检员</h3>
+            <span class="role-code">quality_inspector</span>
+          </div>
+        </div>
+        <p class="role-desc">独立进行质量检验，负责抽检、复检和质量记录，确保产品质量合格。</p>
+        <div class="role-features">
+          <span class="feature-tag">质检录入</span>
+          <span class="feature-tag">抽检/复检</span>
+          <span class="feature-tag">历史记录</span>
+          <span class="feature-tag">溯源查询</span>
+        </div>
+      </a>
+
+      <!-- 10. 设备管理员 -->
+      <a href="10-equipment-admin.html" class="role-card" data-role="equipment_admin" style="--card-gradient: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
+        <div class="role-card-header">
+          <div class="role-icon role-letter role-letter--equipment">设</div>
+          <div class="role-info">
+            <h3>设备管理员</h3>
+            <span class="role-code">equipment_admin</span>
+          </div>
+        </div>
+        <p class="role-desc">负责设备管理、维护保养和告警处理，保障生产设备正常运转。</p>
+        <div class="role-features">
+          <span class="feature-tag">设备管理</span>
+          <span class="feature-tag">告警处理</span>
+          <span class="feature-tag">维护记录</span>
+          <span class="feature-tag">设备统计</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- 页脚 -->
+    <div class="footer-info">
+      <p>白垩纪食品溯源系统 Cretas Food Traceability System</p>
+      <p>版本 v1.0 | 设计规范文档: <a href="DESIGN_GUIDE.md">DESIGN_GUIDE.md</a></p>
+    </div>
+  </div>
+</body>
+</html>

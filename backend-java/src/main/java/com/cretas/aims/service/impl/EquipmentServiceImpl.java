@@ -12,6 +12,7 @@ import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.BatchEquipmentUsageRepository;
 import com.cretas.aims.repository.EquipmentMaintenanceRepository;
 import com.cretas.aims.repository.EquipmentRepository;
+import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.EquipmentService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -51,6 +52,7 @@ public class EquipmentServiceImpl implements EquipmentService {
     private final EquipmentRepository equipmentRepository;
     private final EquipmentMaintenanceRepository maintenanceRepository;
     private final BatchEquipmentUsageRepository usageRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -805,7 +807,14 @@ public class EquipmentServiceImpl implements EquipmentService {
                 .createdAt(equipment.getCreatedAt())
                 .updatedAt(equipment.getUpdatedAt())
                 .createdBy(equipment.getCreatedBy())
+                .operatorId(equipment.getOperatorId())
                 .build();
+
+        // 填充操作员姓名
+        if (equipment.getOperatorId() != null) {
+            userRepository.findById(equipment.getOperatorId())
+                    .ifPresent(user -> dto.setOperatorName(user.getFullName()));
+        }
 
         // 计算当前价值
         dto.setCurrentValue(calculateDepreciatedValue(equipment.getFactoryId(), String.valueOf(equipment.getId())));

@@ -51,6 +51,44 @@ public class QualityInspection extends BaseEntity {
     private String result;  // PASS, FAIL, CONDITIONAL
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    // ==================== 计算字段 ====================
+
+    /**
+     * 缺陷率 (计算字段，不存储在数据库)
+     * defectRate = failCount / sampleSize * 100
+     */
+    @Transient
+    public java.math.BigDecimal getDefectRate() {
+        if (sampleSize == null || sampleSize.compareTo(java.math.BigDecimal.ZERO) == 0) {
+            return java.math.BigDecimal.ZERO;
+        }
+        if (failCount == null) {
+            return java.math.BigDecimal.ZERO;
+        }
+        return failCount.multiply(java.math.BigDecimal.valueOf(100))
+                .divide(sampleSize, 2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 质量等级 (计算字段，基于合格率)
+     * A: >= 95%
+     * B: >= 85%
+     * C: >= 70%
+     * D: < 70%
+     */
+    @Transient
+    public String getQualityGrade() {
+        if (passRate == null) {
+            return null;
+        }
+        double rate = passRate.doubleValue();
+        if (rate >= 95) return "A";
+        if (rate >= 85) return "B";
+        if (rate >= 70) return "C";
+        return "D";
+    }
+
     // 关联关系 (使用 @JsonIgnore 防止循环引用)
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

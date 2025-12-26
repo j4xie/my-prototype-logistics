@@ -2,6 +2,8 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.AlertLevel;
 import com.cretas.aims.entity.enums.AlertStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -22,6 +24,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "equipment_alerts",
        indexes = {
@@ -105,10 +108,12 @@ public class EquipmentAlert extends BaseEntity {
     private String ignoreReason;  // 忽略原因
 
     // 关联关系 - 使用 FactoryEquipment（Equipment 已废弃）
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "equipment_id", referencedColumnName = "id", insertable = false, updatable = false)
     private FactoryEquipment equipment;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;

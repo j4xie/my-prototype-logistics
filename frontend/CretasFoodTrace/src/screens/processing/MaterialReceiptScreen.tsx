@@ -174,7 +174,7 @@ export default function MaterialReceiptScreen() {
         factoryId: user?.factoryId,
         supplierId: batchData.supplierId,
         materialType: batchData.materialTypeId,
-        quantity: batchData.inboundQuantity,
+        quantity: batchData.receiptQuantity,
         totalCost: batchData.totalCost,
       });
 
