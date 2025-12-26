@@ -51,6 +51,7 @@ interface EquipmentInfo {
   installDate: string;
   lastMaintenanceDate?: string;
   nextMaintenanceDate?: string;
+  operatorName?: string;  // 操作员名称
 }
 
 interface RealtimeParameters {
@@ -178,6 +179,7 @@ export default function EquipmentDetailScreen() {
         installDate: eq.purchaseDate || 'Unknown',
         lastMaintenanceDate: eq.lastMaintenanceDate,
         nextMaintenanceDate: eq.nextMaintenanceDate,
+        operatorName: eq.operatorName,
       };
 
       setEquipment(equipmentInfo);
@@ -426,6 +428,16 @@ export default function EquipmentDetailScreen() {
             <Text style={styles.infoLabel}>安装日期</Text>
             <Text style={styles.infoValue}>{equipment.installDate}</Text>
           </View>
+
+          {equipment.operatorName && (
+            <>
+              <Divider style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>操作员</Text>
+                <Text style={styles.infoValue}>{equipment.operatorName}</Text>
+              </View>
+            </>
+          )}
 
           {equipment.lastMaintenanceDate && (
             <>

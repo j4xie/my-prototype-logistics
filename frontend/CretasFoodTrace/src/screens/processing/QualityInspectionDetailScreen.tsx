@@ -73,6 +73,10 @@ interface QualityInspection {
   reviewNotes?: string;
   createdAt: Date;
   updatedAt: Date;
+  // 新增计算字段
+  qualityGrade?: string | null;  // A, B, C, D 质量等级
+  defectRate?: number | null;    // 不合格率
+  passRate?: number | null;      // 合格率
 }
 
 export default function QualityInspectionDetailScreen() {
@@ -187,6 +191,27 @@ export default function QualityInspectionDetailScreen() {
           final_product: '成品检验'
       };
       return map[type] || type;
+  };
+
+  // 质量等级颜色
+  const getQualityGradeColor = (grade: string | null | undefined) => {
+    switch (grade) {
+      case 'A': return theme.colors.success;
+      case 'B': return theme.colors.primary;
+      case 'C': return theme.colors.warning;
+      case 'D': return theme.colors.error;
+      default: return theme.colors.textSecondary;
+    }
+  };
+
+  const getQualityGradeVariant = (grade: string | null | undefined) => {
+    switch (grade) {
+      case 'A': return 'success';
+      case 'B': return 'info';
+      case 'C': return 'warning';
+      case 'D': return 'error';
+      default: return 'default';
+    }
   };
 
   if (loading) {
@@ -308,10 +333,40 @@ export default function QualityInspectionDetailScreen() {
             <Text variant="titleMedium" style={styles.sectionTitle}>检验结论</Text>
             <View style={styles.rowBetween}>
                 <Text style={styles.label}>检验结果</Text>
-                <StatusBadge 
-                    status={{pass: '合格', conditional_pass: '条件合格', fail: '不合格'}[inspection.conclusion]} 
-                    variant={getConclusionVariant(inspection.conclusion)} 
+                <StatusBadge
+                    status={{pass: '合格', conditional_pass: '条件合格', fail: '不合格'}[inspection.conclusion]}
+                    variant={getConclusionVariant(inspection.conclusion)}
                 />
+            </View>
+            <Divider style={styles.divider} />
+            {/* 质量等级显示 */}
+            <View style={styles.rowBetween}>
+                <Text style={styles.label}>质量等级</Text>
+                {inspection.qualityGrade ? (
+                  <View style={[styles.gradeBox, { backgroundColor: getQualityGradeColor(inspection.qualityGrade) + '20' }]}>
+                    <Text style={[styles.gradeText, { color: getQualityGradeColor(inspection.qualityGrade) }]}>
+                      {inspection.qualityGrade}级
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.value}>-</Text>
+                )}
+            </View>
+            <Divider style={styles.divider} />
+            {/* 合格率/不合格率显示 */}
+            <View style={styles.rateRow}>
+                <View style={styles.rateItem}>
+                    <Text style={styles.label}>合格率</Text>
+                    <Text style={[styles.rateValue, { color: theme.colors.success }]}>
+                      {inspection.passRate != null ? `${inspection.passRate}%` : '-'}
+                    </Text>
+                </View>
+                <View style={styles.rateItem}>
+                    <Text style={styles.label}>不合格率</Text>
+                    <Text style={[styles.rateValue, { color: theme.colors.error }]}>
+                      {inspection.defectRate != null ? `${inspection.defectRate}%` : '-'}
+                    </Text>
+                </View>
             </View>
             {inspection.notes && (
                 <View style={styles.noteBox}>
@@ -451,4 +506,27 @@ const styles = StyleSheet.create({
   spacer4: { height: 4 },
   spacer16: { width: 16 },
   bottomSpacer: { height: 32 },
+  // 质量等级样式
+  gradeBox: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  gradeText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  rateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 8,
+  },
+  rateItem: {
+    alignItems: 'center',
+  },
+  rateValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 4,
+  },
 });

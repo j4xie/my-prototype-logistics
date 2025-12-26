@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>销售员 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor">
+          <path d="M1 4h2v8H1zM5 2h2v10H5zM9 0h2v12H9zM13 3h2v9h-2z"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <path d="M8 2a6 6 0 016 6h-2a4 4 0 00-8 0H2a6 6 0 016-6zm0-2a8 8 0 018 8h-2a6 6 0 00-12 0H0a8 8 0 018-8z"/>
+        </svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+          <rect x="0" y="0" width="22" height="12" rx="3" stroke="currentColor" fill="none"/>
+          <rect x="2" y="2" width="16" height="8" rx="1" fill="currentColor"/>
+          <path d="M23 4v4a2 2 0 002-2 2 2 0 00-2-2z"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 头部 -->
+    <div class="header role-header--sales">
+      <div class="header-top">
+        <a href="index.html" class="back-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <h1>销售工作台</h1>
+        <button class="icon-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          <span class="badge">5</span>
+        </button>
+      </div>
+      <div class="welcome-section">
+        <div class="welcome-text">
+          <p class="greeting">销售员</p>
+          <h2>李销售 </h2>
+        </div>
+        <div class="avatar">
+          <span>李</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+      <!-- 订单统计 -->
+      <div class="order-stats">
+        <div class="order-stats-header">
+          <h3> 今日订单</h3>
+          <span class="order-stats-date">2025-12-26</span>
+        </div>
+        <div class="order-grid">
+          <div class="order-stat-item">
+            <div class="order-stat-icon"></div>
+            <div class="order-stat-value">12</div>
+            <div class="order-stat-label">新增订单</div>
+          </div>
+          <div class="order-stat-item">
+            <div class="order-stat-icon">[OK]</div>
+            <div class="order-stat-value">8</div>
+            <div class="order-stat-label">已完成</div>
+          </div>
+          <div class="order-stat-item">
+            <div class="order-stat-icon"></div>
+            <div class="order-stat-value">3</div>
+            <div class="order-stat-label">配送中</div>
+          </div>
+          <div class="order-stat-item">
+            <div class="order-stat-icon">[待]</div>
+            <div class="order-stat-value">1</div>
+            <div class="order-stat-label">待确认</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 业绩概览 -->
+      <div class="performance-card">
+        <div class="performance-header">
+          <h3> 本月业绩</h3>
+          <span class="performance-period">12月</span>
+        </div>
+        <div class="performance-main">
+          <div class="performance-amount">¥186,500</div>
+          <div class="performance-target">
+            <div class="performance-target-label">目标</div>
+            <div class="performance-target-value">¥260,000</div>
+          </div>
+        </div>
+        <div class="performance-progress">
+          <div class="performance-progress-bar"></div>
+        </div>
+        <div class="performance-footer">
+          <span>完成率: 72%</span>
+          <span>距目标还差 ¥73,500</span>
+        </div>
+      </div>
+
+      <!-- 客户待回访 -->
+      <div class="callback-section">
+        <div class="callback-header">
+          <h3> 客户待回访</h3>
+          <span class="callback-count">4 位待回访</span>
+        </div>
+        <div class="callback-list">
+          <div class="callback-item">
+            <div class="callback-item-left">
+              <div class="callback-avatar">鲜</div>
+              <div class="callback-info">
+                <h4>鲜食超市</h4>
+                <p>上次联系: 12-20</p>
+              </div>
+            </div>
+            <div class="callback-action">
+              <span class="callback-urgency urgent">紧急</span>
+              <button class="callback-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="callback-item">
+            <div class="callback-item-left">
+              <div class="callback-avatar">永</div>
+              <div class="callback-info">
+                <h4>永辉超市</h4>
+                <p>上次联系: 12-22</p>
+              </div>
+            </div>
+            <div class="callback-action">
+              <span class="callback-urgency normal">今日</span>
+              <button class="callback-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="callback-item">
+            <div class="callback-item-left">
+              <div class="callback-avatar">盒</div>
+              <div class="callback-info">
+                <h4>盒马鲜生</h4>
+                <p>上次联系: 12-23</p>
+              </div>
+            </div>
+            <div class="callback-action">
+              <span class="callback-urgency normal">今日</span>
+              <button class="callback-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 出货进度跟踪 -->
+      <div class="shipment-section">
+        <div class="shipment-header">
+          <h3> 出货进度</h3>
+          <span class="shipment-more">查看全部 ></span>
+        </div>
+        <div class="shipment-list">
+          <div class="shipment-item">
+            <div class="shipment-item-header">
+              <span class="shipment-item-id">SH-20251226-003</span>
+              <span class="shipment-status shipping">配送中</span>
+            </div>
+            <div class="shipment-item-body">
+              <span class="shipment-customer">鲜食超市 · 带鱼片 80kg</span>
+              <span class="shipment-amount">¥3,600</span>
+            </div>
+            <div class="shipment-progress">
+              <div class="shipment-progress-bar">
+                <div class="shipment-progress-fill" style="width: 60%"></div>
+              </div>
+              <span class="shipment-progress-text">60%</span>
+            </div>
+          </div>
+          <div class="shipment-item">
+            <div class="shipment-item-header">
+              <span class="shipment-item-id">SH-20251226-002</span>
+              <span class="shipment-status pending">待发货</span>
+            </div>
+            <div class="shipment-item-body">
+              <span class="shipment-customer">永辉超市 · 鲈鱼片 50kg</span>
+              <span class="shipment-amount">¥2,500</span>
+            </div>
+            <div class="shipment-progress">
+              <div class="shipment-progress-bar">
+                <div class="shipment-progress-fill" style="width: 20%"></div>
+              </div>
+              <span class="shipment-progress-text">20%</span>
+            </div>
+          </div>
+          <div class="shipment-item">
+            <div class="shipment-item-header">
+              <span class="shipment-item-id">SH-20251225-008</span>
+              <span class="shipment-status delivered">已送达</span>
+            </div>
+            <div class="shipment-item-body">
+              <span class="shipment-customer">盒马鲜生 · 黄鱼片 100kg</span>
+              <span class="shipment-amount">¥5,000</span>
+            </div>
+            <div class="shipment-progress">
+              <div class="shipment-progress-bar">
+                <div class="shipment-progress-fill" style="width: 100%"></div>
+              </div>
+              <span class="shipment-progress-text">100%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="#" class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+          <path d="M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span>客户</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>订单</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <rect x="7" y="7" width="3" height="9"/>
+          <rect x="14" y="7" width="3" height="5"/>
+        </svg>
+        <span>溯源</span>
+      </a>
+      <a href="#" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+
+  <script src="components.js"></script>
+</body>
+</html>

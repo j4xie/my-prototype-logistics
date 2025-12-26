@@ -22,7 +22,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
 import { alertApiClient } from '../../services/api/alertApiClient';
-import { equipmentApiClient } from '../../services/api/equipmentApiClient';
+// equipmentApiClient 的告警方法已废弃，统一使用 alertApiClient
 import { useAuthStore } from '../../store/authStore';
 import { Alert } from 'react-native';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
@@ -175,7 +175,16 @@ export default function EquipmentAlertsScreen() {
     try {
       equipmentAlertsLogger.debug('确认告警', { alertId });
 
-      const response = await equipmentApiClient.acknowledgeAlert(alertId, undefined, factoryId);
+      if (!factoryId) {
+        Alert.alert('错误', '无法获取工厂ID');
+        return;
+      }
+
+      const response = await alertApiClient.acknowledgeAlert({
+        factoryId,
+        alertId,
+        acknowledgedBy: user?.id,
+      });
 
       if (response.success) {
         equipmentAlertsLogger.info('告警确认成功', { alertId });
@@ -205,11 +214,16 @@ export default function EquipmentAlertsScreen() {
             try {
               equipmentAlertsLogger.debug('解决告警', { alertId });
 
-              const response = await equipmentApiClient.resolveAlert(
+              if (!factoryId) {
+                Alert.alert('错误', '无法获取工厂ID');
+                return;
+              }
+
+              const response = await alertApiClient.resolveAlert({
+                factoryId,
                 alertId,
-                undefined,
-                factoryId
-              );
+                resolvedBy: user?.id || 0,
+              });
 
               if (response.success) {
                 equipmentAlertsLogger.info('告警解决成功', { alertId });

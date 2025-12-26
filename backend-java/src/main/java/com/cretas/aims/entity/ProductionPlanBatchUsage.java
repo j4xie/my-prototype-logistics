@@ -1,5 +1,7 @@
 package com.cretas.aims.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -15,6 +17,7 @@ import java.math.BigDecimal;
 @ToString(exclude = {"productionPlan", "materialBatch"})
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "production_plan_batch_usages",
        indexes = {
@@ -41,9 +44,12 @@ public class ProductionPlanBatchUsage extends BaseEntity {
     @Column(name = "used_quantity", precision = 10, scale = 2)
     private BigDecimal usedQuantity = BigDecimal.ZERO;
     // 关联关系
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "production_plan_id", referencedColumnName = "id", insertable = false, updatable = false)
     private ProductionPlan productionPlan;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "material_batch_id", referencedColumnName = "id", insertable = false, updatable = false)
     private MaterialBatch materialBatch;

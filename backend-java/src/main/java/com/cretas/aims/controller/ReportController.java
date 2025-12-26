@@ -131,16 +131,19 @@ public class ReportController {
      * 获取财务报表
      */
     @GetMapping("/finance")
-    @Operation(summary = "获取财务报表", description = "获取指定日期范围的财务报表")
+    @Operation(summary = "获取财务报表", description = "获取指定日期范围的财务报表，默认近30天")
     public ApiResponse<Map<String, Object>> getFinanceReport(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "开始日期") LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "结束日期") LocalDate endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "开始日期，默认30天前") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "结束日期，默认今天") LocalDate endDate) {
+        // 默认值: 近30天
+        LocalDate effectiveEndDate = endDate != null ? endDate : LocalDate.now();
+        LocalDate effectiveStartDate = startDate != null ? startDate : effectiveEndDate.minusDays(30);
         log.info("获取财务报表: factoryId={}, startDate={}, endDate={}",
-                factoryId, startDate, endDate);
-        Map<String, Object> report = reportService.getFinanceReport(factoryId, startDate, endDate);
+                factoryId, effectiveStartDate, effectiveEndDate);
+        Map<String, Object> report = reportService.getFinanceReport(factoryId, effectiveStartDate, effectiveEndDate);
         return ApiResponse.success(report);
     }
 
@@ -165,16 +168,19 @@ public class ReportController {
      * 获取销售报表
      */
     @GetMapping("/sales")
-    @Operation(summary = "获取销售报表", description = "获取指定日期范围的销售报表")
+    @Operation(summary = "获取销售报表", description = "获取指定日期范围的销售报表，默认近30天")
     public ApiResponse<Map<String, Object>> getSalesReport(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "开始日期") LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "结束日期") LocalDate endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "开始日期，默认30天前") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "结束日期，默认今天") LocalDate endDate) {
+        // 默认值: 近30天
+        LocalDate effectiveEndDate = endDate != null ? endDate : LocalDate.now();
+        LocalDate effectiveStartDate = startDate != null ? startDate : effectiveEndDate.minusDays(30);
         log.info("获取销售报表: factoryId={}, startDate={}, endDate={}",
-                factoryId, startDate, endDate);
-        Map<String, Object> report = reportService.getSalesReport(factoryId, startDate, endDate);
+                factoryId, effectiveStartDate, effectiveEndDate);
+        Map<String, Object> report = reportService.getSalesReport(factoryId, effectiveStartDate, effectiveEndDate);
         return ApiResponse.success(report);
     }
 
