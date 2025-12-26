@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>factory_admin1 账号权限与业务操作完整指南</title>
+  <style>
+    :root {
+      --primary-color: #1a73e8;
+      --success-color: #34a853;
+      --warning-color: #fbbc04;
+      --danger-color: #ea4335;
+      --bg-color: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-color: #202124;
+      --text-secondary: #5f6368;
+      --border-color: #dadce0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid var(--primary-color);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      color: var(--text-color);
+      margin: 30px 0 15px;
+      padding: 10px 0;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      margin: 20px 0 10px;
+    }
+
+    h4 {
+      font-size: 1rem;
+      color: var(--text-color);
+      margin: 15px 0 10px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .info-box {
+      background: #e8f0fe;
+      border-left: 4px solid var(--primary-color);
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .success-box {
+      background: #e6f4ea;
+      border-left: 4px solid var(--success-color);
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .warning-box {
+      background: #fef7e0;
+      border-left: 4px solid var(--warning-color);
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .danger-box {
+      background: #fce8e6;
+      border-left: 4px solid var(--danger-color);
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      background: var(--card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background: var(--primary-color);
+      color: white;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: #f5f5f5;
+    }
+
+    code {
+      background: #f1f3f4;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      color: #d93025;
+    }
+
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.85em;
+      margin: 15px 0;
+    }
+
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+
+    .json-key { color: #9cdcfe; }
+    .json-string { color: #ce9178; }
+    .json-number { color: #b5cea8; }
+    .json-boolean { color: #569cd6; }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .badge-success {
+      background: var(--success-color);
+      color: white;
+    }
+
+    .badge-warning {
+      background: var(--warning-color);
+      color: #333;
+    }
+
+    .badge-danger {
+      background: var(--danger-color);
+      color: white;
+    }
+
+    .badge-info {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .flow-diagram {
+      background: #263238;
+      color: #aed581;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.8em;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      margin: 20px 0;
+    }
+
+    .step-number {
+      background: var(--primary-color);
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .nav-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.3s;
+    }
+
+    .nav-tab:hover {
+      background: #f5f5f5;
+    }
+
+    .nav-tab.active {
+      border-bottom-color: var(--primary-color);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .metric-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    .metric-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--primary-color);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      background: var(--primary-color);
+      border-radius: 50%;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      pre {
+        font-size: 0.75em;
+      }
+    }
+
+    .toc {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .toc h3 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+
+    .toc ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .toc li {
+      margin: 8px 0;
+    }
+
+    .toc a {
+      color: var(--text-color);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .toc a:hover {
+      color: var(--primary-color);
+    }
+
+    .toc-part {
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>factory_admin1 账号权限与业务操作完整指南</h1>
+
+    <div class="info-box">
+      <strong>文档说明：</strong>本文档梳理 <code>factory_admin1</code> 账号（工厂超级管理员）的权限逻辑、完整业务操作流程及示例数据流程。
+      <br><strong>最后更新：</strong>2025-12-26
+    </div>
+
+    <!-- 目录 -->
+    <div class="toc">
+      <h3>目录</h3>
+      <ul>
+        <li class="toc-part">第一部分：权限与账号信息</li>
+        <li><a href="#section1">1. 账号基本信息</a></li>
+        <li><a href="#section2">2. 权限架构概览</a></li>
+        <li><a href="#section3">3. 完整登录流程</a></li>
+        <li><a href="#section4">4. 权限验证机制</a></li>
+        <li><a href="#section5">5. 可访问的模块和页面</a></li>
+        <li><a href="#section6">6. 与其他角色对比</a></li>
+        <li><a href="#section7">7. 关键代码文件索引</a></li>
+        <li class="toc-part">第二部分：正常工厂业务流程</li>
+        <li><a href="#section9">9. 完整业务链路图</a></li>
+        <li><a href="#section10">10. 每日工作流程</a></li>
+        <li><a href="#section11">11. 核心功能操作指南</a></li>
+        <li><a href="#section12">12. 数据关系说明</a></li>
+        <li><a href="#section13">13. 常见问题解答</a></li>
+        <li class="toc-part">第三部分：示例数据流程</li>
+        <li><a href="#section15">15. 完整生产案例：带鱼片加工</a></li>
+        <li><a href="#section16">16. 异常场景处理示例</a></li>
+      </ul>
+    </div>
+
+    <!-- 第一部分：权限与账号信息 -->
+    <h2 id="part1">第一部分：权限与账号信息</h2>
+
+    <h3 id="section1">1. 账号基本信息</h3>
+    <div class="card">
+      <table>
+        <tr><th>属性</th><th>值</th></tr>
+        <tr><td><strong>用户名</strong></td><td><code>factory_admin1</code></td></tr>
+        <tr><td><strong>密码</strong></td><td><code>123456</code></td></tr>
+        <tr><td><strong>角色</strong></td><td><span class="badge badge-info">factory_super_admin</span> (工厂超级管理员)</td></tr>
+        <tr><td><strong>所属工厂</strong></td><td><code>F001</code> (白垩纪水产加工一厂)</td></tr>
+        <tr><td><strong>用户ID</strong></td><td><code>22</code></td></tr>
+        <tr><td><strong>部门</strong></td><td><code>management</code></td></tr>
+      </table>
+    </div>
+
+    <h3 id="section2">2. 权限架构概览</h3>
+
+    <h4>2.1 角色层级</h4>
+    <div class="flow-diagram">
+┌─────────────────────────────────────────────────────────┐
+│                     平台角色 (Platform)                  │
+│  super_admin > system_admin > operation_admin > auditor │
+└─────────────────────────────────────────────────────────┘
+                              ↓ 可管理多个工厂
+┌─────────────────────────────────────────────────────────┐
+│                     工厂角色 (Factory)                   │
+│  factory_super_admin > permission_admin > department_   │
+│  admin > operator > viewer > unactivated               │
+└─────────────────────────────────────────────────────────┘</div>
+
+    <h4>2.2 factory_admin1 的权限列表</h4>
+    <div class="card">
+      <pre><code>permissions: [
+  'admin_access',       // ✅ 管理权限
+  'processing_access',  // ✅ 生产模块
+  'farming_access',     // ✅ 农场模块
+  'logistics_access',   // ✅ 物流模块
+  'trace_access',       // ✅ 溯源查询
+  'system_config',      // ✅ 系统配置
+]</code></pre>
+    </div>
+
+    <h3 id="section3">3. 完整登录流程</h3>
+
+    <h4>3.1 流程图</h4>
+    <div class="flow-diagram">
+用户输入 username/password
+         │
+         ▼
+┌─────────────────────────────────────┐
+│  前端: EnhancedLoginScreen          │
+│  调用 useLogin Hook                 │
+└────────────────┬────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────┐
+│  AuthService.login()                │
+│  POST /api/mobile/auth/unified-login│
+└────────────────┬────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────┐
+│  后端: MobileServiceImpl            │
+│  1. 查询 users 表                   │
+│  2. 验证密码 (BCrypt)               │
+│  3. 生成 JWT Token                  │
+└────────────────┬────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────┐
+│  JWT Token 内容                     │
+│  {                                  │
+│    sub: "factory_admin1",           │
+│    userId: 22,                      │
+│    factoryId: "F001",               │
+│    role: "factory_super_admin",     │
+│    exp: <24小时后>                  │
+│  }                                  │
+└────────────────┬────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────┐
+│  前端存储                           │
+│  - accessToken → SecureStore        │
+│  - user 对象 → AuthStore (Zustand)  │
+│  - isAuthenticated = true           │
+└────────────────┬────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────┐
+│  导航到首页 (HomeTab)               │
+│  MainNavigator 渲染可访问的 Tabs    │
+└─────────────────────────────────────┘</div>
+
+    <h4>3.2 关键代码位置</h4>
+    <table>
+      <tr><th>步骤</th><th>文件</th><th>方法/组件</th></tr>
+      <tr><td>登录界面</td><td><code>EnhancedLoginScreen.tsx</code></td><td><code>handleLogin()</code></td></tr>
+      <tr><td>登录逻辑</td><td><code>useLogin.ts</code></td><td><code>login()</code></td></tr>
+      <tr><td>API调用</td><td><code>authService.ts:48-122</code></td><td><code>AuthService.login()</code></td></tr>
+      <tr><td>后端验证</td><td><code>MobileServiceImpl.java:112-201</code></td><td><code>unifiedLogin()</code></td></tr>
+      <tr><td>Token生成</td><td><code>JwtUtil.java</code></td><td><code>generateToken()</code></td></tr>
+      <tr><td>状态存储</td><td><code>authStore.ts</code></td><td><code>login()</code></td></tr>
+    </table>
+
+    <h3 id="section4">4. 权限验证机制</h3>
+
+    <h4>4.1 后端验证 (JwtAuthInterceptor)</h4>
+    <div class="info-box">
+      每个请求都经过 <code>JwtAuthInterceptor.preHandle()</code> 验证
+    </div>
+    <pre><code>// 1. 提取 Token
+String token = authorization.substring(7);  // 移除 "Bearer "
+
+// 2. 验证并提取信息
+Long userId = jwtUtil.getUserIdFromToken(token);        // 22
+String factoryId = jwtUtil.getFactoryIdFromToken(token); // F001
+String role = jwtUtil.getRoleFromToken(token);          // factory_super_admin
+
+// 3. 注入到请求属性
+request.setAttribute("userId", userId);
+request.setAttribute("factoryId", factoryId);
+request.setAttribute("role", role);
+
+// 4. 跨工厂权限检查
+String urlFactoryId = extractFactoryIdFromUrl(requestUri);
+if (!urlFactoryId.equals(tokenFactoryId)) {
+    // 非平台管理员只能访问自己工厂的数据
+    return false;  // 403 Forbidden
+}</code></pre>
+
+    <h4>4.2 前端验证</h4>
+    <pre><code>// MainNavigator.tsx - Tab 可见性控制
+{hasPermission('processing_access') && (
+  &lt;Tab.Screen name="ProcessingTab" component={ProcessingStackNavigator} /&gt;
+)}
+
+// PermissionGuard.tsx - 页面级权限控制
+&lt;PermissionGuard requiredPermissions={['admin_access']}&gt;
+  &lt;ManagementScreen /&gt;
+&lt;/PermissionGuard&gt;
+
+// permissionHelper.ts - 权限检查函数
+function isSuperAdmin(user): boolean {
+  return user?.factoryUser?.role === 'factory_super_admin';
+}</code></pre>
+
+    <h3 id="section5">5. 可访问的模块和页面</h3>
+
+    <h4>5.1 底部导航 Tabs</h4>
+    <table>
+      <tr><th>Tab</th><th>权限要求</th><th>factory_admin1</th></tr>
+      <tr><td>首页 (HomeTab)</td><td>无</td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>考勤 (AttendanceTab)</td><td>userType === 'factory'</td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>生产 (ProcessingTab)</td><td>processing_access</td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>管理 (ManagementTab)</td><td>admin_access</td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>我的 (ProfileTab)</td><td>无</td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>平台 (PlatformTab)</td><td>userType === 'platform'</td><td><span class="badge badge-danger">❌</span></td></tr>
+    </table>
+
+    <h4>5.2 可访问的 API 端点</h4>
+    <table>
+      <tr><th>模块</th><th>端点前缀</th><th>可访问</th></tr>
+      <tr><td>生产批次</td><td><code>/api/mobile/F001/processing/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>原材料</td><td><code>/api/mobile/F001/material-batches/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>质检</td><td><code>/api/mobile/F001/quality-inspections/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>设备</td><td><code>/api/mobile/F001/equipment/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>用户管理</td><td><code>/api/mobile/F001/users/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>部门管理</td><td><code>/api/mobile/F001/departments/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>供应商</td><td><code>/api/mobile/F001/suppliers/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>白名单</td><td><code>/api/mobile/F001/whitelist/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>仪表盘</td><td><code>/api/mobile/F001/reports/dashboard/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td>AI分析</td><td><code>/api/mobile/F001/ai/*</code></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td><strong>其他工厂</strong></td><td><code>/api/mobile/F002/*</code></td><td><span class="badge badge-danger">❌ 禁止</span></td></tr>
+    </table>
+
+    <h3 id="section6">6. 与其他角色对比</h3>
+    <table>
+      <tr><th>功能</th><th>factory_admin1</th><th>operator1</th><th>platform_admin</th></tr>
+      <tr><td><strong>角色</strong></td><td>factory_super_admin</td><td>operator</td><td>platform_admin</td></tr>
+      <tr><td><strong>用户类型</strong></td><td>factory</td><td>factory</td><td>platform</td></tr>
+      <tr><td><strong>所属工厂</strong></td><td>F001</td><td>F001</td><td>无 (可访问所有)</td></tr>
+      <tr><td><strong>可管理用户</strong></td><td><span class="badge badge-success">✅</span></td><td><span class="badge badge-danger">❌</span></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td><strong>可管理部门</strong></td><td><span class="badge badge-success">✅</span></td><td><span class="badge badge-danger">❌</span></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td><strong>可查看报表</strong></td><td><span class="badge badge-success">✅</span></td><td><span class="badge badge-danger">❌</span></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td><strong>访问 F001</strong></td><td><span class="badge badge-success">✅</span></td><td><span class="badge badge-success">✅</span></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td><strong>访问 F002</strong></td><td><span class="badge badge-danger">❌</span></td><td><span class="badge badge-danger">❌</span></td><td><span class="badge badge-success">✅</span></td></tr>
+      <tr><td><strong>登录后跳转</strong></td><td>HomeTab</td><td>打卡页</td><td>平台首页</td></tr>
+    </table>
+
+    <h3 id="section7">7. 关键代码文件索引</h3>
+
+    <h4>后端</h4>
+    <table>
+      <tr><th>功能</th><th>文件路径</th></tr>
+      <tr><td>角色枚举</td><td><code>entity/enums/FactoryUserRole.java</code></td></tr>
+      <tr><td>JWT生成</td><td><code>utils/JwtUtil.java</code></td></tr>
+      <tr><td>请求拦截</td><td><code>config/JwtAuthInterceptor.java</code></td></tr>
+      <tr><td>登录API</td><td><code>controller/MobileController.java</code></td></tr>
+      <tr><td>登录逻辑</td><td><code>service/impl/MobileServiceImpl.java:112-201</code></td></tr>
+      <tr><td>测试数据</td><td><code>resources/data.sql:27</code></td></tr>
+    </table>
+
+    <h4>前端</h4>
+    <table>
+      <tr><th>功能</th><th>文件路径</th></tr>
+      <tr><td>登录界面</td><td><code>screens/auth/EnhancedLoginScreen.tsx</code></td></tr>
+      <tr><td>登录Hook</td><td><code>hooks/useLogin.ts</code></td></tr>
+      <tr><td>认证服务</td><td><code>services/auth/authService.ts</code></td></tr>
+      <tr><td>Token存储</td><td><code>services/tokenManager.ts</code></td></tr>
+      <tr><td>状态管理</td><td><code>store/authStore.ts</code></td></tr>
+      <tr><td>权限检查</td><td><code>utils/permissionHelper.ts</code></td></tr>
+      <tr><td>角色映射</td><td><code>utils/roleMapping.ts</code></td></tr>
+      <tr><td>导航器</td><td><code>navigation/MainNavigator.tsx</code></td></tr>
+      <tr><td>权限守卫</td><td><code>navigation/PermissionGuard.tsx</code></td></tr>
+    </table>
+
+    <div class="success-box">
+      <h4>8. 总结</h4>
+      <p><code>factory_admin1</code> 作为 <strong>工厂超级管理员</strong> (<code>factory_super_admin</code>):</p>
+      <ol>
+        <li><strong>登录后</strong>：自动跳转到首页，可以看到 5 个 Tab（首页、考勤、生产、管理、我的）</li>
+        <li><strong>权限范围</strong>：拥有 F001 工厂的<strong>完整管理权限</strong></li>
+        <li><strong>API访问</strong>：可以调用 F001 的所有业务 API，但<strong>无法访问其他工厂</strong>的数据</li>
+        <li><strong>功能权限</strong>：用户管理、部门管理、设备管理、报表查看、AI分析等<strong>全部开放</strong></li>
+        <li><strong>限制</strong>：不能访问平台级管理功能（PlatformTab）</li>
+      </ol>
+      <p>这是一个<strong>工厂级别的最高权限账号</strong>，适合工厂管理员使用。</p>
+    </div>
+
+    <!-- 第二部分：正常工厂业务流程 -->
+    <h2 id="part2">第二部分：正常工厂业务流程</h2>
+
+    <h3 id="section9">9. 完整业务链路图</h3>
+    <div class="flow-diagram">
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      食品加工厂完整业务流程                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│  ① 原料入库         ② 生产计划         ③ 生产执行         ④ 质检出货    │
+│  ─────────         ─────────         ─────────         ─────────    │
+│                                                                           │
+│  供应商送货          创建计划           开始生产           质检合格       │
+│      ↓               ↓                 ↓                 ↓           │
+│  原料验收           匹配原料           记录各环节          创建出货单    │
+│      ↓               ↓                 ↓                 ↓           │
+│  入库登记           分配批次           计算成本           物流追踪      │
+│      ↓               ↓                 ↓                 ↓           │
+│  MaterialBatch → ProductionPlan → ProductionBatch → ShipmentRecord    │
+│                                                                           │
+│  ═════════════════════════════════════════════════════════════════════  │
+│                           ⑤ 溯源追踪                                     │
+│  ═════════════════════════════════════════════════════════════════════  │
+│  消费者扫码 → 查看完整生产链路 (原料→加工→质检→出货)                      │
+└─────────────────────────────────────────────────────────────────────────┘</div>
+
+    <h3 id="section10">10. 每日工作流程（按角色）</h3>
+
+    <h4>10.1 工厂管理员 (factory_admin1) 每日工作</h4>
+    <table>
+      <tr><th>时间</th><th>操作</th><th>页面</th><th>说明</th></tr>
+      <tr><td>上班</td><td>查看仪表板</td><td>首页 → 生产模块</td><td>查看今日生产任务、设备状态、人员在岗</td></tr>
+      <tr><td>上午</td><td>审批生产计划</td><td>管理 → 生产计划</td><td>确认原料匹配、审批新计划</td></tr>
+      <tr><td>全天</td><td>监控设备告警</td><td>生产 → 设备告警</td><td>处理异常告警</td></tr>
+      <tr><td>下班前</td><td>查看日报</td><td>生产 → 成本分析</td><td>分析今日成本和产出</td></tr>
+    </table>
+
+    <h4>10.2 生产操作员每日工作</h4>
+    <table>
+      <tr><th>时间</th><th>操作</th><th>页面</th><th>说明</th></tr>
+      <tr><td>上班</td><td>打卡</td><td>考勤 → 打卡</td><td>GPS定位打卡</td></tr>
+      <tr><td>开工</td><td>领取任务</td><td>生产 → 批次列表</td><td>查看分配的生产批次</td></tr>
+      <tr><td>生产中</td><td>记录环节</td><td>批次详情</td><td>记录投入、产出、温度等数据</td></tr>
+      <tr><td>下班</td><td>打卡</td><td>考勤 → 打卡</td><td>完成下班打卡</td></tr>
+    </table>
+
+    <h4>10.3 质检员每日工作</h4>
+    <table>
+      <tr><th>时间</th><th>操作</th><th>页面</th><th>说明</th></tr>
+      <tr><td>全天</td><td>创建质检记录</td><td>生产 → 质检管理</td><td>对完成的批次进行质检</td></tr>
+      <tr><td>全天</td><td>拍照上传</td><td>创建质检记录</td><td>上传检验照片</td></tr>
+      <tr><td>下班前</td><td>统计分析</td><td>生产 → 质检统计</td><td>查看今日合格率</td></tr>
+    </table>
+
+    <h3 id="section11">11. 核心功能操作指南</h3>
+
+    <!-- 使用Tab切换 -->
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="showTab('tab1')">原材料管理</div>
+      <div class="nav-tab" onclick="showTab('tab2')">生产计划</div>
+      <div class="nav-tab" onclick="showTab('tab3')">生产批次</div>
+      <div class="nav-tab" onclick="showTab('tab4')">质检管理</div>
+      <div class="nav-tab" onclick="showTab('tab5')">考勤打卡</div>
+      <div class="nav-tab" onclick="showTab('tab6')">成本分析</div>
+      <div class="nav-tab" onclick="showTab('tab7')">设备管理</div>
+      <div class="nav-tab" onclick="showTab('tab8')">出货管理</div>
+    </div>
+
+    <div id="tab1" class="tab-content active">
+      <h4>11.1 原材料管理</h4>
+      <p><strong>入口</strong>: 生产模块 → 原材料管理</p>
+
+      <div class="card">
+        <h4>新原料入库操作</h4>
+        <ol>
+          <li>点击右上角 "+" 按钮</li>
+          <li>填写批次信息:
+            <ul>
+              <li>批次号 (自动生成或手动输入)</li>
+              <li>原料类型 (下拉选择：鲈鱼、带鱼等)</li>
+              <li>入库数量 (kg)</li>
+              <li>单价 (元/kg)</li>
+              <li>供应商 (下拉选择)</li>
+              <li>过期日期</li>
+            </ul>
+          </li>
+          <li>点击"保存"完成入库</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h4>库存预警查看</h4>
+        <p>顶部Tab切换:</p>
+        <ul>
+          <li>"全部": 所有批次</li>
+          <li>"即将过期": 7天内过期的批次 <span class="badge badge-warning">黄色警告</span></li>
+          <li>"已过期": 已过期批次 <span class="badge badge-danger">红色警告</span></li>
+          <li>"低库存": 库存不足的原料</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>转冻品操作</h4>
+        <ol>
+          <li>在批次列表中点击目标批次</li>
+          <li>点击"转冻品"按钮</li>
+          <li>确认转换 (鲜品→冻品)</li>
+          <li>系统自动更新存储类型</li>
+        </ol>
+      </div>
+    </div>
+
+    <div id="tab2" class="tab-content">
+      <h4>11.2 生产计划管理</h4>
+      <p><strong>入口</strong>: 生产模块 → 生产计划</p>
+
+      <div class="card">
+        <h4>创建新计划</h4>
+        <ol>
+          <li>点击右上角 "+" 按钮</li>
+          <li>选择计划类型:
+            <ul>
+              <li>"库存转化": 使用现有库存生产</li>
+              <li>"未来计划": 预订原料后生产</li>
+            </ul>
+          </li>
+          <li>填写计划信息: 产品类型、客户、计划产量、计划日期</li>
+          <li><strong>【关键步骤】匹配原料:</strong>
+            <ul>
+              <li>系统自动计算所需原料量</li>
+              <li>显示可用库存列表</li>
+              <li>选择要使用的原料批次</li>
+              <li>分配数量</li>
+            </ul>
+          </li>
+          <li>点击"创建计划"</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h4>计划状态流转</h4>
+        <div class="flow-diagram" style="font-size: 1em;">
+待开始 (PENDING)
+    ↓ 点击"开始生产"
+进行中 (IN_PROGRESS)
+    ↓ 点击"完成" (输入实际产量)
+已完成 (COMPLETED)</div>
+      </div>
+    </div>
+
+    <div id="tab3" class="tab-content">
+      <h4>11.3 生产批次管理</h4>
+      <p><strong>入口</strong>: 生产模块 → 批次管理</p>
+
+      <div class="card">
+        <h4>创建生产批次</h4>
+        <ol>
+          <li>点击右上角 "+" 按钮</li>
+          <li>填写批次信息:
+            <ul>
+              <li>批次号 (自动生成: PB-YYYYMMDD-XXX)</li>
+              <li>关联生产计划 (可选)</li>
+              <li>产品类型</li>
+              <li>目标产量</li>
+              <li>负责人</li>
+            </ul>
+          </li>
+          <li>点击"创建"</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h4>批次详情页操作</h4>
+        <p><strong>详情Tab:</strong></p>
+        <ul>
+          <li>查看批次基本信息</li>
+          <li>查看状态 (计划中/进行中/已完成)</li>
+          <li>查看成本明细 (原料/人工/设备)</li>
+        </ul>
+        <p><strong>消耗Tab:</strong></p>
+        <ul>
+          <li>查看原料消耗记录</li>
+          <li>查看总消耗量和成本</li>
+        </ul>
+        <p><strong>操作按钮:</strong></p>
+        <ul>
+          <li>"质检": 跳转到创建质检记录</li>
+          <li>"完成生产": 标记批次完成</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="tab4" class="tab-content">
+      <h4>11.4 质检管理</h4>
+      <p><strong>入口</strong>: 生产模块 → 质检管理</p>
+
+      <div class="card">
+        <h4>创建质检记录</h4>
+        <ol>
+          <li>点击右上角 "+" 或从批次详情点击"质检"</li>
+          <li>选择关联批次</li>
+          <li>填写检查项目:
+            <ul>
+              <li>点击"添加检查项"</li>
+              <li>输入项目名称 (如: 外观检查)</li>
+              <li>输入检查标准 (如: 无异味、无杂质)</li>
+              <li>选择结果: 合格/不合格</li>
+              <li>添加备注</li>
+            </ul>
+          </li>
+          <li>填写数量统计: 合格数量、不合格数量、不合格原因</li>
+          <li>上传照片 (可选)</li>
+          <li>点击"提交质检"</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h4>质检结果处理</h4>
+        <div class="success-box">
+          <strong>质检通过 (PASSED):</strong><br>
+          → 批次可进入出货流程
+        </div>
+        <div class="danger-box">
+          <strong>质检不通过 (FAILED):</strong><br>
+          → 进入返工流程<br>
+          → 创建返工记录<br>
+          → 返工完成后重新质检
+        </div>
+      </div>
+    </div>
+
+    <div id="tab5" class="tab-content">
+      <h4>11.5 考勤打卡</h4>
+      <p><strong>入口</strong>: 底部Tab → 考勤</p>
+
+      <div class="card">
+        <h4>上班打卡</h4>
+        <ol>
+          <li>进入考勤页面</li>
+          <li>系统自动获取GPS定位</li>
+          <li>显示当前时间</li>
+          <li>点击"上班打卡"按钮</li>
+          <li>确认弹框 → 确认</li>
+          <li>打卡成功，显示打卡时间</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h4>下班打卡</h4>
+        <ol>
+          <li>进入考勤页面</li>
+          <li>显示今日已打卡记录</li>
+          <li>点击"下班打卡"按钮</li>
+          <li>确认弹框 → 确认</li>
+          <li>系统计算工作时长</li>
+        </ol>
+      </div>
+    </div>
+
+    <div id="tab6" class="tab-content">
+      <h4>11.6 成本分析 (AI功能)</h4>
+      <p><strong>入口</strong>: 生产模块 → 成本分析</p>
+
+      <div class="card">
+        <h4>单批次分析</h4>
+        <ol>
+          <li>选择要分析的批次</li>
+          <li>查看成本明细:
+            <ul>
+              <li>原料成本: XX元 (占比 XX%)</li>
+              <li>人工成本: XX元 (占比 XX%)</li>
+              <li>设备成本: XX元 (占比 XX%)</li>
+              <li>其他成本: XX元 (占比 XX%)</li>
+              <li>总成本: XX元</li>
+              <li>单位成本: XX元/kg</li>
+            </ul>
+          </li>
+          <li>点击"AI分析"获取优化建议</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h4>AI对话分析</h4>
+        <ol>
+          <li>进入AI分析页面</li>
+          <li>系统显示批次数据摘要</li>
+          <li>可以输入问题，如:
+            <ul>
+              <li>"这个批次成本为什么偏高？"</li>
+              <li>"如何降低人工成本？"</li>
+              <li>"与上周的批次对比如何？"</li>
+            </ul>
+          </li>
+          <li>AI返回分析和建议</li>
+          <li>可以继续追问</li>
+        </ol>
+      </div>
+    </div>
+
+    <div id="tab7" class="tab-content">
+      <h4>11.7 设备管理</h4>
+      <p><strong>入口</strong>: 生产模块 → 设备监控</p>
+
+      <div class="card">
+        <h4>查看设备状态</h4>
+        <p>列表显示所有设备:</p>
+        <ul>
+          <li>设备名称</li>
+          <li>当前状态 (运行中/停止/维护中)</li>
+          <li>温度 (冷库设备)</li>
+          <li>运行时长</li>
+          <li>最近告警</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>处理设备告警</h4>
+        <ol>
+          <li>进入设备告警页面</li>
+          <li>查看未处理告警 (红色标记)</li>
+          <li>点击告警条目</li>
+          <li>查看详情: 告警类型、严重程度、发生时间、设备信息</li>
+          <li>处理选项:
+            <ul>
+              <li>"标记已处理": 问题已解决</li>
+              <li>"创建维修单": 需要维修</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <div id="tab8" class="tab-content">
+      <h4>11.8 出货管理</h4>
+      <p><strong>入口</strong>: 管理模块 → 出货管理</p>
+
+      <div class="card">
+        <h4>创建出货单</h4>
+        <ol>
+          <li>点击右上角 "+"</li>
+          <li>选择客户</li>
+          <li>添加产品:
+            <ul>
+              <li>选择产品类型</li>
+              <li>选择生产批次 (已质检通过的)</li>
+              <li>输入数量</li>
+            </ul>
+          </li>
+          <li>填写物流信息: 物流公司、预计发货日期</li>
+          <li>点击"创建出货单"</li>
+        </ol>
+      </div>
+    </div>
+
+    <h3 id="section12">12. 数据关系说明</h3>
+
+    <h4>12.1 核心实体关系</h4>
+    <div class="flow-diagram">
+供应商 (Supplier)
+    ↓ 提供
+原料批次 (MaterialBatch)
+    ↓ 消耗
+生产计划 (ProductionPlan) ←── 关联 ──→ 产品类型 (ProductType)
+    ↓ 执行
+生产批次 (ProductionBatch)
+    ├─── 质检记录 (QualityInspection)
+    ├─── 设备使用 (BatchEquipmentUsage)
+    ├─── 人工记录 (EmployeeWorkSession)
+    └─── 环节记录 (ProcessingStageRecord)
+             ↓ 合格后
+出货记录 (ShipmentRecord) ←── 关联 ──→ 客户 (Customer)</div>
+
+    <h4>12.2 成本计算公式</h4>
+    <div class="card">
+      <pre><code>总成本 = 原料成本 + 人工成本 + 设备成本 + 其他成本
+
+原料成本 = Σ(原料批次单价 × 消耗量)
+人工成本 = Σ(员工时薪 × 工作时长)
+设备成本 = Σ(设备运行成本 × 使用时长)
+
+单位成本 = 总成本 / 良品产量
+良率 = 良品产量 / 实际产量 × 100%</code></pre>
+    </div>
+
+    <h3 id="section13">13. 常见问题解答</h3>
+
+    <div class="card">
+      <h4>Q1: 原料不足怎么办？</h4>
+      <p><strong>答</strong>: 在生产计划创建时，系统会自动检查库存。如果显示"未完全匹配"，需要：</p>
+      <ol>
+        <li>等待新原料入库</li>
+        <li>或调整计划产量</li>
+        <li>或选择其他可用批次</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h4>Q2: 质检不通过后如何处理？</h4>
+      <p><strong>答</strong>:</p>
+      <ol>
+        <li>创建返工记录</li>
+        <li>返工完成后重新质检</li>
+        <li>直到质检通过才能出货</li>
+        <li>不合格品可进入报废流程</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h4>Q3: 如何查看某批次的完整溯源信息？</h4>
+      <p><strong>答</strong>:</p>
+      <ol>
+        <li>进入生产模块 → 溯源查询</li>
+        <li>输入批次号或扫描产品码</li>
+        <li>查看完整的生产链路</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h4>Q4: 如何导出报表？</h4>
+      <p><strong>答</strong>:</p>
+      <ol>
+        <li>进入对应模块 (如原料管理)</li>
+        <li>点击右上角"导出"按钮</li>
+        <li>选择时间范围</li>
+        <li>系统生成Excel文件</li>
+      </ol>
+    </div>
+
+    <h3 id="section14">14. 关键页面路径汇总</h3>
+    <table>
+      <tr><th>功能</th><th>导航路径</th></tr>
+      <tr><td><strong>生产仪表板</strong></td><td>首页 → 生产模块</td></tr>
+      <tr><td><strong>原料管理</strong></td><td>生产 → 原材料管理</td></tr>
+      <tr><td><strong>生产计划</strong></td><td>生产 → 生产计划</td></tr>
+      <tr><td><strong>批次管理</strong></td><td>生产 → 批次管理</td></tr>
+      <tr><td><strong>质检管理</strong></td><td>生产 → 质检管理</td></tr>
+      <tr><td><strong>成本分析</strong></td><td>生产 → 成本分析</td></tr>
+      <tr><td><strong>设备监控</strong></td><td>生产 → 设备监控</td></tr>
+      <tr><td><strong>设备告警</strong></td><td>生产 → 设备告警</td></tr>
+      <tr><td><strong>考勤打卡</strong></td><td>底部Tab → 考勤</td></tr>
+      <tr><td><strong>用户管理</strong></td><td>管理 → 用户管理</td></tr>
+      <tr><td><strong>供应商</strong></td><td>管理 → 供应商管理</td></tr>
+      <tr><td><strong>客户</strong></td><td>管理 → 客户管理</td></tr>
+      <tr><td><strong>出货管理</strong></td><td>管理 → 出货管理</td></tr>
+      <tr><td><strong>溯源查询</strong></td><td>生产 → 溯源查询</td></tr>
+    </table>
+
+    <!-- 第三部分：示例数据流程 -->
+    <h2 id="part3">第三部分：示例数据流程</h2>
+
+    <h3 id="section15">15. 完整生产案例：带鱼片加工</h3>
+
+    <div class="info-box">
+      <h4>15.1 场景背景</h4>
+      <table>
+        <tr><td><strong>日期</strong></td><td>2025-12-26</td></tr>
+        <tr><td><strong>工厂</strong></td><td>F001 (白垩纪水产加工一厂)</td></tr>
+        <tr><td><strong>操作员</strong></td><td>factory_admin1 (工厂超级管理员)</td></tr>
+        <tr><td><strong>客户订单</strong></td><td>鲜食超市需要 80kg 带鱼片</td></tr>
+      </table>
+    </div>
+
+    <h4>15.2 步骤一：原料入库</h4>
+    <div class="card">
+      <p><strong>操作</strong>: 生产 → 原材料管理 → 点击 "+"</p>
+      <p><strong>创建原料批次</strong>:</p>
+      <pre><code>{
+  "batchNumber": "MB-20251226-001",
+  "materialTypeId": "RMT-F001-002",
+  "materialTypeName": "带鱼",
+  "supplierId": "SUP-F001-001",
+  "supplierName": "舟山渔业合作社",
+  "quantity": 150,
+  "unit": "kg",
+  "unitPrice": 18.50,
+  "totalCost": 2775.00,
+  "storageType": "fresh",
+  "storageLocation": "A区-冷藏库-01",
+  "receivedDate": "2025-12-26T08:30:00",
+  "expirationDate": "2025-12-29T23:59:59",
+  "status": "available"
+}</code></pre>
+      <p><strong>API 调用</strong>:</p>
+      <pre><code>POST /api/mobile/F001/material-batches
+Authorization: Bearer &lt;factory_admin1的Token&gt;</code></pre>
+      <p><strong>系统响应</strong>:</p>
+      <pre><code>{
+  "success": true,
+  "data": {
+    "id": "mb-uuid-12345",
+    "batchNumber": "MB-20251226-001",
+    "availableQuantity": 150,
+    "status": "available"
+  },
+  "message": "原料入库成功"
+}</code></pre>
+    </div>
+
+    <h4>15.3 步骤二：创建生产计划</h4>
+    <div class="card">
+      <p><strong>操作</strong>: 生产 → 生产计划 → 点击 "+"</p>
+      <p><strong>创建计划</strong>:</p>
+      <pre><code>{
+  "planName": "带鱼片-鲜食超市订单",
+  "productTypeId": "PT-F001-003",
+  "productTypeName": "带鱼片",
+  "customerId": "CUS-F001-001",
+  "customerName": "鲜食超市",
+  "targetOutput": 80,
+  "unit": "kg",
+  "plannedStartDate": "2025-12-26T09:00:00",
+  "plannedEndDate": "2025-12-26T17:00:00",
+  "type": "STOCK_CONVERSION",
+  "priority": "high"
+}</code></pre>
+
+      <div class="info-box">
+        <h4>系统自动计算原料需求</h4>
+        <ul>
+          <li>产品类型: 带鱼片</li>
+          <li>转换率: 0.65 (即 1kg 带鱼 → 0.65kg 带鱼片)</li>
+          <li>目标产量: 80kg</li>
+          <li>计算: 80 ÷ 0.65 = 123.08kg (需要原料量)</li>
+          <li>取整: 需要 <strong>124kg 带鱼</strong></li>
+        </ul>
+      </div>
+
+      <p><strong>原料匹配界面显示</strong>:</p>
+      <div class="flow-diagram">
+┌─────────────────────────────────────────────────────────┐
+│  原料匹配                                                │
+├─────────────────────────────────────────────────────────┤
+│  需求: 124 kg 带鱼                                       │
+│  可用库存:                                               │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ ☑ MB-20251226-001  带鱼  150kg可用  18.50元/kg    │  │
+│  │   分配数量: [124] kg                               │  │
+│  └──────────────────────────────────────────────────┘  │
+│  匹配状态: ✅ 完全匹配 (库存充足)                         │
+│  预计原料成本: 124 × 18.50 = 2,294.00 元                 │
+└─────────────────────────────────────────────────────────┘</div>
+    </div>
+
+    <h4>15.4 步骤三：开始生产</h4>
+    <div class="card">
+      <p><strong>操作</strong>: 生产计划详情 → 点击"开始生产"</p>
+      <p><strong>系统自动创建生产批次</strong>:</p>
+      <pre><code>{
+  "id": "pb-uuid-11111",
+  "batchNumber": "PB-20251226-001",
+  "productionPlanId": "pp-uuid-67890",
+  "productTypeId": "PT-F001-003",
+  "targetQuantity": 80,
+  "status": "IN_PROGRESS",
+  "startTime": "2025-12-26T09:15:00",
+  "supervisorId": 22,
+  "supervisorName": "factory_admin1"
+}</code></pre>
+      <p><strong>计划状态更新</strong>: <code>PENDING → IN_PROGRESS</code></p>
+    </div>
+
+    <h4>15.5 步骤四：生产环节记录</h4>
+    <div class="card">
+      <p>生产过程中，操作员记录各个加工环节：</p>
+
+      <div class="timeline">
+        <div class="timeline-item">
+          <h4>环节1: 解冻 (THAWING)</h4>
+          <ul>
+            <li>投入: 124.0 kg → 产出: 123.5 kg</li>
+            <li>损耗: 0.5 kg</li>
+            <li>温度: 4.0°C</li>
+            <li>时间: 09:20 - 10:20 (1小时)</li>
+            <li>操作员: 张三</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <h4>环节2: 清洗 (WASHING)</h4>
+          <ul>
+            <li>投入: 123.5 kg → 产出: 122.0 kg</li>
+            <li>损耗: 1.5 kg</li>
+            <li>温度: 8.0°C</li>
+            <li>时间: 10:25 - 11:00 (35分钟)</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <h4>环节3: 切片 (SLICING)</h4>
+          <ul>
+            <li>投入: 122.0 kg → 产出: 82.0 kg</li>
+            <li>损耗: 40.0 kg (鱼头、鱼骨等)</li>
+            <li>设备: 切片机A (EQ-F001-003)</li>
+            <li>时间: 11:10 - 13:30 (2.3小时)</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <h4>环节4: 包装 (PACKAGING)</h4>
+          <ul>
+            <li>投入: 82.0 kg → 产出: 81.5 kg</li>
+            <li>损耗: 0.5 kg</li>
+            <li>时间: 14:00 - 15:30 (1.5小时)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h4>15.6 步骤五：完成生产</h4>
+    <div class="card">
+      <p><strong>操作</strong>: 批次详情 → 点击"完成生产"</p>
+      <p><strong>输入实际产量</strong>: 81.5 kg</p>
+
+      <div class="success-box">
+        <h4>系统自动计算</h4>
+        <ul>
+          <li>实际良品产量: <strong>81.5 kg</strong></li>
+          <li>目标产量: 80 kg</li>
+          <li>完成率: 81.5 / 80 = <strong>101.88%</strong> ✅ 超额完成</li>
+          <li>原料投入: 124 kg</li>
+          <li>产出率: 81.5 / 124 = <strong>65.73%</strong> (接近预期的65%)</li>
+          <li>损耗: 124 - 81.5 = 42.5 kg (34.27%)</li>
+        </ul>
+      </div>
+
+      <h4>成本明细</h4>
+      <table>
+        <tr><th>成本类型</th><th>计算方式</th><th>金额</th><th>占比</th></tr>
+        <tr><td>原料成本</td><td>124 kg × 18.50 元/kg</td><td>¥2,294.00</td><td>92.2%</td></tr>
+        <tr><td>人工成本</td><td>
+          解冻: 1.0h × 25元<br>
+          清洗: 0.5h × 25元<br>
+          切片: 2.3h × 30元<br>
+          包装: 1.5h × 25元
+        </td><td>¥144.00</td><td>5.8%</td></tr>
+        <tr><td>设备成本</td><td>
+          切片机: 2.3h × 15元<br>
+          包装机: 1.5h × 10元
+        </td><td>¥49.50</td><td>2.0%</td></tr>
+        <tr><th>总成本</th><th></th><th>¥2,487.50</th><th>100%</th></tr>
+        <tr><td>单位成本</td><td>2,487.50 / 81.5</td><td colspan="2"><strong>¥30.52/kg</strong></td></tr>
+      </table>
+    </div>
+
+    <h4>15.7 步骤六：质量检验</h4>
+    <div class="card">
+      <p><strong>操作</strong>: 生产 → 质检管理 → 点击 "+" 或从批次详情点击"质检"</p>
+      <p><strong>质检项目</strong>:</p>
+      <table>
+        <tr><th>检查项目</th><th>检查标准</th><th>结果</th><th>备注</th></tr>
+        <tr><td>外观检查</td><td>色泽正常、无异物</td><td><span class="badge badge-success">合格</span></td><td>色泽银白、表面光滑</td></tr>
+        <tr><td>气味检查</td><td>无异味</td><td><span class="badge badge-success">合格</span></td><td>新鲜海鲜气味</td></tr>
+        <tr><td>规格检查</td><td>厚度2-3mm</td><td><span class="badge badge-success">合格</span></td><td>平均厚度2.5mm</td></tr>
+        <tr><td>重量检查</td><td>500g±10g/包</td><td><span class="badge badge-success">合格</span></td><td>抽检5包，均在495-505g范围内</td></tr>
+      </table>
+      <p><strong>总体结果</strong>: <span class="badge badge-success">PASSED - 合格</span></p>
+      <p><strong>合格数量</strong>: 81.5 kg | <strong>不合格数量</strong>: 0 kg</p>
+    </div>
+
+    <h4>15.8 步骤七：创建出货单</h4>
+    <div class="card">
+      <p><strong>操作</strong>: 管理 → 出货管理 → 点击 "+"</p>
+      <pre><code>{
+  "shipmentNumber": "SH-20251226-001",
+  "customerId": "CUS-F001-001",
+  "customerName": "鲜食超市",
+  "items": [
+    {
+      "productionBatchId": "pb-uuid-11111",
+      "batchNumber": "PB-20251226-001",
+      "productName": "带鱼片",
+      "quantity": 80,
+      "unit": "kg",
+      "unitPrice": 45.00,
+      "amount": 3600.00
+    }
+  ],
+  "totalAmount": 3600.00,
+  "shippingInfo": {
+    "carrier": "顺丰冷链",
+    "trackingNumber": "SF1234567890",
+    "estimatedDelivery": "2025-12-27T10:00:00"
+  },
+  "status": "PENDING_SHIPMENT"
+}</code></pre>
+
+      <div class="success-box">
+        <h4>利润计算</h4>
+        <table>
+          <tr><td>销售收入</td><td>80 kg × 45 元/kg</td><td><strong>¥3,600.00</strong></td></tr>
+          <tr><td>生产成本</td><td>按比例: 80/81.5 × 2487.50</td><td>¥2,441.97</td></tr>
+          <tr><td>毛利润</td><td>3600.00 - 2441.97</td><td><strong>¥1,158.03</strong></td></tr>
+          <tr><td>毛利率</td><td>1158.03 / 3600.00</td><td><strong>32.17%</strong></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <h4>15.9 完整数据流转图</h4>
+    <div class="flow-diagram">
+┌────────────────────────────────────────────────────────────────────────────┐
+│                           完整数据流转                                       │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  供应商                原料批次              生产计划              生产批次    │
+│  ┌─────┐             ┌──────────┐          ┌──────────┐          ┌────────┐│
+│  │舟山 │──送货──→ │MB-20251226│──匹配──→│PP-20251226│──执行──→│PB-20251│││
+│  │渔业 │             │-001      │          │-001      │          │226-001 ││
+│  └─────┘             │150kg带鱼 │          │目标80kg  │          │产出81.5││
+│                       │18.50元/kg│          │          │          │kg      ││
+│                       │剩余26kg  │          │          │          │        ││
+│                       └──────────┘          └──────────┘          └────────┘│
+│                            │                     │                     │     │
+│                            │                     │                     ↓     │
+│                            │                     │               ┌──────────┐│
+│                            │                     │               │ 成本计算 ││
+│                            │                     │               │原料 2294 ││
+│                            │                     │               │人工  144 ││
+│                            │                     │               │设备   50 ││
+│                            │                     │               │总计 2488 ││
+│                            │                     │               └──────────┘│
+│                            │                     │                     │     │
+│                            ↓                     ↓                     ↓     │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │                           质检通过                                      │ │
+│  │  QI-20251226-001  |  检验员: 李质检  |  结果: 合格  |  可出货量: 81.5kg │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+│                                       │                                      │
+│                                       ↓                                      │
+│                              ┌──────────────┐                                │
+│                              │   出货单      │                                │
+│                              │SH-20251226-001│                                │
+│                              │客户: 鲜食超市 │                                │
+│                              │数量: 80kg     │                                │
+│                              │金额: 3600元   │                                │
+│                              │利润: 1158元   │                                │
+│                              │毛利率: 32.17% │                                │
+│                              └──────────────┘                                │
+│                                       │                                      │
+│                                       ↓                                      │
+│                              ┌──────────────┐                                │
+│                              │   溯源码      │                                │
+│                              │QR-PB-20251226│                                │
+│                              │-001          │                                │
+│                              │扫码可查完整   │                                │
+│                              │生产链路       │                                │
+│                              └──────────────┘                                │
+└────────────────────────────────────────────────────────────────────────────┘</div>
+
+    <h4>15.10 关键指标汇总</h4>
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-value">124 kg</div>
+        <div class="metric-label">原料投入 (带鱼)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">81.5 kg</div>
+        <div class="metric-label">成品产出 (带鱼片)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">65.73%</div>
+        <div class="metric-label">产出率</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">6.5 h</div>
+        <div class="metric-label">生产耗时</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">¥2,294</div>
+        <div class="metric-label">原料成本 (92.2%)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">¥144</div>
+        <div class="metric-label">人工成本 (5.8%)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">¥49.50</div>
+        <div class="metric-label">设备成本 (2.0%)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">¥2,487.50</div>
+        <div class="metric-label">总成本</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">¥30.52/kg</div>
+        <div class="metric-label">单位成本</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">¥45/kg</div>
+        <div class="metric-label">销售单价</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">¥1,158</div>
+        <div class="metric-label">毛利润</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" style="color: var(--success-color);">32.17%</div>
+        <div class="metric-label">毛利率</div>
+      </div>
+    </div>
+
+    <h4>15.11 API 调用时序</h4>
+    <div class="card">
+      <ol>
+        <li><strong>登录获取Token</strong><br>
+          <code>POST /api/mobile/auth/unified-login</code> → 返回 accessToken</li>
+        <li><strong>创建原料批次</strong><br>
+          <code>POST /api/mobile/F001/material-batches</code> → 返回 batchId: mb-uuid-12345</li>
+        <li><strong>查询转换率配置</strong><br>
+          <code>GET /api/mobile/F001/conversions?rawMaterialTypeId=RMT-F001-002</code> → 返回 conversionRate: 0.65</li>
+        <li><strong>创建生产计划</strong><br>
+          <code>POST /api/mobile/F001/production-plans</code> → 返回 planId: pp-uuid-67890</li>
+        <li><strong>开始生产 (创建生产批次)</strong><br>
+          <code>POST /api/mobile/F001/production-plans/pp-uuid-67890/start</code> → 返回 batchId: pb-uuid-11111</li>
+        <li><strong>记录加工环节 (多次调用)</strong><br>
+          <code>POST /api/mobile/F001/processing/batches/pb-uuid-11111/stages</code> → 返回 stageId</li>
+        <li><strong>完成生产</strong><br>
+          <code>POST /api/mobile/F001/processing/batches/pb-uuid-11111/complete</code> → 返回 costBreakdown</li>
+        <li><strong>创建质检记录</strong><br>
+          <code>POST /api/mobile/F001/quality-inspections</code> → 返回 inspectionId: qi-uuid-001</li>
+        <li><strong>创建出货单</strong><br>
+          <code>POST /api/mobile/F001/shipments</code> → 返回 shipmentId: sh-uuid-001</li>
+        <li><strong>生成溯源码</strong><br>
+          <code>GET /api/mobile/F001/processing/batches/pb-uuid-11111/trace-code</code> → 返回 traceCode: QR-PB-20251226-001</li>
+      </ol>
+    </div>
+
+    <h3 id="section16">16. 异常场景处理示例</h3>
+
+    <h4>16.1 原料不足场景</h4>
+    <div class="warning-box">
+      <p><strong>场景</strong>: 创建生产计划时，需要124kg带鱼，但库存只有100kg</p>
+      <div class="flow-diagram" style="background: #263238;">
+┌─────────────────────────────────────────────────────────┐
+│  ⚠️ 原料不足                                             │
+│                                                          │
+│  需求: 124 kg 带鱼                                       │
+│  可用: 100 kg                                            │
+│  缺口: 24 kg                                             │
+│                                                          │
+│  选项:                                                   │
+│  [1] 调整计划产量为 65 kg (可完全匹配)                   │
+│  [2] 创建未来计划 (等待新原料入库后自动匹配)             │
+│  [3] 部分匹配 (100 kg, 缺口24kg待补)                     │
+└─────────────────────────────────────────────────────────┘</div>
+    </div>
+
+    <h4>16.2 质检不通过场景</h4>
+    <div class="danger-box">
+      <p><strong>场景</strong>: 抽检发现5包中有2包重量不达标</p>
+      <pre><code>{
+  "overallResult": "FAILED",
+  "qualifiedQuantity": 65.0,
+  "unqualifiedQuantity": 16.5,
+  "failureReasons": ["部分产品重量不达标"],
+  "reworkRequired": true
+}</code></pre>
+      <p><strong>后续流程</strong>:</p>
+      <ol>
+        <li>创建返工单 (RW-20251226-001)</li>
+        <li>对16.5kg不合格品重新加工</li>
+        <li>返工完成后再次质检</li>
+        <li>全部合格后才能出货</li>
+      </ol>
+    </div>
+
+    <h4>16.3 设备故障场景</h4>
+    <div class="danger-box">
+      <p><strong>场景</strong>: 切片机在生产中突然故障</p>
+      <pre><code>{
+  "alertId": "ALT-20251226-001",
+  "equipmentId": "EQ-F001-003",
+  "equipmentName": "切片机A",
+  "alertType": "EQUIPMENT_FAILURE",
+  "severity": "HIGH",
+  "description": "刀片磨损严重，需要更换",
+  "timestamp": "2025-12-26T12:30:00"
+}</code></pre>
+      <p><strong>处理流程</strong>:</p>
+      <ol>
+        <li>生产批次暂停</li>
+        <li>切换到备用设备 (切片机B)</li>
+        <li>创建设备维修单</li>
+        <li>继续生产</li>
+        <li>在成本中记录额外设备使用时间</li>
+      </ol>
+    </div>
+
+    <!-- 页脚 -->
+    <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-secondary);">
+      <p>白垩纪食品溯源系统 - factory_admin1 权限与业务指南</p>
+      <p>最后更新: 2025-12-26</p>
+    </div>
+  </div>
+
+  <script>
+    function showTab(tabId) {
+      // 隐藏所有 tab 内容
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      // 移除所有 tab 按钮的 active
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      // 显示选中的 tab
+      document.getElementById(tabId).classList.add('active');
+      // 给点击的按钮添加 active
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>

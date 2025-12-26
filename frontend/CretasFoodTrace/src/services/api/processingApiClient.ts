@@ -76,6 +76,17 @@ export interface ProcessingBatch {
   rawMaterials?: RawMaterial[];
   supplier?: BatchSupplier;
   notes?: string;
+  // Cost fields (Phase 4 data integrity)
+  materialCost?: number;
+  laborCost?: number;
+  equipmentCost?: number;
+  otherCost?: number;
+  totalCost?: number;
+  unitCost?: number;
+  // Quality fields (Phase 4 data integrity)
+  goodQuantity?: number;
+  defectQuantity?: number;
+  qualityStatus?: 'PENDING' | 'PASSED' | 'FAILED' | 'CONDITIONAL';
 }
 
 // Type alias for backward compatibility

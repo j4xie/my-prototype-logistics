@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>仓储物流 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 首页 -->
+    <div class="page active" id="home-page">
+      <header class="header role-header--warehouse">
+        <h1> 仓储工作台</h1>
+        <p>今日入库 5 单 | 待出货 8 单</p>
+      </header>
+
+      <div class="page-content">
+        <!-- 今日统计 -->
+        <div class="today-stats">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-card-icon inbound"></div>
+              <span class="stat-card-title">今日入库</span>
+            </div>
+            <div class="stat-card-value">856</div>
+            <div class="stat-card-unit">kg</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-card-icon outbound"></div>
+              <span class="stat-card-title">今日出库</span>
+            </div>
+            <div class="stat-card-value">1,240</div>
+            <div class="stat-card-unit">kg</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-card-icon pending"></div>
+              <span class="stat-card-title">待出货</span>
+            </div>
+            <div class="stat-card-value">8</div>
+            <div class="stat-card-unit">单</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-card-icon warning">[!]</div>
+              <span class="stat-card-title">库存预警</span>
+            </div>
+            <div class="stat-card-value">3</div>
+            <div class="stat-card-unit">项</div>
+          </div>
+        </div>
+
+        <!-- 待出货订单 -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title"> 待出货订单</span>
+            <span class="section-more">查看全部 ></span>
+          </div>
+          <div class="order-list">
+            <div class="order-card urgent">
+              <div class="order-header">
+                <span class="order-id">SH-20251226-001</span>
+                <span class="order-status waiting">待打包</span>
+              </div>
+              <div class="order-info">
+                <div class="order-info-item">
+                  <span class="order-info-label">客户</span>
+                  <span class="order-info-value">鲜食超市</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">产品</span>
+                  <span class="order-info-value">带鱼片</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">数量</span>
+                  <span class="order-info-value">80 kg</span>
+                </div>
+              </div>
+              <div class="order-footer">
+                <span class="order-time">[急] 需在14:00前发出</span>
+                <button class="order-action">开始打包</button>
+              </div>
+            </div>
+            <div class="order-card">
+              <div class="order-header">
+                <span class="order-id">SH-20251226-002</span>
+                <span class="order-status packing">打包中</span>
+              </div>
+              <div class="order-info">
+                <div class="order-info-item">
+                  <span class="order-info-label">客户</span>
+                  <span class="order-info-value">海鲜批发市场</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">产品</span>
+                  <span class="order-info-value">鲈鱼片</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">数量</span>
+                  <span class="order-info-value">150 kg</span>
+                </div>
+              </div>
+              <div class="order-footer">
+                <span class="order-time">预计16:00发出</span>
+                <button class="order-action">完成打包</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 库存预警 -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">[!] 库存预警</span>
+            <span class="section-more">查看全部 ></span>
+          </div>
+          <div class="alert-list">
+            <div class="alert-item">
+              <div class="alert-icon danger"></div>
+              <div class="alert-content">
+                <div class="alert-name">带鱼 (鲜品)</div>
+                <div class="alert-detail">安全库存: 200kg | 即将过期</div>
+              </div>
+              <div class="alert-value">85kg</div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-icon"></div>
+              <div class="alert-content">
+                <div class="alert-name">虾仁 (冻品)</div>
+                <div class="alert-detail">安全库存: 150kg</div>
+              </div>
+              <div class="alert-value">120kg</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 物流追踪 -->
+        <div class="tracking-card">
+          <div class="tracking-header">
+            <span class="tracking-title"> 物流追踪</span>
+            <span class="tracking-count">在途 3 单</span>
+          </div>
+          <div class="tracking-item">
+            <div class="tracking-icon transit"></div>
+            <div class="tracking-info">
+              <div class="tracking-order">SH-20251225-003</div>
+              <div class="tracking-customer">城市生鲜店 | 顺丰冷链</div>
+            </div>
+            <span class="tracking-status transit">运输中</span>
+          </div>
+          <div class="tracking-item">
+            <div class="tracking-icon transit"></div>
+            <div class="tracking-info">
+              <div class="tracking-order">SH-20251225-002</div>
+              <div class="tracking-customer">鲜食超市 | 京东冷链</div>
+            </div>
+            <span class="tracking-status transit">运输中</span>
+          </div>
+          <div class="tracking-item">
+            <div class="tracking-icon delivered">[OK]</div>
+            <div class="tracking-info">
+              <div class="tracking-order">SH-20251225-001</div>
+              <div class="tracking-customer">海鲜批发市场</div>
+            </div>
+            <span class="tracking-status delivered">已送达</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 入库页面 -->
+    <div class="page" id="inbound-page">
+      <header class="header role-header--warehouse">
+        <h1> 入库确认</h1>
+        <p>待确认入库 3 单</p>
+      </header>
+
+      <div class="page-content">
+        <div class="inbound-card">
+          <div class="inbound-header">
+            <span class="inbound-title">待确认入库</span>
+            <span class="inbound-badge">3</span>
+          </div>
+
+          <div class="inbound-item">
+            <div class="inbound-item-header">
+              <span class="inbound-item-id">MB-20251226-001</span>
+              <span class="inbound-item-time">10分钟前</span>
+            </div>
+            <div class="inbound-item-info">
+              <span class="inbound-item-detail"> 带鱼 150kg</span>
+              <span class="inbound-item-detail">舟山渔业合作社</span>
+            </div>
+            <div class="inbound-item-actions">
+              <button class="inbound-btn reject">驳回</button>
+              <button class="inbound-btn confirm">确认入库</button>
+            </div>
+          </div>
+
+          <div class="inbound-item">
+            <div class="inbound-item-header">
+              <span class="inbound-item-id">MB-20251226-002</span>
+              <span class="inbound-item-time">25分钟前</span>
+            </div>
+            <div class="inbound-item-info">
+              <span class="inbound-item-detail"> 虾仁 80kg</span>
+              <span class="inbound-item-detail">东海水产</span>
+            </div>
+            <div class="inbound-item-actions">
+              <button class="inbound-btn reject">驳回</button>
+              <button class="inbound-btn confirm">确认入库</button>
+            </div>
+          </div>
+
+          <div class="inbound-item">
+            <div class="inbound-item-header">
+              <span class="inbound-item-id">MB-20251226-003</span>
+              <span class="inbound-item-time">1小时前</span>
+            </div>
+            <div class="inbound-item-info">
+              <span class="inbound-item-detail"> 鲈鱼 200kg</span>
+              <span class="inbound-item-detail">宁波海产</span>
+            </div>
+            <div class="inbound-item-actions">
+              <button class="inbound-btn reject">驳回</button>
+              <button class="inbound-btn confirm">确认入库</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 出货页面 -->
+    <div class="page" id="outbound-page">
+      <header class="header role-header--warehouse">
+        <h1> 出货管理</h1>
+        <p>今日待出货 8 单</p>
+      </header>
+
+      <div class="page-content">
+        <div class="inventory-filter">
+          <button class="filter-btn active">全部 (8)</button>
+          <button class="filter-btn">待打包 (3)</button>
+          <button class="filter-btn">打包中 (2)</button>
+          <button class="filter-btn">待发货 (3)</button>
+        </div>
+
+        <div class="section">
+          <div class="order-list">
+            <div class="order-card urgent">
+              <div class="order-header">
+                <span class="order-id">SH-20251226-001</span>
+                <span class="order-status waiting">待打包</span>
+              </div>
+              <div class="order-info">
+                <div class="order-info-item">
+                  <span class="order-info-label">客户</span>
+                  <span class="order-info-value">鲜食超市</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">产品</span>
+                  <span class="order-info-value">带鱼片 80kg</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">物流</span>
+                  <span class="order-info-value">顺丰冷链</span>
+                </div>
+              </div>
+              <div class="order-footer">
+                <span class="order-time">[急] 14:00前发出</span>
+                <button class="order-action">开始打包</button>
+              </div>
+            </div>
+
+            <div class="order-card">
+              <div class="order-header">
+                <span class="order-id">SH-20251226-002</span>
+                <span class="order-status packing">打包中</span>
+              </div>
+              <div class="order-info">
+                <div class="order-info-item">
+                  <span class="order-info-label">客户</span>
+                  <span class="order-info-value">海鲜批发市场</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">产品</span>
+                  <span class="order-info-value">鲈鱼片 150kg</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">物流</span>
+                  <span class="order-info-value">京东冷链</span>
+                </div>
+              </div>
+              <div class="order-footer">
+                <span class="order-time">预计16:00发出</span>
+                <button class="order-action">完成打包</button>
+              </div>
+            </div>
+
+            <div class="order-card">
+              <div class="order-header">
+                <span class="order-id">SH-20251226-003</span>
+                <span class="order-status ready">待发货</span>
+              </div>
+              <div class="order-info">
+                <div class="order-info-item">
+                  <span class="order-info-label">客户</span>
+                  <span class="order-info-value">城市生鲜店</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">产品</span>
+                  <span class="order-info-value">虾仁 50kg</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="order-info-label">物流</span>
+                  <span class="order-info-value">顺丰冷链</span>
+                </div>
+              </div>
+              <div class="order-footer">
+                <span class="order-time">已打包完成</span>
+                <button class="order-action">安排发货</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 库存页面 -->
+    <div class="page" id="inventory-page">
+      <header class="header role-header--warehouse">
+        <h1> 库存查询</h1>
+        <p>总计 12 种物料</p>
+      </header>
+
+      <div class="inventory-filter">
+        <button class="filter-btn active">全部</button>
+        <button class="filter-btn">鲜品</button>
+        <button class="filter-btn">冻品</button>
+        <button class="filter-btn">低库存</button>
+        <button class="filter-btn">即将过期</button>
+      </div>
+
+      <div class="inventory-list">
+        <div class="inventory-item">
+          <div class="inventory-icon"></div>
+          <div class="inventory-info">
+            <div class="inventory-name">带鱼 (鲜品)</div>
+            <div class="inventory-detail">A区-冷藏库-01 | 3天后过期</div>
+          </div>
+          <div class="inventory-quantity">
+            <div class="inventory-value">85</div>
+            <div class="inventory-unit">kg</div>
+            <span class="inventory-status critical">库存不足</span>
+          </div>
+        </div>
+
+        <div class="inventory-item">
+          <div class="inventory-icon"></div>
+          <div class="inventory-info">
+            <div class="inventory-name">鲈鱼 (鲜品)</div>
+            <div class="inventory-detail">A区-冷藏库-02 | 4天后过期</div>
+          </div>
+          <div class="inventory-quantity">
+            <div class="inventory-value">256</div>
+            <div class="inventory-unit">kg</div>
+            <span class="inventory-status normal">正常</span>
+          </div>
+        </div>
+
+        <div class="inventory-item">
+          <div class="inventory-icon"></div>
+          <div class="inventory-info">
+            <div class="inventory-name">虾仁 (冻品)</div>
+            <div class="inventory-detail">B区-冷冻库-01 | 30天后过期</div>
+          </div>
+          <div class="inventory-quantity">
+            <div class="inventory-value">120</div>
+            <div class="inventory-unit">kg</div>
+            <span class="inventory-status low">库存偏低</span>
+          </div>
+        </div>
+
+        <div class="inventory-item">
+          <div class="inventory-icon"></div>
+          <div class="inventory-info">
+            <div class="inventory-name">鱿鱼 (冻品)</div>
+            <div class="inventory-detail">B区-冷冻库-02 | 45天后过期</div>
+          </div>
+          <div class="inventory-quantity">
+            <div class="inventory-value">380</div>
+            <div class="inventory-unit">kg</div>
+            <span class="inventory-status normal">正常</span>
+          </div>
+        </div>
+
+        <div class="inventory-item">
+          <div class="inventory-icon"></div>
+          <div class="inventory-info">
+            <div class="inventory-name">章鱼 (冻品)</div>
+            <div class="inventory-detail">B区-冷冻库-03 | 60天后过期</div>
+          </div>
+          <div class="inventory-quantity">
+            <div class="inventory-value">195</div>
+            <div class="inventory-unit">kg</div>
+            <span class="inventory-status normal">正常</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 我的页面 -->
+    <div class="page" id="profile-page">
+      <header class="header role-header--warehouse">
+        <h1> 我的</h1>
+        <p>个人中心</p>
+      </header>
+
+      <div style="padding: 20px 16px; display: flex; align-items: center; gap: 16px; background: white; margin: 16px; border-radius: 12px;">
+        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">陈</div>
+        <div>
+          <div style="font-size: 18px; font-weight: 600; color: #1a1a2e;">陈仓管</div>
+          <div style="font-size: 13px; color: #666; margin-top: 4px;">仓储部 | 仓库管理员</div>
+          <div style="font-size: 12px; color: #999; margin-top: 2px;">工号: WH-001</div>
+        </div>
+      </div>
+
+      <div style="background: white; margin: 16px; border-radius: 12px; overflow: hidden;">
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; color: #1a1a2e;"> 出入库统计</span>
+          <span style="color: #999;">></span>
+        </div>
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; color: #1a1a2e;"> 操作记录</span>
+          <span style="color: #999;">></span>
+        </div>
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; color: #1a1a2e;"> 设置</span>
+          <span style="color: #999;">></span>
+        </div>
+        <div style="padding: 14px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; color: #1a1a2e;">[?] 帮助与反馈</span>
+          <span style="color: #999;">></span>
+        </div>
+      </div>
+
+      <div style="padding: 16px;">
+        <button style="width: 100%; padding: 14px; background: #f5f5f5; border: none; border-radius: 12px; color: #ff4d4f; font-size: 15px; font-weight: 500;">退出登录</button>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="#" class="nav-item active" onclick="switchPage('home-page')">
+        <span class="nav-icon"></span>
+        <span>首页</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('inbound-page')">
+        <span class="nav-icon"></span>
+        <span>入库</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('outbound-page')">
+        <span class="nav-icon"></span>
+        <span>出货</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('inventory-page')">
+        <span class="nav-icon"></span>
+        <span>库存</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('profile-page')">
+        <span class="nav-icon"></span>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    function switchPage(pageId) {
+      // 隐藏所有页面
+      document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+      });
+      // 显示目标页面
+      document.getElementById(pageId).classList.add('active');
+
+      // 更新导航状态
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+    }
+  </script>
+  <script src="components.js"></script>
+</body>
+</html>

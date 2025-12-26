@@ -23,6 +23,7 @@ import {
   type EquipmentType,
   type CreateEquipmentRequest,
 } from '../../services/api/equipmentApiClient';
+import { userApiClient, type UserDTO } from '../../services/api/userApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
@@ -53,6 +54,11 @@ export default function EquipmentManagementScreen() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
 
+  // 操作员选择 State
+  const [operatorUsers, setOperatorUsers] = useState<UserDTO[]>([]);
+  const [showOperatorMenu, setShowOperatorMenu] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   // Form State
   const [formData, setFormData] = useState<CreateEquipmentRequest>({
     name: '',
@@ -66,10 +72,29 @@ export default function EquipmentManagementScreen() {
     purchasePrice: undefined,
     depreciationYears: undefined,
     maintenanceInterval: undefined,
+    operatorId: undefined,
     notes: '',
   });
 
   const getCurrentFactoryId = (): string => getFactoryId(user) || '';
+
+  // 加载可选择的操作员列表
+  const loadOperatorUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const factoryId = getCurrentFactoryId();
+      // 加载所有用户，后续可以按角色筛选
+      const response = await userApiClient.getUsers({ factoryId, size: 100 });
+      // 处理分页响应
+      const users = Array.isArray(response) ? response : ((response as any)?.content || []);
+      setOperatorUsers(users);
+    } catch (error) {
+      equipmentMgmtLogger.error('加载操作员列表失败', error as Error);
+      setOperatorUsers([]);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const loadEquipments = async () => {
     setLoading(true);
@@ -207,14 +232,23 @@ export default function EquipmentManagementScreen() {
 
   // Dialog Openers
   const openCreateDialog = () => {
-    setFormData({ name: '', code: '', type: 'processing', model: '', manufacturer: '', purchaseDate: '', location: '', specifications: '', notes: '' });
+    setFormData({ name: '', code: '', type: 'processing', model: '', manufacturer: '', purchaseDate: '', location: '', specifications: '', operatorId: undefined, notes: '' });
+    loadOperatorUsers(); // 加载操作员列表
     setShowCreateDialog(true);
   };
 
   const openEditDialog = (equipment: Equipment) => {
     setSelectedEquipment(equipment);
-    setFormData({ ...equipment, purchasePrice: equipment.purchasePrice, depreciationYears: equipment.depreciationYears, maintenanceInterval: equipment.maintenanceInterval });
+    setFormData({ ...equipment, purchasePrice: equipment.purchasePrice, depreciationYears: equipment.depreciationYears, maintenanceInterval: equipment.maintenanceInterval, operatorId: equipment.operatorId });
+    loadOperatorUsers(); // 加载操作员列表
     setShowEditDialog(true);
+  };
+
+  // 获取选中的操作员名称
+  const getSelectedOperatorName = (): string => {
+    if (!formData.operatorId) return '请选择操作员';
+    const operator = operatorUsers.find(u => u.id === formData.operatorId);
+    return operator ? operator.realName : '请选择操作员';
   };
 
   const openDeleteDialog = (equipment: Equipment) => {
@@ -319,6 +353,10 @@ export default function EquipmentManagementScreen() {
                           <Text style={styles.label}>型号</Text>
                           <Text style={styles.value}>{equipment.model || '-'}</Text>
                       </View>
+                      <View style={styles.infoItem}>
+                          <Text style={styles.label}>操作员</Text>
+                          <Text style={styles.value}>{equipment.operatorName || '-'}</Text>
+                      </View>
                   </View>
               </View>
 
@@ -351,14 +389,112 @@ export default function EquipmentManagementScreen() {
       <Portal>
         <Dialog visible={showCreateDialog} onDismiss={() => setShowCreateDialog(false)} style={{ backgroundColor: 'white' }}>
             <Dialog.Title>创建设备</Dialog.Title>
-            <Dialog.Content>
-                <TextInput label="名称" value={formData.name} onChangeText={t => setFormData({...formData, name: t})} mode="outlined" style={styles.input} />
-                <TextInput label="编号" value={formData.code} onChangeText={t => setFormData({...formData, code: t})} mode="outlined" style={styles.input} />
-                {/* More fields... */}
-            </Dialog.Content>
+            <Dialog.ScrollArea style={{ maxHeight: 400, paddingHorizontal: 0 }}>
+              <ScrollView>
+                <View style={{ paddingHorizontal: 24 }}>
+                  <TextInput label="名称" value={formData.name} onChangeText={t => setFormData({...formData, name: t})} mode="outlined" style={styles.input} />
+                  <TextInput label="编号" value={formData.code} onChangeText={t => setFormData({...formData, code: t})} mode="outlined" style={styles.input} />
+                  <TextInput label="型号" value={formData.model || ''} onChangeText={t => setFormData({...formData, model: t})} mode="outlined" style={styles.input} />
+                  <TextInput label="位置" value={formData.location || ''} onChangeText={t => setFormData({...formData, location: t})} mode="outlined" style={styles.input} />
+
+                  {/* 操作员选择 */}
+                  <Text style={styles.fieldLabel}>操作员</Text>
+                  <Menu
+                    visible={showOperatorMenu}
+                    onDismiss={() => setShowOperatorMenu(false)}
+                    anchor={
+                      <NeoButton
+                        variant="outline"
+                        onPress={() => setShowOperatorMenu(true)}
+                        style={styles.operatorButton}
+                      >
+                        {loadingUsers ? '加载中...' : getSelectedOperatorName()}
+                      </NeoButton>
+                    }
+                    contentStyle={{ backgroundColor: 'white', maxHeight: 300 }}
+                  >
+                    <Menu.Item
+                      onPress={() => {
+                        setFormData({...formData, operatorId: undefined});
+                        setShowOperatorMenu(false);
+                      }}
+                      title="不指定"
+                    />
+                    {operatorUsers.map(user => (
+                      <Menu.Item
+                        key={user.id}
+                        onPress={() => {
+                          setFormData({...formData, operatorId: user.id});
+                          setShowOperatorMenu(false);
+                        }}
+                        title={`${user.realName} (${user.position || user.role})`}
+                      />
+                    ))}
+                  </Menu>
+
+                  <TextInput label="备注" value={formData.notes || ''} onChangeText={t => setFormData({...formData, notes: t})} mode="outlined" style={styles.input} multiline numberOfLines={2} />
+                </View>
+              </ScrollView>
+            </Dialog.ScrollArea>
             <Dialog.Actions>
                 <NeoButton variant="ghost" onPress={() => setShowCreateDialog(false)}>取消</NeoButton>
                 <NeoButton variant="primary" onPress={handleCreateEquipment}>创建</NeoButton>
+            </Dialog.Actions>
+        </Dialog>
+
+        {/* 编辑设备对话框 */}
+        <Dialog visible={showEditDialog} onDismiss={() => setShowEditDialog(false)} style={{ backgroundColor: 'white' }}>
+            <Dialog.Title>编辑设备</Dialog.Title>
+            <Dialog.ScrollArea style={{ maxHeight: 400, paddingHorizontal: 0 }}>
+              <ScrollView>
+                <View style={{ paddingHorizontal: 24 }}>
+                  <TextInput label="名称" value={formData.name} onChangeText={t => setFormData({...formData, name: t})} mode="outlined" style={styles.input} />
+                  <TextInput label="编号" value={formData.code} onChangeText={t => setFormData({...formData, code: t})} mode="outlined" style={styles.input} />
+                  <TextInput label="型号" value={formData.model || ''} onChangeText={t => setFormData({...formData, model: t})} mode="outlined" style={styles.input} />
+                  <TextInput label="位置" value={formData.location || ''} onChangeText={t => setFormData({...formData, location: t})} mode="outlined" style={styles.input} />
+
+                  {/* 操作员选择 */}
+                  <Text style={styles.fieldLabel}>操作员</Text>
+                  <Menu
+                    visible={showOperatorMenu}
+                    onDismiss={() => setShowOperatorMenu(false)}
+                    anchor={
+                      <NeoButton
+                        variant="outline"
+                        onPress={() => setShowOperatorMenu(true)}
+                        style={styles.operatorButton}
+                      >
+                        {loadingUsers ? '加载中...' : getSelectedOperatorName()}
+                      </NeoButton>
+                    }
+                    contentStyle={{ backgroundColor: 'white', maxHeight: 300 }}
+                  >
+                    <Menu.Item
+                      onPress={() => {
+                        setFormData({...formData, operatorId: undefined});
+                        setShowOperatorMenu(false);
+                      }}
+                      title="不指定"
+                    />
+                    {operatorUsers.map(user => (
+                      <Menu.Item
+                        key={user.id}
+                        onPress={() => {
+                          setFormData({...formData, operatorId: user.id});
+                          setShowOperatorMenu(false);
+                        }}
+                        title={`${user.realName} (${user.position || user.role})`}
+                      />
+                    ))}
+                  </Menu>
+
+                  <TextInput label="备注" value={formData.notes || ''} onChangeText={t => setFormData({...formData, notes: t})} mode="outlined" style={styles.input} multiline numberOfLines={2} />
+                </View>
+              </ScrollView>
+            </Dialog.ScrollArea>
+            <Dialog.Actions>
+                <NeoButton variant="ghost" onPress={() => setShowEditDialog(false)}>取消</NeoButton>
+                <NeoButton variant="primary" onPress={handleUpdateEquipment}>保存</NeoButton>
             </Dialog.Actions>
         </Dialog>
         
@@ -474,5 +610,15 @@ const styles = StyleSheet.create({
   input: {
       marginBottom: 12,
       backgroundColor: 'white',
-  }
+  },
+  fieldLabel: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginBottom: 4,
+      marginTop: 4,
+  },
+  operatorButton: {
+      marginBottom: 12,
+      width: '100%',
+  },
 });

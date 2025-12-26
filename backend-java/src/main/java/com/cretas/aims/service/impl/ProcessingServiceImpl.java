@@ -390,13 +390,21 @@ public class ProcessingServiceImpl implements ProcessingService {
         Map<String, Object> statistics = new HashMap<>();
         statistics.put("totalInspections", inspections.size());
         if (!inspections.isEmpty()) {
-            BigDecimal averagePassRate = inspections.stream()
+            // 过滤掉 passRate 为 null 的记录（如 pending 状态）
+            List<BigDecimal> validPassRates = inspections.stream()
                     .map(QualityInspection::getPassRate)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add)
-                    .divide(new BigDecimal(inspections.size()), 2, RoundingMode.HALF_UP);
+                    .filter(rate -> rate != null)
+                    .collect(Collectors.toList());
+
+            BigDecimal averagePassRate = BigDecimal.ZERO;
+            if (!validPassRates.isEmpty()) {
+                averagePassRate = validPassRates.stream()
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .divide(new BigDecimal(validPassRates.size()), 2, RoundingMode.HALF_UP);
+            }
             statistics.put("averagePassRate", averagePassRate);
             long passedCount = inspections.stream()
-                    .filter(i -> "PASS".equals(i.getResult()))
+                    .filter(i -> "PASS".equalsIgnoreCase(i.getResult()))
                     .count();
             statistics.put("passedBatches", passedCount);
             statistics.put("failedBatches", inspections.size() - passedCount);
@@ -416,14 +424,22 @@ public class ProcessingServiceImpl implements ProcessingService {
             dayTrend.put("date", date);
             List<QualityInspection> dayInspections = groupedByDate.getOrDefault(date, new ArrayList<>());
             if (!dayInspections.isEmpty()) {
-                BigDecimal avgPassRate = dayInspections.stream()
+                // 过滤掉 passRate 为 null 的记录
+                List<BigDecimal> validRates = dayInspections.stream()
                         .map(QualityInspection::getPassRate)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-                        .divide(new BigDecimal(dayInspections.size()), 2, RoundingMode.HALF_UP);
+                        .filter(rate -> rate != null)
+                        .collect(Collectors.toList());
+
+                BigDecimal avgPassRate = BigDecimal.ZERO;
+                if (!validRates.isEmpty()) {
+                    avgPassRate = validRates.stream()
+                            .reduce(BigDecimal.ZERO, BigDecimal::add)
+                            .divide(new BigDecimal(validRates.size()), 2, RoundingMode.HALF_UP);
+                }
                 dayTrend.put("passRate", avgPassRate);
                 dayTrend.put("inspectionCount", dayInspections.size());
             } else {
-                dayTrend.put("passRate", null);
+                dayTrend.put("passRate", BigDecimal.ZERO);
                 dayTrend.put("inspectionCount", 0);
             }
             trends.add(dayTrend);
@@ -1204,6 +1220,25 @@ public class ProcessingServiceImpl implements ProcessingService {
         dashboard.put("failedInspections", monthlyStats.getOrDefault("failedBatches", 0));
         dashboard.put("avgPassRate", monthlyStats.getOrDefault("averagePassRate", BigDecimal.ZERO));
 
+        // 计算缺陷率 (defectRate = 100 - passRate)
+        BigDecimal passRate = (BigDecimal) monthlyStats.getOrDefault("averagePassRate", BigDecimal.ZERO);
+        BigDecimal defectRate = BigDecimal.valueOf(100).subtract(passRate);
+        dashboard.put("defectRate", defectRate);
+        dashboard.put("passRate", passRate);
+
+        // 添加质量等级 (基于 passRate)
+        String qualityGrade;
+        if (passRate.compareTo(BigDecimal.valueOf(95)) >= 0) {
+            qualityGrade = "A";
+        } else if (passRate.compareTo(BigDecimal.valueOf(90)) >= 0) {
+            qualityGrade = "B";
+        } else if (passRate.compareTo(BigDecimal.valueOf(80)) >= 0) {
+            qualityGrade = "C";
+        } else {
+            qualityGrade = "D";
+        }
+        dashboard.put("qualityGrade", qualityGrade);
+
         // 质量趋势
         List<Map<String, Object>> trends = getQualityTrends(factoryId, 30);
         dashboard.put("trends", trends);
@@ -1321,6 +1356,9 @@ public class ProcessingServiceImpl implements ProcessingService {
         map.put("passRate", inspection.getPassRate());
         map.put("result", inspection.getResult());
         map.put("notes", inspection.getNotes());
+        // 添加计算字段
+        map.put("qualityGrade", inspection.getQualityGrade());
+        map.put("defectRate", inspection.getDefectRate());
         return map;
     }
     private BigDecimal calculatePotentialSavings(ProductionBatch batch) {

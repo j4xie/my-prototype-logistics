@@ -50,6 +50,7 @@ export interface ProductionPlan {
   productUnit?: string;           // 产品单位 (后端 Mapper 映射)
   customerId: string;
   customerName?: string;
+  customerOrderNumber?: string;   // 客户订单号 (后端字段)
   plannedQuantity: number;
   actualQuantity?: number;
   status: 'PENDING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
@@ -58,8 +59,10 @@ export interface ProductionPlan {
   startTime?: string;
   endTime?: string;
   expectedCompletionDate?: string; // 预计完成日期 (v1.2新增)
+  priority?: number;              // 优先级 (后端字段)
   notes?: string;
   createdAt: string;
+  createdBy?: number;             // 创建人ID
   createdByName?: string;         // 创建人姓名
   updatedAt?: string;
 
@@ -71,6 +74,22 @@ export interface ProductionPlan {
   conversionRateConfigured?: boolean;
   conversionRate?: number;
   wastageRate?: number;
+
+  // 原料匹配状态 (Phase 4 data integrity)
+  allocatedQuantity?: number;     // 已分配的原料数量
+  isFullyMatched?: boolean;       // 是否完全匹配
+  remainingQuantity?: number;     // 剩余需要匹配的数量 (@Transient)
+  matchingProgress?: number;      // 匹配进度百分比 (@Transient)
+
+  // 成本字段 (Phase 4 data integrity)
+  estimatedMaterialCost?: number; // 预估材料成本
+  actualMaterialCost?: number;    // 实际材料成本
+  estimatedLaborCost?: number;    // 预估人工成本
+  actualLaborCost?: number;       // 实际人工成本
+  estimatedEquipmentCost?: number;// 预估设备成本
+  actualEquipmentCost?: number;   // 实际设备成本
+  estimatedOtherCost?: number;    // 预估其他成本
+  actualOtherCost?: number;       // 实际其他成本
 }
 
 /**
