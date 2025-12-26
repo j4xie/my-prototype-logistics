@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设备管理员 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor">
+          <path d="M1 4h2v8H1zM5 2h2v10H5zM9 0h2v12H9zM13 3h2v9h-2z"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+          <path d="M8 2a6 6 0 016 6h-2a4 4 0 00-8 0H2a6 6 0 016-6zm0-2a8 8 0 018 8h-2a6 6 0 00-12 0H0a8 8 0 018-8z"/>
+        </svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+          <rect x="0" y="0" width="22" height="12" rx="3" stroke="currentColor" fill="none"/>
+          <rect x="2" y="2" width="16" height="8" rx="1" fill="currentColor"/>
+          <path d="M23 4v4a2 2 0 002-2 2 2 0 00-2-2z"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 头部 -->
+    <div class="header role-header--equipment">
+      <div class="header-top">
+        <a href="index.html" class="back-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <h1>设备工作台</h1>
+        <button class="icon-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          <span class="badge">5</span>
+        </button>
+      </div>
+      <div class="welcome-section">
+        <div class="welcome-text">
+          <p class="greeting">设备管理员</p>
+          <h2>赵工 </h2>
+        </div>
+        <div class="avatar">
+          <span>赵</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="main-content">
+      <!-- 首页 -->
+      <div id="home-page" class="page active">
+        <!-- Equipment Status Overview -->
+        <div class="equipment-overview">
+          <div class="equipment-stat">
+            <div class="equipment-stat-icon running"><span class="status-dot status-dot--success"></span></div>
+            <div class="equipment-stat-value">12</div>
+            <div class="equipment-stat-label">运行中</div>
+          </div>
+          <div class="equipment-stat">
+            <div class="equipment-stat-icon stopped"><span class="status-dot status-dot--idle"></span></div>
+            <div class="equipment-stat-value">3</div>
+            <div class="equipment-stat-label">已停止</div>
+          </div>
+          <div class="equipment-stat">
+            <div class="equipment-stat-icon maintenance"><span class="status-dot status-dot--warning"></span></div>
+            <div class="equipment-stat-value">2</div>
+            <div class="equipment-stat-label">维护中</div>
+          </div>
+          <div class="equipment-stat">
+            <div class="equipment-stat-icon fault"><span class="status-dot status-dot--error"></span></div>
+            <div class="equipment-stat-value">1</div>
+            <div class="equipment-stat-label">故障</div>
+          </div>
+        </div>
+
+        <!-- Unhandled Alerts -->
+        <div class="section-title">
+          <h3>[警] 未处理告警</h3>
+          <span class="more" onclick="switchPage('alert-page')">查看全部</span>
+        </div>
+        <div class="alert-list">
+          <div class="alert-card">
+            <div class="alert-header">
+              <span class="alert-title">切片机A温度过高</span>
+              <span class="alert-severity critical">紧急</span>
+            </div>
+            <div class="alert-equipment"> 设备: EQ-F001-003 | 车间: 加工车间</div>
+            <div class="alert-footer">
+              <span class="alert-time">10分钟前</span>
+              <button class="alert-action" onclick="switchPage('alert-detail-page')">立即处理</button>
+            </div>
+          </div>
+          <div class="alert-card warning">
+            <div class="alert-header">
+              <span class="alert-title">冷库B湿度异常</span>
+              <span class="alert-severity warning">警告</span>
+            </div>
+            <div class="alert-equipment"> 设备: EQ-F001-008 | 车间: 仓储区</div>
+            <div class="alert-footer">
+              <span class="alert-time">25分钟前</span>
+              <button class="alert-action">立即处理</button>
+            </div>
+          </div>
+          <div class="alert-card info">
+            <div class="alert-header">
+              <span class="alert-title">包装机C需要保养</span>
+              <span class="alert-severity info">提醒</span>
+            </div>
+            <div class="alert-equipment"> 设备: EQ-F001-012 | 车间: 包装车间</div>
+            <div class="alert-footer">
+              <span class="alert-time">1小时前</span>
+              <button class="alert-action">查看详情</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Maintenance Tasks -->
+        <div class="section-title">
+          <h3> 今日维护任务</h3>
+          <span class="more">查看全部</span>
+        </div>
+        <div class="maintenance-list">
+          <div class="maintenance-card">
+            <div class="maintenance-header">
+              <span class="maintenance-type routine">例行保养</span>
+              <span class="maintenance-status ongoing">进行中</span>
+            </div>
+            <div class="maintenance-equipment">冷库A压缩机保养</div>
+            <div class="maintenance-info">
+              <span> 09:00-11:00</span>
+              <span> 张技术</span>
+            </div>
+          </div>
+          <div class="maintenance-card">
+            <div class="maintenance-header">
+              <span class="maintenance-type repair">维修</span>
+              <span class="maintenance-status pending">待开始</span>
+            </div>
+            <div class="maintenance-equipment">清洗机B传送带更换</div>
+            <div class="maintenance-info">
+              <span> 14:00-16:00</span>
+              <span> 李技术</span>
+            </div>
+          </div>
+          <div class="maintenance-card">
+            <div class="maintenance-header">
+              <span class="maintenance-type inspection">巡检</span>
+              <span class="maintenance-status completed">已完成</span>
+            </div>
+            <div class="maintenance-equipment">加工车间设备巡检</div>
+            <div class="maintenance-info">
+              <span> 08:00-08:30</span>
+              <span> 赵工</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Equipment Efficiency -->
+        <div class="efficiency-section">
+          <div class="efficiency-header">
+            <span class="efficiency-title">设备运行效率</span>
+            <span class="efficiency-period">今日</span>
+          </div>
+          <div class="efficiency-bars">
+            <div class="efficiency-bar-item">
+              <span class="efficiency-bar-label">切片机组</span>
+              <div class="efficiency-bar-track">
+                <div class="efficiency-bar-fill high" style="width: 92%"></div>
+              </div>
+              <span class="efficiency-bar-value">92%</span>
+            </div>
+            <div class="efficiency-bar-item">
+              <span class="efficiency-bar-label">清洗设备</span>
+              <div class="efficiency-bar-track">
+                <div class="efficiency-bar-fill high" style="width: 88%"></div>
+              </div>
+              <span class="efficiency-bar-value">88%</span>
+            </div>
+            <div class="efficiency-bar-item">
+              <span class="efficiency-bar-label">冷库系统</span>
+              <div class="efficiency-bar-track">
+                <div class="efficiency-bar-fill medium" style="width: 76%"></div>
+              </div>
+              <span class="efficiency-bar-value">76%</span>
+            </div>
+            <div class="efficiency-bar-item">
+              <span class="efficiency-bar-label">包装设备</span>
+              <div class="efficiency-bar-track">
+                <div class="efficiency-bar-fill high" style="width: 95%"></div>
+              </div>
+              <span class="efficiency-bar-value">95%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 设备管理页 -->
+      <div id="equipment-page" class="page">
+        <div class="filter-tabs">
+          <button class="filter-tab active">全部 (18)</button>
+          <button class="filter-tab">运行中 (12)</button>
+          <button class="filter-tab">维护中 (2)</button>
+          <button class="filter-tab">故障 (1)</button>
+          <button class="filter-tab">停止 (3)</button>
+        </div>
+
+        <div class="equipment-card">
+          <div class="equipment-card-header">
+            <div>
+              <div class="equipment-name">切片机A</div>
+              <div class="equipment-code">EQ-F001-003</div>
+            </div>
+            <span class="equipment-status-badge running">运行中</span>
+          </div>
+          <div class="equipment-details">
+            <div class="equipment-detail-item"> 加工车间</div>
+            <div class="equipment-detail-item">运行8.5小时</div>
+            <div class="equipment-detail-item"> 温度: 22°C</div>
+            <div class="equipment-detail-item"> 上次保养: 12-20</div>
+          </div>
+          <div class="equipment-actions">
+            <button class="equipment-action-btn primary">查看详情</button>
+            <button class="equipment-action-btn secondary">创建维护单</button>
+          </div>
+        </div>
+
+        <div class="equipment-card">
+          <div class="equipment-card-header">
+            <div>
+              <div class="equipment-name">冷库A</div>
+              <div class="equipment-code">EQ-F001-006</div>
+            </div>
+            <span class="equipment-status-badge maintenance">维护中</span>
+          </div>
+          <div class="equipment-details">
+            <div class="equipment-detail-item"> 仓储区</div>
+            <div class="equipment-detail-item"> 压缩机保养</div>
+            <div class="equipment-detail-item"> 温度: -18°C</div>
+            <div class="equipment-detail-item"> 张技术</div>
+          </div>
+          <div class="equipment-actions">
+            <button class="equipment-action-btn primary">查看进度</button>
+            <button class="equipment-action-btn secondary">联系维护人员</button>
+          </div>
+        </div>
+
+        <div class="equipment-card">
+          <div class="equipment-card-header">
+            <div>
+              <div class="equipment-name">清洗机B</div>
+              <div class="equipment-code">EQ-F001-004</div>
+            </div>
+            <span class="equipment-status-badge fault">故障</span>
+          </div>
+          <div class="equipment-details">
+            <div class="equipment-detail-item"> 清洗车间</div>
+            <div class="equipment-detail-item"><span class="status-dot status-dot--error"></span> 传送带故障</div>
+            <div class="equipment-detail-item"> 停机2小时</div>
+            <div class="equipment-detail-item"> 维修中</div>
+          </div>
+          <div class="equipment-actions">
+            <button class="equipment-action-btn primary">维修进度</button>
+            <button class="equipment-action-btn secondary">备用方案</button>
+          </div>
+        </div>
+
+        <div class="equipment-card">
+          <div class="equipment-card-header">
+            <div>
+              <div class="equipment-name">包装机A</div>
+              <div class="equipment-code">EQ-F001-010</div>
+            </div>
+            <span class="equipment-status-badge running">运行中</span>
+          </div>
+          <div class="equipment-details">
+            <div class="equipment-detail-item"> 包装车间</div>
+            <div class="equipment-detail-item">运行6.2小时</div>
+            <div class="equipment-detail-item"> 已包装: 1,250包</div>
+            <div class="equipment-detail-item"> 下次保养: 12-30</div>
+          </div>
+          <div class="equipment-actions">
+            <button class="equipment-action-btn primary">查看详情</button>
+            <button class="equipment-action-btn secondary">创建维护单</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 告警页 -->
+      <div id="alert-page" class="page">
+        <div class="filter-tabs">
+          <button class="filter-tab active">未处理 (5)</button>
+          <button class="filter-tab">处理中 (2)</button>
+          <button class="filter-tab">已处理</button>
+          <button class="filter-tab">全部</button>
+        </div>
+
+        <div class="alert-card">
+          <div class="alert-header">
+            <span class="alert-title">切片机A温度过高</span>
+            <span class="alert-severity critical">紧急</span>
+          </div>
+          <div class="alert-equipment"> 设备: EQ-F001-003 | 车间: 加工车间</div>
+          <div class="alert-footer">
+            <span class="alert-time">10分钟前</span>
+            <button class="alert-action" onclick="switchPage('alert-detail-page')">立即处理</button>
+          </div>
+        </div>
+
+        <div class="alert-card warning">
+          <div class="alert-header">
+            <span class="alert-title">冷库B湿度异常</span>
+            <span class="alert-severity warning">警告</span>
+          </div>
+          <div class="alert-equipment"> 设备: EQ-F001-008 | 车间: 仓储区</div>
+          <div class="alert-footer">
+            <span class="alert-time">25分钟前</span>
+            <button class="alert-action">立即处理</button>
+          </div>
+        </div>
+
+        <div class="alert-card warning">
+          <div class="alert-header">
+            <span class="alert-title">清洗机B传送带卡顿</span>
+            <span class="alert-severity warning">警告</span>
+          </div>
+          <div class="alert-equipment"> 设备: EQ-F001-004 | 车间: 清洗车间</div>
+          <div class="alert-footer">
+            <span class="alert-time">45分钟前</span>
+            <button class="alert-action">立即处理</button>
+          </div>
+        </div>
+
+        <div class="alert-card info">
+          <div class="alert-header">
+            <span class="alert-title">包装机C需要保养</span>
+            <span class="alert-severity info">提醒</span>
+          </div>
+          <div class="alert-equipment"> 设备: EQ-F001-012 | 车间: 包装车间</div>
+          <div class="alert-footer">
+            <span class="alert-time">1小时前</span>
+            <button class="alert-action">查看详情</button>
+          </div>
+        </div>
+
+        <div class="alert-card info">
+          <div class="alert-header">
+            <span class="alert-title">切片机B刀具磨损提醒</span>
+            <span class="alert-severity info">提醒</span>
+          </div>
+          <div class="alert-equipment"> 设备: EQ-F001-005 | 车间: 加工车间</div>
+          <div class="alert-footer">
+            <span class="alert-time">2小时前</span>
+            <button class="alert-action">查看详情</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 告警详情页 -->
+      <div id="alert-detail-page" class="page">
+        <div class="back-header">
+          <div class="back-btn" onclick="switchPage('alert-page')"><</div>
+          <span class="page-title">告警详情</span>
+        </div>
+
+        <div class="alert-detail-card">
+          <div class="alert-detail-header">
+            <div class="alert-detail-icon">[急]</div>
+            <div>
+              <div class="alert-detail-title">切片机A温度过高</div>
+              <div class="alert-detail-time">2025-12-26 10:15:32</div>
+            </div>
+          </div>
+          <div class="alert-info-grid">
+            <div class="alert-info-item">
+              <span class="alert-info-label">设备编号</span>
+              <span class="alert-info-value">EQ-F001-003</span>
+            </div>
+            <div class="alert-info-item">
+              <span class="alert-info-label">所在车间</span>
+              <span class="alert-info-value">加工车间</span>
+            </div>
+            <div class="alert-info-item">
+              <span class="alert-info-label">告警类型</span>
+              <span class="alert-info-value">温度异常</span>
+            </div>
+            <div class="alert-info-item">
+              <span class="alert-info-label">严重程度</span>
+              <span class="alert-info-value text-error">紧急</span>
+            </div>
+            <div class="alert-info-item">
+              <span class="alert-info-label">当前温度</span>
+              <span class="alert-info-value text-error">85°C</span>
+            </div>
+            <div class="alert-info-item">
+              <span class="alert-info-label">阈值范围</span>
+              <span class="alert-info-value">20-60°C</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert-handle-section">
+          <div class="handle-title">选择处理方式</div>
+          <div class="handle-options">
+            <div class="handle-option selected" onclick="selectOption(this)">
+              <div class="handle-radio"></div>
+              <span class="handle-option-text">停机检修</span>
+            </div>
+            <div class="handle-option" onclick="selectOption(this)">
+              <div class="handle-radio"></div>
+              <span class="handle-option-text">降低负载运行</span>
+            </div>
+            <div class="handle-option" onclick="selectOption(this)">
+              <div class="handle-radio"></div>
+              <span class="handle-option-text">创建维修工单</span>
+            </div>
+            <div class="handle-option" onclick="selectOption(this)">
+              <div class="handle-radio"></div>
+              <span class="handle-option-text">误报，无需处理</span>
+            </div>
+          </div>
+          <textarea class="handle-note" placeholder="请输入处理备注..."></textarea>
+          <button class="handle-submit">提交处理</button>
+        </div>
+      </div>
+
+      <!-- 维护页 -->
+      <div id="maintenance-page" class="page">
+        <div class="filter-tabs">
+          <button class="filter-tab active">维护记录</button>
+          <button class="filter-tab" onclick="switchPage('create-maintenance-page')">+ 创建工单</button>
+        </div>
+
+        <div class="history-card">
+          <div class="history-header">
+            <span class="history-id">MT-20251226-001</span>
+            <span class="history-date">2025-12-26</span>
+          </div>
+          <div class="history-equipment">冷库A压缩机保养</div>
+          <div class="history-info">
+            <div class="history-info-item">
+              <span class="maintenance-type routine">例行保养</span>
+            </div>
+            <div class="history-info-item"> 张技术</div>
+            <div class="history-info-item">
+              <span class="maintenance-status ongoing">进行中</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-card">
+          <div class="history-header">
+            <span class="history-id">MT-20251225-003</span>
+            <span class="history-date">2025-12-25</span>
+          </div>
+          <div class="history-equipment">切片机A刀具更换</div>
+          <div class="history-info">
+            <div class="history-info-item">
+              <span class="maintenance-type repair">维修</span>
+            </div>
+            <div class="history-info-item"> 赵工</div>
+            <div class="history-info-item">
+              <span class="maintenance-status completed">已完成</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-card">
+          <div class="history-header">
+            <span class="history-id">MT-20251225-002</span>
+            <span class="history-date">2025-12-25</span>
+          </div>
+          <div class="history-equipment">包装车间设备巡检</div>
+          <div class="history-info">
+            <div class="history-info-item">
+              <span class="maintenance-type inspection">巡检</span>
+            </div>
+            <div class="history-info-item"> 李技术</div>
+            <div class="history-info-item">
+              <span class="maintenance-status completed">已完成</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-card">
+          <div class="history-header">
+            <span class="history-id">MT-20251224-001</span>
+            <span class="history-date">2025-12-24</span>
+          </div>
+          <div class="history-equipment">清洗机A水泵维修</div>
+          <div class="history-info">
+            <div class="history-info-item">
+              <span class="maintenance-type repair">维修</span>
+            </div>
+            <div class="history-info-item"> 张技术</div>
+            <div class="history-info-item">
+              <span class="maintenance-status completed">已完成</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 创建维护工单页 -->
+      <div id="create-maintenance-page" class="page">
+        <div class="back-header">
+          <div class="back-btn" onclick="switchPage('maintenance-page')"><</div>
+          <span class="page-title">创建维护工单</span>
+        </div>
+
+        <div class="maintenance-form">
+          <div class="form-group">
+            <label class="form-label">选择设备</label>
+            <select class="form-select">
+              <option>请选择设备</option>
+              <option>切片机A (EQ-F001-003)</option>
+              <option>切片机B (EQ-F001-005)</option>
+              <option>清洗机A (EQ-F001-002)</option>
+              <option>清洗机B (EQ-F001-004)</option>
+              <option>冷库A (EQ-F001-006)</option>
+              <option>冷库B (EQ-F001-008)</option>
+              <option>包装机A (EQ-F001-010)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">维护类型</label>
+            <select class="form-select">
+              <option>请选择类型</option>
+              <option>例行保养</option>
+              <option>故障维修</option>
+              <option>巡检</option>
+              <option>配件更换</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">维护人员</label>
+            <select class="form-select">
+              <option>请选择人员</option>
+              <option>张技术</option>
+              <option>李技术</option>
+              <option>赵工</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">计划时间</label>
+            <input type="datetime-local" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">预计时长</label>
+            <select class="form-select">
+              <option>请选择时长</option>
+              <option>30分钟</option>
+              <option>1小时</option>
+              <option>2小时</option>
+              <option>半天</option>
+              <option>1天</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">维护内容</label>
+            <textarea class="form-textarea" placeholder="请输入详细的维护内容..."></textarea>
+          </div>
+
+          <button class="form-submit">创建工单</button>
+        </div>
+      </div>
+
+      <!-- 我的页 -->
+      <div id="profile-page" class="page">
+        <div class="profile-header">
+          <div class="profile-avatar"></div>
+          <div class="profile-name">赵工</div>
+          <div class="profile-role">设备管理员 | 工号: EMP-008</div>
+          <div class="profile-stats">
+            <div class="profile-stat-item">
+              <div class="profile-stat-value">156</div>
+              <div class="profile-stat-label">处理告警</div>
+            </div>
+            <div class="profile-stat-item">
+              <div class="profile-stat-value">89</div>
+              <div class="profile-stat-label">维护工单</div>
+            </div>
+            <div class="profile-stat-item">
+              <div class="profile-stat-value">98.5%</div>
+              <div class="profile-stat-label">设备正常率</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-list">
+          <div class="menu-item">
+            <div class="menu-icon"></div>
+            <span class="menu-text">个人信息</span>
+            <span class="menu-arrow">></span>
+          </div>
+          <div class="menu-item">
+            <div class="menu-icon"></div>
+            <span class="menu-text">告警设置</span>
+            <span class="menu-arrow">></span>
+          </div>
+          <div class="menu-item">
+            <div class="menu-icon"></div>
+            <span class="menu-text">工作统计</span>
+            <span class="menu-arrow">></span>
+          </div>
+          <div class="menu-item">
+            <div class="menu-icon"></div>
+            <span class="menu-text">设备手册</span>
+            <span class="menu-arrow">></span>
+          </div>
+          <div class="menu-item">
+            <div class="menu-icon"></div>
+            <span class="menu-text">反馈与帮助</span>
+            <span class="menu-arrow">></span>
+          </div>
+          <div class="menu-item">
+            <div class="menu-icon"></div>
+            <span class="menu-text">系统设置</span>
+            <span class="menu-arrow">></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="#" class="nav-item active" onclick="switchPage('home-page')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('equipment-page')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        <span>设备</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('alert-page')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>告警</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('maintenance-page')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span>维护</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('profile-page')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+
+  <script src="components.js"></script>
+  <script>
+    function switchPage(pageId) {
+      // Hide all pages
+      document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+      });
+
+      // Show selected page
+      document.getElementById(pageId).classList.add('active');
+
+      // Update nav items
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // Set active nav item
+      const navMap = {
+        'home-page': 0,
+        'equipment-page': 1,
+        'alert-page': 2,
+        'alert-detail-page': 2,
+        'maintenance-page': 3,
+        'create-maintenance-page': 3,
+        'profile-page': 4
+      };
+
+      const navItems = document.querySelectorAll('.nav-item');
+      if (navMap[pageId] !== undefined) {
+        navItems[navMap[pageId]].classList.add('active');
+      }
+    }
+
+    // Filter tab switching
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        if (this.textContent.includes('创建')) return;
+
+        const parent = this.parentElement;
+        parent.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Handle option selection
+    function selectOption(element) {
+      document.querySelectorAll('.handle-option').forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      element.classList.add('selected');
+    }
+  </script>
+</body>
+</html>

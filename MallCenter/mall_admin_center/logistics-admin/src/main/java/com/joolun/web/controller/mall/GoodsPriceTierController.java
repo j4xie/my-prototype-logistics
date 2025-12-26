@@ -26,7 +26,7 @@ public class GoodsPriceTierController extends BaseController {
      * 获取商品的阶梯定价
      */
     @GetMapping("/spu/{spuId}")
-    public AjaxResult listBySpuId(@PathVariable("spuId") Long spuId) {
+    public AjaxResult listBySpuId(@PathVariable("spuId") String spuId) {
         return AjaxResult.success(goodsPriceTierService.listBySpuId(spuId));
     }
 
@@ -36,7 +36,7 @@ public class GoodsPriceTierController extends BaseController {
     @PostMapping("/spu/{spuId}")
     @PreAuthorize("@ss.hasPermi('mall:goodsspu:edit')")
     public AjaxResult saveTiers(
-            @PathVariable("spuId") Long spuId,
+            @PathVariable("spuId") String spuId,
             @RequestBody List<GoodsPriceTier> tiers) {
         return AjaxResult.success(goodsPriceTierService.saveTiers(spuId, tiers));
     }
@@ -46,7 +46,7 @@ public class GoodsPriceTierController extends BaseController {
      */
     @GetMapping("/calculate")
     public AjaxResult calculatePrice(
-            @RequestParam("spuId") Long spuId,
+            @RequestParam("spuId") String spuId,
             @RequestParam("quantity") Integer quantity) {
         return AjaxResult.success(goodsPriceTierService.calculatePriceDetail(spuId, quantity));
     }
@@ -56,7 +56,7 @@ public class GoodsPriceTierController extends BaseController {
      */
     @DeleteMapping("/spu/{spuId}")
     @PreAuthorize("@ss.hasPermi('mall:goodsspu:edit')")
-    public AjaxResult deleteBySpuId(@PathVariable("spuId") Long spuId) {
+    public AjaxResult deleteBySpuId(@PathVariable("spuId") String spuId) {
         return AjaxResult.success(goodsPriceTierService.deleteBySpuId(spuId));
     }
 }

@@ -103,6 +103,35 @@ class AlertApiClient {
   }
 
   /**
+   * 确认告警
+   * 端点: POST /api/mobile/{factoryId}/equipment/alerts/{alertId}/acknowledge
+   * ✅ P1-5: 后端已实现
+   */
+  async acknowledgeAlert(params: {
+    factoryId: string;
+    alertId: string;
+    acknowledgedBy?: number;
+    notes?: string;
+  }): Promise<{
+    success: boolean;
+    code: number;
+    data: {
+      id: string;
+      status: string;
+      acknowledgedAt: string;
+      acknowledgedBy: number;
+    };
+    message?: string;
+  }> {
+    const { factoryId, alertId, ...data } = params;
+    const response = await apiClient.post(
+      `${this.getPath(factoryId)}/equipment/alerts/${alertId}/acknowledge`,
+      data
+    );
+    return (response as any).data;
+  }
+
+  /**
    * 忽略告警
    * 端点: POST /api/mobile/{factoryId}/equipment/alerts/{alertId}/ignore
    */

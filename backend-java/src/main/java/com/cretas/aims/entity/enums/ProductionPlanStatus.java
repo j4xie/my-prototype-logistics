@@ -9,6 +9,10 @@ package com.cretas.aims.entity.enums;
  */
 public enum ProductionPlanStatus {
     /**
+     * 已计划
+     */
+    PLANNED("已计划", "计划已创建"),
+    /**
      * 待处理
      */
     PENDING("待处理", "计划已创建，等待开始"),

@@ -145,8 +145,8 @@ export default function QualityInspectionListScreen() {
     setRefreshing(false);
   };
 
-  const handleItemPress = (inspectionId: number) => {
-    navigation.navigate('QualityInspectionDetail', { inspectionId: String(inspectionId) });
+  const handleItemPress = (inspectionId: string) => {
+    navigation.navigate('QualityInspectionDetail', { inspectionId });
   };
 
   const handleCreateInspection = () => {
@@ -197,6 +197,16 @@ export default function QualityInspectionListScreen() {
     return '#F44336';
   };
 
+  const getQualityGradeColor = (grade?: string): string => {
+    switch (grade) {
+      case 'A': return '#4CAF50'; // 绿色
+      case 'B': return '#8BC34A'; // 浅绿
+      case 'C': return '#FF9800'; // 橙色
+      case 'D': return '#F44336'; // 红色
+      default: return '#9E9E9E';
+    }
+  };
+
   // Filter data based on search query
   const filteredInspections = inspections.filter((item) => {
     const searchLower = searchQuery.toLowerCase();
@@ -227,6 +237,21 @@ export default function QualityInspectionListScreen() {
             </Text>
           </View>
           <View style={styles.cardHeaderRight}>
+            {item.qualityGrade && (
+              <Chip
+                mode="flat"
+                style={[
+                  styles.gradeChip,
+                  { backgroundColor: getQualityGradeColor(item.qualityGrade) + '20' },
+                ]}
+                textStyle={[
+                  styles.gradeChipText,
+                  { color: getQualityGradeColor(item.qualityGrade) },
+                ]}
+              >
+                {item.qualityGrade}级
+              </Chip>
+            )}
             <Chip
               mode="flat"
               style={[
@@ -453,7 +478,10 @@ const styles = StyleSheet.create({
   cardHeaderLeft: {
     flex: 1,
   },
-  cardHeaderRight: {},
+  cardHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   inspectionId: {
     fontWeight: '600',
     color: '#212121',
@@ -461,6 +489,14 @@ const styles = StyleSheet.create({
   batchId: {
     color: '#666',
     marginTop: 2,
+  },
+  gradeChip: {
+    alignSelf: 'flex-start',
+    marginRight: 6,
+  },
+  gradeChipText: {
+    fontWeight: '700',
+    fontSize: 11,
   },
   resultChip: {
     alignSelf: 'flex-start',

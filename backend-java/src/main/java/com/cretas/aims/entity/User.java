@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.Department;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
@@ -46,6 +47,10 @@ public class User extends BaseEntity {
     private String passwordHash;
     @Column(name = "phone")
     private String phone;
+
+    @Column(name = "email", length = 100)
+    private String email;
+
     @Column(name = "full_name")
     private String fullName;
     @Column(name = "is_active", nullable = false)
@@ -69,26 +74,47 @@ public class User extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Session> sessions = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<EmployeeWorkSession> workSessions = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "recorder", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialConsumption> materialConsumptions = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BatchWorkSession> batchWorkSessions = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RawMaterialType> createdMaterialTypes = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductType> createdProductTypes = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Supplier> createdSuppliers = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Customer> createdCustomers = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductionPlan> createdProductionPlans = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatch> createdMaterialBatches = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "adjustedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatchAdjustment> batchAdjustments = new ArrayList<>();
     // 便捷方法

@@ -160,6 +160,9 @@ export type ProfileStackParamList = {
 
   // Phase 3 P2: 数据导出 (可选，也可以放在ProcessingStackParamList)
   DataExport: { reportType?: 'production' | 'cost' | 'attendance' };
+
+  // 开发者工具: 服务器连接测试
+  ServerConnectivityTest: undefined;
 };
 
 // ==================== 报表中心模块导航参数 ====================
