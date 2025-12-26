@@ -42,7 +42,7 @@ export default function SupplierManagementScreen() {
 
   // 权限控制
   const userType = user?.userType || 'factory';
-  const roleCode = user?.factoryUser?.role || user?.factoryUser?.roleCode || user?.roleCode || 'viewer';
+  const roleCode = user?.factoryUser?.role || 'viewer';
   const isPlatformAdmin = userType === 'platform';
   const isSuperAdmin = roleCode === 'factory_super_admin';
   const isPermissionAdmin = roleCode === 'permission_admin';
@@ -97,8 +97,8 @@ export default function SupplierManagementScreen() {
         supplierLogger.warn('供应商API返回空数据', { factoryId });
       }
     } catch (error) {
-      supplierLogger.error('加载供应商列表失败', error, { factoryId });
-      const errorMessage = error.response?.data?.message || error.message || '加载供应商列表失败';
+      supplierLogger.error('加载供应商列表失败', error, { factoryId: user?.factoryId });
+      const errorMessage = (error as any).response?.data?.message || (error instanceof Error ? error.message : '加载供应商列表失败');
       Alert.alert('错误', errorMessage);
       setSuppliers([]);
     } finally {
@@ -209,7 +209,7 @@ export default function SupplierManagementScreen() {
         isEdit: !!editingSupplier,
         supplierCode: formData.supplierCode,
       });
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
     }
   };
 
@@ -230,7 +230,7 @@ export default function SupplierManagementScreen() {
               loadSuppliers();
             } catch (error) {
               supplierLogger.error('删除供应商失败', error, { supplierId, supplierName });
-              Alert.alert('错误', error.response?.data?.message || '删除失败');
+              Alert.alert('错误', (error as any).response?.data?.message || '删除失败');
             }
           },
         },
@@ -254,7 +254,7 @@ export default function SupplierManagementScreen() {
       loadSuppliers();
     } catch (error) {
       supplierLogger.error('切换状态失败', error, { supplierId, currentStatus });
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
     }
   };
 

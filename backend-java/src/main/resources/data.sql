@@ -53,71 +53,73 @@ INSERT IGNORE INTO departments (factory_id, code, name, is_active, display_order
 -- =====================================================
 -- 5. 供应商 (suppliers)
 -- 注意: 使用正确的列名 supplier_code, contact_phone
+-- 修复: business_type -> supplied_materials, 添加 created_by (必填)
 -- =====================================================
-INSERT IGNORE INTO suppliers (id, factory_id, name, code, supplier_code, contact_person, contact_phone, address, business_type, is_active, created_at, updated_at) VALUES
--- F001 供应商
-('SUP-F001-001', 'F001', '东海水产批发', 'SUP001', 'SUP001', '陈老板', '13600136001', '浙江省舟山市定海区', '海水鱼', 1, NOW(), NOW()),
-('SUP-F001-002', 'F001', '南海渔业公司', 'SUP002', 'SUP002', '林老板', '13600136002', '广东省湛江市', '虾蟹', 1, NOW(), NOW()),
--- F002 供应商
-('SUP-F002-001', 'F002', '北海水产', 'SUP001', 'SUP001', '周老板', '13600136003', '山东省威海市', '海水鱼', 1, NOW(), NOW()),
-('SUP-F002-002', 'F002', '长江渔场', 'SUP002', 'SUP002', '吴老板', '13600136004', '江苏省南通市', '淡水鱼', 1, NOW(), NOW()),
--- F003 供应商
-('SUP-F003-001', 'F003', '黄海水产', 'SUP001', 'SUP001', '郑老板', '13600136005', '山东省日照市', '海水鱼', 1, NOW(), NOW()),
-('SUP-F003-002', 'F003', '渤海渔业', 'SUP002', 'SUP002', '孙老板', '13600136006', '辽宁省大连市', '贝类', 1, NOW(), NOW());
+INSERT IGNORE INTO suppliers (id, factory_id, name, code, supplier_code, contact_person, contact_phone, address, supplied_materials, is_active, created_by, created_at, updated_at) VALUES
+-- F001 供应商 (created_by=22)
+('SUP-F001-001', 'F001', '东海水产批发', 'SUP001', 'SUP001', '陈老板', '13600136001', '浙江省舟山市定海区', '海水鱼', 1, 22, NOW(), NOW()),
+('SUP-F001-002', 'F001', '南海渔业公司', 'SUP002', 'SUP002', '林老板', '13600136002', '广东省湛江市', '虾蟹', 1, 22, NOW(), NOW()),
+-- F002 供应商 (created_by=23)
+('SUP-F002-001', 'F002', '北海水产', 'SUP001', 'SUP001', '周老板', '13600136003', '山东省威海市', '海水鱼', 1, 23, NOW(), NOW()),
+('SUP-F002-002', 'F002', '长江渔场', 'SUP002', 'SUP002', '吴老板', '13600136004', '江苏省南通市', '淡水鱼', 1, 23, NOW(), NOW()),
+-- F003 供应商 (created_by=24)
+('SUP-F003-001', 'F003', '黄海水产', 'SUP001', 'SUP001', '郑老板', '13600136005', '山东省日照市', '海水鱼', 1, 24, NOW(), NOW()),
+('SUP-F003-002', 'F003', '渤海渔业', 'SUP002', 'SUP002', '孙老板', '13600136006', '辽宁省大连市', '贝类', 1, 24, NOW(), NOW());
 
 -- =====================================================
 -- 6. 客户 (customers)
+-- 修复: 添加 customer_code (必填), address -> shipping_address
 -- =====================================================
-INSERT IGNORE INTO customers (id, factory_id, name, code, contact_person, phone, email, address, customer_type, credit_level, status, is_active, created_at, updated_at) VALUES
+INSERT IGNORE INTO customers (id, factory_id, name, code, customer_code, contact_person, phone, email, shipping_address, customer_type, credit_level, status, is_active, created_at, updated_at) VALUES
 -- F001 客户
-('CUS-F001-001', 'F001', '上海盒马鲜生', 'CUS001', '赵采购', '13700137001', 'hema@customer.com', '上海市浦东新区', 'retail', 'A', 'active', 1, NOW(), NOW()),
-('CUS-F001-002', 'F001', '永辉超市华东区', 'CUS002', '钱采购', '13700137002', 'yonghui@customer.com', '上海市徐汇区', 'wholesale', 'A', 'active', 1, NOW(), NOW()),
+('CUS-F001-001', 'F001', '上海盒马鲜生', 'CUS001', 'CUS001', '赵采购', '13700137001', 'hema@customer.com', '上海市浦东新区', 'retail', 'A', 'active', 1, NOW(), NOW()),
+('CUS-F001-002', 'F001', '永辉超市华东区', 'CUS002', 'CUS002', '钱采购', '13700137002', 'yonghui@customer.com', '上海市徐汇区', 'wholesale', 'A', 'active', 1, NOW(), NOW()),
 -- F002 客户
-('CUS-F002-001', 'F002', '宁波大润发', 'CUS001', '孙采购', '13700137003', 'darunfa@customer.com', '浙江省宁波市', 'retail', 'B', 'active', 1, NOW(), NOW()),
-('CUS-F002-002', 'F002', '杭州联华超市', 'CUS002', '李采购', '13700137004', 'lianhua@customer.com', '浙江省杭州市', 'wholesale', 'A', 'active', 1, NOW(), NOW()),
+('CUS-F002-001', 'F002', '宁波大润发', 'CUS001', 'CUS001', '孙采购', '13700137003', 'darunfa@customer.com', '浙江省宁波市', 'retail', 'B', 'active', 1, NOW(), NOW()),
+('CUS-F002-002', 'F002', '杭州联华超市', 'CUS002', 'CUS002', '李采购', '13700137004', 'lianhua@customer.com', '浙江省杭州市', 'wholesale', 'A', 'active', 1, NOW(), NOW()),
 -- F003 客户
-('CUS-F003-001', 'F003', '青岛佳世客', 'CUS001', '王采购', '13700137005', 'jusco@customer.com', '山东省青岛市', 'retail', 'A', 'active', 1, NOW(), NOW()),
-('CUS-F003-002', 'F003', '济南银座超市', 'CUS002', '刘采购', '13700137006', 'yinzuo@customer.com', '山东省济南市', 'wholesale', 'B', 'active', 1, NOW(), NOW());
+('CUS-F003-001', 'F003', '青岛佳世客', 'CUS001', 'CUS001', '王采购', '13700137005', 'jusco@customer.com', '山东省青岛市', 'retail', 'A', 'active', 1, NOW(), NOW()),
+('CUS-F003-002', 'F003', '济南银座超市', 'CUS002', 'CUS002', '刘采购', '13700137006', 'yinzuo@customer.com', '山东省济南市', 'wholesale', 'B', 'active', 1, NOW(), NOW());
 
 -- =====================================================
 -- 7. 原材料类型 (raw_material_types)
 -- =====================================================
-INSERT IGNORE INTO raw_material_types (id, factory_id, code, name, category, unit, unit_price, storage_type, shelf_life_days, min_stock, max_stock, is_active, created_at, updated_at) VALUES
--- F001 原材料类型
-('RMT-F001-001', 'F001', 'DY', '带鱼', '海水鱼', 'kg', 35.00, 'frozen', 180, 100, 5000, 1, NOW(), NOW()),
-('RMT-F001-002', 'F001', 'HHY', '黄花鱼', '海水鱼', 'kg', 45.00, 'frozen', 180, 100, 5000, 1, NOW(), NOW()),
-('RMT-F001-003', 'F001', 'DX', '对虾', '虾类', 'kg', 80.00, 'frozen', 120, 50, 2000, 1, NOW(), NOW()),
-('RMT-F001-004', 'F001', 'YY', '鱿鱼', '头足类', 'kg', 55.00, 'frozen', 180, 80, 3000, 1, NOW(), NOW()),
-('RMT-F001-005', 'F001', 'BYU', '鲍鱼', '贝类', 'kg', 200.00, 'fresh', 7, 20, 500, 1, NOW(), NOW()),
--- F002 原材料类型
-('RMT-F002-001', 'F002', 'DY', '带鱼', '海水鱼', 'kg', 34.00, 'frozen', 180, 100, 5000, 1, NOW(), NOW()),
-('RMT-F002-002', 'F002', 'LY', '鲈鱼', '海水鱼', 'kg', 50.00, 'fresh', 3, 50, 1000, 1, NOW(), NOW()),
-('RMT-F002-003', 'F002', 'PX', '皮皮虾', '虾类', 'kg', 65.00, 'fresh', 2, 30, 800, 1, NOW(), NOW()),
-('RMT-F002-004', 'F002', 'HB', '海蚌', '贝类', 'kg', 40.00, 'fresh', 3, 40, 1000, 1, NOW(), NOW()),
-('RMT-F002-005', 'F002', 'MYU', '墨鱼', '头足类', 'kg', 48.00, 'frozen', 180, 60, 2500, 1, NOW(), NOW()),
--- F003 原材料类型
-('RMT-F003-001', 'F003', 'JY', '金枪鱼', '海水鱼', 'kg', 120.00, 'frozen', 365, 50, 2000, 1, NOW(), NOW()),
-('RMT-F003-002', 'F003', 'SY', '三文鱼', '海水鱼', 'kg', 95.00, 'fresh', 5, 30, 1000, 1, NOW(), NOW()),
-('RMT-F003-003', 'F003', 'LX', '龙虾', '虾类', 'kg', 180.00, 'fresh', 3, 20, 500, 1, NOW(), NOW()),
-('RMT-F003-004', 'F003', 'HX', '海参', '棘皮类', 'kg', 300.00, 'dry', 730, 10, 200, 1, NOW(), NOW()),
-('RMT-F003-005', 'F003', 'SB', '扇贝', '贝类', 'kg', 35.00, 'fresh', 2, 50, 1500, 1, NOW(), NOW());
+INSERT IGNORE INTO raw_material_types (id, factory_id, code, name, category, unit, unit_price, storage_type, shelf_life_days, min_stock, max_stock, is_active, created_by, created_at, updated_at) VALUES
+-- F001 原材料类型 (created_by = 22)
+('RMT-F001-001', 'F001', 'DY', '带鱼', '海水鱼', 'kg', 35.00, 'frozen', 180, 100, 5000, 1, 22, NOW(), NOW()),
+('RMT-F001-002', 'F001', 'HHY', '黄花鱼', '海水鱼', 'kg', 45.00, 'frozen', 180, 100, 5000, 1, 22, NOW(), NOW()),
+('RMT-F001-003', 'F001', 'DX', '对虾', '虾类', 'kg', 80.00, 'frozen', 120, 50, 2000, 1, 22, NOW(), NOW()),
+('RMT-F001-004', 'F001', 'YY', '鱿鱼', '头足类', 'kg', 55.00, 'frozen', 180, 80, 3000, 1, 22, NOW(), NOW()),
+('RMT-F001-005', 'F001', 'BYU', '鲍鱼', '贝类', 'kg', 200.00, 'fresh', 7, 20, 500, 1, 22, NOW(), NOW()),
+-- F002 原材料类型 (created_by = 23)
+('RMT-F002-001', 'F002', 'DY', '带鱼', '海水鱼', 'kg', 34.00, 'frozen', 180, 100, 5000, 1, 23, NOW(), NOW()),
+('RMT-F002-002', 'F002', 'LY', '鲈鱼', '海水鱼', 'kg', 50.00, 'fresh', 3, 50, 1000, 1, 23, NOW(), NOW()),
+('RMT-F002-003', 'F002', 'PX', '皮皮虾', '虾类', 'kg', 65.00, 'fresh', 2, 30, 800, 1, 23, NOW(), NOW()),
+('RMT-F002-004', 'F002', 'HB', '海蚌', '贝类', 'kg', 40.00, 'fresh', 3, 40, 1000, 1, 23, NOW(), NOW()),
+('RMT-F002-005', 'F002', 'MYU', '墨鱼', '头足类', 'kg', 48.00, 'frozen', 180, 60, 2500, 1, 23, NOW(), NOW()),
+-- F003 原材料类型 (created_by = 24)
+('RMT-F003-001', 'F003', 'JY', '金枪鱼', '海水鱼', 'kg', 120.00, 'frozen', 365, 50, 2000, 1, 24, NOW(), NOW()),
+('RMT-F003-002', 'F003', 'SY', '三文鱼', '海水鱼', 'kg', 95.00, 'fresh', 5, 30, 1000, 1, 24, NOW(), NOW()),
+('RMT-F003-003', 'F003', 'LX', '龙虾', '虾类', 'kg', 180.00, 'fresh', 3, 20, 500, 1, 24, NOW(), NOW()),
+('RMT-F003-004', 'F003', 'HX', '海参', '棘皮类', 'kg', 300.00, 'dry', 730, 10, 200, 1, 24, NOW(), NOW()),
+('RMT-F003-005', 'F003', 'SB', '扇贝', '贝类', 'kg', 35.00, 'fresh', 2, 50, 1500, 1, 24, NOW(), NOW());
 
 -- =====================================================
 -- 8. 产品类型 (product_types)
 -- =====================================================
 INSERT IGNORE INTO product_types (id, factory_id, code, name, category, unit, unit_price, production_time_minutes, shelf_life_days, package_spec, is_active, created_by, created_at, updated_at) VALUES
--- F001 产品类型
-('PT-F001-001', 'F001', 'DYP', '带鱼段精品', '冷冻水产', '袋', 25.00, 30, 365, '500g/袋', 1, 1, NOW(), NOW()),
-('PT-F001-002', 'F001', 'DXP', '大虾仁', '冷冻水产', '盒', 45.00, 45, 180, '300g/盒', 1, 1, NOW(), NOW()),
-('PT-F001-003', 'F001', 'YYQ', '鱿鱼圈', '冷冻水产', '袋', 35.00, 40, 365, '400g/袋', 1, 1, NOW(), NOW()),
--- F002 产品类型
-('PT-F002-001', 'F002', 'LYP', '鲈鱼片', '鲜活水产', '盒', 68.00, 20, 3, '400g/盒', 1, 1, NOW(), NOW()),
-('PT-F002-002', 'F002', 'HBP', '海蚌肉', '鲜活水产', '盒', 55.00, 25, 2, '300g/盒', 1, 1, NOW(), NOW()),
-('PT-F002-003', 'F002', 'MYG', '墨鱼干', '干制品', '袋', 120.00, 480, 365, '200g/袋', 1, 1, NOW(), NOW()),
--- F003 产品类型
-('PT-F003-001', 'F003', 'JYP', '金枪鱼排', '冷冻水产', '盒', 150.00, 35, 365, '300g/盒', 1, 1, NOW(), NOW()),
-('PT-F003-002', 'F003', 'SYP', '三文鱼刺身', '鲜活水产', '盒', 128.00, 15, 2, '200g/盒', 1, 1, NOW(), NOW()),
-('PT-F003-003', 'F003', 'HXG', '即食海参', '即食品', '盒', 480.00, 120, 180, '100g/盒', 1, 1, NOW(), NOW());
+-- F001 产品类型 (created_by = 22)
+('PT-F001-001', 'F001', 'DYP', '带鱼段精品', '冷冻水产', '袋', 25.00, 30, 365, '500g/袋', 1, 22, NOW(), NOW()),
+('PT-F001-002', 'F001', 'DXP', '大虾仁', '冷冻水产', '盒', 45.00, 45, 180, '300g/盒', 1, 22, NOW(), NOW()),
+('PT-F001-003', 'F001', 'YYQ', '鱿鱼圈', '冷冻水产', '袋', 35.00, 40, 365, '400g/袋', 1, 22, NOW(), NOW()),
+-- F002 产品类型 (created_by = 23)
+('PT-F002-001', 'F002', 'LYP', '鲈鱼片', '鲜活水产', '盒', 68.00, 20, 3, '400g/盒', 1, 23, NOW(), NOW()),
+('PT-F002-002', 'F002', 'HBP', '海蚌肉', '鲜活水产', '盒', 55.00, 25, 2, '300g/盒', 1, 23, NOW(), NOW()),
+('PT-F002-003', 'F002', 'MYG', '墨鱼干', '干制品', '袋', 120.00, 480, 365, '200g/袋', 1, 23, NOW(), NOW()),
+-- F003 产品类型 (created_by = 24)
+('PT-F003-001', 'F003', 'JYP', '金枪鱼排', '冷冻水产', '盒', 150.00, 35, 365, '300g/盒', 1, 24, NOW(), NOW()),
+('PT-F003-002', 'F003', 'SYP', '三文鱼刺身', '鲜活水产', '盒', 128.00, 15, 2, '200g/盒', 1, 24, NOW(), NOW()),
+('PT-F003-003', 'F003', 'HXG', '即食海参', '即食品', '盒', 480.00, 120, 180, '100g/盒', 1, 24, NOW(), NOW());
 
 -- =====================================================
 -- 9. 设备 (factory_equipment)
@@ -164,30 +166,31 @@ INSERT IGNORE INTO material_batches (id, factory_id, batch_number, material_type
 -- =====================================================
 -- 11. 生产批次 (production_batches)
 -- =====================================================
-INSERT IGNORE INTO production_batches (factory_id, batch_number, product_type_id, product_name, planned_quantity, actual_quantity, good_quantity, defect_quantity, unit, status, start_time, end_time, supervisor_id, created_at, updated_at) VALUES
--- F001 生产批次
-('F001', 'PB20241201001', 'PT-F001-001', '带鱼段精品', 1000, 980, 950, 30, '袋', 'COMPLETED', '2024-12-01 08:00:00', '2024-12-01 16:00:00', 1, NOW(), NOW()),
-('F001', 'PB20241210001', 'PT-F001-002', '大虾仁', 500, 485, 470, 15, '盒', 'COMPLETED', '2024-12-10 08:00:00', '2024-12-10 14:00:00', 1, NOW(), NOW()),
-('F001', 'PB20241220001', 'PT-F001-003', '鱿鱼圈', 800, 0, 0, 0, '袋', 'PRODUCING', '2024-12-20 08:00:00', NULL, 1, NOW(), NOW()),
--- F002 生产批次
-('F002', 'PB20241202001', 'PT-F002-001', '鲈鱼片', 300, 295, 290, 5, '盒', 'COMPLETED', '2024-12-02 08:00:00', '2024-12-02 12:00:00', 1, NOW(), NOW()),
-('F002', 'PB20241212001', 'PT-F002-002', '海蚌肉', 400, 390, 385, 5, '盒', 'COMPLETED', '2024-12-12 08:00:00', '2024-12-12 14:00:00', 1, NOW(), NOW()),
-('F002', 'PB20241221001', 'PT-F002-003', '墨鱼干', 200, 0, 0, 0, '袋', 'PRODUCING', '2024-12-21 08:00:00', NULL, 1, NOW(), NOW()),
--- F003 生产批次
-('F003', 'PB20241203001', 'PT-F003-001', '金枪鱼排', 600, 590, 580, 10, '盒', 'COMPLETED', '2024-12-03 08:00:00', '2024-12-03 15:00:00', 1, NOW(), NOW()),
-('F003', 'PB20241213001', 'PT-F003-002', '三文鱼刺身', 250, 245, 240, 5, '盒', 'COMPLETED', '2024-12-13 08:00:00', '2024-12-13 11:00:00', 1, NOW(), NOW()),
-('F003', 'PB20241222001', 'PT-F003-003', '即食海参', 100, 0, 0, 0, '盒', 'PLANNING', NULL, NULL, 1, NOW(), NOW());
+INSERT IGNORE INTO production_batches (factory_id, batch_number, product_type_id, product_name, planned_quantity, quantity, actual_quantity, good_quantity, defect_quantity, unit, status, start_time, end_time, supervisor_id, created_at, updated_at) VALUES
+-- F001 生产批次 (supervisor_id = 22)
+('F001', 'PB20241201001', 'PT-F001-001', '带鱼段精品', 1000, 1000.00, 980, 950, 30, '袋', 'COMPLETED', '2024-12-01 08:00:00', '2024-12-01 16:00:00', 22, NOW(), NOW()),
+('F001', 'PB20241210001', 'PT-F001-002', '大虾仁', 500, 500.00, 485, 470, 15, '盒', 'COMPLETED', '2024-12-10 08:00:00', '2024-12-10 14:00:00', 22, NOW(), NOW()),
+('F001', 'PB20241220001', 'PT-F001-003', '鱿鱼圈', 800, 800.00, 0, 0, 0, '袋', 'PRODUCING', '2024-12-20 08:00:00', NULL, 22, NOW(), NOW()),
+-- F002 生产批次 (supervisor_id = 23)
+('F002', 'PB20241202001', 'PT-F002-001', '鲈鱼片', 300, 300.00, 295, 290, 5, '盒', 'COMPLETED', '2024-12-02 08:00:00', '2024-12-02 12:00:00', 23, NOW(), NOW()),
+('F002', 'PB20241212001', 'PT-F002-002', '海蚌肉', 400, 400.00, 390, 385, 5, '盒', 'COMPLETED', '2024-12-12 08:00:00', '2024-12-12 14:00:00', 23, NOW(), NOW()),
+('F002', 'PB20241221001', 'PT-F002-003', '墨鱼干', 200, 200.00, 0, 0, 0, '袋', 'PRODUCING', '2024-12-21 08:00:00', NULL, 23, NOW(), NOW()),
+-- F003 生产批次 (supervisor_id = 24)
+('F003', 'PB20241203001', 'PT-F003-001', '金枪鱼排', 600, 600.00, 590, 580, 10, '盒', 'COMPLETED', '2024-12-03 08:00:00', '2024-12-03 15:00:00', 24, NOW(), NOW()),
+('F003', 'PB20241213001', 'PT-F003-002', '三文鱼刺身', 250, 250.00, 245, 240, 5, '盒', 'COMPLETED', '2024-12-13 08:00:00', '2024-12-13 11:00:00', 24, NOW(), NOW()),
+('F003', 'PB20241222001', 'PT-F003-003', '即食海参', 100, 100.00, 0, 0, 0, '盒', 'PLANNING', NULL, NULL, 24, NOW(), NOW());
 
 -- =====================================================
 -- 12. 白名单 (whitelist) - 允许注册的手机号
+-- 注意: added_by 为必填字段 (nullable=false)
 -- =====================================================
-INSERT IGNORE INTO whitelist (factory_id, phone_number, name, department, position, status, created_at, updated_at) VALUES
-('F001', '13800138101', '张三', '管理部', '工厂管理员', 'ACTIVE', NOW(), NOW()),
-('F001', '13800138111', '操作员小王', '生产部', '操作员', 'ACTIVE', NOW(), NOW()),
-('F002', '13800138102', '李四', '管理部', '工厂管理员', 'ACTIVE', NOW(), NOW()),
-('F002', '13800138112', '操作员小李', '生产部', '操作员', 'ACTIVE', NOW(), NOW()),
-('F003', '13800138103', '王五', '管理部', '工厂管理员', 'ACTIVE', NOW(), NOW()),
-('F003', '13800138113', '操作员小张', '生产部', '操作员', 'ACTIVE', NOW(), NOW());
+INSERT IGNORE INTO whitelist (factory_id, phone_number, name, department, position, status, added_by, created_at, updated_at) VALUES
+('F001', '13800138101', '张三', '管理部', '工厂管理员', 'ACTIVE', 22, NOW(), NOW()),
+('F001', '13800138111', '操作员小王', '生产部', '操作员', 'ACTIVE', 22, NOW(), NOW()),
+('F002', '13800138102', '李四', '管理部', '工厂管理员', 'ACTIVE', 23, NOW(), NOW()),
+('F002', '13800138112', '操作员小李', '生产部', '操作员', 'ACTIVE', 23, NOW(), NOW()),
+('F003', '13800138103', '王五', '管理部', '工厂管理员', 'ACTIVE', 24, NOW(), NOW()),
+('F003', '13800138113', '操作员小张', '生产部', '操作员', 'ACTIVE', 24, NOW(), NOW());
 
 -- =====================================================
 -- 13. 数据修复 - 修复跨工厂用户引用
@@ -207,45 +210,47 @@ UPDATE factory_equipment SET created_by=24 WHERE factory_id='F003' AND created_b
 -- =====================================================
 -- 14. 原材料消耗记录 (material_consumptions)
 -- 关联已完成的生产批次与原材料批次
+-- 修复: 移除 id (自增), plan_id -> production_plan_id, 移除 consumed_quantity
 -- =====================================================
 
--- 需要先获取 production_batch 的 ID，使用变量存储
 -- F001 生产批次消耗: PB20241201001(带鱼段精品)消耗MB-F001-001(带鱼), PB20241210001(大虾仁)消耗MB-F001-003(对虾)
-INSERT IGNORE INTO material_consumptions (id, factory_id, production_batch_id, batch_id, plan_id, consumed_quantity, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
-SELECT UUID(), 'F001', pb.id, 'MB-F001-001', '', 100.00, 100.00, 35.00, 3500.00, NOW(), NOW(), 22, NOW(), NOW()
+INSERT IGNORE INTO material_consumptions (factory_id, production_batch_id, batch_id, production_plan_id, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
+SELECT 'F001', pb.id, 'MB-F001-001', NULL, 100.00, 35.00, 3500.00, NOW(), NOW(), 22, NOW(), NOW()
 FROM production_batches pb WHERE pb.batch_number = 'PB20241201001' AND pb.factory_id = 'F001';
 
-INSERT IGNORE INTO material_consumptions (id, factory_id, production_batch_id, batch_id, plan_id, consumed_quantity, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
-SELECT UUID(), 'F001', pb.id, 'MB-F001-003', '', 50.00, 50.00, 80.00, 4000.00, NOW(), NOW(), 22, NOW(), NOW()
+INSERT IGNORE INTO material_consumptions (factory_id, production_batch_id, batch_id, production_plan_id, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
+SELECT 'F001', pb.id, 'MB-F001-003', NULL, 50.00, 80.00, 4000.00, NOW(), NOW(), 22, NOW(), NOW()
 FROM production_batches pb WHERE pb.batch_number = 'PB20241210001' AND pb.factory_id = 'F001';
 
 -- F002 生产批次消耗
-INSERT IGNORE INTO material_consumptions (id, factory_id, production_batch_id, batch_id, plan_id, consumed_quantity, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
-SELECT UUID(), 'F002', pb.id, 'MB-F002-002', '', 80.00, 80.00, 50.00, 4000.00, NOW(), NOW(), 23, NOW(), NOW()
+INSERT IGNORE INTO material_consumptions (factory_id, production_batch_id, batch_id, production_plan_id, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
+SELECT 'F002', pb.id, 'MB-F002-002', NULL, 80.00, 50.00, 4000.00, NOW(), NOW(), 23, NOW(), NOW()
 FROM production_batches pb WHERE pb.batch_number = 'PB20241202001' AND pb.factory_id = 'F002';
 
-INSERT IGNORE INTO material_consumptions (id, factory_id, production_batch_id, batch_id, plan_id, consumed_quantity, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
-SELECT UUID(), 'F002', pb.id, 'MB-F002-004', '', 60.00, 60.00, 40.00, 2400.00, NOW(), NOW(), 23, NOW(), NOW()
+INSERT IGNORE INTO material_consumptions (factory_id, production_batch_id, batch_id, production_plan_id, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
+SELECT 'F002', pb.id, 'MB-F002-004', NULL, 60.00, 40.00, 2400.00, NOW(), NOW(), 23, NOW(), NOW()
 FROM production_batches pb WHERE pb.batch_number = 'PB20241212001' AND pb.factory_id = 'F002';
 
 -- F003 生产批次消耗
-INSERT IGNORE INTO material_consumptions (id, factory_id, production_batch_id, batch_id, plan_id, consumed_quantity, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
-SELECT UUID(), 'F003', pb.id, 'MB-F003-001', '', 50.00, 50.00, 120.00, 6000.00, NOW(), NOW(), 24, NOW(), NOW()
+INSERT IGNORE INTO material_consumptions (factory_id, production_batch_id, batch_id, production_plan_id, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
+SELECT 'F003', pb.id, 'MB-F003-001', NULL, 50.00, 120.00, 6000.00, NOW(), NOW(), 24, NOW(), NOW()
 FROM production_batches pb WHERE pb.batch_number = 'PB20241203001' AND pb.factory_id = 'F003';
 
-INSERT IGNORE INTO material_consumptions (id, factory_id, production_batch_id, batch_id, plan_id, consumed_quantity, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
-SELECT UUID(), 'F003', pb.id, 'MB-F003-002', '', 40.00, 40.00, 95.00, 3800.00, NOW(), NOW(), 24, NOW(), NOW()
+INSERT IGNORE INTO material_consumptions (factory_id, production_batch_id, batch_id, production_plan_id, quantity, unit_price, total_cost, consumption_time, consumed_at, recorded_by, created_at, updated_at)
+SELECT 'F003', pb.id, 'MB-F003-002', NULL, 40.00, 95.00, 3800.00, NOW(), NOW(), 24, NOW(), NOW()
 FROM production_batches pb WHERE pb.batch_number = 'PB20241213001' AND pb.factory_id = 'F003';
 
 -- =====================================================
 -- 15. 更新原材料批次的已用数量 (模拟消耗后的库存)
+-- 注意: remaining_quantity 是 @Transient 计算属性，不存储在数据库
+-- remaining = receipt_quantity - used_quantity (由 Entity 动态计算)
 -- =====================================================
-UPDATE material_batches SET used_quantity = 100.00, remaining_quantity = 400.00 WHERE id = 'MB-F001-001';
-UPDATE material_batches SET used_quantity = 50.00, remaining_quantity = 100.00 WHERE id = 'MB-F001-003';
-UPDATE material_batches SET used_quantity = 80.00, remaining_quantity = 20.00 WHERE id = 'MB-F002-002';
-UPDATE material_batches SET used_quantity = 60.00, remaining_quantity = 60.00 WHERE id = 'MB-F002-004';
-UPDATE material_batches SET used_quantity = 50.00, remaining_quantity = 150.00 WHERE id = 'MB-F003-001';
-UPDATE material_batches SET used_quantity = 40.00, remaining_quantity = 40.00 WHERE id = 'MB-F003-002';
+UPDATE material_batches SET used_quantity = 100.00 WHERE id = 'MB-F001-001';
+UPDATE material_batches SET used_quantity = 50.00 WHERE id = 'MB-F001-003';
+UPDATE material_batches SET used_quantity = 80.00 WHERE id = 'MB-F002-002';
+UPDATE material_batches SET used_quantity = 60.00 WHERE id = 'MB-F002-004';
+UPDATE material_batches SET used_quantity = 50.00 WHERE id = 'MB-F003-001';
+UPDATE material_batches SET used_quantity = 40.00 WHERE id = 'MB-F003-002';
 
 -- =====================================================
 -- 16. 工厂设置 (factory_settings) - 修复404问题

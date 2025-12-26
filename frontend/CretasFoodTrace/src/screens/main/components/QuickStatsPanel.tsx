@@ -73,8 +73,9 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
         if (overviewRes.success && overviewRes.data) {
           const overview = overviewRes.data;
           // 支持两种格式：包装格式(summary/todayStats) 或 扁平格式
-          const summary = overview.summary || overview;
-          const todayStats = overview.todayStats || overview;
+          // 使用 Record<string, any> 兼容多种后端响应格式
+          const summary = (overview.summary || overview) as Record<string, number>;
+          const todayStats = (overview.todayStats || overview) as Record<string, number>;
 
           quickStatsLogger.debug('解析概览数据', { overview });
 

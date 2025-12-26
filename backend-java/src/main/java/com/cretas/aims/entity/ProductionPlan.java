@@ -2,6 +2,8 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.enums.ProductionPlanType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -18,9 +20,10 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@ToString(exclude = {"factory", "productType", "createdBy", "materialConsumptions", "batchUsages"})
+@ToString(exclude = {"factory", "productType", "createdByUser", "materialConsumptions", "batchUsages"})
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "production_plans",
        indexes = {
@@ -94,21 +97,29 @@ public class ProductionPlan extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
     // 关联关系
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     @org.hibernate.annotations.BatchSize(size = 10)
     private Factory factory;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_type_id", referencedColumnName = "id", insertable = false, updatable = false)
     @org.hibernate.annotations.BatchSize(size = 20)
     private ProductType productType;
+
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
     @org.hibernate.annotations.BatchSize(size = 10)
     private User createdByUser;
+
+    @JsonIgnore
     @OneToMany(mappedBy = "productionPlan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialConsumption> materialConsumptions = new ArrayList<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "productionPlan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductionPlanBatchUsage> batchUsages = new ArrayList<>();
 

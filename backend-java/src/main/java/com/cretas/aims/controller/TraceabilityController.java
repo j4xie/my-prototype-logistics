@@ -1,13 +1,26 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.traceability.TraceabilityDTO;
+import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.service.TraceabilityService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 溯源控制器
@@ -20,9 +33,57 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "溯源管理", description = "产品溯源相关接口")
 public class TraceabilityController {
 
     private final TraceabilityService traceabilityService;
+    private final ProductionBatchRepository productionBatchRepository;
+
+    /**
+     * 获取溯源记录列表
+     * 返回最近生产批次的溯源概要信息
+     *
+     * @param factoryId 工厂ID
+     * @param page 页码（1-based）
+     * @param size 每页大小
+     * @return 溯源记录列表
+     */
+    @GetMapping("/api/mobile/{factoryId}/traceability")
+    @Operation(summary = "获取溯源记录列表")
+    public ApiResponse<PageResponse<TraceabilityDTO.TraceListItem>> getTraceabilityList(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码（1-based）") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+        try {
+            log.info("获取溯源记录列表: factoryId={}, page={}, size={}", factoryId, page, size);
+
+            Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            Page<ProductionBatch> batchPage = productionBatchRepository.findByFactoryId(factoryId, pageable);
+
+            List<TraceabilityDTO.TraceListItem> items = batchPage.getContent().stream()
+                    .map(batch -> TraceabilityDTO.TraceListItem.builder()
+                            .batchNumber(batch.getBatchNumber())
+                            .productName(batch.getProductName())
+                            .productionDate(batch.getCreatedAt())
+                            .status(batch.getStatus() != null ? batch.getStatus().name() : "UNKNOWN")
+                            .qualityStatus(batch.getQualityStatus() != null ? batch.getQualityStatus().name() : "PENDING")
+                            .completedQuantity(batch.getActualQuantity() != null ? batch.getActualQuantity().intValue() : 0)
+                            .build())
+                    .collect(Collectors.toList());
+
+            PageResponse<TraceabilityDTO.TraceListItem> response = PageResponse.of(
+                    items,
+                    page,
+                    size,
+                    batchPage.getTotalElements()
+            );
+
+            return ApiResponse.success(response);
+        } catch (Exception e) {
+            log.error("获取溯源记录列表失败", e);
+            return ApiResponse.error("获取溯源记录列表失败: " + e.getMessage());
+        }
+    }
 
     /**
      * 获取基础溯源信息（批次级别）

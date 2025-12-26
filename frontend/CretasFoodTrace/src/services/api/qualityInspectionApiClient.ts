@@ -87,7 +87,7 @@ export enum QualityStatus {
  */
 export interface QualityInspection {
   // 基本信息
-  id?: number;
+  id?: string;  // UUID string (后端使用 String 类型)
   factoryId: string;
   productionBatchId: number;
   inspectorId: number;
@@ -98,9 +98,11 @@ export interface QualityInspection {
   passCount: number;
   failCount: number;
   passRate?: number; // 后端自动计算（passCount / sampleSize * 100）
+  defectRate?: number; // 后端 @Transient 计算字段（failCount / sampleSize * 100）
 
   // 检验结果
   result?: InspectionResult; // PASS, FAIL, CONDITIONAL
+  qualityGrade?: string; // A, B, C, D (后端 @Transient 计算，基于 passRate)
   notes?: string;
 
   // 元数据（只读）
