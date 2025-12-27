@@ -3,13 +3,14 @@
  * 对应原型: warehouse/inventory-transfer.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -25,24 +26,97 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { Picker } from "@react-native-picker/picker";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
+
+interface BatchOption {
+  id: string;
+  batchNumber: string;
+  materialName: string;
+  quantity: number;
+  expiryDate?: string;
+  location: string;
+}
 
 export function WHInventoryTransferScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
-  const [selectedMaterial, setSelectedMaterial] = useState("fish");
-  const [selectedBatch, setSelectedBatch] = useState("MB-20251223-001");
-  const [fromLocation, setFromLocation] = useState("A-01");
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [batches, setBatches] = useState<BatchOption[]>([]);
+  const [selectedBatchId, setSelectedBatchId] = useState("");
   const [toLocation, setToLocation] = useState("");
-  const [quantity, setQuantity] = useState("100");
+  const [quantity, setQuantity] = useState("");
   const [transferType, setTransferType] = useState("space");
   const [remarks, setRemarks] = useState("");
 
-  const maxQuantity = 256; // 可调拨数量
+  // 获取选中批次信息
+  const selectedBatch = batches.find(b => b.id === selectedBatchId);
+  const maxQuantity = selectedBatch?.quantity || 0;
+
+  // 加载批次数据
+  const loadBatches = useCallback(async () => {
+    try {
+      const response = await materialBatchApiClient.getMaterialBatches({
+        status: 'available',
+        size: 100
+      });
+
+      const allBatches = response.data?.content || response.data || [];
+      const batchOptions: BatchOption[] = allBatches
+        .filter((batch: MaterialBatch) => (batch.remainingQuantity || 0) > 0)
+        .map((batch: MaterialBatch) => ({
+          id: batch.id,
+          batchNumber: batch.batchNumber,
+          materialName: batch.materialName || '未知物料',
+          quantity: batch.remainingQuantity || 0,
+          expiryDate: batch.expiryDate,
+          location: batch.storageLocation || '未知库位',
+        }));
+
+      setBatches(batchOptions);
+    } catch (error) {
+      handleError(error, { title: '加载批次数据失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBatches();
+  }, [loadBatches]);
+
+  // 执行调拨
+  const executeTransfer = useCallback(async () => {
+    if (!selectedBatch) return;
+
+    setSubmitting(true);
+    try {
+      await materialBatchApiClient.updateBatch(selectedBatch.id, {
+        storageLocation: toLocation,
+        notes: `库存调拨: ${selectedBatch.location} → ${toLocation}, 原因: ${transferType}, ${remarks}`,
+      });
+
+      Alert.alert("成功", "调拨成功", [
+        { text: "确定", onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      handleError(error, { title: '调拨失败' });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [selectedBatch, toLocation, transferType, remarks, navigation]);
 
   const handleTransfer = () => {
+    if (!selectedBatchId) {
+      Alert.alert("提示", "请选择要调拨的批次");
+      return;
+    }
+
     if (!toLocation) {
       Alert.alert("提示", "请选择目标库位");
       return;
@@ -54,14 +128,12 @@ export function WHInventoryTransferScreen() {
       return;
     }
 
+    const fromLocation = selectedBatch?.location || '当前库位';
     Alert.alert("确认调拨", `确定将 ${qty}kg 从 ${fromLocation} 调拨到 ${toLocation} 吗？`, [
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => {
-          Alert.alert("成功", "调拨成功");
-          navigation.goBack();
-        },
+        onPress: executeTransfer,
       },
     ]);
   };
@@ -69,6 +141,31 @@ export function WHInventoryTransferScreen() {
   const qty = parseInt(quantity) || 0;
   const fromRemaining = maxQuantity - qty;
   const toNew = qty;
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>库存调拨</Text>
+            <Text style={styles.headerSubtitle}>库位间转移</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -88,55 +185,41 @@ export function WHInventoryTransferScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* 选择物料 */}
+        {/* 选择批次 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>选择物料</Text>
+          <Text style={styles.sectionTitle}>选择批次</Text>
 
           <View style={styles.formItem}>
             <Text style={styles.formLabel}>
-              物料名称 <Text style={styles.required}>*</Text>
+              批次 <Text style={styles.required}>*</Text>
             </Text>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={selectedMaterial}
-                onValueChange={setSelectedMaterial}
-                style={styles.picker}
-              >
-                <Picker.Item label="请选择物料" value="" />
-                <Picker.Item label="带鱼 (鲜品)" value="fish" />
-                <Picker.Item label="虾仁 (冻品)" value="shrimp" />
-                <Picker.Item label="鲈鱼 (鲜品)" value="bass" />
-                <Picker.Item label="鱿鱼 (冻品)" value="squid" />
-              </Picker>
-            </View>
-          </View>
-
-          <View style={styles.formItem}>
-            <Text style={styles.formLabel}>
-              选择批次 <Text style={styles.required}>*</Text>
-            </Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={selectedBatch}
-                onValueChange={setSelectedBatch}
+                selectedValue={selectedBatchId}
+                onValueChange={setSelectedBatchId}
                 style={styles.picker}
               >
                 <Picker.Item label="请选择批次" value="" />
-                <Picker.Item
-                  label="MB-20251223-001 (256kg, 3天后过期)"
-                  value="MB-20251223-001"
-                />
-                <Picker.Item
-                  label="MB-20251224-002 (320kg, 4天后过期)"
-                  value="MB-20251224-002"
-                />
-                <Picker.Item
-                  label="MB-20251226-001 (280kg, 新入库)"
-                  value="MB-20251226-001"
-                />
+                {batches.map((batch) => (
+                  <Picker.Item
+                    key={batch.id}
+                    label={`${batch.batchNumber} - ${batch.materialName} (${batch.quantity}kg)`}
+                    value={batch.id}
+                  />
+                ))}
               </Picker>
             </View>
           </View>
+
+          {selectedBatch && (
+            <View style={styles.batchInfo}>
+              <Text style={styles.batchInfoLabel}>当前库位: {selectedBatch.location}</Text>
+              <Text style={styles.batchInfoLabel}>可调拨数量: {selectedBatch.quantity}kg</Text>
+              {selectedBatch.expiryDate && (
+                <Text style={styles.batchInfoLabel}>保质期至: {selectedBatch.expiryDate}</Text>
+              )}
+            </View>
+          )}
         </View>
 
         {/* 调拨信息 */}
@@ -147,14 +230,10 @@ export function WHInventoryTransferScreen() {
             <Text style={styles.formLabel}>
               调出库位 <Text style={styles.required}>*</Text>
             </Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={fromLocation}
-                onValueChange={setFromLocation}
-                style={styles.picker}
-              >
-                <Picker.Item label="A区-冷藏库-01 (当前库位)" value="A-01" />
-              </Picker>
+            <View style={styles.locationDisplay}>
+              <Text style={styles.locationText}>
+                {selectedBatch?.location || '请先选择批次'}
+              </Text>
             </View>
           </View>
 
@@ -269,7 +348,9 @@ export function WHInventoryTransferScreen() {
           <View style={styles.transferPreview}>
             <View style={styles.previewFrom}>
               <Text style={styles.previewLabel}>调出</Text>
-              <Text style={styles.previewLocation}>A区-冷藏库-01</Text>
+              <Text style={styles.previewLocation}>
+                {selectedBatch?.location || '未选择'}
+              </Text>
               <Text style={styles.previewChange}>
                 {maxQuantity}kg → {fromRemaining}kg
               </Text>
@@ -284,9 +365,9 @@ export function WHInventoryTransferScreen() {
             <View style={styles.previewTo}>
               <Text style={styles.previewLabel}>调入</Text>
               <Text style={styles.previewLocation}>
-                {toLocation ? `A区-冷藏库-0${toLocation.split("-")[1]}` : "未选择"}
+                {toLocation || "未选择"}
               </Text>
-              <Text style={styles.previewChange}>0kg → {toNew}kg</Text>
+              <Text style={styles.previewChange}>+{toNew}kg</Text>
             </View>
           </View>
         </View>
@@ -309,8 +390,10 @@ export function WHInventoryTransferScreen() {
           onPress={handleTransfer}
           style={styles.confirmButton}
           labelStyle={{ color: "#fff" }}
+          disabled={submitting}
+          loading={submitting}
         >
-          确认调拨
+          {submitting ? '调拨中...' : '确认调拨'}
         </Button>
       </View>
     </SafeAreaView>
@@ -321,6 +404,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",
@@ -385,6 +478,29 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 50,
+  },
+  batchInfo: {
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  batchInfoLabel: {
+    fontSize: 13,
+    color: "#666",
+    marginBottom: 4,
+  },
+  locationDisplay: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  locationText: {
+    fontSize: 14,
+    color: "#333",
   },
   transferArrow: {
     alignItems: "center",

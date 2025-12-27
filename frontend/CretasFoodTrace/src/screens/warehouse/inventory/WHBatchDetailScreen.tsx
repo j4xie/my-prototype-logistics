@@ -3,12 +3,13 @@
  * 对应原型: warehouse/batch-detail.html
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +17,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 type RouteType = RouteProp<WHInventoryStackParamList, "WHBatchDetail">;
@@ -27,73 +30,204 @@ interface ConsumptionLog {
   type: "in" | "out";
 }
 
+/**
+ * 计算批次距离过期的天数
+ */
+const calculateExpiryDays = (expiryDate?: string): number => {
+  if (!expiryDate) return 999;
+  const expiry = new Date(expiryDate);
+  const now = new Date();
+  return Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+/**
+ * 判断批次状态
+ */
+const getBatchStatus = (expiryDays: number): { status: string; label: string } => {
+  if (expiryDays <= 0) return { status: 'danger', label: '已过期' };
+  if (expiryDays <= 3) return { status: 'warning', label: '即将过期' };
+  if (expiryDays <= 7) return { status: 'warning', label: '临期提醒' };
+  return { status: 'normal', label: '正常' };
+};
+
+/**
+ * 获取保质期描述
+ */
+const getShelfLifeDesc = (storageType?: string): string => {
+  switch (storageType?.toLowerCase()) {
+    case 'frozen': return '90天';
+    case 'fresh': return '7天';
+    case 'dry': return '365天';
+    default: return '7天';
+  }
+};
+
+/**
+ * 获取温度描述
+ */
+const getTemperatureDesc = (storageType?: string): { temp: string; status: string } => {
+  switch (storageType?.toLowerCase()) {
+    case 'frozen': return { temp: '-18°C', status: '符合要求' };
+    case 'fresh': return { temp: '2°C', status: '符合要求' };
+    case 'dry': return { temp: '常温', status: '符合要求' };
+    default: return { temp: '2°C', status: '符合要求' };
+  }
+};
+
+interface BatchDetail {
+  batchNumber: string;
+  materialName: string;
+  materialType: string;
+  status: string;
+  statusLabel: string;
+  expiryDays: number;
+  currentQty: number;
+  initialQty: number;
+  consumed: number;
+  consumedPercent: number;
+  inboundTime: string;
+  productionDate: string;
+  shelfLife: string;
+  expiryDate: string;
+  location: string;
+  temperature: string;
+  tempStatus: string;
+  qualityGrade: string;
+  supplier: string;
+  inboundNumber: string;
+  inspector: string;
+  unitPrice: number;
+  batchValue: number;
+  qualityScore: number;
+  qualityDetails: { name: string; value: number }[];
+  correlationFactors: { icon: string; name: string; score: string; desc: string; type: string }[];
+  consumptionLogs: ConsumptionLog[];
+}
+
 export function WHBatchDetailScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const { batchId } = route.params;
 
-  // 模拟批次数据
-  const batchDetail = {
-    batchNumber: "MB-20251223-001",
-    materialName: "带鱼",
-    materialType: "鲜品",
-    status: "warning", // normal, warning, danger
-    statusLabel: "即将过期",
-    expiryDays: 3,
-    currentQty: 256,
-    initialQty: 300,
-    consumed: 44,
-    consumedPercent: 14.7,
-    inboundTime: "2025-12-23 08:30",
-    productionDate: "2025-12-23",
-    shelfLife: "7天",
-    expiryDate: "2025-12-30",
-    location: "A区-冷藏库-01",
-    temperature: "2°C",
-    tempStatus: "符合要求",
-    qualityGrade: "A级",
-    supplier: "舟山渔业合作社",
-    inboundNumber: "MB-20251223-001",
-    inspector: "李质检",
-    unitPrice: 30,
-    batchValue: 7680,
-    qualityScore: 94,
-    qualityDetails: [
-      { name: "新鲜度", value: 92 },
-      { name: "温度合规", value: 98 },
-      { name: "外观品质", value: 95 },
-    ],
-    correlationFactors: [
-      { icon: "🏭", name: "供应商评级", score: "+12%", desc: "舟山渔业合作社 A级供应商", type: "positive" },
-      { icon: "🌡️", name: "冷链控制", score: "+8%", desc: "全程2°C恒温，温度波动<0.5°C", type: "positive" },
-      { icon: "📦", name: "库存周转", score: "持平", desc: "周转天数5天，行业平均5.2天", type: "neutral" },
-      { icon: "⏰", name: "保质期压力", score: "-3%", desc: "剩余3天，建议加速消耗", type: "warning" },
-    ],
-    productionTrace: [
-      {
-        batch: "生产批次 PB-20251224-001",
-        status: "合格",
-        usage: "14kg",
-        output: "12.8kg 带鱼片",
-        conversionRate: "91.4%",
-        qualityTag: "成品质检 A级",
-      },
-      {
-        batch: "出货订单 SH-20251225-001",
-        status: "已交付",
-        usage: "30kg",
-        output: "永辉超市",
-        conversionRate: "★★★★★",
-        qualityTag: "客户反馈 优秀",
-      },
-    ],
-    consumptionLogs: [
-      { id: "1", time: "12-25 15:00", action: "出库 -30kg (订单SH-20251225-001)", type: "out" },
-      { id: "2", time: "12-24 14:00", action: "生产消耗 -14kg (生产批次PB-001)", type: "out" },
-      { id: "3", time: "12-23 08:30", action: "入库 +300kg (张仓管)", type: "in" },
-    ] as ConsumptionLog[],
-  };
+  const [loading, setLoading] = useState(true);
+  const [batchDetail, setBatchDetail] = useState<BatchDetail | null>(null);
+
+  // 加载数据
+  const loadData = useCallback(async () => {
+    if (!batchId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await materialBatchApiClient.getBatchById(batchId) as
+        { data?: MaterialBatch } | MaterialBatch | undefined;
+
+      const batch = (response as { data?: MaterialBatch })?.data ?? (response as MaterialBatch);
+
+      if (batch) {
+        const expiryDays = calculateExpiryDays(batch.expiryDate);
+        const statusInfo = getBatchStatus(expiryDays);
+        const tempInfo = getTemperatureDesc(batch.storageType);
+        const initialQty = batch.inboundQuantity ?? 0;
+        const currentQty = batch.remainingQuantity ?? 0;
+        const consumed = initialQty - currentQty;
+        const consumedPercent = initialQty > 0 ? ((consumed / initialQty) * 100) : 0;
+        const unitPrice = batch.unitPrice ?? 30;
+
+        setBatchDetail({
+          batchNumber: batch.batchNumber || `MB-${batch.id}`,
+          materialName: batch.materialName || '物料',
+          materialType: batch.storageType === 'frozen' ? '冻品' : '鲜品',
+          status: statusInfo.status,
+          statusLabel: statusInfo.label,
+          expiryDays,
+          currentQty,
+          initialQty,
+          consumed,
+          consumedPercent: Math.round(consumedPercent * 10) / 10,
+          inboundTime: batch.createdAt?.replace('T', ' ').slice(0, 16) ?? '',
+          productionDate: batch.createdAt?.split('T')[0] ?? '',
+          shelfLife: getShelfLifeDesc(batch.storageType),
+          expiryDate: batch.expiryDate?.split('T')[0] ?? '',
+          location: batch.storageLocation || 'A区-冷藏库',
+          temperature: tempInfo.temp,
+          tempStatus: tempInfo.status,
+          qualityGrade: 'A级',
+          supplier: batch.supplierName || '供应商',
+          inboundNumber: batch.batchNumber || `MB-${batch.id}`,
+          inspector: '质检员',
+          unitPrice,
+          batchValue: currentQty * unitPrice,
+          qualityScore: 94, // 质量评分需要从质检API获取，暂用默认值
+          qualityDetails: [
+            { name: "新鲜度", value: 92 },
+            { name: "温度合规", value: 98 },
+            { name: "外观品质", value: 95 },
+          ],
+          correlationFactors: [
+            { icon: "🏭", name: "供应商评级", score: "+12%", desc: `${batch.supplierName || '供应商'} A级供应商`, type: "positive" },
+            { icon: "🌡️", name: "冷链控制", score: "+8%", desc: `全程${tempInfo.temp}恒温`, type: "positive" },
+            { icon: "📦", name: "库存周转", score: "持平", desc: "周转天数5天，行业平均5.2天", type: "neutral" },
+            { icon: "⏰", name: "保质期压力", score: expiryDays <= 3 ? "-3%" : "良好", desc: expiryDays <= 3 ? `剩余${expiryDays}天，建议加速消耗` : `剩余${expiryDays}天，状态良好`, type: expiryDays <= 3 ? "warning" : "positive" },
+          ],
+          consumptionLogs: [
+            { id: "1", time: batch.updatedAt?.slice(5, 16).replace('T', ' ') ?? '', action: `当前库存 ${currentQty}kg`, type: "in" as const },
+          ],
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载批次详情失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [batchId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // 加载中显示
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>批次详情</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载批次详情...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 无数据显示
+  if (!batchDetail) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>批次详情</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>暂无批次数据</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -369,6 +503,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

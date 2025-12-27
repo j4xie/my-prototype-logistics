@@ -3,13 +3,14 @@
  * 对应原型: warehouse/inbound-inspect.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -24,6 +25,10 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInboundStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { qualityInspectionApiClient, InspectionResult } from "../../../services/api/qualityInspectionApiClient";
+import { useAuthStore } from "../../../store/authStore";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInboundStackParamList>;
 type RouteType = RouteProp<WHInboundStackParamList, "WHInspect">;
@@ -34,20 +39,75 @@ interface InspectItem {
   checked: boolean;
 }
 
+interface BatchInfo {
+  batchNumber: string;
+  material: string;
+  materialType: string;
+  supplier: string;
+  quantity: number;
+}
+
+/**
+ * 获取材料类型显示名称
+ */
+const getStorageTypeLabel = (storageType?: string): string => {
+  switch (storageType?.toLowerCase()) {
+    case 'frozen': return '冻品';
+    case 'dry': return '干货';
+    case 'fresh':
+    default: return '鲜品';
+  }
+};
+
 export function WHInspectScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const { batchId } = route.params;
+  const { getUserId } = useAuthStore();
 
-  // 模拟批次数据
-  const batchInfo = {
-    batchNumber: "MB-20251226-002",
-    material: "虾仁",
-    materialType: "冻品",
-    supplier: "东海冷冻食品有限公司",
-    quantity: 80,
-  };
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
+  const [productionBatchId, setProductionBatchId] = useState<number | null>(null);
+
+  // 加载批次数据
+  const loadBatchData = useCallback(async () => {
+    if (!batchId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await materialBatchApiClient.getBatchById(batchId) as
+        { data?: MaterialBatch } | MaterialBatch | undefined;
+
+      const batch = (response as { data?: MaterialBatch })?.data ?? (response as MaterialBatch);
+
+      if (batch) {
+        setBatchInfo({
+          batchNumber: batch.batchNumber ?? `MB-${batch.id}`,
+          material: batch.materialName ?? '未知原料',
+          materialType: getStorageTypeLabel(batch.storageType),
+          supplier: batch.supplierName ?? '未知供应商',
+          quantity: batch.remainingQuantity ?? batch.inboundQuantity ?? 0,
+        });
+        // 保存 productionBatchId 用于提交质检
+        if (batch.id) {
+          setProductionBatchId(typeof batch.id === 'string' ? parseInt(batch.id, 10) : batch.id);
+        }
+      }
+    } catch (error) {
+      handleError(error, { title: '加载批次信息失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [batchId]);
+
+  useEffect(() => {
+    loadBatchData();
+  }, [loadBatchData]);
 
   // 质检项
   const [inspectItems, setInspectItems] = useState<InspectItem[]>([
@@ -73,6 +133,47 @@ export function WHInspectScreen() {
   const allChecked = inspectItems.every((item) => item.checked);
   const checkedCount = inspectItems.filter((item) => item.checked).length;
 
+  // 提交质检结果
+  const submitInspection = async (result: InspectionResult) => {
+    if (!productionBatchId) {
+      Alert.alert('错误', '批次ID无效，无法提交质检');
+      return;
+    }
+
+    const userId = getUserId();
+    if (!userId) {
+      Alert.alert('错误', '用户未登录');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const sampleSizeNum = parseFloat(sampleWeight) || 0;
+      const today = new Date().toISOString().split('T')[0] as string; // YYYY-MM-DD
+
+      await qualityInspectionApiClient.submitInspection(productionBatchId, {
+        inspectorId: userId,
+        inspectionDate: today,
+        sampleSize: sampleSizeNum,
+        passCount: result === InspectionResult.PASS ? sampleSizeNum : 0,
+        failCount: result === InspectionResult.FAIL ? sampleSizeNum : 0,
+        result,
+        notes: remarks || `质检项目: ${checkedCount}/${inspectItems.length} 通过，实测温度: ${actualTemp || '-'}°C`,
+      });
+
+      if (result === InspectionResult.PASS) {
+        Alert.alert('成功', '质检通过，请进行上架操作');
+      } else {
+        Alert.alert('已标记', '批次已标记为质检不通过');
+      }
+      navigation.goBack();
+    } catch (error) {
+      handleError(error, { title: '提交质检失败' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handlePass = () => {
     if (!allChecked) {
       Alert.alert("提示", "请完成所有质检项目");
@@ -83,10 +184,7 @@ export function WHInspectScreen() {
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => {
-          Alert.alert("成功", "质检通过，请进行上架操作");
-          navigation.goBack();
-        },
+        onPress: () => submitInspection(InspectionResult.PASS),
       },
     ]);
   };
@@ -97,13 +195,48 @@ export function WHInspectScreen() {
       {
         text: "确定",
         style: "destructive",
-        onPress: () => {
-          Alert.alert("已标记", "批次已标记为质检不通过");
-          navigation.goBack();
-        },
+        onPress: () => submitInspection(InspectionResult.FAIL),
       },
     ]);
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>质检作业</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 空状态
+  if (!batchInfo) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>质检作业</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="clipboard-check-outline" size={64} color="#ddd" />
+          <Text style={styles.loadingText}>未找到批次信息</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -231,6 +364,7 @@ export function WHInspectScreen() {
           style={styles.rejectButton}
           labelStyle={styles.rejectButtonLabel}
           icon="close"
+          disabled={submitting}
         >
           不通过
         </Button>
@@ -240,9 +374,10 @@ export function WHInspectScreen() {
           style={styles.passButton}
           labelStyle={styles.passButtonLabel}
           icon="check"
-          disabled={!allChecked}
+          disabled={!allChecked || submitting}
+          loading={submitting}
         >
-          质检通过
+          {submitting ? '提交中...' : '质检通过'}
         </Button>
       </View>
     </SafeAreaView>
@@ -253,6 +388,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

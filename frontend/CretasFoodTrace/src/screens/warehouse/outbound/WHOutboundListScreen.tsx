@@ -3,13 +3,14 @@
  * 对应原型: warehouse/outbound.html
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -23,6 +24,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
+import { shipmentApiClient, ShipmentRecord, ShipmentStats } from "../../../services/api/shipmentApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
 
@@ -43,63 +46,44 @@ interface OutboundItem {
   deliveredAt?: string;
 }
 
-// 模拟数据
-const mockOutboundList: OutboundItem[] = [
-  {
-    id: "1",
-    orderNumber: "SH-20251226-001",
-    customer: "鲜食超市",
-    products: "带鱼片",
-    quantity: 80,
-    status: "waiting",
-    dispatchTime: "14:00",
-    isUrgent: true,
-  },
-  {
-    id: "2",
-    orderNumber: "SH-20251226-002",
-    customer: "城市生鲜店",
-    products: "虾仁、鲈鱼片",
-    quantity: 120,
-    status: "waiting",
-    dispatchTime: "16:00",
-  },
-  {
-    id: "3",
-    orderNumber: "SH-20251226-003",
-    customer: "海鲜批发市场",
-    products: "鲈鱼片",
-    quantity: 150,
-    status: "packing",
-    packingProgress: "2/3 件",
-  },
-  {
-    id: "4",
-    orderNumber: "SH-20251226-004",
-    customer: "美食广场",
-    products: "带鱼片、鱿鱼",
-    quantity: 200,
-    status: "ready",
-  },
-  {
-    id: "5",
-    orderNumber: "SH-20251225-001",
-    customer: "鲜味餐厅",
-    products: "鲈鱼片",
-    quantity: 60,
-    status: "shipped",
-    logistics: "顺丰冷链 | 运输中",
-  },
-  {
-    id: "6",
-    orderNumber: "SH-20251225-002",
-    customer: "海鲜酒楼",
-    products: "虾仁",
-    quantity: 100,
-    status: "delivered",
-    deliveredAt: "2025-12-25 15:30",
-  },
-];
+/**
+ * 将后端 ShipmentRecord.status 映射到前端 OutboundStatus
+ * 后端: 'pending' | 'shipped' | 'delivered' | 'returned'
+ * 前端: 'waiting' | 'packing' | 'ready' | 'shipped' | 'delivered'
+ */
+const mapShipmentStatus = (backendStatus: string): OutboundStatus => {
+  switch (backendStatus?.toLowerCase()) {
+    case 'pending':
+      return 'waiting';
+    case 'shipped':
+      return 'shipped';
+    case 'delivered':
+      return 'delivered';
+    case 'returned':
+      return 'delivered'; // 退货也显示为已完成
+    default:
+      return 'waiting';
+  }
+};
+
+/**
+ * 将 ShipmentRecord 转换为 OutboundItem
+ */
+const mapShipmentToOutbound = (shipment: ShipmentRecord): OutboundItem => {
+  const status = mapShipmentStatus(shipment.status);
+  return {
+    id: shipment.id,
+    orderNumber: shipment.shipmentNumber || shipment.orderNumber || `SH-${shipment.id}`,
+    customer: shipment.customerId || '未知客户',
+    products: shipment.productName || '产品',
+    quantity: shipment.quantity ?? 0,
+    status,
+    logistics: shipment.logisticsCompany
+      ? `${shipment.logisticsCompany}${shipment.trackingNumber ? ' | ' + shipment.trackingNumber : ''}`
+      : undefined,
+    deliveredAt: status === 'delivered' ? shipment.updatedAt : undefined,
+  };
+};
 
 const statusConfig: Record<
   OutboundStatus,
@@ -115,28 +99,65 @@ const statusConfig: Record<
 export function WHOutboundListScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [outboundList, setOutboundList] = useState<OutboundItem[]>([]);
+  const [shipmentStats, setShipmentStats] = useState<ShipmentStats | null>(null);
+
+  // 加载数据
+  const loadData = useCallback(async () => {
+    try {
+      const [shipmentsResult, statsResult] = await Promise.allSettled([
+        shipmentApiClient.getShipments({ page: 0, size: 50 }),
+        shipmentApiClient.getShipmentStats(),
+      ]);
+
+      // 处理出货记录
+      if (shipmentsResult.status === 'fulfilled') {
+        const response = shipmentsResult.value as { data?: ShipmentRecord[] };
+        const shipments = response.data ?? [];
+        const mapped = shipments.map(mapShipmentToOutbound);
+        setOutboundList(mapped);
+      }
+
+      // 处理统计数据
+      if (statsResult.status === 'fulfilled') {
+        const stats = statsResult.value as ShipmentStats;
+        setShipmentStats(stats);
+      }
+    } catch (error) {
+      handleError(error, { title: '加载出货数据失败' });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
-  }, []);
+    loadData();
+  }, [loadData]);
 
   // 筛选数据
-  const filteredList = mockOutboundList.filter((item) => {
+  const filteredList = outboundList.filter((item) => {
     if (selectedStatus !== "all" && item.status !== selectedStatus) return false;
     return true;
   });
 
-  // 统计数据
+  // 统计数据 (优先使用API返回的统计，否则从列表计算)
   const stats = {
-    total: mockOutboundList.length,
-    waiting: mockOutboundList.filter((i) => i.status === "waiting").length,
-    packing: mockOutboundList.filter((i) => i.status === "packing").length,
-    ready: mockOutboundList.filter((i) => i.status === "ready").length,
-    shipped: mockOutboundList.filter((i) => i.status === "shipped").length,
-    todayWeight: mockOutboundList.reduce((sum, i) => sum + i.quantity, 0),
+    total: shipmentStats?.total ?? outboundList.length,
+    waiting: shipmentStats?.pending ?? outboundList.filter((i) => i.status === "waiting").length,
+    packing: outboundList.filter((i) => i.status === "packing").length,
+    ready: outboundList.filter((i) => i.status === "ready").length,
+    shipped: shipmentStats?.shipped ?? outboundList.filter((i) => i.status === "shipped").length,
+    todayWeight: outboundList.reduce((sum, i) => sum + i.quantity, 0),
+    delivered: shipmentStats?.delivered ?? outboundList.filter((i) => i.status === "delivered").length,
   };
 
   const getActionText = (status: OutboundStatus): string => {
@@ -175,6 +196,22 @@ export function WHOutboundListScreen() {
         break;
     }
   };
+
+  // 加载中显示
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>出货管理</Text>
+          <Text style={styles.headerSubtitle}>加载中...</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载出货数据...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -413,6 +450,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

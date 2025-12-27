@@ -3,12 +3,13 @@
  * 对应原型: warehouse/order-detail.html
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Divider, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +17,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
+import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
 type RouteType = RouteProp<WHOutboundStackParamList, "WHOrderDetail">;
@@ -30,59 +33,132 @@ interface OrderProduct {
   amount: number;
 }
 
+interface OrderDetail {
+  orderNumber: string;
+  status: string;
+  statusLabel: string;
+  createdAt: string;
+  deliveredAt?: string;
+  customer: {
+    name: string;
+    contact: string;
+    phone: string;
+    address: string;
+  };
+  logistics: {
+    company: string;
+    trackingNumber: string;
+    driver: string;
+    driverPhone: string;
+    vehicleNo: string;
+  };
+  products: OrderProduct[];
+  summary: {
+    totalQuantity: number;
+    totalAmount: number;
+    shippingFee: number;
+    finalAmount: number;
+  };
+}
+
+/**
+ * 获取状态标签
+ */
+const getStatusLabel = (status: string): string => {
+  switch (status) {
+    case 'delivered': return '已送达';
+    case 'shipped': return '配送中';
+    case 'pending': return '待发货';
+    case 'returned': return '已退回';
+    default: return '待处理';
+  }
+};
+
+/**
+ * 格式化日期时间
+ */
+const formatDateTime = (dateStr?: string): string => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+};
+
 export function WHOrderDetailScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const { orderId } = route.params;
 
-  // 模拟订单数据
-  const orderDetail = {
-    orderNumber: "SH-20251226-001",
-    status: "delivered",
-    statusLabel: "已送达",
-    createdAt: "2025-12-26 08:00",
-    deliveredAt: "2025-12-26 14:30",
-    customer: {
-      name: "鲜食超市",
-      contact: "王经理",
-      phone: "139****1234",
-      address: "浙江省宁波市海曙区中山西路123号",
-    },
-    logistics: {
-      company: "顺丰冷链",
-      trackingNumber: "SF1234567890",
-      driver: "李师傅",
-      driverPhone: "139****5678",
-      vehicleNo: "浙B12345",
-    },
-    products: [
-      {
-        id: "1",
-        name: "带鱼片",
-        specification: "500g/包",
-        quantity: 50,
-        unit: "kg",
-        unitPrice: 45,
-        amount: 2250,
-      },
-      {
-        id: "2",
-        name: "带鱼片",
-        specification: "300g/包",
-        quantity: 30,
-        unit: "kg",
-        unitPrice: 48,
-        amount: 1440,
-      },
-    ] as OrderProduct[],
-    summary: {
-      totalQuantity: 80,
-      totalAmount: 3690,
-      shippingFee: 0,
-      finalAmount: 3690,
-    },
-  };
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [orderDetail, setOrderDetail] = useState<OrderDetail | null>(null);
+
+  // 加载订单数据
+  const loadOrderData = useCallback(async () => {
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const shipment = await shipmentApiClient.getShipmentById(orderId);
+
+      if (shipment) {
+        const quantity = shipment.quantity || 0;
+        const unitPrice = shipment.unitPrice || 0;
+        const totalAmount = shipment.totalAmount || (quantity * unitPrice);
+
+        setOrderDetail({
+          orderNumber: shipment.shipmentNumber || shipment.orderNumber || `SH-${shipment.id}`,
+          status: shipment.status || 'pending',
+          statusLabel: getStatusLabel(shipment.status),
+          createdAt: formatDateTime(shipment.createdAt),
+          deliveredAt: shipment.status === 'delivered' ? formatDateTime(shipment.updatedAt) : undefined,
+          customer: {
+            name: shipment.productName || '未知客户',
+            contact: '-',
+            phone: '-',
+            address: shipment.deliveryAddress || '未知地址',
+          },
+          logistics: {
+            company: shipment.logisticsCompany || '未指定',
+            trackingNumber: shipment.trackingNumber || '-',
+            driver: '-',
+            driverPhone: '-',
+            vehicleNo: '-',
+          },
+          products: [
+            {
+              id: shipment.id,
+              name: shipment.productName || '商品',
+              specification: '-',
+              quantity: quantity,
+              unit: shipment.unit || 'kg',
+              unitPrice: unitPrice,
+              amount: totalAmount,
+            },
+          ],
+          summary: {
+            totalQuantity: quantity,
+            totalAmount: totalAmount,
+            shippingFee: 0,
+            finalAmount: totalAmount,
+          },
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载订单详情失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId]);
+
+  useEffect(() => {
+    loadOrderData();
+  }, [loadOrderData]);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -96,6 +172,44 @@ export function WHOrderDetailScreen() {
         return { color: "#f57c00", bgColor: "#fff3e0" };
     }
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>订单详情</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 空状态
+  if (!orderDetail) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>订单详情</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="clipboard-text-outline" size={64} color="#ddd" />
+          <Text style={styles.loadingText}>未找到订单信息</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const statusStyle = getStatusStyle(orderDetail.status);
 
@@ -255,6 +369,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",
