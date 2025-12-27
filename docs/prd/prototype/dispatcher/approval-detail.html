@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>审批详情 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="approval-list.html" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">审批详情</span>
+      <span></span>
+    </div>
+
+    <div class="content" style="background: #f5f5f5;">
+      <!-- 审批类型标签 -->
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+        <span class="approval-type transfer" style="font-size: 14px; padding: 6px 12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+            <path d="M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+          人员调动申请
+        </span>
+        <span class="approval-status pending">待审批</span>
+      </div>
+
+      <!-- 申请信息 -->
+      <div class="detail-section">
+        <div class="detail-section-title">申请信息</div>
+        <div class="detail-row">
+          <span class="detail-label">申请人</span>
+          <span class="detail-value">李主任 (包装车间)</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">申请时间</span>
+          <span class="detail-value">2025-12-27 10:15</span>
+        </div>
+        <div style="border-top: 1px solid #f0f0f0; margin-top: 12px; padding-top: 12px;">
+          <div style="font-size: 14px; color: #666; font-weight: 500; margin-bottom: 8px;">调动内容:</div>
+          <div class="detail-row">
+            <span class="detail-label">源车间</span>
+            <span class="detail-value">冷冻车间</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">目标车间</span>
+            <span class="detail-value">切片车间</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">调动人员</span>
+            <span class="detail-value">陈七星、刘新员 (共2人)</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">调动时间</span>
+            <span class="detail-value">14:00 - 18:00</span>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #f0f0f0; margin-top: 12px; padding-top: 12px;">
+          <div style="font-size: 14px; color: #666; font-weight: 500; margin-bottom: 8px;">申请原因:</div>
+          <div style="font-size: 14px; color: #333; line-height: 1.6;">切片车间接到紧急订单，需要增加人手以确保订单按时完成。</div>
+        </div>
+      </div>
+
+      <!-- 影响分析 -->
+      <div class="detail-section">
+        <div class="detail-section-title">影响分析</div>
+        <div class="impact-card" style="background: #fff1f0; border-color: #ffccc7;">
+          <div class="impact-header" style="color: #ff4d4f;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 4px;">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            冷冻车间: 4人 > 2人
+          </div>
+          <div class="impact-item">产能下降约50%</div>
+          <div class="impact-item">今日任务: PP003 (进度30%)</div>
+          <div class="impact-item">影响评估: 可能延迟2小时</div>
+        </div>
+
+        <div class="impact-card" style="background: #f6ffed; border-color: #b7eb8f;">
+          <div class="impact-header" style="color: #52c41a;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 4px;">
+              <polyline points="20,6 9,17 4,12"/>
+            </svg>
+            切片车间: 8人 > 10人
+          </div>
+          <div class="impact-item">产能提升约25%</div>
+          <div class="impact-item">今日任务: PP001 (进度65%)</div>
+          <div class="impact-item">影响评估: 可按时完成</div>
+        </div>
+      </div>
+
+      <!-- 审批意见 -->
+      <div class="detail-section" style="margin-bottom: 100px;">
+        <div class="detail-section-title">审批意见 (可选)</div>
+        <textarea class="form-textarea" placeholder="输入审批意见..." style="min-height: 80px;"></textarea>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-action-bar">
+      <button class="approval-btn reject" style="flex: 1;">拒绝</button>
+      <button class="approval-btn approve" style="flex: 1;">通过</button>
+    </div>
+  </div>
+</body>
+</html>

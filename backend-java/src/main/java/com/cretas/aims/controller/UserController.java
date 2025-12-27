@@ -20,9 +20,11 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * 用户管理控制器
@@ -311,5 +313,32 @@ public class UserController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(templateBytes);
+    }
+
+    /**
+     * 根据入职日期范围获取用户列表
+     * HR Dashboard 用于显示"本月入职"统计
+     */
+    @GetMapping("/join-date-range")
+    @Operation(summary = "根据入职日期范围获取用户列表")
+    public ApiResponse<PageResponse<UserDTO>> getUsersByJoinDateRange(
+            @Parameter(description = "工厂ID", required = true)
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "开始日期 (yyyy-MM-dd)", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "结束日期 (yyyy-MM-dd)", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @Parameter(description = "页码", example = "1")
+            @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "每页大小", example = "20")
+            @RequestParam(defaultValue = "20") Integer size) {
+
+        log.info("获取入职日期范围内用户: factoryId={}, startDate={}, endDate={}, page={}, size={}",
+                factoryId, startDate, endDate, page, size);
+
+        PageResponse<UserDTO> response = userService.getUsersByJoinDateRange(
+                factoryId, startDate, endDate, page, size);
+
+        return ApiResponse.success(response);
     }
 }

@@ -1,0 +1,170 @@
+/*
+ * 全局样式 - 白垩纪管理系统
+ * 覆盖 Vite 默认样式，适配 Element Plus 管理后台布局
+ */
+
+/* CSS 变量 */
+:root {
+  /* 主题色 */
+  --primary-color: #409eff;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --info-color: #909399;
+
+  /* 背景色 */
+  --bg-color: #f5f7fa;
+  --bg-color-page: #f0f2f5;
+  --bg-color-overlay: #ffffff;
+
+  /* 文字色 */
+  --text-color-primary: #303133;
+  --text-color-regular: #606266;
+  --text-color-secondary: #909399;
+  --text-color-placeholder: #c0c4cc;
+
+  /* 边框色 */
+  --border-color: #dcdfe6;
+  --border-color-light: #e4e7ed;
+  --border-color-lighter: #ebeef5;
+
+  /* 阴影 */
+  --box-shadow-base: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --box-shadow-light: 0 2px 4px rgba(0, 0, 0, 0.12);
+
+  /* 布局 */
+  --header-height: 64px;
+  --sidebar-width: 220px;
+  --sidebar-collapsed-width: 64px;
+
+  /* 字体 */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* 全局重置 */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: 14px;
+  line-height: 1.5715;
+  color: var(--text-color-primary);
+  background-color: var(--bg-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 链接样式 */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: #66b1ff;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #909399;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f7fa;
+}
+
+/* Element Plus 覆盖 */
+.el-card {
+  border-radius: 8px;
+  border: none;
+  box-shadow: var(--box-shadow-light);
+}
+
+.el-table {
+  --el-table-border-color: var(--border-color-lighter);
+}
+
+/* 页面容器基础样式 */
+.page-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 工具类 */
+.flex {
+  display: flex;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.gap-4 {
+  gap: 16px;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.text-center {
+  text-align: center;
+}

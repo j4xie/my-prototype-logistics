@@ -29,6 +29,11 @@ public class WebConfig implements WebMvcConfigurer {
 				.excludePathPatterns("/weixin/api/ma/wxuser/login",
 						"/weixin/api/ma/orderinfo/notify-order",
 						"/weixin/api/ma/orderinfo/notify-logisticsr",
-						"/weixin/api/ma/orderinfo/notify-refunds");//放行接口
+						"/weixin/api/ma/orderinfo/notify-refunds",
+						"/weixin/api/ma/ai/health",
+						"/weixin/api/ma/ai/semantic-search",
+						"/weixin/api/ma/ai/industry-analysis",
+						"/weixin/api/ma/ai/product-analysis/**",
+						"/weixin/api/ma/ai/factory-analysis/**");//放行接口
 	}
 }

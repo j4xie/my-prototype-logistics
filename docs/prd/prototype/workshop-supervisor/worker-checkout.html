@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>员工签出 - 车间主任</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 子页面头部 -->
+    <div class="subpage-header">
+      <a href="batch-detail.html" class="back-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <span class="title">员工签出</span>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content" style="padding-top: 16px;">
+      <!-- 员工信息 -->
+      <div class="info-card" style="text-align: center; padding: 24px;">
+        <div class="worker-avatar" style="width: 72px; height: 72px; font-size: 28px; margin: 0 auto 12px;">
+          <span>王</span>
+          <span class="status-dot online"></span>
+        </div>
+        <div style="font-size: 20px; font-weight: 600; color: #333; margin-bottom: 4px;">王建国</div>
+        <div style="font-size: 14px; color: #999;">工号: EMP-001 | 切片操作员</div>
+      </div>
+
+      <!-- 当前任务信息 -->
+      <div class="info-card">
+        <h3 class="section-title">当前任务</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-item-label">批次编号</div>
+            <div class="info-item-value">PB-20251227-001</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">产品类型</div>
+            <div class="info-item-value">带鱼片</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">工作岗位</div>
+            <div class="info-item-value">切片操作</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">签入时间</div>
+            <div class="info-item-value">09:45</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工时统计 -->
+      <div class="info-card" style="background: #f0f5ff; border: 1px solid #d6e4ff;">
+        <h3 class="section-title" style="color: #667eea;">本次工时统计</h3>
+        <div style="display: flex; justify-content: space-around; text-align: center; padding: 16px 0;">
+          <div>
+            <div style="font-size: 32px; font-weight: 600; color: #667eea;">2.5</div>
+            <div style="font-size: 13px; color: #999; margin-top: 4px;">工作时长 (h)</div>
+          </div>
+          <div style="width: 1px; background: #d6e4ff;"></div>
+          <div>
+            <div style="font-size: 32px; font-weight: 600; color: #52c41a;">52</div>
+            <div style="font-size: 13px; color: #999; margin-top: 4px;">完成产量 (kg)</div>
+          </div>
+          <div style="width: 1px; background: #d6e4ff;"></div>
+          <div>
+            <div style="font-size: 32px; font-weight: 600; color: #fa8c16;">20.8</div>
+            <div style="font-size: 13px; color: #999; margin-top: 4px;">效率 (kg/h)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 签出选项 -->
+      <div class="info-card">
+        <h3 class="section-title">签出类型</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label class="checkbox-item" style="margin: 0; padding: 16px; border: 2px solid #52c41a; border-radius: 8px; background: #f6ffed;">
+            <input type="radio" name="checkout_type" checked style="accent-color: #52c41a;">
+            <div style="flex: 1; margin-left: 12px;">
+              <div style="font-size: 15px; font-weight: 500; color: #333;">正常签出</div>
+              <div style="font-size: 13px; color: #999; margin-top: 4px;">任务完成或换班</div>
+            </div>
+          </label>
+          <label class="checkbox-item" style="margin: 0; padding: 16px; border: 1px solid #d9d9d9; border-radius: 8px;">
+            <input type="radio" name="checkout_type" style="accent-color: #fa8c16;">
+            <div style="flex: 1; margin-left: 12px;">
+              <div style="font-size: 15px; font-weight: 500; color: #333;">临时离开</div>
+              <div style="font-size: 13px; color: #999; margin-top: 4px;">短暂休息，稍后返回</div>
+            </div>
+          </label>
+          <label class="checkbox-item" style="margin: 0; padding: 16px; border: 1px solid #d9d9d9; border-radius: 8px;">
+            <input type="radio" name="checkout_type" style="accent-color: #ff4d4f;">
+            <div style="flex: 1; margin-left: 12px;">
+              <div style="font-size: 15px; font-weight: 500; color: #333;">紧急离开</div>
+              <div style="font-size: 13px; color: #ff4d4f; margin-top: 4px;">身体不适或紧急事务</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 工作评价 -->
+      <div class="info-card">
+        <h3 class="section-title">工作评价 (可选)</h3>
+        <div class="form-group">
+          <label class="form-label">效率评级</label>
+          <div style="display: flex; gap: 8px;">
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px; border: 2px solid #52c41a; border-radius: 8px; background: #f6ffed; cursor: pointer;">
+              <input type="radio" name="rating" checked style="display: none;">
+              <span style="font-size: 13px; font-weight: 500; color: #52c41a;">优秀</span>
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px; border: 1px solid #d9d9d9; border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="rating" style="display: none;">
+              <span style="font-size: 13px; color: #666;">良好</span>
+            </label>
+            <label style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px; border: 1px solid #d9d9d9; border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="rating" style="display: none;">
+              <span style="font-size: 13px; color: #666;">一般</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" placeholder="记录员工表现或问题...">工作认真负责，切片质量优秀。</textarea>
+        </div>
+      </div>
+
+      <!-- 今日工时汇总 -->
+      <div class="info-card">
+        <h3 class="section-title">今日工时汇总</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+            <span style="font-size: 14px; color: #999;">签入时间</span>
+            <span style="font-size: 14px; color: #333;">08:00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+            <span style="font-size: 14px; color: #999;">本批次工时</span>
+            <span style="font-size: 14px; color: #333;">2.5 小时</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+            <span style="font-size: 14px; color: #999;">今日累计工时</span>
+            <span style="font-size: 14px; font-weight: 500; color: #667eea;">4.0 小时</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+            <span style="font-size: 14px; color: #999;">今日完成批次</span>
+            <span style="font-size: 14px; color: #333;">2 个</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="btn-group">
+        <a href="batch-detail.html" class="btn btn-secondary">取消</a>
+        <a href="batch-detail.html" class="btn btn-primary">确认签出</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

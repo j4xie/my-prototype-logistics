@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.LinUCBExplorationLogMapper">
+
+    <!--
+        LinUCB 探索日志批量插入
+        用于高效记录多个探索推荐
+    -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO linucb_exploration_logs (
+            wx_user_id,
+            arm_id,
+            arm_type,
+            context_vector,
+            expected_reward,
+            exploration_bonus,
+            total_ucb,
+            alpha_value,
+            create_time
+        ) VALUES
+        <foreach collection="logs" item="log" separator=",">
+            (
+                #{log.wxUserId},
+                #{log.armId},
+                #{log.armType},
+                #{log.contextVector},
+                #{log.expectedReward},
+                #{log.explorationBonus},
+                #{log.totalUcb},
+                #{log.alphaValue},
+                NOW()
+            )
+        </foreach>
+    </insert>
+
+</mapper>

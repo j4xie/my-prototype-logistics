@@ -4,6 +4,7 @@
   "enablePullDownRefresh": true,
   "usingComponents": {
     "goods-card": "/components/goods-card-index/index",
-    "goods-row": "/components/goods-row/index"
+    "goods-row": "/components/goods-row/index",
+    "cold-start-popup": "/components/cold-start-popup/index"
   }
 }

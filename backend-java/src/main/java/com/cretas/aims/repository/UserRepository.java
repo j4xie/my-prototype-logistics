@@ -126,4 +126,40 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @since 2025-11-20
      */
     long countByIsActive(Boolean isActive);
+
+    /**
+     * 根据入职日期范围查询用户（分页）
+     * 使用 createdAt 字段作为入职日期
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate   结束日期
+     * @param pageable  分页参数
+     * @return 用户分页数据
+     * @since 2025-12-27
+     */
+    @Query("SELECT u FROM User u WHERE u.factoryId = :factoryId " +
+           "AND u.createdAt >= :startDate AND u.createdAt < :endDate " +
+           "ORDER BY u.createdAt DESC")
+    Page<User> findByFactoryIdAndCreatedAtBetween(
+            @Param("factoryId") String factoryId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            Pageable pageable);
+
+    /**
+     * 统计指定日期范围内入职的用户数量
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate   结束日期
+     * @return 用户数量
+     * @since 2025-12-27
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.factoryId = :factoryId " +
+           "AND u.createdAt >= :startDate AND u.createdAt < :endDate")
+    long countByFactoryIdAndCreatedAtBetween(
+            @Param("factoryId") String factoryId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
 }

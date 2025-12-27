@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的考勤 - HR管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">我的考勤</span>
+      <span></span>
+    </div>
+
+    <div class="content">
+      <!-- 月份选择 -->
+      <div class="date-range">
+        <input type="month" value="2025-12">
+      </div>
+
+      <!-- 本月统计 -->
+      <div class="attendance-summary">
+        <div class="attendance-item">
+          <div class="attendance-value green">22</div>
+          <div class="attendance-label">出勤</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value">0</div>
+          <div class="attendance-label">迟到</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value">0</div>
+          <div class="attendance-label">早退</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value orange">2</div>
+          <div class="attendance-label">休假</div>
+        </div>
+      </div>
+
+      <!-- 日历视图占位 -->
+      <div class="chart-placeholder" style="height: 280px;">
+        考勤日历视图
+      </div>
+
+      <!-- 本月记录 -->
+      <div class="section-header">
+        <span class="section-title">打卡记录</span>
+      </div>
+      <div class="record-list">
+        <div class="record-item">
+          <span class="record-time">12-26</span>
+          <span class="record-name">08:00 - 17:30</span>
+          <span class="record-status normal">正常</span>
+        </div>
+        <div class="record-item">
+          <span class="record-time">12-25</span>
+          <span class="record-name">08:02 - 17:35</span>
+          <span class="record-status normal">正常</span>
+        </div>
+        <div class="record-item">
+          <span class="record-time">12-24</span>
+          <span class="record-name">08:00 - 17:30</span>
+          <span class="record-status normal">正常</span>
+        </div>
+        <div class="record-item">
+          <span class="record-time">12-23</span>
+          <span class="record-name">休假</span>
+          <span class="record-status early">年假</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

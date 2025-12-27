@@ -20,6 +20,24 @@ Page({
     hasMore: true
   },
 
+  onShow() {
+    // 检查登录状态 - 商家订单管理需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/home/index'
+        })
+      }, 500)
+      return
+    }
+  },
+
   onLoad() {
     this.loadOrders()
   },
@@ -135,6 +153,9 @@ Page({
     wx.showToast({ title: '搜索功能开发中', icon: 'none' })
   }
 })
+
+
+
 
 
 

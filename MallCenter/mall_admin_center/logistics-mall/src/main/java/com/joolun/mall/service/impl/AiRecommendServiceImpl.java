@@ -26,7 +26,8 @@ import java.util.stream.Collectors;
 
 /**
  * AI推荐服务实现
- * 集成DeepSeek API进行语义理解和商品推荐
+ * 集成阿里云DashScope (通义千问Qwen) API进行语义理解和商品推荐
+ * 注意: 配置变量名为 deepseek 但实际使用的是 DashScope + Qwen 模型
  */
 @Slf4j
 @Service
@@ -39,12 +40,15 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
 
+    // 实际配置为 DashScope API Key (通义千问)
     @Value("${ai.deepseek.api-key:}")
     private String deepseekApiKey;
 
+    // 实际配置为 https://dashscope.aliyuncs.com/compatible-mode
     @Value("${ai.deepseek.base-url:https://api.deepseek.com}")
     private String deepseekBaseUrl;
 
+    // 实际配置为 qwen-plus
     @Value("${ai.deepseek.model:deepseek-chat}")
     private String deepseekModel;
 
@@ -98,10 +102,15 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             recordDemand(sessionId, userId, merchantId, message, aiResponse, keywords,
                     intent, confidence, productIds, intent);
 
-            // 5. 如果是产品咨询且无结果，记录搜索关键词
+            // 5. 如果是产品咨询且无结果，记录搜索关键词 (独立try-catch避免影响主响应)
             if ("product_inquiry".equals(intent) && matchedProducts.isEmpty()) {
-                for (String keyword : keywords) {
-                    searchKeywordService.recordSearch(keyword, userId, merchantId, null, 0, "ai_chat");
+                try {
+                    for (String keyword : keywords) {
+                        searchKeywordService.recordSearch(keyword, userId, merchantId, null, 0, "ai_chat");
+                    }
+                } catch (Exception keywordEx) {
+                    // 关键词记录失败不影响主响应
+                    log.warn("记录搜索关键词失败: {}", keywordEx.getMessage());
                 }
             }
 
@@ -210,10 +219,11 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
 
     /**
      * 调用DeepSeek API分析用户消息
+     * 注意: 使用DashScope OpenAI兼容模式时，不支持 response_format 参数
      */
     private Map<String, Object> analyzeMessage(String message) {
         if (deepseekApiKey == null || deepseekApiKey.isEmpty()) {
-            // 无API Key时使用简单的关键词提取
+            log.warn("AI API Key未配置，使用降级分析");
             return fallbackAnalysis(message);
         }
 
@@ -229,11 +239,14 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 Map.of("role", "user", "content", message)
             ));
             requestBody.put("temperature", 0.7);
-            requestBody.put("response_format", Map.of("type", "json_object"));
+            // 注意: DashScope的qwen模型不支持 response_format 参数，已移除
+
+            String apiUrl = deepseekBaseUrl + "/v1/chat/completions";
+            log.debug("调用AI API: url={}, model={}", apiUrl, deepseekModel);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             ResponseEntity<String> response = restTemplate.exchange(
-                    deepseekBaseUrl + "/v1/chat/completions",
+                    apiUrl,
                     HttpMethod.POST,
                     request,
                     String.class
@@ -242,13 +255,60 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 JsonNode root = objectMapper.readTree(response.getBody());
                 String content = root.path("choices").path(0).path("message").path("content").asText();
-                return objectMapper.readValue(content, Map.class);
+
+                // 尝试解析JSON，如果失败则尝试从文本中提取JSON
+                try {
+                    // 先尝试直接解析
+                    return objectMapper.readValue(content, Map.class);
+                } catch (Exception jsonEx) {
+                    // 如果直接解析失败，尝试提取JSON部分
+                    log.warn("AI返回内容不是纯JSON，尝试提取: {}", content);
+                    String jsonContent = extractJsonFromText(content);
+                    if (jsonContent != null) {
+                        return objectMapper.readValue(jsonContent, Map.class);
+                    }
+                    // 如果提取也失败，使用AI返回的文本作为response
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("intent", "other");
+                    result.put("keywords", extractKeywordsSimple(message));
+                    result.put("response", content);
+                    result.put("confidence", 0.7);
+                    return result;
+                }
+            } else {
+                log.warn("AI API返回非成功状态: {}", response.getStatusCode());
             }
         } catch (Exception e) {
-            log.error("DeepSeek API调用失败", e);
+            log.error("AI API调用失败: {}", e.getMessage(), e);
         }
 
         return fallbackAnalysis(message);
+    }
+
+    /**
+     * 从文本中提取JSON内容
+     */
+    private String extractJsonFromText(String text) {
+        if (text == null) return null;
+
+        // 尝试找到JSON对象的开始和结束
+        int start = text.indexOf('{');
+        int end = text.lastIndexOf('}');
+
+        if (start >= 0 && end > start) {
+            return text.substring(start, end + 1);
+        }
+        return null;
+    }
+
+    /**
+     * 简单关键词提取
+     */
+    private List<String> extractKeywordsSimple(String message) {
+        return Arrays.stream(message.split("[，。？！、\\s]+"))
+                .filter(s -> s.length() >= 2)
+                .limit(5)
+                .collect(Collectors.toList());
     }
 
     /**

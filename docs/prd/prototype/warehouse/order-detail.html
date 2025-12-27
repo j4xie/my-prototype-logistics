@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>订单详情 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回首页</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>订单详情</h1>
+      <p>SH-20251226-001</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 订单状态 -->
+      <div class="order-status-card">
+        <div class="order-status-header">
+          <span class="order-number">SH-20251226-001</span>
+          <div class="order-tags">
+            <span class="order-tag status pending">待打包</span>
+            <span class="order-tag urgent">紧急</span>
+          </div>
+        </div>
+        <div class="order-deadline">
+          <span class="deadline-icon">!</span>
+          <span class="deadline-text">截止时间: 2025-12-26 14:00前发出</span>
+        </div>
+      </div>
+
+      <!-- 客户信息 -->
+      <div class="form-section">
+        <div class="form-section-title">客户信息</div>
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-label">客户名称</span>
+            <span class="info-value">鲜食超市</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">联系人</span>
+            <span class="info-value">王经理</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">联系电话</span>
+            <span class="info-value clickable" onclick="window.location.href='tel:13888888888';">138****8888</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">收货地址</span>
+            <span class="info-value">上海市浦东新区XX路XX号</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 商品明细 -->
+      <div class="form-section">
+        <div class="form-section-title">商品明细</div>
+
+        <div class="product-item">
+          <div class="product-header">
+            <span class="product-name">带鱼片</span>
+            <span class="product-qty">80 kg</span>
+          </div>
+          <div class="product-content">
+            <div class="product-row">
+              <span class="product-label">推荐批次</span>
+              <span class="product-value">MB-20251220-001</span>
+            </div>
+            <div class="product-row">
+              <span class="product-label">保质期</span>
+              <span class="product-value warning">剩余3天 (优先消耗)</span>
+            </div>
+            <div class="product-row">
+              <span class="product-label">库位</span>
+              <span class="product-value">A区-冷藏库-01</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-item">
+          <div class="product-header">
+            <span class="product-name">鲈鱼片</span>
+            <span class="product-qty">50 kg</span>
+          </div>
+          <div class="product-content">
+            <div class="product-row">
+              <span class="product-label">推荐批次</span>
+              <span class="product-value">MB-20251221-002</span>
+            </div>
+            <div class="product-row">
+              <span class="product-label">保质期</span>
+              <span class="product-value">剩余4天</span>
+            </div>
+            <div class="product-row">
+              <span class="product-label">库位</span>
+              <span class="product-value">A区-冷藏库-02</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 物流信息 -->
+      <div class="form-section">
+        <div class="form-section-title">物流信息</div>
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-label">物流公司</span>
+            <span class="info-value">顺丰冷链</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">预计发货</span>
+            <span class="info-value">2025-12-26 14:00前</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">温控要求</span>
+            <span class="info-value">-18°C ~ 0°C</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">运费</span>
+            <span class="info-value">¥150</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 拣货清单 -->
+      <div class="form-section">
+        <div class="form-section-title">拣货清单</div>
+        <div class="picking-list">
+          <div class="picking-item">
+            <input type="checkbox" class="picking-checkbox" id="pick1">
+            <label for="pick1" class="picking-label">
+              <span class="picking-product">带鱼片 80kg</span>
+              <span class="picking-location">@ A区-冷藏库-01</span>
+            </label>
+          </div>
+          <div class="picking-item">
+            <input type="checkbox" class="picking-checkbox" id="pick2">
+            <label for="pick2" class="picking-label">
+              <span class="picking-product">鲈鱼片 50kg</span>
+              <span class="picking-location">@ A区-冷藏库-02</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作记录 -->
+      <div class="form-section">
+        <div class="form-section-title">操作记录</div>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-time">12-26 09:35</div>
+              <div class="timeline-text">分配仓库 (张三)</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-time">12-26 09:30</div>
+              <div class="timeline-text">订单创建 (系统)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="action-buttons">
+        <button type="button" class="action-btn danger" onclick="if(confirm('确定要驳回此订单吗？')) alert('订单已驳回');">驳回订单</button>
+        <a href="packing.html" class="action-btn primary">开始打包</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

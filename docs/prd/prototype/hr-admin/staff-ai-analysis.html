@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>员工AI分析 - HR管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">员工AI分析</span>
+      <span style="color: #f093fb;">导出</span>
+    </div>
+
+    <div class="content">
+      <!-- 员工信息头部 -->
+      <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: white; border-radius: 12px; margin-bottom: 16px;">
+        <div class="staff-avatar">张</div>
+        <div>
+          <div style="font-size: 16px; font-weight: 500;">张三丰</div>
+          <div style="font-size: 12px; color: #999;">操作员 · 1号车间 · 在职9个月</div>
+        </div>
+      </div>
+
+      <!-- AI分析状态 -->
+      <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; padding: 16px; color: white; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="font-size: 20px;">AI</span>
+          <span style="font-weight: 500;">DeepSeek AI 分析完成</span>
+        </div>
+        <div style="font-size: 12px; opacity: 0.8;">分析周期: 2025-10-01 至 2025-12-26 · 数据点: 847项</div>
+      </div>
+
+      <!-- 综合评分 -->
+      <div class="section-header">
+        <span class="section-title">综合评分</span>
+      </div>
+      <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; text-align: center;">
+        <div style="font-size: 48px; font-weight: bold; color: #52c41a;">A</div>
+        <div style="font-size: 14px; color: #666;">综合绩效等级</div>
+        <div style="display: flex; justify-content: center; gap: 20px; margin-top: 16px;">
+          <div>
+            <div style="font-size: 24px; font-weight: 500; color: #f093fb;">87</div>
+            <div style="font-size: 12px; color: #999;">总分</div>
+          </div>
+          <div style="width: 1px; background: #eee;"></div>
+          <div>
+            <div style="font-size: 24px; font-weight: 500; color: #52c41a;">^12%</div>
+            <div style="font-size: 12px; color: #999;">环比上月</div>
+          </div>
+          <div style="width: 1px; background: #eee;"></div>
+          <div>
+            <div style="font-size: 24px; font-weight: 500; color: #faad14;">Top 15%</div>
+            <div style="font-size: 12px; color: #999;">部门排名</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分析维度: 考勤表现 -->
+      <div class="section-header">
+        <span class="section-title">考勤表现</span>
+        <span class="section-action section-action--hr">92分</span>
+      </div>
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div class="attendance-summary" style="margin-bottom: 12px;">
+          <div class="attendance-item">
+            <div class="attendance-value green">96.5%</div>
+            <div class="attendance-label">出勤率</div>
+          </div>
+          <div class="attendance-item">
+            <div class="attendance-value">65</div>
+            <div class="attendance-label">出勤天数</div>
+          </div>
+          <div class="attendance-item">
+            <div class="attendance-value red">2</div>
+            <div class="attendance-label">迟到次数</div>
+          </div>
+          <div class="attendance-item">
+            <div class="attendance-value">0</div>
+            <div class="attendance-label">早退</div>
+          </div>
+        </div>
+        <div style="background: #f0f9eb; border-radius: 8px; padding: 12px; font-size: 13px; color: #52c41a;">
+          <strong>AI洞察:</strong> 出勤表现优秀，高于部门平均(92.3%)。迟到均发生在周一早班，建议关注作息调整。
+        </div>
+      </div>
+
+      <!-- 分析维度: 工时效率 -->
+      <div class="section-header">
+        <span class="section-title">工时效率</span>
+        <span class="section-action section-action--hr">85分</span>
+      </div>
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div class="attendance-summary" style="margin-bottom: 12px;">
+          <div class="attendance-item">
+            <div class="attendance-value">8.2h</div>
+            <div class="attendance-label">日均工时</div>
+          </div>
+          <div class="attendance-item">
+            <div class="attendance-value orange">32h</div>
+            <div class="attendance-label">本月加班</div>
+          </div>
+          <div class="attendance-item">
+            <div class="attendance-value green">94%</div>
+            <div class="attendance-label">工时效率</div>
+          </div>
+          <div class="attendance-item">
+            <div class="attendance-value">5</div>
+            <div class="attendance-label">工作类型</div>
+          </div>
+        </div>
+        <div style="background: #fff7e6; border-radius: 8px; padding: 12px; font-size: 13px; color: #fa8c16;">
+          <strong>AI洞察:</strong> 加班时长较高，主要集中在包装工序(占68%)。建议优化包装流程或增加人手分担。
+        </div>
+      </div>
+
+      <!-- 分析维度: 生产贡献 -->
+      <div class="section-header">
+        <span class="section-title">生产贡献</span>
+        <span class="section-action section-action--hr">88分</span>
+      </div>
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div class="attendance-summary" style="margin-bottom: 12px;">
+          <div class="attendance-item">
+            <div class="attendance-value">23</div>
+            <div class="attendance-label">参与批次</div>
+          </div>
+          <div class="attendance-item">
+            <div class="attendance-value">4,850kg</div>
+            <div class="attendance-label">产量贡献</div>
+          </div>
+          <div class="attendance-item">
+            <div class="attendance-value green">98.2%</div>
+            <div class="attendance-label">良品率</div>
+          </div>
+          <div class="attendance-item">
+            <div class="attendance-value">52kg/h</div>
+            <div class="attendance-label">人均产能</div>
+          </div>
+        </div>
+        <div style="background: #f0f9eb; border-radius: 8px; padding: 12px; font-size: 13px; color: #52c41a;">
+          <strong>AI洞察:</strong> 人均产能(52kg/h)高于部门平均(48kg/h)，良品率优秀。在"冷冻带鱼"产品线表现突出。
+        </div>
+      </div>
+
+      <!-- 分析维度: 技能分布 -->
+      <div class="section-header">
+        <span class="section-title">技能分布</span>
+      </div>
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-size: 13px;">切割加工</span>
+            <span style="font-size: 13px; color: #f093fb;">熟练 · 45%</span>
+          </div>
+          <div class="performance-bar">
+            <div class="performance-bar-fill excellent" style="width: 45%;"></div>
+          </div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-size: 13px;">包装</span>
+            <span style="font-size: 13px; color: #f093fb;">熟练 · 35%</span>
+          </div>
+          <div class="performance-bar">
+            <div class="performance-bar-fill good" style="width: 35%;"></div>
+          </div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-size: 13px;">质检</span>
+            <span style="font-size: 13px; color: #faad14;">学习中 · 12%</span>
+          </div>
+          <div class="performance-bar">
+            <div class="performance-bar-fill average" style="width: 12%;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-size: 13px;">设备操作</span>
+            <span style="font-size: 13px; color: #52c41a;">精通 · 8%</span>
+          </div>
+          <div class="performance-bar">
+            <div class="performance-bar-fill excellent" style="width: 8%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI综合建议 -->
+      <div class="section-header">
+        <span class="section-title">AI综合建议</span>
+      </div>
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span style="background: #52c41a; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">优势</span>
+            <span style="font-weight: 500; font-size: 14px;">工作稳定性高</span>
+          </div>
+          <div style="font-size: 13px; color: #666;">出勤表现优秀，责任心强，适合承担更多责任。建议考虑晋升为小组长。</div>
+        </div>
+        <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span style="background: #faad14; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">建议</span>
+            <span style="font-weight: 500; font-size: 14px;">加强质检技能</span>
+          </div>
+          <div style="font-size: 13px; color: #666;">质检工序参与度较低(12%)，建议安排质检培训，提升综合能力。</div>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span style="background: #ff4d4f; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">关注</span>
+            <span style="font-weight: 500; font-size: 14px;">加班时长偏高</span>
+          </div>
+          <div style="font-size: 13px; color: #666;">连续3周加班超30小时，需关注员工身心健康，避免疲劳作业风险。</div>
+        </div>
+      </div>
+
+      <!-- 历史趋势 -->
+      <div class="section-header">
+        <span class="section-title">绩效趋势</span>
+      </div>
+      <div class="chart-placeholder" style="margin-bottom: 16px;">
+        近6个月绩效评分趋势图
+        <div style="margin-top: 12px; font-size: 12px; color: #999;">
+          7月: 72分 -> 8月: 78分 -> 9月: 81分 -> 10月: 83分 -> 11月: 85分 -> 12月: 87分
+        </div>
+      </div>
+
+      <!-- 对话式追问 -->
+      <div class="section-header">
+        <span class="section-title">追问AI</span>
+      </div>
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 100px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+          <button style="padding: 8px 12px; background: #f0f0f0; border: none; border-radius: 16px; font-size: 12px; color: #666;">该员工适合转岗质检吗？</button>
+          <button style="padding: 8px 12px; background: #f0f0f0; border: none; border-radius: 16px; font-size: 12px; color: #666;">如何降低加班时长？</button>
+          <button style="padding: 8px 12px; background: #f0f0f0; border: none; border-radius: 16px; font-size: 12px; color: #666;">与其他员工对比</button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" placeholder="输入你的问题..." style="flex: 1; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+          <button style="padding: 12px 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px;">发送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

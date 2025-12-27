@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新建生产计划 - 工厂管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: #333; font-size: 22px; font-weight: bold; padding: 8px 12px;">&lt;</a>
+      <span class="title">新建生产计划</span>
+    </div>
+
+    <div class="content" style="padding: 16px;">
+      <!-- 产品选择 -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; color: #333; font-weight: 500; margin-bottom: 8px;">产品类型 <span style="color: #ff4d4f;">*</span></label>
+        <div style="background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #333;">带鱼片</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <!-- 计划产量 -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; color: #333; font-weight: 500; margin-bottom: 8px;">计划产量 (kg) <span style="color: #ff4d4f;">*</span></label>
+        <div style="background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; padding: 12px 16px;">
+          <input type="number" placeholder="请输入计划产量" value="100" style="border: none; outline: none; width: 100%; font-size: 14px; color: #333;">
+        </div>
+      </div>
+
+      <!-- 预计开始时间 -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; color: #333; font-weight: 500; margin-bottom: 8px;">预计开始时间 <span style="color: #ff4d4f;">*</span></label>
+        <div style="background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #333;">2025-12-27 14:00</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+      </div>
+
+      <!-- 预计交付时间 -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; color: #333; font-weight: 500; margin-bottom: 8px;">预计交付时间</label>
+        <div style="background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #333;">2025-12-27 18:00</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+      </div>
+
+      <!-- 生产线选择 -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; color: #333; font-weight: 500; margin-bottom: 8px;">生产线</label>
+        <div style="background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #333;">3号生产线</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <!-- 负责人选择 -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; color: #333; font-weight: 500; margin-bottom: 8px;">负责人 <span style="color: #ff4d4f;">*</span></label>
+        <div style="background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #333;">王班长</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <!-- 原材料批次 -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 14px; color: #333; font-weight: 500; margin-bottom: 8px;">原材料批次</label>
+        <div style="background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; padding: 12px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 14px; color: #333;">MB-20251225-001</div>
+              <div style="font-size: 12px; color: #999; margin-top: 2px;">带鱼 · 剩余 180kg</div>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 备注 -->
+      <div style="margin-bottom: 24px;">
+        <label style="display: block; font-size: 14px; color: #333; font-weight: 500; margin-bottom: 8px;">备注</label>
+        <div style="background: #fff; border: 1px solid #d9d9d9; border-radius: 8px; padding: 12px 16px;">
+          <textarea placeholder="请输入备注信息（可选）" style="border: none; outline: none; width: 100%; font-size: 14px; color: #333; resize: none; height: 60px;"></textarea>
+        </div>
+      </div>
+
+      <!-- AI 智能建议 -->
+      <div class="ai-card" style="margin-bottom: 24px;">
+        <div class="ai-card-content">
+          <p class="ai-insight" style="margin: 0;">[AI] 根据当前产能和原料库存，建议安排产量 100kg，预计3.5小时完成，交付时间充裕。</p>
+        </div>
+      </div>
+
+      <!-- 提交按钮 -->
+      <div style="display: flex; gap: 12px;">
+        <button style="flex: 1; padding: 14px; border: 1px solid #d9d9d9; border-radius: 8px; background: #fff; font-size: 15px; color: #666; cursor: pointer;">取消</button>
+        <button style="flex: 2; padding: 14px; border: none; border-radius: 8px; background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); font-size: 15px; color: #fff; font-weight: 500; cursor: pointer;">创建计划</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

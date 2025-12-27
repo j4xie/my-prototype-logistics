@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>库存盘点 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="inventory.html" class="back-to-index">< 返回库存列表</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>库存盘点</h1>
+      <p>A区-冷藏库</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 盘点进度 -->
+      <div class="progress-card">
+        <div class="progress-header">
+          <span class="progress-title">盘点进度</span>
+          <span class="progress-value">8/12 项</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 67%;"></div>
+        </div>
+        <div class="progress-info">
+          <span>已完成 67%</span>
+          <span>剩余 4 项</span>
+        </div>
+      </div>
+
+      <!-- 盘点选项 -->
+      <div class="form-section">
+        <div class="form-section-title">盘点范围</div>
+        <div class="form-group">
+          <label class="form-label">选择库位</label>
+          <select class="form-select">
+            <option value="A">A区-冷藏库 (全部)</option>
+            <option value="A-01">A区-冷藏库-01</option>
+            <option value="A-02">A区-冷藏库-02</option>
+            <option value="A-03">A区-冷藏库-03</option>
+            <option value="B">B区-冷冻库 (全部)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 盘点列表 -->
+      <div class="form-section">
+        <div class="form-section-title">盘点清单</div>
+
+        <div class="check-item completed">
+          <div class="check-info">
+            <div class="check-name">带鱼 (鲜品)</div>
+            <div class="check-batch">MB-20251223-001 | A区-冷藏库-01</div>
+          </div>
+          <div class="check-qty">
+            <div class="check-system">系统: 256kg</div>
+            <div class="check-actual success">实际: 256kg ✓</div>
+          </div>
+        </div>
+
+        <div class="check-item completed">
+          <div class="check-info">
+            <div class="check-name">带鱼 (鲜品)</div>
+            <div class="check-batch">MB-20251224-002 | A区-冷藏库-02</div>
+          </div>
+          <div class="check-qty">
+            <div class="check-system">系统: 320kg</div>
+            <div class="check-actual success">实际: 320kg ✓</div>
+          </div>
+        </div>
+
+        <div class="check-item completed has-diff">
+          <div class="check-info">
+            <div class="check-name">鲈鱼 (鲜品)</div>
+            <div class="check-batch">MB-20251224-003 | A区-冷藏库-01</div>
+          </div>
+          <div class="check-qty">
+            <div class="check-system">系统: 200kg</div>
+            <div class="check-actual warning">实际: 195kg (-5kg)</div>
+          </div>
+        </div>
+
+        <div class="check-item pending">
+          <div class="check-info">
+            <div class="check-name">蟹类 (鲜品)</div>
+            <div class="check-batch">MB-20251225-001 | A区-冷藏库-03</div>
+          </div>
+          <div class="check-input">
+            <div class="check-system">系统: 120kg</div>
+            <input type="number" class="form-input small" placeholder="实际数量">
+          </div>
+        </div>
+
+        <div class="check-item pending">
+          <div class="check-info">
+            <div class="check-name">鲈鱼 (鲜品)</div>
+            <div class="check-batch">MB-20251225-002 | A区-冷藏库-02</div>
+          </div>
+          <div class="check-input">
+            <div class="check-system">系统: 180kg</div>
+            <input type="number" class="form-input small" placeholder="实际数量">
+          </div>
+        </div>
+
+        <div class="check-item pending">
+          <div class="check-info">
+            <div class="check-name">带鱼 (鲜品)</div>
+            <div class="check-batch">MB-20251226-001 | A区-冷藏库-01</div>
+          </div>
+          <div class="check-input">
+            <div class="check-system">系统: 280kg</div>
+            <input type="number" class="form-input small" placeholder="实际数量">
+          </div>
+        </div>
+      </div>
+
+      <!-- 差异汇总 -->
+      <div class="form-section">
+        <div class="form-section-title">差异汇总</div>
+        <div class="diff-summary">
+          <div class="diff-item">
+            <span class="diff-label">已盘点</span>
+            <span class="diff-value">8 项</span>
+          </div>
+          <div class="diff-item">
+            <span class="diff-label">无差异</span>
+            <span class="diff-value success">7 项</span>
+          </div>
+          <div class="diff-item">
+            <span class="diff-label">有差异</span>
+            <span class="diff-value warning">1 项 (-5kg)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="action-buttons">
+        <button type="button" class="action-btn secondary">暂存</button>
+        <button type="button" class="action-btn primary" onclick="alert('盘点已提交'); location.href='inventory.html';">提交盘点</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

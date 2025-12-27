@@ -67,4 +67,17 @@ public interface TimeClockService {
      * 批量导出考勤记录
       */
     byte[] exportAttendanceRecords(String factoryId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 【管理员】获取工厂所有员工的打卡历史（分页）
+     */
+    PageResponse<TimeClockRecord> getAllEmployeesClockHistory(String factoryId,
+                                                               LocalDate startDate, LocalDate endDate,
+                                                               PageRequest pageRequest);
+
+    /**
+     * 【管理员】获取工厂所有员工的考勤统计
+     */
+    Map<String, Object> getAllEmployeesAttendanceStatistics(String factoryId,
+                                                             LocalDate startDate, LocalDate endDate);
 }

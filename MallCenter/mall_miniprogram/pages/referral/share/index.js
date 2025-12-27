@@ -35,15 +35,30 @@ Page({
     }
   },
 
-  onLoad() {
-    this.loadReferralData()
-  },
-
   onShow() {
+    // 检查登录状态 - 推荐分享页需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/home/index'
+        })
+      }, 500)
+      return
+    }
     // 每次显示时刷新统计
     if (!this.data.loading) {
       this.loadStats()
     }
+  },
+
+  onLoad() {
+    this.loadReferralData()
   },
 
   /**
@@ -248,7 +263,7 @@ Page({
     return {
       title: `我正在使用白垩纪溯源，邀请您一起加入！输入推荐码 ${this.data.referralCode} 可获得新人奖励`,
       path: `/pages/auth/register/index?ref=${this.data.referralCode}`,
-      imageUrl: '/public/img/share-cover.png'
+      imageUrl: '/public/img/banner_1.jpg'
     }
   },
 

@@ -58,4 +58,64 @@ public interface QualityInspectionRepository extends JpaRepository<QualityInspec
      */
     @Query("SELECT COUNT(q) FROM QualityInspection q WHERE q.factoryId = :factoryId AND q.inspectionDate >= :date")
     long countByFactoryIdAndInspectionDateAfter(@Param("factoryId") String factoryId, @Param("date") LocalDate date);
+
+    // ========== 员工AI分析相关查询 ==========
+
+    /**
+     * 根据质检员ID和时间范围统计质检数量
+     * @param inspectorId 质检员ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 质检数量
+     */
+    @Query("SELECT COUNT(q) FROM QualityInspection q WHERE q.inspectorId = :inspectorId " +
+           "AND q.inspectionDate BETWEEN :startDate AND :endDate")
+    long countByInspectorIdAndDateRange(
+            @Param("inspectorId") Long inspectorId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    /**
+     * 根据质检员ID和时间范围统计合格数量
+     * @param inspectorId 质检员ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 合格数量
+     */
+    @Query("SELECT COUNT(q) FROM QualityInspection q WHERE q.inspectorId = :inspectorId " +
+           "AND q.result = 'passed' AND q.inspectionDate BETWEEN :startDate AND :endDate")
+    long countPassedByInspectorIdAndDateRange(
+            @Param("inspectorId") Long inspectorId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    /**
+     * 根据质检员ID和时间范围查询质检记录
+     * @param inspectorId 质检员ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 质检记录列表
+     */
+    @Query("SELECT q FROM QualityInspection q WHERE q.inspectorId = :inspectorId " +
+           "AND q.inspectionDate BETWEEN :startDate AND :endDate ORDER BY q.inspectionDate DESC")
+    List<QualityInspection> findByInspectorIdAndDateRange(
+            @Param("inspectorId") Long inspectorId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    /**
+     * 根据工厂ID和时间范围按质检员统计
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return [inspectorId, totalCount, passedCount]
+     */
+    @Query("SELECT q.inspectorId, COUNT(q), SUM(CASE WHEN q.result = 'passed' THEN 1 ELSE 0 END) " +
+           "FROM QualityInspection q WHERE q.factoryId = :factoryId " +
+           "AND q.inspectionDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY q.inspectorId")
+    List<Object[]> countByFactoryIdAndDateRangeGroupByInspector(
+            @Param("factoryId") String factoryId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人员排班 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="personnel-list.html" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">人员排班</span>
+      <span style="color: #a18cd1; font-size: 14px;">+新增</span>
+    </div>
+
+    <div class="content" style="background: #f5f5f5;">
+      <!-- 周选择器 -->
+      <div style="display: flex; align-items: center; justify-content: space-between; background: white; border-radius: 12px; padding: 16px; margin: 16px; margin-bottom: 0;">
+        <button style="background: none; border: none; font-size: 20px; color: #a18cd1;"><</button>
+        <span style="font-weight: 500;">2025年12月 第4周 (12.23 - 12.29)</span>
+        <button style="background: none; border: none; font-size: 20px; color: #a18cd1;">></button>
+      </div>
+
+      <!-- 班次统计 -->
+      <div class="stats-summary">
+        <div class="stats-item">
+          <div class="stats-value">42</div>
+          <div class="stats-label">本周排班</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value green">38</div>
+          <div class="stats-label">已确认</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value orange">4</div>
+          <div class="stats-label">待确认</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value" style="color: #ff4d4f;">0</div>
+          <div class="stats-label">冲突</div>
+        </div>
+      </div>
+
+      <!-- 车间筛选 -->
+      <div class="filter-chips">
+        <button class="filter-chip">全部</button>
+        <button class="filter-chip active">切片</button>
+        <button class="filter-chip">包装</button>
+        <button class="filter-chip">冷冻</button>
+      </div>
+
+      <!-- 今日排班 -->
+      <div class="section-header">
+        <span class="section-title">今日排班 (12.27 周五)</span>
+      </div>
+
+      <!-- 早班 -->
+      <div class="detail-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <span style="font-size: 14px; font-weight: 500; color: #333;">早班</span>
+            <span style="font-size: 12px; color: #999; margin-left: 8px;">08:00-12:00</span>
+          </div>
+          <span style="font-size: 14px; color: #a18cd1; font-weight: 500;">8人</span>
+        </div>
+        <div class="personnel-grid">
+          <div class="avatar-item">张</div>
+          <div class="avatar-item">李</div>
+          <div class="avatar-item">王</div>
+          <div class="avatar-item">赵</div>
+          <div class="avatar-item">陈</div>
+          <div class="avatar-item">刘</div>
+          <div class="avatar-item">孙</div>
+          <div class="avatar-item">周</div>
+        </div>
+      </div>
+
+      <!-- 午班 -->
+      <div class="detail-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <span style="font-size: 14px; font-weight: 500; color: #333;">午班</span>
+            <span style="font-size: 12px; color: #999; margin-left: 8px;">12:00-18:00</span>
+          </div>
+          <span style="font-size: 14px; color: #a18cd1; font-weight: 500;">7人</span>
+        </div>
+        <div class="personnel-grid">
+          <div class="avatar-item">钱</div>
+          <div class="avatar-item">吴</div>
+          <div class="avatar-item">郑</div>
+          <div class="avatar-item">冯</div>
+          <div class="avatar-item">褚</div>
+          <div class="avatar-item">卫</div>
+          <div class="avatar-item">蒋</div>
+        </div>
+      </div>
+
+      <!-- 加班 -->
+      <div class="detail-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <span style="font-size: 14px; font-weight: 500; color: #333;">加班</span>
+            <span style="font-size: 12px; color: #999; margin-left: 8px;">18:00-20:00</span>
+            <span class="plan-status pending" style="margin-left: 8px; font-size: 10px; padding: 2px 6px;">待审批</span>
+          </div>
+          <span style="font-size: 14px; color: #fa8c16; font-weight: 500;">2人</span>
+        </div>
+        <div class="personnel-grid">
+          <div class="avatar-item" style="background: #fff7e6; border: 1px dashed #fa8c16;">张</div>
+          <div class="avatar-item" style="background: #fff7e6; border: 1px dashed #fa8c16;">李</div>
+        </div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="detail-section" style="margin-bottom: 80px;">
+        <div class="detail-section-title">快捷操作</div>
+        <div style="display: flex; gap: 12px;">
+          <button style="flex: 1; padding: 12px; background: #f6f6f6; border: none; border-radius: 8px; font-size: 14px; color: #666;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+            复制上周
+          </button>
+          <button style="flex: 1; padding: 12px; background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); border: none; border-radius: 8px; font-size: 14px; color: white;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+            智能排班
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="plan-list.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>计划</span>
+      </a>
+      <a href="task-assignment.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+        </svg>
+        <span>分配</span>
+      </a>
+      <a href="personnel-list.html" class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+          <path d="M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span>人员</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

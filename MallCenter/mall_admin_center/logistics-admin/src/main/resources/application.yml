@@ -80,14 +80,14 @@ spring:
       timeout: 10s
       lettuce:
         pool:
-          # 连接池中的最小空闲连接
-          min-idle: 0
+          # 连接池中的最小空闲连接 (预热连接数)
+          min-idle: 10
           # 连接池中的最大空闲连接
-          max-idle: 8
-          # 连接池的最大数据库连接数
-          max-active: 8
-          # #连接池最大阻塞等待时间（使用负值表示没有限制）
-          max-wait: -1ms
+          max-idle: 30
+          # 连接池的最大数据库连接数 (支持高并发)
+          max-active: 100
+          # 连接池最大阻塞等待时间
+          max-wait: 5000ms
   mvc:
     static-path-pattern: /static/**
 
@@ -181,3 +181,13 @@ sms:
     sign-name: 白垩纪食品
     # API端点
     endpoint: dysmsapi.aliyuncs.com
+
+# AI服务配置 (阿里云DashScope - 使用OpenAI兼容模式)
+ai:
+  deepseek:
+    # DashScope API密钥 (与backend-ai-chat服务共用)
+    api-key: sk-e02592efaa6246d2b113a0ef8edaca4a
+    # DashScope OpenAI兼容模式接口地址 (代码会自动添加 /v1/chat/completions)
+    base-url: https://dashscope.aliyuncs.com/compatible-mode
+    # 使用通义千问模型
+    model: qwen-plus

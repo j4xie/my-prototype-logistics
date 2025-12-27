@@ -1,8 +1,8 @@
 <!--
   - Copyright (C) 2018-2019
-  - All rights reserved, Designed By www.joolun.com
+  - 食品商城小程序
   - 注意：
-  - 本软件为www.joolun.com开发研制，项目使用请保留此说明
+  - 基于 JooLun 框架二次开发
 -->
 <view class="cu-list menu-avatar bg-white padding-bottom" style="background-color:#f3f4f7 !important;">
   <view class='flex justify-end margin-right'>
@@ -10,89 +10,122 @@
       <text class="cuIcon-settingsfill text-black"></text>
     </view>
   </view>
-  <view class="cu-avatar round xl head flex" style="background-image:url({{wxUser.headimgUrl}})">{{!wxUser.headimgUrl ? '头' : ''}}</view>
+  <view class="cu-avatar round xl head flex" style="background-image:url({{wxUser.headimgUrl || '/public/img/no_pic.png'}})">{{!wxUser.headimgUrl ? '头' : ''}}</view>
   <view class="content text-center margin-top-sm">
-    <view class="margin-top-xs text-xxl text-bold text-black" wx:if="{{wxUser.nickName}}">{{wxUser.nickName}}</view>
-    <button class="cu-btn round sm margin-top-xs" bindtap="getUserProfile">
-      {{!wxUser.nickName ? '获取昵称' : '更新昵称'}}
-    </button>
+    <!-- 已登录：显示昵称 -->
+    <view wx:if="{{wxUser && wxUser.id}}">
+      <view class="margin-top-xs text-xxl text-bold text-black" wx:if="{{wxUser.nickName}}">{{wxUser.nickName}}</view>
+      <button class="cu-btn round sm margin-top-xs" bindtap="getUserProfile">
+        {{!wxUser.nickName ? '获取昵称' : '更新昵称'}}
+      </button>
+    </view>
+    <!-- 未登录：显示提示 -->
+    <view wx:else class="margin-top-xs">
+      <view class="text-xxl text-bold text-gray">未登录</view>
+      <view class="text-sm text-gray margin-top-xs">登录后享受更多服务</view>
+    </view>
   </view>
 </view>
-<view class="cu-listradius order-list">
-  <view class="cu-bar">
-    <view class="action">
-      <text class="cuIcon-titles text-black titles-color"></text>我的订单
+
+<!-- 已登录才显示的功能区域 -->
+<block wx:if="{{wxUser && wxUser.id}}">
+  <!-- 我的订单 -->
+  <view class="cu-listradius order-list">
+    <view class="cu-bar">
+      <view class="action">
+        <text class="cuIcon-titles text-black titles-color"></text>我的订单
+      </view>
+      <navigator class="action" url="/pages/order/order-list/index" hover-class="none">
+        全部订单<text class="cuIcon-right"></text>
+      </navigator>
     </view>
-    <navigator class="action" url="/pages/order/order-list/index" hover-class="none">
-      全部订单<text class="cuIcon-right"></text>
+    <view class="cu-list grid col-4 no-border order-list-2">
+      <view class="cu-item">
+        <navigator url="/pages/order/order-list/index?status=0" hover-class="none">
+        <image class="order-image" src="/public/img/5-1.png"></image>
+          <text class="text-black">待付款</text>
+        </navigator>
+      </view>
+      <view class="cu-item">
+        <navigator url="/pages/order/order-list/index?status=1" hover-class="none">
+          <image class="order-image" src="/public/img/5-2.png"></image>
+          <text class="text-black">待发货</text>
+        </navigator>
+      </view>
+      <view class="cu-item">
+        <navigator url="/pages/order/order-list/index?status=2" hover-class="none">
+          <image class="order-image" src="/public/img/5-3.png"></image>
+          <text class="text-black">待收货</text>
+        </navigator>
+      </view>
+      <view class="cu-item">
+        <navigator url="/pages/order/order-list/index?status=4" hover-class="none">
+          <image class="order-image" src="/public/img/5-4.png"></image>
+          <text class="text-black">已完成</text>
+        </navigator>
+      </view>
+    </view>
+  </view>
+
+  <!-- 商家工作台卡片 - 黑金风格 -->
+  <view class="merchant-card" bindtap="goToMerchantCenter" hover-class="merchant-card-active">
+    <view class="merchant-card-left">
+      <view class="merchant-card-icon">
+        <text class="cuIcon-shop"></text>
+      </view>
+      <view class="merchant-card-info">
+        <text class="merchant-card-title">商家工作台</text>
+        <text class="merchant-card-subtitle">管理商品、订单与店铺数据</text>
+      </view>
+    </view>
+    <view class="merchant-card-arrow">
+      <text class="cuIcon-right"></text>
+    </view>
+    <text class="merchant-card-watermark">WORKBENCH</text>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="cu-list menu card-menu radius address">
+    <navigator class="cu-item arrow" url="/pages/notification/index" hover-class="none">
+      <view class="content">
+        <text class="cuIcon-notification text-xl text-blue margin-right-sm"></text>
+        <text class="text-black">消息通知</text>
+      </view>
+      <view class="action" wx:if="{{unreadCount > 0}}">
+        <text class="cu-tag badge">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
+      </view>
+    </navigator>
+    <navigator class="cu-item arrow" url="/pages/ai-rag/chat/index" hover-class="none">
+      <view class="content">
+        <text class="cuIcon-creativefill text-xl text-purple margin-right-sm"></text>
+        <text class="text-black">AI智能助手</text>
+      </view>
+    </navigator>
+    <navigator class="cu-item arrow" url="/pages/user/user-address/list/index" hover-class="none">
+      <view class="content">
+        <image class="address-image" src="/public/img/7-1.png"></image>
+        <text class="text-black">收货地址</text>
+      </view>
     </navigator>
   </view>
-  <view class="cu-list grid col-4 no-border order-list-2">
-    <view class="cu-item">
-      <navigator url="/pages/order/order-list/index?status=0" hover-class="none">
-      <image class="order-image" src="/public/img/5-1.png"></image>
-        <text class="text-black">待付款</text>
-      </navigator>
-    </view>
-    <view class="cu-item">
-      <navigator url="/pages/order/order-list/index?status=1" hover-class="none">
-        <image class="order-image" src="/public/img/5-2.png"></image>
-        <text class="text-black">待发货</text>
-      </navigator>
-    </view>
-    <view class="cu-item">
-      <navigator url="/pages/order/order-list/index?status=2" hover-class="none">
-        <image class="order-image" src="/public/img/5-3.png"></image>
-        <text class="text-black">待收货</text>
-      </navigator>
-    </view>
-    <view class="cu-item">
-      <navigator url="/pages/order/order-list/index?status=4" hover-class="none">
-        <image class="order-image" src="/public/img/5-4.png"></image>
-        <text class="text-black">已完成</text>
-      </navigator>
-    </view>
+</block>
+
+<!-- 未登录时的提示区域 -->
+<view wx:else class="not-logged-in-tips">
+  <view class="tip-card">
+    <text class="cuIcon-infofill text-xl text-orange"></text>
+    <text class="tip-text">登录后可查看订单、收货地址等信息</text>
   </view>
-</view>
-<!-- 商家工作台卡片 - 黑金风格 -->
-<view class="merchant-card" bindtap="goToMerchantCenter" hover-class="merchant-card-active">
-  <view class="merchant-card-left">
-    <view class="merchant-card-icon">
-      <text class="cuIcon-shop"></text>
-    </view>
-    <view class="merchant-card-info">
-      <text class="merchant-card-title">商家工作台</text>
-      <text class="merchant-card-subtitle">管理商品、订单与店铺数据</text>
-    </view>
-  </view>
-  <view class="merchant-card-arrow">
-    <text class="cuIcon-right"></text>
-  </view>
-  <text class="merchant-card-watermark">WORKBENCH</text>
 </view>
 
-<view class="cu-list menu card-menu radius address">
-  <navigator class="cu-item arrow" url="/pages/notification/index" hover-class="none">
-    <view class="content">
-      <text class="cuIcon-notification text-xl text-blue margin-right-sm"></text>
-      <text class="text-black">消息通知</text>
-    </view>
-    <view class="action" wx:if="{{unreadCount > 0}}">
-      <text class="cu-tag badge">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
-    </view>
-  </navigator>
-  <navigator class="cu-item arrow" url="/pages/ai-rag/chat/index" hover-class="none">
-    <view class="content">
-      <text class="cuIcon-creativefill text-xl text-purple margin-right-sm"></text>
-      <text class="text-black">AI智能助手</text>
-    </view>
-  </navigator>
-  <navigator class="cu-item arrow" url="/pages/user/user-address/list/index" hover-class="none">
-    <view class="content">
-      <image class="address-image" src="/public/img/7-1.png"></image>
-      <text class="text-black">收货地址</text>
-    </view>
-  </navigator>
+<!-- 登录/退出按钮 -->
+<view class="logout-section">
+  <button wx:if="{{wxUser && wxUser.id}}" class="cu-btn block line-red lg radius margin-lr logout-btn" bindtap="handleLogout">
+    <text class="cuIcon-exit margin-right-xs"></text>退出登录
+  </button>
+  <button wx:else class="cu-btn block bg-gold lg radius margin-lr login-btn" bindtap="goToLogin">
+    <text class="cuIcon-peoplefill margin-right-xs"></text>立即登录
+  </button>
 </view>
 
-<view class="text-gray text-sm text-center margin-top-xl">www.joolun.com 提供技术支持</view>
+<view class="text-gray text-sm text-center margin-top-xl margin-bottom-xl">食品商城 提供服务</view>

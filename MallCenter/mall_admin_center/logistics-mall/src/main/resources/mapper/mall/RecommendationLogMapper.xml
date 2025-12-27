@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.RecommendationLogMapper">
+
+    <!-- P0性能优化: 批量插入推荐日志 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO recommendation_logs (
+            wx_user_id,
+            recommendation_type,
+            recommendation_position,
+            product_id,
+            recommendation_reason,
+            match_tags,
+            score,
+            algorithm_type,
+            algorithm_version,
+            ab_test_group,
+            explorer_algorithm,
+            is_clicked,
+            is_purchased,
+            create_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.wxUserId},
+                #{item.recommendationType},
+                #{item.recommendationPosition},
+                #{item.productId},
+                #{item.recommendationReason},
+                #{item.matchTags},
+                #{item.score},
+                #{item.algorithmType},
+                #{item.algorithmVersion},
+                #{item.abTestGroup},
+                #{item.explorerAlgorithm},
+                #{item.isClicked},
+                #{item.isPurchased},
+                NOW()
+            )
+        </foreach>
+    </insert>
+
+</mapper>

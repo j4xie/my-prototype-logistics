@@ -139,3 +139,55 @@ page{
   letter-spacing: 4rpx;
   pointer-events: none;
 }
+
+/* 退出登录按钮 */
+.logout-section {
+  margin: 60rpx 30rpx 30rpx 30rpx;
+}
+
+.logout-btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 32rpx;
+  border-color: #e54d42 !important;
+  color: #e54d42 !important;
+  background-color: #fff !important;
+}
+
+.logout-btn::after {
+  border-color: #e54d42 !important;
+}
+
+/* 登录按钮 - 金色风格 */
+.login-btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 32rpx;
+  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.bg-gold {
+  background: linear-gradient(135deg, #D4AF37 0%, #B8962E 100%) !important;
+}
+
+/* 未登录提示区域 */
+.not-logged-in-tips {
+  margin: 30rpx;
+}
+
+.tip-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 40rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+}
+
+.tip-text {
+  color: #666;
+  font-size: 28rpx;
+}

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>库存管理 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="warehouse.css">
+</head>
+<body>
+  <div class="mobile-container">
+    <header class="header">
+      <h1>库存管理</h1>
+      <p>在库 12 种 | 总量 3,560 kg</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 快捷操作 -->
+      <div class="quick-actions">
+        <a href="inventory-check.html" class="quick-action-item">
+          <div class="quick-action-icon check"></div>
+          <span class="quick-action-label">盘点</span>
+        </a>
+        <a href="inventory-transfer.html" class="quick-action-item">
+          <div class="quick-action-icon transfer"></div>
+          <span class="quick-action-label">调拨</span>
+        </a>
+        <a href="location-manage.html" class="quick-action-item">
+          <div class="quick-action-icon location"></div>
+          <span class="quick-action-label">库位</span>
+        </a>
+        <a href="expire-handle.html" class="quick-action-item">
+          <div class="quick-action-icon expire"></div>
+          <span class="quick-action-label">过期</span>
+        </a>
+      </div>
+
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <input type="text" class="search-input" placeholder="搜索物料名称/批次号">
+        <button class="search-btn">搜</button>
+      </div>
+
+      <!-- 筛选标签 -->
+      <div class="filter-tabs">
+        <span class="filter-tab active">全部(12)</span>
+        <span class="filter-tab">鲜品(5)</span>
+        <span class="filter-tab">冻品(6)</span>
+        <span class="filter-tab">干货(1)</span>
+      </div>
+
+      <!-- 库存列表 -->
+      <div class="inventory-list">
+        <!-- 带鱼 -->
+        <a href="inventory-detail.html" class="inventory-card" style="text-decoration: none;">
+          <div class="inventory-header">
+            <span class="inventory-name">带鱼</span>
+            <span class="inventory-type fresh">鲜品</span>
+          </div>
+          <div class="inventory-content">
+            <div class="inventory-main">
+              <div class="inventory-qty">856</div>
+              <div class="inventory-unit">kg</div>
+            </div>
+            <div class="inventory-meta">
+              <div class="inventory-meta-item">
+                <span class="meta-label">批次</span>
+                <span class="meta-value">3个</span>
+              </div>
+              <div class="inventory-meta-item">
+                <span class="meta-label">库位</span>
+                <span class="meta-value">A区</span>
+              </div>
+              <div class="inventory-meta-item warning">
+                <span class="meta-label">预警</span>
+                <span class="meta-value">1批即将过期</span>
+              </div>
+            </div>
+          </div>
+          <div class="inventory-footer">
+            <span class="inventory-update">更新: 10分钟前</span>
+            <span class="inventory-action">查看详情 ></span>
+          </div>
+        </a>
+
+        <!-- 虾仁 -->
+        <a href="inventory-detail.html" class="inventory-card" style="text-decoration: none;">
+          <div class="inventory-header">
+            <span class="inventory-name">虾仁</span>
+            <span class="inventory-type frozen">冻品</span>
+          </div>
+          <div class="inventory-content">
+            <div class="inventory-main">
+              <div class="inventory-qty">520</div>
+              <div class="inventory-unit">kg</div>
+            </div>
+            <div class="inventory-meta">
+              <div class="inventory-meta-item">
+                <span class="meta-label">批次</span>
+                <span class="meta-value">4个</span>
+              </div>
+              <div class="inventory-meta-item">
+                <span class="meta-label">库位</span>
+                <span class="meta-value">B区</span>
+              </div>
+              <div class="inventory-meta-item">
+                <span class="meta-label">状态</span>
+                <span class="meta-value success">正常</span>
+              </div>
+            </div>
+          </div>
+          <div class="inventory-footer">
+            <span class="inventory-update">更新: 30分钟前</span>
+            <span class="inventory-action">查看详情 ></span>
+          </div>
+        </a>
+
+        <!-- 鲈鱼 -->
+        <a href="inventory-detail.html" class="inventory-card" style="text-decoration: none;">
+          <div class="inventory-header">
+            <span class="inventory-name">鲈鱼</span>
+            <span class="inventory-type fresh">鲜品</span>
+          </div>
+          <div class="inventory-content">
+            <div class="inventory-main">
+              <div class="inventory-qty">380</div>
+              <div class="inventory-unit">kg</div>
+            </div>
+            <div class="inventory-meta">
+              <div class="inventory-meta-item">
+                <span class="meta-label">批次</span>
+                <span class="meta-value">2个</span>
+              </div>
+              <div class="inventory-meta-item">
+                <span class="meta-label">库位</span>
+                <span class="meta-value">A区</span>
+              </div>
+              <div class="inventory-meta-item">
+                <span class="meta-label">状态</span>
+                <span class="meta-value success">正常</span>
+              </div>
+            </div>
+          </div>
+          <div class="inventory-footer">
+            <span class="inventory-update">更新: 1小时前</span>
+            <span class="inventory-action">查看详情 ></span>
+          </div>
+        </a>
+
+        <!-- 鱿鱼 -->
+        <a href="inventory-detail.html" class="inventory-card" style="text-decoration: none;">
+          <div class="inventory-header">
+            <span class="inventory-name">鱿鱼</span>
+            <span class="inventory-type frozen">冻品</span>
+          </div>
+          <div class="inventory-content">
+            <div class="inventory-main">
+              <div class="inventory-qty">450</div>
+              <div class="inventory-unit">kg</div>
+            </div>
+            <div class="inventory-meta">
+              <div class="inventory-meta-item">
+                <span class="meta-label">批次</span>
+                <span class="meta-value">3个</span>
+              </div>
+              <div class="inventory-meta-item">
+                <span class="meta-label">库位</span>
+                <span class="meta-value">B区</span>
+              </div>
+              <div class="inventory-meta-item">
+                <span class="meta-label">状态</span>
+                <span class="meta-value success">正常</span>
+              </div>
+            </div>
+          </div>
+          <div class="inventory-footer">
+            <span class="inventory-update">更新: 2小时前</span>
+            <span class="inventory-action">查看详情 ></span>
+          </div>
+        </a>
+
+        <!-- 蟹类 -->
+        <a href="inventory-detail.html" class="inventory-card" style="text-decoration: none;">
+          <div class="inventory-header">
+            <span class="inventory-name">蟹类</span>
+            <span class="inventory-type fresh">鲜品</span>
+          </div>
+          <div class="inventory-content">
+            <div class="inventory-main">
+              <div class="inventory-qty">120</div>
+              <div class="inventory-unit">kg</div>
+            </div>
+            <div class="inventory-meta">
+              <div class="inventory-meta-item">
+                <span class="meta-label">批次</span>
+                <span class="meta-value">1个</span>
+              </div>
+              <div class="inventory-meta-item">
+                <span class="meta-label">库位</span>
+                <span class="meta-value">A区</span>
+              </div>
+              <div class="inventory-meta-item warning">
+                <span class="meta-label">库存</span>
+                <span class="meta-value">偏低</span>
+              </div>
+            </div>
+          </div>
+          <div class="inventory-footer">
+            <span class="inventory-update">更新: 3小时前</span>
+            <span class="inventory-action">查看详情 ></span>
+          </div>
+        </a>
+      </div>
+
+      <!-- 库存统计 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">库存概览</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stats-item">
+            <div class="stats-value">12</div>
+            <div class="stats-label">物料种类</div>
+          </div>
+          <div class="stats-item">
+            <div class="stats-value">3,560</div>
+            <div class="stats-label">总库存(kg)</div>
+          </div>
+          <div class="stats-item">
+            <div class="stats-value">¥89K</div>
+            <div class="stats-label">库存价值</div>
+          </div>
+          <div class="stats-item">
+            <div class="stats-value">3</div>
+            <div class="stats-label">预警数</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="inbound.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="7,10 12,15 17,10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>入库</span>
+      </a>
+      <a href="outbound.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="17,8 12,3 7,8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>出货</span>
+      </a>
+      <a href="inventory.html" class="nav-item active">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+          <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <span>库存</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

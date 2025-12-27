@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>采购工作台 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="procurement.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 用户头部 -->
+    <header class="user-header">
+      <div class="user-info">
+        <div class="user-avatar">王</div>
+        <div class="user-details">
+          <div class="user-name">王采购</div>
+          <div class="user-role">采购专员 · 舟山海鲜加工厂</div>
+        </div>
+      </div>
+      <div class="notification-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="notification-badge">3</span>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- 待办事项卡片 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">待办事项</span>
+          <span class="section-link">查看全部 ></span>
+        </div>
+        <div class="todo-cards">
+          <div class="todo-card urgent">
+            <div class="todo-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="todo-content">
+              <div class="todo-title">库存预警</div>
+              <div class="todo-desc">5种原材料低于安全库存</div>
+            </div>
+            <div class="todo-badge">5</div>
+          </div>
+          <div class="todo-card warning">
+            <div class="todo-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12,6 12,12 16,14"/>
+              </svg>
+            </div>
+            <div class="todo-content">
+              <div class="todo-title">待审批订单</div>
+              <div class="todo-desc">等待中后台审批确认</div>
+            </div>
+            <div class="todo-badge">3</div>
+          </div>
+          <div class="todo-card success">
+            <div class="todo-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22,4 12,14.01 9,11.01"/>
+              </svg>
+            </div>
+            <div class="todo-content">
+              <div class="todo-title">已审批待发货</div>
+              <div class="todo-desc">需通知供应商发货</div>
+            </div>
+            <div class="todo-badge">2</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今日统计 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">今日统计</span>
+          <span class="section-date">2025-12-27</span>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <div class="stat-value">5</div>
+            <div class="stat-label">新建订单</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">3</div>
+            <div class="stat-label">审批通过</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">2</div>
+            <div class="stat-label">已发货</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">¥12.5k</div>
+            <div class="stat-label">采购金额</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">快捷操作</span>
+        </div>
+        <div class="quick-actions">
+          <a href="ai-scan.html" class="quick-action-item ai">
+            <div class="action-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+            <span class="action-label">AI扫描选品</span>
+          </a>
+          <a href="order-create.html" class="quick-action-item">
+            <div class="action-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+            </div>
+            <span class="action-label">新建采购单</span>
+          </a>
+          <a href="supplier-list.html" class="quick-action-item">
+            <div class="action-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <span class="action-label">供应商管理</span>
+          </a>
+          <a href="statistics.html" class="quick-action-item">
+            <div class="action-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"/>
+                <line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+            </div>
+            <span class="action-label">采购统计</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 最近订单 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">最近订单</span>
+          <a href="order-list.html" class="section-link">查看全部 ></a>
+        </div>
+        <div class="order-list">
+          <a href="order-detail.html" class="order-item">
+            <div class="order-header">
+              <span class="order-id">PO-20251227-001</span>
+              <span class="order-status pending">待审批</span>
+            </div>
+            <div class="order-content">
+              <div class="order-supplier">舟山渔业合作社</div>
+              <div class="order-products">带鱼 150kg, 鲈鱼 100kg</div>
+            </div>
+            <div class="order-footer">
+              <span class="order-amount">¥5,200</span>
+              <span class="order-time">10:30</span>
+            </div>
+          </a>
+          <a href="order-detail.html" class="order-item">
+            <div class="order-header">
+              <span class="order-id">PO-20251227-002</span>
+              <span class="order-status approved">已通过</span>
+            </div>
+            <div class="order-content">
+              <div class="order-supplier">东海冷冻食品有限公司</div>
+              <div class="order-products">虾仁 200kg</div>
+            </div>
+            <div class="order-footer">
+              <span class="order-amount">¥8,600</span>
+              <span class="order-time">09:15</span>
+            </div>
+          </a>
+          <a href="order-detail.html" class="order-item">
+            <div class="order-header">
+              <span class="order-id">PO-20251226-003</span>
+              <span class="order-status shipped">已发货</span>
+            </div>
+            <div class="order-content">
+              <div class="order-supplier">宁波海鲜批发市场</div>
+              <div class="order-products">鱿鱼 80kg, 墨鱼 50kg</div>
+            </div>
+            <div class="order-footer">
+              <span class="order-amount">¥3,800</span>
+              <span class="order-time">昨天 16:20</span>
+            </div>
+          </a>
+          <a href="order-detail.html" class="order-item">
+            <div class="order-header">
+              <span class="order-id">PO-20251226-002</span>
+              <span class="order-status completed">已完成</span>
+            </div>
+            <div class="order-content">
+              <div class="order-supplier">浙江海产品加工厂</div>
+              <div class="order-products">黄鱼 120kg</div>
+            </div>
+            <div class="order-footer">
+              <span class="order-amount">¥4,320</span>
+              <span class="order-time">昨天 11:00</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- 库存预警详情 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">库存预警</span>
+          <span class="section-link">一键采购 ></span>
+        </div>
+        <div class="alert-list">
+          <div class="alert-item critical">
+            <div class="alert-material">
+              <span class="material-name">带鱼</span>
+              <span class="material-spec">鲜品 / 1kg规格</span>
+            </div>
+            <div class="alert-info">
+              <span class="current-stock">当前: 25kg</span>
+              <span class="safe-stock">安全: 200kg</span>
+            </div>
+            <div class="alert-action">
+              <span class="shortage">缺口 175kg</span>
+            </div>
+          </div>
+          <div class="alert-item warning">
+            <div class="alert-material">
+              <span class="material-name">虾仁</span>
+              <span class="material-spec">冻品 / 500g规格</span>
+            </div>
+            <div class="alert-info">
+              <span class="current-stock">当前: 80kg</span>
+              <span class="safe-stock">安全: 150kg</span>
+            </div>
+            <div class="alert-action">
+              <span class="shortage">缺口 70kg</span>
+            </div>
+          </div>
+          <div class="alert-item warning">
+            <div class="alert-material">
+              <span class="material-name">鲈鱼</span>
+              <span class="material-spec">鲜品 / 条装</span>
+            </div>
+            <div class="alert-info">
+              <span class="current-stock">当前: 45kg</span>
+              <span class="safe-stock">安全: 100kg</span>
+            </div>
+            <div class="alert-action">
+              <span class="shortage">缺口 55kg</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item active">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="order-list.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>订单</span>
+      </a>
+      <a href="ai-scan.html" class="nav-item scan-btn">
+        <div class="scan-btn-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <span>AI扫描</span>
+      </a>
+      <a href="supplier-list.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>供应商</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

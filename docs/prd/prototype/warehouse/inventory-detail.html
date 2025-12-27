@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>库存详情 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="inventory.html" class="back-to-index">< 返回库存列表</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>库存详情</h1>
+      <p>带鱼</p>
+    </header>
+
+    <!-- 操作按钮置顶 -->
+    <div class="action-buttons top-actions">
+      <a href="inventory-transfer.html" class="action-btn secondary">调拨</a>
+      <a href="expire-handle.html" class="action-btn warning">过期处理</a>
+    </div>
+
+    <div class="page-content">
+      <!-- 库存概览 -->
+      <div class="overview-card">
+        <div class="overview-main">
+          <div class="overview-qty">856</div>
+          <div class="overview-unit">kg</div>
+        </div>
+        <div class="overview-meta">
+          <div class="overview-item">
+            <span class="overview-label">安全库存</span>
+            <span class="overview-value">200 kg</span>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">库存状态</span>
+            <span class="overview-value success">充足</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="detail-section">
+        <div class="detail-section-title">基本信息</div>
+        <div class="detail-item">
+          <span class="detail-label">物料名称</span>
+          <span class="detail-value">带鱼</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">物料类型</span>
+          <span class="detail-value">鲜品</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">储存温度</span>
+          <span class="detail-value">0°C ~ 4°C (冷藏)</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">标准保质期</span>
+          <span class="detail-value">7天</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">单价</span>
+          <span class="detail-value">¥30/kg</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">库存价值</span>
+          <span class="detail-value highlight">¥25,680</span>
+        </div>
+      </div>
+
+      <!-- 批次列表 -->
+      <div class="detail-section">
+        <div class="detail-section-title">批次列表 (3个)</div>
+
+        <a href="batch-detail.html" class="batch-card" style="text-decoration: none;">
+          <div class="batch-header">
+            <span class="batch-number">MB-20251223-001</span>
+            <span class="batch-tag warning">3天后过期</span>
+          </div>
+          <div class="batch-content">
+            <div class="batch-row">
+              <span class="batch-label">库存数量</span>
+              <span class="batch-value">256 kg</span>
+            </div>
+            <div class="batch-row">
+              <span class="batch-label">入库日期</span>
+              <span class="batch-value">2025-12-23</span>
+            </div>
+            <div class="batch-row">
+              <span class="batch-label">库位</span>
+              <span class="batch-value">A区-冷藏库-01</span>
+            </div>
+          </div>
+          <div class="batch-footer">
+            <span class="batch-hint">优先消耗 (FIFO)</span>
+            <span class="batch-action">查看详情 ></span>
+          </div>
+        </a>
+
+        <a href="batch-detail.html" class="batch-card" style="text-decoration: none;">
+          <div class="batch-header">
+            <span class="batch-number">MB-20251224-002</span>
+            <span class="batch-tag">4天后过期</span>
+          </div>
+          <div class="batch-content">
+            <div class="batch-row">
+              <span class="batch-label">库存数量</span>
+              <span class="batch-value">320 kg</span>
+            </div>
+            <div class="batch-row">
+              <span class="batch-label">入库日期</span>
+              <span class="batch-value">2025-12-24</span>
+            </div>
+            <div class="batch-row">
+              <span class="batch-label">库位</span>
+              <span class="batch-value">A区-冷藏库-02</span>
+            </div>
+          </div>
+          <div class="batch-footer">
+            <span class="batch-hint"></span>
+            <span class="batch-action">查看详情 ></span>
+          </div>
+        </a>
+
+        <a href="batch-detail.html" class="batch-card" style="text-decoration: none;">
+          <div class="batch-header">
+            <span class="batch-number">MB-20251226-001</span>
+            <span class="batch-tag success">新入库</span>
+          </div>
+          <div class="batch-content">
+            <div class="batch-row">
+              <span class="batch-label">库存数量</span>
+              <span class="batch-value">280 kg</span>
+            </div>
+            <div class="batch-row">
+              <span class="batch-label">入库日期</span>
+              <span class="batch-value">2025-12-26</span>
+            </div>
+            <div class="batch-row">
+              <span class="batch-label">库位</span>
+              <span class="batch-value">A区-冷藏库-01</span>
+            </div>
+          </div>
+          <div class="batch-footer">
+            <span class="batch-hint">7天保质期</span>
+            <span class="batch-action">查看详情 ></span>
+          </div>
+        </a>
+      </div>
+
+      <!-- 库位分布 -->
+      <div class="detail-section">
+        <div class="detail-section-title">库位分布</div>
+        <div class="location-distribution">
+          <div class="location-item">
+            <span class="location-name">A区-冷藏库-01</span>
+            <span class="location-qty">536 kg</span>
+          </div>
+          <div class="location-item">
+            <span class="location-name">A区-冷藏库-02</span>
+            <span class="location-qty">320 kg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作记录 -->
+      <div class="detail-section">
+        <div class="detail-section-title">最近操作</div>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot success"></div>
+            <div class="timeline-content">
+              <div class="timeline-time">12-26 09:30</div>
+              <div class="timeline-text">入库 +280kg (张仓管)</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot danger"></div>
+            <div class="timeline-content">
+              <div class="timeline-time">12-25 15:00</div>
+              <div class="timeline-text">出库 -80kg (订单SH-20251225-001)</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-time">12-24 10:00</div>
+              <div class="timeline-text">入库 +320kg (李仓管)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

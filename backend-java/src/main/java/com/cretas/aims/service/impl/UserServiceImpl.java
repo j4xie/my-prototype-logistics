@@ -19,6 +19,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -451,5 +454,49 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             return obj.toString();
         }
+    }
+
+    @Override
+    public PageResponse<UserDTO> getUsersByJoinDateRange(
+            String factoryId,
+            LocalDate startDate,
+            LocalDate endDate,
+            int page,
+            int size) {
+        log.info("查询入职日期范围内用户: factoryId={}, startDate={}, endDate={}, page={}, size={}",
+                factoryId, startDate, endDate, page, size);
+
+        // 转换为 LocalDateTime（开始时间 00:00:00，结束时间为次日 00:00:00）
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.plusDays(1).atStartOfDay();
+
+        // 创建分页请求
+        org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(
+                page - 1,  // Spring Data 页码从0开始
+                size
+        );
+
+        // 查询数据
+        Page<User> userPage = userRepository.findByFactoryIdAndCreatedAtBetween(
+                factoryId,
+                startDateTime,
+                endDateTime,
+                pageable
+        );
+
+        // 转换为 DTO
+        List<UserDTO> userDTOs = userPage.getContent().stream()
+                .map(userMapper::toDTO)
+                .collect(Collectors.toList());
+
+        log.info("查询入职日期范围内用户成功: factoryId={}, totalElements={}",
+                factoryId, userPage.getTotalElements());
+
+        return PageResponse.of(
+                userDTOs,
+                page,
+                size,
+                userPage.getTotalElements()
+        );
     }
 }

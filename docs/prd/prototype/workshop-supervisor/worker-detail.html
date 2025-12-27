@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>员工详情 - 车间主任</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 子页面头部 -->
+    <div class="subpage-header">
+      <a href="worker-list.html" class="back-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <span class="title">员工详情</span>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content" style="padding-top: 16px;">
+      <!-- 员工信息 -->
+      <div class="info-card" style="text-align: center; padding: 24px;">
+        <div class="worker-avatar" style="width: 80px; height: 80px; font-size: 32px; margin: 0 auto 16px;">
+          <span>王</span>
+          <span class="status-dot online" style="width: 16px; height: 16px; border-width: 3px;"></span>
+        </div>
+        <div style="font-size: 22px; font-weight: 600; color: #333; margin-bottom: 4px;">王建国</div>
+        <div style="font-size: 14px; color: #999;">EMP-001 | 切片操作员</div>
+        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 12px;">
+          <span style="padding: 4px 12px; background: #f6ffed; color: #52c41a; border-radius: 12px; font-size: 12px;">在岗</span>
+          <span style="padding: 4px 12px; background: #e6f7ff; color: #1890ff; border-radius: 12px; font-size: 12px;">熟练工</span>
+          <span style="padding: 4px 12px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 12px; font-size: 12px; font-weight: 600; color: #52c41a;">A级 96%</span>
+        </div>
+      </div>
+
+      <!-- 今日工时 -->
+      <div class="info-card" style="background: var(--workshop-gradient); color: white;">
+        <h3 style="font-size: 14px; font-weight: 500; opacity: 0.9; margin-bottom: 16px;">今日工时</h3>
+        <div style="display: flex; justify-content: space-around; text-align: center;">
+          <div>
+            <div style="font-size: 32px; font-weight: 600;">4.0</div>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">工作时长 (h)</div>
+          </div>
+          <div style="width: 1px; background: rgba(255,255,255,0.2);"></div>
+          <div>
+            <div style="font-size: 32px; font-weight: 600;">08:00</div>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">签到时间</div>
+          </div>
+          <div style="width: 1px; background: rgba(255,255,255,0.2);"></div>
+          <div>
+            <div style="font-size: 32px; font-weight: 600;">--</div>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">签退时间</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI效率评分 (简化版) -->
+      <div class="info-card" style="border: 1px solid #e6f0ff; background: linear-gradient(135deg, #f8faff 0%, #f0f5ff 100%);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 14px; font-weight: 600; color: #333;">AI效率评分</div>
+            <div style="font-size: 11px; color: #999;">综合分析 · 仅供参考</div>
+          </div>
+          <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+            <div style="width: 48px; height: 48px; background: #f6ffed; border: 2px solid #52c41a; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 20px; font-weight: 700; color: #52c41a;">A</span>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 24px; font-weight: 700; color: #52c41a;">96</div>
+              <div style="font-size: 10px; color: #999;">综合分</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 三维评分进度条 -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- 出勤 -->
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #666;">出勤表现</span>
+              <span style="font-size: 12px; font-weight: 600; color: #52c41a;">92%</span>
+            </div>
+            <div style="height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden;">
+              <div style="width: 92%; height: 100%; background: linear-gradient(90deg, #52c41a, #73d13d); border-radius: 4px;"></div>
+            </div>
+          </div>
+          <!-- 质量 -->
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #666;">质量合格率</span>
+              <span style="font-size: 12px; font-weight: 600; color: #52c41a;">95%</span>
+            </div>
+            <div style="height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden;">
+              <div style="width: 95%; height: 100%; background: linear-gradient(90deg, #52c41a, #73d13d); border-radius: 4px;"></div>
+            </div>
+          </div>
+          <!-- 效率 -->
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #666;">生产效率</span>
+              <span style="font-size: 12px; font-weight: 600; color: #fa8c16;">88%</span>
+            </div>
+            <div style="height: 8px; background: #e8e8e8; border-radius: 4px; overflow: hidden;">
+              <div style="width: 88%; height: 100%; background: linear-gradient(90deg, #fa8c16, #ffc53d); border-radius: 4px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 趋势提示 -->
+        <div style="margin-top: 16px; padding: 10px 12px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+            <polyline points="17 6 23 6 23 12"/>
+          </svg>
+          <span style="font-size: 12px; color: #52c41a; font-weight: 500;">近7天效率提升 3%，保持良好势头！</span>
+        </div>
+
+        <!-- 说明文字 -->
+        <div style="margin-top: 12px; font-size: 11px; color: #999; text-align: center;">
+          * AI评分基于历史数据分析，仅供参考。详细报告请联系HR管理员。
+        </div>
+      </div>
+
+      <!-- 本周工时 -->
+      <div class="info-card">
+        <h3 class="section-title">本周工时统计</h3>
+        <div style="display: flex; justify-content: space-between; gap: 4px; margin-bottom: 16px;">
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">周一</div>
+            <div style="height: 80px; display: flex; align-items: flex-end; justify-content: center;">
+              <div style="width: 24px; height: 90%; background: linear-gradient(180deg, #667eea, #764ba2); border-radius: 4px 4px 0 0;"></div>
+            </div>
+            <div style="font-size: 11px; color: #333; margin-top: 4px;">8.5h</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">周二</div>
+            <div style="height: 80px; display: flex; align-items: flex-end; justify-content: center;">
+              <div style="width: 24px; height: 100%; background: linear-gradient(180deg, #667eea, #764ba2); border-radius: 4px 4px 0 0;"></div>
+            </div>
+            <div style="font-size: 11px; color: #333; margin-top: 4px;">9.0h</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">周三</div>
+            <div style="height: 80px; display: flex; align-items: flex-end; justify-content: center;">
+              <div style="width: 24px; height: 85%; background: linear-gradient(180deg, #667eea, #764ba2); border-radius: 4px 4px 0 0;"></div>
+            </div>
+            <div style="font-size: 11px; color: #333; margin-top: 4px;">8.2h</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">周四</div>
+            <div style="height: 80px; display: flex; align-items: flex-end; justify-content: center;">
+              <div style="width: 24px; height: 95%; background: linear-gradient(180deg, #667eea, #764ba2); border-radius: 4px 4px 0 0;"></div>
+            </div>
+            <div style="font-size: 11px; color: #333; margin-top: 4px;">8.8h</div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 10px; color: #1890ff; margin-bottom: 4px;">今天</div>
+            <div style="height: 80px; display: flex; align-items: flex-end; justify-content: center;">
+              <div style="width: 24px; height: 45%; background: linear-gradient(180deg, #1890ff, #096dd9); border-radius: 4px 4px 0 0;"></div>
+            </div>
+            <div style="font-size: 11px; color: #1890ff; margin-top: 4px;">4.0h</div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 12px; background: #fafafa; border-radius: 8px;">
+          <div>
+            <div style="font-size: 12px; color: #999;">本周累计</div>
+            <div style="font-size: 18px; font-weight: 600; color: #333;">38.5 小时</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 12px; color: #999;">平均效率</div>
+            <div style="font-size: 18px; font-weight: 600; color: #52c41a;">18.5 kg/h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="info-card">
+        <h3 class="section-title">基本信息</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-item-label">入职日期</div>
+            <div class="info-item-value">2023-05-15</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">所属部门</div>
+            <div class="info-item-value">切片车间</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">技能等级</div>
+            <div class="info-item-value" style="color: #52c41a;">高级</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">联系电话</div>
+            <div class="info-item-value">138****5678</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 本月统计 -->
+      <div class="info-card">
+        <h3 class="section-title">本月统计</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fafafa; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; background: #e6f7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12,6 12,12 16,14"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 500; color: #333;">累计工时</div>
+                <div style="font-size: 12px; color: #999;">截至今日</div>
+              </div>
+            </div>
+            <div style="font-size: 18px; font-weight: 600; color: #1890ff;">168.5h</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fafafa; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; background: #f6ffed; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 500; color: #333;">参与批次</div>
+                <div style="font-size: 12px; color: #999;">本月已完成</div>
+              </div>
+            </div>
+            <div style="font-size: 18px; font-weight: 600; color: #52c41a;">28 个</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fafafa; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; background: #f0f5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 500; color: #333;">产出总量</div>
+                <div style="font-size: 12px; color: #999;">本月累计</div>
+              </div>
+            </div>
+            <div style="font-size: 18px; font-weight: 600; color: #667eea;">1,856 kg</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fafafa; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; background: #fff7e6; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 500; color: #333;">出勤率</div>
+                <div style="font-size: 12px; color: #999;">本月</div>
+              </div>
+            </div>
+            <div style="font-size: 18px; font-weight: 600; color: #fa8c16;">96%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 近期工作记录 -->
+      <div class="info-card">
+        <h3 class="section-title">近期工作记录</h3>
+        <div class="timeline" style="padding: 0;">
+          <div class="timeline-item">
+            <div class="timeline-dot active">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-title">PB-20251227-001</div>
+              <div class="timeline-desc">带鱼片切片 | 52kg | 2.5h</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot active">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-title">PB-20251226-003</div>
+              <div class="timeline-desc">鲈鱼片切片 | 45kg | 2.0h</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot active">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-title">PB-20251226-001</div>
+              <div class="timeline-desc">黄鱼片切片 | 60kg | 3.0h</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot active">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-title">PB-20251225-002</div>
+              <div class="timeline-desc">带鱼片切片 | 55kg | 2.5h</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="btn-group">
+        <a href="worker-list.html" class="btn btn-secondary">返回列表</a>
+        <a href="worker-assign.html" class="btn btn-primary">分配任务</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

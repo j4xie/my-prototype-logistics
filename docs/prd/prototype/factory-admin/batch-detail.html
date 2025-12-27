@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>批次详情 - 工厂管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: #333; font-size: 22px; font-weight: bold; padding: 8px 12px;">&lt;</a>
+      <span class="title">批次详情</span>
+    </div>
+
+    <div class="content" style="padding: 16px;">
+      <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">MB-20251225-001</span>
+          <span class="list-item-badge badge--green">可用</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div><span style="font-size: 12px; color: #999;">原料类型</span><div style="font-size: 15px; color: #333; margin-top: 4px;">带鱼</div></div>
+          <a href="supplier-detail.html" style="text-decoration: none;"><span style="font-size: 12px; color: #999;">供应商</span><div style="font-size: 15px; color: #1890ff; margin-top: 4px;">东海渔业公司 ></div></a>
+          <div><span style="font-size: 12px; color: #999;">入库数量</span><div style="font-size: 15px; color: #333; margin-top: 4px;">200 kg</div></div>
+          <div><span style="font-size: 12px; color: #999;">剩余数量</span><div style="font-size: 15px; color: #1890ff; margin-top: 4px;">180 kg</div></div>
+          <div><span style="font-size: 12px; color: #999;">入库时间</span><div style="font-size: 15px; color: #333; margin-top: 4px;">2025-12-25 08:30</div></div>
+          <div><span style="font-size: 12px; color: #999;">过期时间</span><div style="font-size: 15px; color: #333; margin-top: 4px;">2026-01-10</div></div>
+          <div><span style="font-size: 12px; color: #999;">存储位置</span><div style="font-size: 15px; color: #333; margin-top: 4px;">A区冷库-01</div></div>
+          <div><span style="font-size: 12px; color: #999;">单价</span><div style="font-size: 15px; color: #333; margin-top: 4px;">¥30.00/kg</div></div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">消耗记录</span>
+      </div>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header">
+          <span class="list-item-title">生产消耗</span>
+          <span class="list-item-badge badge--orange">-20kg</span>
+        </div>
+        <div class="list-item-meta">PB-20251227-001 · 2025-12-27 09:15 ></div>
+      </a>
+
+      <div class="section-header" style="margin-top: 16px;">
+        <span class="section-title">质检记录</span>
+      </div>
+      <a href="qc-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header">
+          <span class="list-item-title">入库质检</span>
+          <span class="list-item-badge badge--green">合格</span>
+        </div>
+        <div class="list-item-meta">QC-20251225-001 · 2025-12-25 08:45</div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

@@ -60,3 +60,13 @@
   text-decoration: line-through;
   margin-left: 12rpx;
 }
+
+/* 未登录时的价格提示 */
+.price-login-hint {
+  font-size: 22rpx;
+  color: #D4AF37;
+  padding: 8rpx 16rpx;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1rpx solid #D4AF37;
+  border-radius: 20rpx;
+}

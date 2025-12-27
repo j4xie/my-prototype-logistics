@@ -1,13 +1,14 @@
 /**
- * Copyright (C) 2018-2019
- * All rights reserved, Designed By www.joolun.com
+ * Copyright (C) 2024-2025
+ * 食品商城小程序
  * 注意：
- * 本软件为www.joolun.com开发研制，项目使用请保留此说明
+ * 基于 JooLun 框架二次开发
  */
 const WxParse = require('../../../public/wxParse/wxParse.js')
 import Poster from '../../../components/wxa-plugin-canvas/poster/poster'
 const { base64src } = require('../../../utils/base64src.js')
 const app = getApp()
+const tracker = require('../../../utils/tracker')
 
 Page({
   data: {
@@ -30,7 +31,33 @@ Page({
     traceInfo: null,
     hasTrace: false,
     // 数量选择弹窗
-    showQtyModal: false
+    showQtyModal: false,
+    // ========== 相似商品推荐 ==========
+    similarProducts: [],           // 相似商品列表
+    similarLoading: false,         // 加载状态
+    scrollDepth: 0,                // 页面滚动深度（用于行为分析）
+    // ========== 来源追踪 ==========
+    entrySource: ''                // 进入详情页的来源 (recommend_home/similar_recommend/category/search等)
+  },
+
+  // 浏览开始时间（用于计算停留时长）
+  viewStartTime: 0,
+  onShow() {
+    // 检查登录状态 - 商品详情页需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/home/index'
+        })
+      }, 500)
+      return
+    }
   },
   onLoad(options) {
     let id
@@ -40,14 +67,76 @@ Page({
       id = options.id
     }
     this.setData({
-      id: id
+      id: id,
+      // 记录进入来源（用于行为追踪）
+      entrySource: options.source || 'direct'
     })
+
+    // 记录浏览开始时间
+    this.viewStartTime = Date.now()
+
     app.initPage()
       .then(res => {
         this.goodsGet(id)
         this.shoppingCartCount()
         this.loadPriceTiers(id)
+        // 加载相似商品
+        this.loadSimilarProducts(id)
       })
+  },
+
+  // 页面隐藏/离开时上报浏览行为
+  onHide() {
+    this.trackViewBehavior()
+  },
+
+  onUnload() {
+    this.trackViewBehavior()
+  },
+
+  // 监听页面滚动
+  onPageScroll(e) {
+    const scrollTop = e.scrollTop
+    // 更新滚动深度（百分比）
+    if (scrollTop > this.data.scrollDepth) {
+      this.setData({ scrollDepth: scrollTop })
+    }
+  },
+
+  /**
+   * 上报浏览行为
+   */
+  trackViewBehavior() {
+    const goodsSpu = this.data.goodsSpu
+    if (!goodsSpu || !this.viewStartTime) return
+
+    const duration = Date.now() - this.viewStartTime
+    const wxUser = app.globalData.wxUser
+
+    if (wxUser && wxUser.id) {
+      // 使用进入来源，如未设置则默认为 direct
+      const source = this.data.entrySource || 'direct'
+
+      // 上报浏览行为
+      tracker.trackView({
+        productId: goodsSpu.id,
+        productName: goodsSpu.name,
+        category: goodsSpu.categoryFirst,
+        duration: duration,
+        scrollDepth: this.data.scrollDepth,
+        source: source
+      })
+
+      console.log('上报浏览行为:', {
+        productId: goodsSpu.id,
+        duration: duration,
+        scrollDepth: this.data.scrollDepth,
+        source: source
+      })
+    }
+
+    // 重置开始时间，避免重复上报
+    this.viewStartTime = 0
   },
   onShareAppMessage: function () {
     let goodsSpu = this.data.goodsSpu
@@ -546,5 +635,70 @@ Page({
   // 阻止冒泡关闭
   preventClose() {
     // 空函数，阻止点击内容区域关闭弹窗
+  },
+
+  // ========== 相似商品推荐相关方法 ==========
+
+  /**
+   * 加载相似商品推荐
+   * @param {string} productId 当前商品ID
+   */
+  loadSimilarProducts(productId) {
+    if (!productId) return
+
+    this.setData({ similarLoading: true })
+
+    const wxUser = app.globalData.wxUser
+    const wxUserId = wxUser ? wxUser.id : null
+
+    app.api.getSimilarProducts(productId, wxUserId, 6)
+      .then(res => {
+        const products = res.data || res || []
+        this.setData({
+          similarProducts: products,
+          similarLoading: false
+        })
+        console.log('相似商品加载完成:', products.length)
+
+        // 追踪相似商品曝光
+        if (products.length > 0 && wxUserId) {
+          const productIds = products.map(p => p.id)
+          tracker.trackExposure(productIds)
+        }
+      })
+      .catch(err => {
+        console.error('加载相似商品失败:', err)
+        this.setData({
+          similarProducts: [],
+          similarLoading: false
+        })
+      })
+  },
+
+  /**
+   * 相似商品点击事件
+   * 记录点击行为用于推荐反馈
+   */
+  onSimilarProductClick(e) {
+    const product = e.currentTarget.dataset.product
+    if (!product) return
+
+    const wxUser = app.globalData.wxUser
+    if (wxUser && wxUser.id && product.id) {
+      // 记录推荐点击（用于强化学习反馈）
+      tracker.trackView({
+        productId: product.id,
+        productName: product.name,
+        source: 'similar_recommend',
+        duration: 0  // 点击时还未浏览，时长为0
+      })
+
+      console.log('相似商品点击:', product.id, product.name)
+    }
+
+    // 跳转到商品详情
+    wx.navigateTo({
+      url: '/pages/goods/goods-detail/index?id=' + product.id
+    })
   }
 })

@@ -20,7 +20,21 @@ Page({
   },
 
   onShow() {
-    // 每次显示页面时检查是否需要刷新
+    // 检查登录状态 - 溯源扫码页需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/home/index'
+        })
+      }, 500)
+      return
+    }
   },
 
   // 加载扫码历史
@@ -209,6 +223,9 @@ Page({
     }
   }
 })
+
+
+
 
 
 

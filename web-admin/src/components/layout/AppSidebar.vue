@@ -1,0 +1,254 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useAppStore } from '@/store/modules/app';
+import { usePermissionStore, ModuleName } from '@/store/modules/permission';
+import {
+  House, Operation, Box, Checked, ShoppingCart, Goods,
+  User, Monitor, Money, Setting, DataAnalysis, Calendar
+} from '@element-plus/icons-vue';
+
+const router = useRouter();
+const route = useRoute();
+const appStore = useAppStore();
+const permissionStore = usePermissionStore();
+
+// 图标映射
+const iconMap: Record<string, any> = {
+  House, Operation, Box, Checked, ShoppingCart, Goods,
+  User, Monitor, Money, Setting, DataAnalysis, Calendar
+};
+
+// 菜单配置
+interface MenuItem {
+  path: string;
+  title: string;
+  icon: string;
+  module: ModuleName;
+  children?: MenuItem[];
+}
+
+const menuConfig: MenuItem[] = [
+  { path: '/dashboard', title: '首页', icon: 'House', module: 'dashboard' },
+  {
+    path: '/production', title: '生产管理', icon: 'Operation', module: 'production',
+    children: [
+      { path: '/production/batches', title: '生产批次', icon: '', module: 'production' },
+      { path: '/production/plans', title: '生产计划', icon: '', module: 'production' },
+      { path: '/production/conversions', title: '转换率配置', icon: '', module: 'production' }
+    ]
+  },
+  {
+    path: '/warehouse', title: '仓储管理', icon: 'Box', module: 'warehouse',
+    children: [
+      { path: '/warehouse/materials', title: '原材料批次', icon: '', module: 'warehouse' },
+      { path: '/warehouse/shipments', title: '出货管理', icon: '', module: 'warehouse' },
+      { path: '/warehouse/inventory', title: '盘点管理', icon: '', module: 'warehouse' }
+    ]
+  },
+  {
+    path: '/quality', title: '质量管理', icon: 'Checked', module: 'quality',
+    children: [
+      { path: '/quality/inspections', title: '质检记录', icon: '', module: 'quality' },
+      { path: '/quality/disposals', title: '废弃处理', icon: '', module: 'quality' }
+    ]
+  },
+  {
+    path: '/procurement', title: '采购管理', icon: 'ShoppingCart', module: 'procurement',
+    children: [
+      { path: '/procurement/suppliers', title: '供应商管理', icon: '', module: 'procurement' }
+    ]
+  },
+  {
+    path: '/sales', title: '销售管理', icon: 'Goods', module: 'sales',
+    children: [
+      { path: '/sales/customers', title: '客户管理', icon: '', module: 'sales' }
+    ]
+  },
+  {
+    path: '/hr', title: '人事管理', icon: 'User', module: 'hr',
+    children: [
+      { path: '/hr/employees', title: '员工管理', icon: '', module: 'hr' },
+      { path: '/hr/attendance', title: '考勤管理', icon: '', module: 'hr' },
+      { path: '/hr/whitelist', title: '白名单管理', icon: '', module: 'hr' },
+      { path: '/hr/departments', title: '部门管理', icon: '', module: 'hr' }
+    ]
+  },
+  {
+    path: '/equipment', title: '设备管理', icon: 'Monitor', module: 'equipment',
+    children: [
+      { path: '/equipment/list', title: '设备列表', icon: '', module: 'equipment' },
+      { path: '/equipment/maintenance', title: '维护记录', icon: '', module: 'equipment' },
+      { path: '/equipment/alerts', title: '告警管理', icon: '', module: 'equipment' }
+    ]
+  },
+  {
+    path: '/finance', title: '财务管理', icon: 'Money', module: 'finance',
+    children: [
+      { path: '/finance/costs', title: '成本分析', icon: '', module: 'finance' },
+      { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' }
+    ]
+  },
+  {
+    path: '/system', title: '系统管理', icon: 'Setting', module: 'system',
+    children: [
+      { path: '/system/users', title: '用户管理', icon: '', module: 'system' },
+      { path: '/system/roles', title: '角色管理', icon: '', module: 'system' },
+      { path: '/system/logs', title: '操作日志', icon: '', module: 'system' },
+      { path: '/system/settings', title: '系统设置', icon: '', module: 'system' }
+    ]
+  },
+  {
+    path: '/analytics', title: '数据分析', icon: 'DataAnalysis', module: 'analytics',
+    children: [
+      { path: '/analytics/overview', title: '分析概览', icon: '', module: 'analytics' },
+      { path: '/analytics/trends', title: '趋势分析', icon: '', module: 'analytics' },
+      { path: '/analytics/ai-reports', title: 'AI分析报告', icon: '', module: 'analytics' },
+      { path: '/analytics/kpi', title: 'KPI看板', icon: '', module: 'analytics' }
+    ]
+  },
+  {
+    path: '/scheduling', title: '智能调度', icon: 'Calendar', module: 'scheduling',
+    children: [
+      { path: '/scheduling/overview', title: '调度中心', icon: '', module: 'scheduling' },
+      { path: '/scheduling/plans', title: '调度计划', icon: '', module: 'scheduling' },
+      { path: '/scheduling/realtime', title: '实时监控', icon: '', module: 'scheduling' },
+      { path: '/scheduling/workers', title: '人员分配', icon: '', module: 'scheduling' },
+      { path: '/scheduling/alerts', title: '告警管理', icon: '', module: 'scheduling' }
+    ]
+  }
+];
+
+// 过滤有权限的菜单
+const filteredMenu = computed(() => {
+  return menuConfig.filter(item => permissionStore.canAccess(item.module));
+});
+
+// 当前激活的菜单
+const activeMenu = computed(() => route.path);
+
+// 默认展开的菜单
+const defaultOpeneds = computed(() => {
+  const path = route.path;
+  const parent = menuConfig.find(item =>
+    item.children?.some(child => path.startsWith(child.path))
+  );
+  return parent ? [parent.path] : [];
+});
+
+function handleSelect(path: string) {
+  router.push(path);
+}
+</script>
+
+<template>
+  <aside
+    class="app-sidebar"
+    :class="{ 'is-collapsed': appStore.sidebarCollapsed }"
+  >
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <img src="/logo.svg" alt="Logo" class="logo-icon" />
+      <span v-if="!appStore.sidebarCollapsed" class="logo-text">白垩纪管理系统</span>
+    </div>
+
+    <!-- 菜单 -->
+    <el-scrollbar class="sidebar-menu-wrap">
+      <el-menu
+        :default-active="activeMenu"
+        :default-openeds="defaultOpeneds"
+        :collapse="appStore.sidebarCollapsed"
+        unique-opened
+        background-color="#001529"
+        text-color="#ffffffa6"
+        active-text-color="#ffffff"
+        @select="handleSelect"
+      >
+        <template v-for="item in filteredMenu" :key="item.path">
+          <!-- 有子菜单 -->
+          <el-sub-menu v-if="item.children?.length" :index="item.path">
+            <template #title>
+              <el-icon><component :is="iconMap[item.icon]" /></el-icon>
+              <span>{{ item.title }}</span>
+            </template>
+            <el-menu-item
+              v-for="child in item.children"
+              :key="child.path"
+              :index="child.path"
+            >
+              {{ child.title }}
+            </el-menu-item>
+          </el-sub-menu>
+
+          <!-- 无子菜单 -->
+          <el-menu-item v-else :index="item.path">
+            <el-icon><component :is="iconMap[item.icon]" /></el-icon>
+            <template #title>{{ item.title }}</template>
+          </el-menu-item>
+        </template>
+      </el-menu>
+    </el-scrollbar>
+  </aside>
+</template>
+
+<style lang="scss" scoped>
+.app-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 220px;
+  background-color: #001529;
+  transition: width 0.3s;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+
+  &.is-collapsed {
+    width: 64px;
+  }
+}
+
+.sidebar-logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logo-text {
+    margin-left: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+}
+
+.sidebar-menu-wrap {
+  flex: 1;
+  overflow-y: auto;
+}
+
+:deep(.el-menu) {
+  border-right: none;
+
+  .el-menu-item,
+  .el-sub-menu__title {
+    &:hover {
+      background-color: #000c17 !important;
+    }
+  }
+
+  .el-menu-item.is-active {
+    background-color: #1890ff !important;
+  }
+}
+</style>

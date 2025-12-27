@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>批次人员分配 - HR管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">批次人员分配</span>
+      <span></span>
+    </div>
+
+    <div class="content">
+      <!-- 今日进行中批次统计 -->
+      <div class="section-header">
+        <span class="section-title">今日生产批次</span>
+        <span class="section-action section-action--hr">3 进行中</span>
+      </div>
+      <div class="attendance-summary">
+        <div class="attendance-item">
+          <div class="attendance-value" style="color: #f093fb;">3</div>
+          <div class="attendance-label">进行中</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value green">12</div>
+          <div class="attendance-label">已分配员工</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value orange">5</div>
+          <div class="attendance-label">待分配</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value">30</div>
+          <div class="attendance-label">可用员工</div>
+        </div>
+      </div>
+
+      <!-- 批次列表 -->
+      <div class="section-header">
+        <span class="section-title">进行中的批次</span>
+      </div>
+
+      <!-- 批次卡片1 -->
+      <a href="batch-workers.html" style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: block; text-decoration: none; color: inherit;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <div style="font-size: 16px; font-weight: 500; color: #333;">PB20241220001</div>
+            <div style="font-size: 12px; color: #999; margin-top: 4px;">鱿鱼圈 · 800袋</div>
+          </div>
+          <span style="background: #e6f7ff; color: #1890ff; padding: 4px 8px; border-radius: 4px; font-size: 12px;">生产中</span>
+        </div>
+        <div style="display: flex; gap: 16px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+          <div style="flex: 1;">
+            <div style="font-size: 20px; font-weight: 500; color: #f093fb;">3</div>
+            <div style="font-size: 12px; color: #999;">已分配</div>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 20px; font-weight: 500; color: #52c41a;">720min</div>
+            <div style="font-size: 12px; color: #999;">总工时</div>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 20px; font-weight: 500; color: #fa8c16;">¥600</div>
+            <div style="font-size: 12px; color: #999;">劳动成本</div>
+          </div>
+        </div>
+        <div style="margin-top: 12px;">
+          <div style="font-size: 12px; color: #999; margin-bottom: 6px;">已分配员工:</div>
+          <div style="display: flex; gap: -8px;">
+            <div style="width: 28px; height: 28px; border-radius: 14px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; border: 2px solid white;">张</div>
+            <div style="width: 28px; height: 28px; border-radius: 14px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; border: 2px solid white; margin-left: -8px;">李</div>
+            <div style="width: 28px; height: 28px; border-radius: 14px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; border: 2px solid white; margin-left: -8px;">王</div>
+            <div style="width: 28px; height: 28px; border-radius: 14px; background: #f0f0f0; color: #999; display: flex; align-items: center; justify-content: center; font-size: 11px; border: 2px solid white; margin-left: -8px;">+</div>
+          </div>
+        </div>
+      </a>
+
+      <!-- 批次卡片2 -->
+      <a href="batch-workers.html" style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: block; text-decoration: none; color: inherit;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <div style="font-size: 16px; font-weight: 500; color: #333;">PB20241227001</div>
+            <div style="font-size: 12px; color: #999; margin-top: 4px;">冷冻带鱼段 · 500kg</div>
+          </div>
+          <span style="background: #e6f7ff; color: #1890ff; padding: 4px 8px; border-radius: 4px; font-size: 12px;">生产中</span>
+        </div>
+        <div style="display: flex; gap: 16px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+          <div style="flex: 1;">
+            <div style="font-size: 20px; font-weight: 500; color: #f093fb;">5</div>
+            <div style="font-size: 12px; color: #999;">已分配</div>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 20px; font-weight: 500; color: #52c41a;">480min</div>
+            <div style="font-size: 12px; color: #999;">总工时</div>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 20px; font-weight: 500; color: #fa8c16;">¥400</div>
+            <div style="font-size: 12px; color: #999;">劳动成本</div>
+          </div>
+        </div>
+      </a>
+
+      <!-- 批次卡片3: 待分配 -->
+      <a href="batch-workers.html" style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 2px dashed #fa8c16; display: block; text-decoration: none; color: inherit;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <div style="font-size: 16px; font-weight: 500; color: #333;">PB20241227002</div>
+            <div style="font-size: 12px; color: #999; margin-top: 4px;">大虾仁 · 300kg</div>
+          </div>
+          <span style="background: #fff7e6; color: #fa8c16; padding: 4px 8px; border-radius: 4px; font-size: 12px;">待分配</span>
+        </div>
+        <div style="background: #fff7e6; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">⚠️</span>
+          <div>
+            <div style="font-size: 14px; color: #fa8c16; font-weight: 500;">需要分配员工</div>
+            <div style="font-size: 12px; color: #999;">建议分配 4-6 名员工</div>
+          </div>
+        </div>
+        <button style="width: 100%; margin-top: 12px; padding: 12px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; font-size: 14px;">立即分配员工</button>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

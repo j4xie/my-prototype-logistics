@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>员工详情 - HR管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">员工详情</span>
+      <span style="color: #f093fb;">编辑</span>
+    </div>
+
+    <div class="content">
+      <!-- 员工头像和基本信息 -->
+      <div class="profile-header">
+        <div class="profile-avatar">张</div>
+        <div class="profile-name">张三丰</div>
+        <div class="profile-role">操作员 · 1号车间</div>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="section-header">
+        <span class="section-title">基本信息</span>
+      </div>
+      <div class="detail-section">
+        <div class="detail-row">
+          <span class="detail-label">工号</span>
+          <span class="detail-value">E001</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">手机号</span>
+          <span class="detail-value">138****1234</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">入职日期</span>
+          <span class="detail-value">2024-03-15</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">状态</span>
+          <span class="detail-value" style="color: #52c41a;">在职</span>
+        </div>
+      </div>
+
+      <!-- 考勤信息 -->
+      <div class="section-header">
+        <span class="section-title">本月考勤</span>
+      </div>
+      <div class="attendance-summary">
+        <div class="attendance-item">
+          <div class="attendance-value">22</div>
+          <div class="attendance-label">出勤天数</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value red">1</div>
+          <div class="attendance-label">迟到</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value">0</div>
+          <div class="attendance-label">早退</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value orange">2</div>
+          <div class="attendance-label">请假</div>
+        </div>
+      </div>
+
+      <!-- 批次参与历史 -->
+      <div class="section-header" style="margin-top: 20px;">
+        <span class="section-title">近期批次参与</span>
+        <a href="batch-workers.html" class="section-action section-action--hr" style="text-decoration: none;">查看全部</a>
+      </div>
+      <div style="background: white; border-radius: 12px; overflow: hidden; margin-bottom: 16px;">
+        <div style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-weight: 500; font-size: 14px;">PB-2025-1227-003</span>
+            <span style="background: #52c41a; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">已完成</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999;">
+            <span>冷冻带鱼 · 切割加工</span>
+            <span>工时: 4h 20min</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-top: 4px;">
+            <span>12-27 08:30 - 12:50</span>
+            <span style="color: #f093fb;">¥200.00</span>
+          </div>
+        </div>
+        <div style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-weight: 500; font-size: 14px;">PB-2025-1226-007</span>
+            <span style="background: #52c41a; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">已完成</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999;">
+            <span>冷冻鲳鱼 · 包装</span>
+            <span>工时: 3h 45min</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-top: 4px;">
+            <span>12-26 14:00 - 17:45</span>
+            <span style="color: #f093fb;">¥175.00</span>
+          </div>
+        </div>
+        <div style="padding: 12px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-weight: 500; font-size: 14px;">PB-2025-1226-002</span>
+            <span style="background: #1890ff; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">进行中</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999;">
+            <span>冷冻虾仁 · 质检</span>
+            <span>工时: 进行中...</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-top: 4px;">
+            <span>12-26 09:00 开始</span>
+            <span style="color: #faad14;">待结算</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工时统计摘要 -->
+      <div class="attendance-summary" style="margin-bottom: 16px;">
+        <div class="attendance-item">
+          <div class="attendance-value">23</div>
+          <div class="attendance-label">参与批次</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value">186h</div>
+          <div class="attendance-label">累计工时</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value green">¥8,650</div>
+          <div class="attendance-label">累计收入</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value">¥46.5</div>
+          <div class="attendance-label">时薪</div>
+        </div>
+      </div>
+
+      <!-- AI分析入口 -->
+      <div class="section-header">
+        <span class="section-title">智能分析</span>
+      </div>
+      <a href="staff-ai-analysis.html" style="display: block; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; padding: 16px; color: white; text-decoration: none;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">AI</div>
+          <div style="flex: 1;">
+            <div style="font-size: 16px; font-weight: 500;">员工AI综合分析</div>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">考勤 · 工时 · 效率 · 批次贡献 · 成本分析</div>
+          </div>
+          <div style="font-size: 20px;">-></div>
+        </div>
+      </a>
+
+      <!-- 操作按钮 -->
+      <div style="display: flex; gap: 12px; margin-top: 24px; margin-bottom: 40px;">
+        <button style="flex: 1; padding: 12px; border: 1px solid #f093fb; color: #f093fb; background: white; border-radius: 8px;">调整部门</button>
+        <button style="flex: 1; padding: 12px; border: 1px solid #ff4d4f; color: #ff4d4f; background: white; border-radius: 8px;">离职处理</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
