@@ -3,13 +3,14 @@
  * 对应原型: warehouse/inbound-putaway.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -23,9 +24,45 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInboundStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
+
+/**
+ * 获取材料类型显示名称
+ */
+const getStorageTypeLabel = (storageType?: string): string => {
+  switch (storageType?.toLowerCase()) {
+    case 'frozen': return '冻品';
+    case 'dry': return '干货';
+    case 'fresh':
+    default: return '鲜品';
+  }
+};
+
+/**
+ * 获取存储温度范围
+ */
+const getStorageTemp = (storageType?: string): string => {
+  switch (storageType?.toLowerCase()) {
+    case 'frozen': return '-18°C ~ -25°C';
+    case 'fresh': return '-2°C ~ 4°C';
+    case 'dry': return '常温';
+    default: return '-2°C ~ 4°C';
+  }
+};
 
 type NavigationProp = NativeStackNavigationProp<WHInboundStackParamList>;
 type RouteType = RouteProp<WHInboundStackParamList, "WHPutaway">;
+
+interface BatchInfo {
+  batchNumber: string;
+  material: string;
+  materialType: string;
+  supplier: string;
+  quantity: number;
+  inspectResult: string;
+  storageTemp: string;
+}
 
 interface LocationOption {
   id: string;
@@ -43,18 +80,48 @@ export function WHPutawayScreen() {
   const route = useRoute<RouteType>();
   const { batchId } = route.params;
 
-  // 模拟批次数据
-  const batchInfo = {
-    batchNumber: "MB-20251225-005",
-    material: "鲈鱼",
-    materialType: "鲜品",
-    supplier: "宁波海鲜批发市场",
-    quantity: 200,
-    inspectResult: "质检通过",
-    storageTemp: "-2°C ~ 4°C",
-  };
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
 
-  // 推荐库位
+  // 加载批次数据
+  const loadBatchData = useCallback(async () => {
+    if (!batchId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await materialBatchApiClient.getBatchById(batchId) as
+        { data?: MaterialBatch } | MaterialBatch | undefined;
+
+      const batch = (response as { data?: MaterialBatch })?.data ?? (response as MaterialBatch);
+
+      if (batch) {
+        const storageType = batch.storageType ?? 'fresh';
+        setBatchInfo({
+          batchNumber: batch.batchNumber ?? `MB-${batch.id}`,
+          material: batch.materialName ?? '未知原料',
+          materialType: getStorageTypeLabel(storageType),
+          supplier: batch.supplierName ?? '未知供应商',
+          quantity: batch.remainingQuantity ?? batch.inboundQuantity ?? 0,
+          inspectResult: batch.status === 'available' ? '质检通过' : '待质检',
+          storageTemp: getStorageTemp(storageType),
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载批次信息失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [batchId]);
+
+  useEffect(() => {
+    loadBatchData();
+  }, [loadBatchData]);
+
+  // 推荐库位（TODO: 后续接入库位管理 API）
   const locationOptions: LocationOption[] = [
     {
       id: "1",
@@ -86,12 +153,17 @@ export function WHPutawayScreen() {
   const [selectedLocation, setSelectedLocation] = useState<string | null>(
     locationOptions.find((l) => l.recommended)?.id ?? null
   );
-  const [actualQuantity, setActualQuantity] = useState(
-    batchInfo.quantity.toString()
-  );
+  const [actualQuantity, setActualQuantity] = useState("");
   const [remarks, setRemarks] = useState("");
 
-  const handleConfirm = () => {
+  // 当批次信息加载完成后，更新数量
+  useEffect(() => {
+    if (batchInfo) {
+      setActualQuantity(batchInfo.quantity.toString());
+    }
+  }, [batchInfo]);
+
+  const handleConfirm = async () => {
     if (!selectedLocation) {
       Alert.alert("提示", "请选择上架库位");
       return;
@@ -101,13 +173,59 @@ export function WHPutawayScreen() {
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => {
-          Alert.alert("成功", "货物已上架完成");
-          navigation.goBack();
+        onPress: async () => {
+          setSubmitting(true);
+          try {
+            // TODO: 调用上架 API（updateBatchStorageLocation 或类似接口）
+            Alert.alert("成功", "货物已上架完成");
+            navigation.goBack();
+          } catch (error) {
+            handleError(error, { title: '上架失败' });
+          } finally {
+            setSubmitting(false);
+          }
         },
       },
     ]);
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>确认上架</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 空状态
+  if (!batchInfo) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>确认上架</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="package-variant" size={64} color="#ddd" />
+          <Text style={styles.loadingText}>未找到批次信息</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -271,6 +389,7 @@ export function WHPutawayScreen() {
           onPress={() => navigation.goBack()}
           style={styles.cancelButton}
           labelStyle={styles.cancelButtonLabel}
+          disabled={submitting}
         >
           返回
         </Button>
@@ -280,8 +399,10 @@ export function WHPutawayScreen() {
           style={styles.confirmButton}
           labelStyle={styles.confirmButtonLabel}
           icon="check"
+          disabled={submitting}
+          loading={submitting}
         >
-          确认上架
+          {submitting ? '提交中...' : '确认上架'}
         </Button>
       </View>
     </SafeAreaView>
@@ -292,6 +413,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

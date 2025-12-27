@@ -3,7 +3,7 @@
  * 对应原型: warehouse/inbound-create.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -24,6 +24,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInboundStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInboundStackParamList>;
 
@@ -43,6 +45,45 @@ export function WHInboundCreateScreen() {
     storageTemp: "",
     remarks: "",
   });
+  const [submitting, setSubmitting] = useState(false);
+
+  // 提交入库API调用
+  const submitInbound = useCallback(async () => {
+    setSubmitting(true);
+    try {
+      // 生成批次号
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+      const randomSuffix = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+      const batchNumber = `MB-${dateStr}-${randomSuffix}`;
+
+      const batchData = {
+        batchNumber,
+        materialName: formData.material,
+        materialTypeId: formData.materialType, // TODO: 后续需要从原料类型API获取真实ID
+        supplierId: formData.supplier, // TODO: 后续需要从供应商API获取真实ID
+        inboundQuantity: parseFloat(formData.quantity) || 0,
+        remainingQuantity: parseFloat(formData.quantity) || 0,
+        unitPrice: parseFloat(formData.unitPrice) || 0,
+        totalCost: (parseFloat(formData.quantity) || 0) * (parseFloat(formData.unitPrice) || 0),
+        inboundDate: today.toISOString().split('T')[0],
+        productionDate: formData.productionDate || undefined,
+        expiryDate: formData.expiryDate || undefined,
+        storageLocation: formData.storageTemp || undefined,
+        notes: formData.remarks || undefined,
+        status: 'available',
+      };
+
+      await materialBatchApiClient.createBatch(batchData);
+      Alert.alert('成功', '入库单创建成功', [
+        { text: '确定', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      handleError(error, { title: '创建入库单失败' });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [formData, navigation]);
 
   const handleSubmit = () => {
     if (!formData.material || !formData.supplier || !formData.quantity) {
@@ -54,10 +95,7 @@ export function WHInboundCreateScreen() {
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => {
-          Alert.alert("成功", "入库单创建成功");
-          navigation.goBack();
-        },
+        onPress: submitInbound,
       },
     ]);
   };
@@ -273,8 +311,10 @@ export function WHInboundCreateScreen() {
           onPress={handleSubmit}
           style={styles.submitButton}
           labelStyle={styles.submitButtonLabel}
+          disabled={submitting}
+          loading={submitting}
         >
-          提交入库
+          {submitting ? '提交中...' : '提交入库'}
         </Button>
       </View>
     </SafeAreaView>

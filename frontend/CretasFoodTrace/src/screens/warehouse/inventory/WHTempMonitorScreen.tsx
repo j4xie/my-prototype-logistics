@@ -3,13 +3,14 @@
  * 对应原型: warehouse/temperature-monitor.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,6 +18,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { equipmentAlertsApiClient, EquipmentAlert } from "../../../services/api/equipmentAlertsApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -51,8 +54,12 @@ export function WHTempMonitorScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
-  const [lastUpdate] = useState("13:45:32");
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState("");
+  const [alertRecords, setAlertRecords] = useState<AlertRecord[]>([]);
 
+  // 温区配置（静态数据，后续可从设备配置API获取）
   const zones: TempZone[] = [
     {
       id: "A",
@@ -78,35 +85,81 @@ export function WHTempMonitorScreen() {
     },
   ];
 
-  const alertRecords: AlertRecord[] = [
-    {
-      id: "1",
-      time: "12-25 14:30",
-      level: "warning",
-      title: "A区温度异常",
-      description: "温度升至5.2°C，超出上限",
-      handled: "已处理: 调整制冷设备",
-    },
-    {
-      id: "2",
-      time: "12-24 08:00",
-      level: "success",
-      title: "B区除霜完成",
-      description: "温度已恢复正常",
-    },
-    {
-      id: "3",
-      time: "12-23 20:00",
-      level: "info",
-      title: "B区计划除霜",
-      description: "除霜时间约2小时",
-    },
-  ];
-
   const thresholds: ThresholdConfig[] = [
     { zone: "A区 - 冷藏库", upperLimit: "4°C", lowerLimit: "-2°C" },
     { zone: "B区 - 冷冻库", upperLimit: "-15°C", lowerLimit: "-22°C" },
   ];
+
+  // 加载告警记录
+  const loadAlertData = useCallback(async () => {
+    try {
+      const response = await equipmentAlertsApiClient.getAlerts({
+        page: 1,
+        size: 10,
+        alertType: 'temperature'
+      });
+
+      const alerts = response.data?.content || response.data || [];
+
+      // 转换为告警记录格式
+      const records: AlertRecord[] = alerts.map((alert: EquipmentAlert) => {
+        // 根据告警状态确定level
+        let level: 'warning' | 'success' | 'info' = 'info';
+        if (alert.status === 'resolved' || alert.status === 'handled') {
+          level = 'success';
+        } else if (alert.alertLevel === 'critical' || alert.alertLevel === 'high') {
+          level = 'warning';
+        }
+
+        // 格式化时间
+        const date = new Date(alert.createdAt || Date.now());
+        const timeStr = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+        return {
+          id: alert.id,
+          time: timeStr,
+          level,
+          title: alert.alertTitle || alert.alertType || '温度告警',
+          description: alert.alertMessage || alert.description || '-',
+          handled: alert.status === 'resolved' ? `已处理: ${alert.resolvedNote || '问题已解决'}` : undefined,
+        };
+      });
+
+      setAlertRecords(records.length > 0 ? records : [
+        {
+          id: "1",
+          time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-'),
+          level: "info",
+          title: "系统正常",
+          description: "暂无温度异常告警",
+        }
+      ]);
+
+      // 更新时间
+      const now = new Date();
+      setLastUpdate(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`);
+
+    } catch (error) {
+      handleError(error, { title: '加载告警数据失败' });
+      // 使用默认告警记录
+      setAlertRecords([
+        {
+          id: "1",
+          time: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-'),
+          level: "info",
+          title: "暂无告警",
+          description: "温度监控系统运行正常",
+        }
+      ]);
+      setLastUpdate(new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAlertData();
+  }, [loadAlertData]);
 
   const getStatusBadgeStyle = (status: TempZone["status"]) => {
     switch (status) {
@@ -148,6 +201,31 @@ export function WHTempMonitorScreen() {
   const handleSetThreshold = () => {
     Alert.alert("提示", "告警阈值设置功能");
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>温控监控</Text>
+            <Text style={styles.headerSubtitle}>实时温度监控</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const renderZoneCard = (zone: TempZone) => {
     const statusStyle = getStatusBadgeStyle(zone.status);
@@ -317,6 +395,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

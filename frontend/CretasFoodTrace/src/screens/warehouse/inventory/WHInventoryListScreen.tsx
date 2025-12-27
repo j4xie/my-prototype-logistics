@@ -1,15 +1,19 @@
 /**
  * 库存管理列表页面
  * 对应原型: warehouse/inventory.html
+ *
+ * API集成:
+ * - materialBatchApiClient - 获取库存统计和批次列表
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -23,6 +27,9 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
+import { logger } from "../../../utils/logger";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -41,78 +48,6 @@ interface InventoryItem {
   warningType?: "expire" | "low" | "normal";
   updatedAt: string;
 }
-
-// 模拟数据
-const mockInventoryList: InventoryItem[] = [
-  {
-    id: "1",
-    name: "带鱼",
-    type: "fresh",
-    quantity: 856,
-    unit: "kg",
-    batchCount: 3,
-    location: "A区",
-    warning: "1批即将过期",
-    warningType: "expire",
-    updatedAt: "10分钟前",
-  },
-  {
-    id: "2",
-    name: "虾仁",
-    type: "frozen",
-    quantity: 520,
-    unit: "kg",
-    batchCount: 4,
-    location: "B区",
-    warningType: "normal",
-    updatedAt: "30分钟前",
-  },
-  {
-    id: "3",
-    name: "鲈鱼",
-    type: "fresh",
-    quantity: 380,
-    unit: "kg",
-    batchCount: 2,
-    location: "A区",
-    warningType: "normal",
-    updatedAt: "1小时前",
-  },
-  {
-    id: "4",
-    name: "鱿鱼",
-    type: "frozen",
-    quantity: 450,
-    unit: "kg",
-    batchCount: 3,
-    location: "B区",
-    warningType: "normal",
-    updatedAt: "2小时前",
-  },
-  {
-    id: "5",
-    name: "蟹类",
-    type: "fresh",
-    quantity: 120,
-    unit: "kg",
-    batchCount: 1,
-    location: "A区",
-    warning: "偏低",
-    warningType: "low",
-    updatedAt: "3小时前",
-  },
-  {
-    id: "6",
-    name: "干贝",
-    type: "dry",
-    quantity: 80,
-    unit: "kg",
-    batchCount: 2,
-    location: "C区",
-    warningType: "normal",
-    updatedAt: "5小时前",
-  },
-];
 
 const typeConfig: Record<MaterialType, { label: string; color: string; bgColor: string }> = {
   fresh: { label: "鲜品", color: "#4CAF50", bgColor: "#e8f5e9" },
@@ -135,20 +70,151 @@ const quickActions: QuickAction[] = [
   { key: "expire", label: "过期", icon: "clock-alert-outline", color: "#FF5722", screen: "WHExpireHandle" },
 ];
 
+// 将后端批次状态映射为仓储物料类型
+const mapBatchToMaterialType = (batch: MaterialBatch): MaterialType => {
+  // 根据 storageType 或 status 判断类型
+  const status = batch.status?.toLowerCase() ?? '';
+  const storageType = batch.storageType?.toLowerCase() ?? '';
+
+  if (storageType === 'frozen' || status === 'frozen') {
+    return 'frozen';
+  } else if (storageType === 'dry' || storageType.includes('干')) {
+    return 'dry';
+  }
+  return 'fresh';
+};
+
+// 计算预警类型
+const getWarningType = (batch: MaterialBatch): "expire" | "low" | "normal" => {
+  const remaining = batch.remainingQuantity ?? 0;
+  const total = batch.inboundQuantity ?? 0;
+
+  // 检查是否即将过期 (7天内)
+  if (batch.expiryDate) {
+    const expDate = new Date(batch.expiryDate);
+    const now = new Date();
+    const daysUntilExpire = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysUntilExpire <= 7) {
+      return 'expire';
+    }
+  }
+
+  // 检查库存是否过低 (低于30%)
+  if (total > 0 && remaining / total < 0.3) {
+    return 'low';
+  }
+
+  return 'normal';
+};
+
+// 获取预警文本
+const getWarningText = (warningType: "expire" | "low" | "normal", batch: MaterialBatch): string => {
+  if (warningType === 'expire') {
+    if (batch.expiryDate) {
+      const expDate = new Date(batch.expiryDate);
+      const now = new Date();
+      const daysUntilExpire = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return daysUntilExpire <= 0 ? '已过期' : `${daysUntilExpire}天后过期`;
+    }
+    return '即将过期';
+  } else if (warningType === 'low') {
+    return '库存不足';
+  }
+  return '正常';
+};
+
 export function WHInventoryListScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [inventoryList, setInventoryList] = useState<InventoryItem[]>([]);
+  const [inventoryStats, setInventoryStats] = useState<{
+    totalValue: number;
+    totalBatches: number;
+    availableBatches: number;
+    expiringBatchesCount: number;
+    inventoryByType?: Record<string, number>;
+  } | null>(null);
+
+  // 加载库存数据
+  const loadData = useCallback(async () => {
+    try {
+      logger.info('WHInventoryListScreen', '开始加载库存数据...');
+
+      // 并行获取批次列表和库存统计
+      const [batchesResult, statsResult] = await Promise.allSettled([
+        materialBatchApiClient.getMaterialBatches({ page: 1, size: 50 }),
+        materialBatchApiClient.getInventoryStatistics(),
+      ]);
+
+      // 处理批次列表
+      if (batchesResult.status === 'fulfilled') {
+        const response = batchesResult.value as { success?: boolean; data?: { content?: MaterialBatch[] } };
+        if (response.success) {
+          const batches = response.data?.content ?? [];
+          logger.info('WHInventoryListScreen', `获取到 ${batches.length} 个批次`);
+
+          // 转换为库存项目格式
+          const items: InventoryItem[] = batches.map((batch: MaterialBatch) => {
+            const warningType = getWarningType(batch);
+            return {
+              id: batch.id ?? batch.batchNumber ?? String(Math.random()),
+              name: batch.materialName ?? batch.materialCategory ?? '未知物料',
+              type: mapBatchToMaterialType(batch),
+              quantity: batch.remainingQuantity ?? batch.inboundQuantity ?? 0,
+              unit: 'kg', // 默认单位
+              batchCount: 1, // 每个批次算一个
+              location: batch.storageLocation ?? '默认库位',
+              warning: getWarningText(warningType, batch),
+              warningType: warningType,
+              updatedAt: batch.updatedAt
+                ? new Date(batch.updatedAt).toLocaleDateString('zh-CN')
+                : new Date().toLocaleDateString('zh-CN'),
+            };
+          });
+
+          setInventoryList(items);
+        } else {
+          logger.warn('WHInventoryListScreen', '获取批次列表失败');
+          setInventoryList([]);
+        }
+      } else {
+        logger.warn('WHInventoryListScreen', '获取批次列表失败');
+        setInventoryList([]);
+      }
+
+      // 处理库存统计
+      if (statsResult.status === 'fulfilled') {
+        const statsResponse = statsResult.value as { success?: boolean; data?: { totalValue: number; totalBatches: number; availableBatches: number; expiringBatchesCount: number; inventoryByType?: Record<string, number> } };
+        if (statsResponse.success && statsResponse.data) {
+          setInventoryStats(statsResponse.data);
+        }
+      }
+
+    } catch (error) {
+      logger.error('WHInventoryListScreen', '加载库存数据失败', error);
+      handleError(error, { title: '加载库存数据失败' });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  // 初始加载
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
-  }, []);
+    loadData();
+  }, [loadData]);
 
   // 筛选数据
-  const filteredList = mockInventoryList.filter((item) => {
+  const filteredList = inventoryList.filter((item) => {
     if (selectedType !== "all" && item.type !== selectedType) return false;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -159,12 +225,13 @@ export function WHInventoryListScreen() {
 
   // 统计数据
   const stats = {
-    total: mockInventoryList.length,
-    fresh: mockInventoryList.filter((i) => i.type === "fresh").length,
-    frozen: mockInventoryList.filter((i) => i.type === "frozen").length,
-    dry: mockInventoryList.filter((i) => i.type === "dry").length,
-    totalWeight: mockInventoryList.reduce((sum, i) => sum + i.quantity, 0),
-    warningCount: mockInventoryList.filter((i) => i.warningType !== "normal").length,
+    total: inventoryStats?.totalBatches ?? inventoryList.length,
+    fresh: inventoryList.filter((i) => i.type === "fresh").length,
+    frozen: inventoryList.filter((i) => i.type === "frozen").length,
+    dry: inventoryList.filter((i) => i.type === "dry").length,
+    totalWeight: inventoryList.reduce((sum, i) => sum + i.quantity, 0),
+    warningCount: inventoryStats?.expiringBatchesCount ?? inventoryList.filter((i) => i.warningType !== "normal").length,
+    totalValue: inventoryStats?.totalValue ?? 0,
   };
 
   const handleItemPress = (item: InventoryItem) => {
@@ -185,6 +252,12 @@ export function WHInventoryListScreen() {
         </Text>
       </View>
 
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      ) : (
       <ScrollView
         style={styles.content}
         refreshControl={
@@ -370,7 +443,9 @@ export function WHInventoryListScreen() {
               <Text style={styles.statsLabel}>总库存(kg)</Text>
             </View>
             <View style={styles.statsItem}>
-              <Text style={styles.statsValue}>¥89K</Text>
+              <Text style={styles.statsValue}>
+                ¥{stats.totalValue > 1000 ? `${(stats.totalValue / 1000).toFixed(0)}K` : stats.totalValue.toFixed(0)}
+              </Text>
               <Text style={styles.statsLabel}>库存价值</Text>
             </View>
             <View style={styles.statsItem}>
@@ -384,6 +459,7 @@ export function WHInventoryListScreen() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -392,6 +468,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 100,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",
