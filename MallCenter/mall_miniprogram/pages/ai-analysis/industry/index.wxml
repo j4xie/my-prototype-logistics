@@ -1,0 +1,164 @@
+<!--
+  行业分析报告页面
+  实时AI分析 + Redis缓存 + 下拉刷新
+-->
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">AI正在分析行业数据...</text>
+    <text class="loading-tip">首次加载可能需要10-20秒</text>
+  </view>
+
+  <!-- 错误状态 -->
+  <view class="error-container" wx:elif="{{error}}">
+    <text class="error-icon">警告</text>
+    <text class="error-message">{{error.message}}</text>
+    <button class="retry-btn" bindtap="retryLoad" wx:if="{{error.canRetry}}">重新加载</button>
+  </view>
+
+  <!-- 报告内容 -->
+  <block wx:else>
+    <!-- 报告头部 -->
+    <view class="report-header">
+      <text class="report-title">{{reportTitle}}</text>
+      <view class="report-meta">
+        <text class="report-date">{{reportSubtitle}}</text>
+        <view class="cache-badge" wx:if="{{fromCache}}">
+          <text class="cache-icon">缓存</text>
+          <text>缓存数据</text>
+        </view>
+      </view>
+      <text class="report-time">更新于 {{generatedAt}}</text>
+    </view>
+
+    <!-- 行业亮点 -->
+    <view class="section highlight-section">
+      <view class="section-title">
+        <text class="section-icon">亮点</text>
+        <text>行业亮点</text>
+      </view>
+      <view class="highlight-grid">
+        <view class="highlight-card" wx:for="{{highlights}}" wx:key="label">
+          <text class="highlight-value">{{item.value}}</text>
+          <text class="highlight-label">{{item.label}}</text>
+          <view class="highlight-change {{item.trend === 'up' ? 'change-up' : item.trend === 'down' ? 'change-down' : 'change-stable'}}">
+            <text>{{item.change}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 行业趋势 -->
+    <view class="section">
+      <view class="section-title">
+        <text class="section-icon">趋势</text>
+        <text>行业趋势</text>
+      </view>
+      <view class="trend-list">
+        <view class="trend-item" wx:for="{{trends}}" wx:key="title">
+          <view class="trend-header">
+            <text class="trend-title">{{item.title}}</text>
+            <text class="trend-tag {{item.tag === 'hot' ? 'trend-tag-hot' : 'trend-tag-rising'}}">
+              {{item.tag === 'hot' ? '热门' : '上升'}}
+            </text>
+          </view>
+          <text class="trend-desc">{{item.description}}</text>
+          <view class="trend-keywords" wx:if="{{item.keywords}}">
+            <text class="keyword" wx:for="{{item.keywords}}" wx:for-item="kw" wx:key="*this">{{kw}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 竞争格局 -->
+    <view class="section">
+      <view class="section-title">
+        <text class="section-icon">竞争</text>
+        <text>竞争格局 Top5</text>
+      </view>
+      <view class="competitor-table">
+        <view class="table-header">
+          <text class="col-rank">排名</text>
+          <text class="col-name">企业</text>
+          <text class="col-share">市场份额</text>
+        </view>
+        <view class="table-row" wx:for="{{competitors}}" wx:key="rank">
+          <view class="col-rank">
+            <text class="rank-badge rank-{{item.rank}}">{{item.rank}}</text>
+          </view>
+          <text class="col-name">{{item.name}}</text>
+          <view class="col-share">
+            <text class="share-value">{{item.share}}</text>
+            <text class="share-change {{item.change}}">
+              {{item.change === 'up' ? '↑' : item.change === 'down' ? '↓' : '-'}}
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 市场机会 -->
+    <view class="section">
+      <view class="section-title">
+        <text class="section-icon">机会</text>
+        <text>市场机会</text>
+      </view>
+      <view class="opportunity-list">
+        <view class="opportunity-card" wx:for="{{opportunities}}" wx:key="title"
+              style="background: linear-gradient(135deg, {{item.gradientStart || '#667eea'}} 0%, {{item.gradientEnd || '#764ba2'}} 100%);">
+          <view class="opportunity-header">
+            <text class="opportunity-title">{{item.title}}</text>
+            <view class="potential-badge potential-{{item.potential}}">
+              {{item.potential === 'high' ? '高潜力' : item.potential === 'medium' ? '中潜力' : '低潜力'}}
+            </view>
+          </view>
+          <text class="opportunity-desc">{{item.description}}</text>
+          <view class="opportunity-tags" wx:if="{{item.tags}}">
+            <text class="opp-tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- AI智能洞察 -->
+    <view class="section">
+      <view class="section-title">
+        <text class="section-icon">AI</text>
+        <text>AI智能洞察</text>
+      </view>
+      <view class="insight-list">
+        <view class="insight-item" wx:for="{{insights}}" wx:key="title">
+          <view class="insight-header">
+            <view class="insight-type type-{{item.type}}">
+              {{item.type === 'technology' ? '技术' : item.type === 'market' ? '市场' : item.type === 'policy' ? '政策' : item.type === 'opportunity' ? '机遇' : '风险'}}
+            </view>
+            <view class="insight-importance importance-{{item.importance}}">
+              {{item.importance === 'critical' ? '关键' : item.importance === 'important' ? '重要' : '一般'}}
+            </view>
+          </view>
+          <text class="insight-title">{{item.title}}</text>
+          <text class="insight-content">{{item.content}}</text>
+          <view class="insight-footer">
+            <text class="confidence">置信度: {{item.confidence * 100}}%</text>
+            <text class="source" wx:if="{{item.source}}">来源: {{item.source}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- AI声明 -->
+    <view class="ai-disclaimer">
+      <text>* 本报告由DeepSeek AI智能分析生成</text>
+      <text>下拉刷新可强制重新生成分析</text>
+    </view>
+
+    <!-- 底部操作栏 -->
+    <view class="bottom-bar">
+      <button class="share-btn" open-type="share">
+        <text class="cuIcon-share"></text>
+        <text>分享报告</text>
+      </button>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,91 @@
+<!--
+  数据统计页面
+-->
+<view class="container">
+  <!-- 周期切换 -->
+  <view class="period-bar">
+    <view class="period-item {{currentPeriod === item.key ? 'active' : ''}}" 
+          wx:for="{{periods}}" wx:key="key"
+          bindtap="switchPeriod" data-period="{{item.key}}">
+      <text>{{item.title}}</text>
+    </view>
+  </view>
+
+  <!-- 核心指标 -->
+  <view class="overview-section">
+    <view class="overview-main">
+      <text class="overview-label">销售额</text>
+      <text class="overview-value">¥{{overview.totalSales}}</text>
+    </view>
+    <view class="overview-grid">
+      <view class="overview-item">
+        <text class="item-value">{{overview.orderCount}}</text>
+        <text class="item-label">订单数</text>
+      </view>
+      <view class="overview-item">
+        <text class="item-value">{{overview.customerCount}}</text>
+        <text class="item-label">客户数</text>
+      </view>
+      <view class="overview-item">
+        <text class="item-value">¥{{overview.avgOrderAmount}}</text>
+        <text class="item-label">客单价</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 订单状态 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">订单状态</text>
+    </view>
+    <view class="order-status-grid">
+      <view class="status-item" bindtap="viewOrders" data-type="pending">
+        <text class="status-value red">{{orderStats.pending}}</text>
+        <text class="status-label">待处理</text>
+      </view>
+      <view class="status-item" bindtap="viewOrders" data-type="shipping">
+        <text class="status-value orange">{{orderStats.shipping}}</text>
+        <text class="status-label">配送中</text>
+      </view>
+      <view class="status-item" bindtap="viewOrders" data-type="completed">
+        <text class="status-value green">{{orderStats.completed}}</text>
+        <text class="status-label">已完成</text>
+      </view>
+      <view class="status-item" bindtap="viewOrders" data-type="refund">
+        <text class="status-value gray">{{orderStats.refund}}</text>
+        <text class="status-label">退款</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 热销商品 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">热销商品 TOP5</text>
+    </view>
+    <view class="product-rank">
+      <view class="rank-item" wx:for="{{topProducts}}" wx:key="name">
+        <view class="rank-num {{index < 3 ? 'top' : ''}}">{{index + 1}}</view>
+        <view class="rank-info">
+          <text class="rank-name">{{item.name}}</text>
+          <text class="rank-sales">销量 {{item.sales}}</text>
+        </view>
+        <text class="rank-amount">¥{{item.amount}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 导出按钮 -->
+  <view class="export-section">
+    <button class="cu-btn line-green block" bindtap="exportReport">
+      <text class="cuIcon-upload margin-right-xs"></text>导出报表
+    </button>
+  </view>
+</view>
+
+
+
+
+
+
+

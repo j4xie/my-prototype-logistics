@@ -1,0 +1,111 @@
+<!--
+  商品发布/编辑页面
+-->
+<view class="container">
+  <view class="loading-mask" wx:if="{{loading}}">
+    <view class="cu-load loading"></view>
+  </view>
+
+  <!-- 图片上传 -->
+  <view class="section">
+    <view class="section-title">商品图片 <text class="required">*</text></view>
+    <view class="image-grid">
+      <view class="image-item" wx:for="{{form.images}}" wx:key="*this">
+        <image src="{{item}}" mode="aspectFill" bindtap="previewImage" data-url="{{item}}"></image>
+        <view class="delete-btn" catchtap="deleteImage" data-index="{{index}}">
+          <text class="cuIcon-close"></text>
+        </view>
+      </view>
+      <view class="image-upload" bindtap="chooseImage" wx:if="{{form.images.length < 9}}">
+        <text class="cuIcon-add"></text>
+        <text class="upload-text">添加图片</text>
+      </view>
+    </view>
+    <text class="image-tip">最多上传9张，第一张为主图</text>
+  </view>
+
+  <!-- 基本信息 -->
+  <view class="section">
+    <view class="section-title">基本信息</view>
+    <view class="form-item">
+      <text class="label">商品名称 <text class="required">*</text></text>
+      <input class="input" placeholder="请输入商品名称" value="{{form.name}}" bindinput="onInput" data-field="name" />
+    </view>
+    <view class="form-item">
+      <text class="label">商品分类 <text class="required">*</text></text>
+      <picker mode="selector" range="{{categories}}" range-key="name" bindchange="onCategoryChange">
+        <view class="picker-value {{form.categoryName ? '' : 'placeholder'}}">
+          {{form.categoryName || '请选择分类'}}
+          <text class="cuIcon-right"></text>
+        </view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="label">商品描述</text>
+      <textarea class="textarea" placeholder="请输入商品描述" value="{{form.description}}" bindinput="onInput" data-field="description" maxlength="500" />
+    </view>
+  </view>
+
+  <!-- 价格库存 -->
+  <view class="section">
+    <view class="section-title">价格库存</view>
+    <view class="form-row">
+      <view class="form-item half">
+        <text class="label">售价 <text class="required">*</text></text>
+        <view class="input-group">
+          <text class="prefix">¥</text>
+          <input class="input" type="digit" placeholder="0.00" value="{{form.price}}" bindinput="onInput" data-field="price" />
+        </view>
+      </view>
+      <view class="form-item half">
+        <text class="label">原价</text>
+        <view class="input-group">
+          <text class="prefix">¥</text>
+          <input class="input" type="digit" placeholder="0.00" value="{{form.originalPrice}}" bindinput="onInput" data-field="originalPrice" />
+        </view>
+      </view>
+    </view>
+    <view class="form-row">
+      <view class="form-item half">
+        <text class="label">库存 <text class="required">*</text></text>
+        <input class="input" type="number" placeholder="0" value="{{form.stock}}" bindinput="onInput" data-field="stock" />
+      </view>
+      <view class="form-item half">
+        <text class="label">单位</text>
+        <picker mode="selector" range="{{units}}" bindchange="onUnitChange">
+          <view class="picker-value">
+            {{form.unit}}
+            <text class="cuIcon-right"></text>
+          </view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <!-- 溯源设置 -->
+  <view class="section">
+    <view class="section-title">溯源设置</view>
+    <view class="form-item switch-item">
+      <text class="label">启用溯源</text>
+      <switch checked="{{form.hasTraceability}}" bindchange="onTraceabilityChange" color="#52c41a" />
+    </view>
+    <view class="form-item" wx:if="{{form.hasTraceability}}">
+      <text class="label">溯源批次号</text>
+      <input class="input" placeholder="请输入批次号" value="{{form.batchNo}}" bindinput="onInput" data-field="batchNo" />
+    </view>
+  </view>
+
+  <!-- 提交按钮 -->
+  <view class="submit-section">
+    <button class="cu-btn bg-green lg block" bindtap="submitForm" loading="{{submitting}}" disabled="{{submitting}}">
+      {{isEdit ? '保存修改' : '立即发布'}}
+    </button>
+  </view>
+</view>
+
+
+
+
+
+
+

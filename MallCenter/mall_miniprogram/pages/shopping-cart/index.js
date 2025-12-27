@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2018-2019
- * All rights reserved, Designed By www.joolun.com
+ * Copyright (C) 2024-2025
+ * 食品商城小程序
  * 注意：
- * 本软件为www.joolun.com开发研制，项目使用请保留此说明
+ * 基于 JooLun 框架二次开发
  */
 const app = getApp()
+const tracker = require('../../utils/tracker')
 
 Page({
   data: {
@@ -24,9 +25,28 @@ Page({
     selectValue: [],
     settlePrice: 0, //结算金额
     goodsSpu: [],
-    shoppingCartSelect: []
+    shoppingCartSelect: [],
+    // 推荐商品相关
+    goodsListRecom: [],
+    cartRecommendLoaded: false  // 标记是否使用购物车个性化推荐
   },
   onShow() {
+    // 检查登录状态 - 购物车页需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.navigateTo({
+          url: '/pages/auth/login/index'
+        })
+      }, 500)
+      return
+    }
+
     //更新tabbar购物车数量
     wx.setTabBarBadge({
       index: 2,
@@ -80,22 +100,87 @@ Page({
         if (selectValue.length > 0) {
           this.checkboxHandle(selectValue)
         }
+        // 购物车数据加载后，刷新个性化推荐
+        this.goodsRecom()
       })
   },
-  //推荐商品
+  //推荐商品（基于购物车的个性化推荐）
   goodsRecom() {
+    const wxUser = app.globalData.wxUser
+    const wxUserId = wxUser ? wxUser.id : null
+
+    // 获取购物车中的商品ID列表
+    const cartProductIds = this.data.shoppingCartData
+      .filter(item => item.goodsSpu && item.goodsSpu.id)
+      .map(item => item.goodsSpu.id)
+
+    if (wxUserId && cartProductIds.length > 0) {
+      // 有登录且购物车有商品时，使用购物车推荐API
+      // P1修复: API期望对象参数，不是3个独立参数
+      app.api.getCartRecommend({ wxUserId, cartProductIds, limit: 6 })
+        .then(res => {
+          const products = res.data || res || []
+          this.setData({
+            goodsListRecom: products,
+            cartRecommendLoaded: true
+          })
+
+          // 追踪推荐商品曝光
+          if (products.length > 0) {
+            const productIds = products.map(p => p.id)
+            tracker.trackExposure(productIds)
+          }
+        })
+        .catch(err => {
+          console.error('加载购物车推荐失败:', err)
+          // 降级到普通推荐
+          this.loadDefaultRecommendations()
+        })
+    } else {
+      // 未登录或购物车为空时，使用默认推荐
+      this.loadDefaultRecommendations()
+    }
+  },
+
+  // 加载默认推荐商品（降级方案）
+  loadDefaultRecommendations() {
     app.api.goodsPage({
       searchCount: false,
       current: 1,
-      size: 4,
-      descs: 'create_time'
+      size: 6,
+      descs: 'sale_num'  // 按销量排序
     })
       .then(res => {
-        let goodsListRecom = res.data.records
+        let goodsListRecom = res.data.records || []
         this.setData({
           goodsListRecom: goodsListRecom
         })
       })
+      .catch(err => {
+        console.error('加载默认推荐失败:', err)
+        this.setData({ goodsListRecom: [] })
+      })
+  },
+
+  // 推荐商品点击事件（用于推荐反馈）
+  onRecommendClick(e) {
+    const product = e.currentTarget.dataset.product
+    if (!product) return
+
+    const wxUser = app.globalData.wxUser
+    if (wxUser && wxUser.id && product.id) {
+      tracker.trackView({
+        productId: product.id,
+        productName: product.name,
+        source: 'cart_recommend',
+        duration: 0
+      })
+    }
+
+    // 跳转到商品详情
+    wx.navigateTo({
+      url: '/pages/goods/goods-detail/index?id=' + product.id
+    })
   },
   //数量变化
   cartNumChang(e) {
@@ -114,9 +199,85 @@ Page({
   shoppingCartEdit(parm){
     app.api.shoppingCartEdit(parm)
   },
-  //收藏
-  userCollectAdd(){
-    
+  //收藏 - 将选中的商品移入收藏夹
+  userCollectAdd() {
+    let selectValue = this.data.selectValue
+    let shoppingCartData = this.data.shoppingCartData
+
+    if (selectValue.length <= 0) {
+      wx.showToast({
+        title: '请先选择商品',
+        icon: 'none'
+      })
+      return
+    }
+
+    // 获取已收藏的商品
+    let collections = wx.getStorageSync('userCollections') || []
+    let addCount = 0
+
+    // 将选中商品添加到收藏
+    shoppingCartData.forEach((shoppingCart) => {
+      if (selectValue.indexOf(shoppingCart.id) > -1 && shoppingCart.goodsSpu) {
+        const goods = shoppingCart.goodsSpu
+        // 检查是否已收藏
+        const existIndex = collections.findIndex(item => item.spuId === goods.id)
+        if (existIndex === -1) {
+          // 添加到收藏
+          collections.unshift({
+            spuId: goods.id,
+            spuName: goods.name,
+            picUrl: goods.picUrls ? goods.picUrls[0] : '',
+            salesPrice: goods.salesPrice,
+            collectTime: new Date().getTime()
+          })
+          addCount++
+        }
+      }
+    })
+
+    // 限制收藏数量最多100个
+    if (collections.length > 100) {
+      collections = collections.slice(0, 100)
+    }
+
+    // 保存到本地存储
+    wx.setStorageSync('userCollections', collections)
+
+    if (addCount > 0) {
+      let that = this
+      wx.showModal({
+        title: '收藏成功',
+        content: `已将${addCount}件商品移入收藏夹，是否从购物车删除？`,
+        confirmText: '删除',
+        cancelText: '保留',
+        success: (res) => {
+          if (res.confirm) {
+            // 删除购物车中的选中商品
+            app.api.shoppingCartDel(selectValue)
+              .then(() => {
+                that.setData({
+                  selectValue: [],
+                  isAllSelect: false,
+                  settlePrice: 0
+                })
+                that.shoppingCartPage()
+              })
+          } else {
+            that.setData({
+              selectValue: [],
+              isAllSelect: false
+            })
+            that.checkboxHandle([])
+          }
+        }
+      })
+    } else {
+      wx.showToast({
+        title: '已在收藏夹中',
+        icon: 'none'
+      })
+    }
   },
   shoppingCartDel(){
     let selectValue = this.data.selectValue
@@ -298,7 +459,7 @@ Page({
       data: params
     })
     wx.navigateTo({
-      url: '/pages/order/order-confirm/index'
+      url: '/pages/orders/checkout/index'
     })
   }
 })

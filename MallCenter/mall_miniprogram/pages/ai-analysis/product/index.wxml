@@ -1,0 +1,133 @@
+<!--
+  产品分析报告页面
+-->
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">AI正在分析产品数据...</text>
+  </view>
+
+  <block wx:else>
+    <!-- 产品基础信息 -->
+    <view class="product-header">
+      <image class="product-image" src="{{product.image}}" mode="aspectFill"></image>
+      <view class="product-info">
+        <text class="product-name">{{product.name}}</text>
+        <text class="product-category">{{product.category}}</text>
+        <view class="product-rating">
+          <text class="rating-stars">{{product.stars}}</text>
+          <text class="rating-score">{{product.score}}分</text>
+          <text class="rating-count">({{product.reviewCount}}评价)</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 核心指标 -->
+    <view class="score-grid">
+      <view class="score-item" wx:for="{{coreMetrics}}" wx:key="label">
+        <text class="score-value">{{item.value}}</text>
+        <text class="score-label">{{item.label}}</text>
+      </view>
+    </view>
+
+    <!-- 质量分析 -->
+    <view class="analysis-section">
+      <view class="section-title">
+        <text class="section-icon">质量</text>
+        <text>质量分析</text>
+      </view>
+      <view class="progress-item" wx:for="{{qualityMetrics}}" wx:key="label">
+        <view class="progress-header">
+          <text class="progress-label">{{item.label}}</text>
+          <text class="progress-value">{{item.score}}分</text>
+        </view>
+        <view class="progress-bar">
+          <view class="progress-fill" style="width: {{item.score}}%;"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 同类产品对比 -->
+    <view class="analysis-section">
+      <view class="section-title">
+        <text class="section-icon">指标</text>
+        <text>同类产品对比</text>
+      </view>
+      <view class="comparison-table">
+        <view class="table-header">
+          <text class="table-cell">指标</text>
+          <text class="table-cell">本产品</text>
+          <text class="table-cell">行业平均</text>
+        </view>
+        <view class="table-row" wx:for="{{comparison}}" wx:key="metric">
+          <text class="table-cell">{{item.metric}}</text>
+          <text class="table-cell {{item.better ? 'better' : 'worse'}}">{{item.value}} {{item.arrow}}</text>
+          <text class="table-cell">{{item.average}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 用户评价 -->
+    <view class="analysis-section">
+      <view class="section-title">
+        <text class="section-icon">评价</text>
+        <text>用户评价</text>
+      </view>
+      <view class="review-card" wx:for="{{reviews}}" wx:key="id">
+        <view class="review-header">
+          <text class="review-user">{{item.user}}</text>
+          <text class="review-date">{{item.date}}</text>
+        </view>
+        <text class="review-stars">{{item.stars}}</text>
+        <text class="review-content">{{item.content}}</text>
+      </view>
+    </view>
+
+    <!-- 高频标签 -->
+    <view class="analysis-section">
+      <view class="section-title">
+        <text class="section-icon">标签</text>
+        <text>用户高频标签</text>
+      </view>
+      <view class="tag-list">
+        <text class="tag" wx:for="{{tags}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+
+    <!-- AI智能建议 -->
+    <view class="analysis-section">
+      <view class="section-title">
+        <text class="section-icon">AI</text>
+        <text>AI智能建议</text>
+      </view>
+      <view class="ai-suggestion">
+        <view class="suggestion-block">
+          <text class="suggestion-title">产品优势：</text>
+          <view class="suggestion-item" wx:for="{{aiSuggestion.strengths}}" wx:key="*this">
+            <text>{{index + 1}}. {{item}}</text>
+          </view>
+        </view>
+        <view class="suggestion-block">
+          <text class="suggestion-title">改进建议：</text>
+          <view class="suggestion-item" wx:for="{{aiSuggestion.improvements}}" wx:key="*this">
+            <text>{{index + 1}}. {{item}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- AI生成说明 -->
+    <view class="ai-disclaimer">
+      <text>* 本报告由AI智能分析生成，数据基于质检记录和用户评价，仅供参考</text>
+    </view>
+
+    <!-- 底部操作栏 -->
+    <view class="bottom-bar">
+      <button class="share-btn" open-type="share">
+        <text class="cuIcon-share"></text>
+        <text>分享报告</text>
+      </button>
+    </view>
+  </block>
+</view>

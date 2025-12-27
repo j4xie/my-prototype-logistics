@@ -1,0 +1,78 @@
+<!--
+  阶梯定价计算器页面
+-->
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:else>
+    <!-- 产品信息 -->
+    <view class="product-card">
+      <image class="product-image" src="{{product.image}}" mode="aspectFill"></image>
+      <view class="product-info">
+        <text class="product-name">{{product.name}}</text>
+        <text class="product-base-price">基础价：¥{{product.basePrice}} / 件</text>
+      </view>
+    </view>
+
+    <!-- 价格显示 -->
+    <view class="price-display">
+      <text class="price-label">总价</text>
+      <text class="price-value">¥{{totalPrice}}</text>
+      <text class="price-unit">单价 ¥{{unitPrice}} × {{quantity}} 件</text>
+      <view class="discount-badge" wx:if="{{savedAmount > 0}}">
+        <text>已省 ¥{{savedAmount}}</text>
+      </view>
+    </view>
+
+    <!-- 数量选择 -->
+    <view class="quantity-section">
+      <text class="section-title">选择采购数量</text>
+      <view class="quantity-selector">
+        <view class="qty-btn {{quantity <= 1 ? 'disabled' : ''}}" bindtap="decreaseQty">−</view>
+        <input class="qty-input" type="number" value="{{quantity}}" bindinput="onQtyInput" />
+        <view class="qty-btn" bindtap="increaseQty">+</view>
+      </view>
+    </view>
+
+    <!-- 阶梯价格表 -->
+    <view class="tier-section">
+      <text class="section-title">📊 阶梯优惠价格</text>
+      <view class="tier-list">
+        <view class="tier-item {{index === activeTierIndex ? 'active' : ''}}"
+              wx:for="{{tiers}}" wx:key="minQty">
+          <view class="tier-info">
+            <text class="tier-label">{{item.label}}</text>
+            <text class="tier-range">({{item.minQty}}{{index < tiers.length - 1 ? ' - ' + (tiers[index + 1].minQty - 1) : '+'}} 件)</text>
+          </view>
+          <view class="tier-price-wrap">
+            <text class="tier-price">¥{{item.price}}</text>
+            <text class="tier-save" wx:if="{{!item.isBase}}">
+              省{{item.savePercent}}%
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 提示信息 -->
+    <view class="tips-card">
+      <text class="tips-icon">💡</text>
+      <view class="tips-content">
+        <text class="tips-title">温馨提示</text>
+        <text class="tips-item">• 采购数量越多，单价越优惠</text>
+        <text class="tips-item">• 支持混合采购，满足阶梯条件即可享受优惠</text>
+        <text class="tips-item">• 价格已含税，全国包邮</text>
+      </view>
+    </view>
+
+    <!-- 底部操作栏 -->
+    <view class="bottom-bar">
+      <button class="action-btn btn-cart" bindtap="addToCart">加入购物车</button>
+      <button class="action-btn btn-buy" bindtap="buyNow">立即购买</button>
+    </view>
+  </block>
+</view>

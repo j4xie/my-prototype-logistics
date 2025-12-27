@@ -1,0 +1,82 @@
+<!--
+  质检报告详情页
+-->
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载质检报告...</text>
+  </view>
+
+  <!-- 错误状态 -->
+  <view class="error-container" wx:elif="{{error}}">
+    <text class="error-icon">警告</text>
+    <text class="error-message">{{error.message}}</text>
+    <button class="retry-btn" bindtap="retryLoad" wx:if="{{error.canRetry}}">重新加载</button>
+  </view>
+
+  <!-- 报告内容 -->
+  <block wx:else>
+    <!-- 报告头部 - 状态展示 -->
+    <view class="report-header {{isPass ? 'pass' : 'fail'}}">
+      <text class="status-icon">{{isPass ? '通过' : '不通过'}}</text>
+      <text class="status-text">{{statusText}}</text>
+    </view>
+
+    <!-- 基本信息 -->
+    <view class="info-card">
+      <view class="card-title">基本信息</view>
+      <view class="info-row">
+        <text class="info-label">检测批次</text>
+        <text class="info-value">{{basicInfo.batchId}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">检测日期</text>
+        <text class="info-value">{{basicInfo.testDate}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">检测机构</text>
+        <text class="info-value">{{basicInfo.institution}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">检测员</text>
+        <text class="info-value">{{basicInfo.inspector}}</text>
+      </view>
+      <view class="info-row" wx:if="{{basicInfo.certificateNo}}">
+        <text class="info-label">证书编号</text>
+        <text class="info-value">{{basicInfo.certificateNo}}</text>
+      </view>
+    </view>
+
+    <!-- 检测项目 -->
+    <view class="info-card">
+      <view class="card-title">检测项目</view>
+      <view class="test-list">
+        <view class="test-item" wx:for="{{testItems}}" wx:key="name">
+          <view class="test-info">
+            <text class="test-name">{{item.name}}</text>
+            <text class="test-standard" wx:if="{{item.standard}}">标准: {{item.standard}}</text>
+          </view>
+          <view class="test-result {{item.result}}">
+            <text class="result-icon">{{item.result === 'pass' ? '√' : '×'}}</text>
+            <text class="result-text">{{item.resultText}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部声明 -->
+    <view class="disclaimer">
+      <text>本报告仅对送检样品负责</text>
+      <text>如有疑问请联系检测机构</text>
+    </view>
+
+    <!-- 分享按钮 -->
+    <view class="bottom-bar">
+      <button class="share-btn" open-type="share">
+        <text class="cuIcon-share"></text>
+        <text>分享报告</text>
+      </button>
+    </view>
+  </block>
+</view>

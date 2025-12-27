@@ -1,0 +1,107 @@
+/* 设置页面样式 */
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 60rpx;
+}
+
+/* 设置分组 */
+.settings-group {
+  background: #fff;
+  margin-bottom: 20rpx;
+}
+
+.group-title {
+  padding: 20rpx 30rpx;
+  font-size: 24rpx;
+  color: #999;
+  background: #f8f8f8;
+}
+
+/* 设置项 */
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.settings-item:last-child {
+  border-bottom: none;
+}
+
+.item-left {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  flex: 1;
+}
+
+.item-icon {
+  font-size: 40rpx;
+  width: 48rpx;
+  text-align: center;
+}
+
+.item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.item-title {
+  font-size: 30rpx;
+  color: #333;
+}
+
+.item-desc {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.item-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.item-value {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.item-arrow {
+  font-size: 32rpx;
+  color: #ccc;
+}
+
+/* 版本信息 */
+.version-info {
+  text-align: center;
+  padding: 50rpx 30rpx 30rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.version-info text {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 退出登录按钮 */
+.logout-btn {
+  margin: 20rpx 30rpx 40rpx;
+  padding: 28rpx;
+  background: #fff;
+  color: #ff4d4f;
+  border: 2rpx solid #ff4d4f;
+  border-radius: 48rpx;
+  font-size: 32rpx;
+}
+
+.logout-btn::after {
+  border: none;
+}

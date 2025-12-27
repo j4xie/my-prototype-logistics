@@ -1,23 +1,28 @@
 /**
- * Copyright (C) 2018-2019
- * All rights reserved, Designed By www.joolun.com
+ * Copyright (C) 2024-2025
+ * 食品商城小程序
  * 注意：
- * 本软件为www.joolun.com开发研制，项目使用请保留此说明
+ * 基于 JooLun 框架二次开发
  */
 /**
  * <version>3.3.2</version>
  */
 import api from './utils/api'
 import __config from './config/env'
+const tracker = require('./utils/tracker')
 
 App({
   api: api,
+  tracker: tracker,  // 暴露给页面使用
   globalData: {
     thirdSession: null,
     wxUser: null,
     config: __config
   },
   onLaunch: function () {
+    // P0修复: 初始化行为追踪器
+    tracker.init()
+
     //检测新版本
     this.updateManager()
     wx.getSystemInfo({
@@ -28,6 +33,15 @@ App({
         this.globalData.CustomBar = custom.bottom + custom.top - e.statusBarHeight;
       }
     })
+  },
+  onShow: function () {
+    // 恢复行为追踪
+    tracker.resume()
+  },
+  onHide: function () {
+    // 切后台时立即上报所有队列事件
+    tracker.flush()
+    tracker.pause()
   },
   updateManager(){
     const updateManager = wx.getUpdateManager()
