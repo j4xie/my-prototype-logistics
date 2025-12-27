@@ -3,12 +3,13 @@
  * 对应原型: warehouse/location-manage.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +17,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -44,94 +47,120 @@ export function WHLocationManageScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
-  const zones: Zone[] = [
-    {
-      id: "A",
-      name: "A区 - 冷藏库",
-      tempRange: "0°C ~ 4°C",
-      totalLocations: 5,
-      usedLocations: 3,
-      capacity: 68,
-    },
-    {
-      id: "B",
-      name: "B区 - 冷冻库",
-      tempRange: "-20°C ~ -15°C",
-      totalLocations: 5,
-      usedLocations: 4,
-      capacity: 72,
-    },
-  ];
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [totalLocations, setTotalLocations] = useState(0);
+  const [usedLocations, setUsedLocations] = useState(0);
 
-  const zoneALocations: Location[] = [
-    {
-      id: "A-01",
-      name: "A区-冷藏库-01",
-      zoneId: "A",
-      status: "using",
-      capacity: 500,
-      used: 536,
-      temperature: 2,
-      tempNormal: true,
-      items: "带鱼 x2批",
-    },
-    {
-      id: "A-02",
-      name: "A区-冷藏库-02",
-      zoneId: "A",
-      status: "using",
-      capacity: 400,
-      used: 320,
-      temperature: 3,
-      tempNormal: true,
-      items: "带鱼、鲈鱼",
-    },
-    {
-      id: "A-03",
-      name: "A区-冷藏库-03",
-      zoneId: "A",
-      status: "using",
-      capacity: 400,
-      used: 120,
-      temperature: 2.5,
-      tempNormal: true,
-      items: "蟹类",
-    },
-    {
-      id: "A-04",
-      name: "A区-冷藏库-04",
-      zoneId: "A",
-      status: "empty",
-      capacity: 300,
-      used: 0,
-      temperature: 2,
-      tempNormal: true,
-    },
-    {
-      id: "A-05",
-      name: "A区-冷藏库-05",
-      zoneId: "A",
-      status: "empty",
-      capacity: 300,
-      used: 0,
-      temperature: 2,
-      tempNormal: true,
-    },
-  ];
+  // 从批次数据计算库位信息
+  const loadLocationData = useCallback(async () => {
+    try {
+      const response = await materialBatchApiClient.getMaterialBatches({
+        status: 'available',
+        size: 200
+      });
 
-  const zoneBLocations: Location[] = [
-    {
-      id: "B-01",
-      name: "B区-冷冻库-01",
-      zoneId: "B",
-      status: "using",
-      capacity: 600,
-      used: 520,
-      temperature: -18,
-      tempNormal: true,
-      items: "虾仁 x4批",
-    },
-  ];
+      const allBatches = response.data?.content || response.data || [];
+
+      // 按库位分组批次
+      const locationMap = new Map<string, {
+        batches: MaterialBatch[];
+        totalQuantity: number;
+        materials: Set<string>;
+      }>();
+
+      allBatches.forEach((batch: MaterialBatch) => {
+        const loc = batch.storageLocation || '未分配';
+        if (!locationMap.has(loc)) {
+          locationMap.set(loc, {
+            batches: [],
+            totalQuantity: 0,
+            materials: new Set(),
+          });
+        }
+        const data = locationMap.get(loc)!;
+        data.batches.push(batch);
+        data.totalQuantity += batch.remainingQuantity || 0;
+        if (batch.materialName) {
+          data.materials.add(batch.materialName);
+        }
+      });
+
+      // 生成库位列表
+      const locationList: Location[] = Array.from(locationMap.entries())
+        .filter(([loc]) => loc !== '未分配')
+        .map(([loc, data]) => {
+          // 根据库位名称判断区域
+          const zoneId = loc.startsWith('B') ? 'B' : 'A';
+          const isUsing = data.totalQuantity > 0;
+          const capacity = 500; // 默认容量
+          const temperature = zoneId === 'B' ? -18 : 2; // 冷冻-18°C, 冷藏2°C
+
+          return {
+            id: loc,
+            name: loc,
+            zoneId,
+            status: isUsing ? 'using' as const : 'empty' as const,
+            capacity,
+            used: data.totalQuantity,
+            temperature,
+            tempNormal: true,
+            items: data.materials.size > 0
+              ? `${Array.from(data.materials).slice(0, 2).join('、')}${data.materials.size > 2 ? '等' : ''} x${data.batches.length}批`
+              : undefined,
+          };
+        });
+
+      // 计算区域统计
+      const zoneALocs = locationList.filter(l => l.zoneId === 'A');
+      const zoneBLocs = locationList.filter(l => l.zoneId === 'B');
+
+      const zoneStats: Zone[] = [
+        {
+          id: 'A',
+          name: 'A区 - 冷藏库',
+          tempRange: '0°C ~ 4°C',
+          totalLocations: Math.max(zoneALocs.length, 5),
+          usedLocations: zoneALocs.filter(l => l.status === 'using').length,
+          capacity: Math.round(
+            zoneALocs.reduce((sum, l) => sum + (l.used / l.capacity) * 100, 0) /
+            Math.max(zoneALocs.length, 1)
+          ),
+        },
+        {
+          id: 'B',
+          name: 'B区 - 冷冻库',
+          tempRange: '-20°C ~ -15°C',
+          totalLocations: Math.max(zoneBLocs.length, 5),
+          usedLocations: zoneBLocs.filter(l => l.status === 'using').length,
+          capacity: Math.round(
+            zoneBLocs.reduce((sum, l) => sum + (l.used / l.capacity) * 100, 0) /
+            Math.max(zoneBLocs.length, 1)
+          ),
+        },
+      ];
+
+      setZones(zoneStats);
+      setLocations(locationList);
+      setTotalLocations(locationList.length || 10);
+      setUsedLocations(locationList.filter(l => l.status === 'using').length);
+
+    } catch (error) {
+      handleError(error, { title: '加载库位数据失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLocationData();
+  }, [loadLocationData]);
+
+  // 按区域过滤库位
+  const zoneALocations = locations.filter(l => l.zoneId === 'A');
+  const zoneBLocations = locations.filter(l => l.zoneId === 'B');
 
   const getUsagePercent = (used: number, capacity: number) => {
     return Math.round((used / capacity) * 100);
@@ -259,6 +288,31 @@ export function WHLocationManageScreen() {
     );
   };
 
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>库位管理</Text>
+            <Text style={styles.headerSubtitle}>加载中...</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
@@ -272,7 +326,7 @@ export function WHLocationManageScreen() {
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>库位管理</Text>
           <Text style={styles.headerSubtitle}>
-            总库位 10 个 | 使用中 7 个
+            总库位 {totalLocations} 个 | 使用中 {usedLocations} 个
           </Text>
         </View>
         <View style={styles.headerRight} />
@@ -318,6 +372,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

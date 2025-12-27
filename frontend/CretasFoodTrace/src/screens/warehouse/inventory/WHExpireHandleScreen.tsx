@@ -3,13 +3,14 @@
  * 对应原型: warehouse/expire-handle.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,6 +18,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -34,58 +37,91 @@ interface ExpireBatch {
 
 type FilterTab = "all" | "warning" | "expired";
 
+// 获取存储类型显示名称
+const getStorageTypeLabel = (type?: string): string => {
+  switch (type) {
+    case 'fresh': return '鲜品';
+    case 'frozen': return '冻品';
+    case 'dry': return '干货';
+    default: return '其他';
+  }
+};
+
+// 计算批次过期状态
+const calculateExpireStatus = (expiryDate?: string): { status: 'expired' | 'warning' | 'normal'; daysLeft: number } => {
+  if (!expiryDate) {
+    return { status: 'normal', daysLeft: 999 };
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(expiryDate);
+  expiry.setHours(0, 0, 0, 0);
+  const diffTime = expiry.getTime() - today.getTime();
+  const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (daysLeft <= 0) {
+    return { status: 'expired', daysLeft: 0 };
+  } else if (daysLeft <= 3) {
+    return { status: 'warning', daysLeft };
+  }
+  return { status: 'normal', daysLeft };
+};
+
 export function WHExpireHandleScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
+  const [batches, setBatches] = useState<ExpireBatch[]>([]);
 
-  const batches: ExpireBatch[] = [
-    {
-      id: "1",
-      batchNumber: "MB-20251219-001",
-      materialName: "带鱼",
-      materialType: "鲜品",
-      quantity: 45,
-      expireDate: "2025-12-26",
-      daysLeft: 0,
-      location: "A区-冷藏库-01",
-      status: "expired",
-    },
-    {
-      id: "2",
-      batchNumber: "MB-20251223-001",
-      materialName: "带鱼",
-      materialType: "鲜品",
-      quantity: 256,
-      expireDate: "2025-12-30",
-      daysLeft: 3,
-      location: "A区-冷藏库-01",
-      status: "warning",
-    },
-    {
-      id: "3",
-      batchNumber: "MB-20251224-003",
-      materialName: "鲈鱼",
-      materialType: "鲜品",
-      quantity: 180,
-      expireDate: "2025-12-28",
-      daysLeft: 2,
-      location: "A区-冷藏库-02",
-      status: "warning",
-    },
-    {
-      id: "4",
-      batchNumber: "MB-20251225-001",
-      materialName: "蟹类",
-      materialType: "鲜品",
-      quantity: 120,
-      expireDate: "2025-12-31",
-      daysLeft: 5,
-      location: "A区-冷藏库-03",
-      status: "normal",
-    },
-  ];
+  // 加载过期批次数据
+  const loadExpireBatches = useCallback(async () => {
+    try {
+      // 获取所有可用批次
+      const response = await materialBatchApiClient.getMaterialBatches({
+        status: 'available',
+        size: 100
+      });
+
+      const allBatches = response.data?.content || response.data || [];
+
+      // 筛选即将过期或已过期的批次（7天内）
+      const expireBatches: ExpireBatch[] = allBatches
+        .filter((batch: MaterialBatch) => {
+          if (!batch.expiryDate) return false;
+          const { daysLeft } = calculateExpireStatus(batch.expiryDate);
+          return daysLeft <= 7; // 7天内过期的批次
+        })
+        .map((batch: MaterialBatch) => {
+          const { status, daysLeft } = calculateExpireStatus(batch.expiryDate);
+          return {
+            id: batch.id,
+            batchNumber: batch.batchNumber,
+            materialName: batch.materialName || '未知物料',
+            materialType: getStorageTypeLabel(batch.storageType),
+            quantity: batch.remainingQuantity || 0,
+            expireDate: batch.expiryDate || '-',
+            daysLeft,
+            location: batch.storageLocation || '未知库位',
+            status,
+          };
+        })
+        .sort((a: ExpireBatch, b: ExpireBatch) => a.daysLeft - b.daysLeft); // 按剩余天数排序
+
+      setBatches(expireBatches);
+    } catch (error) {
+      handleError(error, { title: '加载过期批次失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadExpireBatches();
+  }, [loadExpireBatches]);
 
   const filteredBatches = batches.filter((batch) => {
     if (activeFilter === "all") return true;
@@ -100,28 +136,67 @@ export function WHExpireHandleScreen() {
     (b) => b.status === "warning" || b.status === "normal"
   ).length;
 
-  const handleReportDamage = (batch: ExpireBatch) => {
+  // 报损处理
+  const handleReportDamage = async (batch: ExpireBatch) => {
     Alert.alert("确认报损", `确定将批次 ${batch.batchNumber} 进行报损处理吗？`, [
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => Alert.alert("成功", "报损处理已提交"),
+        onPress: async () => {
+          setProcessing(true);
+          try {
+            await materialBatchApiClient.updateBatch(batch.id, {
+              status: 'depleted',
+              notes: `报损处理: 过期处理 ${new Date().toISOString().split('T')[0]}`,
+            });
+            Alert.alert("成功", "报损处理已提交");
+            loadExpireBatches(); // 刷新列表
+          } catch (error) {
+            handleError(error, { title: '报损处理失败' });
+          } finally {
+            setProcessing(false);
+          }
+        },
       },
     ]);
   };
 
-  const handleConvertToFrozen = (batch: ExpireBatch) => {
+  // 转冻品处理
+  const handleConvertToFrozen = async (batch: ExpireBatch) => {
     Alert.alert("转冻品", `将 ${batch.batchNumber} 转为冻品？`, [
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => Alert.alert("成功", "已转为冻品，保质期延长30天"),
+        onPress: async () => {
+          setProcessing(true);
+          try {
+            // 调用转冻品API
+            await materialBatchApiClient.convertToFrozen(batch.id);
+            Alert.alert("成功", "已转为冻品，保质期延长30天");
+            loadExpireBatches(); // 刷新列表
+          } catch (error) {
+            handleError(error, { title: '转冻品失败' });
+          } finally {
+            setProcessing(false);
+          }
+        },
       },
     ]);
   };
 
-  const handlePriorityOutbound = (batch: ExpireBatch) => {
-    Alert.alert("成功", `已将批次 ${batch.batchNumber} 标记为优先出库`);
+  // 优先出库标记
+  const handlePriorityOutbound = async (batch: ExpireBatch) => {
+    setProcessing(true);
+    try {
+      await materialBatchApiClient.updateBatch(batch.id, {
+        notes: `优先出库标记 ${new Date().toISOString().split('T')[0]}`,
+      });
+      Alert.alert("成功", `已将批次 ${batch.batchNumber} 标记为优先出库`);
+    } catch (error) {
+      handleError(error, { title: '标记优先出库失败' });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const getExpireTagText = (batch: ExpireBatch) => {
@@ -129,6 +204,27 @@ export function WHExpireHandleScreen() {
     if (batch.daysLeft <= 3) return `${batch.daysLeft}天后`;
     return `${batch.daysLeft}天后`;
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>过期处理</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const renderExpireCard = (batch: ExpireBatch) => (
     <View
@@ -386,6 +482,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

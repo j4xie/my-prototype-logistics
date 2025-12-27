@@ -1,15 +1,19 @@
 /**
  * 入库管理列表页面
  * 对应原型: warehouse/inbound.html
+ *
+ * API集成:
+ * - materialBatchApiClient - 获取原材料批次列表
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -24,6 +28,9 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInboundStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
+import { logger } from "../../../utils/logger";
 
 type NavigationProp = NativeStackNavigationProp<WHInboundStackParamList>;
 
@@ -43,63 +50,6 @@ interface InboundItem {
   inspectResult?: string;
 }
 
-// 模拟数据
-const mockInboundList: InboundItem[] = [
-  {
-    id: "1",
-    batchNumber: "MB-20251226-001",
-    material: "带鱼",
-    materialType: "鲜品",
-    supplier: "舟山渔业合作社",
-    quantity: 150,
-    status: "pending",
-    createdAt: "2025-12-26 09:00",
-  },
-  {
-    id: "2",
-    batchNumber: "MB-20251226-002",
-    material: "虾仁",
-    materialType: "冻品",
-    supplier: "东海冷冻食品有限公司",
-    quantity: 80,
-    status: "inspecting",
-    createdAt: "2025-12-26 08:30",
-  },
-  {
-    id: "3",
-    batchNumber: "MB-20251225-005",
-    material: "鲈鱼",
-    materialType: "鲜品",
-    supplier: "宁波海鲜批发市场",
-    quantity: 200,
-    status: "putaway",
-    createdAt: "2025-12-25 16:00",
-    inspectResult: "质检通过",
-  },
-  {
-    id: "4",
-    batchNumber: "MB-20251225-003",
-    material: "鱿鱼",
-    materialType: "冻品",
-    supplier: "浙江海产品加工厂",
-    quantity: 120,
-    status: "completed",
-    createdAt: "2025-12-25 14:30",
-    location: "A区-冷冻库-02",
-  },
-  {
-    id: "5",
-    batchNumber: "MB-20251225-002",
-    material: "带鱼",
-    materialType: "鲜品",
-    supplier: "舟山渔业合作社",
-    quantity: 180,
-    status: "completed",
-    createdAt: "2025-12-25 10:00",
-    location: "A区-冷藏库-01",
-  },
-];
-
 const statusConfig: Record<
   InboundStatus,
   { label: string; color: string; bgColor: string }
@@ -110,20 +60,79 @@ const statusConfig: Record<
   completed: { label: "已完成", color: "#388e3c", bgColor: "#e8f5e9" },
 };
 
+// 将后端状态映射到前端状态
+const mapBatchStatusToInbound = (backendStatus: string | undefined): InboundStatus => {
+  switch (backendStatus?.toLowerCase()) {
+    case 'available': return 'completed';
+    case 'reserved': return 'inspecting';
+    case 'depleted': return 'completed';
+    case 'expired': return 'completed';
+    case 'fresh': return 'pending';
+    case 'frozen': return 'pending';
+    default: return 'pending';
+  }
+};
+
 export function WHInboundListScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [inboundList, setInboundList] = useState<InboundItem[]>([]);
+
+  // 加载数据
+  const loadData = useCallback(async () => {
+    try {
+      logger.info('[WHInboundListScreen] 开始加载入库列表');
+
+      const response = await materialBatchApiClient.getMaterialBatches({ page: 0, size: 50 }) as
+        { data?: { content?: MaterialBatch[] }; content?: MaterialBatch[] } | undefined;
+
+      // 处理响应数据
+      const batchData = response?.data?.content ?? response?.content ?? [];
+      const batches = Array.isArray(batchData) ? batchData : [];
+
+      const mappedList: InboundItem[] = batches.map((b: MaterialBatch) => ({
+        id: b.id,
+        batchNumber: b.batchNumber || b.id,
+        material: b.materialName || '原材料',
+        materialType: b.storageType === 'frozen' ? '冻品' : b.storageType === 'fresh' ? '鲜品' : '干货',
+        supplier: b.supplierName || b.supplierId || '未知供应商',
+        quantity: b.inboundQuantity || 0,
+        status: mapBatchStatusToInbound(b.status),
+        createdAt: b.inboundDate
+          ? new Date(b.inboundDate).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+          : '未知时间',
+        location: b.storageLocation,
+        inspectResult: b.qualityGrade ? `质量等级: ${b.qualityGrade}` : undefined,
+      }));
+
+      setInboundList(mappedList);
+      logger.info(`[WHInboundListScreen] 加载入库列表成功: ${mappedList.length}条`);
+
+    } catch (error) {
+      logger.error('[WHInboundListScreen] 加载入库列表失败:', error);
+      handleError(error, { title: '加载入库列表失败' });
+      setInboundList([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
-  }, []);
+    loadData();
+  }, [loadData]);
 
   // 筛选数据
-  const filteredList = mockInboundList.filter((item) => {
+  const filteredList = inboundList.filter((item) => {
     if (selectedStatus !== "all" && item.status !== selectedStatus) return false;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -138,11 +147,11 @@ export function WHInboundListScreen() {
 
   // 统计数据
   const stats = {
-    total: mockInboundList.length,
-    pending: mockInboundList.filter((i) => i.status === "pending").length,
-    inspecting: mockInboundList.filter((i) => i.status === "inspecting").length,
-    completed: mockInboundList.filter((i) => i.status === "completed").length,
-    todayWeight: mockInboundList.reduce((sum, i) => sum + i.quantity, 0),
+    total: inboundList.length,
+    pending: inboundList.filter((i) => i.status === "pending").length,
+    inspecting: inboundList.filter((i) => i.status === "inspecting").length,
+    completed: inboundList.filter((i) => i.status === "completed").length,
+    todayWeight: inboundList.reduce((sum, i) => sum + i.quantity, 0),
   };
 
   const getActionText = (status: InboundStatus): string => {
@@ -176,6 +185,20 @@ export function WHInboundListScreen() {
         break;
     }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>入库管理</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -377,6 +400,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

@@ -3,13 +3,14 @@
  * 对应原型: warehouse/inventory-check.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -25,6 +26,8 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { Picker } from "@react-native-picker/picker";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -43,70 +46,54 @@ export function WHInventoryCheckScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState("A");
+  const [checkItems, setCheckItems] = useState<CheckItem[]>([]);
 
-  const [checkItems, setCheckItems] = useState<CheckItem[]>([
-    {
-      id: "1",
-      name: "带鱼",
-      type: "鲜品",
-      batchNumber: "MB-20251223-001",
-      location: "A区-冷藏库-01",
-      systemQty: 256,
-      actualQty: 256,
-      status: "completed",
-    },
-    {
-      id: "2",
-      name: "带鱼",
-      type: "鲜品",
-      batchNumber: "MB-20251224-002",
-      location: "A区-冷藏库-02",
-      systemQty: 320,
-      actualQty: 320,
-      status: "completed",
-    },
-    {
-      id: "3",
-      name: "鲈鱼",
-      type: "鲜品",
-      batchNumber: "MB-20251224-003",
-      location: "A区-冷藏库-01",
-      systemQty: 200,
-      actualQty: 195,
-      status: "diff",
-    },
-    {
-      id: "4",
-      name: "蟹类",
-      type: "鲜品",
-      batchNumber: "MB-20251225-001",
-      location: "A区-冷藏库-03",
-      systemQty: 120,
-      actualQty: null,
-      status: "pending",
-    },
-    {
-      id: "5",
-      name: "鲈鱼",
-      type: "鲜品",
-      batchNumber: "MB-20251225-002",
-      location: "A区-冷藏库-02",
-      systemQty: 180,
-      actualQty: null,
-      status: "pending",
-    },
-    {
-      id: "6",
-      name: "带鱼",
-      type: "鲜品",
-      batchNumber: "MB-20251226-001",
-      location: "A区-冷藏库-01",
-      systemQty: 280,
-      actualQty: null,
-      status: "pending",
-    },
-  ]);
+  // 获取存储类型显示名称
+  const getStorageTypeLabel = (type?: string): string => {
+    switch (type) {
+      case 'fresh': return '鲜品';
+      case 'frozen': return '冻品';
+      case 'dry': return '干货';
+      default: return '其他';
+    }
+  };
+
+  // 加载库存数据
+  const loadInventoryData = useCallback(async () => {
+    try {
+      const response = await materialBatchApiClient.getMaterialBatches({
+        status: 'available',
+        size: 50
+      });
+
+      const batches = response.data?.content || response.data || [];
+
+      const items: CheckItem[] = batches.map((batch: MaterialBatch) => ({
+        id: batch.id,
+        name: batch.materialName || '未知物料',
+        type: getStorageTypeLabel(batch.storageType),
+        batchNumber: batch.batchNumber,
+        location: batch.storageLocation || 'A区-冷藏库',
+        systemQty: batch.remainingQuantity || 0,
+        actualQty: null,
+        status: 'pending' as const,
+      }));
+
+      setCheckItems(items);
+    } catch (error) {
+      handleError(error, { title: '加载库存数据失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadInventoryData();
+  }, [loadInventoryData]);
 
   const completedCount = checkItems.filter(
     (item) => item.status !== "pending"
@@ -140,6 +127,34 @@ export function WHInventoryCheckScreen() {
     );
   };
 
+  // 提交盘点结果
+  const submitInventoryCheck = useCallback(async () => {
+    setSubmitting(true);
+    try {
+      // 更新有差异的批次数量
+      const diffItems = checkItems.filter(item => item.status === 'diff');
+
+      for (const item of diffItems) {
+        if (item.actualQty !== null && item.actualQty !== item.systemQty) {
+          // TODO: 后端需要提供库存调整API
+          // 暂时使用updateBatch来调整数量
+          await materialBatchApiClient.updateBatch(item.id, {
+            remainingQuantity: item.actualQty,
+            notes: `盘点调整: 系统${item.systemQty}kg → 实际${item.actualQty}kg`,
+          });
+        }
+      }
+
+      Alert.alert('成功', '盘点已提交', [
+        { text: '确定', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      handleError(error, { title: '提交盘点失败' });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [checkItems, navigation]);
+
   const handleSubmit = () => {
     const pendingItems = checkItems.filter((item) => item.status === "pending");
     if (pendingItems.length > 0) {
@@ -151,17 +166,36 @@ export function WHInventoryCheckScreen() {
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => {
-          Alert.alert("成功", "盘点已提交");
-          navigation.goBack();
-        },
+        onPress: submitInventoryCheck,
       },
     ]);
   };
 
   const handleSave = () => {
+    // TODO: 实现暂存功能，可能需要AsyncStorage或后端API
     Alert.alert("成功", "盘点进度已暂存");
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>库存盘点</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -322,8 +356,10 @@ export function WHInventoryCheckScreen() {
           onPress={handleSubmit}
           style={styles.submitButton}
           labelStyle={{ color: "#fff" }}
+          disabled={submitting}
+          loading={submitting}
         >
-          提交盘点
+          {submitting ? '提交中...' : '提交盘点'}
         </Button>
       </View>
     </SafeAreaView>
@@ -334,6 +370,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

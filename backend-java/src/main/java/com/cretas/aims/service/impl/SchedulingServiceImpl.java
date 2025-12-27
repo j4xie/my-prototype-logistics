@@ -368,13 +368,292 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Override
     @Transactional
     public SchedulingPlanDTO generateSchedule(String factoryId, GenerateScheduleRequest request, Long userId) {
-        // 简化实现：创建基础调度计划
-        CreateSchedulingPlanRequest planRequest = new CreateSchedulingPlanRequest();
-        planRequest.setPlanDate(request.getPlanDate());
-        planRequest.setPlanName("AI生成-" + request.getPlanDate());
+        log.info("开始 AI 智能排产: factoryId={}, planDate={}, batchIds={}",
+            factoryId, request.getPlanDate(), request.getBatchIds());
 
-        // TODO: 实际实现中调用 Python AI 服务
-        return createPlan(factoryId, planRequest, userId);
+        // 1. 获取需要排产的批次
+        List<ProductionBatch> batches;
+        if (request.getBatchIds() != null && !request.getBatchIds().isEmpty()) {
+            batches = batchRepository.findAllById(request.getBatchIds());
+        } else {
+            // 自动选择待生产的批次 (PLANNED 或 PLANNING 状态)
+            batches = batchRepository.findByFactoryIdAndStatus(
+                factoryId,
+                com.cretas.aims.entity.enums.ProductionBatchStatus.PLANNED,
+                org.springframework.data.domain.Pageable.unpaged()
+            ).getContent();
+            if (batches.isEmpty()) {
+                batches = batchRepository.findByFactoryIdAndStatus(
+                    factoryId,
+                    com.cretas.aims.entity.enums.ProductionBatchStatus.PLANNING,
+                    org.springframework.data.domain.Pageable.unpaged()
+                ).getContent();
+            }
+        }
+
+        if (batches.isEmpty()) {
+            log.warn("没有找到需要排产的批次，请在请求中指定 batchIds");
+            throw new RuntimeException("没有找到需要排产的批次，请指定 batchIds 参数");
+        }
+
+        log.info("找到 {} 个批次需要排产", batches.size());
+
+        // 2. 获取可用产线
+        List<ProductionLine> productionLines = lineRepository.findByFactoryIdAndStatusAndDeletedAtIsNull(
+            factoryId, ProductionLine.LineStatus.active);
+
+        if (productionLines.isEmpty()) {
+            log.warn("没有可用的产线，创建默认产线");
+            // 创建默认产线
+            ProductionLine defaultLine = new ProductionLine();
+            defaultLine.setFactoryId(factoryId);
+            defaultLine.setName("默认产线");
+            defaultLine.setLineCode("LINE-001");
+            defaultLine.setMinWorkers(2);
+            defaultLine.setMaxWorkers(10);
+            defaultLine.setHourlyCapacity(BigDecimal.valueOf(50));
+            defaultLine.setStatus(ProductionLine.LineStatus.active);
+            defaultLine = lineRepository.save(defaultLine);
+            productionLines = List.of(defaultLine);
+        }
+
+        // 3. 创建调度计划
+        SchedulingPlan plan = new SchedulingPlan();
+        plan.setFactoryId(factoryId);
+        plan.setPlanDate(request.getPlanDate());
+        plan.setPlanName("AI生成-" + request.getPlanDate());
+        plan.setCreatedBy(userId);
+        plan.setStatus(SchedulingPlan.PlanStatus.draft);
+        plan = planRepository.save(plan);
+
+        // 4. 调用 AI 服务获取优化的排程建议
+        List<Map<String, Object>> aiScheduleResult = null;
+        try {
+            aiScheduleResult = callAISchedulingService(factoryId, batches, productionLines, request);
+        } catch (Exception e) {
+            log.warn("AI 调度服务调用失败，使用本地算法: {}", e.getMessage());
+        }
+
+        // 5. 创建产线排程
+        List<LineSchedule> schedules = new ArrayList<>();
+        int sequenceOrder = 0;
+
+        if (aiScheduleResult != null && !aiScheduleResult.isEmpty()) {
+            // 使用 AI 建议的排程
+            for (Map<String, Object> suggestion : aiScheduleResult) {
+                LineSchedule schedule = createScheduleFromAISuggestion(plan, suggestion, productionLines);
+                if (schedule != null) {
+                    schedule.setSequenceOrder(sequenceOrder++);
+                    schedules.add(schedule);
+                }
+            }
+        } else {
+            // 使用本地简单轮询算法分配
+            int lineIndex = 0;
+            LocalDateTime startTime = request.getPlanDate().atTime(8, 0); // 默认早上8点开始
+
+            for (ProductionBatch batch : batches) {
+                ProductionLine line = productionLines.get(lineIndex % productionLines.size());
+
+                LineSchedule schedule = new LineSchedule();
+                schedule.setPlan(plan);
+                schedule.setProductionLineId(line.getId());
+                schedule.setBatchId(batch.getId());
+                schedule.setSequenceOrder(sequenceOrder++);
+                schedule.setPlannedStartTime(startTime);
+
+                // 估算完成时间 (根据产能)
+                int quantity = batch.getPlannedQuantity() != null ?
+                    batch.getPlannedQuantity().intValue() : 100;
+                double hourlyCapacity = line.getHourlyCapacity() != null ?
+                    line.getHourlyCapacity().doubleValue() : 50;
+                double hoursNeeded = quantity / hourlyCapacity;
+                LocalDateTime endTime = startTime.plusMinutes((long)(hoursNeeded * 60));
+
+                schedule.setPlannedEndTime(endTime);
+                schedule.setPlannedQuantity(quantity);
+                schedule.setStatus(LineSchedule.ScheduleStatus.pending);
+
+                // 预测效率
+                try {
+                    Map<String, Object> prediction = getPredictionForSchedule(factoryId, batch, line);
+                    if (prediction != null) {
+                        if (prediction.get("predicted_efficiency") != null) {
+                            schedule.setPredictedEfficiency(toBigDecimal(prediction.get("predicted_efficiency")));
+                        }
+                        if (prediction.get("probability") != null) {
+                            schedule.setPredictedCompletionProb(toBigDecimal(prediction.get("probability")));
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("获取预测失败: {}", e.getMessage());
+                }
+
+                schedules.add(schedule);
+
+                // 下一个批次开始时间
+                startTime = endTime.plusMinutes(15); // 15分钟间隔
+                lineIndex++;
+            }
+        }
+
+        if (!schedules.isEmpty()) {
+            scheduleRepository.saveAll(schedules);
+            plan.setTotalBatches(schedules.size());
+            planRepository.save(plan);
+        }
+
+        log.info("AI 排产完成: planId={}, schedules={}", plan.getId(), schedules.size());
+
+        // 6. 返回完整的计划 DTO
+        return getPlan(factoryId, plan.getId());
+    }
+
+    /**
+     * 调用 AI 调度服务
+     */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> callAISchedulingService(
+            String factoryId, List<ProductionBatch> batches,
+            List<ProductionLine> lines, GenerateScheduleRequest request) {
+
+        try {
+            Map<String, Object> aiRequest = new HashMap<>();
+            aiRequest.put("factory_id", factoryId);
+
+            // 批次数据
+            List<Map<String, Object>> batchData = batches.stream().map(b -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", b.getId());
+                m.put("batch_number", b.getBatchNumber());
+                m.put("quantity", b.getPlannedQuantity() != null ? b.getPlannedQuantity().intValue() : 100);
+                m.put("product_type", b.getProductTypeId());
+                m.put("priority", 1);
+                return m;
+            }).collect(Collectors.toList());
+            aiRequest.put("batches", batchData);
+
+            // 产线数据
+            List<Map<String, Object>> lineData = lines.stream().map(l -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", l.getId());
+                m.put("name", l.getName());
+                m.put("capacity", l.getHourlyCapacity() != null ? l.getHourlyCapacity().doubleValue() : 50);
+                m.put("min_workers", l.getMinWorkers());
+                m.put("max_workers", l.getMaxWorkers());
+                return m;
+            }).collect(Collectors.toList());
+            aiRequest.put("production_lines", lineData);
+
+            aiRequest.put("plan_date", request.getPlanDate().toString());
+            aiRequest.put("priority_strategy", request.getPriorityStrategy());
+            aiRequest.put("target_probability", request.getTargetProbability());
+
+            String url = aiServiceUrl + "/scheduling/generate";
+            log.debug("调用 AI 调度服务: {}", url);
+
+            Map<String, Object> response = restTemplate.postForObject(url, aiRequest, Map.class);
+
+            if (response != null && response.get("schedules") != null) {
+                return (List<Map<String, Object>>) response.get("schedules");
+            }
+        } catch (Exception e) {
+            log.warn("AI 调度服务调用失败: {}", e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * 从 AI 建议创建排程
+     */
+    private LineSchedule createScheduleFromAISuggestion(
+            SchedulingPlan plan, Map<String, Object> suggestion, List<ProductionLine> lines) {
+
+        try {
+            LineSchedule schedule = new LineSchedule();
+            schedule.setPlan(plan);
+
+            // 产线ID
+            String lineId = (String) suggestion.get("line_id");
+            if (lineId == null && suggestion.get("line_index") != null) {
+                int index = ((Number) suggestion.get("line_index")).intValue();
+                lineId = lines.get(index % lines.size()).getId();
+            }
+            schedule.setProductionLineId(lineId);
+
+            // 批次ID
+            if (suggestion.get("batch_id") != null) {
+                schedule.setBatchId(((Number) suggestion.get("batch_id")).longValue());
+            }
+
+            // 时间
+            if (suggestion.get("start_time") != null) {
+                schedule.setPlannedStartTime(LocalDateTime.parse((String) suggestion.get("start_time")));
+            }
+            if (suggestion.get("end_time") != null) {
+                schedule.setPlannedEndTime(LocalDateTime.parse((String) suggestion.get("end_time")));
+            }
+
+            // 数量
+            if (suggestion.get("quantity") != null) {
+                schedule.setPlannedQuantity(((Number) suggestion.get("quantity")).intValue());
+            }
+
+            // 预测值
+            if (suggestion.get("predicted_efficiency") != null) {
+                schedule.setPredictedEfficiency(toBigDecimal(suggestion.get("predicted_efficiency")));
+            }
+            if (suggestion.get("completion_probability") != null) {
+                schedule.setPredictedCompletionProb(toBigDecimal(suggestion.get("completion_probability")));
+            }
+
+            schedule.setStatus(LineSchedule.ScheduleStatus.pending);
+            return schedule;
+        } catch (Exception e) {
+            log.warn("解析 AI 排程建议失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 获取排程的效率预测
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getPredictionForSchedule(
+            String factoryId, ProductionBatch batch, ProductionLine line) {
+
+        try {
+            Map<String, Object> request = new HashMap<>();
+            request.put("factory_id", factoryId);
+            request.put("remaining_quantity", batch.getPlannedQuantity() != null ?
+                batch.getPlannedQuantity().intValue() : 100);
+            request.put("deadline_hours", 8.0);
+            request.put("available_workers", line.getMinWorkers() != null ? line.getMinWorkers() : 5);
+
+            Map<String, Object> features = new HashMap<>();
+            LocalDateTime now = LocalDateTime.now();
+            features.put("hour_of_day", 8);
+            features.put("day_of_week", now.getDayOfWeek().getValue());
+            features.put("worker_count", line.getMinWorkers() != null ? line.getMinWorkers() : 5);
+            features.put("product_complexity", 5);
+            request.put("features", features);
+
+            String url = aiServiceUrl + "/scheduling/hybrid-predict";
+            Map<String, Object> result = restTemplate.postForObject(url, request, Map.class);
+
+            if (result != null && result.get("efficiency_prediction") instanceof Map) {
+                Map<String, Object> effPred = (Map<String, Object>) result.get("efficiency_prediction");
+                Map<String, Object> prediction = new HashMap<>();
+                prediction.put("predicted_efficiency", effPred.get("prediction"));
+                prediction.put("probability", result.get("probability"));
+                return prediction;
+            }
+        } catch (Exception e) {
+            log.debug("预测服务调用失败: {}", e.getMessage());
+        }
+
+        return null;
     }
 
     @Override
@@ -575,6 +854,16 @@ public class SchedulingServiceImpl implements SchedulingService {
             response.setProbability(BigDecimal.ONE);
             response.setRiskLevel("low");
             response.setSuggestion("无生产任务");
+            response.setPredictionMode("local");
+            return response;
+        }
+
+        // 如果没有分配工人，设置为极高风险
+        if (workers <= 0) {
+            response.setProbability(BigDecimal.ZERO);
+            response.setMeanHours(null);
+            response.setRiskLevel("critical");
+            response.setSuggestion("尚未分配工人，请先分配生产人员");
             response.setPredictionMode("local");
             return response;
         }

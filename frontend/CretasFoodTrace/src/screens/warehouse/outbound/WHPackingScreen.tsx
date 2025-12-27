@@ -3,13 +3,14 @@
  * 对应原型: warehouse/packing.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -24,6 +25,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
+import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
 type RouteType = RouteProp<WHOutboundStackParamList, "WHPacking">;
@@ -37,21 +40,61 @@ interface PackingItem {
   packed: boolean;
 }
 
+interface OrderInfo {
+  orderNumber: string;
+  customer: string;
+  dispatchTime: string;
+  totalQuantity: number;
+}
+
 export function WHPackingScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const { orderId } = route.params;
 
-  // 模拟订单数据
-  const orderInfo = {
-    orderNumber: "SH-20251226-003",
-    customer: "海鲜批发市场",
-    dispatchTime: "16:00 前发出",
-    totalQuantity: 150,
-  };
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
+  const [shipmentId, setShipmentId] = useState<string | null>(null);
 
-  // 打包项目
+  // 加载出货单数据
+  const loadShipmentData = useCallback(async () => {
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const shipment = await shipmentApiClient.getShipmentById(orderId);
+
+      if (shipment) {
+        setShipmentId(shipment.id);
+        // 格式化发货时间
+        const shipDate = new Date(shipment.shipmentDate);
+        const dispatchTime = `${shipDate.getHours()}:${String(shipDate.getMinutes()).padStart(2, '0')} 前发出`;
+
+        setOrderInfo({
+          orderNumber: shipment.shipmentNumber || shipment.orderNumber || `SH-${shipment.id}`,
+          customer: shipment.deliveryAddress || '未知客户',
+          dispatchTime: dispatchTime,
+          totalQuantity: shipment.quantity || 0,
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载出货单信息失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId]);
+
+  useEffect(() => {
+    loadShipmentData();
+  }, [loadShipmentData]);
+
+  // TODO: 打包项目需要从后端获取订单关联的批次列表
+  // 当前使用模拟数据，后续需要接入订单明细 API
   const [packingItems, setPackingItems] = useState<PackingItem[]>([
     {
       id: "1",
@@ -59,7 +102,7 @@ export function WHPackingScreen() {
       batchNumber: "PB-20251225-003",
       quantity: 50,
       location: "A区-冷藏库-01",
-      packed: true,
+      packed: false,
     },
     {
       id: "2",
@@ -67,7 +110,7 @@ export function WHPackingScreen() {
       batchNumber: "PB-20251225-004",
       quantity: 50,
       location: "A区-冷藏库-02",
-      packed: true,
+      packed: false,
     },
     {
       id: "3",
@@ -92,6 +135,26 @@ export function WHPackingScreen() {
   const progress = packedCount / totalCount;
   const allPacked = packedCount === totalCount;
 
+  // 完成打包操作
+  const completePacking = async () => {
+    if (!shipmentId) {
+      Alert.alert('错误', '出货单ID无效，无法完成打包');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // 更新出货状态为 shipped（已发货/待发货）
+      await shipmentApiClient.updateStatus(shipmentId, 'shipped');
+      Alert.alert('成功', '打包完成，等待发货确认');
+      navigation.goBack();
+    } catch (error) {
+      handleError(error, { title: '完成打包失败' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleComplete = () => {
     if (!allPacked) {
       Alert.alert("提示", "请完成所有商品打包");
@@ -102,13 +165,48 @@ export function WHPackingScreen() {
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => {
-          Alert.alert("成功", "打包完成，等待发货确认");
-          navigation.goBack();
-        },
+        onPress: completePacking,
       },
     ]);
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>打包作业</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 空状态
+  if (!orderInfo) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>打包作业</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="package-variant" size={64} color="#ddd" />
+          <Text style={styles.loadingText}>未找到出货单信息</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -262,13 +360,14 @@ export function WHPackingScreen() {
           onPress={handleComplete}
           style={[
             styles.completeButton,
-            !allPacked && styles.completeButtonDisabled,
+            (!allPacked || submitting) && styles.completeButtonDisabled,
           ]}
           labelStyle={styles.completeButtonLabel}
           icon="check"
-          disabled={!allPacked}
+          disabled={!allPacked || submitting}
+          loading={submitting}
         >
-          打包完成
+          {submitting ? '提交中...' : '打包完成'}
         </Button>
       </View>
     </SafeAreaView>
@@ -279,6 +378,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

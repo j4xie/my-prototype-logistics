@@ -3,12 +3,13 @@
  * 对应原型: warehouse/inventory-detail.html
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Button, Divider, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +17,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 type RouteType = RouteProp<WHInventoryStackParamList, "WHInventoryDetail">;
@@ -38,62 +41,178 @@ interface OperationLog {
   type: "in" | "out" | "normal";
 }
 
+/**
+ * 计算批次距离过期的天数
+ */
+const calculateExpiryDays = (expiryDate?: string): number => {
+  if (!expiryDate) return 999; // 无过期日期，显示很大
+  const expiry = new Date(expiryDate);
+  const now = new Date();
+  return Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+/**
+ * 判断库存状态
+ */
+const getInventoryStatus = (totalQty: number, safetyStock: number): { status: string; label: string } => {
+  if (totalQty >= safetyStock * 1.5) return { status: 'sufficient', label: '充足' };
+  if (totalQty >= safetyStock) return { status: 'warning', label: '正常' };
+  if (totalQty > 0) return { status: 'danger', label: '不足' };
+  return { status: 'danger', label: '缺货' };
+};
+
+/**
+ * 根据存储类型获取温度和保质期描述
+ */
+const getStorageInfo = (storageType?: string): { temp: string; shelfLife: string } => {
+  switch (storageType?.toLowerCase()) {
+    case 'frozen':
+      return { temp: '-18°C (冷冻)', shelfLife: '90天' };
+    case 'fresh':
+      return { temp: '0°C ~ 4°C (冷藏)', shelfLife: '7天' };
+    case 'dry':
+      return { temp: '常温', shelfLife: '365天' };
+    default:
+      return { temp: '0°C ~ 4°C (冷藏)', shelfLife: '7天' };
+  }
+};
+
 export function WHInventoryDetailScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const { materialId } = route.params;
 
-  // 模拟库存数据
-  const inventoryDetail = {
-    materialName: "带鱼",
-    materialType: "鲜品",
-    totalQuantity: 856,
-    safetyStock: 200,
-    status: "sufficient", // sufficient, warning, danger
-    statusLabel: "充足",
-    storageTemp: "0°C ~ 4°C (冷藏)",
-    shelfLife: "7天",
-    unitPrice: 30,
-    totalValue: 25680,
-    batches: [
-      {
-        id: "1",
-        batchNumber: "MB-20251223-001",
-        quantity: 256,
-        inboundDate: "2025-12-23",
-        location: "A区-冷藏库-01",
-        expiryDays: 3,
-        isFifo: true,
-      },
-      {
-        id: "2",
-        batchNumber: "MB-20251224-002",
-        quantity: 320,
-        inboundDate: "2025-12-24",
-        location: "A区-冷藏库-02",
-        expiryDays: 4,
-      },
-      {
-        id: "3",
-        batchNumber: "MB-20251226-001",
-        quantity: 280,
-        inboundDate: "2025-12-26",
-        location: "A区-冷藏库-01",
-        expiryDays: 7,
-        isNew: true,
-      },
-    ] as BatchItem[],
-    locationDistribution: [
-      { name: "A区-冷藏库-01", quantity: 536 },
-      { name: "A区-冷藏库-02", quantity: 320 },
-    ],
-    operationLogs: [
-      { id: "1", time: "12-26 09:30", action: "入库 +280kg (张仓管)", type: "in" },
-      { id: "2", time: "12-25 15:00", action: "出库 -80kg (订单SH-20251225-001)", type: "out" },
-      { id: "3", time: "12-24 10:00", action: "入库 +320kg (李仓管)", type: "normal" },
-    ] as OperationLog[],
-  };
+  const [loading, setLoading] = useState(true);
+  const [batches, setBatches] = useState<MaterialBatch[]>([]);
+  const [inventoryDetail, setInventoryDetail] = useState<{
+    materialName: string;
+    materialType: string;
+    totalQuantity: number;
+    safetyStock: number;
+    status: string;
+    statusLabel: string;
+    storageTemp: string;
+    shelfLife: string;
+    unitPrice: number;
+    totalValue: number;
+    batches: BatchItem[];
+    locationDistribution: { name: string; quantity: number }[];
+    operationLogs: OperationLog[];
+  } | null>(null);
+
+  // 加载数据
+  const loadData = useCallback(async () => {
+    try {
+      // 获取该物料类型的所有批次
+      const response = await materialBatchApiClient.getMaterialBatches({
+        materialTypeId: materialId,
+        page: 1,
+        size: 50,
+      }) as { data?: { content?: MaterialBatch[] }; content?: MaterialBatch[] };
+
+      const batchList = response?.data?.content ?? response?.content ?? [];
+      setBatches(batchList);
+
+      const firstBatch = batchList[0];
+      if (batchList.length > 0 && firstBatch) {
+        // 从批次数据构建详情
+        const totalQty = batchList.reduce((sum, b) => sum + (b.remainingQuantity ?? 0), 0);
+        const safetyStock = 200; // 默认安全库存
+        const statusInfo = getInventoryStatus(totalQty, safetyStock);
+        const storageInfo = getStorageInfo(firstBatch.storageType);
+        const unitPrice = firstBatch.unitPrice ?? 30;
+
+        // 构建批次列表
+        const batchItems: BatchItem[] = batchList.map((b, idx) => ({
+          id: b.id,
+          batchNumber: b.batchNumber || `MB-${b.id}`,
+          quantity: b.remainingQuantity ?? 0,
+          inboundDate: b.createdAt?.split('T')[0] ?? '',
+          location: b.storageLocation || 'A区-冷藏库',
+          expiryDays: calculateExpiryDays(b.expiryDate),
+          isFifo: idx === 0, // 第一个批次标记为FIFO优先消耗
+          isNew: calculateExpiryDays(b.expiryDate) >= 7,
+        }));
+
+        // 构建库位分布
+        const locationMap = new Map<string, number>();
+        batchList.forEach(b => {
+          const loc = b.storageLocation || 'A区-冷藏库';
+          locationMap.set(loc, (locationMap.get(loc) ?? 0) + (b.remainingQuantity ?? 0));
+        });
+        const locationDistribution = Array.from(locationMap.entries()).map(([name, quantity]) => ({
+          name,
+          quantity,
+        }));
+
+        setInventoryDetail({
+          materialName: firstBatch.materialName || '物料',
+          materialType: firstBatch.storageType === 'frozen' ? '冻品' : '鲜品',
+          totalQuantity: totalQty,
+          safetyStock,
+          status: statusInfo.status,
+          statusLabel: statusInfo.label,
+          storageTemp: storageInfo.temp,
+          shelfLife: storageInfo.shelfLife,
+          unitPrice,
+          totalValue: totalQty * unitPrice,
+          batches: batchItems,
+          locationDistribution,
+          operationLogs: [], // 操作日志需要另外API获取，暂时为空
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载库存详情失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [materialId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // 加载中显示
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>库存详情</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载库存详情...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 无数据显示
+  if (!inventoryDetail) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>库存详情</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>暂无库存数据</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -300,6 +419,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",
