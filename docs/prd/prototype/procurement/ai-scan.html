@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI扫描选品 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="procurement.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回工作台</a>
+
+  <div class="mobile-container">
+    <header class="header ai-header">
+      <h1>AI扫描选品</h1>
+      <p>智能识别产品 · 市场分析 · 采购建议</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 扫描区域 -->
+      <div class="scan-area">
+        <div class="scan-preview">
+          <div class="scan-frame">
+            <div class="scan-corner top-left"></div>
+            <div class="scan-corner top-right"></div>
+            <div class="scan-corner bottom-left"></div>
+            <div class="scan-corner bottom-right"></div>
+            <div class="scan-line"></div>
+          </div>
+          <div class="scan-placeholder">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span>将产品放入扫描区域</span>
+          </div>
+        </div>
+        <div class="scan-actions">
+          <button class="scan-btn-action secondary" onclick="document.getElementById('fileInput').click()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21,15 16,10 5,21"/>
+            </svg>
+            <span>相册选择</span>
+            <input type="file" id="fileInput" accept="image/*" style="display:none">
+          </button>
+          <button class="scan-btn-action primary" onclick="startScan()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span>拍照识别</span>
+          </button>
+          <button class="scan-btn-action secondary" onclick="scanBarcode()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 5v14"/>
+              <path d="M8 5v14"/>
+              <path d="M12 5v14"/>
+              <path d="M17 5v14"/>
+              <path d="M21 5v14"/>
+            </svg>
+            <span>扫描条码</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- AI识别状态 (隐藏状态) -->
+      <div class="ai-status" id="aiStatus" style="display:none;">
+        <div class="ai-status-icon">
+          <div class="ai-loading-ring"></div>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 10 10"/>
+          </svg>
+        </div>
+        <div class="ai-status-text">AI识别中...</div>
+        <div class="ai-progress">
+          <div class="ai-progress-bar" style="width: 65%"></div>
+        </div>
+        <div class="ai-progress-text">正在分析产品特征...</div>
+      </div>
+
+      <!-- AI识别结果 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">识别结果</span>
+          <span class="ai-badge">AI</span>
+        </div>
+        <a href="ai-analysis.html" class="ai-result-card">
+          <div class="result-image">
+            <div class="image-placeholder">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <ellipse cx="12" cy="12" rx="10" ry="6"/>
+                <path d="M2 12c0 3 4.5 6 10 6s10-3 10-6"/>
+              </svg>
+            </div>
+          </div>
+          <div class="result-content">
+            <div class="result-name">带鱼 <span class="latin-name">(Trichiurus lepturus)</span></div>
+            <div class="result-tags">
+              <span class="tag category">海水鱼类</span>
+              <span class="tag fresh">鲜品</span>
+              <span class="tag confidence">置信度 96%</span>
+            </div>
+            <div class="result-specs">
+              <div class="spec-item">
+                <span class="spec-label">规格</span>
+                <span class="spec-value">500g-1kg/条</span>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">存储</span>
+                <span class="spec-value">冷藏 0-4°C</span>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">保质</span>
+                <span class="spec-value">3-5天</span>
+              </div>
+            </div>
+          </div>
+          <div class="result-arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9,18 15,12 9,6"/>
+            </svg>
+          </div>
+        </a>
+      </div>
+
+      <!-- 快速操作 -->
+      <div class="section">
+        <div class="quick-result-actions">
+          <a href="ai-analysis.html" class="result-action-btn primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            <span>查看详细分析</span>
+          </a>
+          <a href="order-create.html?product=带鱼" class="result-action-btn secondary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+            <span>直接采购</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 历史扫描记录 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">最近扫描</span>
+          <span class="section-link">查看全部 ></span>
+        </div>
+        <div class="scan-history">
+          <a href="ai-analysis.html" class="history-item">
+            <div class="history-image">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <ellipse cx="12" cy="12" rx="10" ry="6"/>
+              </svg>
+            </div>
+            <div class="history-info">
+              <div class="history-name">虾仁</div>
+              <div class="history-time">今天 09:30</div>
+            </div>
+            <div class="history-status analyzed">已分析</div>
+          </a>
+          <a href="ai-analysis.html" class="history-item">
+            <div class="history-image">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <ellipse cx="12" cy="12" rx="10" ry="6"/>
+              </svg>
+            </div>
+            <div class="history-info">
+              <div class="history-name">鲈鱼</div>
+              <div class="history-time">昨天 14:20</div>
+            </div>
+            <div class="history-status ordered">已采购</div>
+          </a>
+          <a href="ai-analysis.html" class="history-item">
+            <div class="history-image">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <ellipse cx="12" cy="12" rx="10" ry="6"/>
+              </svg>
+            </div>
+            <div class="history-info">
+              <div class="history-name">鱿鱼</div>
+              <div class="history-time">昨天 10:15</div>
+            </div>
+            <div class="history-status analyzed">已分析</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- AI功能说明 -->
+      <div class="section">
+        <div class="ai-features">
+          <div class="ai-feature-item">
+            <div class="feature-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <div class="feature-text">
+              <div class="feature-title">智能识别</div>
+              <div class="feature-desc">AI自动识别产品种类和规格</div>
+            </div>
+          </div>
+          <div class="ai-feature-item">
+            <div class="feature-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+              </svg>
+            </div>
+            <div class="feature-text">
+              <div class="feature-title">市场分析</div>
+              <div class="feature-desc">实时行情和价格趋势分析</div>
+            </div>
+          </div>
+          <div class="ai-feature-item">
+            <div class="feature-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"/>
+                <path d="M18 17V9"/>
+                <path d="M13 17V5"/>
+                <path d="M8 17v-3"/>
+              </svg>
+            </div>
+            <div class="feature-text">
+              <div class="feature-title">生产建议</div>
+              <div class="feature-desc">结合工厂情况给出采购建议</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="order-list.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>订单</span>
+      </a>
+      <a href="ai-scan.html" class="nav-item scan-btn active">
+        <div class="scan-btn-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <span>AI扫描</span>
+      </a>
+      <a href="supplier-list.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>供应商</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    function startScan() {
+      // 显示AI识别状态
+      document.getElementById('aiStatus').style.display = 'block';
+
+      // 模拟识别过程
+      setTimeout(() => {
+        document.getElementById('aiStatus').style.display = 'none';
+        alert('识别完成！发现: 带鱼 (置信度 96%)');
+      }, 2000);
+    }
+
+    function scanBarcode() {
+      alert('请将条码对准扫描框');
+    }
+  </script>
+</body>
+</html>

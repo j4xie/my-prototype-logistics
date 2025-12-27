@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2018-2019
- * All rights reserved, Designed By www.joolun.com
+ * Copyright (C) 2024-2025
+ * 食品商城小程序
  * 注意：
- * 本软件为www.joolun.com开发研制，项目使用请保留此说明
+ * 基于 JooLun 框架二次开发
  */
 const app = getApp()
+const tracker = require('../../utils/tracker')
 
 Page({
   data: {
@@ -27,7 +28,17 @@ Page({
     // 启动广告弹窗
     showSplashAd: false,
     splashAdData: null,
-    splashAdCountdown: 5
+    splashAdCountdown: 5,
+    // ========== 个性化推荐相关 ==========
+    recommendList: [],           // 个性化推荐商品列表
+    isLoggedIn: false,           // 登录状态
+    recommendPage: 0,            // 推荐分页页码
+    hasMoreRecommend: true,      // 是否有更多推荐
+    recommendLoading: false,     // 推荐加载中状态
+    usePersonalized: false,      // 是否使用个性化推荐(需5+行为)
+    // ========== 冷启动弹窗相关 ==========
+    showColdStartPopup: false,   // 是否显示冷启动弹窗
+    coldStartChecked: false      // 是否已检查过冷启动状态
   },
 
   // 启动广告定时器
@@ -35,8 +46,13 @@ Page({
   onLoad() {
     app.initPage()
       .then(res => {
+        // 检查登录状态
+        this.checkLoginStatus()
+        // 加载数据
         this.loadData()
         this.loadBanners()
+        // 加载个性化推荐
+        this.loadRecommendations()
         // 延迟显示启动广告
         setTimeout(() => {
           this.loadSplashAd()
@@ -49,6 +65,8 @@ Page({
       index: 2,
       text: app.globalData.shoppingCartCount + ''
     })
+    // 重新检查登录状态（用户可能在其他页面登录）
+    this.checkLoginStatus()
   },
   loadData(){
     this.goodsNew()
@@ -116,14 +134,23 @@ Page({
       })
   },
   refresh(){
+    // P1修复: 刷新时清除曝光记录，确保统计正确
+    tracker.clearExposures()
+
     this.setData({
       loadmore: true,
       ['page.current']: 1,
       goodsList: [],
       goodsListNew: [],
-      goodsListHot: []
+      goodsListHot: [],
+      // 重置推荐状态
+      recommendList: [],
+      recommendPage: 0,
+      hasMoreRecommend: true
     })
     this.loadData()
+    // 刷新个性化推荐
+    this.loadRecommendations()
   },
   onPullDownRefresh(){
     // 显示顶部刷新图标
@@ -135,7 +162,11 @@ Page({
     wx.stopPullDownRefresh()
   },
   onReachBottom() {
-    if (this.data.loadmore) {
+    // 如果使用个性化推荐，加载更多推荐
+    if (this.data.usePersonalized && this.data.hasMoreRecommend && !this.data.recommendLoading) {
+      this.loadMoreRecommendations()
+    } else if (this.data.loadmore) {
+      // 否则加载更多普通商品
       this.setData({
         ['page.current']: this.data.page.current + 1
       })
@@ -168,11 +199,13 @@ Page({
         }
       })
       .catch(err => {
-        console.log('加载Banner失败，使用默认图片')
-        // 使用默认banner
+        console.log('加载Banner失败，使用本地默认图片')
+        // 使用本地默认banner图片
         this.setData({
           swiperData: [
-            'https://joolun-base-test.oss-cn-zhangjiakou.aliyuncs.com/1/material/c888e1d3-f542-4b4e-aa43-be9d50cc0696.jpg'
+            '/public/img/banner_1.jpg',
+            '/public/img/banner_2.jpg',
+            '/public/img/banner_3.jpg'
           ]
         })
       })
@@ -214,6 +247,25 @@ Page({
       }
     }
   },
+  // Banner图片加载失败时使用本地备用图片
+  onBannerImageError(e) {
+    const index = e.currentTarget.dataset.index
+    const fallbackImages = [
+      '/public/img/banner_1.jpg',
+      '/public/img/banner_2.jpg',
+      '/public/img/banner_3.jpg'
+    ]
+    // 使用对应索引的本地图片，超出范围则循环使用
+    const fallbackImage = fallbackImages[index % fallbackImages.length]
+    console.log(`Banner图片加载失败 (index: ${index}), 使用本地备用图片: ${fallbackImage}`)
+
+    // 更新对应索引的图片URL
+    const swiperData = this.data.swiperData
+    if (swiperData && swiperData[index]) {
+      swiperData[index] = fallbackImage
+      this.setData({ swiperData })
+    }
+  },
   // 扫码溯源 - 统一跳转到扫码页
   scanTrace() {
     wx.navigateTo({
@@ -225,6 +277,20 @@ Page({
     wx.navigateTo({
       url: '/pages/base/search/index'
     })
+  },
+
+  // 跳转登录页（未登录用户点击价格时触发）
+  goToLogin() {
+    wx.showToast({
+      title: '请先登录查看价格',
+      icon: 'none',
+      duration: 1500
+    })
+    setTimeout(() => {
+      wx.navigateTo({
+        url: '/pages/auth/login/index'
+      })
+    }, 500)
   },
 
   // ========== 启动广告弹窗相关 ==========
@@ -250,17 +316,11 @@ Page({
         }
       })
       .catch(err => {
-        console.log('加载启动广告失败', err)
-        // 使用默认广告图片
+        console.log('加载启动广告失败，不显示默认广告', err)
+        // 不显示启动广告，避免加载外部图片失败
         this.setData({
-          splashAdData: {
-            imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600',
-            productId: null
-          },
-          showSplashAd: true,
-          splashAdCountdown: 5
+          showSplashAd: false
         })
-        this.startSplashAdCountdown()
       })
   },
 
@@ -310,5 +370,252 @@ Page({
   // 阻止冒泡
   preventClose() {
     // 空函数，阻止点击内容区域关闭弹窗
+  },
+
+  // ========== 个性化推荐相关方法 ==========
+
+  /**
+   * 检查登录状态
+   */
+  checkLoginStatus() {
+    const wxUser = app.globalData.wxUser
+    const isLoggedIn = wxUser && wxUser.id
+    this.setData({ isLoggedIn: isLoggedIn })
+    console.log('登录状态:', isLoggedIn ? '已登录' : '未登录', wxUser ? wxUser.id : 'null')
+  },
+
+  /**
+   * 获取用户ID
+   */
+  getWxUserId() {
+    const wxUser = app.globalData.wxUser
+    return wxUser ? wxUser.id : null
+  },
+
+  /**
+   * 加载个性化推荐
+   * - 已登录用户: 调用个性化推荐API
+   * - 未登录用户: 调用热门商品API
+   */
+  loadRecommendations() {
+    const wxUserId = this.getWxUserId()
+
+    if (wxUserId) {
+      // 已登录，尝试加载个性化推荐
+      this.loadPersonalizedRecommendations(wxUserId)
+    } else {
+      // 未登录，加载热门商品
+      this.loadPopularProducts()
+    }
+  },
+
+  /**
+   * 加载个性化推荐
+   */
+  loadPersonalizedRecommendations(wxUserId) {
+    this.setData({ recommendLoading: true })
+
+    // 只有已授权个人信息的用户才检查冷启动弹窗
+    // 匿名用户（没有 nickName）不显示冷启动弹窗
+    const wxUser = app.globalData.wxUser
+    if (wxUser && wxUser.nickName) {
+      this.checkColdStart(wxUserId)
+    }
+
+    // 先调用首页推荐API（获取初始推荐）
+    app.api.getHomeRecommend(wxUserId, 10)
+      .then(res => {
+        const data = res.data || res
+        const products = data.recommendations || data || []
+        // 添加默认值容错：后端可能未返回 coldStartState
+        const coldStartState = data.coldStartState ?? 'cold_start'
+
+        // 判断是否启用个性化推荐
+        // 只有在明确返回非cold_start状态时才启用个性化
+        const usePersonalized = products.length > 0 && coldStartState !== 'cold_start'
+
+        this.setData({
+          recommendList: products,
+          recommendPage: 0,
+          usePersonalized: usePersonalized,
+          hasMoreRecommend: products.length >= 10,
+          recommendLoading: false
+        })
+
+        console.log('个性化推荐加载完成:', {
+          count: products.length,
+          coldStartState: coldStartState,
+          usePersonalized: usePersonalized
+        })
+
+        // 追踪推荐商品曝光
+        if (products.length > 0) {
+          const productIds = products.map(p => p.id)
+          tracker.trackExposure(productIds)
+        }
+      })
+      .catch(err => {
+        console.error('加载个性化推荐失败:', err)
+        // 降级到热门商品
+        this.loadPopularProducts()
+      })
+  },
+
+  /**
+   * 加载热门商品（未登录或冷启动时使用）
+   */
+  loadPopularProducts() {
+    this.setData({ recommendLoading: true })
+
+    app.api.getPopularProducts(null, 10)
+      .then(res => {
+        const products = res.data || res || []
+        this.setData({
+          recommendList: products,
+          usePersonalized: false,
+          hasMoreRecommend: products.length >= 10,
+          recommendLoading: false
+        })
+        console.log('热门商品加载完成:', products.length)
+      })
+      .catch(err => {
+        console.error('加载热门商品失败:', err)
+        this.setData({
+          recommendList: [],
+          recommendLoading: false
+        })
+      })
+  },
+
+  /**
+   * 加载更多推荐（触底加载）
+   */
+  loadMoreRecommendations() {
+    if (this.data.recommendLoading || !this.data.hasMoreRecommend) {
+      return
+    }
+
+    const wxUserId = this.getWxUserId()
+    if (!wxUserId) {
+      return
+    }
+
+    const nextPage = this.data.recommendPage + 1
+    this.setData({ recommendLoading: true })
+
+    app.api.getYouMayLike(wxUserId, nextPage, 10)
+      .then(res => {
+        const data = res.data || res
+        const products = data.content || data.recommendations || data || []
+
+        // 追踪新加载商品的曝光
+        if (products.length > 0) {
+          const productIds = products.map(p => p.id)
+          tracker.trackExposure(productIds)
+        }
+
+        this.setData({
+          recommendList: [...this.data.recommendList, ...products],
+          recommendPage: nextPage,
+          hasMoreRecommend: products.length >= 10,
+          recommendLoading: false
+        })
+
+        console.log('加载更多推荐:', {
+          page: nextPage,
+          newCount: products.length,
+          totalCount: this.data.recommendList.length + products.length
+        })
+      })
+      .catch(err => {
+        console.error('加载更多推荐失败:', err)
+        this.setData({
+          recommendLoading: false,
+          hasMoreRecommend: false
+        })
+      })
+  },
+
+  /**
+   * 推荐商品点击事件
+   * 记录点击行为用于强化学习反馈
+   */
+  onRecommendClick(e) {
+    const product = e.currentTarget.dataset.product
+    if (!product) return
+
+    const wxUserId = this.getWxUserId()
+    if (wxUserId && product.id) {
+      // 记录推荐点击（用于Thompson Sampling强化学习）
+      tracker.trackView({
+        productId: product.id,
+        productName: product.name,
+        source: 'recommend_home',
+        duration: 0  // 点击时还未浏览，时长为0
+      })
+
+      console.log('推荐商品点击:', product.id, product.name)
+    }
+
+    // 跳转到商品详情，携带来源参数
+    wx.navigateTo({
+      url: '/pages/goods/goods-detail/index?id=' + product.id + '&source=recommend_home'
+    })
+  },
+
+  // ========== 冷启动弹窗相关方法 ==========
+
+  /**
+   * 检查是否需要显示冷启动弹窗
+   * 只有首次使用的用户才会看到弹窗
+   */
+  checkColdStart(wxUserId) {
+    if (this.data.coldStartChecked) {
+      return // 已检查过，不重复检查
+    }
+
+    app.api.checkColdStart(wxUserId)
+      .then(res => {
+        const needsShow = res.data && res.data.needsShow
+        console.log('冷启动检查结果:', needsShow)
+
+        this.setData({
+          coldStartChecked: true,
+          showColdStartPopup: needsShow
+        })
+      })
+      .catch(err => {
+        console.error('检查冷启动状态失败:', err)
+        this.setData({ coldStartChecked: true })
+      })
+  },
+
+  /**
+   * 冷启动弹窗完成/跳过回调
+   */
+  onColdStartComplete(e) {
+    const { skipped, preferences } = e.detail
+
+    console.log('冷启动完成:', skipped ? '已跳过' : '已设置偏好', preferences)
+
+    // 关闭弹窗
+    this.setData({ showColdStartPopup: false })
+
+    // 如果用户设置了偏好，刷新推荐列表
+    if (!skipped && preferences) {
+      // 触发兴趣分析，让后端更新用户标签
+      const wxUserId = this.getWxUserId()
+      if (wxUserId) {
+        app.api.analyzeUserInterests(wxUserId)
+          .then(() => {
+            console.log('已触发兴趣分析')
+            // 重新加载推荐
+            this.loadRecommendations()
+          })
+          .catch(err => {
+            console.error('触发兴趣分析失败:', err)
+          })
+      }
+    }
   }
 })

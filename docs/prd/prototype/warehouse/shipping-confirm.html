@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>发货确认 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="packing.html" class="back-to-index">< 返回打包</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>发货确认</h1>
+      <p>SH-20251226-001</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 打包完成状态 -->
+      <div class="status-card success">
+        <div class="status-icon">✓</div>
+        <div class="status-info">
+          <div class="status-title">已打包完成</div>
+          <div class="status-desc">打包人: 陈仓管 | 完成时间: 12:30</div>
+        </div>
+      </div>
+
+      <!-- 收货信息 -->
+      <div class="detail-section">
+        <div class="detail-section-title">收货信息</div>
+        <div class="detail-item">
+          <span class="detail-label">客户</span>
+          <span class="detail-value">鲜食超市</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">收货人</span>
+          <span class="detail-value">王经理</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">电话</span>
+          <span class="detail-value clickable">138****8888</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">地址</span>
+          <span class="detail-value">上海市浦东新区XX路XX号</span>
+        </div>
+      </div>
+
+      <!-- 物流选择 -->
+      <div class="form-section">
+        <div class="form-section-title">选择物流</div>
+
+        <div class="logistics-card selected">
+          <div class="logistics-header">
+            <span class="logistics-name">顺丰冷链</span>
+            <span class="logistics-tag">推荐</span>
+          </div>
+          <div class="logistics-info">
+            <div class="logistics-row">
+              <span class="logistics-label">预计送达</span>
+              <span class="logistics-value">明日10:00前</span>
+            </div>
+            <div class="logistics-row">
+              <span class="logistics-label">运费</span>
+              <span class="logistics-value">¥150</span>
+            </div>
+          </div>
+          <label class="logistics-select">
+            <input type="radio" name="logistics" value="sf" checked>
+            <span class="checkmark"></span>
+          </label>
+        </div>
+
+        <div class="logistics-card">
+          <div class="logistics-header">
+            <span class="logistics-name">京东冷链</span>
+          </div>
+          <div class="logistics-info">
+            <div class="logistics-row">
+              <span class="logistics-label">预计送达</span>
+              <span class="logistics-value">明日14:00前</span>
+            </div>
+            <div class="logistics-row">
+              <span class="logistics-label">运费</span>
+              <span class="logistics-value">¥120</span>
+            </div>
+          </div>
+          <label class="logistics-select">
+            <input type="radio" name="logistics" value="jd">
+            <span class="checkmark"></span>
+          </label>
+        </div>
+
+        <div class="logistics-card">
+          <div class="logistics-header">
+            <span class="logistics-name">客户自提</span>
+          </div>
+          <div class="logistics-info">
+            <div class="logistics-row">
+              <span class="logistics-label">说明</span>
+              <span class="logistics-value">客户上门提货</span>
+            </div>
+            <div class="logistics-row">
+              <span class="logistics-label">运费</span>
+              <span class="logistics-value">¥0</span>
+            </div>
+          </div>
+          <label class="logistics-select">
+            <input type="radio" name="logistics" value="pickup">
+            <span class="checkmark"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 运单信息 -->
+      <div class="form-section">
+        <div class="form-section-title">运单信息</div>
+
+        <div class="form-group">
+          <label class="form-label">运单号</label>
+          <input type="text" class="form-input" placeholder="请输入运单号" value="SF1234567890">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" rows="2" placeholder="请输入发货备注（选填）"></textarea>
+        </div>
+      </div>
+
+      <!-- 发货清单 -->
+      <div class="detail-section">
+        <div class="detail-section-title">发货清单</div>
+        <div class="shipment-summary">
+          <div class="summary-item">
+            <span class="summary-label">商品</span>
+            <span class="summary-value">带鱼片</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">数量</span>
+            <span class="summary-value">80 kg (2件)</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">批次</span>
+            <span class="summary-value">MB-20251220-001, MB-20251221-002</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">包装</span>
+            <span class="summary-value">泡沫箱 x2 + 冰袋 x8</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="action-buttons">
+        <a href="packing.html" class="action-btn secondary">返回修改</a>
+        <button type="button" class="action-btn primary" onclick="alert('发货成功！运单号: SF1234567890'); location.href='outbound.html';">确认发货</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

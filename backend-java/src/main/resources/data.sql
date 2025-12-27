@@ -19,19 +19,48 @@ INSERT IGNORE INTO platform_admins (username, password_hash, real_name, email, p
 ('platform_admin', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', '平台超级管理员', 'admin@cretas.com', '13900000000', 'super_admin', 'active', NOW(), NOW());
 
 -- =====================================================
--- 3. 工厂用户 (users)
+-- 3. 工厂用户 (users) - 14角色系统
 -- department枚举: farming, processing, logistics, quality, management
+-- level: 0=工厂总监, 10=部门经理, 20=车间主任, 30=一线员工, 50=查看者, 99=未激活
+-- platform_type: web,mobile (所有角色默认支持双平台)
 -- =====================================================
-INSERT IGNORE INTO users (username, password_hash, factory_id, full_name, phone, department, position, role_code, is_active, monthly_salary, expected_work_minutes, created_at, updated_at) VALUES
--- F001 工厂用户
-('factory_admin1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '张三', '13800138101', 'management', '工厂管理员', 'factory_super_admin', 1, 15000.00, 10080, NOW(), NOW()),
-('operator1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '操作员小王', '13800138111', 'processing', '操作员', 'operator', 1, 6000.00, 10080, NOW(), NOW()),
--- F002 工厂用户
-('factory_admin2', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F002', '李四', '13800138102', 'management', '工厂管理员', 'factory_super_admin', 1, 15000.00, 10080, NOW(), NOW()),
-('operator2', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F002', '操作员小李', '13800138112', 'processing', '操作员', 'operator', 1, 6000.00, 10080, NOW(), NOW()),
--- F003 工厂用户
-('factory_admin3', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F003', '王五', '13800138103', 'management', '工厂管理员', 'factory_super_admin', 1, 15000.00, 10080, NOW(), NOW()),
-('operator3', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F003', '操作员小张', '13800138113', 'processing', '操作员', 'operator', 1, 6000.00, 10080, NOW(), NOW());
+INSERT IGNORE INTO users (username, password_hash, factory_id, full_name, phone, department, position, role_code, is_active, monthly_salary, expected_work_minutes, level, platform_type, created_at, updated_at) VALUES
+-- ===== F001 工厂用户 (全角色测试) =====
+-- Level 0: 工厂总监
+('factory_admin1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '张三', '13800138101', 'management', '工厂总监', 'factory_super_admin', 1, 25000.00, 10080, 0, 'web,mobile', NOW(), NOW()),
+
+-- Level 10: 职能部门经理
+('hr_admin1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', 'HR经理小陈', '13800138121', 'management', 'HR管理员', 'hr_admin', 1, 12000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+('production_mgr1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '生产经理老刘', '13800138122', 'processing', '生产经理', 'production_manager', 1, 15000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+('quality_mgr1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '质量经理小周', '13800138123', 'quality', '质量经理', 'quality_manager', 1, 14000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+('warehouse_mgr1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '仓储主管老赵', '13800138124', 'logistics', '仓储主管', 'warehouse_manager', 1, 12000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+('equipment_admin1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '设备管理员小孙', '13800138125', 'processing', '设备管理员', 'equipment_admin', 1, 11000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+('procurement_mgr1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '采购主管老钱', '13800138126', 'management', '采购主管', 'procurement_manager', 1, 12000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+('sales_mgr1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '销售主管小吴', '13800138127', 'management', '销售主管', 'sales_manager', 1, 13000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+('finance_mgr1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '财务主管老郑', '13800138128', 'management', '财务主管', 'finance_manager', 1, 14000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+
+-- Level 20: 车间管理
+('workshop_sup1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '车间主任老马', '13800138131', 'processing', '车间主任', 'workshop_supervisor', 1, 10000.00, 10080, 20, 'web,mobile', NOW(), NOW()),
+
+-- Level 30: 一线员工
+('quality_insp1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '质检员小林', '13800138141', 'quality', '质检员', 'quality_inspector', 1, 7000.00, 10080, 30, 'web,mobile', NOW(), NOW()),
+('operator1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '操作员小王', '13800138111', 'processing', '操作员', 'operator', 1, 6000.00, 10080, 30, 'web,mobile', NOW(), NOW()),
+('warehouse_worker1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '仓库员小黄', '13800138151', 'logistics', '仓库员', 'warehouse_worker', 1, 5500.00, 10080, 30, 'web,mobile', NOW(), NOW()),
+
+-- Level 50: 查看者
+('viewer1', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F001', '访客小何', '13800138161', NULL, '查看者', 'viewer', 1, 0.00, 0, 50, 'web,mobile', NOW(), NOW()),
+
+-- ===== F002 工厂用户 (基础角色) =====
+('factory_admin2', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F002', '李四', '13800138102', 'management', '工厂总监', 'factory_super_admin', 1, 25000.00, 10080, 0, 'web,mobile', NOW(), NOW()),
+('production_mgr2', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F002', '生产经理老杨', '13800138202', 'processing', '生产经理', 'production_manager', 1, 15000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+('workshop_sup2', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F002', '车间主任老徐', '13800138212', 'processing', '车间主任', 'workshop_supervisor', 1, 10000.00, 10080, 20, 'web,mobile', NOW(), NOW()),
+('operator2', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F002', '操作员小李', '13800138112', 'processing', '操作员', 'operator', 1, 6000.00, 10080, 30, 'web,mobile', NOW(), NOW()),
+
+-- ===== F003 工厂用户 (基础角色) =====
+('factory_admin3', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F003', '王五', '13800138103', 'management', '工厂总监', 'factory_super_admin', 1, 25000.00, 10080, 0, 'web,mobile', NOW(), NOW()),
+('production_mgr3', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F003', '生产经理老胡', '13800138303', 'processing', '生产经理', 'production_manager', 1, 15000.00, 10080, 10, 'web,mobile', NOW(), NOW()),
+('workshop_sup3', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F003', '车间主任老朱', '13800138313', 'processing', '车间主任', 'workshop_supervisor', 1, 10000.00, 10080, 20, 'web,mobile', NOW(), NOW()),
+('operator3', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'F003', '操作员小张', '13800138113', 'processing', '操作员', 'operator', 1, 6000.00, 10080, 30, 'web,mobile', NOW(), NOW());
 
 -- =====================================================
 -- 4. 部门 (departments)
@@ -273,3 +302,156 @@ INSERT IGNORE INTO ai_analysis_results (factory_id, batch_id, report_type, analy
 ('F002', NULL, 'weekly', '## 周成本分析报告 (测试数据)\n\n### 生产情况\n- 完成批次: 2个\n- 总产量: 695盒\n- 良品率: 97.1%\n\n### 成本分析\n鲜活水产处理成本较高，建议优化冷链配送', 'test-session-003', DATE_SUB(NOW(), INTERVAL 7 DAY), NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 0, NOW(), NOW()),
 -- F003 测试报告
 ('F003', NULL, 'weekly', '## 周成本分析报告 (测试数据)\n\n### 高端水产线分析\n- 金枪鱼排: 利润率35%\n- 三文鱼刺身: 利润率28%\n\n### 优化空间\n建议扩大金枪鱼产品线', 'test-session-004', DATE_SUB(NOW(), INTERVAL 7 DAY), NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 0, NOW(), NOW());
+
+-- =====================================================
+-- 18. 设备告警 (equipment_alerts) - 解决404问题
+-- 需要关联 factory_equipment 的设备ID
+-- =====================================================
+
+-- 为 F001 添加设备告警
+INSERT IGNORE INTO equipment_alerts (factory_id, equipment_id, alert_type, level, status, message, details, triggered_at, created_at, updated_at)
+SELECT 'F001', e.id, '维护提醒', 'CRITICAL', 'ACTIVE',
+       CONCAT('设备 ', e.equipment_name, ' 维护已逾期 15 天'),
+       CONCAT('上次维护: 2025-10-01\n下次维护: 2025-11-04\n设备编号: ', e.equipment_code),
+       DATE_SUB(NOW(), INTERVAL 15 DAY), NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F001' AND e.code = 'EQ001';
+
+INSERT IGNORE INTO equipment_alerts (factory_id, equipment_id, alert_type, level, status, message, details, triggered_at, created_at, updated_at)
+SELECT 'F001', e.id, '温度异常', 'WARNING', 'ACTIVE',
+       CONCAT('设备 ', e.equipment_name, ' 运行温度偏高'),
+       CONCAT('当前温度: -12℃\n正常范围: -18℃ ~ -20℃\n设备编号: ', e.equipment_code),
+       DATE_SUB(NOW(), INTERVAL 3 DAY), NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F001' AND e.code = 'EQ001';
+
+INSERT IGNORE INTO equipment_alerts (factory_id, equipment_id, alert_type, level, status, message, details, triggered_at, acknowledged_at, acknowledged_by, acknowledged_by_name, created_at, updated_at)
+SELECT 'F001', e.id, '刀片磨损', 'WARNING', 'ACKNOWLEDGED',
+       CONCAT('设备 ', e.equipment_name, ' 刀片需要更换'),
+       CONCAT('已使用次数: 8500\n建议更换阈值: 8000\n设备编号: ', e.equipment_code),
+       DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 4 DAY), 22, '张三', NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F001' AND e.code = 'EQ002';
+
+INSERT IGNORE INTO equipment_alerts (factory_id, equipment_id, alert_type, level, status, message, details, triggered_at, acknowledged_at, acknowledged_by, acknowledged_by_name, resolved_at, resolved_by, resolved_by_name, resolution_notes, created_at, updated_at)
+SELECT 'F001', e.id, '真空度不足', 'WARNING', 'RESOLVED',
+       CONCAT('设备 ', e.equipment_name, ' 真空度低于标准'),
+       CONCAT('当前真空度: 85%\n标准值: 95%\n设备编号: ', e.equipment_code),
+       DATE_SUB(NOW(), INTERVAL 7 DAY), DATE_SUB(NOW(), INTERVAL 6 DAY), 22, '张三',
+       DATE_SUB(NOW(), INTERVAL 5 DAY), 22, '张三', '已更换真空泵密封圈，恢复正常', NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F001' AND e.code = 'EQ003';
+
+-- 为 F002 添加设备告警
+INSERT IGNORE INTO equipment_alerts (factory_id, equipment_id, alert_type, level, status, message, details, triggered_at, created_at, updated_at)
+SELECT 'F002', e.id, '电力异常', 'CRITICAL', 'ACTIVE',
+       CONCAT('设备 ', e.equipment_name, ' 电流异常'),
+       CONCAT('当前电流: 45A\n额定电流: 35A\n设备编号: ', e.equipment_code),
+       DATE_SUB(NOW(), INTERVAL 2 DAY), NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F002' AND e.code = 'EQ001';
+
+INSERT IGNORE INTO equipment_alerts (factory_id, equipment_id, alert_type, level, status, message, details, triggered_at, created_at, updated_at)
+SELECT 'F002', e.id, '水压不足', 'WARNING', 'ACTIVE',
+       CONCAT('设备 ', e.equipment_name, ' 水压低于标准'),
+       CONCAT('当前水压: 0.3MPa\n标准水压: 0.5MPa\n设备编号: ', e.equipment_code),
+       DATE_SUB(NOW(), INTERVAL 1 DAY), NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F002' AND e.code = 'EQ002';
+
+-- 为 F003 添加设备告警
+INSERT IGNORE INTO equipment_alerts (factory_id, equipment_id, alert_type, level, status, message, details, triggered_at, created_at, updated_at)
+SELECT 'F003', e.id, '温度异常', 'CRITICAL', 'ACTIVE',
+       CONCAT('设备 ', e.equipment_name, ' 温度波动异常'),
+       CONCAT('当前温度: -48℃\n设定温度: -55℃\n波动范围超出±3℃\n设备编号: ', e.equipment_code),
+       DATE_SUB(NOW(), INTERVAL 1 DAY), NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F003' AND e.code = 'EQ001';
+
+INSERT IGNORE INTO equipment_alerts (factory_id, equipment_id, alert_type, level, status, message, details, triggered_at, acknowledged_at, acknowledged_by, acknowledged_by_name, resolved_at, resolved_by, resolved_by_name, resolution_notes, created_at, updated_at)
+SELECT 'F003', e.id, '刀片磨损', 'WARNING', 'RESOLVED',
+       CONCAT('设备 ', e.equipment_name, ' 刀片精度下降'),
+       CONCAT('切片厚度偏差: ±0.5mm\n标准偏差: ±0.2mm\n设备编号: ', e.equipment_code),
+       DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 9 DAY), 24, '王五',
+       DATE_SUB(NOW(), INTERVAL 8 DAY), 24, '王五', '已更换进口刀片，精度恢复正常', NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F003' AND e.code = 'EQ002';
+
+-- =====================================================
+-- 19. 出货记录 (shipment_records) - 解决无数据问题
+-- =====================================================
+INSERT IGNORE INTO shipment_records (id, factory_id, shipment_number, customer_id, shipment_date, total_amount, status, notes, created_by, created_at, updated_at) VALUES
+-- F001 出货记录
+('SH-F001-001', 'F001', 'SH20241215001', 'CUST-F001-001', '2024-12-15', 15000.00, 'DELIVERED', '带鱼段精品出货', 22, NOW(), NOW()),
+('SH-F001-002', 'F001', 'SH20241220001', 'CUST-F001-002', '2024-12-20', 8500.00, 'SHIPPED', '大虾仁出货', 22, NOW(), NOW()),
+('SH-F001-003', 'F001', 'SH20241225001', 'CUST-F001-001', '2024-12-25', 12000.00, 'PENDING', '鱿鱼圈出货', 22, NOW(), NOW()),
+-- F002 出货记录
+('SH-F002-001', 'F002', 'SH20241216001', 'CUST-F002-001', '2024-12-16', 9800.00, 'DELIVERED', '鲈鱼片出货', 23, NOW(), NOW()),
+('SH-F002-002', 'F002', 'SH20241221001', 'CUST-F002-002', '2024-12-21', 7200.00, 'SHIPPED', '海蚌肉出货', 23, NOW(), NOW()),
+-- F003 出货记录
+('SH-F003-001', 'F003', 'SH20241218001', 'CUST-F003-001', '2024-12-18', 25000.00, 'DELIVERED', '金枪鱼排出货', 24, NOW(), NOW()),
+('SH-F003-002', 'F003', 'SH20241222001', 'CUST-F003-002', '2024-12-22', 18000.00, 'PENDING', '三文鱼刺身出货', 24, NOW(), NOW());
+
+-- =====================================================
+-- 20. 质检记录 (quality_inspections) - 解决无数据问题
+-- =====================================================
+INSERT IGNORE INTO quality_inspections (factory_id, batch_id, inspector_id, inspection_type, result, inspection_date, temperature, appearance_score, texture_score, smell_score, overall_score, notes, created_at, updated_at)
+SELECT 'F001', pb.id, 27, 'INCOMING', 'PASSED', DATE(pb.start_time), -18.5, 95, 92, 94, 93.7, '带鱼外观完整，色泽正常', NOW(), NOW()
+FROM production_batches pb WHERE pb.batch_number = 'PB20241201001' AND pb.factory_id = 'F001';
+
+INSERT IGNORE INTO quality_inspections (factory_id, batch_id, inspector_id, inspection_type, result, inspection_date, temperature, appearance_score, texture_score, smell_score, overall_score, notes, created_at, updated_at)
+SELECT 'F001', pb.id, 27, 'OUTGOING', 'PASSED', DATE(pb.end_time), -20.0, 96, 94, 95, 95.0, '成品包装完整，标签规范', NOW(), NOW()
+FROM production_batches pb WHERE pb.batch_number = 'PB20241201001' AND pb.factory_id = 'F001';
+
+INSERT IGNORE INTO quality_inspections (factory_id, batch_id, inspector_id, inspection_type, result, inspection_date, temperature, appearance_score, texture_score, smell_score, overall_score, notes, created_at, updated_at)
+SELECT 'F001', pb.id, 27, 'INCOMING', 'PASSED', DATE(pb.start_time), -16.0, 94, 93, 95, 94.0, '对虾新鲜度良好', NOW(), NOW()
+FROM production_batches pb WHERE pb.batch_number = 'PB20241210001' AND pb.factory_id = 'F001';
+
+INSERT IGNORE INTO quality_inspections (factory_id, batch_id, inspector_id, inspection_type, result, inspection_date, temperature, appearance_score, texture_score, smell_score, overall_score, notes, created_at, updated_at)
+SELECT 'F002', pb.id, 28, 'INCOMING', 'PASSED', DATE(pb.start_time), 4.0, 93, 91, 93, 92.3, '鲈鱼活体健康', NOW(), NOW()
+FROM production_batches pb WHERE pb.batch_number = 'PB20241202001' AND pb.factory_id = 'F002';
+
+INSERT IGNORE INTO quality_inspections (factory_id, batch_id, inspector_id, inspection_type, result, inspection_date, temperature, appearance_score, texture_score, smell_score, overall_score, notes, created_at, updated_at)
+SELECT 'F003', pb.id, 29, 'INCOMING', 'PASSED', DATE(pb.start_time), -55.0, 98, 97, 98, 97.7, '金枪鱼品质优良', NOW(), NOW()
+FROM production_batches pb WHERE pb.batch_number = 'PB20241203001' AND pb.factory_id = 'F003';
+
+-- =====================================================
+-- 21. 废弃处理记录 (disposal_records) - 解决无数据问题
+-- =====================================================
+INSERT IGNORE INTO disposal_records (id, factory_id, disposal_number, disposal_date, disposal_type, disposal_reason, quantity, unit, estimated_loss, actual_loss, status, notes, created_by, approved_by, approved_at, created_at, updated_at) VALUES
+-- F001 废弃记录
+('DR-F001-001', 'F001', 'DR20241210001', '2024-12-10', 'SCRAPPED', '过期', 50.0, 'kg', 1750.00, 1750.00, 'COMPLETED', '带鱼过期报废', 22, 22, NOW(), NOW(), NOW()),
+('DR-F001-002', 'F001', 'DR20241215001', '2024-12-15', 'RETURNED', '质量不合格', 30.0, 'kg', 2400.00, 2400.00, 'COMPLETED', '对虾质量问题退货', 22, 22, NOW(), NOW(), NOW()),
+-- F002 废弃记录
+('DR-F002-001', 'F002', 'DR20241212001', '2024-12-12', 'SCRAPPED', '设备故障', 20.0, 'kg', 1000.00, 1000.00, 'COMPLETED', '清洗设备故障导致损耗', 23, 23, NOW(), NOW(), NOW()),
+-- F003 废弃记录
+('DR-F003-001', 'F003', 'DR20241218001', '2024-12-18', 'SCRAPPED', '温度异常', 10.0, 'kg', 1200.00, 1200.00, 'COMPLETED', '冷库温度异常导致损失', 24, 24, NOW(), NOW(), NOW()),
+('DR-F003-002', 'F003', 'DR20241220001', '2024-12-20', 'RETURNED', '客户退货', 15.0, 'kg', 1425.00, 1425.00, 'PENDING', '客户退货待处理', 24, NULL, NULL, NOW(), NOW());
+
+-- =====================================================
+-- 22. 考勤记录 (time_clock_records) - 解决无数据问题
+-- =====================================================
+INSERT IGNORE INTO time_clock_records (factory_id, user_id, clock_in_time, clock_out_time, clock_in_location, clock_out_location, work_date, status, total_work_minutes, overtime_minutes, created_at, updated_at) VALUES
+-- F001 考勤记录 (user_id: 22=factory_admin1, 27=quality_insp1, 28=operator1)
+('F001', 22, '2024-12-26 08:00:00', '2024-12-26 17:30:00', '上海市浦东新区', '上海市浦东新区', '2024-12-26', 'NORMAL', 570, 30, NOW(), NOW()),
+('F001', 22, '2024-12-25 08:05:00', '2024-12-25 17:00:00', '上海市浦东新区', '上海市浦东新区', '2024-12-25', 'NORMAL', 535, 0, NOW(), NOW()),
+('F001', 27, '2024-12-26 07:55:00', '2024-12-26 17:00:00', '上海市浦东新区', '上海市浦东新区', '2024-12-26', 'NORMAL', 545, 0, NOW(), NOW()),
+('F001', 27, '2024-12-25 08:15:00', '2024-12-25 17:00:00', '上海市浦东新区', '上海市浦东新区', '2024-12-25', 'LATE', 525, 0, NOW(), NOW()),
+('F001', 28, '2024-12-26 08:00:00', '2024-12-26 18:00:00', '上海市浦东新区', '上海市浦东新区', '2024-12-26', 'NORMAL', 600, 60, NOW(), NOW()),
+-- F002 考勤记录
+('F002', 23, '2024-12-26 07:58:00', '2024-12-26 17:00:00', '浙江省宁波市', '浙江省宁波市', '2024-12-26', 'NORMAL', 542, 0, NOW(), NOW()),
+('F002', 23, '2024-12-25 08:00:00', '2024-12-25 17:30:00', '浙江省宁波市', '浙江省宁波市', '2024-12-25', 'NORMAL', 570, 30, NOW(), NOW()),
+-- F003 考勤记录
+('F003', 24, '2024-12-26 08:00:00', '2024-12-26 17:00:00', '山东省青岛市', '山东省青岛市', '2024-12-26', 'NORMAL', 540, 0, NOW(), NOW()),
+('F003', 24, '2024-12-25 09:00:00', '2024-12-25 17:00:00', '山东省青岛市', '山东省青岛市', '2024-12-25', 'LATE', 480, 0, NOW(), NOW());
+
+-- =====================================================
+-- 23. 设备维护记录 (equipment_maintenance) - 解决无数据问题
+-- =====================================================
+INSERT IGNORE INTO equipment_maintenance (factory_id, equipment_id, maintenance_type, maintenance_date, description, cost, performed_by, next_maintenance_date, created_at, updated_at)
+SELECT 'F001', e.id, 'ROUTINE', '2024-12-15', '速冻隧道机日常保养，清洁冷凝器，检查制冷剂', 800.00, '张三', '2025-01-15', NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F001' AND e.code = 'EQ001';
+
+INSERT IGNORE INTO equipment_maintenance (factory_id, equipment_id, maintenance_type, maintenance_date, description, cost, performed_by, next_maintenance_date, created_at, updated_at)
+SELECT 'F001', e.id, 'PREVENTIVE', '2024-12-10', '切片机刀片更换，传动带检查', 1500.00, '李四', '2025-02-10', NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F001' AND e.code = 'EQ002';
+
+INSERT IGNORE INTO equipment_maintenance (factory_id, equipment_id, maintenance_type, maintenance_date, description, cost, performed_by, next_maintenance_date, created_at, updated_at)
+SELECT 'F002', e.id, 'CORRECTIVE', '2024-12-18', '制冰机压缩机维修，更换阀门', 3500.00, '王五', '2025-03-18', NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F002' AND e.code = 'EQ001';
+
+INSERT IGNORE INTO equipment_maintenance (factory_id, equipment_id, maintenance_type, maintenance_date, description, cost, performed_by, next_maintenance_date, created_at, updated_at)
+SELECT 'F003', e.id, 'ROUTINE', '2024-12-20', '超低温冷库温度校准，门封检查', 500.00, '赵六', '2025-01-20', NOW(), NOW()
+FROM factory_equipment e WHERE e.factory_id = 'F003' AND e.code = 'EQ001';

@@ -1137,6 +1137,24 @@ public class ProcessingServiceImpl implements ProcessingService {
         todayStats.put("activeEquipment", activeEquipment);
         overview.put("todayStats", todayStats);
 
+        // ===== yesterdayStats (昨日统计，用于计算涨幅) =====
+        LocalDateTime yesterdayStart = LocalDate.now().minusDays(1).atStartOfDay();
+        LocalDateTime yesterdayEnd = LocalDate.now().atStartOfDay();
+        Map<String, Object> yesterdayStats = new HashMap<>();
+        // 昨日批次总数
+        long yesterdayBatches = productionBatchRepository.countByFactoryIdAndCreatedAtBetween(
+                factoryId, yesterdayStart, yesterdayEnd);
+        yesterdayStats.put("totalBatches", yesterdayBatches);
+        // 昨日产量
+        BigDecimal yesterdayOutput = productionBatchRepository.calculateTotalOutputBetween(
+                factoryId, yesterdayStart, yesterdayEnd);
+        yesterdayStats.put("outputKg", yesterdayOutput != null ? yesterdayOutput : BigDecimal.ZERO);
+        // 昨日完成批次
+        long yesterdayCompleted = productionBatchRepository.countByFactoryIdAndStatusAndCreatedAtBetween(
+                factoryId, ProductionBatchStatus.COMPLETED, yesterdayStart, yesterdayEnd);
+        yesterdayStats.put("completedBatches", yesterdayCompleted);
+        overview.put("yesterdayStats", yesterdayStats);
+
         // ===== kpi (关键绩效指标) =====
         Map<String, Object> kpi = new HashMap<>();
         kpi.put("productionEfficiency", avgEfficiency != null ? avgEfficiency : BigDecimal.ZERO);
@@ -1611,5 +1629,248 @@ public class ProcessingServiceImpl implements ProcessingService {
     public Map<String, Object> checkAIServiceHealth() {
         log.info("检查AI服务健康状态");
         return aiAnalysisService.healthCheck();
+    }
+
+    // ========== 批次员工分配 ==========
+
+    /**
+     * 分配员工到批次
+     */
+    @Override
+    @Transactional
+    public List<Map<String, Object>> assignWorkersToBatch(String factoryId, Long batchId,
+                                                           List<Long> workerIds, Long assignedBy, String notes) {
+        log.info("分配员工到批次: factoryId={}, batchId={}, workerIds={}, assignedBy={}",
+                factoryId, batchId, workerIds, assignedBy);
+
+        // 1. 验证批次存在且状态正确
+        ProductionBatch batch = productionBatchRepository.findByIdAndFactoryId(batchId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("批次不存在: " + batchId));
+
+        // 兼容 PRODUCING 和 IN_PROGRESS，以及 PLANNING 和 PLANNED
+        ProductionBatchStatus status = batch.getStatus();
+        if (status != ProductionBatchStatus.IN_PROGRESS &&
+            status != ProductionBatchStatus.PRODUCING &&
+            status != ProductionBatchStatus.PLANNED &&
+            status != ProductionBatchStatus.PLANNING) {
+            throw new BusinessException("只有计划中或进行中的批次可以分配员工");
+        }
+
+        // 2. 验证分配人存在
+        User assigner = userRepository.findById(assignedBy)
+                .orElseThrow(() -> new ResourceNotFoundException("分配人不存在: " + assignedBy));
+
+        List<Map<String, Object>> results = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Long workerId : workerIds) {
+            try {
+                // 3. 验证员工存在且属于该工厂
+                User worker = userRepository.findById(workerId)
+                        .orElseThrow(() -> new ResourceNotFoundException("员工不存在: " + workerId));
+
+                if (!factoryId.equals(worker.getFactoryId())) {
+                    throw new BusinessException("员工不属于该工厂: " + workerId);
+                }
+
+                // 4. 检查员工是否已分配到该批次
+                Optional<BatchWorkSession> existing = batchWorkSessionRepository
+                        .findActiveByBatchIdAndEmployeeId(batchId, workerId);
+
+                if (existing.isPresent()) {
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("workerId", workerId);
+                    result.put("workerName", worker.getFullName() != null ? worker.getFullName() : worker.getUsername());
+                    result.put("success", false);
+                    result.put("message", "员工已分配到该批次");
+                    results.add(result);
+                    continue;
+                }
+
+                // 5. 创建 BatchWorkSession 记录
+                BatchWorkSession session = new BatchWorkSession();
+                session.setBatchId(batchId);
+                session.setEmployeeId(workerId);
+                session.setCheckInTime(now);
+                session.setAssignedBy(assignedBy);
+                session.setStatus(BatchWorkSession.Status.ASSIGNED);
+                session.setNotes(notes);
+                session.setCreatedAt(now);
+
+                batchWorkSessionRepository.save(session);
+
+                Map<String, Object> result = new HashMap<>();
+                result.put("workerId", workerId);
+                result.put("workerName", worker.getFullName() != null ? worker.getFullName() : worker.getUsername());
+                result.put("sessionId", session.getId());
+                result.put("checkInTime", now);
+                result.put("success", true);
+                result.put("message", "分配成功");
+                results.add(result);
+
+                log.info("成功分配员工 {} 到批次 {}", workerId, batchId);
+
+            } catch (Exception e) {
+                Map<String, Object> result = new HashMap<>();
+                result.put("workerId", workerId);
+                result.put("success", false);
+                result.put("message", e.getMessage());
+                results.add(result);
+                log.error("分配员工失败: workerId={}, error={}", workerId, e.getMessage());
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * 员工完成批次工作（签出）
+     */
+    @Override
+    @Transactional
+    public Map<String, Object> workerCheckout(String factoryId, Long batchId, Long workerId,
+                                               Integer workMinutes, String notes) {
+        log.info("员工签出: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
+
+        // 1. 查找活跃的工作会话
+        BatchWorkSession session = batchWorkSessionRepository
+                .findActiveByBatchIdAndEmployeeId(batchId, workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("未找到该员工在该批次的活跃工作记录"));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 2. 计算工作时长
+        int actualWorkMinutes;
+        if (workMinutes != null && workMinutes > 0) {
+            actualWorkMinutes = workMinutes;
+        } else if (session.getCheckInTime() != null) {
+            actualWorkMinutes = (int) ChronoUnit.MINUTES.between(session.getCheckInTime(), now);
+        } else {
+            actualWorkMinutes = 0;
+        }
+
+        // 3. 计算人工成本（假设每小时50元）
+        BigDecimal hourlyRate = new BigDecimal("50.00");
+        BigDecimal laborCost = hourlyRate
+                .multiply(BigDecimal.valueOf(actualWorkMinutes))
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+
+        // 4. 更新工作会话
+        session.setCheckOutTime(now);
+        session.setWorkMinutes(actualWorkMinutes);
+        session.setLaborCost(laborCost);
+        session.setStatus(BatchWorkSession.Status.COMPLETED);
+        if (notes != null && !notes.isEmpty()) {
+            session.setNotes(session.getNotes() != null ?
+                    session.getNotes() + "\n" + notes : notes);
+        }
+        session.setUpdatedAt(now);
+
+        batchWorkSessionRepository.save(session);
+
+        // 5. 获取员工信息
+        User worker = userRepository.findById(workerId).orElse(null);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("sessionId", session.getId());
+        result.put("workerId", workerId);
+        result.put("workerName", worker != null ? (worker.getFullName() != null ? worker.getFullName() : worker.getUsername()) : "未知");
+        result.put("checkInTime", session.getCheckInTime());
+        result.put("checkOutTime", now);
+        result.put("workMinutes", actualWorkMinutes);
+        result.put("laborCost", laborCost);
+        result.put("status", session.getStatus());
+        result.put("success", true);
+        result.put("message", "签出成功");
+
+        log.info("员工签出成功: workerId={}, workMinutes={}, laborCost={}",
+                workerId, actualWorkMinutes, laborCost);
+
+        return result;
+    }
+
+    /**
+     * 获取批次的员工列表
+     */
+    @Override
+    public List<Map<String, Object>> getBatchWorkers(String factoryId, Long batchId) {
+        log.info("获取批次员工列表: factoryId={}, batchId={}", factoryId, batchId);
+
+        // 验证批次存在
+        productionBatchRepository.findByIdAndFactoryId(batchId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("批次不存在: " + batchId));
+
+        // 获取批次的所有工作会话
+        List<BatchWorkSession> sessions = batchWorkSessionRepository.findByBatchIdWithEmployees(batchId);
+
+        return sessions.stream().map(session -> {
+            Map<String, Object> workerInfo = new HashMap<>();
+            workerInfo.put("sessionId", session.getId());
+            workerInfo.put("workerId", session.getEmployeeId());
+
+            User employee = session.getEmployee();
+            if (employee != null) {
+                workerInfo.put("workerName", employee.getFullName() != null ? employee.getFullName() : employee.getUsername());
+                workerInfo.put("employeeNumber", employee.getUsername());
+                workerInfo.put("departmentName", employee.getDepartment());
+            } else {
+                workerInfo.put("workerName", "未知");
+            }
+
+            workerInfo.put("checkInTime", session.getCheckInTime());
+            workerInfo.put("checkOutTime", session.getCheckOutTime());
+            workerInfo.put("workMinutes", session.getWorkMinutes());
+            workerInfo.put("laborCost", session.getLaborCost());
+            workerInfo.put("status", session.getStatus());
+
+            // 状态显示文字
+            String statusText = "未知";
+            if (session.getStatus() != null) {
+                switch (session.getStatus()) {
+                    case BatchWorkSession.Status.ASSIGNED: statusText = "已分配"; break;
+                    case BatchWorkSession.Status.WORKING: statusText = "工作中"; break;
+                    case BatchWorkSession.Status.COMPLETED: statusText = "已完成"; break;
+                    case BatchWorkSession.Status.CANCELLED: statusText = "已取消"; break;
+                }
+            }
+            workerInfo.put("statusText", statusText);
+
+            User assigner = session.getAssigner();
+            workerInfo.put("assignedBy", session.getAssignedBy());
+            workerInfo.put("assignerName", assigner != null ? (assigner.getFullName() != null ? assigner.getFullName() : assigner.getUsername()) : null);
+            workerInfo.put("assignedAt", session.getCreatedAt());
+            workerInfo.put("notes", session.getNotes());
+
+            return workerInfo;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 取消员工批次分配
+     */
+    @Override
+    @Transactional
+    public Map<String, Object> cancelWorkerAssignment(String factoryId, Long batchId, Long workerId) {
+        log.info("取消员工分配: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
+
+        // 查找活跃的工作会话
+        BatchWorkSession session = batchWorkSessionRepository
+                .findActiveByBatchIdAndEmployeeId(batchId, workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("未找到该员工在该批次的活跃工作记录"));
+
+        // 更新状态为取消
+        session.setStatus(BatchWorkSession.Status.CANCELLED);
+        session.setUpdatedAt(LocalDateTime.now());
+        batchWorkSessionRepository.save(session);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("sessionId", session.getId());
+        result.put("workerId", workerId);
+        result.put("success", true);
+        result.put("message", "取消分配成功");
+
+        log.info("取消员工分配成功: workerId={}", workerId);
+
+        return result;
     }
 }

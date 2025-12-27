@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>库存调拨 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="inventory.html" class="back-to-index">< 返回库存列表</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>库存调拨</h1>
+      <p>库位间转移</p>
+    </header>
+
+    <div class="page-content">
+      <form class="form-container">
+        <!-- 选择物料 -->
+        <div class="form-section">
+          <div class="form-section-title">选择物料</div>
+
+          <div class="form-group">
+            <label class="form-label required">物料名称</label>
+            <select class="form-select">
+              <option value="">请选择物料</option>
+              <option value="fish" selected>带鱼 (鲜品)</option>
+              <option value="shrimp">虾仁 (冻品)</option>
+              <option value="bass">鲈鱼 (鲜品)</option>
+              <option value="squid">鱿鱼 (冻品)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">选择批次</label>
+            <select class="form-select">
+              <option value="">请选择批次</option>
+              <option value="MB-20251223-001" selected>MB-20251223-001 (256kg, 3天后过期)</option>
+              <option value="MB-20251224-002">MB-20251224-002 (320kg, 4天后过期)</option>
+              <option value="MB-20251226-001">MB-20251226-001 (280kg, 新入库)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 调拨信息 -->
+        <div class="form-section">
+          <div class="form-section-title">调拨信息</div>
+
+          <div class="form-group">
+            <label class="form-label required">调出库位</label>
+            <select class="form-select">
+              <option value="A-01" selected>A区-冷藏库-01 (当前库位)</option>
+            </select>
+          </div>
+
+          <div class="transfer-arrow">
+            <span>↓</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">调入库位</label>
+            <select class="form-select">
+              <option value="">请选择目标库位</option>
+              <option value="A-02">A区-冷藏库-02 (剩余: 150kg)</option>
+              <option value="A-03">A区-冷藏库-03 (剩余: 300kg)</option>
+              <option value="B-01">B区-冷冻库-01 (剩余: 500kg)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">调拨数量 (kg)</label>
+            <input type="number" class="form-input" placeholder="请输入调拨数量" value="100">
+            <div class="form-hint">可调拨: 256 kg</div>
+          </div>
+        </div>
+
+        <!-- 调拨原因 -->
+        <div class="form-section">
+          <div class="form-section-title">调拨原因</div>
+
+          <div class="form-group">
+            <label class="form-label required">调拨类型</label>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input type="radio" name="transfer_type" value="space" checked>
+                <span class="radio-label">库位整理</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="transfer_type" value="temp">
+                <span class="radio-label">温控调整</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="transfer_type" value="fifo">
+                <span class="radio-label">先进先出</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="transfer_type" value="other">
+                <span class="radio-label">其他</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">备注说明</label>
+            <textarea class="form-textarea" rows="2" placeholder="请输入调拨说明（选填）"></textarea>
+          </div>
+        </div>
+
+        <!-- 调拨预览 -->
+        <div class="form-section">
+          <div class="form-section-title">调拨预览</div>
+          <div class="transfer-preview">
+            <div class="preview-from">
+              <div class="preview-label">调出</div>
+              <div class="preview-location">A区-冷藏库-01</div>
+              <div class="preview-change">256kg → 156kg</div>
+            </div>
+            <div class="preview-arrow">→</div>
+            <div class="preview-to">
+              <div class="preview-label">调入</div>
+              <div class="preview-location">A区-冷藏库-02</div>
+              <div class="preview-change">0kg → 100kg</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="form-actions">
+          <a href="inventory.html" class="action-btn secondary">取消</a>
+          <button type="button" class="action-btn primary" onclick="alert('调拨成功'); location.href='inventory.html';">确认调拨</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

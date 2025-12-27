@@ -61,6 +61,19 @@ public class User extends BaseEntity {
     private String position;
     @Column(name = "role_code")
     private String roleCode;
+
+    @Column(name = "level")
+    private Integer level;  // 权限级别 (0最高, 99最低)
+
+    @Column(name = "platform_type", length = 20)
+    private String platformType = "web,mobile";  // 支持的平台: web, mobile, web,mobile
+
+    @Column(name = "reports_to")
+    private Long reportsTo;  // 汇报对象用户ID
+
+    @Column(name = "secondary_reports_to")
+    private Long secondaryReportsTo;  // 质检员双重汇报 (质量经理ID)
+
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
     // 薪资和成本相关字段
@@ -160,24 +173,72 @@ public class User extends BaseEntity {
     }
 
     /**
-     * 获取权限字符串（基于职位）
+     * 获取权限字符串（基于角色）
      */
     public String getPermissions() {
-        // 根据职位返回默认权限
-        if (this.position == null) {
+        FactoryUserRole role = getRoleEnum();
+        if (role == null) {
             return "";
         }
-        switch (this.position) {
-            case "super_admin":
-                return "admin:all";
-            case "permission_admin":
-                return "admin:users,admin:permissions";
-            case "supervisor":
-                return "manager:all,production:all,employee:all";
-            case "operator":
-                return "production:view,production:manage,timeclock:manage";
-            default:
-                return "";
+        return role.getPermissionPrefix() + ":*";
+    }
+
+    /**
+     * 获取角色枚举
+     */
+    public FactoryUserRole getRoleEnum() {
+        return FactoryUserRole.fromRoleCode(this.roleCode);
+    }
+
+    /**
+     * 检查是否为管理层
+     */
+    public boolean isManager() {
+        FactoryUserRole role = getRoleEnum();
+        return role != null && role.isManager();
+    }
+
+    /**
+     * 检查是否为一线员工
+     */
+    public boolean isWorker() {
+        FactoryUserRole role = getRoleEnum();
+        return role != null && role.isWorker();
+    }
+
+    /**
+     * 检查是否可以管理目标用户
+     */
+    public boolean canManage(User target) {
+        if (target == null) return false;
+        FactoryUserRole myRole = getRoleEnum();
+        FactoryUserRole targetRole = target.getRoleEnum();
+        if (myRole == null || targetRole == null) return false;
+        return myRole.canManage(targetRole);
+    }
+
+    /**
+     * 获取权限级别 (从角色自动获取)
+     */
+    public int getEffectiveLevel() {
+        if (this.level != null) {
+            return this.level;
         }
+        FactoryUserRole role = getRoleEnum();
+        return role != null ? role.getLevel() : 99;
+    }
+
+    /**
+     * 检查是否支持Web平台
+     */
+    public boolean supportsWeb() {
+        return this.platformType == null || this.platformType.contains("web");
+    }
+
+    /**
+     * 检查是否支持Mobile平台
+     */
+    public boolean supportsMobile() {
+        return this.platformType == null || this.platformType.contains("mobile");
     }
 }

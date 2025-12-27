@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>入库详情 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="inbound.html" class="back-to-index">< 返回入库列表</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>入库详情</h1>
+      <p>MB-20251226-001</p>
+    </header>
+
+    <!-- 操作按钮置顶 -->
+    <div class="action-buttons top-actions">
+      <a href="inbound.html" class="action-btn secondary">驳回</a>
+      <a href="inbound-inspect.html" class="action-btn primary">去质检</a>
+    </div>
+
+    <!-- 快捷确认置顶 -->
+    <div class="quick-action-card top-action">
+      <div class="quick-action-title">快捷操作</div>
+      <div class="quick-action-desc">如物料已验收，可直接确认入库</div>
+      <a href="inbound-putaway.html" class="action-btn outline">直接确认入库</a>
+    </div>
+
+    <div class="page-content">
+      <!-- 状态卡片 -->
+      <div class="status-card pending">
+        <div class="status-icon">IN</div>
+        <div class="status-info">
+          <div class="status-title">待确认</div>
+          <div class="status-desc">请确认入库信息并进行质检</div>
+        </div>
+      </div>
+
+      <!-- 基础信息 -->
+      <div class="detail-section">
+        <div class="detail-section-title">基础信息</div>
+        <div class="detail-item">
+          <span class="detail-label">入库单号</span>
+          <span class="detail-value">MB-20251226-001</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">创建时间</span>
+          <span class="detail-value">2025-12-26 09:00</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">创建人</span>
+          <span class="detail-value">张仓管</span>
+        </div>
+      </div>
+
+      <!-- 供应商信息 -->
+      <div class="detail-section">
+        <div class="detail-section-title">供应商信息</div>
+        <div class="detail-item">
+          <span class="detail-label">供应商</span>
+          <span class="detail-value">舟山渔业合作社</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">联系人</span>
+          <span class="detail-value">李经理</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">联系电话</span>
+          <span class="detail-value clickable">139****9999</span>
+        </div>
+      </div>
+
+      <!-- 物料信息 -->
+      <div class="detail-section">
+        <div class="detail-section-title">物料信息</div>
+        <div class="detail-item">
+          <span class="detail-label">物料名称</span>
+          <span class="detail-value">带鱼</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">物料类型</span>
+          <span class="detail-value">鲜品</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">入库数量</span>
+          <span class="detail-value highlight">150 kg</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">单价</span>
+          <span class="detail-value">¥30/kg</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">总金额</span>
+          <span class="detail-value highlight">¥4,500</span>
+        </div>
+      </div>
+
+      <!-- 质检信息 -->
+      <div class="detail-section">
+        <div class="detail-section-title">质检信息</div>
+        <div class="detail-item">
+          <span class="detail-label">质检状态</span>
+          <span class="detail-value status-tag pending">待质检</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">质检员</span>
+          <span class="detail-value">-</span>
+        </div>
+      </div>
+
+      <!-- 储存信息 -->
+      <div class="detail-section">
+        <div class="detail-section-title">储存信息</div>
+        <div class="detail-item">
+          <span class="detail-label">建议库位</span>
+          <span class="detail-value">A区-冷藏库-01</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">储存类型</span>
+          <span class="detail-value">冷藏 (0°C ~ 4°C)</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">保质期</span>
+          <span class="detail-value">7天</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">到期日期</span>
+          <span class="detail-value">2025-01-02</span>
+        </div>
+      </div>
+
+      <!-- 备注 -->
+      <div class="detail-section">
+        <div class="detail-section-title">备注</div>
+        <div class="detail-note">
+          今日到货，需尽快质检入库。供应商承诺为当日捕捞的新鲜带鱼。
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

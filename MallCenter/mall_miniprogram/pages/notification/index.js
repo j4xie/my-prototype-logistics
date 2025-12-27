@@ -29,6 +29,21 @@ Page({
   },
 
   onShow() {
+    // 检查登录状态 - 通知中心需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.navigateTo({
+          url: '/pages/auth/login/index'
+        })
+      }, 500)
+      return
+    }
     // 页面显示时刷新未读数
     this.loadUnreadCount()
   },

@@ -100,9 +100,9 @@ public class TimeClockRecord extends BaseEntity {
     @Column(name = "status", length = 20)
     private String status;
      /**
-      * 考勤状态: NORMAL, LATE, EARLY_LEAVE, ABSENT（计算字段）
+      * 考勤状态: NORMAL, LATE, EARLY_LEAVE, LATE_AND_EARLY_LEAVE, ABSENT
       */
-    @Transient
+    @Column(name = "attendance_status", length = 30)
     private String attendanceStatus;
      /**
       * 工作类型ID（扩展字段，表中暂无）

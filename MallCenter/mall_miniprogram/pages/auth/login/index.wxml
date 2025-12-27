@@ -5,7 +5,9 @@
   <!-- Logo区域 -->
   <view class="login-header">
     <view class="login-logo">
-      <image src="/public/img/logo.png" mode="aspectFit" class="logo-image"></image>
+      <view class="logo-icon-wrapper">
+        <text class="cuIcon-scan logo-icon"></text>
+      </view>
     </view>
     <text class="login-title">溯源商城</text>
     <text class="login-subtitle">全程可追溯 · 品质有保障</text>
@@ -35,13 +37,8 @@
     <view class="agreement">
       <checkbox-group bindchange="onAgreementChange">
         <label class="agreement-label">
-          <checkbox value="agree" checked="{{agreed}}" color="#52c41a"/>
-          <text class="agreement-text">
-            登录即表示同意
-            <text class="agreement-link" bindtap="showUserAgreement">《用户协议》</text>
-            和
-            <text class="agreement-link" bindtap="showPrivacyPolicy">《隐私政策》</text>
-          </text>
+          <checkbox value="agree" checked="{{agreed}}" color="#D4AF37"/>
+          <text class="agreement-text">登录即表示同意<text class="agreement-link" catchtap="showUserAgreement">《用户协议》</text>和<text class="agreement-link" catchtap="showPrivacyPolicy">《隐私政策》</text></text>
         </label>
       </checkbox-group>
     </view>
@@ -50,15 +47,21 @@
   <!-- 特性展示 -->
   <view class="features">
     <view class="feature-item">
-      <text class="feature-icon cuIcon-scan"></text>
+      <view class="feature-icon">
+        <text class="cuIcon-scan"></text>
+      </view>
       <text class="feature-label">扫码溯源</text>
     </view>
     <view class="feature-item">
-      <text class="feature-icon cuIcon-creativefill"></text>
+      <view class="feature-icon">
+        <text class="cuIcon-creativefill"></text>
+      </view>
       <text class="feature-label">AI智能</text>
     </view>
     <view class="feature-item">
-      <text class="feature-icon cuIcon-safe"></text>
+      <view class="feature-icon">
+        <text class="cuIcon-safe"></text>
+      </view>
       <text class="feature-label">品质保证</text>
     </view>
   </view>

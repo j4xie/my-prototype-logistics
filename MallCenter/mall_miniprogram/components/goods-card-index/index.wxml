@@ -1,8 +1,8 @@
 <!--
   - Copyright (C) 2018-2019
-  - All rights reserved, Designed By www.joolun.com
+  - 食品商城小程序
   - 注意：
-  - 本软件为www.joolun.com开发研制，项目使用请保留此说明
+  - 基于 JooLun 框架二次开发
 -->
 <view class="goods-container">
   <view class="goods-box" wx:for="{{goodsList}}" wx:key="index">
@@ -15,8 +15,13 @@
       <view class="goods-info">
         <view class="goods-name">{{item.name}}</view>
         <view class="price-row">
-          <text class="sales-price">¥{{item.salesPrice}}</text>
-          <text class="market-price">¥{{item.marketPrice}}</text>
+          <!-- 已登录显示价格 -->
+          <block wx:if="{{isLoggedIn}}">
+            <text class="sales-price">¥{{item.salesPrice}}</text>
+            <text class="market-price">¥{{item.marketPrice}}</text>
+          </block>
+          <!-- 未登录显示登录提示 -->
+          <text wx:else class="price-login-hint" catchtap="goToLogin">登录查看价格</text>
         </view>
       </view>
     </navigator>

@@ -1,4 +1,6 @@
 export { default as ManagementScreen } from './ManagementScreen';
+export { default as HRDashboardScreen } from './HRDashboardScreen';
+export { default as HREmployeeAIScreen } from './HREmployeeAIScreen';
 export { default as ProductTypeManagementScreen } from './ProductTypeManagementScreen';
 export { default as ConversionRateScreen } from './ConversionRateScreen';
 export { default as MaterialConversionDetailScreen } from './MaterialConversionDetailScreen';

@@ -148,6 +148,12 @@ export type ManagementStackParamList = {
   MaterialSpecManagement: undefined; // Phase 4: 物料规格管理（已实现但暂未启用）
   DisposalRecordManagement: undefined; // 报废记录管理
   WorkSessionManagement: undefined; // 工作会话管理
+
+  // HR管理员模块 (permission_admin角色专用)
+  HRDashboard: undefined;  // HR管理员仪表板
+  HREmployeeAI: { employeeId?: number };  // 员工AI分析
+  UserCreate: undefined;   // 添加员工
+  AttendanceStats: undefined;  // 考勤统计
 };
 
 // ==================== 个人中心模块导航参数 ====================
@@ -202,6 +208,238 @@ export type AdminStackParamList = {
   RolePermissions: { role: string };
   PermissionSettings: undefined;
 };
+
+// ==================== Factory Admin 模块导航参数 ====================
+// 仅 factory_super_admin 角色使用的新界面
+
+export type FactoryAdminTabParamList = {
+  FAHomeTab: NavigatorScreenParams<FAHomeStackParamList>;
+  FAAITab: NavigatorScreenParams<FAAIStackParamList>;
+  FAManagementTab: NavigatorScreenParams<FAManagementStackParamList>;
+  FAProfileTab: NavigatorScreenParams<FAProfileStackParamList>;
+};
+
+export type FAHomeStackParamList = {
+  FAHome: undefined;
+  TodayProduction: undefined;
+  TodayBatches: undefined;
+  MaterialBatch: undefined;
+  AIAlerts: undefined;
+  // 详情页
+  BatchDetail: { batchId: string; readonly?: boolean };
+  MaterialBatchDetail: { batchId: string };
+};
+
+export type FAAIStackParamList = {
+  AIAnalysisCenter: undefined;
+  AICostAnalysis: undefined;
+  AIReport: undefined;
+  AIChat: undefined;  // 不再需要 sessionId 参数，新屏幕会自动创建会话
+  QualityAnalysis: undefined;
+  CreatePlan: undefined;
+  // 详情页
+  AIReportDetail: { reportId: number; reportType: string; title: string };
+};
+
+export type FAManagementStackParamList = {
+  FAManagement: undefined;
+  EmployeeList: undefined;
+  EquipmentList: undefined;
+  // 复用现有详情页
+  EmployeeDetail: { employeeId: number };
+  EquipmentDetail: { equipmentId: number };
+  // 其他管理页面 (可复用现有)
+  ProductTypeManagement: undefined;
+  MaterialTypeManagement: undefined;
+  DepartmentManagement: undefined;
+  SupplierManagement: undefined;
+  CustomerManagement: undefined;
+  ShipmentManagement: undefined;
+  ConversionRate: undefined;
+  DisposalRecordManagement: undefined;
+};
+
+export type FAProfileStackParamList = {
+  FAProfile: undefined;
+  PersonalInfo: undefined;
+  ChangePassword: undefined;
+  NotificationSettings: undefined;
+  SystemSettings: undefined;
+  HelpCenter: undefined;
+  About: undefined;
+  Feedback: undefined;
+  DataExport: { reportType?: 'production' | 'cost' | 'attendance' };
+};
+
+// Factory Admin 屏幕Props
+export type FAHomeScreenProps<T extends keyof FAHomeStackParamList> =
+  NativeStackScreenProps<FAHomeStackParamList, T>;
+
+export type FAAIScreenProps<T extends keyof FAAIStackParamList> =
+  NativeStackScreenProps<FAAIStackParamList, T>;
+
+export type FAManagementScreenProps<T extends keyof FAManagementStackParamList> =
+  NativeStackScreenProps<FAManagementStackParamList, T>;
+
+export type FAProfileScreenProps<T extends keyof FAProfileStackParamList> =
+  NativeStackScreenProps<FAProfileStackParamList, T>;
+
+// ==================== Workshop Supervisor 模块导航参数 ====================
+// 车间主任(department_admin)角色专用界面
+// 5个Tab: 首页 | 批次 | 人员 | 设备 | 我的
+
+export type WorkshopSupervisorTabParamList = {
+  WSHomeTab: NavigatorScreenParams<WSHomeStackParamList>;
+  WSBatchesTab: NavigatorScreenParams<WSBatchesStackParamList>;
+  WSWorkersTab: NavigatorScreenParams<WSWorkersStackParamList>;
+  WSEquipmentTab: NavigatorScreenParams<WSEquipmentStackParamList>;
+  WSProfileTab: NavigatorScreenParams<WSProfileStackParamList>;
+};
+
+export type WSHomeStackParamList = {
+  WSHome: undefined;
+  // 从首页进入的详情页
+  BatchDetail: { batchId: string; readonly?: boolean };
+  WorkerDetail: { workerId: number };
+  EquipmentDetail: { equipmentId: number };
+  Notifications: undefined;
+  // 任务引导流程
+  TaskGuide: { batchId: string; batchNumber: string };
+  TaskGuideStep2: { batchId: string; batchNumber: string };
+  TaskGuideStep3: { batchId: string; batchNumber: string };
+};
+
+export type WSBatchesStackParamList = {
+  WSBatches: undefined;
+  BatchDetail: { batchId: string; readonly?: boolean };
+  BatchStart: { planId?: string };
+  BatchStage: { batchId: string; stageType: string; stageName: string };
+  BatchComplete: { batchId: string };
+  MaterialConsumption: { batchId: string };
+  QualityCreate: { batchId: string };
+  QualityDetail: { inspectionId: string };
+};
+
+export type WSWorkersStackParamList = {
+  WSWorkers: undefined;
+  WorkerDetail: { workerId: number };
+  WorkerAssign: { batchId?: string; batchNumber?: string };
+  ClockIn: undefined;
+  AttendanceHistory: { workerId?: number };
+};
+
+export type WSEquipmentStackParamList = {
+  WSEquipment: undefined;
+  EquipmentDetail: { equipmentId: number };
+  EquipmentAlert: { alertId: string };
+  EquipmentMaintenance: { equipmentId: number };
+};
+
+export type WSProfileStackParamList = {
+  WSProfile: undefined;
+  PersonalInfo: undefined;
+  ChangePassword: undefined;
+  NotificationSettings: undefined;
+  Settings: undefined;
+  About: undefined;
+};
+
+// Workshop Supervisor 屏幕Props
+export type WSHomeScreenProps<T extends keyof WSHomeStackParamList> =
+  NativeStackScreenProps<WSHomeStackParamList, T>;
+
+export type WSBatchesScreenProps<T extends keyof WSBatchesStackParamList> =
+  NativeStackScreenProps<WSBatchesStackParamList, T>;
+
+export type WSWorkersScreenProps<T extends keyof WSWorkersStackParamList> =
+  NativeStackScreenProps<WSWorkersStackParamList, T>;
+
+export type WSEquipmentScreenProps<T extends keyof WSEquipmentStackParamList> =
+  NativeStackScreenProps<WSEquipmentStackParamList, T>;
+
+export type WSProfileScreenProps<T extends keyof WSProfileStackParamList> =
+  NativeStackScreenProps<WSProfileStackParamList, T>;
+
+// ==================== Warehouse Manager 模块导航参数 ====================
+// 仓储管理员 (warehouse_manager) 和仓储员工 (warehouse_worker) 角色专用界面
+// 5个Tab: 首页 | 入库 | 出货 | 库存 | 我的
+
+export type WarehouseManagerTabParamList = {
+  WHHomeTab: NavigatorScreenParams<WHHomeStackParamList>;
+  WHInboundTab: NavigatorScreenParams<WHInboundStackParamList>;
+  WHOutboundTab: NavigatorScreenParams<WHOutboundStackParamList>;
+  WHInventoryTab: NavigatorScreenParams<WHInventoryStackParamList>;
+  WHProfileTab: NavigatorScreenParams<WHProfileStackParamList>;
+};
+
+export type WHHomeStackParamList = {
+  WHHome: undefined;
+  // 从首页进入的详情页
+  OutboundDetail: { orderId: string };
+  InboundDetail: { batchId: string };
+  AlertHandle: { alertId: string };
+  TempMonitor: undefined;
+};
+
+export type WHInboundStackParamList = {
+  WHInboundList: undefined;
+  WHInboundDetail: { batchId: string };
+  WHInboundCreate: undefined;
+  WHInspect: { batchId: string };
+  WHPutaway: { batchId: string };
+  WHScanOperation: { type: 'inbound' | 'outbound'; orderId?: string; mode?: string };
+};
+
+export type WHOutboundStackParamList = {
+  WHOutboundList: undefined;
+  WHOutboundDetail: { shipmentId: string };
+  WHPacking: { orderId: string };
+  WHLoading: { vehicleId?: string };
+  WHShippingConfirm: { orderId: string };
+  WHTrackingDetail: { shipmentId: string };
+  WHOrderDetail: { orderId: string };
+  WHScanOperation: { type: 'inbound' | 'outbound'; orderId?: string; mode?: string };
+};
+
+export type WHInventoryStackParamList = {
+  WHInventoryList: undefined;
+  WHInventoryDetail: { materialId?: string; inventoryId?: string };
+  WHBatchDetail: { batchId?: string; batchNumber?: string };
+  WHInventoryCheck: undefined;
+  WHInventoryTransfer: { batchId?: string };
+  WHLocationManage: undefined;
+  WHExpireHandle: { batchId?: string; batchNumber?: string };
+  WHTempMonitor: undefined;
+  WHIOStatistics: undefined;
+  WHBatchTrace: { batchNumber?: string; batchId?: string };
+};
+
+export type WHProfileStackParamList = {
+  WHProfile: undefined;
+  WHProfileEdit: undefined;
+  WHSettings: undefined;
+  WHOperationLog: undefined;
+  WHAlertList: undefined;
+  WHAlertHandle: { alertId: string };
+  WHRecallManage: undefined;
+  WHConversionAnalysis: undefined;
+};
+
+// Warehouse Manager 屏幕Props
+export type WHHomeScreenProps<T extends keyof WHHomeStackParamList> =
+  NativeStackScreenProps<WHHomeStackParamList, T>;
+
+export type WHInboundScreenProps<T extends keyof WHInboundStackParamList> =
+  NativeStackScreenProps<WHInboundStackParamList, T>;
+
+export type WHOutboundScreenProps<T extends keyof WHOutboundStackParamList> =
+  NativeStackScreenProps<WHOutboundStackParamList, T>;
+
+export type WHInventoryScreenProps<T extends keyof WHInventoryStackParamList> =
+  NativeStackScreenProps<WHInventoryStackParamList, T>;
+
+export type WHProfileScreenProps<T extends keyof WHProfileStackParamList> =
+  NativeStackScreenProps<WHProfileStackParamList, T>;
 
 // ==================== 未来模块导航参数(预留) ====================
 

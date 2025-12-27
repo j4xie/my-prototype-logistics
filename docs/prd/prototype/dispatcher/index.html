@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>调度工作台 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- Header -->
+    <div class="header role-header--dispatcher" style="height: auto; padding: 16px; flex-direction: column; align-items: stretch;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <a href="../index.html" style="color: white; text-decoration: none; font-size: 20px;"><</a>
+        <span style="color: white; font-size: 16px; font-weight: 500;">调度工作台</span>
+        <a href="approval-list.html" style="position: relative; color: white;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          <span style="position: absolute; top: -4px; right: -4px; background: #ff4d4f; color: white; font-size: 10px; padding: 2px 5px; border-radius: 8px;">3</span>
+        </a>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 14px;">调度员</div>
+          <div style="color: white; font-size: 20px; font-weight: 600; margin-top: 4px;">赵调度</div>
+        </div>
+        <div style="width: 48px; height: 48px; border-radius: 24px; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">赵</div>
+      </div>
+    </div>
+
+    <div class="content" style="background: #f5f5f5;">
+      <!-- 今日生产计划 -->
+      <div class="section-header">
+        <span class="section-title">今日生产计划</span>
+        <span style="font-size: 12px; color: #999;">2025-12-27</span>
+      </div>
+      <div class="stats-summary">
+        <div class="stats-item">
+          <div class="stats-value purple">12</div>
+          <div class="stats-label">计划总数</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value green">5</div>
+          <div class="stats-label">已完成</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value" style="color: #1890ff;">4</div>
+          <div class="stats-label">进行中</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value orange">3</div>
+          <div class="stats-label">待开始</div>
+        </div>
+      </div>
+
+      <!-- 车间任务状态 -->
+      <div class="section-header">
+        <span class="section-title">车间任务状态</span>
+        <a href="workshop-status.html" class="section-action section-action--dispatcher">查看全部 ></a>
+      </div>
+
+      <a href="workshop-status.html" class="workshop-card running" style="text-decoration: none; color: inherit;">
+        <div class="workshop-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #52c41a;"></span>
+            <span class="workshop-name">切片车间</span>
+          </div>
+          <span class="workshop-status running">运行中</span>
+        </div>
+        <div class="workshop-progress">
+          <div class="workshop-progress-bar">
+            <div class="workshop-progress-fill" style="width: 75%;"></div>
+          </div>
+          <span class="workshop-progress-text">75%</span>
+        </div>
+        <div class="workshop-meta">
+          <span>负责人: 张主任</span>
+          <span>3个批次进行中</span>
+        </div>
+      </a>
+
+      <a href="workshop-status.html" class="workshop-card running" style="text-decoration: none; color: inherit;">
+        <div class="workshop-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #52c41a;"></span>
+            <span class="workshop-name">包装车间</span>
+          </div>
+          <span class="workshop-status running">运行中</span>
+        </div>
+        <div class="workshop-progress">
+          <div class="workshop-progress-bar">
+            <div class="workshop-progress-fill" style="width: 60%;"></div>
+          </div>
+          <span class="workshop-progress-text">60%</span>
+        </div>
+        <div class="workshop-meta">
+          <span>负责人: 李主任</span>
+          <span>2个批次进行中</span>
+        </div>
+      </a>
+
+      <a href="workshop-status.html" class="workshop-card idle" style="text-decoration: none; color: inherit;">
+        <div class="workshop-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #d9d9d9;"></span>
+            <span class="workshop-name">冷冻车间</span>
+          </div>
+          <span class="workshop-status idle">空闲</span>
+        </div>
+        <div class="workshop-progress">
+          <div class="workshop-progress-bar">
+            <div class="workshop-progress-fill" style="width: 0%;"></div>
+          </div>
+          <span class="workshop-progress-text">0%</span>
+        </div>
+        <div class="workshop-meta">
+          <span>负责人: 王主任</span>
+          <span>待分配任务</span>
+        </div>
+      </a>
+
+      <!-- 人员分配 -->
+      <div class="section-header">
+        <span class="section-title">人员分配</span>
+        <a href="personnel-transfer.html" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: white; padding: 6px 12px; border-radius: 16px; font-size: 12px; text-decoration: none;">调动人员</a>
+      </div>
+      <div class="personnel-grid">
+        <div class="personnel-card">
+          <div class="personnel-card-header">
+            <span class="personnel-card-title">切片车间</span>
+          </div>
+          <div class="personnel-numbers">
+            <span class="personnel-count">8</span>
+            <span class="personnel-total">/ 10人</span>
+          </div>
+        </div>
+        <div class="personnel-card">
+          <div class="personnel-card-header">
+            <span class="personnel-card-title">包装车间</span>
+          </div>
+          <div class="personnel-numbers">
+            <span class="personnel-count">6</span>
+            <span class="personnel-total">/ 8人</span>
+          </div>
+        </div>
+        <div class="personnel-card">
+          <div class="personnel-card-header">
+            <span class="personnel-card-title">冷冻车间</span>
+          </div>
+          <div class="personnel-numbers">
+            <span class="personnel-count">2</span>
+            <span class="personnel-total">/ 6人</span>
+          </div>
+        </div>
+        <div class="personnel-card">
+          <div class="personnel-card-header">
+            <span class="personnel-card-title">机动人员</span>
+          </div>
+          <div class="personnel-numbers">
+            <span class="personnel-count">4</span>
+            <span class="personnel-total">人</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 待审批事项 -->
+      <div class="section-header">
+        <span class="section-title">待审批事项</span>
+        <a href="approval-list.html" class="section-action section-action--dispatcher">3项待处理 ></a>
+      </div>
+
+      <a href="approval-detail.html?type=plan" class="approval-card" style="text-decoration: none; color: inherit;">
+        <div class="approval-header">
+          <span class="approval-type plan">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            计划
+          </span>
+          <span class="approval-status pending">待审批</span>
+        </div>
+        <div class="approval-content">新增生产计划申请</div>
+        <div class="approval-meta">带鱼片100kg · 张主任提交</div>
+        <div class="approval-actions">
+          <button class="approval-btn reject">拒绝</button>
+          <button class="approval-btn approve">通过</button>
+        </div>
+      </a>
+
+      <a href="approval-detail.html?type=transfer" class="approval-card" style="text-decoration: none; color: inherit;">
+        <div class="approval-header">
+          <span class="approval-type transfer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+              <path d="M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+            调动
+          </span>
+          <span class="approval-status pending">待审批</span>
+        </div>
+        <div class="approval-content">人员调动申请</div>
+        <div class="approval-meta">冷冻>切片 · 2人</div>
+        <div class="approval-actions">
+          <button class="approval-btn reject">拒绝</button>
+          <button class="approval-btn approve">通过</button>
+        </div>
+      </a>
+
+      <a href="approval-detail.html?type=overtime" class="approval-card" style="text-decoration: none; color: inherit; margin-bottom: 80px;">
+        <div class="approval-header">
+          <span class="approval-type overtime">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12,6 12,12 16,14"/>
+            </svg>
+            加班
+          </span>
+          <span class="approval-status pending">待审批</span>
+        </div>
+        <div class="approval-content">加班申请</div>
+        <div class="approval-meta">包装车间 · 今晚2小时</div>
+        <div class="approval-actions">
+          <button class="approval-btn reject">拒绝</button>
+          <button class="approval-btn approve">通过</button>
+        </div>
+      </a>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="plan-list.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>计划</span>
+      </a>
+      <a href="task-assignment.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+        </svg>
+        <span>分配</span>
+      </a>
+      <a href="personnel-list.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+          <path d="M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span>人员</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

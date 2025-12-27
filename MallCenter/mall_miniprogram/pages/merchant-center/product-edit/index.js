@@ -32,6 +32,24 @@ Page({
     units: ['件', '斤', '公斤', '盒', '袋', '瓶']
   },
 
+  onShow() {
+    // 检查登录状态 - 商品编辑页需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/home/index'
+        })
+      }, 500)
+      return
+    }
+  },
+
   onLoad(options) {
     if (options.id) {
       this.setData({
@@ -191,6 +209,9 @@ Page({
     }
   }
 })
+
+
+
 
 
 

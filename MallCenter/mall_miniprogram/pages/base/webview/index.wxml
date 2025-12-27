@@ -12,7 +12,7 @@
 
 <view wx:else class="empty-container">
   <view class="empty-icon">
-    <image src="/public/img/empty-page.png" mode="aspectFit"></image>
+    <image src="/public/img/no_pic.png" mode="aspectFit"></image>
   </view>
   <view class="empty-text">暂无内容</view>
 </view>

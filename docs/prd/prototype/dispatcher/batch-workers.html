@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人员分配 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="task-assignment.html" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">人员分配</span>
+      <span style="color: #a18cd1; font-size: 14px;">确认</span>
+    </div>
+
+    <div class="content" style="background: #f5f5f5;">
+      <!-- 批次信息 -->
+      <div class="detail-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 16px; font-weight: 600; color: #333;">PB20241227002</span>
+          <span class="plan-status pending">待分配</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">产品</span>
+          <span class="detail-value">冷冻大虾仁</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">数量</span>
+          <span class="detail-value">200kg</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">车间</span>
+          <span class="detail-value">冷冻车间</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">建议人数</span>
+          <span class="detail-value" style="color: #a18cd1;">4-6人</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">工时预估</span>
+          <span class="detail-value">6小时</span>
+        </div>
+      </div>
+
+      <!-- 已分配员工 -->
+      <div class="detail-section">
+        <div class="detail-section-title">
+          已分配员工 (0人)
+        </div>
+        <div style="text-align: center; padding: 24px; color: #999; font-size: 14px;">
+          暂无已分配员工
+        </div>
+      </div>
+
+      <!-- 可用员工列表 -->
+      <div class="detail-section" style="margin-bottom: 120px;">
+        <div class="detail-section-title">
+          <span>可用员工 (18人)</span>
+          <div style="display: flex; gap: 8px;">
+            <span style="color: #a18cd1; font-size: 12px; cursor: pointer;">全选</span>
+            <span style="color: #999; font-size: 12px; cursor: pointer;">清空</span>
+          </div>
+        </div>
+
+        <!-- 本车间员工 -->
+        <div style="font-size: 13px; color: #666; margin-bottom: 8px; padding-left: 4px;">本车间员工 (4人)</div>
+
+        <div class="worker-item selected">
+          <div class="worker-checkbox checked"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px;">王</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">王五行</div>
+            <div style="font-size: 12px; color: #52c41a;">空闲</div>
+          </div>
+          <span class="worker-skill">冷冻</span>
+        </div>
+
+        <div class="worker-item selected">
+          <div class="worker-checkbox checked"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px;">周</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">周大力</div>
+            <div style="font-size: 12px; color: #52c41a;">空闲</div>
+          </div>
+          <span class="worker-skill">冷冻</span>
+        </div>
+
+        <div class="worker-item">
+          <div class="worker-checkbox"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px;">吴</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">吴小二</div>
+            <div style="font-size: 12px; color: #1890ff;">工作中</div>
+          </div>
+          <span class="worker-skill" style="background: #f5f5f5; color: #999;">不可用</span>
+        </div>
+
+        <div class="worker-item selected">
+          <div class="worker-checkbox checked"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px;">郑</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">郑新手</div>
+            <div style="font-size: 12px; color: #52c41a;">空闲</div>
+          </div>
+          <span class="worker-skill">通用</span>
+        </div>
+
+        <!-- 机动人员 -->
+        <div style="font-size: 13px; color: #666; margin: 16px 0 8px 4px;">机动人员 (4人)</div>
+
+        <div class="worker-item selected">
+          <div class="worker-checkbox checked"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px; background: #ffc53d;">钱</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">钱多多</div>
+            <div style="font-size: 12px; color: #52c41a;">空闲</div>
+          </div>
+          <span class="worker-skill" style="background: #fff7e6; color: #fa8c16;">机动</span>
+        </div>
+
+        <div class="worker-item">
+          <div class="worker-checkbox"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px; background: #ffc53d;">孙</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">孙小明</div>
+            <div style="font-size: 12px; color: #52c41a;">空闲</div>
+          </div>
+          <span class="worker-skill" style="background: #fff7e6; color: #fa8c16;">机动</span>
+        </div>
+
+        <div class="worker-item">
+          <div class="worker-checkbox"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px; background: #ffc53d;">赵</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">赵六顺</div>
+            <div style="font-size: 12px; color: #52c41a;">空闲</div>
+          </div>
+          <span class="worker-skill" style="background: #fff7e6; color: #fa8c16;">机动</span>
+        </div>
+
+        <div class="worker-item">
+          <div class="worker-checkbox"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px; background: #ffc53d;">陈</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">陈七星</div>
+            <div style="font-size: 12px; color: #52c41a;">空闲</div>
+          </div>
+          <span class="worker-skill" style="background: #fff7e6; color: #fa8c16;">机动</span>
+        </div>
+
+        <!-- 可调动员工 -->
+        <div style="font-size: 13px; color: #666; margin: 16px 0 8px 4px;">可调动员工 (10人)</div>
+
+        <div class="worker-item">
+          <div class="worker-checkbox"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px;">张</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">张三丰</div>
+            <div style="font-size: 12px; color: #999;">切片车间 · 可调动</div>
+          </div>
+          <span class="worker-skill">切片</span>
+        </div>
+
+        <div class="worker-item">
+          <div class="worker-checkbox"></div>
+          <div class="avatar-item" style="margin: 0; width: 36px; height: 36px; border-radius: 18px; font-size: 14px;">李</div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333;">李四海</div>
+            <div style="font-size: 12px; color: #999;">包装车间 · 可调动</div>
+          </div>
+          <span class="worker-skill">包装</span>
+        </div>
+
+        <div style="text-align: center; color: #999; font-size: 13px; padding: 12px;">
+          +8 更多员工...
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-action-bar">
+      <button style="flex: 1; padding: 12px; background: white; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; color: #666; margin-right: 12px;">取消</button>
+      <a href="task-assignment.html" style="flex: 2; padding: 12px; background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); border: none; border-radius: 8px; font-size: 14px; color: white; text-align: center; text-decoration: none;">确认分配 (已选4人)</a>
+    </div>
+  </div>
+</body>
+</html>

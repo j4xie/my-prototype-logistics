@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>任务执行引导 - 车间主任</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 子页面头部 -->
+    <div class="subpage-header">
+      <a href="index.html" class="back-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <span class="title">任务执行引导</span>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content" style="padding-top: 16px;">
+      <!-- 批次信息卡片 -->
+      <div class="info-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 12px; opacity: 0.9;">当前任务</div>
+            <div style="font-size: 18px; font-weight: 600; margin-top: 4px;">PB-20251227-001</div>
+            <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">带鱼片 | 目标: 80kg</div>
+          </div>
+          <div style="text-align: right;">
+            <span style="padding: 4px 10px; background: rgba(255,77,79,0.9); border-radius: 12px; font-size: 11px; font-weight: 500;">急</span>
+            <div style="font-size: 12px; opacity: 0.9; margin-top: 8px;">需 11:30 前完成</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 步骤进度指示器 -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 20px 0;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">1</div>
+        <div style="width: 40px; height: 2px; background: #e0e0e0;"></div>
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; color: #999; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">2</div>
+        <div style="width: 40px; height: 2px; background: #e0e0e0;"></div>
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; color: #999; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">3</div>
+      </div>
+
+      <!-- 步骤 1: 前往工位 -->
+      <div class="info-card" style="border: 2px solid #667eea;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <div style="width: 40px; height: 40px; background: var(--workshop-gradient); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 14px; font-weight: 600; color: #667eea;">步骤 1/3: 前往工位</div>
+            <div style="font-size: 12px; color: #999; margin-top: 2px;">请前往指定工位准备生产</div>
+          </div>
+        </div>
+
+        <!-- 位置信息 -->
+        <div style="background: #f8f9ff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 44px; height: 44px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+              </svg>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 15px; font-weight: 600; color: #333;">切片车间 A区</div>
+              <div style="font-size: 13px; color: #666; margin-top: 4px;">3号工位 · 一楼东侧</div>
+              <div style="margin-top: 8px;">
+                <a href="#" style="font-size: 12px; color: #667eea; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                  </svg>
+                  查看车间地图
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 确认到达 -->
+        <label style="display: flex; align-items: center; gap: 12px; padding: 14px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 10px; cursor: pointer;">
+          <input type="checkbox" id="step1-confirm" style="width: 20px; height: 20px; accent-color: #52c41a;">
+          <div>
+            <div style="font-size: 14px; font-weight: 500; color: #333;">我已到达工位</div>
+            <div style="font-size: 12px; color: #52c41a; margin-top: 2px;">确认后进入下一步</div>
+          </div>
+        </label>
+      </div>
+
+      <!-- 步骤 2: 确认设备 (初始折叠) -->
+      <div class="info-card" style="opacity: 0.6;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <div style="width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 14px; font-weight: 500; color: #999;">步骤 2/3: 确认设备</div>
+            <div style="font-size: 12px; color: #bbb; margin-top: 2px;">检查设备状态并启动</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 步骤 3: 召集人员 (初始折叠) -->
+      <div class="info-card" style="opacity: 0.6;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 14px; font-weight: 500; color: #999;">步骤 3/3: 确认人员</div>
+            <div style="font-size: 12px; color: #bbb; margin-top: 2px;">确认分配人员已到位</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部按钮 -->
+      <div class="btn-group" style="margin-top: 24px;">
+        <a href="index.html" class="btn btn-secondary">取消任务</a>
+        <a href="task-guide-step2.html" class="btn btn-primary" style="opacity: 0.5; pointer-events: none;">下一步</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 简单的交互逻辑
+    document.getElementById('step1-confirm').addEventListener('change', function() {
+      const nextBtn = document.querySelector('.btn-primary');
+      if (this.checked) {
+        nextBtn.style.opacity = '1';
+        nextBtn.style.pointerEvents = 'auto';
+      } else {
+        nextBtn.style.opacity = '0.5';
+        nextBtn.style.pointerEvents = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
