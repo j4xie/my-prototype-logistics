@@ -381,6 +381,20 @@ public class EquipmentController {
     }
 
     /**
+     * 获取工厂设备总体统计（别名，兼容前端调用）
+     */
+    @GetMapping("/statistics")
+    @Operation(summary = "获取工厂设备总体统计（别名）")
+    public ApiResponse<Map<String, Object>> getEquipmentStatisticsAlias(
+            @Parameter(description = "工厂ID", required = true)
+            @PathVariable @NotBlank String factoryId) {
+
+        // 委托给 getOverallEquipmentStatistics
+        Map<String, Object> statistics = equipmentService.getOverallEquipmentStatistics(factoryId);
+        return ApiResponse.success(statistics);
+    }
+
+    /**
      * 获取设备效率报告
      */
     @GetMapping("/{equipmentId}/efficiency-report")

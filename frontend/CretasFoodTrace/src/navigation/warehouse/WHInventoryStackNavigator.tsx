@@ -1,0 +1,100 @@
+/**
+ * Warehouse 库存 Stack 导航器
+ * 包含: 库存列表、库存详情、批次详情、盘点、调拨、库位管理、过期处理、温控监测、出入库统计、批次溯源
+ */
+
+import React from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { WHInventoryStackParamList } from "../../types/navigation";
+
+// 导入库存相关页面组件
+import WHInventoryListScreen from "../../screens/warehouse/inventory/WHInventoryListScreen";
+import WHInventoryDetailScreen from "../../screens/warehouse/inventory/WHInventoryDetailScreen";
+import WHBatchDetailScreen from "../../screens/warehouse/inventory/WHBatchDetailScreen";
+import WHInventoryCheckScreen from "../../screens/warehouse/inventory/WHInventoryCheckScreen";
+import WHInventoryTransferScreen from "../../screens/warehouse/inventory/WHInventoryTransferScreen";
+import WHLocationManageScreen from "../../screens/warehouse/inventory/WHLocationManageScreen";
+import WHExpireHandleScreen from "../../screens/warehouse/inventory/WHExpireHandleScreen";
+import WHTempMonitorScreen from "../../screens/warehouse/inventory/WHTempMonitorScreen";
+import WHIOStatisticsScreen from "../../screens/warehouse/inventory/WHIOStatisticsScreen";
+import WHBatchTraceScreen from "../../screens/warehouse/shared/WHBatchTraceScreen";
+
+const Stack = createNativeStackNavigator<WHInventoryStackParamList>();
+
+export function WHInventoryStackNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      {/* 库存列表 */}
+      <Stack.Screen name="WHInventoryList" component={WHInventoryListScreen} />
+
+      {/* 库存详情 */}
+      <Stack.Screen
+        name="WHInventoryDetail"
+        component={WHInventoryDetailScreen}
+        options={{ title: "库存详情" }}
+      />
+
+      {/* 批次详情 */}
+      <Stack.Screen
+        name="WHBatchDetail"
+        component={WHBatchDetailScreen}
+        options={{ title: "批次详情" }}
+      />
+
+      {/* 盘点 */}
+      <Stack.Screen
+        name="WHInventoryCheck"
+        component={WHInventoryCheckScreen}
+        options={{ title: "库存盘点" }}
+      />
+
+      {/* 调拨 */}
+      <Stack.Screen
+        name="WHInventoryTransfer"
+        component={WHInventoryTransferScreen}
+        options={{ title: "库存调拨" }}
+      />
+
+      {/* 库位管理 */}
+      <Stack.Screen
+        name="WHLocationManage"
+        component={WHLocationManageScreen}
+        options={{ title: "库位管理" }}
+      />
+
+      {/* 过期处理 */}
+      <Stack.Screen
+        name="WHExpireHandle"
+        component={WHExpireHandleScreen}
+        options={{ title: "过期处理" }}
+      />
+
+      {/* 温控监测 */}
+      <Stack.Screen
+        name="WHTempMonitor"
+        component={WHTempMonitorScreen}
+        options={{ title: "温控监测" }}
+      />
+
+      {/* 出入库统计 */}
+      <Stack.Screen
+        name="WHIOStatistics"
+        component={WHIOStatisticsScreen}
+        options={{ title: "出入库统计" }}
+      />
+
+      {/* 批次溯源 */}
+      <Stack.Screen
+        name="WHBatchTrace"
+        component={WHBatchTraceScreen}
+        options={{ title: "批次溯源" }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+export default WHInventoryStackNavigator;

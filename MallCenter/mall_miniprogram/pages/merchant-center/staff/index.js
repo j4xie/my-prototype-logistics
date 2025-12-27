@@ -11,6 +11,24 @@ Page({
     roles: ['管理员', '店员', '配送员', '客服']
   },
 
+  onShow() {
+    // 检查登录状态 - 员工管理页需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/home/index'
+        })
+      }, 500)
+      return
+    }
+  },
+
   onLoad() {
     const merchantId = app.globalData.merchantId || wx.getStorageSync('merchantId')
     if (merchantId) {

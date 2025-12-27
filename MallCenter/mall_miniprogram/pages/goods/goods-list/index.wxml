@@ -1,8 +1,8 @@
 <!--
   - Copyright (C) 2018-2019
-  - All rights reserved, Designed By www.joolun.com
+  - 食品商城小程序
   - 注意：
-  - 本软件为www.joolun.com开发研制，项目使用请保留此说明
+  - 基于 JooLun 框架二次开发
 -->
 <view class="cu-bar search bg-white fixed">
   <view class="search-form round">
@@ -79,10 +79,10 @@
   <!-- 正常商品列表 -->
   <view wx:if="{{!noResult}}">
     <view wx:if="{{viewType}}">
-      <goods-card goodsList="{{goodsList}}"/>
+      <goods-card goodsList="{{goodsList}}" source="{{source}}"/>
     </view>
     <view wx:if="{{!viewType}}">
-      <goods-row goodsList="{{goodsList}}"/>
+      <goods-row goodsList="{{goodsList}}" source="{{source}}"/>
     </view>
     <view class="cu-load bg-gray {{loadmore?'loading':'over'}}"></view>
   </view>

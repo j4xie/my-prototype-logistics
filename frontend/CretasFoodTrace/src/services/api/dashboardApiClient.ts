@@ -38,6 +38,12 @@ export interface DashboardOverviewData {
     activeEquipment: number;      // 活跃设备数
     totalEquipment: number;       // 总设备数
   };
+  // ✅ 昨日统计，用于计算涨幅 (2025-12-28)
+  yesterdayStats?: {
+    totalBatches: number;         // 昨日批次数
+    outputKg: number;             // 昨日产量kg
+    completedBatches: number;     // 昨日完成批次
+  };
   kpi: {
     productionEfficiency: number;
     qualityPassRate: number;

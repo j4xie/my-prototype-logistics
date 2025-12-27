@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>过期处理 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="inventory.html" class="back-to-index">< 返回库存列表</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>过期处理</h1>
+      <p>即将过期 3 批 | 已过期 1 批</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 筛选标签 -->
+      <div class="filter-tabs">
+        <span class="filter-tab active">全部(4)</span>
+        <span class="filter-tab">即将过期(3)</span>
+        <span class="filter-tab">已过期(1)</span>
+      </div>
+
+      <!-- 已过期批次 -->
+      <div class="form-section">
+        <div class="form-section-title danger">已过期 (需立即处理)</div>
+
+        <div class="expire-card expired">
+          <div class="expire-header">
+            <span class="expire-batch">MB-20251219-001</span>
+            <span class="expire-tag danger">已过期</span>
+          </div>
+          <div class="expire-content">
+            <div class="expire-row">
+              <span class="expire-label">物料</span>
+              <span class="expire-value">带鱼 (鲜品)</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">数量</span>
+              <span class="expire-value">45 kg</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">过期时间</span>
+              <span class="expire-value danger">2025-12-26 (今天)</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">库位</span>
+              <span class="expire-value">A区-冷藏库-01</span>
+            </div>
+          </div>
+          <div class="expire-actions">
+            <button class="action-btn danger small">报损处理</button>
+            <button class="action-btn warning small">转冻品</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 即将过期批次 -->
+      <div class="form-section">
+        <div class="form-section-title warning">即将过期 (3天内)</div>
+
+        <div class="expire-card warning">
+          <div class="expire-header">
+            <span class="expire-batch">MB-20251223-001</span>
+            <span class="expire-tag warning">3天后</span>
+          </div>
+          <div class="expire-content">
+            <div class="expire-row">
+              <span class="expire-label">物料</span>
+              <span class="expire-value">带鱼 (鲜品)</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">数量</span>
+              <span class="expire-value">256 kg</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">过期时间</span>
+              <span class="expire-value warning">2025-12-30</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">库位</span>
+              <span class="expire-value">A区-冷藏库-01</span>
+            </div>
+          </div>
+          <div class="expire-actions">
+            <button class="action-btn secondary small">优先出库</button>
+            <button class="action-btn warning small">转冻品</button>
+          </div>
+        </div>
+
+        <div class="expire-card warning">
+          <div class="expire-header">
+            <span class="expire-batch">MB-20251224-003</span>
+            <span class="expire-tag warning">2天后</span>
+          </div>
+          <div class="expire-content">
+            <div class="expire-row">
+              <span class="expire-label">物料</span>
+              <span class="expire-value">鲈鱼 (鲜品)</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">数量</span>
+              <span class="expire-value">180 kg</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">过期时间</span>
+              <span class="expire-value warning">2025-12-28</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">库位</span>
+              <span class="expire-value">A区-冷藏库-02</span>
+            </div>
+          </div>
+          <div class="expire-actions">
+            <button class="action-btn secondary small">优先出库</button>
+            <button class="action-btn warning small">转冻品</button>
+          </div>
+        </div>
+
+        <div class="expire-card">
+          <div class="expire-header">
+            <span class="expire-batch">MB-20251225-001</span>
+            <span class="expire-tag">5天后</span>
+          </div>
+          <div class="expire-content">
+            <div class="expire-row">
+              <span class="expire-label">物料</span>
+              <span class="expire-value">蟹类 (鲜品)</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">数量</span>
+              <span class="expire-value">120 kg</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">过期时间</span>
+              <span class="expire-value">2025-12-31</span>
+            </div>
+            <div class="expire-row">
+              <span class="expire-label">库位</span>
+              <span class="expire-value">A区-冷藏库-03</span>
+            </div>
+          </div>
+          <div class="expire-actions">
+            <button class="action-btn secondary small">优先出库</button>
+            <button class="action-btn outline small">查看详情</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 处理说明 -->
+      <div class="form-section">
+        <div class="form-section-title">处理方式说明</div>
+        <div class="info-list">
+          <div class="info-item">
+            <span class="info-icon">1</span>
+            <div class="info-content">
+              <div class="info-title">优先出库</div>
+              <div class="info-desc">标记为FIFO优先消耗，系统自动推荐此批次</div>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">2</span>
+            <div class="info-content">
+              <div class="info-title">转冻品</div>
+              <div class="info-desc">将鲜品转为冻品，延长保质期30天</div>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">3</span>
+            <div class="info-content">
+              <div class="info-title">报损处理</div>
+              <div class="info-desc">已过期物料需进行报损登记</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,505 @@
+/**
+ * 上架页面
+ * 对应原型: warehouse/inbound-putaway.html
+ */
+
+import React, { useState } from "react";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import {
+  Text,
+  Surface,
+  Button,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { WHInboundStackParamList } from "../../../types/navigation";
+
+type NavigationProp = NativeStackNavigationProp<WHInboundStackParamList>;
+type RouteType = RouteProp<WHInboundStackParamList, "WHPutaway">;
+
+interface LocationOption {
+  id: string;
+  name: string;
+  zone: string;
+  capacity: number;
+  used: number;
+  temperature: string;
+  recommended?: boolean;
+}
+
+export function WHPutawayScreen() {
+  const theme = useTheme();
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteType>();
+  const { batchId } = route.params;
+
+  // 模拟批次数据
+  const batchInfo = {
+    batchNumber: "MB-20251225-005",
+    material: "鲈鱼",
+    materialType: "鲜品",
+    supplier: "宁波海鲜批发市场",
+    quantity: 200,
+    inspectResult: "质检通过",
+    storageTemp: "-2°C ~ 4°C",
+  };
+
+  // 推荐库位
+  const locationOptions: LocationOption[] = [
+    {
+      id: "1",
+      name: "A区-冷藏库-01",
+      zone: "A区",
+      capacity: 500,
+      used: 350,
+      temperature: "0°C ~ 4°C",
+      recommended: true,
+    },
+    {
+      id: "2",
+      name: "A区-冷藏库-02",
+      zone: "A区",
+      capacity: 500,
+      used: 420,
+      temperature: "0°C ~ 4°C",
+    },
+    {
+      id: "3",
+      name: "A区-冷藏库-03",
+      zone: "A区",
+      capacity: 500,
+      used: 280,
+      temperature: "-2°C ~ 2°C",
+    },
+  ];
+
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(
+    locationOptions.find((l) => l.recommended)?.id ?? null
+  );
+  const [actualQuantity, setActualQuantity] = useState(
+    batchInfo.quantity.toString()
+  );
+  const [remarks, setRemarks] = useState("");
+
+  const handleConfirm = () => {
+    if (!selectedLocation) {
+      Alert.alert("提示", "请选择上架库位");
+      return;
+    }
+
+    Alert.alert("确认上架", "确定将货物上架到所选库位吗？", [
+      { text: "取消", style: "cancel" },
+      {
+        text: "确定",
+        onPress: () => {
+          Alert.alert("成功", "货物已上架完成");
+          navigation.goBack();
+        },
+      },
+    ]);
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>确认上架</Text>
+        <View style={styles.headerRight} />
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* 批次信息 */}
+        <Surface style={styles.batchCard} elevation={1}>
+          <View style={styles.batchHeader}>
+            <Text style={styles.batchNumber}>{batchInfo.batchNumber}</Text>
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>{batchInfo.inspectResult}</Text>
+            </View>
+          </View>
+          <View style={styles.batchInfo}>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>物料</Text>
+              <Text style={styles.infoValue}>
+                {batchInfo.material} ({batchInfo.materialType})
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>供应商</Text>
+              <Text style={styles.infoValue}>{batchInfo.supplier}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>数量</Text>
+              <Text style={[styles.infoValue, styles.quantityValue]}>
+                {batchInfo.quantity} kg
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>存储温度</Text>
+              <Text style={styles.infoValue}>{batchInfo.storageTemp}</Text>
+            </View>
+          </View>
+        </Surface>
+
+        {/* 选择库位 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>选择库位</Text>
+
+          {locationOptions.map((location) => (
+            <TouchableOpacity
+              key={location.id}
+              style={[
+                styles.locationCard,
+                selectedLocation === location.id && styles.locationCardSelected,
+              ]}
+              onPress={() => setSelectedLocation(location.id)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.locationHeader}>
+                <View style={styles.locationInfo}>
+                  <Text style={styles.locationName}>{location.name}</Text>
+                  {location.recommended && (
+                    <View style={styles.recommendBadge}>
+                      <Text style={styles.recommendText}>推荐</Text>
+                    </View>
+                  )}
+                </View>
+                <MaterialCommunityIcons
+                  name={
+                    selectedLocation === location.id
+                      ? "radiobox-marked"
+                      : "radiobox-blank"
+                  }
+                  size={24}
+                  color={selectedLocation === location.id ? "#4CAF50" : "#ccc"}
+                />
+              </View>
+              <View style={styles.locationMeta}>
+                <View style={styles.metaItem}>
+                  <MaterialCommunityIcons
+                    name="thermometer"
+                    size={14}
+                    color="#666"
+                  />
+                  <Text style={styles.metaText}>{location.temperature}</Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <MaterialCommunityIcons
+                    name="package-variant"
+                    size={14}
+                    color="#666"
+                  />
+                  <Text style={styles.metaText}>
+                    {location.used}/{location.capacity} kg
+                  </Text>
+                </View>
+                <View style={styles.capacityBar}>
+                  <View
+                    style={[
+                      styles.capacityFill,
+                      {
+                        width: `${(location.used / location.capacity) * 100}%`,
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* 上架数量 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>上架数量</Text>
+          <View style={styles.quantityRow}>
+            <TextInput
+              mode="outlined"
+              value={actualQuantity}
+              onChangeText={setActualQuantity}
+              keyboardType="numeric"
+              style={styles.quantityInput}
+              outlineColor="#ddd"
+              activeOutlineColor="#4CAF50"
+            />
+            <Text style={styles.unitText}>kg</Text>
+          </View>
+          {Number(actualQuantity) !== batchInfo.quantity && (
+            <Text style={styles.warningText}>
+              注意：上架数量与入库数量不一致
+            </Text>
+          )}
+        </View>
+
+        {/* 备注 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>备注</Text>
+          <TextInput
+            mode="outlined"
+            value={remarks}
+            onChangeText={setRemarks}
+            placeholder="请输入上架备注..."
+            multiline
+            numberOfLines={3}
+            style={styles.textArea}
+            outlineColor="#ddd"
+            activeOutlineColor="#4CAF50"
+          />
+        </View>
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* 底部操作 */}
+      <View style={styles.bottomActions}>
+        <Button
+          mode="outlined"
+          onPress={() => navigation.goBack()}
+          style={styles.cancelButton}
+          labelStyle={styles.cancelButtonLabel}
+        >
+          返回
+        </Button>
+        <Button
+          mode="contained"
+          onPress={handleConfirm}
+          style={styles.confirmButton}
+          labelStyle={styles.confirmButtonLabel}
+          icon="check"
+        >
+          确认上架
+        </Button>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
+  header: {
+    backgroundColor: "#4CAF50",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#fff",
+    textAlign: "center",
+    marginRight: 28,
+  },
+  headerRight: {
+    width: 28,
+  },
+  content: {
+    flex: 1,
+  },
+  batchCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 16,
+  },
+  batchHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  batchNumber: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#333",
+  },
+  statusBadge: {
+    backgroundColor: "#e8f5e9",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    color: "#4CAF50",
+    fontWeight: "500",
+  },
+  batchInfo: {
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+    paddingTop: 12,
+  },
+  infoRow: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  infoLabel: {
+    width: 70,
+    fontSize: 13,
+    color: "#999",
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: 13,
+    color: "#333",
+  },
+  quantityValue: {
+    fontWeight: "600",
+    color: "#4CAF50",
+  },
+  section: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 12,
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#999",
+    marginBottom: 12,
+  },
+  locationCard: {
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+  },
+  locationCardSelected: {
+    borderColor: "#4CAF50",
+    backgroundColor: "#f1f8e9",
+  },
+  locationHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  locationInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  locationName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#333",
+  },
+  recommendBadge: {
+    backgroundColor: "#fff3e0",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  recommendText: {
+    fontSize: 10,
+    color: "#ff9800",
+    fontWeight: "600",
+  },
+  locationMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  metaText: {
+    fontSize: 12,
+    color: "#666",
+  },
+  capacityBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 2,
+  },
+  capacityFill: {
+    height: "100%",
+    backgroundColor: "#4CAF50",
+    borderRadius: 2,
+  },
+  quantityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  quantityInput: {
+    flex: 1,
+    backgroundColor: "#fff",
+    fontSize: 20,
+    textAlign: "center",
+  },
+  unitText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  warningText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#ff9800",
+  },
+  textArea: {
+    backgroundColor: "#fff",
+    fontSize: 14,
+    minHeight: 80,
+  },
+  bottomActions: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    padding: 16,
+    paddingBottom: 34,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  cancelButton: {
+    flex: 1,
+    borderRadius: 8,
+    borderColor: "#ddd",
+  },
+  cancelButtonLabel: {
+    color: "#666",
+  },
+  confirmButton: {
+    flex: 1,
+    borderRadius: 8,
+    backgroundColor: "#4CAF50",
+  },
+  confirmButtonLabel: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+});
+
+export default WHPutawayScreen;

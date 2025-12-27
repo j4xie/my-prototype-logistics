@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>召回管理 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回首页</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>召回管理</h1>
+      <p>产品召回追溯</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 筛选标签 -->
+      <div class="filter-tabs">
+        <span class="filter-tab active">进行中(1)</span>
+        <span class="filter-tab">已完成(3)</span>
+        <span class="filter-tab">新建召回</span>
+      </div>
+
+      <!-- 进行中的召回 -->
+      <div class="form-section">
+        <div class="form-section-title danger">进行中的召回</div>
+
+        <div class="recall-card active">
+          <div class="recall-header">
+            <div class="recall-info">
+              <span class="recall-number">RC-20251226-001</span>
+              <span class="recall-level urgent">紧急</span>
+            </div>
+            <span class="recall-status processing">执行中</span>
+          </div>
+          <div class="recall-content">
+            <div class="recall-row">
+              <span class="recall-label">召回原因</span>
+              <span class="recall-value">供应商质检问题</span>
+            </div>
+            <div class="recall-row">
+              <span class="recall-label">涉及批次</span>
+              <span class="recall-value">MB-20251220-005</span>
+            </div>
+            <div class="recall-row">
+              <span class="recall-label">涉及数量</span>
+              <span class="recall-value danger">200 kg</span>
+            </div>
+            <div class="recall-row">
+              <span class="recall-label">发起时间</span>
+              <span class="recall-value">2025-12-26 09:00</span>
+            </div>
+          </div>
+
+          <div class="recall-scope">
+            <div class="recall-scope-title">追溯范围</div>
+            <div class="recall-scope-item">
+              <span class="scope-icon">1</span>
+              <div class="scope-content">
+                <div class="scope-label">库存在库</div>
+                <div class="scope-value">50 kg</div>
+              </div>
+              <span class="scope-status success">已冻结</span>
+            </div>
+            <div class="recall-scope-item">
+              <span class="scope-icon">2</span>
+              <div class="scope-content">
+                <div class="scope-label">已出货</div>
+                <div class="scope-value">100 kg → 3家客户</div>
+              </div>
+              <span class="scope-status warning">通知中</span>
+            </div>
+            <div class="recall-scope-item">
+              <span class="scope-icon">3</span>
+              <div class="scope-content">
+                <div class="scope-label">已消耗</div>
+                <div class="scope-value">50 kg → 2个生产批次</div>
+              </div>
+              <span class="scope-status warning">追溯中</span>
+            </div>
+          </div>
+
+          <div class="recall-progress">
+            <div class="progress-header">
+              <span>处理进度</span>
+              <span>60%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 60%;"></div>
+            </div>
+          </div>
+
+          <div class="recall-actions">
+            <a href="recall-detail.html" class="action-btn secondary small">查看详情</a>
+            <button class="action-btn primary small">继续处理</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 召回流程说明 -->
+      <div class="form-section">
+        <div class="form-section-title">召回流程</div>
+        <div class="recall-flow">
+          <div class="flow-step completed">
+            <div class="flow-number">1</div>
+            <div class="flow-content">
+              <div class="flow-title">冻结库存</div>
+              <div class="flow-desc">锁定问题批次</div>
+            </div>
+          </div>
+          <div class="flow-connector"></div>
+          <div class="flow-step completed">
+            <div class="flow-number">2</div>
+            <div class="flow-content">
+              <div class="flow-title">通知客户</div>
+              <div class="flow-desc">发送召回通知</div>
+            </div>
+          </div>
+          <div class="flow-connector"></div>
+          <div class="flow-step active">
+            <div class="flow-number">3</div>
+            <div class="flow-content">
+              <div class="flow-title">回收产品</div>
+              <div class="flow-desc">客户退货处理</div>
+            </div>
+          </div>
+          <div class="flow-connector"></div>
+          <div class="flow-step pending">
+            <div class="flow-number">4</div>
+            <div class="flow-content">
+              <div class="flow-title">处置记录</div>
+              <div class="flow-desc">销毁/处理</div>
+            </div>
+          </div>
+          <div class="flow-connector"></div>
+          <div class="flow-step pending">
+            <div class="flow-number">5</div>
+            <div class="flow-content">
+              <div class="flow-title">原因分析</div>
+              <div class="flow-desc">根因分析报告</div>
+            </div>
+          </div>
+          <div class="flow-connector"></div>
+          <div class="flow-step pending">
+            <div class="flow-number">6</div>
+            <div class="flow-content">
+              <div class="flow-title">关闭召回</div>
+              <div class="flow-desc">完成闭环</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 历史召回记录 -->
+      <div class="form-section">
+        <div class="form-section-title">历史召回记录</div>
+
+        <div class="recall-card">
+          <div class="recall-header">
+            <div class="recall-info">
+              <span class="recall-number">RC-20251210-001</span>
+              <span class="recall-level normal">一般</span>
+            </div>
+            <span class="recall-status completed">已完成</span>
+          </div>
+          <div class="recall-content">
+            <div class="recall-row">
+              <span class="recall-label">召回原因</span>
+              <span class="recall-value">温控异常</span>
+            </div>
+            <div class="recall-row">
+              <span class="recall-label">涉及数量</span>
+              <span class="recall-value">80 kg</span>
+            </div>
+            <div class="recall-row">
+              <span class="recall-label">完成时间</span>
+              <span class="recall-value">2025-12-15</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recall-card">
+          <div class="recall-header">
+            <div class="recall-info">
+              <span class="recall-number">RC-20251128-002</span>
+              <span class="recall-level normal">一般</span>
+            </div>
+            <span class="recall-status completed">已完成</span>
+          </div>
+          <div class="recall-content">
+            <div class="recall-row">
+              <span class="recall-label">召回原因</span>
+              <span class="recall-value">客户投诉</span>
+            </div>
+            <div class="recall-row">
+              <span class="recall-label">涉及数量</span>
+              <span class="recall-value">30 kg</span>
+            </div>
+            <div class="recall-row">
+              <span class="recall-label">完成时间</span>
+              <span class="recall-value">2025-12-02</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="action-buttons">
+        <button type="button" class="action-btn primary" onclick="alert('发起新召回'); location.href='recall-create.html';">发起新召回</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

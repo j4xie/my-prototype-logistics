@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>质检详情 - 工厂管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: #333; font-size: 22px; font-weight: bold; padding: 8px 12px;">&lt;</a>
+      <span class="title">质检详情</span>
+    </div>
+
+    <div class="content" style="padding: 16px;">
+      <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 18px; font-weight: 600; color: #333;">QC-20251227-003</span>
+          <span class="list-item-badge badge--green">合格</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <a href="product-detail.html" style="text-decoration: none;"><span style="font-size: 12px; color: #999;">产品名称</span><div style="font-size: 15px; color: #1890ff; margin-top: 4px;">带鱼片 ></div></a>
+          <a href="production-batch-detail.html" style="text-decoration: none;"><span style="font-size: 12px; color: #999;">生产批次</span><div style="font-size: 15px; color: #1890ff; margin-top: 4px;">PB-20251227-001 ></div></a>
+          <div><span style="font-size: 12px; color: #999;">质检类型</span><div style="font-size: 15px; color: #333; margin-top: 4px;">成品质检</div></div>
+          <div><span style="font-size: 12px; color: #999;">质检员</span><div style="font-size: 15px; color: #333; margin-top: 4px;">李质检</div></div>
+          <div><span style="font-size: 12px; color: #999;">质检时间</span><div style="font-size: 15px; color: #333; margin-top: 4px;">2025-12-27 10:30</div></div>
+          <div><span style="font-size: 12px; color: #999;">抽检数量</span><div style="font-size: 15px; color: #333; margin-top: 4px;">5 件</div></div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">检测项目</span>
+      </div>
+      <div class="list-item">
+        <div class="list-item-header"><span class="list-item-title">感官检测</span><span class="list-item-badge badge--green">合格</span></div>
+        <div class="list-item-meta">色泽正常、无异味、弹性良好</div>
+      </div>
+      <div class="list-item">
+        <div class="list-item-header"><span class="list-item-title">菌落总数</span><span class="list-item-badge badge--green">合格</span></div>
+        <div class="list-item-meta">检测值: 2.1×10³ CFU/g · 标准: ≤10⁵ CFU/g</div>
+      </div>
+      <div class="list-item">
+        <div class="list-item-header"><span class="list-item-title">大肠菌群</span><span class="list-item-badge badge--green">合格</span></div>
+        <div class="list-item-meta">检测值: 未检出 · 标准: ≤40 MPN/100g</div>
+      </div>
+      <div class="list-item">
+        <div class="list-item-header"><span class="list-item-title">重量规格</span><span class="list-item-badge badge--green">合格</span></div>
+        <div class="list-item-meta">实测: 102g±3g · 标准: 100g±5g</div>
+      </div>
+
+      <div class="section-header" style="margin-top: 16px;">
+        <span class="section-title">质检照片</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+        <div style="aspect-ratio: 1; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999;">样品1</div>
+        <div style="aspect-ratio: 1; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999;">样品2</div>
+        <div style="aspect-ratio: 1; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999;">检测</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

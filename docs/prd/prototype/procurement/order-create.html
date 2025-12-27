@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新建采购单 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="procurement.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回工作台</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>新建采购单</h1>
+      <p>填写采购信息并提交审批</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 来源标记 -->
+      <div class="source-tag ai-source">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 16v-4"/>
+          <path d="M12 8h.01"/>
+        </svg>
+        <span>来源: AI扫描推荐</span>
+      </div>
+
+      <form class="form-container">
+        <!-- 供应商选择 -->
+        <div class="form-section">
+          <div class="form-section-title">供应商信息</div>
+
+          <div class="form-group">
+            <label class="form-label required">选择供应商</label>
+            <select class="form-select">
+              <option value="">请选择供应商</option>
+              <option value="1" selected>舟山渔业合作社 ⭐ AI推荐</option>
+              <option value="2">宁波海鲜批发市场</option>
+              <option value="3">东海冷冻食品有限公司</option>
+              <option value="4">浙江海产品加工厂</option>
+            </select>
+          </div>
+
+          <div class="supplier-preview">
+            <div class="preview-header">
+              <span class="preview-name">舟山渔业合作社</span>
+              <span class="preview-rating">★★★★★ 5.0</span>
+            </div>
+            <div class="preview-info">
+              <span>合作156单 · 准时率98.2%</span>
+            </div>
+            <div class="preview-contact">
+              <span>联系人: 张经理 · 138****5678</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 采购明细 -->
+        <div class="form-section">
+          <div class="form-section-title">采购明细</div>
+
+          <!-- 明细项 1 -->
+          <div class="order-item-card">
+            <div class="item-header">
+              <span class="item-name">带鱼 (鲜品)</span>
+              <button type="button" class="item-remove" onclick="this.closest('.order-item-card').style.display='none'">×</button>
+            </div>
+            <div class="item-form-row">
+              <div class="form-group flex-1">
+                <label class="form-label">规格</label>
+                <input type="text" class="form-input" value="500g-1kg/条" readonly>
+              </div>
+            </div>
+            <div class="item-form-row">
+              <div class="form-group flex-2">
+                <label class="form-label required">数量</label>
+                <input type="number" class="form-input" value="200" id="qty1">
+              </div>
+              <div class="form-group flex-1">
+                <label class="form-label">单位</label>
+                <select class="form-select">
+                  <option value="kg" selected>kg</option>
+                  <option value="g">g</option>
+                  <option value="吨">吨</option>
+                </select>
+              </div>
+            </div>
+            <div class="item-form-row">
+              <div class="form-group flex-2">
+                <label class="form-label required">单价 (元/kg)</label>
+                <input type="number" class="form-input" value="17.5" step="0.1" id="price1">
+              </div>
+              <div class="form-group flex-1">
+                <label class="form-label">小计</label>
+                <div class="form-value">¥3,500</div>
+              </div>
+            </div>
+            <div class="ai-price-hint">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+              </svg>
+              <span>低于市场均价 ¥18.5，节省约 5.4%</span>
+            </div>
+          </div>
+
+          <!-- 添加更多按钮 -->
+          <button type="button" class="add-item-btn" onclick="alert('添加采购项')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            <span>添加采购项</span>
+          </button>
+        </div>
+
+        <!-- 交货信息 -->
+        <div class="form-section">
+          <div class="form-section-title">交货信息</div>
+
+          <div class="form-group">
+            <label class="form-label required">预计交货日期</label>
+            <input type="date" class="form-input" value="2025-12-28">
+            <div class="form-hint success">预计次日送达 (供应商承诺)</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">收货地址</label>
+            <select class="form-select">
+              <option value="1" selected>舟山海鲜加工厂 - 主仓库</option>
+              <option value="2">舟山海鲜加工厂 - 冷库</option>
+            </select>
+            <div class="form-hint">浙江省舟山市定海区临城街道xxx号</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">收货联系人</label>
+            <div class="form-row">
+              <input type="text" class="form-input flex-2" value="李仓管" placeholder="姓名">
+              <input type="tel" class="form-input flex-2" value="139****8888" placeholder="电话">
+            </div>
+          </div>
+        </div>
+
+        <!-- 金额汇总 -->
+        <div class="form-section">
+          <div class="form-section-title">金额汇总</div>
+          <div class="amount-summary">
+            <div class="amount-row">
+              <span class="amount-label">商品金额</span>
+              <span class="amount-value">¥3,500.00</span>
+            </div>
+            <div class="amount-row">
+              <span class="amount-label">运费</span>
+              <span class="amount-value">包邮</span>
+            </div>
+            <div class="amount-row total">
+              <span class="amount-label">合计金额</span>
+              <span class="amount-value">¥3,500.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 备注 -->
+        <div class="form-section">
+          <div class="form-section-title">备注</div>
+          <div class="form-group">
+            <textarea class="form-textarea" rows="3" placeholder="请输入备注信息（选填）">根据AI分析建议采购，满足未来5天生产需求。</textarea>
+          </div>
+        </div>
+
+        <!-- 附件 -->
+        <div class="form-section">
+          <div class="form-section-title">附件</div>
+          <div class="upload-area">
+            <div class="upload-placeholder">
+              <span class="upload-icon">+</span>
+              <span class="upload-text">点击上传附件</span>
+              <span class="upload-hint">支持图片、PDF格式</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 审批流程预览 -->
+        <div class="form-section">
+          <div class="form-section-title">审批流程</div>
+          <div class="approval-flow-preview">
+            <div class="flow-step">
+              <div class="step-icon current">1</div>
+              <div class="step-info">
+                <div class="step-name">提交申请</div>
+                <div class="step-user">当前步骤</div>
+              </div>
+            </div>
+            <div class="flow-line"></div>
+            <div class="flow-step">
+              <div class="step-icon pending">2</div>
+              <div class="step-info">
+                <div class="step-name">部门审批</div>
+                <div class="step-user">张经理</div>
+              </div>
+            </div>
+            <div class="flow-line"></div>
+            <div class="flow-step">
+              <div class="step-icon pending">3</div>
+              <div class="step-info">
+                <div class="step-name">财务确认</div>
+                <div class="step-user">财务部</div>
+              </div>
+            </div>
+            <div class="flow-line"></div>
+            <div class="flow-step">
+              <div class="step-icon pending">4</div>
+              <div class="step-info">
+                <div class="step-name">发送供应商</div>
+                <div class="step-user">系统自动</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 提交按钮 -->
+        <div class="form-actions">
+          <button type="button" class="action-btn secondary" onclick="alert('草稿已保存'); location.href='order-list.html';">保存草稿</button>
+          <button type="button" class="action-btn primary" onclick="alert('采购单已提交审批'); location.href='order-detail.html';">提交审批</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.joolun.mall.entity.GoodsSpu;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -30,5 +31,12 @@ public interface GoodsSpuMapper extends BaseMapper<GoodsSpu> {
 	GoodsSpu selectById4(String id);
 
 	GoodsSpu selectOneByShoppingCart(String id);
+
+	/**
+	 * 获取所有活跃分类（有上架商品的分类）
+	 * 用于 Thompson Sampling 探索推荐
+	 */
+	@Select("SELECT DISTINCT category_first FROM goods_spu WHERE shelf = '1' AND category_first IS NOT NULL")
+	List<String> selectDistinctCategories();
 
 }

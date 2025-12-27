@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.UserInterestTagMapper">
+
+    <!--
+        P1性能优化: 原子性UPSERT操作
+        解决并发场景下的 UPDATE失败→INSERT→冲突→重试UPDATE 问题
+        使用 MySQL 的 INSERT ON DUPLICATE KEY UPDATE 语法
+
+        唯一键约束: (wx_user_id, tag_type, tag_value)
+    -->
+    <insert id="upsertTag">
+        INSERT INTO user_interest_tags (
+            wx_user_id,
+            tag_type,
+            tag_value,
+            tag_level,
+            weight,
+            confidence,
+            source,
+            interaction_count,
+            last_interaction_time,
+            decay_factor,
+            create_time,
+            update_time
+        ) VALUES (
+            #{wxUserId},
+            #{tagType},
+            #{tagValue},
+            #{tagLevel},
+            #{weight},
+            #{confidence},
+            #{source},
+            1,
+            NOW(),
+            1.0,
+            NOW(),
+            NOW()
+        )
+        ON DUPLICATE KEY UPDATE
+            weight = LEAST(1.0, weight + #{weightIncrement}),
+            interaction_count = interaction_count + 1,
+            last_interaction_time = NOW(),
+            decay_factor = 1.0,
+            update_time = NOW()
+    </insert>
+
+</mapper>

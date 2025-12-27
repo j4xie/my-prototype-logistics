@@ -71,6 +71,57 @@
   --header-height: 56px;
   --tab-bar-height: 56px;
   --safe-area-bottom: 20px;
+
+  /* ====================
+     仓储物流角色配色方案
+     ==================== */
+  /* 主色 - 仓储绿 */
+  --warehouse-primary: #2E7D32;
+  --warehouse-primary-light: #4CAF50;
+  --warehouse-primary-dark: #1B5E20;
+  --warehouse-gradient: linear-gradient(135deg, #2E7D32 0%, #81C784 100%);
+
+  /* 辅助色 - 物流橙 */
+  --logistics-accent: #FF9800;
+  --logistics-accent-light: #FFB74D;
+  --logistics-accent-dark: #F57C00;
+
+  /* 仓储状态色 */
+  --status-inbound: #4CAF50;    /* 入库 - 绿色 */
+  --status-outbound: #FF9800;   /* 出库 - 橙色 */
+  --status-storage: #2196F3;    /* 库存 - 蓝色 */
+  --status-alert: #F44336;      /* 预警 - 红色 */
+  --status-frozen: #00BCD4;     /* 冷冻 - 青色 */
+  --status-fresh: #8BC34A;      /* 鲜品 - 浅绿色 */
+
+  /* 温控区域色 */
+  --temp-cold: #00BCD4;         /* 冷藏 */
+  --temp-frozen: #03A9F4;       /* 冷冻 */
+  --temp-normal: #4CAF50;       /* 正常 */
+  --temp-warning: #FF9800;      /* 警告 */
+  --temp-danger: #F44336;       /* 危险 */
+
+  /* ====================
+     角色渐变色 (来自 DESIGN_GUIDE.md)
+     ==================== */
+  --gradient-factory: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-hr: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-procurement: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-sales: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  --gradient-dispatcher: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+  --gradient-workshop: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-operator: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-warehouse: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-quality: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+  --gradient-equipment: linear-gradient(135deg, #0093E9 0%, #80D0C7 100%);
+
+  /* ====================
+     状态背景色 (用于标签/卡片)
+     ==================== */
+  --color-success-bg: #f6ffed;
+  --color-warning-bg: #fffbe6;
+  --color-error-bg: #fff2f0;
+  --color-info-bg: #e6f7ff;
 }
 
 /* ====================
@@ -1970,17 +2021,18 @@ html, body {
   margin: 4px 0 0 0;
 }
 
-/* 各角色头部渐变色 */
-.role-header--admin { background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); }
-.role-header--hr { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.role-header--procurement { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-.role-header--sales { background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%); }
-.role-header--dispatcher { background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%); }
-.role-header--workshop { background: linear-gradient(135deg, #13c2c2 0%, #36cfc9 100%); }
-.role-header--operator { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.role-header--warehouse { background: linear-gradient(135deg, #fa541c 0%, #ff7a45 100%); }
-.role-header--quality { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); }
-.role-header--equipment { background: linear-gradient(135deg, #2f54eb 0%, #597ef7 100%); }
+/* 各角色头部渐变色 (统一使用 DESIGN_GUIDE.md 规范) */
+.role-header--admin { background: var(--gradient-factory); }
+.role-header--factory { background: var(--gradient-factory); }
+.role-header--hr { background: var(--gradient-hr); }
+.role-header--procurement { background: var(--gradient-procurement); }
+.role-header--sales { background: var(--gradient-sales); }
+.role-header--dispatcher { background: var(--gradient-dispatcher); }
+.role-header--workshop { background: var(--gradient-workshop); }
+.role-header--operator { background: var(--gradient-operator); }
+.role-header--warehouse { background: var(--gradient-warehouse); }
+.role-header--quality { background: var(--gradient-quality); }
+.role-header--equipment { background: var(--gradient-equipment); }
 
 /* ====================
    Welcome Section - 欢迎区域
@@ -3755,7 +3807,7 @@ html, body {
    =========================== */
 
 .role-header--dispatcher {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  background: var(--gradient-dispatcher);
 }
 
 /* 生产计划总览 */
@@ -4127,7 +4179,7 @@ html, body {
    ========================================== */
 
 .role-header--workshop {
-  background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+  background: var(--gradient-workshop);
 }
 
 /* 今日任务概览 */
@@ -4153,7 +4205,7 @@ html, body {
 
 .task-workshop-badge {
   font-size: 12px;
-  background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+  background: var(--gradient-workshop);
   color: #fff;
   padding: 4px 12px;
   border-radius: 12px;
@@ -4459,9 +4511,29 @@ html, body {
    仓储物流角色样式 (8-warehouse.html)
    ============================================ */
 
-/* 仓储角色头部渐变 */
+/* 仓储角色头部渐变 - 使用 DESIGN_GUIDE 统一配色 */
 .role-header--warehouse {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: var(--gradient-warehouse);
+  padding: 20px 16px 16px;
+  color: white;
+  height: auto;
+  min-height: 80px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.role-header--warehouse h1 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: white;
+}
+
+.role-header--warehouse p {
+  font-size: 13px;
+  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* 今日统计卡片 */
@@ -4548,7 +4620,8 @@ html, body {
 
 .section-more {
   font-size: 13px;
-  color: #f5576c;
+  color: var(--warehouse-primary);
+  cursor: pointer;
 }
 
 /* 订单列表 */
@@ -4640,13 +4713,24 @@ html, body {
 }
 
 .order-action {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: var(--warehouse-gradient);
   color: white;
   border: none;
   border-radius: 15px;
   padding: 6px 14px;
   font-size: 12px;
   cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.order-action:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.order-action.secondary {
+  background: var(--logistics-accent);
 }
 
 /* 库存预警列表 */
@@ -4867,8 +4951,14 @@ html, body {
 }
 
 .inbound-btn.confirm {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: var(--warehouse-gradient);
   color: white;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.inbound-btn.confirm:hover {
+  opacity: 0.9;
 }
 
 .inbound-btn.reject {
@@ -4896,7 +4986,7 @@ html, body {
 }
 
 .filter-btn.active {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: var(--warehouse-gradient);
   color: white;
 }
 
@@ -4990,6 +5080,800 @@ html, body {
 
 .page-content {
   padding-bottom: 100px;
+}
+
+/* ====================
+   仓储次级页面样式
+   ==================== */
+
+/* 次级页面头部 (带返回按钮) */
+.subpage-header {
+  background: var(--warehouse-gradient);
+  padding: 16px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subpage-header .back-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 18px;
+  border: none;
+}
+
+.subpage-header .page-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* 详情信息卡片 */
+.detail-card {
+  background: white;
+  border-radius: 12px;
+  margin: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.detail-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f5f5f5;
+  margin-bottom: 12px;
+}
+
+.detail-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.detail-card-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: var(--status-inbound);
+  color: white;
+}
+
+.detail-card-badge.urgent {
+  background: var(--status-alert);
+}
+
+.detail-card-badge.outbound {
+  background: var(--logistics-accent);
+}
+
+/* 详情信息行 */
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f9f9f9;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.detail-value {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* 分组标题 */
+.section-divider {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 16px 16px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-divider::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: var(--warehouse-primary);
+  border-radius: 2px;
+}
+
+/* 底部操作按钮 */
+.bottom-actions {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 375px;
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  gap: 12px;
+  z-index: 100;
+}
+
+.btn-primary {
+  flex: 1;
+  padding: 14px;
+  background: var(--warehouse-gradient);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  flex: 1;
+  padding: 14px;
+  background: #f5f5f5;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-danger {
+  flex: 1;
+  padding: 14px;
+  background: #ffebee;
+  color: var(--status-alert);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* ====================
+   温控监控样式
+   ==================== */
+.temp-monitor-card {
+  background: white;
+  border-radius: 12px;
+  margin: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.temp-monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.temp-monitor-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.temp-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.temp-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--temp-normal);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.temp-zone-card {
+  background: #f9f9f9;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.temp-zone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.temp-zone-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.temp-zone-status {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.temp-zone-status.normal {
+  background: #e8f5e9;
+  color: var(--temp-normal);
+}
+
+.temp-zone-status.warning {
+  background: #fff3e0;
+  color: var(--temp-warning);
+}
+
+.temp-zone-status.danger {
+  background: #ffebee;
+  color: var(--temp-danger);
+}
+
+.temp-current {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.temp-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.temp-unit {
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.temp-range {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.temp-trend {
+  height: 40px;
+  background: linear-gradient(to right, #e8f5e9, #e8f5e9);
+  border-radius: 4px;
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 4px;
+}
+
+.temp-trend-bar {
+  flex: 1;
+  background: var(--warehouse-primary);
+  border-radius: 2px;
+  min-height: 10%;
+}
+
+/* ====================
+   扫码作业样式
+   ==================== */
+.scan-camera-area {
+  background: #000;
+  height: 300px;
+  margin: 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.scan-frame {
+  width: 200px;
+  height: 200px;
+  border: 2px solid white;
+  border-radius: 12px;
+  position: relative;
+}
+
+.scan-frame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--warehouse-primary-light);
+  animation: scan-line 2s linear infinite;
+}
+
+@keyframes scan-line {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+
+.scan-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: white;
+  font-size: 14px;
+}
+
+.scan-mode-tabs {
+  display: flex;
+  margin: 0 16px 16px;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.scan-mode-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.scan-mode-tab.active {
+  background: white;
+  color: var(--warehouse-primary);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.scan-history-list {
+  margin: 0 16px;
+}
+
+.scan-history-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.scan-history-icon {
+  width: 36px;
+  height: 36px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--warehouse-primary);
+  font-size: 16px;
+  margin-right: 12px;
+}
+
+.scan-history-info {
+  flex: 1;
+}
+
+.scan-history-code {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.scan-history-detail {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.scan-history-time {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* ====================
+   召回管理样式
+   ==================== */
+.recall-status-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.recall-tab {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  background: #f5f5f5;
+  color: var(--text-secondary);
+  border: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.recall-tab.active {
+  background: var(--status-alert);
+  color: white;
+}
+
+.recall-card {
+  background: white;
+  border-radius: 12px;
+  margin: 0 16px 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-left: 3px solid var(--status-alert);
+}
+
+.recall-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.recall-card-id {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.recall-card-status {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #ffebee;
+  color: var(--status-alert);
+}
+
+.recall-card-status.completed {
+  background: #e8f5e9;
+  color: var(--temp-normal);
+}
+
+.recall-progress {
+  margin-top: 12px;
+}
+
+.recall-progress-bar {
+  height: 6px;
+  background: #f5f5f5;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.recall-progress-fill {
+  height: 100%;
+  background: var(--logistics-accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.recall-scope {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.recall-scope-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+/* ====================
+   表单样式
+   ==================== */
+.form-group {
+  margin-bottom: 16px;
+  padding: 0 16px;
+}
+
+.form-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.form-label.required::after {
+  content: ' *';
+  color: var(--status-alert);
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--warehouse-primary);
+}
+
+.form-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.form-select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: white;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: white;
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--warehouse-primary);
+}
+
+.form-radio-group {
+  display: flex;
+  gap: 16px;
+}
+
+.form-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.form-radio {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--warehouse-primary);
+}
+
+/* 类型选择按钮组 */
+.type-btn-group {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.type-btn {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: center;
+}
+
+.type-btn.active {
+  border-color: var(--warehouse-primary);
+  background: #e8f5e9;
+  color: var(--warehouse-primary);
+  font-weight: 500;
+}
+
+/* 图片上传区域 */
+.photo-upload {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.photo-item {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 24px;
+  color: var(--text-tertiary);
+  border: 1px dashed #d9d9d9;
+}
+
+.photo-item.has-photo {
+  border: none;
+  background-size: cover;
+  background-position: center;
+}
+
+/* 评分星星 */
+.rating-stars {
+  display: flex;
+  gap: 4px;
+  font-size: 24px;
+}
+
+.rating-star {
+  color: #e0e0e0;
+  cursor: pointer;
+}
+
+.rating-star.active {
+  color: var(--logistics-accent);
+}
+
+/* 时间轴 */
+.timeline {
+  padding: 0 16px;
+}
+
+.timeline-item {
+  display: flex;
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 24px;
+  bottom: 0;
+  width: 2px;
+  background: #e0e0e0;
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+.timeline-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--warehouse-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-right: 12px;
+  z-index: 1;
+}
+
+.timeline-dot.pending {
+  background: #e0e0e0;
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-time {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+.timeline-title {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.timeline-desc {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* 快捷功能入口 */
+.quick-entry-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.quick-entry-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.quick-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.quick-entry-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.quick-entry-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.quick-entry-icon.inbound { background: #e8f5e9; }
+.quick-entry-icon.outbound { background: #fff3e0; }
+.quick-entry-icon.inventory { background: #e3f2fd; }
+.quick-entry-icon.temp { background: #fce4ec; }
+.quick-entry-icon.scan { background: #e8eaf6; }
+.quick-entry-icon.recall { background: #ffebee; }
+.quick-entry-icon.report { background: #f3e5f5; }
+.quick-entry-icon.settings { background: #f5f5f5; }
+
+.quick-entry-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 /* ====================
@@ -5820,7 +6704,7 @@ html, body {
 
 /* === Equipment Admin - Role Header === */
 .role-header--equipment {
-  background: linear-gradient(135deg, #0093E9 0%, #80D0C7 100%);
+  background: var(--gradient-equipment);
 }
 
 /* === Equipment Overview Stats === */

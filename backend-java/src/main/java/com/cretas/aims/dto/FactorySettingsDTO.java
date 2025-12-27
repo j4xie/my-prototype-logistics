@@ -261,4 +261,118 @@ public class FactorySettingsDTO {
         @Pattern(regexp = "^(daily|weekly|monthly)$", message = "备份频率格式不正确")
         private String backupFrequency;
     }
+
+    /**
+     * 基础设置 (前端系统设置页面使用)
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BasicSettings {
+        @Schema(description = "工厂名称", example = "测试工厂")
+        private String factoryName;
+
+        @Schema(description = "时区", example = "Asia/Shanghai")
+        private String timezone;
+
+        @Schema(description = "语言", example = "zh-CN")
+        private String language;
+
+        @Schema(description = "日期格式", example = "YYYY-MM-DD")
+        private String dateFormat;
+
+        @Schema(description = "工作开始时间", example = "08:00")
+        private String workStartTime;
+
+        @Schema(description = "工作结束时间", example = "17:00")
+        private String workEndTime;
+    }
+
+    /**
+     * 通知设置 (前端格式)
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class WebNotificationSettings {
+        @Schema(description = "邮件通知", example = "true")
+        private Boolean emailNotification;
+
+        @Schema(description = "短信通知", example = "false")
+        private Boolean smsNotification;
+
+        @Schema(description = "告警通知", example = "true")
+        private Boolean alertNotification;
+
+        @Schema(description = "维护提醒", example = "true")
+        private Boolean maintenanceReminder;
+
+        @Schema(description = "提前提醒天数", example = "3")
+        private Integer reminderDays;
+    }
+
+    /**
+     * 安全设置 (前端格式)
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SecuritySettings {
+        @Schema(description = "密码最小长度", example = "8")
+        private Integer passwordMinLength;
+
+        @Schema(description = "要求包含大写字母", example = "true")
+        private Boolean passwordRequireUppercase;
+
+        @Schema(description = "要求包含数字", example = "true")
+        private Boolean passwordRequireNumber;
+
+        @Schema(description = "会话超时时间(分钟)", example = "30")
+        private Integer sessionTimeout;
+
+        @Schema(description = "最大登录尝试次数", example = "5")
+        private Integer maxLoginAttempts;
+    }
+
+    /**
+     * 系统状态
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SystemStatus {
+        @Schema(description = "系统版本", example = "1.0.0")
+        private String version;
+
+        @Schema(description = "上次备份时间", example = "2025-12-27 10:00:00")
+        private String lastBackup;
+
+        @Schema(description = "数据库大小", example = "128MB")
+        private String databaseSize;
+
+        @Schema(description = "服务器状态", example = "running")
+        private String serverStatus;
+    }
+
+    /**
+     * 前端设置页面响应格式
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class WebSettingsResponse {
+        @Schema(description = "基础设置")
+        private BasicSettings basic;
+
+        @Schema(description = "通知设置")
+        private WebNotificationSettings notification;
+
+        @Schema(description = "安全设置")
+        private SecuritySettings security;
+    }
 }

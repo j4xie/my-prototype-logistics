@@ -1,8 +1,8 @@
 <!--
   - Copyright (C) 2018-2019
-  - All rights reserved, Designed By www.joolun.com
+  - 食品商城小程序
   - 注意：
-  - 本软件为www.joolun.com开发研制，项目使用请保留此说明
+  - 基于 JooLun 框架二次开发
 -->
 <!-- 顶部导航栏 - 黑底金字 -->
 <view class="header-bar">
@@ -104,7 +104,7 @@
   <view class="banner-section">
     <swiper class="banner-swiper" indicator-dots="true" circular="true" autoplay="true" interval="5000" duration="500" bindchange="onBannerChange" indicator-color="rgba(212, 175, 55, 0.3)" indicator-active-color="#D4AF37">
       <swiper-item wx:for="{{swiperData}}" wx:key="index" bindtap="onBannerClick" data-index="{{index}}">
-        <image class="banner-image" src="{{item}}" mode="aspectFill"></image>
+        <image class="banner-image" src="{{item}}" mode="aspectFill" binderror="onBannerImageError" data-index="{{index}}"></image>
       </swiper-item>
     </swiper>
   </view>
@@ -156,7 +156,10 @@
             <text class='goods-name'>{{item.name}}</text>
             <text class='goods-desc'>{{item.sellPoint}}</text>
             <view class="goods-price-row">
-              <text class="goods-price"><text class="price-symbol">¥</text>{{item.salesPrice}}</text>
+              <!-- 已登录显示价格 -->
+              <text wx:if="{{isLoggedIn}}" class="goods-price"><text class="price-symbol">¥</text>{{item.salesPrice}}</text>
+              <!-- 未登录显示登录提示 -->
+              <text wx:else class="price-login-hint" catchtap="goToLogin">登录查看价格</text>
               <view class="goods-buy-btn">购买</view>
             </view>
           </view>
@@ -165,15 +168,65 @@
     </scroll-view>
   </view>
 
-  <!-- 猜你喜欢 -->
+  <!-- 猜你喜欢 - 个性化推荐模块 -->
   <view class="section-header">
     <view class="section-title">
       <view class="title-decoration"></view>
       <text>猜你喜欢</text>
+      <!-- 个性化推荐标签 -->
+      <view class="recommend-tag" wx:if="{{usePersonalized}}">
+        <text class="cuIcon-likefill"></text>
+        <text>为你推荐</text>
+      </view>
+    </view>
+    <!-- 刷新按钮 -->
+    <view class="refresh-btn" bindtap="refresh" wx:if="{{isLoggedIn}}">
+      <text class="cuIcon-refresh"></text>
+      <text>换一批</text>
     </view>
   </view>
-  <goods-card goodsList="{{goodsList}}"/>
-  <view class="cu-load {{loadmore?'loading':'over'}}"></view>
+
+  <!-- 推荐商品列表 -->
+  <view class="recommend-list" wx:if="{{recommendList.length > 0}}">
+    <view class="recommend-grid">
+      <view class="recommend-item" wx:for="{{recommendList}}" wx:key="id" data-product="{{item}}" bindtap="onRecommendClick">
+        <view class="recommend-img-box">
+          <image src="{{item.picUrls[0] ? item.picUrls[0] : '/public/img/no_pic.png'}}" mode="aspectFill"></image>
+          <!-- 推荐理由标签 -->
+          <view class="recommend-reason" wx:if="{{item.recommendReason}}">
+            <text>{{item.recommendReason}}</text>
+          </view>
+          <!-- 探索标签 -->
+          <view class="explore-tag" wx:if="{{item.isExploration}}">
+            <text>新发现</text>
+          </view>
+        </view>
+        <view class="recommend-info">
+          <text class="recommend-name">{{item.name}}</text>
+          <text class="recommend-desc">{{item.sellPoint}}</text>
+          <view class="recommend-price-row">
+            <!-- 已登录显示价格 -->
+            <text wx:if="{{isLoggedIn}}" class="recommend-price"><text class="price-symbol">¥</text>{{item.salesPrice}}</text>
+            <!-- 未登录显示登录提示 -->
+            <text wx:else class="price-login-hint" catchtap="goToLogin">登录查看价格</text>
+            <view class="recommend-buy-btn">购买</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 未登录或无推荐时显示普通商品列表 -->
+  <view wx:if="{{recommendList.length === 0}}">
+    <goods-card goodsList="{{goodsList}}" isLoggedIn="{{isLoggedIn}}"/>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="cu-load" wx:if="{{usePersonalized}}">
+    <view wx:if="{{recommendLoading}}" class="loading">加载中...</view>
+    <view wx:elif="{{!hasMoreRecommend}}" class="over">— 已经到底了 —</view>
+  </view>
+  <view class="cu-load {{loadmore?'loading':'over'}}" wx:else></view>
 </view>
 
 <!-- 浮动AI客服按钮 -->
@@ -202,3 +255,9 @@
     <view class="splash-ad-skip" bindtap="closeSplashAd">跳过广告</view>
   </view>
 </view>
+
+<!-- 冷启动偏好设置弹窗 - 首次用户显示 -->
+<cold-start-popup
+  show="{{showColdStartPopup}}"
+  bind:complete="onColdStartComplete"
+/>

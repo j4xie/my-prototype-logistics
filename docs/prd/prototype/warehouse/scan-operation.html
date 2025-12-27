@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>扫码作业 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回首页</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>扫码作业</h1>
+      <p>快速入库/出库</p>
+    </header>
+
+    <!-- 操作按钮置顶 -->
+    <div class="action-buttons top-actions">
+      <button type="button" class="action-btn primary" onclick="alert('扫码作业已完成'); location.href='index.html';">完成扫码作业</button>
+    </div>
+
+    <div class="page-content">
+      <!-- 作业模式选择 -->
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="inbound">
+          <span class="mode-icon">IN</span>
+          <span class="mode-label">入库扫码</span>
+        </button>
+        <button class="mode-btn" data-mode="outbound">
+          <span class="mode-icon">OUT</span>
+          <span class="mode-label">出库扫码</span>
+        </button>
+      </div>
+
+      <!-- 扫码区域 -->
+      <div class="scan-area">
+        <div class="scan-frame">
+          <div class="scan-corners">
+            <span class="corner top-left"></span>
+            <span class="corner top-right"></span>
+            <span class="corner bottom-left"></span>
+            <span class="corner bottom-right"></span>
+          </div>
+          <div class="scan-line"></div>
+          <div class="scan-hint">
+            <span class="scan-icon">SCAN</span>
+            <span class="scan-text">将条形码或二维码对准扫描框</span>
+          </div>
+        </div>
+        <div class="scan-tips">
+          <p>• 支持条形码和二维码</p>
+          <p>• 保持扫码稳定，光线充足</p>
+        </div>
+      </div>
+
+      <!-- 手动输入 -->
+      <div class="manual-input">
+        <div class="manual-input-header">
+          <span>或手动输入批次号</span>
+        </div>
+        <div class="manual-input-form">
+          <input type="text" class="form-input" placeholder="请输入批次号">
+          <button class="action-btn primary small">确认</button>
+        </div>
+      </div>
+
+      <!-- 已扫描记录 -->
+      <div class="form-section">
+        <div class="form-section-title">已扫描记录 (今日)</div>
+
+        <div class="scan-record success">
+          <div class="scan-record-icon">✓</div>
+          <div class="scan-record-content">
+            <div class="scan-record-batch">MB-20251226-001</div>
+            <div class="scan-record-info">带鱼 150kg | A区-冷藏库-01</div>
+            <div class="scan-record-time">13:30:25</div>
+          </div>
+          <span class="scan-record-tag inbound">入库</span>
+        </div>
+
+        <div class="scan-record success">
+          <div class="scan-record-icon">✓</div>
+          <div class="scan-record-content">
+            <div class="scan-record-batch">MB-20251226-002</div>
+            <div class="scan-record-info">虾仁 80kg | B区-冷冻库-01</div>
+            <div class="scan-record-time">13:28:15</div>
+          </div>
+          <span class="scan-record-tag inbound">入库</span>
+        </div>
+
+        <div class="scan-record success">
+          <div class="scan-record-icon">✓</div>
+          <div class="scan-record-content">
+            <div class="scan-record-batch">SH-20251226-001</div>
+            <div class="scan-record-info">带鱼片 80kg | 鲜食超市</div>
+            <div class="scan-record-time">12:45:10</div>
+          </div>
+          <span class="scan-record-tag outbound">出库</span>
+        </div>
+
+        <div class="scan-record success">
+          <div class="scan-record-icon">✓</div>
+          <div class="scan-record-content">
+            <div class="scan-record-batch">MB-20251225-005</div>
+            <div class="scan-record-info">鲈鱼 200kg | A区-冷藏库-02</div>
+            <div class="scan-record-time">10:15:30</div>
+          </div>
+          <span class="scan-record-tag inbound">入库</span>
+        </div>
+
+        <div class="scan-record error">
+          <div class="scan-record-icon">✗</div>
+          <div class="scan-record-content">
+            <div class="scan-record-batch">INVALID-CODE</div>
+            <div class="scan-record-info">无法识别的编码</div>
+            <div class="scan-record-time">09:30:00</div>
+          </div>
+          <span class="scan-record-tag error">失败</span>
+        </div>
+      </div>
+
+      <!-- 统计信息 -->
+      <div class="scan-stats">
+        <div class="scan-stat-item">
+          <span class="scan-stat-value">5</span>
+          <span class="scan-stat-label">今日扫描</span>
+        </div>
+        <div class="scan-stat-item">
+          <span class="scan-stat-value">430</span>
+          <span class="scan-stat-label">入库(kg)</span>
+        </div>
+        <div class="scan-stat-item">
+          <span class="scan-stat-value">80</span>
+          <span class="scan-stat-label">出库(kg)</span>
+        </div>
+        <div class="scan-stat-item">
+          <span class="scan-stat-value">1</span>
+          <span class="scan-stat-label">失败</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

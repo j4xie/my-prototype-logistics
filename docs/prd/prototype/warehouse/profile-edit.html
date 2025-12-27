@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人信息 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="warehouse.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="profile.html" class="back-to-index">< 返回我的</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>个人信息</h1>
+      <p>编辑个人资料</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 头像 -->
+      <div class="avatar-section">
+        <div class="avatar-large">
+          <span class="avatar-icon">U</span>
+        </div>
+        <button class="avatar-change-btn" onclick="alert('更换头像');">更换头像</button>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="form-section">
+        <div class="form-section-title">基本信息</div>
+
+        <div class="form-group">
+          <label class="form-label">姓名</label>
+          <input type="text" class="form-input" value="陈仓管">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">工号</label>
+          <input type="text" class="form-input" value="WH001" disabled>
+          <span class="form-hint">工号不可修改</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">手机号</label>
+          <div class="input-with-action">
+            <input type="text" class="form-input" value="138****8888" disabled>
+            <button class="input-action-btn" onclick="alert('更换手机号');">更换</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">邮箱</label>
+          <input type="email" class="form-input" placeholder="请输入邮箱">
+        </div>
+      </div>
+
+      <!-- 工作信息 -->
+      <div class="form-section">
+        <div class="form-section-title">工作信息</div>
+
+        <div class="form-group">
+          <label class="form-label">所属工厂</label>
+          <input type="text" class="form-input" value="白垩纪食品加工厂" disabled>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">部门</label>
+          <input type="text" class="form-input" value="仓储部" disabled>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">职位</label>
+          <input type="text" class="form-input" value="仓储管理员" disabled>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">入职日期</label>
+          <input type="text" class="form-input" value="2024-03-15" disabled>
+        </div>
+      </div>
+
+      <!-- 安全设置 -->
+      <div class="form-section">
+        <div class="form-section-title">安全设置</div>
+
+        <a href="#" class="menu-item" onclick="alert('修改密码');">
+          <span class="menu-icon">*</span>
+          <span class="menu-text">修改密码</span>
+          <span class="menu-arrow">></span>
+        </a>
+
+        <div class="menu-item">
+          <span class="menu-icon">*</span>
+          <span class="menu-text">设备绑定</span>
+          <span class="menu-desc">已绑定</span>
+          <span class="menu-arrow">></span>
+        </div>
+
+        <div class="menu-item">
+          <span class="menu-icon">*</span>
+          <span class="menu-text">指纹登录</span>
+          <label class="toggle-switch">
+            <input type="checkbox" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="action-buttons">
+        <button type="button" class="action-btn secondary" onclick="location.href='profile.html';">取消</button>
+        <button type="button" class="action-btn primary" onclick="alert('保存成功'); location.href='profile.html';">保存</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

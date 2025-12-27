@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>考勤统计 - HR管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">考勤统计</span>
+      <span style="color: #f093fb;">导出</span>
+    </div>
+
+    <div class="content">
+      <!-- 日期范围选择 -->
+      <div class="date-range">
+        <input type="date" value="2025-12-01">
+        <span style="color: #999;">至</span>
+        <input type="date" value="2025-12-26">
+      </div>
+
+      <!-- 总体统计 -->
+      <div class="section-header">
+        <span class="section-title">本月概览</span>
+      </div>
+      <div class="attendance-summary">
+        <div class="attendance-item">
+          <div class="attendance-value green">94.5%</div>
+          <div class="attendance-label">出勤率</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value">1,134</div>
+          <div class="attendance-label">出勤人次</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value red">23</div>
+          <div class="attendance-label">迟到人次</div>
+        </div>
+        <div class="attendance-item">
+          <div class="attendance-value orange">8</div>
+          <div class="attendance-label">早退人次</div>
+        </div>
+      </div>
+
+      <!-- 趋势图 -->
+      <div class="section-header">
+        <span class="section-title">出勤趋势</span>
+      </div>
+      <div class="chart-placeholder">
+        出勤率趋势图表
+        <div style="margin-top: 12px; font-size: 12px;">
+          周一: 96% | 周二: 95% | 周三: 94% | 周四: 93% | 周五: 92%
+        </div>
+      </div>
+
+      <!-- 部门统计 -->
+      <div class="section-header">
+        <span class="section-title">部门排名</span>
+      </div>
+      <div style="background: white; border-radius: 12px; overflow: hidden; margin-bottom: 16px;">
+        <div style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center;">
+          <span style="width: 24px; height: 24px; background: #ffd700; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 12px;">1</span>
+          <span style="flex: 1; font-size: 14px;">质检部</span>
+          <span style="color: #52c41a; font-weight: 500;">98.2%</span>
+        </div>
+        <div style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center;">
+          <span style="width: 24px; height: 24px; background: #c0c0c0; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 12px;">2</span>
+          <span style="flex: 1; font-size: 14px;">1号车间</span>
+          <span style="color: #52c41a; font-weight: 500;">96.5%</span>
+        </div>
+        <div style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center;">
+          <span style="width: 24px; height: 24px; background: #cd7f32; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 12px;">3</span>
+          <span style="flex: 1; font-size: 14px;">仓库</span>
+          <span style="color: #52c41a; font-weight: 500;">95.1%</span>
+        </div>
+        <div style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center;">
+          <span style="width: 24px; height: 24px; background: #999; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 12px;">4</span>
+          <span style="flex: 1; font-size: 14px;">2号车间</span>
+          <span style="color: #faad14; font-weight: 500;">93.2%</span>
+        </div>
+        <div style="padding: 12px 16px; display: flex; align-items: center;">
+          <span style="width: 24px; height: 24px; background: #999; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 12px;">5</span>
+          <span style="flex: 1; font-size: 14px;">3号车间</span>
+          <span style="color: #ff4d4f; font-weight: 500;">91.8%</span>
+        </div>
+      </div>
+
+      <!-- 异常记录 -->
+      <div class="section-header">
+        <span class="section-title">本月异常记录</span>
+        <a href="attendance-anomaly.html" class="section-action section-action--hr" style="text-decoration: none;">查看全部</a>
+      </div>
+      <div class="record-list" style="margin-bottom: 40px;">
+        <div class="record-item">
+          <span class="record-time">12-26</span>
+          <span class="record-name">王小明</span>
+          <span class="record-status late">迟到15分钟</span>
+        </div>
+        <div class="record-item">
+          <span class="record-time">12-25</span>
+          <span class="record-name">李大强</span>
+          <span class="record-status late">未打卡</span>
+        </div>
+        <div class="record-item">
+          <span class="record-time">12-24</span>
+          <span class="record-name">赵六顺</span>
+          <span class="record-status early">早退30分钟</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -139,5 +139,23 @@ public interface TimeClockRecordRepository extends JpaRepository<TimeClockRecord
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    /**
+     * 查询工厂在日期范围内的所有打卡记录（分页版本）
+     *
+     * @param factoryId 工厂ID
+     * @param start 开始时间
+     * @param end 结束时间
+     * @param pageable 分页参数
+     * @return 分页的打卡记录
+     */
+    @Query("SELECT t FROM TimeClockRecord t WHERE t.factoryId = :factoryId " +
+           "AND t.clockInTime >= :start AND t.clockInTime < :end ORDER BY t.clockInTime DESC")
+    Page<TimeClockRecord> findByFactoryIdAndClockDateBetweenPaged(
+            @Param("factoryId") String factoryId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            Pageable pageable
+    );
 }
 
