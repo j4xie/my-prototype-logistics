@@ -104,6 +104,18 @@ module.exports = {
   goodsGet: (id) => {//商品查询
     return request('/weixin/api/ma/goodsspu/' + id, 'get', null, false)
   },
+  goodsAdd: (data) => {//商品新增
+    return request('/weixin/api/ma/goodsspu', 'post', data, true)
+  },
+  goodsEdit: (data) => {//商品修改
+    return request('/weixin/api/ma/goodsspu', 'put', data, true)
+  },
+  goodsDel: (id) => {//商品删除
+    return request('/weixin/api/ma/goodsspu/' + id, 'delete', null, true)
+  },
+  merchantGoodsPage: (data) => {//商户商品列表
+    return request('/weixin/api/ma/goodsspu/merchant/page', 'get', data, false)
+  },
   shoppingCartPage: (data) => {//购物车列表
     return request('/weixin/api/ma/shoppingcart/page', 'get', data, false)
   },

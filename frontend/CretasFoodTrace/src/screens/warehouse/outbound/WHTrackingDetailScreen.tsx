@@ -3,13 +3,14 @@
  * 对应原型: warehouse/tracking-detail.html
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,9 +18,22 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
+import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
 type RouteType = RouteProp<WHOutboundStackParamList, "WHTrackingDetail">;
+
+interface TrackingInfo {
+  orderNumber: string;
+  customer: string;
+  logistics: string;
+  trackingNumber: string;
+  status: string;
+  temperature: string;
+  driver: string;
+  driverPhone: string;
+}
 
 interface TrackingEvent {
   id: string;
@@ -35,17 +49,53 @@ export function WHTrackingDetailScreen() {
   const route = useRoute<RouteType>();
   const { shipmentId } = route.params;
 
-  // 模拟物流数据
-  const trackingInfo = {
-    orderNumber: "SH-20251225-001",
-    customer: "鲜味餐厅",
-    logistics: "顺丰冷链",
-    trackingNumber: "SF1234567890",
-    status: "运输中",
-    temperature: "-18°C",
-    driver: "李师傅",
-    driverPhone: "139****5678",
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [trackingInfo, setTrackingInfo] = useState<TrackingInfo | null>(null);
+
+  // 获取状态显示文本
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'delivered': return '已送达';
+      case 'shipped': return '运输中';
+      case 'pending': return '待发货';
+      case 'returned': return '已退回';
+      default: return '处理中';
+    }
   };
+
+  // 加载物流数据
+  const loadTrackingData = useCallback(async () => {
+    if (!shipmentId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const shipment = await shipmentApiClient.getShipmentById(shipmentId);
+
+      if (shipment) {
+        setTrackingInfo({
+          orderNumber: shipment.shipmentNumber || shipment.orderNumber || `SH-${shipment.id}`,
+          customer: shipment.productName || '未知客户',
+          logistics: shipment.logisticsCompany || '未指定物流',
+          trackingNumber: shipment.trackingNumber || '-',
+          status: getStatusLabel(shipment.status),
+          temperature: '-18°C', // TODO: 从设备监控获取实时温度
+          driver: '司机信息', // TODO: 从物流接口获取
+          driverPhone: '-', // TODO: 从物流接口获取
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载物流信息失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [shipmentId]);
+
+  useEffect(() => {
+    loadTrackingData();
+  }, [loadTrackingData]);
 
   // 物流轨迹
   const trackingEvents: TrackingEvent[] = [
@@ -77,8 +127,48 @@ export function WHTrackingDetailScreen() {
   ];
 
   const handleCallDriver = () => {
-    Linking.openURL(`tel:${trackingInfo.driverPhone.replace(/\*/g, "")}`);
+    if (trackingInfo?.driverPhone && trackingInfo.driverPhone !== '-') {
+      Linking.openURL(`tel:${trackingInfo.driverPhone.replace(/\*/g, "")}`);
+    }
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>物流跟踪</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 空状态
+  if (!trackingInfo) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>物流跟踪</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="truck-outline" size={64} color="#ddd" />
+          <Text style={styles.loadingText}>未找到物流信息</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -225,6 +315,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

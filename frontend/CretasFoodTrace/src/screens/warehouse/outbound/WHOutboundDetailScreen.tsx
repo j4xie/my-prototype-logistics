@@ -3,13 +3,14 @@
  * 对应原型: warehouse/outbound-detail.html
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Button, Divider, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,9 +18,61 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
+import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
 type RouteType = RouteProp<WHOutboundStackParamList, "WHOutboundDetail">;
+
+/**
+ * 获取出货状态信息
+ */
+const getStatusInfo = (status?: string): {
+  status: string;
+  label: string;
+  bgColor: string;
+  textColor: string;
+  showPackButton: boolean;
+} => {
+  switch (status?.toLowerCase()) {
+    case 'shipped':
+      return { status: 'shipped', label: '已发货', bgColor: '#e3f2fd', textColor: '#2196F3', showPackButton: false };
+    case 'delivered':
+      return { status: 'delivered', label: '已送达', bgColor: '#e8f5e9', textColor: '#4CAF50', showPackButton: false };
+    case 'returned':
+      return { status: 'returned', label: '已退回', bgColor: '#ffebee', textColor: '#f44336', showPackButton: false };
+    case 'pending':
+    default:
+      return { status: 'waiting', label: '待打包', bgColor: '#fff3e0', textColor: '#f57c00', showPackButton: true };
+  }
+};
+
+/**
+ * 格式化日期时间
+ */
+const formatDateTime = (dateStr?: string): string => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+};
+
+/**
+ * 计算发货时间提示
+ */
+const getDispatchTimeHint = (shipmentDate?: string): string => {
+  if (!shipmentDate) return '尽快发出';
+  const date = new Date(shipmentDate);
+  const now = new Date();
+  const diffHours = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60));
+
+  if (diffHours < 0) return '已超时';
+  if (diffHours < 2) return '2小时内发出';
+  if (diffHours < 24) return `${diffHours}小时内发出`;
+  return formatDateTime(shipmentDate) + ' 前发出';
+};
 
 interface OrderProduct {
   id: string;
@@ -29,47 +82,137 @@ interface OrderProduct {
   location: string;
 }
 
+interface OutboundDetail {
+  orderNumber: string;
+  status: string;
+  statusLabel: string;
+  statusBgColor: string;
+  statusTextColor: string;
+  showPackButton: boolean;
+  isUrgent: boolean;
+  dispatchTime: string;
+  customer: string;
+  customerContact: string;
+  address: string;
+  totalQuantity: number;
+  totalAmount: number;
+  createdAt: string;
+  remarks: string;
+  products: OrderProduct[];
+  logisticsInfo?: string;
+}
+
 export function WHOutboundDetailScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const { shipmentId } = route.params;
 
-  // 模拟数据
-  const detail = {
-    orderNumber: "SH-20251226-001",
-    status: "waiting",
-    statusLabel: "待打包",
-    isUrgent: true,
-    dispatchTime: "14:00 前发出",
-    customer: "鲜食超市",
-    customerContact: "王经理 139****1234",
-    address: "浙江省宁波市海曙区中山西路123号",
-    totalQuantity: 80,
-    totalAmount: 4800,
-    createdAt: "2025-12-26 08:00",
-    remarks: "请确保冷链运输，货物需要单独包装",
-    products: [
-      {
-        id: "1",
-        name: "带鱼片",
-        batchNumber: "PB-20251225-001",
-        quantity: 50,
-        location: "A区-冷藏库-01",
-      },
-      {
-        id: "2",
-        name: "带鱼片",
-        batchNumber: "PB-20251225-002",
-        quantity: 30,
-        location: "A区-冷藏库-02",
-      },
-    ] as OrderProduct[],
-  };
+  const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState<OutboundDetail | null>(null);
+
+  // 加载数据
+  const loadData = useCallback(async () => {
+    if (!shipmentId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const shipment = await shipmentApiClient.getShipmentById(shipmentId);
+
+      if (shipment) {
+        const statusInfo = getStatusInfo(shipment.status);
+        const qty = shipment.quantity ?? 0;
+        const unitPrice = shipment.unitPrice ?? 0;
+
+        // 判断是否紧急（发货时间在24小时内）
+        const isUrgent = shipment.shipmentDate
+          ? (new Date(shipment.shipmentDate).getTime() - Date.now()) < 24 * 60 * 60 * 1000
+          : false;
+
+        setDetail({
+          orderNumber: shipment.shipmentNumber ?? shipment.orderNumber ?? `SH-${shipment.id}`,
+          status: statusInfo.status,
+          statusLabel: statusInfo.label,
+          statusBgColor: statusInfo.bgColor,
+          statusTextColor: statusInfo.textColor,
+          showPackButton: statusInfo.showPackButton,
+          isUrgent,
+          dispatchTime: getDispatchTimeHint(shipment.shipmentDate),
+          customer: shipment.customerId ?? '未知客户',
+          customerContact: '-',  // API doesn't provide contact info
+          address: shipment.deliveryAddress ?? '-',
+          totalQuantity: qty,
+          totalAmount: shipment.totalAmount ?? (qty * unitPrice),
+          createdAt: formatDateTime(shipment.createdAt),
+          remarks: shipment.notes ?? '无备注',
+          products: [
+            {
+              id: '1',
+              name: shipment.productName ?? '产品',
+              batchNumber: '-',  // Not available in current API
+              quantity: qty,
+              location: '-',  // Not available in current API
+            }
+          ],
+          logisticsInfo: shipment.logisticsCompany
+            ? `${shipment.logisticsCompany}${shipment.trackingNumber ? ' | ' + shipment.trackingNumber : ''}`
+            : undefined,
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载出货详情失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [shipmentId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleStartPacking = () => {
     navigation.navigate("WHPacking", { orderId: shipmentId });
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>出货详情</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 空状态
+  if (!detail) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>出货详情</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="package-variant-closed" size={64} color="#ddd" />
+          <Text style={styles.loadingText}>未找到出货记录</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -97,8 +240,8 @@ export function WHOutboundDetailScreen() {
                 </View>
               )}
             </View>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>{detail.statusLabel}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: detail.statusBgColor }]}>
+              <Text style={[styles.statusText, { color: detail.statusTextColor }]}>{detail.statusLabel}</Text>
             </View>
           </View>
           <View style={styles.dispatchInfo}>
@@ -109,6 +252,12 @@ export function WHOutboundDetailScreen() {
             />
             <Text style={styles.dispatchText}>{detail.dispatchTime}</Text>
           </View>
+          {detail.logisticsInfo && (
+            <View style={styles.logisticsInfo}>
+              <MaterialCommunityIcons name="truck-delivery" size={16} color="#4CAF50" />
+              <Text style={styles.logisticsText}>{detail.logisticsInfo}</Text>
+            </View>
+          )}
         </Surface>
 
         {/* 客户信息 */}
@@ -187,7 +336,7 @@ export function WHOutboundDetailScreen() {
       </ScrollView>
 
       {/* 底部操作 */}
-      {detail.status === "waiting" && (
+      {detail.showPackButton && (
         <View style={styles.bottomActions}>
           <Button
             mode="outlined"
@@ -216,6 +365,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",
@@ -298,6 +457,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#f44336",
     fontWeight: "600",
+  },
+  logisticsInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  logisticsText: {
+    fontSize: 13,
+    color: "#4CAF50",
   },
   section: {
     backgroundColor: "#fff",

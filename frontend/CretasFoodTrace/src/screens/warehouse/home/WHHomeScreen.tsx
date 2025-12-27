@@ -2,6 +2,11 @@
  * 仓储工作台首页
  * 功能: 出入库任务概览、今日统计、库存预警、温控监控
  * 参照: /docs/prd/prototype/warehouse/index.html
+ *
+ * API集成:
+ * - dashboardAPI - 获取仪表板概览统计
+ * - shipmentApiClient - 获取出货任务列表
+ * - materialBatchApiClient - 获取入库批次和库存预警
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -11,6 +16,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -27,6 +33,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WHHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
+import { dashboardAPI } from '../../../services/api/dashboardApiClient';
+import { shipmentApiClient, ShipmentRecord } from '../../../services/api/shipmentApiClient';
+import { materialBatchApiClient, MaterialBatch } from '../../../services/api/materialBatchApiClient';
+import { handleError, getErrorMsg } from '../../../utils/errorHandler';
+import { logger } from '../../../utils/logger';
 
 // 主题色
 const THEME_COLOR = '#4CAF50';
@@ -100,129 +111,159 @@ export default function WHHomeScreen() {
   // 加载数据
   const loadData = useCallback(async () => {
     try {
-      // TODO: 替换为实际API调用
-      // 模拟数据
-      setOutboundTasks([
-        {
-          id: '1',
-          orderId: 'SH-20251226-001',
-          customer: '鲜食超市',
-          product: '带鱼片',
-          quantity: 80,
-          unit: 'kg',
-          status: 'waiting',
-          dispatchTime: '14:00 前发出',
-          urgent: true,
-        },
-        {
-          id: '2',
-          orderId: 'SH-20251226-002',
-          customer: '海鲜批发市场',
-          product: '鲈鱼片',
-          quantity: 150,
-          unit: 'kg',
-          status: 'packing',
-          dispatchTime: '16:00 前发出',
-          urgent: false,
-        },
-        {
-          id: '3',
-          orderId: 'SH-20251226-003',
-          customer: '城市生鲜店',
-          product: '虾仁 + 墨鱼',
-          quantity: 200,
-          unit: 'kg',
-          status: 'waiting',
-          dispatchTime: '18:00 前发出',
-          urgent: false,
-        },
+      logger.info('[WHHomeScreen] 开始加载仓储首页数据');
+
+      // 并行加载所有数据
+      const [
+        shipmentsResult,
+        batchesResult,
+        lowStockResult,
+        expiringResult,
+        dashboardResult,
+      ] = await Promise.allSettled([
+        // 1. 获取出货任务 (待发货/已发货)
+        shipmentApiClient.getShipments({ status: 'pending', page: 0, size: 10 }),
+        // 2. 获取入库批次 (今日创建的)
+        materialBatchApiClient.getMaterialBatches({ page: 0, size: 10 }),
+        // 3. 获取低库存预警
+        materialBatchApiClient.getLowStockBatches(),
+        // 4. 获取即将过期批次
+        materialBatchApiClient.getExpiringBatches(7),
+        // 5. 获取仪表板概览
+        dashboardAPI.getDashboardOverview('today'),
       ]);
 
-      setInboundTasks([
-        {
-          id: '1',
-          batchId: 'RK-20251227-001',
-          supplier: '舟山渔业合作社',
-          material: '带鱼',
-          quantity: 300,
-          unit: 'kg',
-          status: 'pending',
-          arrivalTime: '预计到货 10:30',
-        },
-        {
-          id: '2',
-          batchId: 'RK-20251227-002',
-          supplier: '阳澄湖蟹业',
-          material: '蟹类',
-          quantity: 150,
-          unit: 'kg',
-          status: 'pending',
-          arrivalTime: '预计到货 14:00',
-        },
-        {
-          id: '3',
-          batchId: 'RK-20251227-003',
-          supplier: '海洋水产',
-          material: '虾仁',
-          quantity: 200,
-          unit: 'kg',
-          status: 'arrived',
-          arrivalTime: '已到货 09:15',
-        },
-      ]);
+      // 处理出货任务
+      if (shipmentsResult.status === 'fulfilled' && shipmentsResult.value?.data) {
+        const shipments = shipmentsResult.value.data;
+        const mappedTasks: OutboundTask[] = shipments.map((s: ShipmentRecord) => ({
+          id: s.id,
+          orderId: s.shipmentNumber || s.orderNumber || s.id,
+          customer: s.customerId || '未知客户',
+          product: s.productName || '商品',
+          quantity: s.quantity || 0,
+          unit: s.unit || 'kg',
+          status: mapShipmentStatus(s.status),
+          dispatchTime: s.shipmentDate ? `${new Date(s.shipmentDate).toLocaleDateString()} 发出` : '待安排',
+          urgent: false, // 后端没有urgent字段，默认false
+        }));
+        setOutboundTasks(mappedTasks);
+        logger.info(`[WHHomeScreen] 加载出货任务成功: ${mappedTasks.length}条`);
+      } else {
+        logger.warn('[WHHomeScreen] 加载出货任务失败，使用空列表');
+        setOutboundTasks([]);
+      }
 
-      setAlerts([
-        {
-          id: '1',
-          materialName: '带鱼 (鲜品)',
-          materialType: 'fresh',
-          currentStock: 85,
-          safetyStock: 200,
+      // 处理入库批次
+      if (batchesResult.status === 'fulfilled') {
+        const batchData = batchesResult.value as { data?: { content?: MaterialBatch[] } } | undefined;
+        const batches = batchData?.data?.content ?? [];
+        const mappedBatches: InboundTask[] = (Array.isArray(batches) ? batches : []).map((b: MaterialBatch) => ({
+          id: b.id,
+          batchId: b.batchNumber || b.id,
+          supplier: b.supplierName || b.supplierId || '未知供应商',
+          material: b.materialName || '原材料',
+          quantity: b.inboundQuantity || 0,
           unit: 'kg',
-          isExpiring: true,
-        },
-        {
-          id: '2',
-          materialName: '虾仁 (冻品)',
-          materialType: 'frozen',
-          currentStock: 120,
-          safetyStock: 150,
-          unit: 'kg',
-          isExpiring: false,
-        },
-      ]);
+          status: mapBatchStatus(b.status),
+          arrivalTime: b.inboundDate ? `入库时间: ${new Date(b.inboundDate).toLocaleDateString()}` : '待入库',
+        }));
+        setInboundTasks(mappedBatches.slice(0, 5)); // 只显示前5条
+        logger.info(`[WHHomeScreen] 加载入库批次成功: ${mappedBatches.length}条`);
+      } else {
+        logger.warn('[WHHomeScreen] 加载入库批次失败，使用空列表');
+        setInboundTasks([]);
+      }
 
+      // 处理库存预警
+      const alertItems: AlertItem[] = [];
+      if (lowStockResult.status === 'fulfilled') {
+        const lowStockData = lowStockResult.value as { data?: MaterialBatch[] } | MaterialBatch[] | undefined;
+        const lowStockBatches = Array.isArray(lowStockData) ? lowStockData : (lowStockData as { data?: MaterialBatch[] })?.data ?? [];
+        (Array.isArray(lowStockBatches) ? lowStockBatches : []).forEach((b: MaterialBatch) => {
+          alertItems.push({
+            id: b.id,
+            materialName: b.materialName || b.batchNumber || '未知材料',
+            materialType: b.storageType || 'fresh',
+            currentStock: b.remainingQuantity || 0,
+            safetyStock: 100, // 安全库存暂时硬编码
+            unit: 'kg',
+            isExpiring: false,
+          });
+        });
+      }
+      if (expiringResult.status === 'fulfilled') {
+        const expiringData = expiringResult.value as { data?: MaterialBatch[] } | MaterialBatch[] | undefined;
+        const expiringBatches = Array.isArray(expiringData) ? expiringData : (expiringData as { data?: MaterialBatch[] })?.data ?? [];
+        (Array.isArray(expiringBatches) ? expiringBatches : []).forEach((b: MaterialBatch) => {
+          alertItems.push({
+            id: b.id,
+            materialName: b.materialName || b.batchNumber || '未知材料',
+            materialType: b.storageType || 'fresh',
+            currentStock: b.remainingQuantity || 0,
+            safetyStock: 100,
+            unit: 'kg',
+            isExpiring: true,
+          });
+        });
+      }
+      setAlerts(alertItems.slice(0, 5)); // 只显示前5个预警
+      logger.info(`[WHHomeScreen] 加载库存预警成功: ${alertItems.length}条`);
+
+      // 处理仪表板统计
+      if (dashboardResult.status === 'fulfilled' && dashboardResult.value?.data) {
+        const overview = dashboardResult.value.data;
+        setStats({
+          todayInbound: overview.todayStats?.materialReceived || 0,
+          todayOutbound: overview.todayStats?.ordersCompleted || 0,
+          pendingOutbound: overview.summary?.activeBatches || 0,
+          alertCount: overview.summary?.activeAlerts || alertItems.length,
+        });
+        logger.info('[WHHomeScreen] 加载仪表板统计成功');
+      } else {
+        // 使用默认统计
+        setStats({
+          todayInbound: 0,
+          todayOutbound: 0,
+          pendingOutbound: outboundTasks.length,
+          alertCount: alertItems.length,
+        });
+      }
+
+      // 温控监控 - 暂时使用模拟数据 (后端暂无温控API)
       setTempZones([
-        {
-          id: '1',
-          name: '冷藏区 A区',
-          currentTemp: 2.5,
-          unit: '°C',
-          status: 'normal',
-        },
-        {
-          id: '2',
-          name: '冷冻区 B区',
-          currentTemp: -18,
-          unit: '°C',
-          status: 'normal',
-        },
+        { id: '1', name: '冷藏区 A区', currentTemp: 2.5, unit: '°C', status: 'normal' },
+        { id: '2', name: '冷冻区 B区', currentTemp: -18, unit: '°C', status: 'normal' },
       ]);
-
-      setStats({
-        todayInbound: 856,
-        todayOutbound: 1240,
-        pendingOutbound: 8,
-        alertCount: 3,
-      });
 
     } catch (error) {
-      console.error('加载数据失败:', error);
+      logger.error('[WHHomeScreen] 加载数据失败:', error);
+      handleError(error, { title: '加载仓储首页数据失败' });
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
+
+  // 状态映射函数
+  const mapShipmentStatus = (status: string | undefined): 'waiting' | 'packing' | 'packed' | 'shipped' => {
+    switch (status?.toLowerCase()) {
+      case 'pending': return 'waiting';
+      case 'shipped': return 'shipped';
+      case 'delivered': return 'shipped';
+      default: return 'waiting';
+    }
+  };
+
+  const mapBatchStatus = (status: string | undefined): 'pending' | 'arrived' | 'inspecting' | 'completed' => {
+    switch (status?.toLowerCase()) {
+      case 'available': return 'completed';
+      case 'reserved': return 'inspecting';
+      case 'depleted': return 'completed';
+      case 'expired': return 'completed';
+      default: return 'pending';
+    }
+  };
 
   useEffect(() => {
     loadData();

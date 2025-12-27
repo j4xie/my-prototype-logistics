@@ -3,12 +3,13 @@
  * 对应原型: warehouse/operation-log.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +17,9 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHProfileStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHProfileStackParamList>;
 
@@ -40,7 +44,13 @@ export function WHOperationLogScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
+  // 状态管理
+  const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("all");
+  const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const tabs = [
     { key: "all", label: "全部" },
@@ -49,136 +59,178 @@ export function WHOperationLogScreen() {
     { key: "check", label: "盘点" },
   ];
 
-  const logGroups: LogGroup[] = [
-    {
-      date: "12-26",
-      dateLabel: "今日 (12-26)",
-      items: [
-        {
-          id: "1",
-          type: "inbound",
-          title: "确认入库",
-          description: "MB-20251226-001 带鱼 150kg",
-          time: "13:45",
-          location: "A区-冷藏库-01",
-          status: "success",
-          statusText: "成功",
-        },
-        {
-          id: "2",
-          type: "outbound",
-          title: "确认出库",
-          description: "SH-20251226-001 带鱼片 80kg",
-          time: "12:30",
-          location: "鲜食超市",
-          status: "success",
-          statusText: "成功",
-        },
-        {
-          id: "3",
-          type: "quality",
-          title: "质检验收",
-          description: "MB-20251226-002 虾仁 80kg (A级)",
-          time: "11:20",
-          location: "质检区",
-          status: "success",
-          statusText: "通过",
-        },
-        {
-          id: "4",
-          type: "transfer",
-          title: "库位转移",
-          description: "MB-20251225-003 从A区-01转至B区-01",
-          time: "10:15",
-          location: "转冻品处理",
-          status: "success",
-          statusText: "成功",
-        },
-        {
-          id: "5",
-          type: "scan",
-          title: "扫码入库",
-          description: "MB-20251226-003 鲈鱼 200kg",
-          time: "09:30",
-          location: "A区-冷藏库-02",
-          status: "success",
-          statusText: "成功",
-        },
-      ],
-    },
-    {
-      date: "12-25",
-      dateLabel: "昨日 (12-25)",
-      items: [
-        {
-          id: "6",
-          type: "check",
-          title: "库存盘点",
-          description: "A区-冷藏库 完成盘点",
-          time: "16:30",
-          location: "差异: 0",
-          status: "success",
-          statusText: "完成",
-        },
-        {
-          id: "7",
-          type: "outbound",
-          title: "确认出库",
-          description: "SH-20251225-003 虾仁 50kg",
-          time: "15:00",
-          location: "城市生鲜店",
-          status: "success",
-          statusText: "成功",
-        },
-        {
-          id: "8",
-          type: "alert",
-          title: "温度异常处理",
-          description: "A区温度5.2°C 调整制冷设备",
-          time: "14:30",
-          location: "A区-冷藏库",
-          status: "warning",
-          statusText: "已处理",
-        },
-        {
-          id: "9",
-          type: "inbound",
-          title: "确认入库",
-          description: "MB-20251225-001 蟹类 120kg",
-          time: "10:00",
-          location: "A区-冷藏库-03",
-          status: "success",
-          statusText: "成功",
-        },
-      ],
-    },
-    {
-      date: "earlier",
-      dateLabel: "更早",
-      items: [
-        {
-          id: "10",
-          type: "quality",
-          title: "质检不合格",
-          description: "MB-20251224-005 带鱼 30kg 已退回",
-          time: "12-24 11:30",
-          location: "退回供应商",
-          status: "danger",
-          statusText: "退回",
-        },
-        {
-          id: "11",
-          type: "dispose",
-          title: "过期报损",
-          description: "MB-20251218-002 虾仁 15kg",
-          time: "12-23 16:00",
-          location: "报损处理",
-          status: "danger",
-          statusText: "已销毁",
-        },
-      ],
-    },
-  ];
+  // 格式化日期标签
+  const formatDateLabel = (dateStr: string): { date: string; label: string } => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const dateKey = `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+    if (date.toDateString() === today.toDateString()) {
+      return { date: dateKey, label: `今日 (${dateKey})` };
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return { date: dateKey, label: `昨日 (${dateKey})` };
+    } else {
+      return { date: dateKey, label: dateKey };
+    }
+  };
+
+  // 将批次数据转换为日志项
+  const batchToLogItem = (batch: MaterialBatch, index: number): LogItem => {
+    const createdAt = batch.createdAt ? new Date(batch.createdAt) : new Date();
+    const time = `${createdAt.getHours().toString().padStart(2, '0')}:${createdAt.getMinutes().toString().padStart(2, '0')}`;
+
+    return {
+      id: `batch-${batch.id || index}`,
+      type: "inbound",
+      title: "确认入库",
+      description: `${batch.batchNumber} ${batch.materialName || ''} ${batch.remainingQuantity || batch.initialQuantity || 0}${batch.unit || 'kg'}`,
+      time,
+      location: batch.storageLocation || "待分配",
+      status: "success",
+      statusText: "成功",
+    };
+  };
+
+  // 将出货数据转换为日志项
+  const shipmentToLogItem = (shipment: ShipmentRecord, index: number): LogItem => {
+    const createdAt = shipment.createdAt ? new Date(shipment.createdAt) : new Date();
+    const time = `${createdAt.getHours().toString().padStart(2, '0')}:${createdAt.getMinutes().toString().padStart(2, '0')}`;
+
+    const statusMap: Record<string, { status: LogItem["status"]; text: string }> = {
+      pending: { status: "warning", text: "待处理" },
+      shipped: { status: "success", text: "已发货" },
+      delivered: { status: "success", text: "已送达" },
+      cancelled: { status: "danger", text: "已取消" },
+    };
+    const statusInfo = statusMap[shipment.status] || { status: "success", text: "成功" };
+
+    return {
+      id: `shipment-${shipment.id || index}`,
+      type: "outbound",
+      title: "确认出库",
+      description: `${shipment.shipmentNumber} ${shipment.quantity || 0}${shipment.unit || 'kg'}`,
+      time,
+      location: shipment.customerName || shipment.destination || "未知目的地",
+      status: statusInfo.status,
+      statusText: statusInfo.text,
+    };
+  };
+
+  // 加载操作记录
+  const loadOperationLogs = useCallback(async (pageNum: number = 1, append: boolean = false) => {
+    try {
+      if (pageNum === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      // 并行获取入库批次和出货记录
+      const [batchesResponse, shipmentsResponse] = await Promise.all([
+        materialBatchApiClient.getMaterialBatches({ page: pageNum, size: 10 }),
+        shipmentApiClient.getShipments({ page: pageNum, size: 10 }),
+      ]);
+
+      const batches = batchesResponse.data?.content || batchesResponse.data || [];
+      const shipments = shipmentsResponse.data?.content || shipmentsResponse.data || [];
+
+      // 转换为日志项
+      const batchLogs = batches.map((b: MaterialBatch, i: number) => ({
+        ...batchToLogItem(b, i),
+        createdAt: b.createdAt,
+      }));
+
+      const shipmentLogs = shipments.map((s: ShipmentRecord, i: number) => ({
+        ...shipmentToLogItem(s, i),
+        createdAt: s.createdAt,
+      }));
+
+      // 合并并按时间排序
+      const allLogs = [...batchLogs, ...shipmentLogs].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+
+      // 按日期分组
+      const groupMap = new Map<string, LogItem[]>();
+
+      allLogs.forEach((log) => {
+        const { date, label } = formatDateLabel(log.createdAt || new Date().toISOString());
+        if (!groupMap.has(date)) {
+          groupMap.set(date, []);
+        }
+        // 移除临时的 createdAt 属性
+        const { createdAt, ...logItem } = log;
+        groupMap.get(date)!.push(logItem as LogItem);
+      });
+
+      // 转换为数组
+      const newGroups: LogGroup[] = Array.from(groupMap.entries()).map(([date, items]) => {
+        const { label } = formatDateLabel(items[0]?.time ? new Date().toISOString() : new Date().toISOString());
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        let dateLabel = date;
+        const [month, day] = date.split('-').map(Number);
+        const checkDate = new Date(today.getFullYear(), month - 1, day);
+
+        if (checkDate.toDateString() === today.toDateString()) {
+          dateLabel = `今日 (${date})`;
+        } else if (checkDate.toDateString() === yesterday.toDateString()) {
+          dateLabel = `昨日 (${date})`;
+        }
+
+        return { date, dateLabel, items };
+      });
+
+      if (append) {
+        setLogGroups((prev) => {
+          // 合并相同日期的组
+          const merged = [...prev];
+          newGroups.forEach((newGroup) => {
+            const existingIndex = merged.findIndex((g) => g.date === newGroup.date);
+            if (existingIndex >= 0) {
+              merged[existingIndex].items.push(...newGroup.items);
+            } else {
+              merged.push(newGroup);
+            }
+          });
+          return merged;
+        });
+      } else {
+        setLogGroups(newGroups);
+      }
+
+      // 检查是否还有更多数据
+      setHasMore(batches.length >= 10 || shipments.length >= 10);
+
+    } catch (error) {
+      handleError(error, { title: '加载操作记录失败' });
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOperationLogs();
+  }, [loadOperationLogs]);
+
+  // 加载更多
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      loadOperationLogs(nextPage, true);
+    }
+  };
 
   const getLogIcon = (type: LogItem["type"]) => {
     switch (type) {

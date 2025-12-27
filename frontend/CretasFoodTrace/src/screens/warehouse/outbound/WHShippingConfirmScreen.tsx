@@ -3,13 +3,14 @@
  * 对应原型: warehouse/shipping-confirm.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -24,9 +25,19 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
+import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
 type RouteType = RouteProp<WHOutboundStackParamList, "WHShippingConfirm">;
+
+interface OrderInfo {
+  orderNumber: string;
+  customer: string;
+  address: string;
+  totalQuantity: number;
+  packageCount: number;
+}
 
 interface LogisticsOption {
   id: string;
@@ -41,14 +52,42 @@ export function WHShippingConfirmScreen() {
   const route = useRoute<RouteType>();
   const { orderId } = route.params;
 
-  // 模拟订单数据
-  const orderInfo = {
-    orderNumber: "SH-20251226-004",
-    customer: "美食广场",
-    address: "浙江省宁波市海曙区中山西路123号",
-    totalQuantity: 200,
-    packageCount: 4,
-  };
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
+  const [shipmentId, setShipmentId] = useState<string | null>(null);
+
+  // 加载出货单数据
+  const loadShipmentData = useCallback(async () => {
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const shipment = await shipmentApiClient.getShipmentById(orderId);
+
+      if (shipment) {
+        setShipmentId(shipment.id);
+        setOrderInfo({
+          orderNumber: shipment.shipmentNumber || shipment.orderNumber || `SH-${shipment.id}`,
+          customer: shipment.productName || '未知客户',
+          address: shipment.deliveryAddress || '未知地址',
+          totalQuantity: shipment.quantity || 0,
+          packageCount: Math.ceil((shipment.quantity || 0) / 50), // 假设每50kg一件
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载出货单信息失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId]);
+
+  useEffect(() => {
+    loadShipmentData();
+  }, [loadShipmentData]);
 
   // 物流选项
   const logisticsOptions: LogisticsOption[] = [
@@ -78,6 +117,26 @@ export function WHShippingConfirmScreen() {
   const [driverPhone, setDriverPhone] = useState("");
   const [remarks, setRemarks] = useState("");
 
+  // 确认发货操作
+  const confirmShipping = async () => {
+    if (!shipmentId) {
+      Alert.alert('错误', '出货单ID无效，无法确认发货');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // 更新出货状态为 shipped（已发货）
+      await shipmentApiClient.updateStatus(shipmentId, 'shipped');
+      Alert.alert('成功', '发货成功，已通知客户！');
+      navigation.goBack();
+    } catch (error) {
+      handleError(error, { title: '确认发货失败' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleConfirm = () => {
     if (selectedLogistics === "self" && (!vehicleNo || !driverName)) {
       Alert.alert("提示", "请填写车辆和司机信息");
@@ -88,13 +147,48 @@ export function WHShippingConfirmScreen() {
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => {
-          Alert.alert("成功", "发货成功！");
-          navigation.goBack();
-        },
+        onPress: confirmShipping,
       },
     ]);
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>发货确认</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 空状态
+  if (!orderInfo) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>发货确认</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="truck-delivery" size={64} color="#ddd" />
+          <Text style={styles.loadingText}>未找到出货单信息</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -257,8 +351,10 @@ export function WHShippingConfirmScreen() {
           style={styles.confirmButton}
           labelStyle={styles.confirmButtonLabel}
           icon="truck-check"
+          disabled={submitting}
+          loading={submitting}
         >
-          确认发货
+          {submitting ? '发货中...' : '确认发货'}
         </Button>
       </View>
     </SafeAreaView>
@@ -269,6 +365,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

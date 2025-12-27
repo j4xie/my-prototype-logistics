@@ -3,13 +3,14 @@
  * 对应原型: warehouse/inbound-detail.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Text, Surface, Button, Divider, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,9 +18,87 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInboundStackParamList } from "../../../types/navigation";
+import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInboundStackParamList>;
 type RouteType = RouteProp<WHInboundStackParamList, "WHInboundDetail">;
+
+/**
+ * 获取入库状态标签和样式
+ */
+const getInboundStatusInfo = (status?: string): { label: string; bgColor: string; textColor: string } => {
+  switch (status?.toLowerCase()) {
+    case 'available':
+      return { label: '已入库', bgColor: '#e8f5e9', textColor: '#4CAF50' };
+    case 'reserved':
+      return { label: '已预留', bgColor: '#e3f2fd', textColor: '#2196F3' };
+    case 'depleted':
+      return { label: '已耗尽', bgColor: '#f5f5f5', textColor: '#999' };
+    case 'expired':
+      return { label: '已过期', bgColor: '#ffebee', textColor: '#f44336' };
+    case 'pending':
+    default:
+      return { label: '待确认', bgColor: '#fff3e0', textColor: '#f57c00' };
+  }
+};
+
+/**
+ * 获取存储温度描述
+ */
+const getStorageTemp = (storageType?: string): string => {
+  switch (storageType?.toLowerCase()) {
+    case 'frozen': return '-18°C ~ -25°C';
+    case 'fresh': return '-2°C ~ 4°C';
+    case 'dry': return '常温';
+    default: return '-2°C ~ 4°C';
+  }
+};
+
+/**
+ * 格式化日期
+ */
+const formatDate = (dateStr?: string): string => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+};
+
+/**
+ * 格式化日期时间
+ */
+const formatDateTime = (dateStr?: string): string => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+};
+
+interface InboundDetail {
+  batchNumber: string;
+  status: string;
+  statusLabel: string;
+  statusBgColor: string;
+  statusTextColor: string;
+  material: string;
+  materialType: string;
+  supplier: string;
+  supplierContact: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalAmount: number;
+  productionDate: string;
+  expiryDate: string;
+  storageTemp: string;
+  arrivalTime: string;
+  vehicleNo: string;
+  driverName: string;
+  driverPhone: string;
+  remarks: string;
+}
 
 export function WHInboundDetailScreen() {
   const theme = useTheme();
@@ -27,28 +106,61 @@ export function WHInboundDetailScreen() {
   const route = useRoute<RouteType>();
   const { batchId } = route.params;
 
-  // 模拟数据
-  const detail = {
-    batchNumber: "MB-20251226-001",
-    status: "pending",
-    statusLabel: "待确认",
-    material: "带鱼",
-    materialType: "鲜品",
-    supplier: "舟山渔业合作社",
-    supplierContact: "张经理 138****1234",
-    quantity: 150,
-    unit: "kg",
-    unitPrice: 28.5,
-    totalAmount: 4275,
-    productionDate: "2025-12-25",
-    expiryDate: "2025-12-28",
-    storageTemp: "-2°C ~ 4°C",
-    arrivalTime: "2025-12-26 09:00",
-    vehicleNo: "浙B12345",
-    driverName: "李师傅",
-    driverPhone: "139****5678",
-    remarks: "请注意冷链保鲜，到货后立即质检",
-  };
+  const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState<InboundDetail | null>(null);
+
+  // 加载数据
+  const loadData = useCallback(async () => {
+    if (!batchId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await materialBatchApiClient.getBatchById(batchId) as
+        { data?: MaterialBatch } | MaterialBatch | undefined;
+
+      const batch = (response as { data?: MaterialBatch })?.data ?? (response as MaterialBatch);
+
+      if (batch) {
+        const statusInfo = getInboundStatusInfo(batch.status);
+        const qty = batch.inboundQuantity ?? batch.remainingQuantity ?? 0;
+        const unitPrice = batch.unitPrice ?? 0;
+
+        setDetail({
+          batchNumber: batch.batchNumber ?? `MB-${batch.id}`,
+          status: batch.status ?? 'pending',
+          statusLabel: statusInfo.label,
+          statusBgColor: statusInfo.bgColor,
+          statusTextColor: statusInfo.textColor,
+          material: batch.materialName ?? '未知原料',
+          materialType: batch.storageType === 'frozen' ? '冻品' : batch.storageType === 'dry' ? '干货' : '鲜品',
+          supplier: batch.supplierName ?? '未知供应商',
+          supplierContact: '-',  // Backend doesn't provide supplier contact
+          quantity: qty,
+          unit: 'kg',
+          unitPrice: unitPrice,
+          totalAmount: qty * unitPrice,
+          productionDate: formatDate(batch.productionDate),
+          expiryDate: formatDate(batch.expiryDate),
+          storageTemp: getStorageTemp(batch.storageType),
+          arrivalTime: formatDateTime(batch.inboundDate),
+          vehicleNo: '-',  // Not available from API
+          driverName: '-',  // Not available from API
+          driverPhone: '-',  // Not available from API
+          remarks: batch.notes ?? '无备注',
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载入库详情失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [batchId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleConfirm = () => {
     Alert.alert("确认入库", "确定要确认此入库单吗？", [
@@ -62,6 +174,44 @@ export function WHInboundDetailScreen() {
       },
     ]);
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>入库详情</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 空状态
+  if (!detail) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>入库详情</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="package-variant" size={64} color="#ddd" />
+          <Text style={styles.loadingText}>未找到入库记录</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -82,8 +232,8 @@ export function WHInboundDetailScreen() {
         <Surface style={styles.statusCard} elevation={1}>
           <View style={styles.statusHeader}>
             <Text style={styles.batchNumber}>{detail.batchNumber}</Text>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>{detail.statusLabel}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: detail.statusBgColor }]}>
+              <Text style={[styles.statusText, { color: detail.statusTextColor }]}>{detail.statusLabel}</Text>
             </View>
           </View>
           <Divider style={styles.cardDivider} />
@@ -202,6 +352,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",
