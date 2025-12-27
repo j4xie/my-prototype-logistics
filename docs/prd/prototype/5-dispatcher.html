@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>调度员 - 白垩纪食品溯源系统</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="components.css">
 </head>
 <body>
   <a href="index.html" class="back-to-index">< 返回角色选择</a>
@@ -87,6 +88,7 @@
       <div class="workshop-section">
         <div class="workshop-header">
           <h3> 车间任务状态</h3>
+          <a href="dispatcher/workshop-status.html" style="color: #a18cd1; font-size: 12px; text-decoration: none;">查看全部 ></a>
         </div>
         <div class="workshop-list">
           <div class="workshop-item">
@@ -153,7 +155,7 @@
       <div class="personnel-section">
         <div class="personnel-header">
           <h3> 人员分配</h3>
-          <button class="personnel-btn">调动人员</button>
+          <a href="dispatcher/personnel-transfer.html" class="personnel-btn" style="text-decoration: none;">调动人员</a>
         </div>
         <div class="personnel-grid">
           <div class="personnel-card">
@@ -203,7 +205,7 @@
       <div class="approval-section">
         <div class="approval-header">
           <h3> 待审批事项</h3>
-          <span class="approval-count">3 项待处理</span>
+          <a href="dispatcher/approval-list.html" style="color: #a18cd1; font-size: 12px; text-decoration: none;">3 项待处理 ></a>
         </div>
         <div class="approval-list">
           <div class="approval-item">
@@ -251,14 +253,14 @@
 
     <!-- 底部导航 -->
     <nav class="bottom-nav">
-      <a href="#" class="nav-item active">
+      <a href="dispatcher/index.html" class="nav-item active">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
           <polyline points="9,22 9,12 15,12 15,22"/>
         </svg>
         <span>首页</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="dispatcher/plan-list.html" class="nav-item">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
           <line x1="16" y1="2" x2="16" y2="6"/>
@@ -267,13 +269,13 @@
         </svg>
         <span>计划</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="dispatcher/task-assignment.html" class="nav-item">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
         </svg>
         <span>分配</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="dispatcher/personnel-list.html" class="nav-item">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
@@ -282,7 +284,7 @@
         </svg>
         <span>人员</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="dispatcher/profile.html" class="nav-item">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>

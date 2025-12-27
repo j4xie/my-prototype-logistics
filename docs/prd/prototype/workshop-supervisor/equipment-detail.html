@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设备详情 - 车间主任</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 子页面头部 -->
+    <div class="subpage-header">
+      <a href="equipment.html" class="back-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <span class="title">设备详情</span>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content" style="padding-top: 16px;">
+      <!-- 设备信息 -->
+      <div class="info-card" style="text-align: center; padding: 24px;">
+        <div style="width: 80px; height: 80px; margin: 0 auto 16px; background: #f6ffed; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </div>
+        <div style="font-size: 22px; font-weight: 600; color: #333; margin-bottom: 4px;">切片机 A</div>
+        <div style="font-size: 14px; color: #999;">型号: SL-3000A | 编号: EQ-001</div>
+        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 12px;">
+          <span style="padding: 4px 12px; background: #f6ffed; color: #52c41a; border-radius: 12px; font-size: 12px;">运行中</span>
+          <span style="padding: 4px 12px; background: #e6f7ff; color: #1890ff; border-radius: 12px; font-size: 12px;">效率正常</span>
+        </div>
+      </div>
+
+      <!-- 实时数据 -->
+      <div class="info-card" style="background: var(--workshop-gradient); color: white;">
+        <h3 style="font-size: 14px; font-weight: 500; opacity: 0.9; margin-bottom: 16px;">实时运行数据</h3>
+        <div style="display: flex; justify-content: space-around; text-align: center;">
+          <div>
+            <div style="font-size: 28px; font-weight: 600;">4.2h</div>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">运行时长</div>
+          </div>
+          <div style="width: 1px; background: rgba(255,255,255,0.2);"></div>
+          <div>
+            <div style="font-size: 28px; font-weight: 600;">92%</div>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">运行效率</div>
+          </div>
+          <div style="width: 1px; background: rgba(255,255,255,0.2);"></div>
+          <div>
+            <div style="font-size: 28px; font-weight: 600;">35</div>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">温度 (C)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 当前任务 -->
+      <div class="info-card">
+        <h3 class="section-title">当前任务</h3>
+        <a href="batch-detail.html" style="display: block; padding: 16px; background: #f0f5ff; border-radius: 8px; border: 1px solid #d6e4ff; text-decoration: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 16px; font-weight: 600; color: #333;">PB-20251227-001</span>
+            <span style="padding: 4px 8px; background: #667eea; color: white; border-radius: 4px; font-size: 12px;">进行中</span>
+          </div>
+          <div style="display: flex; gap: 16px;">
+            <div>
+              <div style="font-size: 12px; color: #999;">产品</div>
+              <div style="font-size: 14px; color: #333;">带鱼片</div>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: #999;">进度</div>
+              <div style="font-size: 14px; color: #52c41a;">65%</div>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: #999;">操作员</div>
+              <div style="font-size: 14px; color: #333;">王建国</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- 设备参数 -->
+      <div class="info-card">
+        <h3 class="section-title">设备参数</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-item-label">额定功率</div>
+            <div class="info-item-value">3.5 kW</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">处理能力</div>
+            <div class="info-item-value">50 kg/h</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">运行电压</div>
+            <div class="info-item-value">380V</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">切片厚度</div>
+            <div class="info-item-value">3-15mm</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今日运行统计 -->
+      <div class="info-card">
+        <h3 class="section-title">今日运行统计</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fafafa; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; background: #e6f7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12,6 12,12 16,14"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 500; color: #333;">累计运行</div>
+                <div style="font-size: 12px; color: #999;">启动 3 次</div>
+              </div>
+            </div>
+            <div style="font-size: 18px; font-weight: 600; color: #1890ff;">6.5h</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fafafa; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; background: #f6ffed; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 500; color: #333;">处理产量</div>
+                <div style="font-size: 12px; color: #999;">完成 2 批次</div>
+              </div>
+            </div>
+            <div style="font-size: 18px; font-weight: 600; color: #52c41a;">285 kg</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fafafa; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; background: #f0f5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 500; color: #333;">平均效率</div>
+                <div style="font-size: 12px; color: #999;">高于标准</div>
+              </div>
+            </div>
+            <div style="font-size: 18px; font-weight: 600; color: #667eea;">92%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 维护信息 -->
+      <div class="info-card">
+        <h3 class="section-title">维护信息</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-item-label">上次保养</div>
+            <div class="info-item-value">2025-12-20</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">下次保养</div>
+            <div class="info-item-value" style="color: #52c41a;">2026-01-20</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">累计运行</div>
+            <div class="info-item-value">1,256h</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">设备状态</div>
+            <div class="info-item-value" style="color: #52c41a;">良好</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 运行记录 -->
+      <div class="info-card">
+        <h3 class="section-title">近期运行记录</h3>
+        <div class="timeline" style="padding: 0;">
+          <div class="timeline-item">
+            <div class="timeline-dot active">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-title" style="color: #52c41a;">运行中</div>
+              <div class="timeline-desc">PB-20251227-001 | 08:30 开始</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot active">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-title">已完成</div>
+              <div class="timeline-desc">PB-20251226-005 | 2.5h | 120kg</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot active">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-title">已完成</div>
+              <div class="timeline-desc">PB-20251226-003 | 3.0h | 145kg</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="btn-group">
+        <a href="equipment.html" class="btn btn-secondary">返回列表</a>
+        <a href="#" class="btn btn-primary">申请维护</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

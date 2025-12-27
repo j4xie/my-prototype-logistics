@@ -531,6 +531,349 @@ def generate_mock_analysis(cost_data: str) -> str:
 
     return analysis
 
+
+# ==================== 调度服务端点 ====================
+
+# 导入调度服务模块
+try:
+    from scheduling_service import (
+        CompletionProbabilityRequest,
+        CompletionProbabilityResponse,
+        OptimizeWorkersRequest,
+        OptimizeWorkersResponse,
+        GenerateScheduleRequest,
+        RescheduleRequest,
+        calculate_completion_probability,
+        optimize_workers,
+        generate_schedule,
+        reschedule,
+        insight_generator
+    )
+    SCHEDULING_SERVICE_AVAILABLE = True
+except ImportError as e:
+    print(f"[WARN] Scheduling service not available: {e}")
+    SCHEDULING_SERVICE_AVAILABLE = False
+
+
+@app.post("/scheduling/completion-probability")
+async def scheduling_completion_probability(request: dict):
+    """
+    Monte Carlo 模拟 - 计算生产完成概率
+
+    输入:
+    - factory_id: 工厂ID
+    - schedule_id: 排程ID
+    - remaining_quantity: 剩余数量
+    - deadline: 截止时间 (ISO格式)
+    - assigned_workers: 分配工人数
+    - efficiency_mean: 效率均值 (可选)
+    - efficiency_std: 效率标准差 (可选)
+
+    输出:
+    - probability: 按时完成概率
+    - mean_hours: 预计完成时间均值
+    - confidence_lower/upper: 置信区间
+    - insight: AI 洞察文本
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        from scheduling_service import CompletionProbabilityRequest as CPRequest
+        req = CPRequest(**request)
+        result = calculate_completion_probability(req)
+        return result.dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"计算完成概率失败: {str(e)}")
+
+
+@app.post("/scheduling/optimize-workers")
+async def scheduling_optimize_workers(request: dict):
+    """
+    OR-Tools 优化 - 工人分配优化
+
+    输入:
+    - factory_id: 工厂ID
+    - plan_id: 计划ID
+    - workers: 工人列表 [{'id', 'skill', 'cost_per_hour', 'is_temporary'}]
+    - schedules: 排程列表 [{'id', 'required_skill', 'min_workers', 'max_workers'}]
+    - objective: 优化目标 (minimize_cost/maximize_efficiency/balanced)
+    - max_temporary_ratio: 最大临时工比例
+
+    输出:
+    - assignments: 分配结果 [{'worker_id', 'schedule_id', 'assignment_type'}]
+    - total_cost: 总成本
+    - efficiency_score: 效率评分
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        from scheduling_service import OptimizeWorkersRequest as OWRequest
+        req = OWRequest(**request)
+        result = optimize_workers(req)
+        return result.dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"人员优化失败: {str(e)}")
+
+
+@app.post("/scheduling/generate")
+async def scheduling_generate(request: dict):
+    """
+    AI 生成调度建议
+
+    输入:
+    - factory_id: 工厂ID
+    - plan_date: 计划日期 (YYYY-MM-DD)
+    - batch_ids: 批次ID列表
+    - production_line_ids: 产线ID列表 (可选)
+    - available_worker_ids: 可用工人ID列表 (可选)
+    - target_completion_probability: 目标完成概率
+
+    输出:
+    - schedules: 生成的排程列表
+    - confidence: AI 置信度
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        from scheduling_service import GenerateScheduleRequest as GSRequest
+        req = GSRequest(**request)
+        result = generate_schedule(req)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"生成调度失败: {str(e)}")
+
+
+@app.post("/scheduling/reschedule")
+async def scheduling_reschedule(request: dict):
+    """
+    重新调度
+
+    输入:
+    - factory_id: 工厂ID
+    - plan_id: 计划ID
+    - reason: 重新调度原因
+    - keep_completed: 是否保留已完成的排程
+    - schedule_ids_to_reschedule: 需要重新调度的排程ID
+    - unavailable_worker_ids: 不可用工人ID
+
+    输出:
+    - updated_schedules: 更新后的排程列表
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        from scheduling_service import RescheduleRequest as RSRequest
+        req = RSRequest(**request)
+        result = reschedule(req)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"重新调度失败: {str(e)}")
+
+
+@app.post("/scheduling/explain-alert")
+async def scheduling_explain_alert(request: dict):
+    """
+    LLM 解释告警原因
+
+    输入:
+    - alert_type: 告警类型
+    - schedule_data: 排程数据
+    - probability: 完成概率
+
+    输出:
+    - explanation: 告警解释文本
+    - recommendations: 建议措施
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        alert_type = request.get('alert_type', 'low_probability')
+        schedule_data = request.get('schedule_data', {})
+        probability = request.get('probability', 0.5)
+
+        explanation = insight_generator.explain_alert(alert_type, schedule_data, probability)
+
+        return {
+            'success': True,
+            'explanation': explanation,
+            'alert_type': alert_type,
+            'probability': probability
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"解释告警失败: {str(e)}")
+
+
+@app.get("/scheduling/health")
+async def scheduling_health():
+    """
+    调度服务健康检查
+    """
+    return {
+        'service': 'scheduling',
+        'status': 'running' if SCHEDULING_SERVICE_AVAILABLE else 'unavailable',
+        'monte_carlo': True,
+        'ortools': SCHEDULING_SERVICE_AVAILABLE,
+        'llm_available': bool(client)
+    }
+
+
+# ==================== ML训练和混合预测 ====================
+
+# 导入ML模块
+ML_SERVICE_AVAILABLE = False
+try:
+    from ml_trainer import train_models, model_loader
+    from hybrid_predictor import (
+        hybrid_predictor, predict_with_hybrid,
+        predict_completion, get_model_status
+    )
+    ML_SERVICE_AVAILABLE = True
+except ImportError as e:
+    print(f"[WARN] ML服务未加载: {e}")
+
+
+@app.post("/ml/train")
+async def ml_train_models(request: dict):
+    """
+    触发模型训练
+
+    输入:
+    - factory_id: 工厂ID
+    - model_types: 模型类型列表 ["efficiency", "duration", "quality"]
+
+    输出:
+    - success: 是否成功
+    - results: 各模型训练结果
+    """
+    if not ML_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="ML服务不可用")
+
+    try:
+        factory_id = request.get('factory_id')
+        model_types = request.get('model_types', ['efficiency', 'duration', 'quality'])
+
+        if not factory_id:
+            raise HTTPException(status_code=400, detail="factory_id 不能为空")
+
+        result = train_models(factory_id, model_types)
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"训练失败: {str(e)}")
+
+
+@app.post("/ml/predict")
+async def ml_predict(request: dict):
+    """
+    使用ML模型进行预测
+
+    输入:
+    - factory_id: 工厂ID
+    - prediction_type: 预测类型 (efficiency/duration/quality)
+    - features: 特征数据
+
+    输出:
+    - prediction: 预测值
+    - confidence: 置信度
+    - model_version: 模型版本
+    """
+    if not ML_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="ML服务不可用")
+
+    try:
+        factory_id = request.get('factory_id')
+        prediction_type = request.get('prediction_type', 'efficiency')
+        features = request.get('features', {})
+
+        result = predict_with_hybrid(factory_id, features, prediction_type)
+        return {
+            'success': True,
+            **result
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"预测失败: {str(e)}")
+
+
+@app.post("/scheduling/hybrid-predict")
+async def scheduling_hybrid_predict(request: dict):
+    """
+    混合预测完成概率 (ML + Monte Carlo + LLM)
+
+    输入:
+    - factory_id: 工厂ID
+    - remaining_quantity: 剩余数量
+    - deadline_hours: 截止时间(小时)
+    - available_workers: 可用工人数
+    - 其他特征...
+
+    输出:
+    - probability: 完成概率
+    - mean_hours: 预计平均时长
+    - mode: 预测模式 (hybrid/llm_only)
+    - explanation: 解释
+    """
+    if not ML_SERVICE_AVAILABLE:
+        # 回退到基础Monte Carlo
+        raise HTTPException(status_code=500, detail="ML服务不可用，请使用 /scheduling/completion-probability")
+
+    try:
+        factory_id = request.get('factory_id')
+        if not factory_id:
+            raise HTTPException(status_code=400, detail="factory_id 不能为空")
+
+        result = predict_completion(factory_id, request)
+        return {
+            'success': True,
+            **result
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"混合预测失败: {str(e)}")
+
+
+@app.get("/ml/status/{factory_id}")
+async def ml_model_status(factory_id: str):
+    """
+    获取工厂的ML模型状态
+
+    输出:
+    - models: 各类型模型的可用状态
+    """
+    if not ML_SERVICE_AVAILABLE:
+        return {
+            'factory_id': factory_id,
+            'ml_service_available': False,
+            'models': {}
+        }
+
+    try:
+        status = get_model_status(factory_id)
+        status['ml_service_available'] = True
+        return status
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取状态失败: {str(e)}")
+
+
+@app.get("/ml/health")
+async def ml_health():
+    """
+    ML服务健康检查
+    """
+    return {
+        'service': 'ml',
+        'status': 'running' if ML_SERVICE_AVAILABLE else 'unavailable',
+        'lightgbm_available': ML_SERVICE_AVAILABLE,
+        'hybrid_predictor_available': ML_SERVICE_AVAILABLE
+    }
+
+
 # ==================== 启动 ====================
 if __name__ == "__main__":
     import uvicorn

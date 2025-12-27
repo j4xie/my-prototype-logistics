@@ -29,6 +29,24 @@ Page({
     activeTierIndex: 0
   },
 
+  onShow() {
+    // 检查登录状态 - 阶梯价格计算器需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/home/index'
+        })
+      }, 500)
+      return
+    }
+  },
+
   onLoad(options) {
     if (options.id) {
       this.setData({ productId: options.id })
@@ -86,7 +104,7 @@ Page({
         product: {
           id: this.data.productId || '1',
           name: '速冻鱼排',
-          image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=200',
+          image: '/public/img/food_seafood.jpg',
           basePrice: 28.00
         },
         tiers: [

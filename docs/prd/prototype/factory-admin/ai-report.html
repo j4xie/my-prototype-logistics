@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据报表 - 工厂管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: #333; font-size: 22px; font-weight: bold; padding: 8px 12px;">&lt;</a>
+      <span class="title">数据报表</span>
+    </div>
+
+    <div class="filter-tabs">
+      <span class="filter-tab active">生产报表</span>
+      <span class="filter-tab">库存报表</span>
+      <span class="filter-tab">质量报表</span>
+      <span class="filter-tab">财务报表</span>
+    </div>
+
+    <!-- 维度筛选区域 -->
+    <div style="padding: 12px 16px; background: #f5f5f5;">
+      <!-- 第一行：产品 + 时间 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <div style="flex: 1; background: #fff; border-radius: 6px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e8e8e8; cursor: pointer;">
+          <div>
+            <div style="font-size: 10px; color: #999;">产品</div>
+            <div style="font-size: 13px; color: #333;">全部</div>
+          </div>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div style="flex: 1; background: #fff; border-radius: 6px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #1890ff; cursor: pointer;">
+          <div>
+            <div style="font-size: 10px; color: #1890ff;">时间</div>
+            <div style="font-size: 13px; color: #333;">本周</div>
+          </div>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      <!-- 第二行：部门 + 批次 -->
+      <div style="display: flex; gap: 8px;">
+        <div style="flex: 1; background: #fff; border-radius: 6px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e8e8e8; cursor: pointer;">
+          <div>
+            <div style="font-size: 10px; color: #999;">部门</div>
+            <div style="font-size: 13px; color: #333;">全部</div>
+          </div>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div style="flex: 1; background: #fff; border-radius: 6px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e8e8e8; cursor: pointer;">
+          <div>
+            <div style="font-size: 10px; color: #999;">批次</div>
+            <div style="font-size: 13px; color: #333;">全部</div>
+          </div>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" style="padding: 16px;">
+      <!-- 生产趋势图 -->
+      <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 14px; color: #333; font-weight: 500;">生产趋势</span>
+          <span style="font-size: 12px; color: #1890ff;">查看详情</span>
+        </div>
+        <!-- 简易折线图 -->
+        <div style="position: relative; height: 80px; border-bottom: 1px solid #f0f0f0;">
+          <svg width="100%" height="100%" viewBox="0 0 280 80" preserveAspectRatio="none">
+            <polyline points="0,60 40,45 80,55 120,30 160,40 200,25 240,35 280,20" fill="none" stroke="#1890ff" stroke-width="2"/>
+            <polyline points="0,70 40,65 80,60 120,55 160,50 200,45 240,40 280,35" fill="none" stroke="#52c41a" stroke-width="2" stroke-dasharray="4"/>
+          </svg>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+          <span style="font-size: 10px; color: #999;">周一</span>
+          <span style="font-size: 10px; color: #999;">周二</span>
+          <span style="font-size: 10px; color: #999;">周三</span>
+          <span style="font-size: 10px; color: #999;">周四</span>
+          <span style="font-size: 10px; color: #999;">周五</span>
+          <span style="font-size: 10px; color: #1890ff;">今日</span>
+          <span style="font-size: 10px; color: #999;">预测</span>
+        </div>
+        <div style="display: flex; gap: 16px; margin-top: 12px;">
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <div style="width: 12px; height: 2px; background: #1890ff;"></div>
+            <span style="font-size: 11px; color: #666;">产量</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <div style="width: 12px; height: 2px; background: #52c41a; border-style: dashed;"></div>
+            <span style="font-size: 11px; color: #666;">目标</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-info"><span class="stat-value">8,750</span><span class="stat-label">本周产量 (kg)</span></div>
+          <div class="stat-trend trend-up">^ 15%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info"><span class="stat-value">56</span><span class="stat-label">完成批次</span></div>
+          <div class="stat-trend trend-up">^ 8</div>
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top: 16px;">
+        <span class="section-title">近期报表</span>
+      </div>
+
+      <a href="report-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header">
+          <span class="list-item-title">12月周报 (第4周)</span>
+          <span class="list-item-badge badge--green">已生成</span>
+        </div>
+        <div class="list-item-meta">2025-12-23 ~ 2025-12-27</div>
+      </a>
+
+      <a href="report-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header">
+          <span class="list-item-title">12月周报 (第3周)</span>
+          <span class="list-item-badge badge--green">已生成</span>
+        </div>
+        <div class="list-item-meta">2025-12-16 ~ 2025-12-22</div>
+      </a>
+
+      <!-- 底部留白给对话入口 -->
+      <div style="height: 80px;"></div>
+    </div>
+
+    <!-- AI 对话入口 - 底部固定栏 -->
+    <div style="position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; background: #fff; border-top: 1px solid #f0f0f0; padding: 12px 16px; box-shadow: 0 -2px 8px rgba(0,0,0,0.06);">
+      <!-- 次数限制提示 -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#faad14" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="font-size: 12px; color: #faad14;">今日剩余 AI 对话次数：<strong>8/10</strong> 次</span>
+      </div>
+      <!-- 对话输入区 -->
+      <a href="ai-chat.html?context=report" style="text-decoration: none; display: flex; align-items: center; gap: 12px; background: #f5f5f5; border-radius: 24px; padding: 10px 16px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span style="flex: 1; font-size: 14px; color: #999;">向 AI 提问关于报表数据的问题...</span>
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

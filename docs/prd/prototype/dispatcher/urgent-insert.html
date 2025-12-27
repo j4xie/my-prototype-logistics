@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>紧急插单 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="plan-list.html" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">紧急插单</span>
+      <span></span>
+    </div>
+
+    <div class="content" style="background: #f5f5f5;">
+      <!-- 紧急插单提示 -->
+      <div class="info-box warning">
+        <svg class="info-box-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div class="info-box-content">
+          <div class="info-box-title">紧急插单提示</div>
+          <div class="info-box-text">紧急插单将影响当前排程，请确认影响分析后再提交审批</div>
+        </div>
+      </div>
+
+      <!-- 插单信息 -->
+      <div class="detail-section">
+        <div class="detail-section-title">插单信息</div>
+        <div class="detail-row">
+          <span class="detail-label">产品类型</span>
+          <span class="detail-value">冷冻大虾仁</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">数量</span>
+          <span class="detail-value">200kg</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">客户</span>
+          <span class="detail-value">永辉超市</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">交货时间</span>
+          <span class="detail-value" style="color: #ff4d4f;">2025-12-28 12:00</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">优先级</span>
+          <span class="plan-tag priority-high" style="margin: 0; background: #fff1f0; color: #ff4d4f;">紧急</span>
+        </div>
+      </div>
+
+      <!-- 影响分析 -->
+      <div class="detail-section">
+        <div class="detail-section-title">
+          <span>影响分析</span>
+          <span style="color: #ff4d4f; font-size: 12px;">以下计划将受影响</span>
+        </div>
+
+        <div class="impact-card">
+          <div class="impact-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d46b08" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 4px;">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            PP20241227003 大虾仁 300kg
+          </div>
+          <div class="impact-item">原定完成: 12-28 16:00</div>
+          <div class="impact-item">预计延迟: 4小时</div>
+          <div class="impact-item">影响客户: 盒马鲜生</div>
+        </div>
+
+        <div class="impact-card">
+          <div class="impact-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d46b08" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 4px;">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            PP20241227004 鱿鱼圈 500袋
+          </div>
+          <div class="impact-item">原定完成: 12-28 14:00</div>
+          <div class="impact-item">预计延迟: 2小时</div>
+        </div>
+      </div>
+
+      <!-- 建议调整方案 -->
+      <div class="detail-section" style="margin-bottom: 120px;">
+        <div class="detail-section-title">建议调整方案</div>
+
+        <div class="plan-option selected">
+          <div class="plan-option-header">
+            <div class="plan-option-radio"></div>
+            <span class="plan-option-title">方案A: 调入机动人员</span>
+            <span class="plan-option-badge">推荐</span>
+          </div>
+          <div class="plan-option-desc">调入2名机动人员支援，无需延迟其他订单</div>
+        </div>
+
+        <div class="plan-option">
+          <div class="plan-option-header">
+            <div class="plan-option-radio"></div>
+            <span class="plan-option-title">方案B: 包装车间支援</span>
+          </div>
+          <div class="plan-option-desc">从包装车间调1人支援，PP004延迟1小时</div>
+        </div>
+
+        <div class="plan-option">
+          <div class="plan-option-header">
+            <div class="plan-option-radio"></div>
+            <span class="plan-option-title">方案C: 按原计划排队</span>
+          </div>
+          <div class="plan-option-desc">不调整资源，PP003和PP004分别延迟4/2小时</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-action-bar">
+      <button class="btn-primary-dispatcher" style="flex: 1; margin-top: 0;">提交插单审批</button>
+    </div>
+  </div>
+</body>
+</html>

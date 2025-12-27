@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.MobileDTO;
+import com.cretas.aims.dto.batch.AssignWorkersDTO;
+import com.cretas.aims.dto.batch.WorkerCheckoutDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
@@ -163,6 +165,69 @@ public class ProcessingController {
         log.info("获取批次时间线: factoryId={}, batchId={}", factoryId, batchId);
         List<Map<String, Object>> timeline = processingService.getBatchTimeline(factoryId, batchId);
         return ApiResponse.success(timeline);
+    }
+
+    // ========== 批次员工分配接口 ==========
+
+    /**
+     * 分配员工到批次
+     */
+    @PostMapping("/batches/{batchId}/assign-workers")
+    @Operation(summary = "分配员工到批次", description = "将多个员工分配到生产批次")
+    public ApiResponse<List<Map<String, Object>>> assignWorkersToBatch(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") Long batchId,
+            @RequestBody @Valid @Parameter(description = "分配请求") AssignWorkersDTO request) {
+        log.info("分配员工到批次: factoryId={}, batchId={}, workerCount={}",
+                factoryId, batchId, request.getWorkerIds().size());
+        List<Map<String, Object>> results = processingService.assignWorkersToBatch(
+                factoryId, batchId, request.getWorkerIds(), request.getAssignedBy(), request.getNotes());
+        return ApiResponse.success(results);
+    }
+
+    /**
+     * 员工签出（完成批次工作）
+     */
+    @PostMapping("/batches/{batchId}/workers/{workerId}/checkout")
+    @Operation(summary = "员工签出", description = "员工完成批次工作并签出")
+    public ApiResponse<Map<String, Object>> workerCheckout(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") Long batchId,
+            @PathVariable @Parameter(description = "员工ID") Long workerId,
+            @RequestBody(required = false) @Parameter(description = "签出信息") WorkerCheckoutDTO request) {
+        log.info("员工签出: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
+        Integer workMinutes = request != null ? request.getWorkMinutes() : null;
+        String notes = request != null ? request.getNotes() : null;
+        Map<String, Object> result = processingService.workerCheckout(
+                factoryId, batchId, workerId, workMinutes, notes);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取批次员工列表
+     */
+    @GetMapping("/batches/{batchId}/workers")
+    @Operation(summary = "获取批次员工", description = "获取分配到批次的所有员工及其工时状态")
+    public ApiResponse<List<Map<String, Object>>> getBatchWorkers(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") Long batchId) {
+        log.info("获取批次员工: factoryId={}, batchId={}", factoryId, batchId);
+        List<Map<String, Object>> workers = processingService.getBatchWorkers(factoryId, batchId);
+        return ApiResponse.success(workers);
+    }
+
+    /**
+     * 取消员工批次分配
+     */
+    @DeleteMapping("/batches/{batchId}/workers/{workerId}")
+    @Operation(summary = "取消员工分配", description = "取消员工在批次的分配")
+    public ApiResponse<Map<String, Object>> cancelWorkerAssignment(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") Long batchId,
+            @PathVariable @Parameter(description = "员工ID") Long workerId) {
+        log.info("取消员工分配: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
+        Map<String, Object> result = processingService.cancelWorkerAssignment(factoryId, batchId, workerId);
+        return ApiResponse.success(result);
     }
 
     // ========== 原材料管理接口 ==========

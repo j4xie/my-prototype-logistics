@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>帮助中心 - 工厂管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: #333; font-size: 22px; font-weight: bold; padding: 8px 12px;">&lt;</a>
+      <span class="title">帮助中心</span>
+      <div style="width: 40px;"></div>
+    </div>
+
+    <div class="content" style="background: #f5f5f5; padding: 16px;">
+      <!-- 搜索框 -->
+      <div style="background: #fff; border-radius: 24px; padding: 10px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="搜索常见问题..." style="flex: 1; border: none; font-size: 14px; color: #333; outline: none; background: transparent;" />
+      </div>
+
+      <!-- 快捷入口 -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div style="text-align: center;">
+          <div style="width: 48px; height: 48px; border-radius: 12px; background: #e6f7ff; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            </svg>
+          </div>
+          <span style="font-size: 12px; color: #333;">生产管理</span>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 48px; height: 48px; border-radius: 12px; background: #f6ffed; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+              <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </div>
+          <span style="font-size: 12px; color: #333;">AI 分析</span>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7e6; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+              <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/>
+            </svg>
+          </div>
+          <span style="font-size: 12px; color: #333;">设备管理</span>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 48px; height: 48px; border-radius: 12px; background: #f0f5ff; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            </svg>
+          </div>
+          <span style="font-size: 12px; color: #333;">人员管理</span>
+        </div>
+      </div>
+
+      <!-- 常见问题 -->
+      <div style="font-size: 16px; color: #333; font-weight: 500; margin-bottom: 12px;">常见问题</div>
+      <div style="background: #fff; border-radius: 12px; overflow: hidden; margin-bottom: 16px;">
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 15px; color: #333;">如何创建新的生产计划？</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 15px; color: #333;">AI 对话次数用完了怎么办？</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 15px; color: #333;">如何查看历史批次数据？</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 15px; color: #333;">如何添加新员工？</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div style="padding: 14px 16px; cursor: pointer;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 15px; color: #333;">如何处理设备告警？</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 问题详情示例 (展开状态) -->
+      <div style="background: #fff; border-radius: 12px; overflow: hidden; margin-bottom: 16px;">
+        <div style="padding: 14px 16px; background: #fafafa; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 15px; color: #333; font-weight: 500;">如何导出数据报表？</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+          </div>
+        </div>
+        <div style="padding: 16px;">
+          <p style="font-size: 14px; color: #666; line-height: 1.8; margin: 0 0 12px 0;">
+            您可以通过以下步骤导出数据报表：
+          </p>
+          <ol style="font-size: 14px; color: #666; line-height: 1.8; margin: 0; padding-left: 20px;">
+            <li>进入「AI分析」-「数据报表」页面</li>
+            <li>选择需要的报表类型（生产/库存/质量/财务）</li>
+            <li>设置筛选条件（时间、产品、部门等）</li>
+            <li>点击右上角「导出」按钮</li>
+            <li>选择导出格式（Excel/PDF）</li>
+          </ol>
+          <div style="margin-top: 12px; padding: 10px; background: #e6f7ff; border-radius: 6px;">
+            <span style="font-size: 13px; color: #1890ff;">提示：导出的文件将保存在手机下载目录中</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 联系客服 -->
+      <div style="font-size: 16px; color: #333; font-weight: 500; margin-bottom: 12px;">联系我们</div>
+      <div style="background: #fff; border-radius: 12px; overflow: hidden; margin-bottom: 16px;">
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 15px; color: #333;">在线客服</div>
+            <div style="font-size: 12px; color: #999;">工作时间：9:00-18:00</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: #52c41a; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 15px; color: #333;">电话咨询</div>
+            <div style="font-size: 12px; color: #1890ff;">400-800-8888</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div style="padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: #1890ff; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 15px; color: #333;">邮件反馈</div>
+            <div style="font-size: 12px; color: #999;">support@cretas.com</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
+      <!-- 反馈建议 -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 16px; color: #fff; font-weight: 500;">提交反馈建议</div>
+          <div style="font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 2px;">帮助我们改进产品</div>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+
+      <div style="height: 24px;"></div>
+    </div>
+  </div>
+</body>
+</html>

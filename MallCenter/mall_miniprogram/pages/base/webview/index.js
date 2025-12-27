@@ -10,6 +10,10 @@ Page({
     title: '加载中...'
   },
 
+  onShow() {
+    // WebView 页面不需要登录检查，允许查看用户协议、隐私政策等
+  },
+
   onLoad(options) {
     // 支持传递 url 和 title 参数
     if (options.url) {

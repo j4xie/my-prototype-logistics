@@ -1,8 +1,8 @@
 /**
- * Copyright (C) 2018-2019
- * All rights reserved, Designed By www.joolun.com
+ * Copyright (C) 2024-2025
+ * 食品商城小程序
  * 注意：
- * 本软件为www.joolun.com开发研制，项目使用请保留此说明
+ * 基于 JooLun 框架二次开发
  */
 import __config from '../config/env'
 
@@ -318,5 +318,71 @@ module.exports = {
         }
       })
     })
+  },
+  // ========== 用户行为追踪相关 ==========
+  trackBehavior: (data) => {//上报单个行为事件
+    return request('/weixin/ma/behavior/track', 'post', data, false)
+  },
+  trackBehaviorBatch: (data) => {//批量上报行为事件
+    return request('/weixin/ma/behavior/trackBatch', 'post', data, false)
+  },
+  trackProductView: (data) => {//上报商品浏览事件
+    return request('/weixin/ma/behavior/view/product', 'post', data, false)
+  },
+  trackSearch: (data) => {//上报搜索事件
+    return request('/weixin/ma/behavior/search', 'post', data, false)
+  },
+  trackCartAdd: (data) => {//上报加购事件
+    return request('/weixin/ma/behavior/cart/add', 'post', data, false)
+  },
+  getUserInterests: (wxUserId, limit = 20) => {//获取用户兴趣标签
+    return request('/weixin/ma/behavior/interests/' + wxUserId + '?limit=' + limit, 'get', null, false)
+  },
+  getUserProfile: (wxUserId) => {//获取用户画像
+    return request('/weixin/ma/behavior/profile/' + wxUserId, 'get', null, false)
+  },
+  getSearchHistory: (wxUserId, limit = 10) => {//获取用户搜索历史
+    return request('/weixin/ma/behavior/searchHistory/' + wxUserId + '?limit=' + limit, 'get', null, false)
+  },
+  getRecentViewed: (wxUserId, limit = 20) => {//获取最近浏览的商品
+    return request('/weixin/ma/behavior/recentViewed/' + wxUserId + '?limit=' + limit, 'get', null, false)
+  },
+  analyzeUserInterests: (wxUserId) => {//手动触发兴趣分析
+    return request('/weixin/ma/behavior/analyze/' + wxUserId, 'post', null, false)
+  },
+  // ========== 冷启动偏好设置 ==========
+  checkColdStart: (wxUserId) => {//检查是否需要显示冷启动弹窗
+    return request('/weixin/ma/behavior/cold-start/check/' + wxUserId, 'get', null, false)
+  },
+  completeColdStart: (data) => {//完成冷启动偏好设置
+    // data: { wxUserId, preferences: { categories: [], priceRange: {}, brands: [] } }
+    return request('/weixin/ma/behavior/cold-start/complete', 'post', data, false)
+  },
+  // ========== 个性化推荐相关 ==========
+  getHomeRecommend: (wxUserId, limit = 20) => {//获取首页推荐商品
+    return request('/weixin/ma/recommend/home/' + wxUserId + '?limit=' + limit, 'get', null, false)
+  },
+  getYouMayLike: (wxUserId, page = 0, size = 10) => {//获取猜你喜欢推荐(分页)
+    return request('/weixin/ma/recommend/youMayLike/' + wxUserId + '?page=' + page + '&size=' + size, 'get', null, false)
+  },
+  getSimilarProducts: (productId, wxUserId, limit = 6) => {//获取相似商品推荐
+    let url = '/weixin/ma/recommend/similar/' + productId + '?limit=' + limit
+    if (wxUserId) {
+      url += '&wxUserId=' + wxUserId
+    }
+    return request(url, 'get', null, false)
+  },
+  getCartRecommend: (data) => {//获取购物车推荐
+    return request('/weixin/ma/recommend/cart', 'post', data, false)
+  },
+  getPopularProducts: (category, limit = 10) => {//获取热门商品(无需登录)
+    let url = '/weixin/ma/recommend/popular?limit=' + limit
+    if (category) {
+      url += '&category=' + encodeURIComponent(category)
+    }
+    return request(url, 'get', null, false)
+  },
+  refreshRecommendCache: (wxUserId) => {//刷新推荐缓存
+    return request('/weixin/ma/recommend/refresh/' + wxUserId, 'post', null, false)
   }
 }

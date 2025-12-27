@@ -3,6 +3,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ManagementStackParamList } from '../types/navigation';
 import {
   ManagementScreen,
+  HRDashboardScreen,
+  HREmployeeAIScreen,
   ProductTypeManagementScreen,
   ConversionRateScreen,
   MaterialConversionDetailScreen,
@@ -115,6 +117,28 @@ export function ManagementStackNavigator() {
         name="FactorySettings"
         component={FactorySettingsScreen}
         options={{ title: '工厂设置' }}
+      />
+
+      {/* HR管理员模块 (permission_admin角色专用) */}
+      <Stack.Screen
+        name="HRDashboard"
+        component={HRDashboardScreen}
+        options={{ title: 'HR管理员' }}
+      />
+      <Stack.Screen
+        name="HREmployeeAI"
+        component={HREmployeeAIScreen}
+        options={{ title: '员工AI分析' }}
+      />
+      <Stack.Screen
+        name="UserCreate"
+        component={UserManagementScreen}
+        options={{ title: '添加员工' }}
+      />
+      <Stack.Screen
+        name="AttendanceStats"
+        component={ManagementScreen}
+        options={{ title: '考勤统计' }}
       />
 
       {/* Phase 4启用：规格配置管理

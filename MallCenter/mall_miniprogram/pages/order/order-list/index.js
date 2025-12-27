@@ -1,8 +1,8 @@
 /**
- * Copyright (C) 2018-2019
- * All rights reserved, Designed By www.joolun.com
+ * Copyright (C) 2024-2025
+ * 食品商城小程序
  * 注意：
- * 本软件为www.joolun.com开发研制，项目使用请保留此说明
+ * 基于 JooLun 框架二次开发
  */
 const util = require('../../../utils/util.js')
 const app = getApp()
@@ -41,7 +41,21 @@ Page({
     orderList: []
   },
   onShow() {
-    
+    // 检查登录状态 - 订单列表页需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.navigateTo({
+          url: '/pages/auth/login/index'
+        })
+      }, 500)
+      return
+    }
   },
   onLoad: function (options) {
     let that = this

@@ -1,0 +1,480 @@
+package com.cretas.aims.controller;
+
+import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.scheduling.*;
+import com.cretas.aims.service.SchedulingService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * 智能调度控制器
+ * 提供调度计划、产线排程、人员分配、AI辅助调度等功能
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/mobile/{factoryId}/scheduling")
+@RequiredArgsConstructor
+public class SchedulingController {
+
+    private final SchedulingService schedulingService;
+
+    // ==================== 调度计划 CRUD ====================
+
+    /**
+     * 创建调度计划
+     */
+    @PostMapping("/plans")
+    public ApiResponse<SchedulingPlanDTO> createPlan(
+            @PathVariable String factoryId,
+            @Valid @RequestBody CreateSchedulingPlanRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("创建调度计划: factoryId={}, planDate={}", factoryId, request.getPlanDate());
+        SchedulingPlanDTO plan = schedulingService.createPlan(factoryId, request, userId);
+        return ApiResponse.success("创建成功", plan);
+    }
+
+    /**
+     * 获取调度计划详情
+     */
+    @GetMapping("/plans/{planId}")
+    public ApiResponse<SchedulingPlanDTO> getPlan(
+            @PathVariable String factoryId,
+            @PathVariable String planId) {
+        log.info("获取调度计划详情: factoryId={}, planId={}", factoryId, planId);
+        SchedulingPlanDTO plan = schedulingService.getPlan(factoryId, planId);
+        return ApiResponse.success("获取成功", plan);
+    }
+
+    /**
+     * 获取调度计划列表 (分页)
+     */
+    @GetMapping("/plans")
+    public ApiResponse<Page<SchedulingPlanDTO>> getPlans(
+            @PathVariable String factoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("获取调度计划列表: factoryId={}, startDate={}, endDate={}, status={}",
+                factoryId, startDate, endDate, status);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<SchedulingPlanDTO> plans = schedulingService.getPlans(factoryId, startDate, endDate, status, pageable);
+        return ApiResponse.success("获取成功", plans);
+    }
+
+    /**
+     * 更新调度计划
+     */
+    @PutMapping("/plans/{planId}")
+    public ApiResponse<SchedulingPlanDTO> updatePlan(
+            @PathVariable String factoryId,
+            @PathVariable String planId,
+            @Valid @RequestBody CreateSchedulingPlanRequest request) {
+        log.info("更新调度计划: factoryId={}, planId={}", factoryId, planId);
+        SchedulingPlanDTO plan = schedulingService.updatePlan(factoryId, planId, request);
+        return ApiResponse.success("更新成功", plan);
+    }
+
+    /**
+     * 确认调度计划
+     */
+    @PostMapping("/plans/{planId}/confirm")
+    public ApiResponse<SchedulingPlanDTO> confirmPlan(
+            @PathVariable String factoryId,
+            @PathVariable String planId,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("确认调度计划: factoryId={}, planId={}", factoryId, planId);
+        SchedulingPlanDTO plan = schedulingService.confirmPlan(factoryId, planId, userId);
+        return ApiResponse.success("确认成功", plan);
+    }
+
+    /**
+     * 取消调度计划
+     */
+    @PostMapping("/plans/{planId}/cancel")
+    public ApiResponse<Void> cancelPlan(
+            @PathVariable String factoryId,
+            @PathVariable String planId,
+            @RequestParam(required = false) String reason) {
+        log.info("取消调度计划: factoryId={}, planId={}, reason={}", factoryId, planId, reason);
+        schedulingService.cancelPlan(factoryId, planId, reason);
+        return ApiResponse.success("取消成功", null);
+    }
+
+    // ==================== 产线排程管理 ====================
+
+    /**
+     * 获取排程详情
+     */
+    @GetMapping("/schedules/{scheduleId}")
+    public ApiResponse<LineScheduleDTO> getSchedule(
+            @PathVariable String factoryId,
+            @PathVariable String scheduleId) {
+        log.info("获取排程详情: factoryId={}, scheduleId={}", factoryId, scheduleId);
+        LineScheduleDTO schedule = schedulingService.getSchedule(factoryId, scheduleId);
+        return ApiResponse.success("获取成功", schedule);
+    }
+
+    /**
+     * 更新排程
+     */
+    @PutMapping("/schedules/{scheduleId}")
+    public ApiResponse<LineScheduleDTO> updateSchedule(
+            @PathVariable String factoryId,
+            @PathVariable String scheduleId,
+            @Valid @RequestBody UpdateScheduleRequest request) {
+        log.info("更新排程: factoryId={}, scheduleId={}", factoryId, scheduleId);
+        LineScheduleDTO schedule = schedulingService.updateSchedule(factoryId, scheduleId, request);
+        return ApiResponse.success("更新成功", schedule);
+    }
+
+    /**
+     * 开始排程 (启动生产)
+     */
+    @PostMapping("/schedules/{scheduleId}/start")
+    public ApiResponse<LineScheduleDTO> startSchedule(
+            @PathVariable String factoryId,
+            @PathVariable String scheduleId) {
+        log.info("开始排程: factoryId={}, scheduleId={}", factoryId, scheduleId);
+        LineScheduleDTO schedule = schedulingService.startSchedule(factoryId, scheduleId);
+        return ApiResponse.success("已开始生产", schedule);
+    }
+
+    /**
+     * 完成排程
+     */
+    @PostMapping("/schedules/{scheduleId}/complete")
+    public ApiResponse<LineScheduleDTO> completeSchedule(
+            @PathVariable String factoryId,
+            @PathVariable String scheduleId,
+            @RequestParam Integer completedQuantity) {
+        log.info("完成排程: factoryId={}, scheduleId={}, completedQuantity={}",
+                factoryId, scheduleId, completedQuantity);
+        LineScheduleDTO schedule = schedulingService.completeSchedule(factoryId, scheduleId, completedQuantity);
+        return ApiResponse.success("已完成", schedule);
+    }
+
+    /**
+     * 更新排程进度
+     */
+    @PostMapping("/schedules/{scheduleId}/progress")
+    public ApiResponse<LineScheduleDTO> updateProgress(
+            @PathVariable String factoryId,
+            @PathVariable String scheduleId,
+            @RequestParam Integer completedQuantity) {
+        log.info("更新排程进度: factoryId={}, scheduleId={}, completedQuantity={}",
+                factoryId, scheduleId, completedQuantity);
+        LineScheduleDTO schedule = schedulingService.updateProgress(factoryId, scheduleId, completedQuantity);
+        return ApiResponse.success("进度已更新", schedule);
+    }
+
+    // ==================== 工人分配管理 ====================
+
+    /**
+     * 分配工人
+     */
+    @PostMapping("/workers/assign")
+    public ApiResponse<List<WorkerAssignmentDTO>> assignWorkers(
+            @PathVariable String factoryId,
+            @Valid @RequestBody AssignWorkerRequest request) {
+        log.info("分配工人: factoryId={}, scheduleId={}, workerCount={}",
+                factoryId, request.getScheduleId(), request.getWorkerIds().size());
+        List<WorkerAssignmentDTO> assignments = schedulingService.assignWorkers(factoryId, request);
+        return ApiResponse.success("分配成功", assignments);
+    }
+
+    /**
+     * 移除工人分配
+     */
+    @DeleteMapping("/workers/assignments/{assignmentId}")
+    public ApiResponse<Void> removeWorkerAssignment(
+            @PathVariable String factoryId,
+            @PathVariable String assignmentId) {
+        log.info("移除工人分配: factoryId={}, assignmentId={}", factoryId, assignmentId);
+        schedulingService.removeWorkerAssignment(factoryId, assignmentId);
+        return ApiResponse.success("移除成功", null);
+    }
+
+    /**
+     * 工人签到
+     */
+    @PostMapping("/workers/assignments/{assignmentId}/check-in")
+    public ApiResponse<WorkerAssignmentDTO> workerCheckIn(
+            @PathVariable String factoryId,
+            @PathVariable String assignmentId) {
+        log.info("工人签到: factoryId={}, assignmentId={}", factoryId, assignmentId);
+        WorkerAssignmentDTO assignment = schedulingService.workerCheckIn(factoryId, assignmentId);
+        return ApiResponse.success("签到成功", assignment);
+    }
+
+    /**
+     * 工人签退
+     */
+    @PostMapping("/workers/assignments/{assignmentId}/check-out")
+    public ApiResponse<WorkerAssignmentDTO> workerCheckOut(
+            @PathVariable String factoryId,
+            @PathVariable String assignmentId,
+            @RequestParam(required = false) Integer performanceScore) {
+        log.info("工人签退: factoryId={}, assignmentId={}, performanceScore={}",
+                factoryId, assignmentId, performanceScore);
+        WorkerAssignmentDTO assignment = schedulingService.workerCheckOut(factoryId, assignmentId, performanceScore);
+        return ApiResponse.success("签退成功", assignment);
+    }
+
+    /**
+     * 获取工人分配列表 (按用户和日期)
+     */
+    @GetMapping("/workers/assignments")
+    public ApiResponse<List<WorkerAssignmentDTO>> getWorkerAssignments(
+            @PathVariable String factoryId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        log.info("获取工人分配: factoryId={}, userId={}, date={}", factoryId, userId, date);
+        List<WorkerAssignmentDTO> assignments = schedulingService.getWorkerAssignments(factoryId, userId, date);
+        return ApiResponse.success("获取成功", assignments);
+    }
+
+    // ==================== AI 辅助功能 ====================
+
+    /**
+     * AI 生成调度计划
+     */
+    @PostMapping("/generate")
+    public ApiResponse<SchedulingPlanDTO> generateSchedule(
+            @PathVariable String factoryId,
+            @Valid @RequestBody GenerateScheduleRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("AI生成调度计划: factoryId={}, planDate={}", factoryId, request.getPlanDate());
+        SchedulingPlanDTO plan = schedulingService.generateSchedule(factoryId, request, userId);
+        return ApiResponse.success("生成成功", plan);
+    }
+
+    /**
+     * AI 优化人员分配
+     */
+    @PostMapping("/optimize-workers")
+    public ApiResponse<List<WorkerAssignmentDTO>> optimizeWorkers(
+            @PathVariable String factoryId,
+            @Valid @RequestBody OptimizeWorkersRequest request) {
+        log.info("AI优化人员分配: factoryId={}, planId={}", factoryId, request.getPlanId());
+        List<WorkerAssignmentDTO> assignments = schedulingService.optimizeWorkers(factoryId, request);
+        return ApiResponse.success("优化完成", assignments);
+    }
+
+    /**
+     * 计算排程完成概率
+     */
+    @GetMapping("/schedules/{scheduleId}/probability")
+    public ApiResponse<CompletionProbabilityResponse> calculateCompletionProbability(
+            @PathVariable String factoryId,
+            @PathVariable String scheduleId) {
+        log.info("计算完成概率: factoryId={}, scheduleId={}", factoryId, scheduleId);
+        CompletionProbabilityResponse probability = schedulingService.calculateCompletionProbability(factoryId, scheduleId);
+        return ApiResponse.success("计算完成", probability);
+    }
+
+    /**
+     * 批量计算计划内所有排程的完成概率
+     */
+    @GetMapping("/plans/{planId}/probabilities")
+    public ApiResponse<List<CompletionProbabilityResponse>> calculateBatchProbabilities(
+            @PathVariable String factoryId,
+            @PathVariable String planId) {
+        log.info("批量计算完成概率: factoryId={}, planId={}", factoryId, planId);
+        List<CompletionProbabilityResponse> probabilities = schedulingService.calculateBatchProbabilities(factoryId, planId);
+        return ApiResponse.success("计算完成", probabilities);
+    }
+
+    /**
+     * 重新调度 (AI 辅助)
+     */
+    @PostMapping("/reschedule")
+    public ApiResponse<SchedulingPlanDTO> reschedule(
+            @PathVariable String factoryId,
+            @Valid @RequestBody RescheduleRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("重新调度: factoryId={}, planId={}", factoryId, request.getPlanId());
+        SchedulingPlanDTO plan = schedulingService.reschedule(factoryId, request, userId);
+        return ApiResponse.success("重新调度完成", plan);
+    }
+
+    // ==================== 告警管理 ====================
+
+    /**
+     * 获取未解决告警列表
+     */
+    @GetMapping("/alerts/unresolved")
+    public ApiResponse<List<SchedulingAlertDTO>> getUnresolvedAlerts(
+            @PathVariable String factoryId) {
+        log.info("获取未解决告警: factoryId={}", factoryId);
+        List<SchedulingAlertDTO> alerts = schedulingService.getUnresolvedAlerts(factoryId);
+        return ApiResponse.success("获取成功", alerts);
+    }
+
+    /**
+     * 获取告警列表 (分页)
+     */
+    @GetMapping("/alerts")
+    public ApiResponse<Page<SchedulingAlertDTO>> getAlerts(
+            @PathVariable String factoryId,
+            @RequestParam(required = false) String severity,
+            @RequestParam(required = false) String alertType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("获取告警列表: factoryId={}, severity={}, alertType={}", factoryId, severity, alertType);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<SchedulingAlertDTO> alerts = schedulingService.getAlerts(factoryId, severity, alertType, pageable);
+        return ApiResponse.success("获取成功", alerts);
+    }
+
+    /**
+     * 确认告警
+     */
+    @PostMapping("/alerts/{alertId}/acknowledge")
+    public ApiResponse<SchedulingAlertDTO> acknowledgeAlert(
+            @PathVariable String factoryId,
+            @PathVariable String alertId,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("确认告警: factoryId={}, alertId={}", factoryId, alertId);
+        SchedulingAlertDTO alert = schedulingService.acknowledgeAlert(factoryId, alertId, userId);
+        return ApiResponse.success("确认成功", alert);
+    }
+
+    /**
+     * 解决告警
+     */
+    @PostMapping("/alerts/{alertId}/resolve")
+    public ApiResponse<SchedulingAlertDTO> resolveAlert(
+            @PathVariable String factoryId,
+            @PathVariable String alertId,
+            @RequestParam(required = false) String resolutionNotes,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("解决告警: factoryId={}, alertId={}", factoryId, alertId);
+        SchedulingAlertDTO alert = schedulingService.resolveAlert(factoryId, alertId, userId, resolutionNotes);
+        return ApiResponse.success("解决成功", alert);
+    }
+
+    // ==================== 产线管理 ====================
+
+    /**
+     * 获取产线列表
+     */
+    @GetMapping("/production-lines")
+    public ApiResponse<List<ProductionLineDTO>> getProductionLines(
+            @PathVariable String factoryId,
+            @RequestParam(required = false) String status) {
+        log.info("获取产线列表: factoryId={}, status={}", factoryId, status);
+        List<ProductionLineDTO> lines = schedulingService.getProductionLines(factoryId, status);
+        return ApiResponse.success("获取成功", lines);
+    }
+
+    /**
+     * 创建产线
+     */
+    @PostMapping("/production-lines")
+    public ApiResponse<ProductionLineDTO> createProductionLine(
+            @PathVariable String factoryId,
+            @Valid @RequestBody ProductionLineDTO request) {
+        log.info("创建产线: factoryId={}, name={}", factoryId, request.getName());
+        ProductionLineDTO line = schedulingService.createProductionLine(factoryId, request);
+        return ApiResponse.success("创建成功", line);
+    }
+
+    /**
+     * 更新产线
+     */
+    @PutMapping("/production-lines/{lineId}")
+    public ApiResponse<ProductionLineDTO> updateProductionLine(
+            @PathVariable String factoryId,
+            @PathVariable String lineId,
+            @Valid @RequestBody ProductionLineDTO request) {
+        log.info("更新产线: factoryId={}, lineId={}", factoryId, lineId);
+        ProductionLineDTO line = schedulingService.updateProductionLine(factoryId, lineId, request);
+        return ApiResponse.success("更新成功", line);
+    }
+
+    /**
+     * 更新产线状态
+     */
+    @PutMapping("/production-lines/{lineId}/status")
+    public ApiResponse<ProductionLineDTO> updateProductionLineStatus(
+            @PathVariable String factoryId,
+            @PathVariable String lineId,
+            @RequestParam String status) {
+        log.info("更新产线状态: factoryId={}, lineId={}, status={}", factoryId, lineId, status);
+        ProductionLineDTO line = schedulingService.updateProductionLineStatus(factoryId, lineId, status);
+        return ApiResponse.success("状态更新成功", line);
+    }
+
+    // ==================== Dashboard ====================
+
+    /**
+     * 获取调度 Dashboard
+     */
+    @GetMapping("/dashboard")
+    public ApiResponse<SchedulingDashboardDTO> getDashboard(
+            @PathVariable String factoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        log.info("获取调度Dashboard: factoryId={}, date={}", factoryId, date);
+        SchedulingDashboardDTO dashboard = schedulingService.getDashboard(factoryId, date);
+        return ApiResponse.success("获取成功", dashboard);
+    }
+
+    /**
+     * 获取实时监控数据
+     */
+    @GetMapping("/realtime/{planId}")
+    public ApiResponse<SchedulingDashboardDTO> getRealtimeMonitor(
+            @PathVariable String factoryId,
+            @PathVariable String planId) {
+        log.info("获取实时监控: factoryId={}, planId={}", factoryId, planId);
+        SchedulingDashboardDTO dashboard = schedulingService.getRealtimeMonitor(factoryId, planId);
+        return ApiResponse.success("获取成功", dashboard);
+    }
+
+    // ==================== 辅助方法 ====================
+
+    /**
+     * 从请求中获取用户ID
+     */
+    private Long getUserId(HttpServletRequest request) {
+        Object userIdObj = request.getAttribute("userId");
+        if (userIdObj == null) {
+            return null;
+        }
+        if (userIdObj instanceof Long) {
+            return (Long) userIdObj;
+        }
+        if (userIdObj instanceof Integer) {
+            return ((Integer) userIdObj).longValue();
+        }
+        if (userIdObj instanceof String) {
+            try {
+                return Long.parseLong((String) userIdObj);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+}

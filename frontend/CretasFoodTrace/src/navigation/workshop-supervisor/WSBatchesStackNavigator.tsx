@@ -1,0 +1,89 @@
+/**
+ * Workshop Supervisor 批次管理 Stack 导航器
+ * 包含: 批次列表、批次详情、开始生产、工艺环节录入、完成生产、
+ *       原料消耗记录、质检创建、质检详情
+ */
+
+import React from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { WSBatchesStackParamList } from "../../types/navigation";
+
+// 导入批次相关页面组件
+import WSBatchesScreen from "../../screens/workshop-supervisor/batches/WSBatchesScreen";
+import BatchStartScreen from "../../screens/workshop-supervisor/batches/BatchStartScreen";
+import BatchStageScreen from "../../screens/workshop-supervisor/batches/BatchStageScreen";
+import BatchCompleteScreen from "../../screens/workshop-supervisor/batches/BatchCompleteScreen";
+import MaterialConsumptionScreen from "../../screens/workshop-supervisor/batches/MaterialConsumptionScreen";
+
+// 复用现有详情页
+import BatchDetailScreen from "../../screens/processing/BatchDetailScreen";
+
+// 质检相关 (复用现有)
+import CreateQualityRecordScreen from "../../screens/processing/CreateQualityRecordScreen";
+import QualityInspectionDetailScreen from "../../screens/processing/QualityInspectionDetailScreen";
+
+const Stack = createNativeStackNavigator<WSBatchesStackParamList>();
+
+export function WSBatchesStackNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      {/* 批次列表主页 */}
+      <Stack.Screen name="WSBatches" component={WSBatchesScreen} />
+
+      {/* 批次详情 (复用现有) */}
+      <Stack.Screen
+        name="BatchDetail"
+        component={BatchDetailScreen}
+        options={{ title: "批次详情" }}
+      />
+
+      {/* 开始生产 - 从生产计划创建批次 */}
+      <Stack.Screen
+        name="BatchStart"
+        component={BatchStartScreen}
+        options={{ title: "开始生产" }}
+      />
+
+      {/* 工艺环节录入 */}
+      <Stack.Screen
+        name="BatchStage"
+        component={BatchStageScreen}
+        options={{ title: "工艺环节" }}
+      />
+
+      {/* 完成生产 */}
+      <Stack.Screen
+        name="BatchComplete"
+        component={BatchCompleteScreen}
+        options={{ title: "完成生产" }}
+      />
+
+      {/* 原料消耗记录 */}
+      <Stack.Screen
+        name="MaterialConsumption"
+        component={MaterialConsumptionScreen}
+        options={{ title: "原料消耗" }}
+      />
+
+      {/* 创建质检记录 (复用现有) */}
+      <Stack.Screen
+        name="QualityCreate"
+        component={CreateQualityRecordScreen}
+        options={{ title: "创建质检" }}
+      />
+
+      {/* 质检详情 (复用现有) */}
+      <Stack.Screen
+        name="QualityDetail"
+        component={QualityInspectionDetailScreen}
+        options={{ title: "质检详情" }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+export default WSBatchesStackNavigator;

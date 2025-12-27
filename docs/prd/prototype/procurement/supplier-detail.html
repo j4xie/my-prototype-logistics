@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>供应商详情 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="procurement.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="supplier-list.html" class="back-to-index">< 返回供应商列表</a>
+
+  <div class="mobile-container">
+    <header class="header supplier-detail-header">
+      <div class="supplier-detail-avatar">舟</div>
+      <h1>舟山渔业合作社</h1>
+      <div class="supplier-detail-rating">
+        <span class="stars">★★★★★</span>
+        <span class="score">5.0</span>
+        <span class="reviews">(156单评价)</span>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- 合作统计 -->
+      <div class="section">
+        <div class="cooperation-stats">
+          <div class="coop-stat">
+            <div class="coop-value">2年3月</div>
+            <div class="coop-label">合作时长</div>
+          </div>
+          <div class="coop-stat">
+            <div class="coop-value">156单</div>
+            <div class="coop-label">总订单数</div>
+          </div>
+          <div class="coop-stat">
+            <div class="coop-value">¥458k</div>
+            <div class="coop-label">累计金额</div>
+          </div>
+          <div class="coop-stat">
+            <div class="coop-value">98.2%</div>
+            <div class="coop-label">准时率</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="section">
+        <div class="quick-action-row">
+          <a href="order-create.html?supplier=舟山渔业合作社" class="quick-action-btn primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+            <span>新建订单</span>
+          </a>
+          <button class="quick-action-btn" onclick="alert('正在拨打 138****5678')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            <span>联系</span>
+          </button>
+          <a href="supplier-form.html?id=1" class="quick-action-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            <span>编辑</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">基本信息</span>
+        </div>
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-label">供应商代码</span>
+            <span class="info-value">SUP-001</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">联系人</span>
+            <span class="info-value">张经理</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">联系电话</span>
+            <span class="info-value">138****5678</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">电子邮箱</span>
+            <span class="info-value">zhang@zhoushan-fish.com</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">地址</span>
+            <span class="info-value">浙江省舟山市普陀区沈家门街道xxx号</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 经营信息 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">经营信息</span>
+        </div>
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-label">营业执照号</span>
+            <span class="info-value">91330902MA2H****</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">税务登记号</span>
+            <span class="info-value">91330902MA2H****</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">主营产品</span>
+            <span class="info-value">
+              <span class="tag">带鱼</span>
+              <span class="tag">黄鱼</span>
+              <span class="tag">鲈鱼</span>
+              <span class="tag">鲳鱼</span>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">配送范围</span>
+            <span class="info-value">浙江省全境</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">交货周期</span>
+            <span class="info-value">1-2天</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 评级信息 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">评级详情</span>
+        </div>
+        <div class="rating-detail-card">
+          <div class="rating-row">
+            <span class="rating-label">产品质量</span>
+            <div class="rating-bar-container">
+              <div class="rating-bar" style="width: 98%"></div>
+            </div>
+            <span class="rating-score">4.9</span>
+          </div>
+          <div class="rating-row">
+            <span class="rating-label">配送时效</span>
+            <div class="rating-bar-container">
+              <div class="rating-bar" style="width: 96%"></div>
+            </div>
+            <span class="rating-score">4.8</span>
+          </div>
+          <div class="rating-row">
+            <span class="rating-label">价格竞争力</span>
+            <div class="rating-bar-container">
+              <div class="rating-bar" style="width: 100%"></div>
+            </div>
+            <span class="rating-score">5.0</span>
+          </div>
+          <div class="rating-row">
+            <span class="rating-label">服务态度</span>
+            <div class="rating-bar-container">
+              <div class="rating-bar" style="width: 100%"></div>
+            </div>
+            <span class="rating-score">5.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 历史订单 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">最近订单</span>
+          <span class="section-link">查看全部 ></span>
+        </div>
+        <div class="history-order-list">
+          <a href="order-detail.html" class="history-order-item">
+            <div class="order-info">
+              <div class="order-id">PO-20251227-001</div>
+              <div class="order-products">带鱼 200kg</div>
+            </div>
+            <div class="order-meta">
+              <span class="order-amount">¥3,500</span>
+              <span class="order-status pending">待审批</span>
+            </div>
+          </a>
+          <a href="order-detail.html" class="history-order-item">
+            <div class="order-info">
+              <div class="order-id">PO-20251226-002</div>
+              <div class="order-products">黄鱼 80kg</div>
+            </div>
+            <div class="order-meta">
+              <span class="order-amount">¥4,800</span>
+              <span class="order-status shipped">已发货</span>
+            </div>
+          </a>
+          <a href="order-detail.html" class="history-order-item">
+            <div class="order-info">
+              <div class="order-id">PO-20251225-001</div>
+              <div class="order-products">带鱼 150kg, 鲈鱼 100kg</div>
+            </div>
+            <div class="order-meta">
+              <span class="order-amount">¥8,200</span>
+              <span class="order-status completed">已完成</span>
+            </div>
+          </a>
+          <a href="order-detail.html" class="history-order-item">
+            <div class="order-info">
+              <div class="order-id">PO-20251220-003</div>
+              <div class="order-products">鲳鱼 60kg</div>
+            </div>
+            <div class="order-meta">
+              <span class="order-amount">¥2,400</span>
+              <span class="order-status completed">已完成</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="section">
+        <div class="action-buttons">
+          <button class="action-btn danger" onclick="if(confirm('确定停用该供应商?')) alert('已停用')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+            <span>停用供应商</span>
+          </button>
+          <a href="order-create.html?supplier=舟山渔业合作社" class="action-btn primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+            <span>新建订单</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="order-list.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>订单</span>
+      </a>
+      <a href="ai-scan.html" class="nav-item scan-btn">
+        <div class="scan-btn-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <span>AI扫描</span>
+      </a>
+      <a href="supplier-list.html" class="nav-item active">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>供应商</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

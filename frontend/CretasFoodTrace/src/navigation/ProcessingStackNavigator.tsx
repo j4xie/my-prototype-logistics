@@ -45,8 +45,8 @@ import EquipmentDetailScreen from '../screens/processing/EquipmentDetailScreen';
 // Phase 3 P2 - 质检统计分析
 import QualityAnalyticsScreen from '../screens/processing/QualityAnalyticsScreen';
 
-// Phase 3 P2 - 库存盘点
-import InventoryCheckScreen from '../screens/processing/InventoryCheckScreen';
+// Phase 3 P2 - 库存盘点 (Legacy - 已移至 legacy/warehouse)
+import InventoryCheckScreen from '../screens/legacy/warehouse/InventoryCheckScreen';
 
 // Phase 3 P2 - 异常预警
 import ExceptionAlertScreen from '../screens/alerts/ExceptionAlertScreen';

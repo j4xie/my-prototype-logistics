@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>采购统计 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="procurement.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回工作台</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>采购统计</h1>
+      <p>数据分析与洞察</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 时间选择器 -->
+      <div class="time-selector">
+        <button class="time-btn">日</button>
+        <button class="time-btn">周</button>
+        <button class="time-btn active">月</button>
+        <button class="time-btn">年</button>
+      </div>
+
+      <!-- 核心指标 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">本月概况</span>
+          <span class="section-date">2025年12月</span>
+        </div>
+        <div class="stats-overview">
+          <div class="overview-card primary">
+            <div class="overview-value">¥128.5k</div>
+            <div class="overview-label">采购总额</div>
+            <div class="overview-trend up">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
+              </svg>
+              <span>较上月 +12.3%</span>
+            </div>
+          </div>
+          <div class="overview-row">
+            <div class="overview-item">
+              <div class="overview-value">45</div>
+              <div class="overview-label">订单数量</div>
+              <div class="overview-trend up">+8单</div>
+            </div>
+            <div class="overview-item">
+              <div class="overview-value">12</div>
+              <div class="overview-label">供应商数</div>
+              <div class="overview-trend up">+2家</div>
+            </div>
+            <div class="overview-item">
+              <div class="overview-value">¥2,855</div>
+              <div class="overview-label">平均单价</div>
+              <div class="overview-trend down">-3.2%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 采购趋势图 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">采购趋势</span>
+        </div>
+        <div class="chart-card">
+          <div class="chart-container large">
+            <svg viewBox="0 0 320 150" class="trend-chart">
+              <!-- 背景网格 -->
+              <line x1="40" y1="20" x2="40" y2="120" stroke="#e0e0e0" stroke-width="1"/>
+              <line x1="40" y1="120" x2="310" y2="120" stroke="#e0e0e0" stroke-width="1"/>
+              <line x1="40" y1="70" x2="310" y2="70" stroke="#e0e0e0" stroke-width="1" stroke-dasharray="4"/>
+              <line x1="40" y1="20" x2="310" y2="20" stroke="#e0e0e0" stroke-width="1" stroke-dasharray="4"/>
+
+              <!-- 数据线 -->
+              <polyline
+                fill="none"
+                stroke="url(#trendGradient)"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                points="50,100 80,85 110,90 140,70 170,75 200,55 230,60 260,45 290,50"
+              />
+
+              <!-- 数据点 -->
+              <circle cx="50" cy="100" r="4" fill="#4facfe"/>
+              <circle cx="80" cy="85" r="4" fill="#4facfe"/>
+              <circle cx="110" cy="90" r="4" fill="#4facfe"/>
+              <circle cx="140" cy="70" r="4" fill="#4facfe"/>
+              <circle cx="170" cy="75" r="4" fill="#4facfe"/>
+              <circle cx="200" cy="55" r="4" fill="#4facfe"/>
+              <circle cx="230" cy="60" r="4" fill="#4facfe"/>
+              <circle cx="260" cy="45" r="4" fill="#00f2fe"/>
+              <circle cx="290" cy="50" r="4" fill="#00f2fe"/>
+
+              <!-- Y轴标签 -->
+              <text x="35" y="25" text-anchor="end" font-size="10" fill="#999">15万</text>
+              <text x="35" y="75" text-anchor="end" font-size="10" fill="#999">10万</text>
+              <text x="35" y="125" text-anchor="end" font-size="10" fill="#999">5万</text>
+
+              <!-- X轴标签 -->
+              <text x="50" y="135" text-anchor="middle" font-size="10" fill="#999">1周</text>
+              <text x="110" y="135" text-anchor="middle" font-size="10" fill="#999">2周</text>
+              <text x="170" y="135" text-anchor="middle" font-size="10" fill="#999">3周</text>
+              <text x="230" y="135" text-anchor="middle" font-size="10" fill="#999">4周</text>
+              <text x="290" y="135" text-anchor="middle" font-size="10" fill="#999">本周</text>
+
+              <defs>
+                <linearGradient id="trendGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#4facfe"/>
+                  <stop offset="100%" style="stop-color:#00f2fe"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 材料类别分布 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">材料类别分布</span>
+        </div>
+        <div class="category-stats">
+          <div class="category-chart">
+            <svg viewBox="0 0 100 100" class="pie-chart">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#4facfe" stroke-width="20" stroke-dasharray="75.4 175.9"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#00f2fe" stroke-width="20" stroke-dasharray="50.3 200" transform="rotate(108 50 50)"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#667eea" stroke-width="20" stroke-dasharray="37.7 213.6" transform="rotate(180 50 50)"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#764ba2" stroke-width="20" stroke-dasharray="25.1 226.2" transform="rotate(234 50 50)"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#f093fb" stroke-width="20" stroke-dasharray="12.6 238.7" transform="rotate(270 50 50)"/>
+            </svg>
+          </div>
+          <div class="category-list">
+            <div class="category-item">
+              <span class="category-color" style="background: #4facfe"></span>
+              <span class="category-name">带鱼</span>
+              <span class="category-value">30%</span>
+              <span class="category-amount">¥38.5k</span>
+            </div>
+            <div class="category-item">
+              <span class="category-color" style="background: #00f2fe"></span>
+              <span class="category-name">虾仁</span>
+              <span class="category-value">20%</span>
+              <span class="category-amount">¥25.7k</span>
+            </div>
+            <div class="category-item">
+              <span class="category-color" style="background: #667eea"></span>
+              <span class="category-name">鲈鱼</span>
+              <span class="category-value">15%</span>
+              <span class="category-amount">¥19.3k</span>
+            </div>
+            <div class="category-item">
+              <span class="category-color" style="background: #764ba2"></span>
+              <span class="category-name">鱿鱼</span>
+              <span class="category-value">10%</span>
+              <span class="category-amount">¥12.8k</span>
+            </div>
+            <div class="category-item">
+              <span class="category-color" style="background: #f093fb"></span>
+              <span class="category-name">其他</span>
+              <span class="category-value">25%</span>
+              <span class="category-amount">¥32.2k</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 供应商排行 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">供应商排行</span>
+          <span class="section-link">按采购额</span>
+        </div>
+        <div class="ranking-list">
+          <div class="ranking-item">
+            <span class="rank gold">1</span>
+            <div class="ranking-info">
+              <div class="ranking-name">舟山渔业合作社</div>
+              <div class="ranking-bar-container">
+                <div class="ranking-bar" style="width: 100%; background: linear-gradient(90deg, #4facfe, #00f2fe)"></div>
+              </div>
+            </div>
+            <span class="ranking-value">¥45.8k</span>
+          </div>
+          <div class="ranking-item">
+            <span class="rank silver">2</span>
+            <div class="ranking-info">
+              <div class="ranking-name">东海冷冻食品有限公司</div>
+              <div class="ranking-bar-container">
+                <div class="ranking-bar" style="width: 75%; background: linear-gradient(90deg, #667eea, #764ba2)"></div>
+              </div>
+            </div>
+            <span class="ranking-value">¥34.2k</span>
+          </div>
+          <div class="ranking-item">
+            <span class="rank bronze">3</span>
+            <div class="ranking-info">
+              <div class="ranking-name">宁波海鲜批发市场</div>
+              <div class="ranking-bar-container">
+                <div class="ranking-bar" style="width: 52%; background: #f093fb"></div>
+              </div>
+            </div>
+            <span class="ranking-value">¥23.8k</span>
+          </div>
+          <div class="ranking-item">
+            <span class="rank">4</span>
+            <div class="ranking-info">
+              <div class="ranking-name">浙江海产品加工厂</div>
+              <div class="ranking-bar-container">
+                <div class="ranking-bar" style="width: 35%; background: #ccc"></div>
+              </div>
+            </div>
+            <span class="ranking-value">¥16.0k</span>
+          </div>
+          <div class="ranking-item">
+            <span class="rank">5</span>
+            <div class="ranking-info">
+              <div class="ranking-name">福建海鲜贸易公司</div>
+              <div class="ranking-bar-container">
+                <div class="ranking-bar" style="width: 20%; background: #ccc"></div>
+              </div>
+            </div>
+            <span class="ranking-value">¥8.7k</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI分析建议 -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">AI洞察</span>
+          <span class="ai-badge">AI分析</span>
+        </div>
+        <div class="ai-insight-card">
+          <div class="insight-item">
+            <div class="insight-icon success">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+              </svg>
+            </div>
+            <div class="insight-content">
+              <div class="insight-title">成本优化建议</div>
+              <div class="insight-desc">本月带鱼采购价格高于市场均价3.2%，建议与舟山渔业合作社协商长期合作价格，预计可节省约¥1,200/月</div>
+            </div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-icon warning">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="insight-content">
+              <div class="insight-title">供应商风险提示</div>
+              <div class="insight-desc">浙江海产品加工厂近期准时率下降至92.8%，建议关注并准备备选供应商</div>
+            </div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-icon info">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </div>
+            <div class="insight-content">
+              <div class="insight-title">采购节奏优化</div>
+              <div class="insight-desc">分析显示周二、周四采购价格较低，建议调整采购计划以获得更优价格</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="order-list.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>订单</span>
+      </a>
+      <a href="ai-scan.html" class="nav-item scan-btn">
+        <div class="scan-btn-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <span>AI扫描</span>
+      </a>
+      <a href="supplier-list.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>供应商</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

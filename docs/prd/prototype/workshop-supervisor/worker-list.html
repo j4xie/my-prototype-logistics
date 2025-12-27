@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>员工列表 - 车间主任</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 子页面头部 -->
+    <div class="subpage-header">
+      <a href="attendance.html" class="back-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <span class="title">员工列表</span>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content" style="padding-top: 16px;">
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" placeholder="搜索员工姓名或工号">
+      </div>
+
+      <!-- 筛选标签 -->
+      <div class="filter-tabs">
+        <button class="filter-tab active">全部 (10)</button>
+        <button class="filter-tab">在岗 (8)</button>
+        <button class="filter-tab">请假 (1)</button>
+        <button class="filter-tab">缺勤 (1)</button>
+      </div>
+
+      <!-- 员工统计 -->
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <div style="flex: 1; padding: 16px; background: #f6ffed; border-radius: 12px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 600; color: #52c41a;">8</div>
+          <div style="font-size: 12px; color: #999; margin-top: 4px;">在岗</div>
+        </div>
+        <div style="flex: 1; padding: 16px; background: #fff7e6; border-radius: 12px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 600; color: #fa8c16;">1</div>
+          <div style="font-size: 12px; color: #999; margin-top: 4px;">请假</div>
+        </div>
+        <div style="flex: 1; padding: 16px; background: #fff1f0; border-radius: 12px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 600; color: #ff4d4f;">1</div>
+          <div style="font-size: 12px; color: #999; margin-top: 4px;">缺勤</div>
+        </div>
+      </div>
+
+      <!-- 员工列表 -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- 在岗员工 -->
+        <a href="worker-detail.html" class="worker-card" style="text-decoration: none;">
+          <div class="worker-avatar">
+            <span>王</span>
+            <span class="status-dot online"></span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">王建国</div>
+            <div class="worker-role">EMP-001 | 切片操作员</div>
+          </div>
+          <div class="worker-stats" style="display: flex; gap: 12px; align-items: center;">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #52c41a;">4.0h</span>
+              <span class="stat-label">今日</span>
+            </div>
+            <div style="padding: 4px 8px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 12px; font-weight: 600; color: #52c41a;">A</span>
+              <span style="font-size: 10px; color: #52c41a;">96%</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="worker-detail.html?id=2" class="worker-card" style="text-decoration: none;">
+          <div class="worker-avatar" style="background: linear-gradient(135deg, #1890ff, #096dd9);">
+            <span>李</span>
+            <span class="status-dot online"></span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">李明</div>
+            <div class="worker-role">EMP-002 | 清洗操作员</div>
+          </div>
+          <div class="worker-stats" style="display: flex; gap: 12px; align-items: center;">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #52c41a;">3.5h</span>
+              <span class="stat-label">今日</span>
+            </div>
+            <div style="padding: 4px 8px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 12px; font-weight: 600; color: #52c41a;">A</span>
+              <span style="font-size: 10px; color: #52c41a;">92%</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="worker-detail.html?id=3" class="worker-card" style="text-decoration: none;">
+          <div class="worker-avatar" style="background: linear-gradient(135deg, #52c41a, #389e0d);">
+            <span>张</span>
+            <span class="status-dot online"></span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">张伟</div>
+            <div class="worker-role">EMP-003 | 包装操作员</div>
+          </div>
+          <div class="worker-stats" style="display: flex; gap: 12px; align-items: center;">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #52c41a;">4.2h</span>
+              <span class="stat-label">今日</span>
+            </div>
+            <div style="padding: 4px 8px; background: #fff7e6; border: 1px solid #ffd591; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 12px; font-weight: 600; color: #fa8c16;">B</span>
+              <span style="font-size: 10px; color: #fa8c16;">85%</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="worker-detail.html?id=4" class="worker-card" style="text-decoration: none;">
+          <div class="worker-avatar" style="background: linear-gradient(135deg, #fa8c16, #d46b08);">
+            <span>赵</span>
+            <span class="status-dot online"></span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">赵磊</div>
+            <div class="worker-role">EMP-004 | 切片操作员</div>
+          </div>
+          <div class="worker-stats" style="display: flex; gap: 12px; align-items: center;">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #52c41a;">3.8h</span>
+              <span class="stat-label">今日</span>
+            </div>
+            <div style="padding: 4px 8px; background: #fff7e6; border: 1px solid #ffd591; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 12px; font-weight: 600; color: #fa8c16;">B</span>
+              <span style="font-size: 10px; color: #fa8c16;">88%</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="worker-detail.html?id=5" class="worker-card" style="text-decoration: none;">
+          <div class="worker-avatar" style="background: linear-gradient(135deg, #722ed1, #531dab);">
+            <span>孙</span>
+            <span class="status-dot online"></span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">孙鹏</div>
+            <div class="worker-role">EMP-005 | 质检员</div>
+          </div>
+          <div class="worker-stats" style="display: flex; gap: 12px; align-items: center;">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #52c41a;">4.5h</span>
+              <span class="stat-label">今日</span>
+            </div>
+            <div style="padding: 4px 8px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 12px; font-weight: 600; color: #52c41a;">A</span>
+              <span style="font-size: 10px; color: #52c41a;">94%</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="worker-detail.html?id=6" class="worker-card" style="text-decoration: none;">
+          <div class="worker-avatar" style="background: linear-gradient(135deg, #13c2c2, #08979c);">
+            <span>周</span>
+            <span class="status-dot online"></span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">周婷</div>
+            <div class="worker-role">EMP-006 | 包装操作员</div>
+          </div>
+          <div class="worker-stats" style="display: flex; gap: 12px; align-items: center;">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #52c41a;">3.2h</span>
+              <span class="stat-label">今日</span>
+            </div>
+            <div style="padding: 4px 8px; background: #fff1f0; border: 1px solid #ffa39e; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 12px; font-weight: 600; color: #ff4d4f;">C</span>
+              <span style="font-size: 10px; color: #ff4d4f;">72%</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="worker-detail.html?id=7" class="worker-card" style="text-decoration: none;">
+          <div class="worker-avatar" style="background: linear-gradient(135deg, #eb2f96, #c41d7f);">
+            <span>吴</span>
+            <span class="status-dot online"></span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">吴芳</div>
+            <div class="worker-role">EMP-007 | 清洗操作员</div>
+          </div>
+          <div class="worker-stats" style="display: flex; gap: 12px; align-items: center;">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #52c41a;">4.0h</span>
+              <span class="stat-label">今日</span>
+            </div>
+            <div style="padding: 4px 8px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 12px; font-weight: 600; color: #52c41a;">A</span>
+              <span style="font-size: 10px; color: #52c41a;">91%</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="worker-detail.html?id=8" class="worker-card" style="text-decoration: none;">
+          <div class="worker-avatar" style="background: linear-gradient(135deg, #2f54eb, #1d39c4);">
+            <span>郑</span>
+            <span class="status-dot online"></span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">郑强</div>
+            <div class="worker-role">EMP-008 | 设备维护员</div>
+          </div>
+          <div class="worker-stats" style="display: flex; gap: 12px; align-items: center;">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #52c41a;">3.0h</span>
+              <span class="stat-label">今日</span>
+            </div>
+            <div style="padding: 4px 8px; background: #fff7e6; border: 1px solid #ffd591; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 12px; font-weight: 600; color: #fa8c16;">B</span>
+              <span style="font-size: 10px; color: #fa8c16;">82%</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 请假员工 -->
+        <div class="worker-card" style="opacity: 0.7; border-left: 3px solid #fa8c16;">
+          <div class="worker-avatar" style="background: #d9d9d9;">
+            <span>陈</span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">陈强</div>
+            <div class="worker-role">EMP-009 | 切片操作员</div>
+          </div>
+          <div class="worker-stats">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #fa8c16;">请假</span>
+              <span class="stat-label">事假</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 缺勤员工 -->
+        <div class="worker-card" style="opacity: 0.7; border-left: 3px solid #ff4d4f;">
+          <div class="worker-avatar" style="background: #d9d9d9;">
+            <span>刘</span>
+          </div>
+          <div class="worker-info">
+            <div class="worker-name">刘洋</div>
+            <div class="worker-role">EMP-010 | 包装操作员</div>
+          </div>
+          <div class="worker-stats">
+            <div class="worker-stat">
+              <span class="stat-value" style="color: #ff4d4f;">缺勤</span>
+              <span class="stat-label">未到</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

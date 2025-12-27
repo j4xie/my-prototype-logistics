@@ -1,20 +1,37 @@
 /**
- * Copyright (C) 2018-2019
- * All rights reserved, Designed By www.joolun.com
+ * Copyright (C) 2024-2025
+ * 食品商城小程序
  * 注意：
- * 本软件为www.joolun.com开发研制，项目使用请保留此说明
+ * 基于 JooLun 框架二次开发
  */
 Component({
   properties: {
     goodsList: {
       type: Object,
       value: []
+    },
+    // 登录状态，用于控制价格显示
+    isLoggedIn: {
+      type: Boolean,
+      value: false
     }
   },
   data: {
 
   },
   methods: {
-
+    // 跳转登录页
+    goToLogin() {
+      wx.showToast({
+        title: '请先登录查看价格',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.navigateTo({
+          url: '/pages/auth/login/index'
+        })
+      }, 500)
+    }
   }
 })

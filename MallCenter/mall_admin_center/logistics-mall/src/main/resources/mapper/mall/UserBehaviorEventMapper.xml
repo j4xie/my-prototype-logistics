@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.UserBehaviorEventMapper">
+
+    <!-- P0性能优化: 批量插入用户行为事件 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO user_behavior_events (
+            wx_user_id,
+            event_type,
+            event_time,
+            target_type,
+            target_id,
+            target_name,
+            event_data,
+            session_id,
+            device_type,
+            ip_address,
+            source_type,
+            source_id,
+            create_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.wxUserId},
+                #{item.eventType},
+                #{item.eventTime},
+                #{item.targetType},
+                #{item.targetId},
+                #{item.targetName},
+                #{item.eventData},
+                #{item.sessionId},
+                #{item.deviceType},
+                #{item.ipAddress},
+                #{item.sourceType},
+                #{item.sourceId},
+                NOW()
+            )
+        </foreach>
+    </insert>
+
+</mapper>
