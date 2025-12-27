@@ -3,13 +3,14 @@
  * 对应原型: warehouse/profile-edit.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Text, TextInput, Button, Switch, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,6 +18,9 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHProfileStackParamList } from "../../../types/navigation";
+import { useAuthStore } from "../../../store/authStore";
+import { userApiClient } from "../../../services/api/userApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHProfileStackParamList>;
 
@@ -34,24 +38,85 @@ interface ProfileData {
 export function WHProfileEditScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useAuthStore();
 
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData>({
-    name: "陈仓管",
-    employeeId: "WH001",
-    phone: "138****8888",
+    name: "",
+    employeeId: "",
+    phone: "",
     email: "",
-    factory: "白垩纪食品加工厂",
-    department: "仓储部",
-    position: "仓储管理员",
-    joinDate: "2024-03-15",
+    factory: "",
+    department: "",
+    position: "",
+    joinDate: "",
   });
-
   const [fingerprintEnabled, setFingerprintEnabled] = useState(true);
 
-  const handleSave = () => {
-    Alert.alert("成功", "个人信息已保存", [
-      { text: "确定", onPress: () => navigation.goBack() },
-    ]);
+  // 加载用户数据
+  const loadUserProfile = useCallback(async () => {
+    try {
+      // 首先使用auth store中的数据
+      if (user) {
+        setProfileData({
+          name: user.username || user.realName || "用户",
+          employeeId: user.employeeId || `WH${String(user.id || 1).padStart(3, '0')}`,
+          phone: user.phone ? `${user.phone.substring(0, 3)}****${user.phone.substring(7)}` : "",
+          email: user.email || "",
+          factory: user.factoryId || "白垩纪食品加工厂",
+          department: user.departmentName || "仓储部",
+          position: user.roleName || "仓储管理员",
+          joinDate: user.createdAt ? user.createdAt.split('T')[0] : "",
+        });
+      }
+
+      // 尝试从API获取更多详细信息
+      if (user?.id) {
+        try {
+          const userDetail = await userApiClient.getUserById(user.id);
+          if (userDetail) {
+            setProfileData(prev => ({
+              ...prev,
+              name: userDetail.realName || userDetail.username || prev.name,
+              email: userDetail.email || prev.email,
+              department: userDetail.departmentName || prev.department,
+            }));
+          }
+        } catch {
+          // API调用失败，继续使用store中的数据
+        }
+      }
+    } catch (error) {
+      handleError(error, { title: '加载用户信息失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadUserProfile();
+  }, [loadUserProfile]);
+
+  // 保存用户信息
+  const handleSave = async () => {
+    setSubmitting(true);
+    try {
+      if (user?.id) {
+        await userApiClient.updateUser(user.id, {
+          realName: profileData.name,
+          email: profileData.email,
+        });
+      }
+      Alert.alert("成功", "个人信息已保存", [
+        { text: "确定", onPress: () => navigation.goBack() },
+      ]);
+    } catch (error) {
+      handleError(error, { title: '保存失败' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChangePhone = () => {
@@ -69,6 +134,31 @@ export function WHProfileEditScreen() {
   const handleChangeAvatar = () => {
     Alert.alert("更换头像", "选择新头像");
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>个人信息</Text>
+            <Text style={styles.headerSubtitle}>编辑个人资料</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -251,6 +341,7 @@ export function WHProfileEditScreen() {
             onPress={() => navigation.goBack()}
             style={styles.actionBtnSecondary}
             labelStyle={{ color: "#666" }}
+            disabled={submitting}
           >
             取消
           </Button>
@@ -259,8 +350,10 @@ export function WHProfileEditScreen() {
             onPress={handleSave}
             style={styles.actionBtnPrimary}
             labelStyle={{ color: "#fff" }}
+            disabled={submitting}
+            loading={submitting}
           >
-            保存
+            {submitting ? '保存中...' : '保存'}
           </Button>
         </View>
 
@@ -274,6 +367,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

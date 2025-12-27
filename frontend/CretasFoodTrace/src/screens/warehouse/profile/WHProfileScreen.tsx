@@ -3,13 +3,14 @@
  * 对应原型: warehouse/profile.html
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -25,6 +26,8 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHProfileStackParamList } from "../../../types/navigation";
 import { useAuthStore } from "../../../store/authStore";
+import { dashboardApiClient } from "../../../services/api/dashboardApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHProfileStackParamList>;
 
@@ -43,10 +46,24 @@ interface MenuSection {
   items: MenuItem[];
 }
 
+interface TodayStat {
+  label: string;
+  value: number;
+}
+
 export function WHProfileScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuthStore();
+
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [todayStats, setTodayStats] = useState<TodayStat[]>([
+    { label: "入库单", value: 0 },
+    { label: "出库单", value: 0 },
+    { label: "盘点", value: 0 },
+    { label: "异常", value: 0 },
+  ]);
 
   // 用户信息
   const userInfo = {
@@ -56,13 +73,36 @@ export function WHProfileScreen() {
     avatar: user?.username?.charAt(0).toUpperCase() || "U",
   };
 
-  // 今日统计
-  const todayStats = [
-    { label: "入库单", value: 8 },
-    { label: "出库单", value: 12 },
-    { label: "盘点", value: 3 },
-    { label: "异常", value: 2 },
-  ];
+  // 加载今日统计数据
+  const loadTodayStats = useCallback(async () => {
+    try {
+      const overview = await dashboardApiClient.getDashboardOverview();
+
+      if (overview) {
+        setTodayStats([
+          { label: "入库单", value: overview.todayInbound || overview.pendingBatches || 0 },
+          { label: "出库单", value: overview.todayOutbound || overview.completedBatches || 0 },
+          { label: "盘点", value: overview.todayInventoryChecks || 0 },
+          { label: "异常", value: overview.activeAlerts || overview.pendingAlerts || 0 },
+        ]);
+      }
+    } catch (error) {
+      handleError(error, { title: '加载统计数据失败' });
+      // 使用默认值
+      setTodayStats([
+        { label: "入库单", value: 0 },
+        { label: "出库单", value: 0 },
+        { label: "盘点", value: 0 },
+        { label: "异常", value: 0 },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTodayStats();
+  }, [loadTodayStats]);
 
   // 菜单配置
   const menuSections: MenuSection[] = [
@@ -171,6 +211,22 @@ export function WHProfileScreen() {
       navigation.navigate(item.screen as any);
     }
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>我的</Text>
+          <Text style={styles.headerSubtitle}>{userInfo.role}</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -288,6 +344,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

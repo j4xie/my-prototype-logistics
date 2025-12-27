@@ -3,13 +3,14 @@
  * 对应原型: warehouse/loading.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {
   Text,
@@ -23,6 +24,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHOutboundStackParamList } from "../../../types/navigation";
+import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
+import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
 
@@ -48,7 +51,13 @@ export function WHLoadingScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
-  // 模拟车辆数据
+  // 状态管理
+  const [loading, setLoading] = useState(true);
+  const [dispatching, setDispatching] = useState<string | null>(null); // 正在发车的车辆ID
+  const [waitingOrders, setWaitingOrders] = useState<LoadingOrder[]>([]);
+
+  // TODO: 车辆管理需要后端 API，当前使用模拟数据
+  // 后续需要接入车辆管理和装车分配 API
   const [vehicles, setVehicles] = useState<Vehicle[]>([
     {
       id: "1",
@@ -93,32 +102,61 @@ export function WHLoadingScreen() {
     },
   ]);
 
-  // 待装车订单
-  const waitingOrders: LoadingOrder[] = [
-    {
-      id: "4",
-      orderNumber: "SH-20251226-007",
-      customer: "海鲜酒楼",
-      quantity: 100,
-      status: "waiting",
-    },
-    {
-      id: "5",
-      orderNumber: "SH-20251226-008",
-      customer: "品质超市",
-      quantity: 150,
-      status: "waiting",
-    },
-  ];
+  // 加载待装车订单（从出货记录中获取 pending 状态的订单）
+  const loadWaitingOrders = useCallback(async () => {
+    try {
+      const response = await shipmentApiClient.getShipments({ status: 'pending', size: 20 });
+
+      const orders: LoadingOrder[] = (response.data || []).map((shipment: ShipmentRecord) => ({
+        id: shipment.id,
+        orderNumber: shipment.shipmentNumber || shipment.orderNumber || `SH-${shipment.id}`,
+        customer: shipment.deliveryAddress || '未知客户',
+        quantity: shipment.quantity || 0,
+        status: 'waiting' as const,
+      }));
+
+      setWaitingOrders(orders);
+    } catch (error) {
+      handleError(error, { title: '加载待装车订单失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadWaitingOrders();
+  }, [loadWaitingOrders]);
+
+  // 发车操作
+  const dispatchVehicle = async (vehicleId: string) => {
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if (!vehicle) return;
+
+    setDispatching(vehicleId);
+    try {
+      // 批量更新车辆上所有订单的状态为 'shipped'
+      const updatePromises = vehicle.orders
+        .filter(order => order.status === 'loaded')
+        .map(order => shipmentApiClient.updateStatus(order.id, 'shipped'));
+
+      await Promise.all(updatePromises);
+
+      // 从车辆列表中移除已发车的车辆
+      setVehicles(prev => prev.filter(v => v.id !== vehicleId));
+      Alert.alert('成功', '车辆已发车');
+    } catch (error) {
+      handleError(error, { title: '发车失败' });
+    } finally {
+      setDispatching(null);
+    }
+  };
 
   const handleDispatch = (vehicleId: string) => {
     Alert.alert("确认发车", "确定此车辆出发吗？", [
       { text: "取消", style: "cancel" },
       {
         text: "确定",
-        onPress: () => {
-          Alert.alert("成功", "车辆已发车");
-        },
+        onPress: () => dispatchVehicle(vehicleId),
       },
     ]);
   };
@@ -133,6 +171,25 @@ export function WHLoadingScreen() {
         return { label: "已装车", color: "#388e3c", bgColor: "#e8f5e9" };
     }
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>装车管理</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -217,8 +274,10 @@ export function WHLoadingScreen() {
               style={styles.dispatchButton}
               labelStyle={styles.dispatchButtonLabel}
               icon="truck-fast"
+              disabled={dispatching !== null}
+              loading={dispatching === vehicle.id}
             >
-              确认发车
+              {dispatching === vehicle.id ? '发车中...' : '确认发车'}
             </Button>
           </Surface>
         ))}
@@ -265,6 +324,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",
