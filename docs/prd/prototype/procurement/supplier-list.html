@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>供应商管理 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="procurement.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回工作台</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>供应商管理</h1>
+      <p>共 12 家合作供应商</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="搜索供应商名称/代码">
+      </div>
+
+      <!-- 筛选器 -->
+      <div class="filter-section">
+        <div class="filter-row">
+          <select class="filter-select">
+            <option value="all">全部状态</option>
+            <option value="active" selected>启用中</option>
+            <option value="inactive">已停用</option>
+          </select>
+          <select class="filter-select">
+            <option value="all">全部评级</option>
+            <option value="5">5星</option>
+            <option value="4">4星及以上</option>
+            <option value="3">3星及以上</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 统计摘要 -->
+      <div class="supplier-stats">
+        <div class="stat-item">
+          <span class="stat-value">12</span>
+          <span class="stat-label">合作供应商</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">5</span>
+          <span class="stat-label">本月新增</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">¥458k</span>
+          <span class="stat-label">本月采购额</span>
+        </div>
+      </div>
+
+      <!-- 供应商列表 -->
+      <div class="supplier-list">
+        <!-- 供应商1 - 推荐 -->
+        <a href="supplier-detail.html" class="supplier-card featured">
+          <div class="supplier-badge">优质供应商</div>
+          <div class="supplier-header">
+            <div class="supplier-avatar">舟</div>
+            <div class="supplier-info">
+              <div class="supplier-name">舟山渔业合作社</div>
+              <div class="supplier-code">SUP-001</div>
+            </div>
+            <div class="supplier-rating">
+              <span class="stars">★★★★★</span>
+              <span class="score">5.0</span>
+            </div>
+          </div>
+          <div class="supplier-tags">
+            <span class="tag">带鱼</span>
+            <span class="tag">黄鱼</span>
+            <span class="tag">鲈鱼</span>
+          </div>
+          <div class="supplier-stats-row">
+            <div class="stat">
+              <span class="value">156单</span>
+              <span class="label">合作订单</span>
+            </div>
+            <div class="stat">
+              <span class="value">¥458k</span>
+              <span class="label">累计金额</span>
+            </div>
+            <div class="stat">
+              <span class="value">98.2%</span>
+              <span class="label">准时率</span>
+            </div>
+          </div>
+          <div class="supplier-actions">
+            <button class="action-btn-small" onclick="event.preventDefault(); alert('正在拨打...')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              联系
+            </button>
+            <button class="action-btn-small primary" onclick="event.preventDefault(); location.href='order-create.html?supplier=舟山渔业合作社'">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+              下单
+            </button>
+          </div>
+        </a>
+
+        <!-- 供应商2 -->
+        <a href="supplier-detail.html" class="supplier-card">
+          <div class="supplier-header">
+            <div class="supplier-avatar">东</div>
+            <div class="supplier-info">
+              <div class="supplier-name">东海冷冻食品有限公司</div>
+              <div class="supplier-code">SUP-002</div>
+            </div>
+            <div class="supplier-rating">
+              <span class="stars">★★★★★</span>
+              <span class="score">4.8</span>
+            </div>
+          </div>
+          <div class="supplier-tags">
+            <span class="tag">虾仁</span>
+            <span class="tag">蟹肉</span>
+            <span class="tag">冻品</span>
+          </div>
+          <div class="supplier-stats-row">
+            <div class="stat">
+              <span class="value">89单</span>
+              <span class="label">合作订单</span>
+            </div>
+            <div class="stat">
+              <span class="value">¥285k</span>
+              <span class="label">累计金额</span>
+            </div>
+            <div class="stat">
+              <span class="value">96.5%</span>
+              <span class="label">准时率</span>
+            </div>
+          </div>
+          <div class="supplier-actions">
+            <button class="action-btn-small" onclick="event.preventDefault(); alert('正在拨打...')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              联系
+            </button>
+            <button class="action-btn-small primary" onclick="event.preventDefault(); location.href='order-create.html'">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+              下单
+            </button>
+          </div>
+        </a>
+
+        <!-- 供应商3 -->
+        <a href="supplier-detail.html" class="supplier-card">
+          <div class="supplier-header">
+            <div class="supplier-avatar">宁</div>
+            <div class="supplier-info">
+              <div class="supplier-name">宁波海鲜批发市场</div>
+              <div class="supplier-code">SUP-003</div>
+            </div>
+            <div class="supplier-rating">
+              <span class="stars">★★★★☆</span>
+              <span class="score">4.5</span>
+            </div>
+          </div>
+          <div class="supplier-tags">
+            <span class="tag">鱿鱼</span>
+            <span class="tag">墨鱼</span>
+            <span class="tag">章鱼</span>
+          </div>
+          <div class="supplier-stats-row">
+            <div class="stat">
+              <span class="value">67单</span>
+              <span class="label">合作订单</span>
+            </div>
+            <div class="stat">
+              <span class="value">¥178k</span>
+              <span class="label">累计金额</span>
+            </div>
+            <div class="stat">
+              <span class="value">95.2%</span>
+              <span class="label">准时率</span>
+            </div>
+          </div>
+          <div class="supplier-actions">
+            <button class="action-btn-small" onclick="event.preventDefault(); alert('正在拨打...')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              联系
+            </button>
+            <button class="action-btn-small primary" onclick="event.preventDefault(); location.href='order-create.html'">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+              下单
+            </button>
+          </div>
+        </a>
+
+        <!-- 供应商4 -->
+        <a href="supplier-detail.html" class="supplier-card">
+          <div class="supplier-header">
+            <div class="supplier-avatar">浙</div>
+            <div class="supplier-info">
+              <div class="supplier-name">浙江海产品加工厂</div>
+              <div class="supplier-code">SUP-004</div>
+            </div>
+            <div class="supplier-rating">
+              <span class="stars">★★★★☆</span>
+              <span class="score">4.3</span>
+            </div>
+          </div>
+          <div class="supplier-tags">
+            <span class="tag">鲈鱼</span>
+            <span class="tag">带鱼</span>
+            <span class="tag">加工品</span>
+          </div>
+          <div class="supplier-stats-row">
+            <div class="stat">
+              <span class="value">45单</span>
+              <span class="label">合作订单</span>
+            </div>
+            <div class="stat">
+              <span class="value">¥125k</span>
+              <span class="label">累计金额</span>
+            </div>
+            <div class="stat">
+              <span class="value">92.8%</span>
+              <span class="label">准时率</span>
+            </div>
+          </div>
+          <div class="supplier-actions">
+            <button class="action-btn-small" onclick="event.preventDefault(); alert('正在拨打...')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              联系
+            </button>
+            <button class="action-btn-small primary" onclick="event.preventDefault(); location.href='order-create.html'">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+              下单
+            </button>
+          </div>
+        </a>
+
+        <!-- 新供应商 -->
+        <a href="supplier-detail.html" class="supplier-card new">
+          <div class="supplier-badge new">新供应商</div>
+          <div class="supplier-header">
+            <div class="supplier-avatar">福</div>
+            <div class="supplier-info">
+              <div class="supplier-name">福建海鲜贸易公司</div>
+              <div class="supplier-code">SUP-012</div>
+            </div>
+            <div class="supplier-rating">
+              <span class="stars">★★★★☆</span>
+              <span class="score">4.0</span>
+            </div>
+          </div>
+          <div class="supplier-tags">
+            <span class="tag">鲍鱼</span>
+            <span class="tag">海参</span>
+            <span class="tag">高端海鲜</span>
+          </div>
+          <div class="supplier-stats-row">
+            <div class="stat">
+              <span class="value">3单</span>
+              <span class="label">合作订单</span>
+            </div>
+            <div class="stat">
+              <span class="value">¥28k</span>
+              <span class="label">累计金额</span>
+            </div>
+            <div class="stat">
+              <span class="value">100%</span>
+              <span class="label">准时率</span>
+            </div>
+          </div>
+          <div class="supplier-actions">
+            <button class="action-btn-small" onclick="event.preventDefault(); alert('正在拨打...')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              联系
+            </button>
+            <button class="action-btn-small primary" onclick="event.preventDefault(); location.href='order-create.html'">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+              下单
+            </button>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 悬浮按钮 -->
+    <a href="supplier-form.html" class="fab-button">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </a>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="order-list.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>订单</span>
+      </a>
+      <a href="ai-scan.html" class="nav-item scan-btn">
+        <div class="scan-btn-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <span>AI扫描</span>
+      </a>
+      <a href="supplier-list.html" class="nav-item active">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>供应商</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

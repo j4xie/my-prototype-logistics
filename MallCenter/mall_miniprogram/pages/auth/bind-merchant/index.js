@@ -30,15 +30,10 @@ Page({
     // 检查是否已登录
     const userInfo = wx.getStorageSync('userInfo')
     if (!userInfo || !userInfo.id) {
-      wx.showToast({
-        title: '请先登录',
-        icon: 'none'
+      // 未登录，直接跳转到登录页（不显示此页面）
+      wx.redirectTo({
+        url: '/pages/auth/login/index?redirect=bind-merchant'
       })
-      setTimeout(() => {
-        wx.redirectTo({
-          url: '/pages/auth/login/index'
-        })
-      }, 1500)
       return
     }
 

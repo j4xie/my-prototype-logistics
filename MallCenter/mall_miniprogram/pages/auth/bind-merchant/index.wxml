@@ -18,7 +18,7 @@
         <text>微信账号</text>
       </view>
       <view class="wechat-info">
-        <image class="wechat-avatar" src="{{userInfo.avatarUrl || '/public/img/avatar-default.png'}}" mode="aspectFill"></image>
+        <image class="wechat-avatar" src="{{userInfo.avatarUrl || '/public/img/no_pic.png'}}" mode="aspectFill"></image>
         <view class="wechat-details">
           <text class="wechat-name">{{userInfo.nickName || '微信用户'}}</text>
           <text class="wechat-id">微信已授权</text>

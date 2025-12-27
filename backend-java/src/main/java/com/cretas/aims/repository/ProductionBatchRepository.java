@@ -67,6 +67,26 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
     long countByFactoryIdAndStatus(String factoryId, ProductionBatchStatus status);
 
     /**
+     * 统计指定时间范围内的批次数
+     */
+    long countByFactoryIdAndCreatedAtBetween(String factoryId, LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * 统计指定工厂、指定状态、指定时间范围内的批次数量
+     */
+    long countByFactoryIdAndStatusAndCreatedAtBetween(String factoryId, ProductionBatchStatus status,
+                                                       LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * 计算指定时间范围内的总产量
+     */
+    @Query("SELECT SUM(p.actualQuantity) FROM ProductionBatch p WHERE p.factoryId = :factoryId " +
+           "AND p.createdAt >= :startTime AND p.createdAt < :endTime AND p.status = 'COMPLETED'")
+    BigDecimal calculateTotalOutputBetween(@Param("factoryId") String factoryId,
+                                           @Param("startTime") LocalDateTime startTime,
+                                           @Param("endTime") LocalDateTime endTime);
+
+    /**
      * 统计指定工厂、指定状态、指定时间后创建的批次数量
      * @param factoryId 工厂ID
      * @param status 批次状态（枚举）

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今日批次 - 工厂管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: #333; font-size: 22px; font-weight: bold; padding: 8px 12px;">&lt;</a>
+      <span class="title">今日批次</span>
+    </div>
+
+    <!-- 筛选标签 -->
+    <div class="filter-tabs">
+      <span class="filter-tab active">全部 (13)</span>
+      <span class="filter-tab">进行中 (3)</span>
+      <span class="filter-tab">待开始 (2)</span>
+      <span class="filter-tab">已完成 (8)</span>
+    </div>
+
+    <!-- 简化的统计摘要 -->
+    <div style="display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto;">
+      <div style="background: #e6f7ff; border-radius: 16px; padding: 6px 12px; white-space: nowrap; font-size: 12px; color: #1890ff;">
+        <span style="font-weight: 600;">3</span> 进行中
+      </div>
+      <div style="background: #fff7e6; border-radius: 16px; padding: 6px 12px; white-space: nowrap; font-size: 12px; color: #fa8c16;">
+        <span style="font-weight: 600;">2</span> 待开始
+      </div>
+      <div style="background: #f6ffed; border-radius: 16px; padding: 6px 12px; white-space: nowrap; font-size: 12px; color: #52c41a;">
+        <span style="font-weight: 600;">8</span> 已完成
+      </div>
+      <div style="background: #f0f0f0; border-radius: 16px; padding: 6px 12px; white-space: nowrap; font-size: 12px; color: #666;">
+        总产量 <span style="font-weight: 600;">1,250kg</span>
+      </div>
+    </div>
+
+    <div class="content" style="padding: 0 16px 16px;">
+      <!-- 进行中批次 -->
+      <div class="section-header"><span class="section-title">进行中 (3)</span></div>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none; border-left: 3px solid #1890ff;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-001</span><span class="list-item-badge badge--blue">生产中</span></div>
+        <div class="list-item-meta">带鱼片 · 计划 80kg · 进度 65%</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px;">
+          <span style="color: #666;">预交付: 今日 18:00</span>
+          <span style="color: #52c41a;">AI预测: 92% 可按时完成</span>
+        </div>
+        <div style="background: #e6f7ff; height: 6px; border-radius: 3px; margin-top: 8px;"><div style="background: #1890ff; height: 100%; width: 65%; border-radius: 3px;"></div></div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none; border-left: 3px solid #1890ff;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-002</span><span class="list-item-badge badge--blue">生产中</span></div>
+        <div class="list-item-meta">鲈鱼片 · 计划 60kg · 进度 40%</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px;">
+          <span style="color: #666;">预交付: 今日 19:30</span>
+          <span style="color: #fa8c16;">AI预测: 68% 中等风险</span>
+        </div>
+        <div style="background: #e6f7ff; height: 6px; border-radius: 3px; margin-top: 8px;"><div style="background: #1890ff; height: 100%; width: 40%; border-radius: 3px;"></div></div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none; border-left: 3px solid #1890ff;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-003</span><span class="list-item-badge badge--blue">生产中</span></div>
+        <div class="list-item-meta">黄鱼片 · 计划 50kg · 进度 20%</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px;">
+          <span style="color: #666;">预交付: 明日 10:00</span>
+          <span style="color: #52c41a;">AI预测: 85% 可按时完成</span>
+        </div>
+        <div style="background: #e6f7ff; height: 6px; border-radius: 3px; margin-top: 8px;"><div style="background: #1890ff; height: 100%; width: 20%; border-radius: 3px;"></div></div>
+      </a>
+
+      <!-- 待开始批次 -->
+      <div class="section-header" style="margin-top: 16px;"><span class="section-title">待开始 (2)</span></div>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none; border-left: 3px solid #fa8c16;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-011</span><span class="list-item-badge badge--orange">待开始</span></div>
+        <div class="list-item-meta">带鱼片 · 计划 100kg · 预计 14:00 开始</div>
+        <div style="font-size: 12px; color: #666; margin-top: 4px;">原料已备齐 · 设备 3号线待分配</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none; border-left: 3px solid #fa8c16;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-012</span><span class="list-item-badge badge--orange">待开始</span></div>
+        <div class="list-item-meta">鲈鱼片 · 计划 80kg · 预计 15:30 开始</div>
+        <div style="font-size: 12px; color: #666; margin-top: 4px;">原料已备齐 · 设备 2号线待分配</div>
+      </a>
+
+      <!-- 已完成批次 -->
+      <div class="section-header" style="margin-top: 16px;"><span class="section-title">已完成 (8)</span></div>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-004</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">带鱼片 · 完成 100kg · 合格率 100%</div>
+        <div style="font-size: 12px; color: #52c41a; margin-top: 4px;">完成时间: 11:30</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-005</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">鲈鱼片 · 完成 85kg · 合格率 98.8%</div>
+        <div style="font-size: 12px; color: #52c41a; margin-top: 4px;">完成时间: 10:45</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-006</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">黄鱼片 · 完成 90kg · 合格率 100%</div>
+        <div style="font-size: 12px; color: #52c41a; margin-top: 4px;">完成时间: 10:15</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-007</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">带鱼片 · 完成 120kg · 合格率 99.5%</div>
+        <div style="font-size: 12px; color: #52c41a; margin-top: 4px;">完成时间: 09:30</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-008</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">鲈鱼片 · 完成 75kg · 合格率 100%</div>
+        <div style="font-size: 12px; color: #52c41a; margin-top: 4px;">完成时间: 08:45</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-009</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">黄鱼片 · 完成 95kg · 合格率 99.8%</div>
+        <div style="font-size: 12px; color: #52c41a; margin-top: 4px;">完成时间: 08:00</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-010</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">带鱼片 · 完成 110kg · 合格率 100%</div>
+        <div style="font-size: 12px; color: #52c41a; margin-top: 4px;">完成时间: 07:30</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-013</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">鲈鱼片 · 完成 65kg · 合格率 100%</div>
+        <div style="font-size: 12px; color: #52c41a; margin-top: 4px;">完成时间: 07:00</div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

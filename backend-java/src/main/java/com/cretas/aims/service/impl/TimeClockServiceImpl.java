@@ -568,4 +568,101 @@ public class TimeClockServiceImpl implements TimeClockService {
         // TODO: 实现批量导出考勤记录逻辑（使用Apache POI或EasyExcel）
         throw new UnsupportedOperationException("exportAttendanceRecords not implemented yet");
     }
+
+    @Override
+    public PageResponse<TimeClockRecord> getAllEmployeesClockHistory(String factoryId,
+                                                                      LocalDate startDate, LocalDate endDate,
+                                                                      PageRequest pageRequest) {
+        log.info("【管理员】获取所有员工打卡历史: factoryId={}, startDate={}, endDate={}, page={}, size={}",
+                factoryId, startDate, endDate, pageRequest.getPage(), pageRequest.getSize());
+
+        // 转换LocalDate为LocalDateTime范围
+        LocalDateTime start = startDate.atStartOfDay();
+        LocalDateTime end = endDate.plusDays(1).atStartOfDay();
+
+        // 创建分页请求
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPage() - 1,
+                pageRequest.getSize(),
+                Sort.by(Sort.Direction.DESC, "clockInTime")
+        );
+
+        Page<TimeClockRecord> page = timeClockRecordRepository
+                .findByFactoryIdAndClockDateBetweenPaged(factoryId, start, end, pageable);
+
+        // 补充员工信息
+        for (TimeClockRecord record : page.getContent()) {
+            if (record.getUserId() != null && record.getUsername() == null) {
+                userRepository.findById(record.getUserId()).ifPresent(user -> {
+                    record.setUsername(user.getUsername());
+                    // 如果需要显示员工姓名，可以在这里设置
+                });
+            }
+        }
+
+        return PageResponse.of(
+                page.getContent(),
+                pageRequest.getPage(),
+                pageRequest.getSize(),
+                page.getTotalElements()
+        );
+    }
+
+    @Override
+    public Map<String, Object> getAllEmployeesAttendanceStatistics(String factoryId,
+                                                                    LocalDate startDate, LocalDate endDate) {
+        log.info("【管理员】获取所有员工考勤统计: factoryId={}, startDate={}, endDate={}",
+                factoryId, startDate, endDate);
+
+        // 转换LocalDate为LocalDateTime范围
+        LocalDateTime start = startDate.atStartOfDay();
+        LocalDateTime end = endDate.plusDays(1).atStartOfDay();
+
+        List<TimeClockRecord> records = timeClockRecordRepository
+                .findByFactoryIdAndClockDateBetween(factoryId, start, end);
+
+        Map<String, Object> statistics = new HashMap<>();
+
+        int totalRecords = records.size();
+        int normalCount = 0;
+        int lateCount = 0;
+        int earlyLeaveCount = 0;
+
+        for (TimeClockRecord record : records) {
+            String status = record.getAttendanceStatus();
+            if ("NORMAL".equals(status)) {
+                normalCount++;
+            } else if (status != null && status.contains("LATE")) {
+                lateCount++;
+            } else if (status != null && status.contains("EARLY_LEAVE")) {
+                earlyLeaveCount++;
+            }
+        }
+
+        // 获取工厂活跃员工数（排除已停用账号）
+        long totalEmployees = userRepository.countActiveUsers(factoryId);
+
+        // 计算应出勤天数（工作日）
+        long workDays = startDate.datesUntil(endDate.plusDays(1))
+                .filter(date -> {
+                    int dayOfWeek = date.getDayOfWeek().getValue();
+                    return dayOfWeek >= 1 && dayOfWeek <= 5;
+                })
+                .count();
+
+        // 应出勤总人次
+        long expectedRecords = totalEmployees * workDays;
+        int absentCount = (int) Math.max(0, expectedRecords - totalRecords);
+
+        statistics.put("totalRecords", totalRecords);
+        statistics.put("normalCount", normalCount);
+        statistics.put("lateCount", lateCount);
+        statistics.put("earlyLeaveCount", earlyLeaveCount);
+        statistics.put("absentCount", absentCount);
+        statistics.put("totalEmployees", totalEmployees);
+        statistics.put("workDays", workDays);
+        statistics.put("attendanceRate", expectedRecords > 0 ? (double) totalRecords / expectedRecords * 100 : 0);
+
+        return statistics;
+    }
 }

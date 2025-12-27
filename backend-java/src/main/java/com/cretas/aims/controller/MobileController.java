@@ -430,28 +430,7 @@ public class MobileController {
     }
 
     // ==================== 设备告警接口 ====================
-
-    /**
-     * 获取设备告警列表
-     */
-    @GetMapping("/{factoryId}/equipment-alerts")
-    @Operation(summary = "获取设备告警列表", description = "分页获取设备告警列表")
-    public ApiResponse<PageResponse<MobileDTO.AlertResponse>> getEquipmentAlerts(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(required = false) @Parameter(description = "告警状态（ACTIVE/ACKNOWLEDGED/RESOLVED）") String status,
-            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
-
-        log.info("获取设备告警列表: factoryId={}, status={}, page={}, size={}", factoryId, status, page, size);
-
-        PageRequest pageRequest = new PageRequest();
-        pageRequest.setPage(page);
-        pageRequest.setSize(size);
-
-        PageResponse<MobileDTO.AlertResponse> result = mobileService.getEquipmentAlerts(factoryId, status, pageRequest);
-
-        return ApiResponse.success(result);
-    }
+    // 注意: 获取告警列表已移至 EquipmentAlertsController
 
     /**
      * 确认设备告警

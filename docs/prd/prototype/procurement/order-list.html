@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>采购订单 - 白垩纪食品溯源系统</title>
+  <link rel="stylesheet" href="procurement.css">
+  <link rel="stylesheet" href="../components.css">
+</head>
+<body>
+  <a href="index.html" class="back-to-index">< 返回工作台</a>
+
+  <div class="mobile-container">
+    <header class="header">
+      <h1>采购订单</h1>
+      <p>管理所有采购订单</p>
+    </header>
+
+    <div class="page-content">
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="搜索订单号/供应商名称">
+      </div>
+
+      <!-- 筛选器 -->
+      <div class="filter-section">
+        <div class="filter-row">
+          <select class="filter-select">
+            <option value="all">全部时间</option>
+            <option value="today">今日</option>
+            <option value="week" selected>本周</option>
+            <option value="month">本月</option>
+            <option value="custom">自定义</option>
+          </select>
+          <select class="filter-select">
+            <option value="all">全部状态</option>
+            <option value="draft">草稿</option>
+            <option value="pending">待审批</option>
+            <option value="approved">已通过</option>
+            <option value="rejected">已拒绝</option>
+            <option value="shipped">已发货</option>
+            <option value="completed">已完成</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 统计摘要 -->
+      <div class="list-summary">
+        <span class="summary-count">共 12 条记录</span>
+        <span class="summary-amount">合计金额 ¥45,800</span>
+      </div>
+
+      <!-- 订单列表 -->
+      <div class="order-list-full">
+        <!-- 待审批订单 -->
+        <a href="order-detail.html" class="order-card pending">
+          <div class="order-card-header">
+            <span class="order-number">PO-20251227-001</span>
+            <span class="order-status pending">待审批</span>
+          </div>
+          <div class="order-card-body">
+            <div class="order-supplier-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              </svg>
+              <span>舟山渔业合作社</span>
+            </div>
+            <div class="order-products-row">
+              <span class="product-tag">带鱼 200kg</span>
+            </div>
+            <div class="order-meta-row">
+              <div class="meta-item">
+                <span class="meta-label">金额</span>
+                <span class="meta-value highlight">¥3,500</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">交货</span>
+                <span class="meta-value">12-28</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">创建</span>
+                <span class="meta-value">今天 10:30</span>
+              </div>
+            </div>
+          </div>
+          <div class="order-card-footer">
+            <span class="order-source ai">AI推荐</span>
+            <span class="order-action">查看详情 ></span>
+          </div>
+        </a>
+
+        <!-- 待审批订单 2 -->
+        <a href="order-detail.html" class="order-card pending">
+          <div class="order-card-header">
+            <span class="order-number">PO-20251227-002</span>
+            <span class="order-status pending">待审批</span>
+          </div>
+          <div class="order-card-body">
+            <div class="order-supplier-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              </svg>
+              <span>东海冷冻食品有限公司</span>
+            </div>
+            <div class="order-products-row">
+              <span class="product-tag">虾仁 150kg</span>
+              <span class="product-tag">蟹肉 50kg</span>
+            </div>
+            <div class="order-meta-row">
+              <div class="meta-item">
+                <span class="meta-label">金额</span>
+                <span class="meta-value highlight">¥12,500</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">交货</span>
+                <span class="meta-value">12-29</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">创建</span>
+                <span class="meta-value">今天 09:15</span>
+              </div>
+            </div>
+          </div>
+          <div class="order-card-footer">
+            <span class="order-source manual">手动创建</span>
+            <span class="order-action">查看详情 ></span>
+          </div>
+        </a>
+
+        <!-- 已通过订单 -->
+        <a href="order-detail.html" class="order-card approved">
+          <div class="order-card-header">
+            <span class="order-number">PO-20251226-003</span>
+            <span class="order-status approved">已通过</span>
+          </div>
+          <div class="order-card-body">
+            <div class="order-supplier-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              </svg>
+              <span>宁波海鲜批发市场</span>
+            </div>
+            <div class="order-products-row">
+              <span class="product-tag">鱿鱼 100kg</span>
+              <span class="product-tag">墨鱼 80kg</span>
+            </div>
+            <div class="order-meta-row">
+              <div class="meta-item">
+                <span class="meta-label">金额</span>
+                <span class="meta-value highlight">¥6,800</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">交货</span>
+                <span class="meta-value">12-28</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">审批</span>
+                <span class="meta-value">昨天 16:20</span>
+              </div>
+            </div>
+          </div>
+          <div class="order-card-footer">
+            <span class="order-source alert">库存预警</span>
+            <span class="order-action">发送供应商 ></span>
+          </div>
+        </a>
+
+        <!-- 已发货订单 -->
+        <a href="order-detail.html" class="order-card shipped">
+          <div class="order-card-header">
+            <span class="order-number">PO-20251226-002</span>
+            <span class="order-status shipped">已发货</span>
+          </div>
+          <div class="order-card-body">
+            <div class="order-supplier-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              </svg>
+              <span>舟山渔业合作社</span>
+            </div>
+            <div class="order-products-row">
+              <span class="product-tag">黄鱼 80kg</span>
+            </div>
+            <div class="order-meta-row">
+              <div class="meta-item">
+                <span class="meta-label">金额</span>
+                <span class="meta-value highlight">¥4,800</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">发货</span>
+                <span class="meta-value">今天 08:00</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">预计</span>
+                <span class="meta-value">今天 14:00</span>
+              </div>
+            </div>
+          </div>
+          <div class="order-card-footer">
+            <span class="order-source ai">AI推荐</span>
+            <span class="order-action">跟踪物流 ></span>
+          </div>
+        </a>
+
+        <!-- 已完成订单 -->
+        <a href="order-detail.html" class="order-card completed">
+          <div class="order-card-header">
+            <span class="order-number">PO-20251225-001</span>
+            <span class="order-status completed">已完成</span>
+          </div>
+          <div class="order-card-body">
+            <div class="order-supplier-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              </svg>
+              <span>浙江海产品加工厂</span>
+            </div>
+            <div class="order-products-row">
+              <span class="product-tag">鲈鱼 150kg</span>
+              <span class="product-tag">带鱼 100kg</span>
+            </div>
+            <div class="order-meta-row">
+              <div class="meta-item">
+                <span class="meta-label">金额</span>
+                <span class="meta-value">¥8,200</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">入库</span>
+                <span class="meta-value">12-25</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">完成</span>
+                <span class="meta-value">12-25 15:30</span>
+              </div>
+            </div>
+          </div>
+          <div class="order-card-footer">
+            <span class="order-source manual">手动创建</span>
+            <span class="order-action">查看详情 ></span>
+          </div>
+        </a>
+
+        <!-- 已拒绝订单 -->
+        <a href="order-detail.html" class="order-card rejected">
+          <div class="order-card-header">
+            <span class="order-number">PO-20251224-005</span>
+            <span class="order-status rejected">已拒绝</span>
+          </div>
+          <div class="order-card-body">
+            <div class="order-supplier-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              </svg>
+              <span>临时供应商A</span>
+            </div>
+            <div class="order-products-row">
+              <span class="product-tag">杂鱼 200kg</span>
+            </div>
+            <div class="order-meta-row">
+              <div class="meta-item">
+                <span class="meta-label">金额</span>
+                <span class="meta-value">¥3,000</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">拒绝</span>
+                <span class="meta-value">12-24</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">原因</span>
+                <span class="meta-value danger">供应商资质</span>
+              </div>
+            </div>
+          </div>
+          <div class="order-card-footer">
+            <span class="order-source manual">手动创建</span>
+            <span class="order-action">查看原因 ></span>
+          </div>
+        </a>
+
+        <!-- 草稿订单 -->
+        <a href="order-create.html" class="order-card draft">
+          <div class="order-card-header">
+            <span class="order-number">PO-20251227-003 (草稿)</span>
+            <span class="order-status draft">草稿</span>
+          </div>
+          <div class="order-card-body">
+            <div class="order-supplier-row">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              </svg>
+              <span>待选择供应商</span>
+            </div>
+            <div class="order-products-row">
+              <span class="product-tag">鳕鱼 100kg</span>
+            </div>
+            <div class="order-meta-row">
+              <div class="meta-item">
+                <span class="meta-label">金额</span>
+                <span class="meta-value">¥--</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">保存</span>
+                <span class="meta-value">今天 08:30</span>
+              </div>
+            </div>
+          </div>
+          <div class="order-card-footer">
+            <span class="order-source ai">AI推荐</span>
+            <span class="order-action">继续编辑 ></span>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 悬浮按钮 -->
+    <a href="order-create.html" class="fab-button">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </a>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="order-list.html" class="nav-item active">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>订单</span>
+      </a>
+      <a href="ai-scan.html" class="nav-item scan-btn">
+        <div class="scan-btn-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <span>AI扫描</span>
+      </a>
+      <a href="supplier-list.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>供应商</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

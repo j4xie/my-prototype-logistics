@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>状态展示演示 - 工厂管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: #333; font-size: 22px; font-weight: bold; padding: 8px 12px;">&lt;</a>
+      <span class="title">状态展示演示</span>
+    </div>
+
+    <div class="content" style="padding: 16px;">
+      <div class="section-header"><span class="section-title">加载状态</span></div>
+      <div class="state-container" style="background: #fff; border-radius: 12px; margin-bottom: 16px;">
+        <div class="state-icon state-icon--loading"><div class="loading-spinner"></div></div>
+        <div class="state-title">正在加载</div>
+        <div class="state-desc">请稍候，数据加载中...</div>
+      </div>
+
+      <div class="section-header"><span class="section-title">骨架屏加载</span></div>
+      <div class="skeleton-card">
+        <div class="skeleton-row" style="margin-bottom: 12px;">
+          <div class="skeleton skeleton-avatar"></div>
+          <div style="flex: 1;"><div class="skeleton skeleton-text skeleton-text--short"></div><div class="skeleton skeleton-text skeleton-text--long"></div></div>
+        </div>
+        <div class="skeleton skeleton-text skeleton-text--long"></div>
+        <div class="skeleton skeleton-text skeleton-text--short"></div>
+      </div>
+
+      <div class="section-header"><span class="section-title">空状态</span></div>
+      <div class="state-container" style="background: #fff; border-radius: 12px; margin-bottom: 16px;">
+        <div class="state-icon state-icon--empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#bfbfbf" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="state-title">暂无数据</div>
+        <div class="state-desc">当前没有符合条件的记录</div>
+        <div class="state-action state-action--primary">刷新</div>
+      </div>
+
+      <div class="section-header"><span class="section-title">错误状态</span></div>
+      <div class="state-container" style="background: #fff; border-radius: 12px; margin-bottom: 16px;">
+        <div class="state-icon state-icon--error"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ff4d4f" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+        <div class="state-title">加载失败</div>
+        <div class="state-desc">网络异常，请检查网络连接后重试</div>
+        <div style="display: flex; gap: 12px;">
+          <div class="state-action state-action--secondary">取消</div>
+          <div class="state-action state-action--primary">重试</div>
+        </div>
+      </div>
+
+      <div class="section-header"><span class="section-title">网络断开状态</span></div>
+      <div class="state-container" style="background: #fff; border-radius: 12px;">
+        <div class="state-icon state-icon--empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#bfbfbf" stroke-width="2"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg></div>
+        <div class="state-title">网络已断开</div>
+        <div class="state-desc">请检查网络设置后重试</div>
+        <div class="state-action state-action--primary">打开设置</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

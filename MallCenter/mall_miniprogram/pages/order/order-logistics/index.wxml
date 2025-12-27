@@ -5,7 +5,7 @@
   <!-- 物流公司信息 -->
   <view class="logistics-header">
     <view class="company-info">
-      <image class="company-logo" src="{{logistics.companyLogo || '/public/img/logistics-default.png'}}" mode="aspectFit"></image>
+      <image class="company-logo" src="{{logistics.companyLogo || '/public/img/no_pic.png'}}" mode="aspectFit"></image>
       <view class="company-detail">
         <text class="company-name">{{logistics.companyName || '物流公司'}}</text>
         <text class="tracking-number">运单号：{{logistics.trackingNumber || '--'}}</text>

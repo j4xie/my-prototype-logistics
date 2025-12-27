@@ -3,6 +3,7 @@
  * 包含搜索历史、热门关键词、搜索建议、高级筛选
  */
 const app = getApp()
+const tracker = require('../../../utils/tracker')
 
 Page({
   data: {
@@ -35,6 +36,21 @@ Page({
   },
 
   onShow() {
+    // 检查登录状态 - 搜索页需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/home/index'
+        })
+      }, 500)
+      return
+    }
     this.loadSearchHistory()
   },
 
@@ -157,8 +173,17 @@ Page({
     // 记录搜索历史
     this.saveSearchHistory(keyword)
 
-    // 记录到服务端统计
+    // 记录到服务端统计（旧API）
     app.api.recordSearchKeyword({ keyword }).catch(() => {})
+
+    // 上报搜索行为到推荐系统（用于个性化推荐）
+    const wxUser = app.globalData.wxUser
+    if (wxUser && wxUser.id) {
+      tracker.trackSearch({
+        keyword: keyword,
+        resultCount: 0  // 实际结果数在商品列表页获取
+      })
+    }
 
     // 构建查询参数
     const { filterOptions } = this.data

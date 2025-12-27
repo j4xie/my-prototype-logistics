@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设备管理 - 车间主任</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* 设备页面专用样式 */
+    .equipment-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      padding: 12px 8px;
+      border-radius: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+    }
+
+    .stat-card.active {
+      border-color: currentColor;
+      transform: scale(1.02);
+    }
+
+    .stat-card--running { background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%); }
+    .stat-card--idle { background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%); }
+    .stat-card--maintenance { background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%); }
+    .stat-card--alert { background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%); }
+
+    .stat-card .stat-number {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-card--running .stat-number { color: #52c41a; }
+    .stat-card--idle .stat-number { color: #8c8c8c; }
+    .stat-card--maintenance .stat-number { color: #fa8c16; }
+    .stat-card--alert .stat-number { color: #ff4d4f; }
+
+    .stat-card .stat-label {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .stat-card .stat-icon {
+      width: 20px;
+      height: 20px;
+      margin-bottom: 4px;
+    }
+
+    /* 设备卡片优化 */
+    .equipment-item {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      text-decoration: none;
+      display: block;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .equipment-item:active {
+      transform: scale(0.98);
+    }
+
+    .equipment-item--alert {
+      border-left: 4px solid #ff4d4f;
+      animation: alertPulse 2s infinite;
+    }
+
+    .equipment-item--maintenance {
+      border-left: 4px solid #fa8c16;
+      opacity: 0.85;
+    }
+
+    @keyframes alertPulse {
+      0%, 100% { box-shadow: 0 2px 8px rgba(255,77,79,0.1); }
+      50% { box-shadow: 0 2px 16px rgba(255,77,79,0.25); }
+    }
+
+    .equipment-item-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .equipment-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .equipment-avatar--running { background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%); }
+    .equipment-avatar--idle { background: linear-gradient(135deg, #8c8c8c 0%, #bfbfbf 100%); }
+    .equipment-avatar--maintenance { background: linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%); }
+    .equipment-avatar--alert { background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%); }
+
+    .equipment-avatar svg {
+      width: 24px;
+      height: 24px;
+      stroke: #fff;
+    }
+
+    .equipment-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .equipment-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 2px;
+    }
+
+    .equipment-subtitle {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .equipment-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .equipment-badge--running { background: #f6ffed; color: #52c41a; }
+    .equipment-badge--idle { background: #f5f5f5; color: #8c8c8c; }
+    .equipment-badge--maintenance { background: #fff7e6; color: #fa8c16; }
+    .equipment-badge--alert { background: #fff1f0; color: #ff4d4f; }
+
+    .equipment-metrics {
+      display: flex;
+      gap: 16px;
+      padding: 12px;
+      background: #fafafa;
+      border-radius: 10px;
+    }
+
+    .metric-item {
+      flex: 1;
+      text-align: center;
+    }
+
+    .metric-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .alert-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #fff1f0;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+
+    .alert-banner svg {
+      width: 16px;
+      height: 16px;
+      stroke: #ff4d4f;
+      flex-shrink: 0;
+    }
+
+    .alert-banner span {
+      font-size: 13px;
+      color: #ff4d4f;
+      font-weight: 500;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #999;
+      margin: 20px 0 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 头部 - 与其他主页面保持一致 -->
+    <div class="header--workshop">
+      <div class="header-top">
+        <div>
+          <h1 style="font-size: 20px; margin: 0;">设备管理</h1>
+          <p style="font-size: 12px; color: rgba(255,255,255,0.8); margin: 4px 0 0;">共 6 台设备</p>
+        </div>
+        <a href="notifications.html" class="icon-btn" style="position: relative;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          <span style="position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; background: #ff4d4f; border-radius: 50%; font-size: 10px; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600;">1</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+      <!-- 搜索栏 -->
+      <div class="search-bar" style="margin-bottom: 16px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" placeholder="搜索设备名称、编号...">
+      </div>
+
+      <!-- 设备状态统计 - 可点击筛选 -->
+      <div class="equipment-stats-grid">
+        <div class="stat-card stat-card--running">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 12l3 3 5-5"/>
+          </svg>
+          <div class="stat-number">3</div>
+          <div class="stat-label">运行中</div>
+        </div>
+        <div class="stat-card stat-card--idle">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 12h8"/>
+          </svg>
+          <div class="stat-number">1</div>
+          <div class="stat-label">空闲</div>
+        </div>
+        <div class="stat-card stat-card--maintenance">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+          </svg>
+          <div class="stat-number">1</div>
+          <div class="stat-label">维护中</div>
+        </div>
+        <div class="stat-card stat-card--alert active">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="#ff4d4f" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div class="stat-number">1</div>
+          <div class="stat-label">告警</div>
+        </div>
+      </div>
+
+      <!-- 告警设备 - 置顶显示 -->
+      <div class="section-title">
+        <span style="color: #ff4d4f;">需要关注</span>
+      </div>
+
+      <a href="equipment-alert.html" class="equipment-item equipment-item--alert">
+        <div class="equipment-item-header">
+          <div class="equipment-avatar equipment-avatar--alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+          </div>
+          <div class="equipment-meta">
+            <div class="equipment-title">切片机 C</div>
+            <div class="equipment-subtitle">SL-3000C · EQ-003</div>
+          </div>
+          <span class="equipment-badge equipment-badge--alert">告警</span>
+        </div>
+        <div class="equipment-metrics">
+          <div class="metric-item">
+            <div class="metric-value" style="color: #ff4d4f;">温度过高</div>
+            <div class="metric-label">告警原因</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">85°C</div>
+            <div class="metric-label">当前温度</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">10:25</div>
+            <div class="metric-label">发生时间</div>
+          </div>
+        </div>
+        <div class="alert-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4"/>
+            <path d="M12 16h.01"/>
+          </svg>
+          <span>需要立即处理 - 点击查看详情</span>
+        </div>
+      </a>
+
+      <!-- 运行中设备 -->
+      <div class="section-title">运行中</div>
+
+      <a href="equipment-detail.html" class="equipment-item">
+        <div class="equipment-item-header">
+          <div class="equipment-avatar equipment-avatar--running">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+          </div>
+          <div class="equipment-meta">
+            <div class="equipment-title">切片机 A</div>
+            <div class="equipment-subtitle">SL-3000A · EQ-001</div>
+          </div>
+          <span class="equipment-badge equipment-badge--running">运行中</span>
+        </div>
+        <div class="equipment-metrics">
+          <div class="metric-item">
+            <div class="metric-value">4.2h</div>
+            <div class="metric-label">运行时长</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value" style="color: #667eea;">PB-001</div>
+            <div class="metric-label">当前任务</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value" style="color: #52c41a;">92%</div>
+            <div class="metric-label">效率</div>
+          </div>
+        </div>
+      </a>
+
+      <a href="equipment-detail.html?id=2" class="equipment-item">
+        <div class="equipment-item-header">
+          <div class="equipment-avatar equipment-avatar--running">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+          </div>
+          <div class="equipment-meta">
+            <div class="equipment-title">切片机 B</div>
+            <div class="equipment-subtitle">SL-3000B · EQ-002</div>
+          </div>
+          <span class="equipment-badge equipment-badge--running">运行中</span>
+        </div>
+        <div class="equipment-metrics">
+          <div class="metric-item">
+            <div class="metric-value">3.5h</div>
+            <div class="metric-label">运行时长</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value" style="color: #667eea;">PB-002</div>
+            <div class="metric-label">当前任务</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value" style="color: #52c41a;">88%</div>
+            <div class="metric-label">效率</div>
+          </div>
+        </div>
+      </a>
+
+      <a href="equipment-detail.html?id=4" class="equipment-item">
+        <div class="equipment-item-header">
+          <div class="equipment-avatar equipment-avatar--running">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <rect x="2" y="6" width="20" height="12" rx="2"/>
+              <path d="M6 12h4"/>
+              <path d="M14 12h4"/>
+            </svg>
+          </div>
+          <div class="equipment-meta">
+            <div class="equipment-title">清洗机 A</div>
+            <div class="equipment-subtitle">CL-2000A · EQ-004</div>
+          </div>
+          <span class="equipment-badge equipment-badge--running">运行中</span>
+        </div>
+        <div class="equipment-metrics">
+          <div class="metric-item">
+            <div class="metric-value">2.8h</div>
+            <div class="metric-label">运行时长</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value" style="color: #667eea;">PB-003</div>
+            <div class="metric-label">当前任务</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value" style="color: #52c41a;">95%</div>
+            <div class="metric-label">效率</div>
+          </div>
+        </div>
+      </a>
+
+      <!-- 空闲设备 -->
+      <div class="section-title">空闲</div>
+
+      <a href="equipment-detail.html?id=5" class="equipment-item">
+        <div class="equipment-item-header">
+          <div class="equipment-avatar equipment-avatar--idle">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="9" y1="21" x2="9" y2="9"/>
+            </svg>
+          </div>
+          <div class="equipment-meta">
+            <div class="equipment-title">包装机 A</div>
+            <div class="equipment-subtitle">PK-1000A · EQ-005</div>
+          </div>
+          <span class="equipment-badge equipment-badge--idle">空闲</span>
+        </div>
+        <div class="equipment-metrics">
+          <div class="metric-item">
+            <div class="metric-value">1.5h</div>
+            <div class="metric-label">空闲时长</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">2.5h</div>
+            <div class="metric-label">今日使用</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value" style="color: #52c41a;">正常</div>
+            <div class="metric-label">状态</div>
+          </div>
+        </div>
+      </a>
+
+      <!-- 维护中设备 -->
+      <div class="section-title">维护中</div>
+
+      <a href="equipment-detail.html?id=6" class="equipment-item equipment-item--maintenance">
+        <div class="equipment-item-header">
+          <div class="equipment-avatar equipment-avatar--maintenance">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <div class="equipment-meta">
+            <div class="equipment-title">冷冻机 A</div>
+            <div class="equipment-subtitle">FR-5000A · EQ-006</div>
+          </div>
+          <span class="equipment-badge equipment-badge--maintenance">维护中</span>
+        </div>
+        <div class="equipment-metrics">
+          <div class="metric-item">
+            <div class="metric-value">定期保养</div>
+            <div class="metric-label">维护类型</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value" style="color: #fa8c16;">14:00</div>
+            <div class="metric-label">预计完成</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-value">张师傅</div>
+            <div class="metric-label">负责人</div>
+          </div>
+        </div>
+      </a>
+
+      <!-- 底部间距 -->
+      <div style="height: 80px;"></div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="batches.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        <span>批次</span>
+      </a>
+      <a href="workers.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+          <path d="M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span>人员</span>
+      </a>
+      <a href="equipment.html" class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="6" width="20" height="12" rx="2"/>
+          <path d="M12 12h.01"/>
+          <path d="M17 12h.01"/>
+          <path d="M7 12h.01"/>
+        </svg>
+        <span>设备</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

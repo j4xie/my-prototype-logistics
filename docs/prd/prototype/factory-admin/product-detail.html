@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>产品详情 - 工厂管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="javascript:history.back()" class="back-btn" style="text-decoration: none; color: #333; font-size: 22px; font-weight: bold; padding: 8px 12px;">&lt;</a>
+      <span class="title">产品详情</span>
+    </div>
+
+    <div class="content" style="padding: 16px;">
+      <div style="background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; margin-bottom: 16px;">
+          <div style="width: 80px; height: 80px; border-radius: 12px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; color: #999; font-size: 32px; margin-right: 16px;">🐟</div>
+          <div>
+            <div style="font-size: 20px; font-weight: 600; color: #333;">带鱼片</div>
+            <div style="font-size: 13px; color: #999; margin-top: 4px;">产品编码: PROD-001</div>
+            <div style="margin-top: 8px;"><span class="list-item-badge badge--blue">冷冻产品</span></div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div><span style="font-size: 12px; color: #999;">规格</span><div style="font-size: 15px; color: #333; margin-top: 4px;">100g/片</div></div>
+          <div><span style="font-size: 12px; color: #999;">保质期</span><div style="font-size: 15px; color: #333; margin-top: 4px;">-18°C 12个月</div></div>
+          <div><span style="font-size: 12px; color: #999;">原料</span><div style="font-size: 15px; color: #333; margin-top: 4px;">带鱼</div></div>
+          <div><span style="font-size: 12px; color: #999;">单位成本</span><div style="font-size: 15px; color: #333; margin-top: 4px;">¥28.50/kg</div></div>
+          <div><span style="font-size: 12px; color: #999;">出成率</span><div style="font-size: 15px; color: #333; margin-top: 4px;">65%</div></div>
+          <div><span style="font-size: 12px; color: #999;">参考售价</span><div style="font-size: 15px; color: #333; margin-top: 4px;">¥45.00/kg</div></div>
+        </div>
+      </div>
+
+      <div class="section-header"><span class="section-title">生产数据 (本月)</span></div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-info"><span class="stat-value">3,200</span><span class="stat-label">产量 (kg)</span></div><div class="stat-trend trend-up">^ 15%</div></div>
+        <div class="stat-card"><div class="stat-info"><span class="stat-value">32</span><span class="stat-label">生产批次</span></div><div class="stat-trend trend-up">^ 5</div></div>
+        <div class="stat-card"><div class="stat-info"><span class="stat-value">98.8%</span><span class="stat-label">合格率</span></div><div class="stat-trend trend-up">^ 0.3%</div></div>
+        <div class="stat-card"><div class="stat-info"><span class="stat-value">¥91.2k</span><span class="stat-label">成本总额</span></div><div class="stat-trend trend-down">v 2%</div></div>
+      </div>
+
+      <div class="section-header" style="margin-top: 16px;"><span class="section-title">近期生产批次</span></div>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251227-001</span><span class="list-item-badge badge--blue">生产中</span></div>
+        <div class="list-item-meta">计划 80kg · 进度 65%</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251226-003</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">完成 100kg · 合格率 100%</div>
+      </a>
+      <a href="production-batch-detail.html" class="list-item" style="text-decoration: none;">
+        <div class="list-item-header"><span class="list-item-title">PB-20251225-002</span><span class="list-item-badge badge--green">已完成</span></div>
+        <div class="list-item-meta">完成 85kg · 合格率 98.5%</div>
+      </a>
+
+      <div class="section-header" style="margin-top: 16px;"><span class="section-title">质量趋势</span></div>
+      <div style="background: #fff; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+          <span style="font-size: 14px; color: #333;">近7天合格率</span>
+          <span style="font-size: 14px; color: #52c41a;">98.8% ↑</span>
+        </div>
+        <div style="display: flex; align-items: flex-end; gap: 8px; height: 60px;">
+          <div style="flex: 1; background: #52c41a; height: 85%; border-radius: 4px 4px 0 0; opacity: 0.6;"></div>
+          <div style="flex: 1; background: #52c41a; height: 90%; border-radius: 4px 4px 0 0; opacity: 0.7;"></div>
+          <div style="flex: 1; background: #52c41a; height: 88%; border-radius: 4px 4px 0 0; opacity: 0.7;"></div>
+          <div style="flex: 1; background: #52c41a; height: 95%; border-radius: 4px 4px 0 0; opacity: 0.8;"></div>
+          <div style="flex: 1; background: #52c41a; height: 92%; border-radius: 4px 4px 0 0; opacity: 0.8;"></div>
+          <div style="flex: 1; background: #52c41a; height: 100%; border-radius: 4px 4px 0 0; opacity: 0.9;"></div>
+          <div style="flex: 1; background: #52c41a; height: 98%; border-radius: 4px 4px 0 0;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; color: #999;">
+          <span>12/21</span><span>12/22</span><span>12/23</span><span>12/24</span><span>12/25</span><span>12/26</span><span>12/27</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

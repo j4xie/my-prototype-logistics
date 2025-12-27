@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.user.CreateUserRequest;
 import com.cretas.aims.dto.user.UserDTO;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import java.time.LocalDate;
 import java.util.List;
 /**
  * 用户服务接口
@@ -92,4 +93,23 @@ public interface UserService {
      * 从Excel文件批量导入用户
      */
     com.cretas.aims.dto.common.ImportResult<UserDTO> importUsersFromExcel(String factoryId, java.io.InputStream inputStream);
+
+    /**
+     * 根据入职日期范围获取用户列表（分页）
+     * HR Dashboard 用于显示"本月入职"统计
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate   结束日期
+     * @param page      页码（从1开始）
+     * @param size      每页大小
+     * @return 分页用户数据
+     * @since 2025-12-27
+     */
+    PageResponse<UserDTO> getUsersByJoinDateRange(
+            String factoryId,
+            LocalDate startDate,
+            LocalDate endDate,
+            int page,
+            int size);
 }

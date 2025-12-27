@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>排程视图 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="plan-list.html" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">排程视图</span>
+      <span style="color: #a18cd1; font-size: 14px;">今日</span>
+    </div>
+
+    <div class="content" style="background: #f5f5f5;">
+      <!-- 周选择器 -->
+      <div style="display: flex; align-items: center; justify-content: space-between; background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <button style="background: none; border: none; font-size: 20px; color: #a18cd1;"><</button>
+        <span style="font-weight: 500;">2025年12月 第4周 (12.23 - 12.29)</span>
+        <button style="background: none; border: none; font-size: 20px; color: #a18cd1;">></button>
+      </div>
+
+      <!-- 甘特图 -->
+      <div class="gantt-container">
+        <!-- 时间轴头部 -->
+        <div class="timeline-header">
+          <div class="timeline-cell">周一<br><span style="font-size: 11px;">23</span></div>
+          <div class="timeline-cell">周二<br><span style="font-size: 11px;">24</span></div>
+          <div class="timeline-cell">周三<br><span style="font-size: 11px;">25</span></div>
+          <div class="timeline-cell">周四<br><span style="font-size: 11px;">26</span></div>
+          <div class="timeline-cell today">周五<br><span style="font-size: 11px;">27</span></div>
+          <div class="timeline-cell">周六<br><span style="font-size: 11px;">28</span></div>
+          <div class="timeline-cell">周日<br><span style="font-size: 11px;">29</span></div>
+        </div>
+
+        <!-- 甘特图行 - 切片车间 -->
+        <div style="margin-top: 16px;">
+          <div style="font-size: 13px; font-weight: 500; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #52c41a;"></span>
+            切片车间
+          </div>
+          <div style="display: flex; gap: 2px; height: 28px; margin-bottom: 8px;">
+            <div style="flex: 2; background: #52c41a; border-radius: 4px; display: flex; align-items: center; padding: 0 6px;">
+              <span style="color: white; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PP001 带鱼</span>
+            </div>
+            <div style="flex: 1.5; background: linear-gradient(90deg, #a18cd1, #fbc2eb); border-radius: 4px; display: flex; align-items: center; padding: 0 6px;">
+              <span style="color: white; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PP002 鱿鱼</span>
+            </div>
+            <div style="flex: 1; background: #d9d9d9; border-radius: 4px; display: flex; align-items: center; padding: 0 6px;">
+              <span style="color: #666; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PP003</span>
+            </div>
+            <div style="flex: 2.5;"></div>
+          </div>
+        </div>
+
+        <!-- 甘特图行 - 包装车间 -->
+        <div style="margin-top: 12px;">
+          <div style="font-size: 13px; font-weight: 500; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #52c41a;"></span>
+            包装车间
+          </div>
+          <div style="display: flex; gap: 2px; height: 28px; margin-bottom: 8px;">
+            <div style="flex: 1;"></div>
+            <div style="flex: 3; background: linear-gradient(90deg, #a18cd1, #fbc2eb); border-radius: 4px; display: flex; align-items: center; padding: 0 6px;">
+              <span style="color: white; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PP004 包装</span>
+            </div>
+            <div style="flex: 1.5; background: #d9d9d9; border-radius: 4px; display: flex; align-items: center; padding: 0 6px;">
+              <span style="color: #666; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PP005</span>
+            </div>
+            <div style="flex: 1.5;"></div>
+          </div>
+        </div>
+
+        <!-- 甘特图行 - 冷冻车间 -->
+        <div style="margin-top: 12px;">
+          <div style="font-size: 13px; font-weight: 500; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #d9d9d9;"></span>
+            冷冻车间
+          </div>
+          <div style="display: flex; gap: 2px; height: 28px; margin-bottom: 8px;">
+            <div style="flex: 2.5;"></div>
+            <div style="flex: 2; background: #52c41a; border-radius: 4px; display: flex; align-items: center; padding: 0 6px;">
+              <span style="color: white; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PP006 冷冻</span>
+            </div>
+            <div style="flex: 1.5; background: #d9d9d9; border-radius: 4px; display: flex; align-items: center; padding: 0 6px;">
+              <span style="color: #666; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PP007</span>
+            </div>
+            <div style="flex: 1;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 图例 -->
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color completed"></div>
+          <span>已完成</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color in-progress"></div>
+          <span>进行中</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color pending"></div>
+          <span>待开始</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color conflict"></div>
+          <span>冲突</span>
+        </div>
+      </div>
+
+      <!-- 资源负荷 -->
+      <div class="detail-section">
+        <div class="detail-section-title">资源负荷</div>
+
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 14px; color: #333;">切片车间</span>
+            <span style="font-size: 14px; color: #fa8c16; font-weight: 500;">85%</span>
+          </div>
+          <div class="resource-bar">
+            <div class="resource-bar-fill medium" style="width: 85%;"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 14px; color: #333;">包装车间</span>
+            <span style="font-size: 14px; color: #52c41a; font-weight: 500;">70%</span>
+          </div>
+          <div class="resource-bar">
+            <div class="resource-bar-fill low" style="width: 70%;"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 14px; color: #333;">冷冻车间</span>
+            <span style="font-size: 14px; color: #52c41a; font-weight: 500;">45%</span>
+          </div>
+          <div class="resource-bar">
+            <div class="resource-bar-fill low" style="width: 45%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 冲突警告 -->
+      <div class="info-box warning" style="margin-bottom: 80px;">
+        <svg class="info-box-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div class="info-box-content">
+          <div class="info-box-title">切片车间负荷较高</div>
+          <div class="info-box-text">当前负荷率85%，建议分流部分任务到其他车间</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="plan-list.html" class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>计划</span>
+      </a>
+      <a href="task-assignment.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+        </svg>
+        <span>分配</span>
+      </a>
+      <a href="personnel-list.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+          <path d="M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span>人员</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

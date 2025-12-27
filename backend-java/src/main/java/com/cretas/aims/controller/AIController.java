@@ -212,6 +212,24 @@ public class AIController {
     // ========== 对话管理接口 ==========
 
     /**
+     * 获取AI对话历史列表
+     */
+    @GetMapping("/conversations")
+    @Operation(summary = "获取AI对话历史列表",
+               description = "获取工厂的所有AI对话会话列表")
+    public ApiResponse<List<AIResponseDTO.ConversationResponse>> getConversationList(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(defaultValue = "10") @Parameter(description = "限制数量") Integer limit) {
+
+        log.info("获取AI对话历史列表: factoryId={}, limit={}", factoryId, limit);
+
+        // 返回空列表（DeepSeek不维护会话列表，会话是临时的）
+        List<AIResponseDTO.ConversationResponse> conversations = new java.util.ArrayList<>();
+
+        return ApiResponse.success(conversations);
+    }
+
+    /**
      * 获取AI对话历史
      */
     @GetMapping("/conversations/{sessionId}")
@@ -403,6 +421,72 @@ public class AIController {
                 .errorMessage(healthData.get("error") != null ?
                         healthData.get("error").toString() : null)
                 .build();
+
+        return ApiResponse.success(response);
+    }
+
+    // ========== 员工AI分析接口 ==========
+
+    /**
+     * 员工AI综合分析
+     *
+     * 分析维度：
+     * 1. 考勤表现 - 出勤率、迟到、早退、缺勤
+     * 2. 工时效率 - 日均工时、加班、工作类型分布
+     * 3. 生产贡献 - 参与批次、产量、良品率
+     * 4. 技能分布 - 各工序参与度和熟练程度
+     */
+    @PostMapping("/analysis/employee/{employeeId}")
+    @Operation(summary = "员工AI综合分析",
+               description = "对指定员工进行AI综合绩效分析，包含考勤、工时、生产贡献、技能等多维度")
+    public ApiResponse<AIResponseDTO.EmployeeAnalysisResponse> analyzeEmployee(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "员工ID") Long employeeId,
+            @RequestParam(defaultValue = "90") @Parameter(description = "分析天数") Integer days,
+            @RequestParam(required = false) @Parameter(description = "追问问题") String question,
+            @RequestParam(required = false) @Parameter(description = "会话ID") String sessionId,
+            HttpServletRequest httpRequest) {
+
+        // 从Token获取用户ID
+        String token = TokenUtils.extractToken(httpRequest.getHeader("Authorization"));
+        Long requesterId = (long) mobileService.getUserFromToken(token).getId();
+
+        log.info("员工AI综合分析: factoryId={}, employeeId={}, days={}, requester={}",
+                factoryId, employeeId, days, requesterId);
+
+        // 调用AI服务进行员工分析
+        AIResponseDTO.EmployeeAnalysisResponse response = basicAIService.analyzeEmployee(
+                factoryId, employeeId, days, question, sessionId);
+
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 员工AI追问
+     *
+     * 基于已有分析结果进行追问
+     */
+    @PostMapping("/analysis/employee/{employeeId}/followup")
+    @Operation(summary = "员工AI追问",
+               description = "基于已有的员工分析结果进行追问")
+    public ApiResponse<AIResponseDTO.EmployeeAnalysisResponse> employeeFollowUp(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "员工ID") Long employeeId,
+            @RequestParam @Parameter(description = "会话ID") String sessionId,
+            @RequestBody @Parameter(description = "追问内容") Map<String, String> body,
+            HttpServletRequest httpRequest) {
+
+        String question = body.get("question");
+        if (question == null || question.trim().isEmpty()) {
+            throw new IllegalArgumentException("追问内容不能为空");
+        }
+
+        log.info("员工AI追问: factoryId={}, employeeId={}, sessionId={}, question={}",
+                factoryId, employeeId, sessionId, question);
+
+        // 调用AI服务进行追问分析
+        AIResponseDTO.EmployeeAnalysisResponse response = basicAIService.analyzeEmployee(
+                factoryId, employeeId, 90, question, sessionId);
 
         return ApiResponse.success(response);
     }

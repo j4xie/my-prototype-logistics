@@ -177,6 +177,39 @@ public class TimeClockController {
     }
 
     /**
+     * 获取月度考勤记录
+     */
+    @GetMapping("/monthly")
+    @Operation(summary = "月度考勤记录", description = "获取员工指定月份的考勤记录")
+    public ApiResponse<PageResponse<TimeClockRecord>> getMonthlyRecords(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestAttribute("userId") @Parameter(description = "用户ID (从JWT token获取)") Long userId,
+            @RequestParam(defaultValue = "0") @Parameter(description = "年份，默认当年") Integer year,
+            @RequestParam(defaultValue = "0") @Parameter(description = "月份，默认当月") Integer month,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "31") @Parameter(description = "每页大小") Integer size) {
+
+        // 默认当前年月
+        int actualYear = year > 0 ? year : LocalDate.now().getYear();
+        int actualMonth = month > 0 ? month : LocalDate.now().getMonthValue();
+
+        // 计算月份起止日期
+        LocalDate startDate = LocalDate.of(actualYear, actualMonth, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        log.info("获取月度考勤记录: factoryId={}, userId={}, year={}, month={}",
+                factoryId, userId, actualYear, actualMonth);
+
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(page);
+        pageRequest.setSize(size);
+
+        PageResponse<TimeClockRecord> records = timeClockService.getClockHistory(
+                factoryId, userId, startDate, endDate, pageRequest);
+        return ApiResponse.success(records);
+    }
+
+    /**
      * 获取部门考勤
      */
     @GetMapping("/department/{department}")
@@ -216,5 +249,48 @@ public class TimeClockController {
         } catch (Exception e) {
             log.error("导出考勤记录失败", e);
         }
+    }
+
+    // ====================== 管理员端点 ======================
+
+    /**
+     * 【管理员】获取所有员工打卡历史
+     */
+    @GetMapping("/admin/history")
+    @Operation(summary = "【管理员】所有员工打卡历史", description = "获取工厂所有员工的打卡历史记录（分页）")
+    public ApiResponse<PageResponse<TimeClockRecord>> getAllEmployeesClockHistory(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "开始日期") LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "结束日期") LocalDate endDate,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+        log.info("【管理员】获取所有员工打卡历史: factoryId={}, startDate={}, endDate={}, page={}, size={}",
+                factoryId, startDate, endDate, page, size);
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(page);
+        pageRequest.setSize(size);
+        PageResponse<TimeClockRecord> history = timeClockService.getAllEmployeesClockHistory(
+                factoryId, startDate, endDate, pageRequest);
+        return ApiResponse.success(history);
+    }
+
+    /**
+     * 【管理员】获取所有员工考勤统计
+     */
+    @GetMapping("/admin/statistics")
+    @Operation(summary = "【管理员】所有员工考勤统计", description = "获取工厂所有员工的考勤统计数据")
+    public ApiResponse<Map<String, Object>> getAllEmployeesAttendanceStatistics(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "开始日期") LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "结束日期") LocalDate endDate) {
+        log.info("【管理员】获取所有员工考勤统计: factoryId={}, startDate={}, endDate={}",
+                factoryId, startDate, endDate);
+        Map<String, Object> statistics = timeClockService.getAllEmployeesAttendanceStatistics(
+                factoryId, startDate, endDate);
+        return ApiResponse.success(statistics);
     }
 }

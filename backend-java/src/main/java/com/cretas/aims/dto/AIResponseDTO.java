@@ -329,4 +329,253 @@ public class AIResponseDTO {
         @Schema(description = "错误信息（如果有）")
         private String errorMessage;
     }
+
+    // ==================== 员工AI分析相关DTO ====================
+
+    /**
+     * 员工AI综合分析响应
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "员工AI综合分析响应")
+    public static class EmployeeAnalysisResponse {
+        @Schema(description = "员工ID")
+        private Long employeeId;
+
+        @Schema(description = "员工姓名")
+        private String employeeName;
+
+        @Schema(description = "部门")
+        private String department;
+
+        @Schema(description = "职位")
+        private String position;
+
+        @Schema(description = "入职时长(月)")
+        private Integer tenureMonths;
+
+        @Schema(description = "分析周期开始")
+        private String periodStart;
+
+        @Schema(description = "分析周期结束")
+        private String periodEnd;
+
+        @Schema(description = "数据点数量")
+        private Integer dataPoints;
+
+        @Schema(description = "综合评分(0-100)")
+        private Integer overallScore;
+
+        @Schema(description = "综合等级", allowableValues = {"A", "B", "C", "D"})
+        private String overallGrade;
+
+        @Schema(description = "环比变化百分比")
+        private Double scoreChange;
+
+        @Schema(description = "部门排名百分比(Top N%)")
+        private Integer departmentRankPercent;
+
+        @Schema(description = "考勤表现分析")
+        private AttendanceAnalysis attendance;
+
+        @Schema(description = "工时效率分析")
+        private WorkHoursAnalysis workHours;
+
+        @Schema(description = "生产贡献分析")
+        private ProductionAnalysis production;
+
+        @Schema(description = "技能分布")
+        private List<SkillDistribution> skills;
+
+        @Schema(description = "AI综合建议")
+        private List<EmployeeSuggestion> suggestions;
+
+        @Schema(description = "绩效趋势(近6个月)")
+        private List<PerformanceTrend> trends;
+
+        @Schema(description = "AI深度洞察")
+        private String aiInsight;
+
+        @Schema(description = "会话ID(用于追问)")
+        private String sessionId;
+
+        @Schema(description = "分析时间")
+        private LocalDateTime analyzedAt;
+
+        @Schema(description = "消耗Token数")
+        private Integer tokensUsed;
+    }
+
+    /**
+     * 考勤表现分析
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "考勤表现分析")
+    public static class AttendanceAnalysis {
+        @Schema(description = "评分(0-100)")
+        private Integer score;
+
+        @Schema(description = "出勤率(%)")
+        private Double attendanceRate;
+
+        @Schema(description = "出勤天数")
+        private Integer attendanceDays;
+
+        @Schema(description = "迟到次数")
+        private Integer lateCount;
+
+        @Schema(description = "早退次数")
+        private Integer earlyLeaveCount;
+
+        @Schema(description = "缺勤天数")
+        private Integer absentDays;
+
+        @Schema(description = "部门平均出勤率(%)")
+        private Double departmentAvgRate;
+
+        @Schema(description = "AI洞察")
+        private String insight;
+
+        @Schema(description = "洞察类型", allowableValues = {"positive", "warning", "neutral"})
+        private String insightType;
+    }
+
+    /**
+     * 工时效率分析
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "工时效率分析")
+    public static class WorkHoursAnalysis {
+        @Schema(description = "评分(0-100)")
+        private Integer score;
+
+        @Schema(description = "日均工时(小时)")
+        private Double avgDailyHours;
+
+        @Schema(description = "本月加班时长(小时)")
+        private Double overtimeHours;
+
+        @Schema(description = "工时效率(%)")
+        private Double efficiency;
+
+        @Schema(description = "参与工作类型数")
+        private Integer workTypeCount;
+
+        @Schema(description = "部门平均日工时")
+        private Double departmentAvgHours;
+
+        @Schema(description = "AI洞察")
+        private String insight;
+
+        @Schema(description = "洞察类型", allowableValues = {"positive", "warning", "neutral"})
+        private String insightType;
+    }
+
+    /**
+     * 生产贡献分析
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "生产贡献分析")
+    public static class ProductionAnalysis {
+        @Schema(description = "评分(0-100)")
+        private Integer score;
+
+        @Schema(description = "参与批次数")
+        private Integer batchCount;
+
+        @Schema(description = "产量贡献(kg)")
+        private Double outputQuantity;
+
+        @Schema(description = "良品率(%)")
+        private Double qualityRate;
+
+        @Schema(description = "人均产能(kg/h)")
+        private Double productivityRate;
+
+        @Schema(description = "部门平均产能")
+        private Double departmentAvgProductivity;
+
+        @Schema(description = "擅长产品线")
+        private String topProductLine;
+
+        @Schema(description = "AI洞察")
+        private String insight;
+
+        @Schema(description = "洞察类型", allowableValues = {"positive", "warning", "neutral"})
+        private String insightType;
+    }
+
+    /**
+     * 技能分布
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "技能分布")
+    public static class SkillDistribution {
+        @Schema(description = "技能/工序名称")
+        private String skillName;
+
+        @Schema(description = "参与占比(%)")
+        private Double percentage;
+
+        @Schema(description = "熟练程度", allowableValues = {"精通", "熟练", "学习中", "新手"})
+        private String proficiency;
+
+        @Schema(description = "工时(小时)")
+        private Double hours;
+    }
+
+    /**
+     * 员工建议
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "员工建议")
+    public static class EmployeeSuggestion {
+        @Schema(description = "建议类型", allowableValues = {"优势", "建议", "关注"})
+        private String type;
+
+        @Schema(description = "标题")
+        private String title;
+
+        @Schema(description = "详细描述")
+        private String description;
+
+        @Schema(description = "优先级", allowableValues = {"high", "medium", "low"})
+        private String priority;
+    }
+
+    /**
+     * 绩效趋势
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "绩效趋势")
+    public static class PerformanceTrend {
+        @Schema(description = "月份(yyyy-MM)")
+        private String month;
+
+        @Schema(description = "评分")
+        private Integer score;
+
+        @Schema(description = "等级")
+        private String grade;
+    }
 }

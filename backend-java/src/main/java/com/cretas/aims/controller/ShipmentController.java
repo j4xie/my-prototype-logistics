@@ -159,6 +159,30 @@ public class ShipmentController {
         }
     }
 
+    /**
+     * 获取最近出货记录
+     */
+    @GetMapping("/recent")
+    public ResponseEntity<?> getRecentShipments(
+            @PathVariable String factoryId,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            // 获取最近N条出货记录
+            Page<ShipmentRecord> shipments = shipmentRecordService.getByFactoryId(factoryId, 0, limit);
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", shipments.getContent()
+            ));
+        } catch (Exception e) {
+            log.error("获取最近出货记录失败", e);
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", e.getMessage()
+            ));
+        }
+    }
+
     // ==================== 通配符路径放在最后 ====================
 
     /**

@@ -197,6 +197,53 @@ public interface ProcessingService {
             String factoryId,
             List<String> batchIds);
 
+    // ========== 批次员工分配 ==========
+
+    /**
+     * 分配员工到批次
+     *
+     * @param factoryId 工厂ID
+     * @param batchId 批次ID
+     * @param workerIds 员工ID列表
+     * @param assignedBy 分配人ID
+     * @param notes 备注
+     * @return 分配结果
+     */
+    List<Map<String, Object>> assignWorkersToBatch(String factoryId, Long batchId,
+                                                    List<Long> workerIds, Long assignedBy, String notes);
+
+    /**
+     * 员工完成批次工作（签出）
+     *
+     * @param factoryId 工厂ID
+     * @param batchId 批次ID
+     * @param workerId 员工ID
+     * @param workMinutes 工作分钟数（可选）
+     * @param notes 备注
+     * @return 签出结果
+     */
+    Map<String, Object> workerCheckout(String factoryId, Long batchId, Long workerId,
+                                        Integer workMinutes, String notes);
+
+    /**
+     * 获取批次的员工列表
+     *
+     * @param factoryId 工厂ID
+     * @param batchId 批次ID
+     * @return 员工列表
+     */
+    List<Map<String, Object>> getBatchWorkers(String factoryId, Long batchId);
+
+    /**
+     * 取消员工批次分配
+     *
+     * @param factoryId 工厂ID
+     * @param batchId 批次ID
+     * @param workerId 员工ID
+     * @return 取消结果
+     */
+    Map<String, Object> cancelWorkerAssignment(String factoryId, Long batchId, Long workerId);
+
     // ========== 仪表盘 ==========
      /**
      * 生产概览

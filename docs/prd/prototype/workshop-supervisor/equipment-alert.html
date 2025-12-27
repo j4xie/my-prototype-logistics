@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设备告警 - 车间主任</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 子页面头部 -->
+    <div class="subpage-header" style="background: linear-gradient(135deg, #ff4d4f, #cf1322);">
+      <a href="equipment.html" class="back-btn" style="color: white;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <span class="title" style="color: white;">设备告警</span>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content" style="padding-top: 16px;">
+      <!-- 告警信息 -->
+      <div class="info-card" style="background: linear-gradient(135deg, #ff4d4f, #cf1322); color: white; text-align: center; padding: 24px;">
+        <div style="width: 80px; height: 80px; margin: 0 auto 16px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div style="font-size: 22px; font-weight: 600; margin-bottom: 4px;">温度过高告警</div>
+        <div style="font-size: 14px; opacity: 0.9;">切片机 C (EQ-003)</div>
+        <div style="font-size: 13px; opacity: 0.8; margin-top: 8px;">发生时间: 2025-12-27 10:25:36</div>
+      </div>
+
+      <!-- 告警详情 -->
+      <div class="info-card">
+        <h3 class="section-title">告警详情</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-item-label">告警类型</div>
+            <div class="info-item-value" style="color: #ff4d4f;">温度异常</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">告警等级</div>
+            <div class="info-item-value" style="color: #ff4d4f;">紧急</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">当前温度</div>
+            <div class="info-item-value" style="color: #ff4d4f;">68°C</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">正常范围</div>
+            <div class="info-item-value">25-50°C</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 设备信息 -->
+      <div class="info-card">
+        <h3 class="section-title">设备信息</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-item-label">设备名称</div>
+            <div class="info-item-value">切片机 C</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">设备编号</div>
+            <div class="info-item-value">EQ-003</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">设备型号</div>
+            <div class="info-item-value">SL-3000C</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">运行时长</div>
+            <div class="info-item-value">3.8h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 影响评估 -->
+      <div class="info-card" style="background: #fff7e6; border: 1px solid #ffd591;">
+        <h3 class="section-title" style="color: #fa8c16;">影响评估</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 24px; height: 24px; background: #fa8c16; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; font-weight: 500; color: #333;">生产影响</div>
+              <div style="font-size: 13px; color: #666; margin-top: 4px;">当前批次 PB-20251227-003 已暂停，预计延迟 30 分钟</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 24px; height: 24px; background: #fa8c16; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; font-weight: 500; color: #333;">人员影响</div>
+              <div style="font-size: 13px; color: #666; margin-top: 4px;">操作员赵磊已停止作业，等待设备恢复</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 建议措施 -->
+      <div class="info-card" style="background: #f0f5ff; border: 1px solid #d6e4ff;">
+        <h3 class="section-title" style="color: #667eea;">建议措施</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; gap: 12px;">
+            <div style="width: 24px; height: 24px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span style="font-size: 12px; color: white; font-weight: 600;">1</span>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; font-weight: 500; color: #333;">立即停机</div>
+              <div style="font-size: 13px; color: #666; margin-top: 4px;">关闭设备电源，防止进一步损坏</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <div style="width: 24px; height: 24px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span style="font-size: 12px; color: white; font-weight: 600;">2</span>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; font-weight: 500; color: #333;">检查冷却系统</div>
+              <div style="font-size: 13px; color: #666; margin-top: 4px;">检查冷却液是否充足，散热风扇是否正常</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <div style="width: 24px; height: 24px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span style="font-size: 12px; color: white; font-weight: 600;">3</span>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; font-weight: 500; color: #333;">联系维修人员</div>
+              <div style="font-size: 13px; color: #666; margin-top: 4px;">通知设备维护组进行检修</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 处理选项 -->
+      <div class="info-card">
+        <h3 class="section-title">处理方式</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label class="checkbox-item" style="margin: 0; padding: 16px; border: 2px solid #ff4d4f; border-radius: 8px; background: #fff1f0;">
+            <input type="radio" name="handle_type" checked style="accent-color: #ff4d4f;">
+            <div style="flex: 1; margin-left: 12px;">
+              <div style="font-size: 15px; font-weight: 500; color: #333;">紧急停机维修</div>
+              <div style="font-size: 13px; color: #999; margin-top: 4px;">立即停止设备，安排维修人员处理</div>
+            </div>
+          </label>
+          <label class="checkbox-item" style="margin: 0; padding: 16px; border: 1px solid #d9d9d9; border-radius: 8px;">
+            <input type="radio" name="handle_type" style="accent-color: #fa8c16;">
+            <div style="flex: 1; margin-left: 12px;">
+              <div style="font-size: 15px; font-weight: 500; color: #333;">降负荷运行</div>
+              <div style="font-size: 13px; color: #999; margin-top: 4px;">降低设备负荷，继续生产</div>
+            </div>
+          </label>
+          <label class="checkbox-item" style="margin: 0; padding: 16px; border: 1px solid #d9d9d9; border-radius: 8px;">
+            <input type="radio" name="handle_type" style="accent-color: #52c41a;">
+            <div style="flex: 1; margin-left: 12px;">
+              <div style="font-size: 15px; font-weight: 500; color: #333;">误报确认</div>
+              <div style="font-size: 13px; color: #999; margin-top: 4px;">确认为误报，恢复正常运行</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 处理备注 -->
+      <div class="info-card">
+        <h3 class="section-title">处理备注</h3>
+        <textarea class="form-textarea" placeholder="输入处理说明...">检查发现冷却液不足，已补充冷却液。设备温度正在下降中，预计15分钟后可恢复正常。</textarea>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="btn-group">
+        <a href="equipment.html" class="btn btn-secondary">返回</a>
+        <a href="equipment.html" class="btn btn-primary" style="background: linear-gradient(135deg, #ff4d4f, #cf1322);">确认处理</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

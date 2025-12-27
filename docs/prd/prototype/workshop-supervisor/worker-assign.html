@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分配员工 - 车间主任</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 子页面头部 -->
+    <div class="subpage-header">
+      <a href="batch-detail.html" class="back-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <span class="title">分配员工</span>
+      <span class="action">全选</span>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content" style="padding-top: 16px;">
+      <!-- 批次信息 -->
+      <div class="info-card">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 16px; font-weight: 600; color: #333;">PB-20251227-001</div>
+            <div style="font-size: 13px; color: #999; margin-top: 4px;">带鱼片 | 目标: 80kg</div>
+          </div>
+          <span class="batch-stage">切片中</span>
+        </div>
+      </div>
+
+      <!-- 筛选 -->
+      <div class="filter-tabs">
+        <button class="filter-tab active">全部 (10)</button>
+        <button class="filter-tab">在岗 (8)</button>
+        <button class="filter-tab">空闲 (5)</button>
+        <button class="filter-tab">已分配 (3)</button>
+      </div>
+
+      <!-- 已分配员工 -->
+      <div class="info-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <h3 class="section-title" style="margin: 0;">已分配 (3人)</h3>
+          <span style="font-size: 12px; color: #999;">点击移除</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label class="checkbox-item" style="margin: 0; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px;">
+            <input type="checkbox" checked>
+            <div class="worker-avatar" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>王</span>
+              <span class="status-dot online"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px;">王建国</div>
+              <div class="worker-meta">切片操作 | 今日: 2.5h</div>
+            </div>
+            <span class="worker-status working">工作中</span>
+          </label>
+          <label class="checkbox-item" style="margin: 0; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px;">
+            <input type="checkbox" checked>
+            <div class="worker-avatar" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>李</span>
+              <span class="status-dot online"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px;">李明辉</div>
+              <div class="worker-meta">包装操作 | 今日: 2.0h</div>
+            </div>
+            <span class="worker-status working">工作中</span>
+          </label>
+          <label class="checkbox-item" style="margin: 0; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px;">
+            <input type="checkbox" checked>
+            <div class="worker-avatar" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>刘</span>
+              <span class="status-dot online"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px;">刘晓峰</div>
+              <div class="worker-meta">清洗操作 | 今日: 1.5h</div>
+            </div>
+            <span class="worker-status working">工作中</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 可分配员工 -->
+      <div class="info-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <h3 class="section-title" style="margin: 0;">可分配员工 (5人)</h3>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label class="checkbox-item" style="margin: 0; background: white; border-radius: 8px;">
+            <input type="checkbox">
+            <div class="worker-avatar" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>陈</span>
+              <span class="status-dot online"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px;">陈志强</div>
+              <div class="worker-meta">设备操作 | 空闲中</div>
+            </div>
+            <span style="font-size: 12px; color: #52c41a;">可用</span>
+          </label>
+          <label class="checkbox-item" style="margin: 0; background: white; border-radius: 8px;">
+            <input type="checkbox">
+            <div class="worker-avatar" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>杨</span>
+              <span class="status-dot online"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px;">杨海涛</div>
+              <div class="worker-meta">切片操作 | 空闲中</div>
+            </div>
+            <span style="font-size: 12px; color: #52c41a;">可用</span>
+          </label>
+          <label class="checkbox-item" style="margin: 0; background: white; border-radius: 8px;">
+            <input type="checkbox">
+            <div class="worker-avatar" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>吴</span>
+              <span class="status-dot online"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px;">吴大伟</div>
+              <div class="worker-meta">包装操作 | 空闲中</div>
+            </div>
+            <span style="font-size: 12px; color: #52c41a;">可用</span>
+          </label>
+          <label class="checkbox-item" style="margin: 0; background: white; border-radius: 8px;">
+            <input type="checkbox">
+            <div class="worker-avatar" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>赵</span>
+              <span class="status-dot online"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px;">赵国强</div>
+              <div class="worker-meta">清洗操作 | 空闲中</div>
+            </div>
+            <span style="font-size: 12px; color: #52c41a;">可用</span>
+          </label>
+          <label class="checkbox-item" style="margin: 0; background: white; border-radius: 8px;">
+            <input type="checkbox">
+            <div class="worker-avatar" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>孙</span>
+              <span class="status-dot online"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px;">孙明亮</div>
+              <div class="worker-meta">设备操作 | 空闲中</div>
+            </div>
+            <span style="font-size: 12px; color: #52c41a;">可用</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 不可用员工 -->
+      <div class="info-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <h3 class="section-title" style="margin: 0; color: #999;">不可用 (2人)</h3>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label class="checkbox-item" style="margin: 0; background: #fafafa; border-radius: 8px; opacity: 0.6;">
+            <input type="checkbox" disabled>
+            <div class="worker-avatar offline" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>周</span>
+              <span class="status-dot offline"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px; color: #999;">周伟</div>
+              <div class="worker-meta" style="color: #ff4d4f;">未打卡 | 今日休假</div>
+            </div>
+            <span class="worker-status off">离线</span>
+          </label>
+          <label class="checkbox-item" style="margin: 0; background: #fafafa; border-radius: 8px; opacity: 0.6;">
+            <input type="checkbox" disabled>
+            <div class="worker-avatar offline" style="width: 40px; height: 40px; font-size: 14px;">
+              <span>郑</span>
+              <span class="status-dot offline"></span>
+            </div>
+            <div class="worker-info" style="flex: 1;">
+              <div class="worker-name" style="font-size: 14px; color: #999;">郑小明</div>
+              <div class="worker-meta" style="color: #ff4d4f;">未打卡 | 病假</div>
+            </div>
+            <span class="worker-status off">离线</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="btn-group">
+        <a href="batch-detail.html" class="btn btn-secondary">取消</a>
+        <a href="batch-detail.html" class="btn btn-primary">确认分配 (3人)</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

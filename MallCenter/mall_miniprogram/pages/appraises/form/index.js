@@ -46,6 +46,24 @@ Page({
     canSubmit: true
   },
 
+  onShow() {
+    // 检查登录状态 - 评价页需要登录才能访问
+    const wxUser = app.globalData.wxUser
+    if (!wxUser || !wxUser.id) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      })
+      setTimeout(() => {
+        wx.switchTab({
+          url: '/pages/home/index'
+        })
+      }, 500)
+      return
+    }
+  },
+
   onLoad(options) {
     if (options.orderId) {
       this.setData({ orderId: options.orderId })
@@ -75,7 +93,7 @@ Page({
         this.setData({
           orderInfo: {
             goodsName: order.goodsName || '商品名称',
-            goodsImage: order.goodsImage || '/public/img/goods-default.png',
+            goodsImage: order.goodsImage || '/public/img/no_pic.png',
             spec: order.spec || '规格: 默认'
           }
         })
@@ -86,7 +104,7 @@ Page({
       this.setData({
         orderInfo: {
           goodsName: '有机蔬菜礼盒',
-          goodsImage: '/public/img/goods-default.png',
+          goodsImage: '/public/img/no_pic.png',
           spec: '规格: 10斤装'
         }
       })

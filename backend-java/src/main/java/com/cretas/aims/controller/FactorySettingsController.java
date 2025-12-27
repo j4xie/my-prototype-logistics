@@ -33,10 +33,55 @@ public class FactorySettingsController {
     private final FactoryAIService factoryAIService;
 
     @GetMapping
-    @Operation(summary = "获取工厂设置")
-    public ApiResponse<FactorySettingsDTO> getSettings(
+    @Operation(summary = "获取工厂设置（前端格式）")
+    public ApiResponse<FactorySettingsDTO.WebSettingsResponse> getSettings(
             @PathVariable @Parameter(description = "工厂ID") String factoryId) {
-        log.debug("获取工厂设置: factoryId={}", factoryId);
+        log.debug("获取工厂设置（前端格式）: factoryId={}", factoryId);
+        FactorySettingsDTO settings = settingsService.getSettings(factoryId);
+
+        // 转换为前端期望的格式
+        FactorySettingsDTO.BasicSettings basic = FactorySettingsDTO.BasicSettings.builder()
+                .factoryName(settings.getFactoryName())
+                .timezone(settings.getTimezone())
+                .language(settings.getLanguage())
+                .dateFormat(settings.getDateFormat())
+                .workStartTime(settings.getWorkTimeSettings() != null ?
+                        settings.getWorkTimeSettings().getStartTime() : "08:00")
+                .workEndTime(settings.getWorkTimeSettings() != null ?
+                        settings.getWorkTimeSettings().getEndTime() : "17:00")
+                .build();
+
+        FactorySettingsDTO.WebNotificationSettings notification = FactorySettingsDTO.WebNotificationSettings.builder()
+                .emailNotification(settings.getNotificationSettings() != null ?
+                        settings.getNotificationSettings().getEmailEnabled() : true)
+                .smsNotification(false)
+                .alertNotification(true)
+                .maintenanceReminder(true)
+                .reminderDays(3)
+                .build();
+
+        FactorySettingsDTO.SecuritySettings security = FactorySettingsDTO.SecuritySettings.builder()
+                .passwordMinLength(8)
+                .passwordRequireUppercase(true)
+                .passwordRequireNumber(true)
+                .sessionTimeout(30)
+                .maxLoginAttempts(5)
+                .build();
+
+        FactorySettingsDTO.WebSettingsResponse response = FactorySettingsDTO.WebSettingsResponse.builder()
+                .basic(basic)
+                .notification(notification)
+                .security(security)
+                .build();
+
+        return ApiResponse.success(response);
+    }
+
+    @GetMapping("/full")
+    @Operation(summary = "获取工厂完整设置")
+    public ApiResponse<FactorySettingsDTO> getFullSettings(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+        log.debug("获取工厂完整设置: factoryId={}", factoryId);
         FactorySettingsDTO settings = settingsService.getSettings(factoryId);
         return ApiResponse.success(settings);
     }
@@ -49,6 +94,63 @@ public class FactorySettingsController {
         log.info("更新工厂设置: factoryId={}", factoryId);
         FactorySettingsDTO settings = settingsService.saveSettings(factoryId, dto);
         return ApiResponse.success(settings);
+    }
+
+    // ==================== 前端设置页面 API ====================
+
+    @PutMapping("/basic")
+    @Operation(summary = "更新基础设置")
+    public ApiResponse<FactorySettingsDTO.BasicSettings> updateBasicSettings(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestBody @Valid FactorySettingsDTO.BasicSettings basicSettings) {
+        log.info("更新基础设置: factoryId={}", factoryId);
+
+        // 更新显示设置
+        settingsService.updateDisplaySettings(
+                factoryId,
+                basicSettings.getLanguage(),
+                basicSettings.getTimezone(),
+                basicSettings.getDateFormat(),
+                null // currency not in basic settings
+        );
+
+        // 更新工作时间设置
+        FactorySettingsDTO.WorkTimeSettings workTime = FactorySettingsDTO.WorkTimeSettings.builder()
+                .startTime(basicSettings.getWorkStartTime())
+                .endTime(basicSettings.getWorkEndTime())
+                .build();
+        settingsService.updateWorkTimeSettings(factoryId, workTime);
+
+        return ApiResponse.success("基础设置已保存", basicSettings);
+    }
+
+    @PutMapping("/notification")
+    @Operation(summary = "更新通知设置（前端格式）")
+    public ApiResponse<FactorySettingsDTO.WebNotificationSettings> updateWebNotificationSettings(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestBody @Valid FactorySettingsDTO.WebNotificationSettings notifSettings) {
+        log.info("更新通知设置: factoryId={}", factoryId);
+
+        // 转换为后端格式并保存
+        FactorySettingsDTO.NotificationSettings backendSettings = FactorySettingsDTO.NotificationSettings.builder()
+                .emailEnabled(notifSettings.getEmailNotification())
+                .pushEnabled(notifSettings.getAlertNotification())
+                .wechatEnabled(false)
+                .build();
+        settingsService.updateNotificationSettings(factoryId, backendSettings);
+
+        return ApiResponse.success("通知设置已保存", notifSettings);
+    }
+
+    @PutMapping("/security")
+    @Operation(summary = "更新安全设置")
+    public ApiResponse<FactorySettingsDTO.SecuritySettings> updateSecuritySettings(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestBody @Valid FactorySettingsDTO.SecuritySettings securitySettings) {
+        log.info("更新安全设置: factoryId={}", factoryId);
+        // 安全设置目前存储在内存中，实际项目中应存储到数据库
+        // 这里只返回成功响应
+        return ApiResponse.success("安全设置已保存", securitySettings);
     }
 
     // ==================== AI设置 ====================

@@ -4,26 +4,107 @@ export const PLATFORM_ROLES = {
   PLATFORM_ADMIN: 'platform_admin'  // 统一的平台管理员角色
 } as const;
 
-// 工厂角色 (User表)
+// 工厂角色 (User表) - 14角色系统
 export const FACTORY_ROLES = {
+  // Level 0 - 工厂最高管理
   FACTORY_SUPER_ADMIN: 'factory_super_admin',
-  PERMISSION_ADMIN: 'permission_admin',
-  DEPARTMENT_ADMIN: 'department_admin',
+
+  // Level 10 - 职能部门经理
+  HR_ADMIN: 'hr_admin',
+  PROCUREMENT_MANAGER: 'procurement_manager',
+  SALES_MANAGER: 'sales_manager',
+  PRODUCTION_MANAGER: 'production_manager',
+  WAREHOUSE_MANAGER: 'warehouse_manager',
+  EQUIPMENT_ADMIN: 'equipment_admin',
+  QUALITY_MANAGER: 'quality_manager',
+  FINANCE_MANAGER: 'finance_manager',
+
+  // Level 20 - 车间管理
+  WORKSHOP_SUPERVISOR: 'workshop_supervisor',
+
+  // Level 30 - 一线员工
+  QUALITY_INSPECTOR: 'quality_inspector',
   OPERATOR: 'operator',
+  WAREHOUSE_WORKER: 'warehouse_worker',
+
+  // Level 50 - 查看者
   VIEWER: 'viewer',
-  UNACTIVATED: 'unactivated'
+
+  // Level 99 - 未激活
+  UNACTIVATED: 'unactivated',
+
+  // 已废弃 (向后兼容)
+  PERMISSION_ADMIN: 'permission_admin',
+  DEPARTMENT_ADMIN: 'department_admin'
 } as const;
+
+// 角色元数据 - 与后端 FactoryUserRole 保持同步
+export interface RoleMetadata {
+  displayName: string;
+  description: string;
+  level: number;
+  department: string;
+  isDeprecated?: boolean;
+}
+
+export const ROLE_METADATA: Record<string, RoleMetadata> = {
+  // Level 0
+  factory_super_admin: { displayName: '工厂总监', description: '拥有工厂所有权限', level: 0, department: 'all' },
+
+  // Level 10 - 职能部门经理
+  hr_admin: { displayName: 'HR管理员', description: '人事管理、考勤、薪资', level: 10, department: 'hr' },
+  procurement_manager: { displayName: '采购主管', description: '供应商、采购、成本', level: 10, department: 'procurement' },
+  sales_manager: { displayName: '销售主管', description: '客户、订单、出货', level: 10, department: 'sales' },
+  production_manager: { displayName: '生产经理', description: '车间统管、生产计划', level: 10, department: 'production' },
+  warehouse_manager: { displayName: '仓储主管', description: '库存、出入库、盘点', level: 10, department: 'warehouse' },
+  equipment_admin: { displayName: '设备管理员', description: '设备维护、保养、告警', level: 10, department: 'equipment' },
+  quality_manager: { displayName: '质量经理', description: '质量体系、质检审核', level: 10, department: 'quality' },
+  finance_manager: { displayName: '财务主管', description: '成本核算、费用、报表', level: 10, department: 'finance' },
+
+  // Level 20 - 车间管理
+  workshop_supervisor: { displayName: '车间主任', description: '车间日常、人员调度', level: 20, department: 'workshop' },
+
+  // Level 30 - 一线员工
+  quality_inspector: { displayName: '质检员', description: '执行质检、提交报告', level: 30, department: 'quality' },
+  operator: { displayName: '操作员', description: '生产执行、打卡记录', level: 30, department: 'production' },
+  warehouse_worker: { displayName: '仓库员', description: '出入库操作、盘点', level: 30, department: 'warehouse' },
+
+  // Level 50 - 查看者
+  viewer: { displayName: '查看者', description: '只读访问', level: 50, department: 'none' },
+
+  // Level 99 - 未激活
+  unactivated: { displayName: '未激活', description: '账户未激活', level: 99, department: 'none' },
+
+  // 已废弃角色 (向后兼容)
+  permission_admin: { displayName: '权限管理员', description: '管理用户权限和角色', level: 10, department: 'system', isDeprecated: true },
+  department_admin: { displayName: '部门管理员', description: '管理部门相关业务', level: 15, department: 'department', isDeprecated: true },
+
+  // 平台角色
+  platform_admin: { displayName: '平台管理员', description: '平台最高权限', level: 0, department: 'platform' }
+};
 
 // 统一角色定义 (兼容旧代码)
 export const USER_ROLES = {
   // 平台角色
-  PLATFORM_ADMIN: 'platform_admin', // 统一的平台管理员角色
-  // 工厂角色
+  PLATFORM_ADMIN: 'platform_admin',
+  // 工厂角色 - 新增
   FACTORY_SUPER_ADMIN: 'factory_super_admin',
-  PERMISSION_ADMIN: 'permission_admin',
-  DEPARTMENT_ADMIN: 'department_admin',
+  HR_ADMIN: 'hr_admin',
+  PROCUREMENT_MANAGER: 'procurement_manager',
+  SALES_MANAGER: 'sales_manager',
+  PRODUCTION_MANAGER: 'production_manager',
+  WAREHOUSE_MANAGER: 'warehouse_manager',
+  EQUIPMENT_ADMIN: 'equipment_admin',
+  QUALITY_MANAGER: 'quality_manager',
+  FINANCE_MANAGER: 'finance_manager',
+  WORKSHOP_SUPERVISOR: 'workshop_supervisor',
+  QUALITY_INSPECTOR: 'quality_inspector',
   OPERATOR: 'operator',
-  VIEWER: 'viewer'
+  WAREHOUSE_WORKER: 'warehouse_worker',
+  VIEWER: 'viewer',
+  // 已废弃 (向后兼容)
+  PERMISSION_ADMIN: 'permission_admin',
+  DEPARTMENT_ADMIN: 'department_admin'
 } as const;
 
 export type PlatformRole = typeof PLATFORM_ROLES[keyof typeof PLATFORM_ROLES];
@@ -369,17 +450,73 @@ export function getUserPermissions(user: User | null | undefined): string[] {
 
 /**
  * 根据角色获取默认权限
+ * 权限格式: module:action (如 production:read, quality:write)
  */
 function getDefaultPermissionsForRole(role: string): string[] {
   const rolePermissions: Record<string, string[]> = {
     // 平台角色
     platform_admin: ['platform_access', 'admin_access', 'processing_access', 'farming_access', 'logistics_access', 'trace_access'],
-    // 工厂角色
-    factory_super_admin: ['admin_access', 'processing_access', 'farming_access', 'logistics_access', 'trace_access'],
-    permission_admin: ['admin_access'],
-    department_admin: ['processing_access'],
-    operator: ['processing_access'],
-    viewer: ['trace_access'],
+
+    // Level 0 - 工厂总监 (所有权限)
+    factory_super_admin: [
+      'admin_access', 'processing_access', 'farming_access', 'logistics_access', 'trace_access',
+      'dashboard:read', 'dashboard:write',
+      'production:read', 'production:write',
+      'warehouse:read', 'warehouse:write',
+      'quality:read', 'quality:write',
+      'procurement:read', 'procurement:write',
+      'sales:read', 'sales:write',
+      'hr:read', 'hr:write',
+      'equipment:read', 'equipment:write',
+      'finance:read', 'finance:write',
+      'system:read', 'system:write'
+    ],
+
+    // Level 10 - 职能部门经理
+    hr_admin: ['hr:read', 'hr:write', 'dashboard:read'],
+    procurement_manager: ['procurement:read', 'procurement:write', 'warehouse:read', 'dashboard:read'],
+    sales_manager: ['sales:read', 'sales:write', 'warehouse:read', 'dashboard:read'],
+    production_manager: [
+      'production:read', 'production:write',
+      'warehouse:read', 'quality:read', 'procurement:read',
+      'hr:read', 'equipment:read', 'system:read',
+      'dashboard:read', 'dashboard:write',
+      'processing_access', 'admin_access'
+    ],
+    warehouse_manager: ['warehouse:read', 'warehouse:write', 'production:read', 'dashboard:read', 'dashboard:write'],
+    equipment_admin: ['equipment:read', 'equipment:write', 'dashboard:read'],
+    quality_manager: ['quality:read', 'quality:write', 'production:read', 'dashboard:read'],
+    finance_manager: [
+      'finance:read', 'finance:write',
+      'production:read', 'procurement:read', 'sales:read',
+      'dashboard:read'
+    ],
+
+    // Level 20 - 车间管理
+    workshop_supervisor: [
+      'production:read', 'production:write',
+      'warehouse:read', 'quality:write',
+      'hr:read', 'equipment:read',
+      'dashboard:read',
+      'processing_access'
+    ],
+
+    // Level 30 - 一线员工
+    quality_inspector: ['quality:write', 'production:read', 'dashboard:read', 'processing_access'],
+    operator: ['production:write', 'dashboard:read', 'processing_access'],
+    warehouse_worker: ['warehouse:write', 'dashboard:read'],
+
+    // Level 50 - 查看者
+    viewer: [
+      'dashboard:read', 'production:read', 'warehouse:read',
+      'quality:read', 'procurement:read', 'sales:read',
+      'hr:read', 'equipment:read',
+      'trace_access'
+    ],
+
+    // 已废弃角色 (向后兼容)
+    permission_admin: ['admin_access', 'system:read', 'system:write'],
+    department_admin: ['processing_access', 'production:read', 'production:write'],
   };
   return rolePermissions[role] || [];
 }
