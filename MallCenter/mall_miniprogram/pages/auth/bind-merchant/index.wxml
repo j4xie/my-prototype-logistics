@@ -1,0 +1,130 @@
+<!--
+  商户绑定页面
+-->
+<view class="container">
+  <!-- 头部信息 -->
+  <view class="bind-header">
+    <text class="header-icon">🏢</text>
+    <text class="header-title">绑定商家账号</text>
+    <text class="header-subtitle">请填写商家信息以完成绑定</text>
+  </view>
+
+  <!-- 表单内容 -->
+  <scroll-view class="form-scroll" scroll-y>
+    <!-- 微信账号信息 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="section-icon">💚</text>
+        <text>微信账号</text>
+      </view>
+      <view class="wechat-info">
+        <image class="wechat-avatar" src="{{userInfo.avatarUrl || '/public/img/no_pic.png'}}" mode="aspectFill"></image>
+        <view class="wechat-details">
+          <text class="wechat-name">{{userInfo.nickName || '微信用户'}}</text>
+          <text class="wechat-id">微信已授权</text>
+        </view>
+        <view class="verified-badge">
+          <text class="cuIcon-roundcheck"></text>
+          <text>已验证</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 公司信息 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="section-icon">🏢</text>
+        <text>公司信息</text>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label required">公司名称</text>
+        <input class="form-input" placeholder="请输入公司全称" value="{{formData.companyName}}" bindinput="onInputChange" data-field="companyName"/>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label required">统一社会信用代码</text>
+        <input class="form-input" placeholder="18位统一社会信用代码" maxlength="18" value="{{formData.creditCode}}" bindinput="onInputChange" data-field="creditCode"/>
+        <text class="form-help">用于企业认证，请确保准确无误</text>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label required">公司类型</text>
+        <picker mode="selector" range="{{companyTypes}}" range-key="label" bindchange="onCompanyTypeChange">
+          <view class="form-picker {{formData.companyType ? '' : 'placeholder'}}">
+            <text>{{formData.companyTypeLabel || '请选择公司类型'}}</text>
+            <text class="cuIcon-right"></text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label required">公司地址</text>
+        <input class="form-input" placeholder="请输入详细地址" value="{{formData.companyAddress}}" bindinput="onInputChange" data-field="companyAddress"/>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label required">营业执照照片</text>
+        <view class="license-upload" bindtap="uploadLicense">
+          <block wx:if="{{!licenseImage}}">
+            <text class="upload-icon cuIcon-camera"></text>
+            <text class="upload-text">点击上传营业执照</text>
+            <text class="upload-hint">支持 JPG、PNG 格式</text>
+          </block>
+          <block wx:else>
+            <image class="license-preview" src="{{licenseImage}}" mode="aspectFit"></image>
+            <view class="license-actions">
+              <view class="license-btn" catchtap="viewLicense">
+                <text class="cuIcon-preview"></text>
+              </view>
+              <view class="license-btn" catchtap="removeLicense">
+                <text class="cuIcon-close"></text>
+              </view>
+            </view>
+          </block>
+        </view>
+      </view>
+    </view>
+
+    <!-- 联系人信息 -->
+    <view class="form-section">
+      <view class="section-title">
+        <text class="section-icon">👤</text>
+        <text>联系人信息</text>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label required">联系人姓名</text>
+        <input class="form-input" placeholder="请输入姓名" value="{{formData.contactName}}" bindinput="onInputChange" data-field="contactName"/>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label required">联系电话</text>
+        <input class="form-input" type="number" placeholder="请输入手机号" maxlength="11" value="{{formData.contactPhone}}" bindinput="onInputChange" data-field="contactPhone"/>
+      </view>
+    </view>
+
+    <!-- 提示信息 -->
+    <view class="form-tip">
+      <view class="tip-title">
+        <text class="cuIcon-info"></text>
+        <text>温馨提示</text>
+      </view>
+      <view class="tip-content">
+        <text>• 提交后平台将在1-3个工作日内审核</text>
+        <text>• 审核通过后即可使用商家功能</text>
+        <text>• 如有疑问请联系客服：400-123-4567</text>
+      </view>
+    </view>
+
+    <!-- 底部占位 -->
+    <view style="height: 140rpx;"></view>
+  </scroll-view>
+
+  <!-- 提交按钮 -->
+  <view class="submit-section">
+    <button class="submit-btn" bindtap="handleSubmit" disabled="{{submitting}}">
+      {{submitting ? '提交中...' : '提交绑定'}}
+    </button>
+  </view>
+</view>

@@ -1,0 +1,59 @@
+<!--
+  AI咨询历史页面
+-->
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrapper">
+      <text class="cuIcon-search"></text>
+      <input class="search-input" placeholder="搜索历史对话" value="{{searchText}}" bindinput="onSearch"/>
+      <text class="cuIcon-close" wx:if="{{searchText}}" bindtap="clearSearch"></text>
+    </view>
+  </view>
+
+  <!-- 历史列表 -->
+  <scroll-view class="history-scroll" scroll-y wx:if="{{historyList.length > 0}}">
+    <view class="history-list">
+      <view class="history-item" wx:for="{{filteredList}}" wx:key="id" bindtap="goToChat" data-id="{{item.id}}">
+        <view class="history-icon">
+          <text class="cuIcon-creativefill"></text>
+        </view>
+        <view class="history-content">
+          <text class="history-question">{{item.question}}</text>
+          <text class="history-answer">{{item.answer}}</text>
+          <view class="history-meta">
+            <text class="history-time">{{item.dateStr}}</text>
+            <text class="history-count">{{item.messageCount}}条对话</text>
+          </view>
+        </view>
+        <text class="cuIcon-right history-arrow"></text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{historyList.length === 0}}">
+    <text class="cuIcon-time empty-icon"></text>
+    <text class="empty-title">暂无咨询记录</text>
+    <text class="empty-desc">开始与AI助手对话，这里将保存您的咨询历史</text>
+    <button class="start-chat-btn" bindtap="goNewChat">
+      <text class="cuIcon-add"></text>
+      <text>开始对话</text>
+    </button>
+  </view>
+
+  <!-- 搜索无结果 -->
+  <view class="empty-state" wx:if="{{historyList.length > 0 && filteredList.length === 0}}">
+    <text class="cuIcon-search empty-icon"></text>
+    <text class="empty-title">未找到相关记录</text>
+    <text class="empty-desc">换个关键词试试</text>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-bar" wx:if="{{historyList.length > 0}}">
+    <button class="clear-all-btn" bindtap="clearAllHistory">
+      <text class="cuIcon-delete"></text>
+      <text>清空历史</text>
+    </button>
+  </view>
+</view>

@@ -1,0 +1,103 @@
+<!--
+  工厂分析报告页面
+-->
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">AI正在分析工厂数据...</text>
+  </view>
+
+  <block wx:else>
+    <!-- 报告标题 -->
+    <view class="report-header">
+      <text class="report-title">{{factory.name}}</text>
+      <text class="report-date">分析日期: {{reportDate}}</text>
+    </view>
+
+    <!-- 综合评分 -->
+    <view class="score-card">
+      <view class="score-circle">
+        <text class="score-number">{{overallScore}}</text>
+        <text class="score-label">综合评分</text>
+      </view>
+      <text class="score-desc">{{scoreLevel}} | 超过全国{{percentile}}%的同类工厂</text>
+    </view>
+
+    <!-- 关键指标 -->
+    <view class="analysis-section">
+      <view class="section-title">
+        <text class="section-icon">指标</text>
+        <text>关键指标</text>
+      </view>
+      <view class="metric-grid">
+        <view class="metric-card" wx:for="{{keyMetrics}}" wx:key="label">
+          <text class="metric-value">{{item.value}}</text>
+          <text class="metric-label">{{item.label}}</text>
+        </view>
+      </view>
+
+      <!-- 月度产量趋势 -->
+      <view class="chart-section">
+        <text class="chart-title">近6个月产量趋势</text>
+        <view class="chart-container">
+          <view class="chart-bar" wx:for="{{monthlyData}}" wx:key="month" style="height: {{item.percent}}%;">
+            <text class="chart-label">{{item.month}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 核心优势 -->
+    <view class="analysis-section">
+      <view class="section-title">
+        <text class="section-icon">优势</text>
+        <text>核心优势</text>
+      </view>
+      <view class="badge-list">
+        <text class="strength-badge" wx:for="{{strengths}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+
+    <!-- 改进建议 -->
+    <view class="analysis-section">
+      <view class="section-title">
+        <text class="section-icon">建议</text>
+        <text>改进建议</text>
+      </view>
+      <view class="badge-list">
+        <text class="weakness-badge" wx:for="{{weaknesses}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+
+    <!-- AI智能洞察 -->
+    <view class="analysis-section">
+      <view class="section-title">
+        <text class="section-icon">AI</text>
+        <text>AI智能洞察</text>
+      </view>
+      <view class="insight-list">
+        <view class="insight-item" wx:for="{{insights}}" wx:key="title">
+          <text class="insight-icon">{{item.icon}}</text>
+          <view class="insight-content">
+            <text class="insight-title">{{item.title}}</text>
+            <text class="insight-desc">{{item.desc}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- AI生成说明 -->
+    <view class="ai-disclaimer">
+      <text>* 本报告由AI智能分析生成，仅供参考</text>
+    </view>
+
+    <!-- 底部操作栏 -->
+    <view class="bottom-bar">
+      <button class="share-btn" open-type="share">
+        <text class="cuIcon-share"></text>
+        <text>分享报告</text>
+      </button>
+    </view>
+  </block>
+</view>

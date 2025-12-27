@@ -1,0 +1,68 @@
+<!--
+  员工管理页面
+-->
+<view class="container">
+  <!-- 添加按钮 -->
+  <view class="add-section">
+    <button class="cu-btn bg-green block" bindtap="addStaff">
+      <text class="cuIcon-add margin-right-xs"></text>添加员工
+    </button>
+  </view>
+
+  <!-- 员工列表 -->
+  <view class="staff-list">
+    <view class="staff-card" wx:for="{{staffList}}" wx:key="id">
+      <view class="staff-avatar">
+        <image src="{{item.avatar || '/public/img/no_pic.png'}}" mode="aspectFill"></image>
+        <view class="status-dot {{item.status === 1 ? 'active' : 'inactive'}}"></view>
+      </view>
+      <view class="staff-info">
+        <view class="staff-name">
+          <text>{{item.name}}</text>
+          <text class="cu-tag sm {{item.role === '管理员' ? 'bg-red' : 'bg-gray'}}">{{item.role}}</text>
+        </view>
+        <view class="staff-phone" bindtap="callStaff" data-phone="{{item.phone}}">
+          <text class="cuIcon-phone margin-right-xs"></text>{{item.phone}}
+        </view>
+        <text class="staff-join">加入时间: {{item.joinTime}}</text>
+      </view>
+      <view class="staff-action" bindtap="editStaff" data-staff="{{item}}">
+        <text class="cuIcon-more"></text>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && staffList.length === 0}}">
+      <text class="cuIcon-people"></text>
+      <text>暂无员工</text>
+    </view>
+  </view>
+
+  <!-- 权限说明 -->
+  <view class="tips-section">
+    <view class="tips-title">角色权限说明</view>
+    <view class="tips-item">
+      <text class="cu-tag sm bg-red">管理员</text>
+      <text>拥有所有权限，可管理员工</text>
+    </view>
+    <view class="tips-item">
+      <text class="cu-tag sm bg-gray">店员</text>
+      <text>商品管理、订单处理</text>
+    </view>
+    <view class="tips-item">
+      <text class="cu-tag sm bg-gray">配送员</text>
+      <text>查看配送订单、确认送达</text>
+    </view>
+    <view class="tips-item">
+      <text class="cu-tag sm bg-gray">客服</text>
+      <text>处理客户咨询和售后</text>
+    </view>
+  </view>
+</view>
+
+
+
+
+
+
+

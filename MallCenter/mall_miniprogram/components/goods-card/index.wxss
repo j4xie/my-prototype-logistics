@@ -15,12 +15,23 @@
   border-radius: 20rpx;
 	box-shadow: 0rpx 0rpx 60rpx rgba(211, 211, 211, 1);
 }
-.goods-box .img-box {
+.goods-box-img-box {
   width: 100%;
   height: 349rpx;
   overflow: hidden;
 }
-.goods-box .img-box image {
+.goods-box-img-box image {
   width: 100%;
   height: 336rpx;
+}
+
+/* 未登录时的价格提示 */
+.price-login-hint {
+  display: inline-block;
+  font-size: 22rpx;
+  color: #D4AF37;
+  padding: 8rpx 16rpx;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1rpx solid #D4AF37;
+  border-radius: 20rpx;
 }

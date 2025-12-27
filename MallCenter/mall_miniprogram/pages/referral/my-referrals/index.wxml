@@ -1,0 +1,121 @@
+<!--
+  我的推荐页面
+-->
+<view class="container">
+  <!-- 统计头部 -->
+  <view class="stats-header">
+    <view class="stats-bg"></view>
+    <view class="stats-content">
+      <view class="stats-row">
+        <view class="stat-item">
+          <text class="stat-value">{{stats.total}}</text>
+          <text class="stat-label">总推荐</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-value success">{{stats.success}}</text>
+          <text class="stat-label">已成功</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-value pending">{{stats.pending}}</text>
+          <text class="stat-label">待确认</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-value reward">¥{{stats.totalRewards}}</text>
+          <text class="stat-label">累计奖励</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 标签页 -->
+  <view class="tabs-wrapper">
+    <view class="tabs">
+      <view class="tab-item {{activeTab === item.key ? 'active' : ''}}"
+            wx:for="{{tabs}}" wx:key="key"
+            data-key="{{item.key}}"
+            bindtap="switchTab">
+        <text class="tab-text">{{item.name}}</text>
+        <view class="tab-indicator" wx:if="{{activeTab === item.key}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 列表内容 -->
+  <block wx:else>
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{referralList.length === 0}}">
+      <text class="empty-icon">📭</text>
+      <text class="empty-text">暂无推荐记录</text>
+      <view class="empty-action" bindtap="goShare">去邀请好友</view>
+    </view>
+
+    <!-- 推荐列表 -->
+    <view class="referral-list" wx:else>
+      <view class="referral-item" wx:for="{{referralList}}" wx:key="id"
+            data-id="{{item.id}}" bindtap="viewDetail">
+        <!-- 用户信息 -->
+        <view class="user-section">
+          <view class="avatar" wx:if="{{item.avatar}}">
+            <image class="avatar-img" src="{{item.avatar}}" mode="aspectFill"></image>
+          </view>
+          <view class="avatar default-avatar" wx:else>
+            <text>{{item.userName[0] || '?'}}</text>
+          </view>
+          <view class="user-info">
+            <text class="user-name">{{item.userName}}</text>
+            <text class="user-phone">{{item.phone}}</text>
+          </view>
+          <view class="status-badge {{item.status}}">
+            <text>{{item.status === 'success' ? '已成功' : '待确认'}}</text>
+          </view>
+        </view>
+
+        <!-- 详情信息 -->
+        <view class="detail-section">
+          <view class="detail-row">
+            <text class="detail-label">注册时间</text>
+            <text class="detail-value">{{item.registerTime}}</text>
+          </view>
+          <view class="detail-row" wx:if="{{item.firstOrderTime}}">
+            <text class="detail-label">首单时间</text>
+            <text class="detail-value">{{item.firstOrderTime}}</text>
+          </view>
+          <view class="detail-row" wx:if="{{item.status === 'success'}}">
+            <text class="detail-label">获得奖励</text>
+            <text class="detail-value reward">+¥{{item.reward}}</text>
+          </view>
+          <view class="detail-row" wx:if="{{item.status === 'pending'}}">
+            <text class="detail-label">状态说明</text>
+            <text class="detail-value hint">等待完成首单</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="load-more" wx:if="{{referralList.length > 0}}">
+      <view class="loading-more" wx:if="{{loadingMore}}">
+        <view class="loading-spinner small"></view>
+        <text>加载中...</text>
+      </view>
+      <text class="no-more" wx:elif="{{!hasMore}}">没有更多了</text>
+    </view>
+  </block>
+
+  <!-- 底部邀请按钮 -->
+  <view class="bottom-bar">
+    <button class="invite-btn" open-type="share">
+      <text class="btn-icon">👥</text>
+      <text>邀请好友</text>
+    </button>
+  </view>
+</view>

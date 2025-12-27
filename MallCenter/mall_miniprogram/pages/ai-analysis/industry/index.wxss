@@ -1,0 +1,491 @@
+/* 行业分析报告页面样式 */
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 140rpx;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}
+
+.loading-spinner {
+  width: 80rpx;
+  height: 80rpx;
+  border: 6rpx solid #f3f3f3;
+  border-top: 6rpx solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 30rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 12rpx;
+}
+
+.loading-tip {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 错误状态 */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  padding: 40rpx;
+}
+
+.error-icon {
+  font-size: 80rpx;
+  margin-bottom: 30rpx;
+}
+
+.error-message {
+  font-size: 28rpx;
+  color: #666;
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.retry-btn {
+  padding: 20rpx 60rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+/* 报告头部 */
+.report-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  padding: 60rpx 30rpx 50rpx;
+  text-align: center;
+}
+
+.report-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+}
+
+.report-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.report-date {
+  font-size: 28rpx;
+  opacity: 0.9;
+}
+
+.cache-badge {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 6rpx 16rpx;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20rpx;
+  font-size: 22rpx;
+}
+
+.cache-icon {
+  font-size: 20rpx;
+}
+
+.report-time {
+  font-size: 24rpx;
+  opacity: 0.8;
+}
+
+/* 通用区块 */
+.section {
+  background: #fff;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.section-icon {
+  font-size: 36rpx;
+}
+
+/* 行业亮点 */
+.highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.highlight-card {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+  padding: 30rpx 20rpx;
+  border-radius: 16rpx;
+  text-align: center;
+  position: relative;
+}
+
+.highlight-value {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 8rpx;
+}
+
+.highlight-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.highlight-change {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+  font-size: 20rpx;
+}
+
+.change-up {
+  background: #e6f7e6;
+  color: #52c41a;
+}
+
+.change-down {
+  background: #fff2f0;
+  color: #ff4d4f;
+}
+
+.change-stable {
+  background: #f0f0f0;
+  color: #999;
+}
+
+/* 行业趋势 */
+.trend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.trend-item {
+  padding: 24rpx;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+  border-left: 6rpx solid #667eea;
+}
+
+.trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.trend-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.trend-tag {
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  font-size: 22rpx;
+}
+
+.trend-tag-hot {
+  background: #ff4d4f;
+  color: #fff;
+}
+
+.trend-tag-rising {
+  background: #faad14;
+  color: #fff;
+}
+
+.trend-desc {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 16rpx;
+}
+
+.trend-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.keyword {
+  padding: 6rpx 16rpx;
+  background: #e6f0ff;
+  color: #667eea;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+}
+
+/* 竞争格局表格 */
+.competitor-table {
+  background: #f8f9fa;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  padding: 20rpx 24rpx;
+  background: #667eea;
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+.table-row {
+  display: flex;
+  padding: 20rpx 24rpx;
+  border-bottom: 1rpx solid #eee;
+  align-items: center;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.col-rank {
+  width: 80rpx;
+  flex-shrink: 0;
+}
+
+.col-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.col-share {
+  width: 160rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8rpx;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.rank-1 { background: #ffd700; color: #333; }
+.rank-2 { background: #c0c0c0; color: #333; }
+.rank-3 { background: #cd7f32; color: #fff; }
+.rank-4, .rank-5 { background: #e0e0e0; color: #666; }
+
+.share-value {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.share-change {
+  font-size: 24rpx;
+}
+
+.share-change.up { color: #52c41a; }
+.share-change.down { color: #ff4d4f; }
+.share-change.stable { color: #999; }
+
+/* 市场机会 */
+.opportunity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.opportunity-card {
+  padding: 30rpx;
+  border-radius: 20rpx;
+  color: #fff;
+}
+
+.opportunity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16rpx;
+}
+
+.opportunity-title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.potential-badge {
+  padding: 6rpx 16rpx;
+  background: rgba(255,255,255,0.2);
+  border-radius: 16rpx;
+  font-size: 22rpx;
+}
+
+.potential-high { border: 2rpx solid #fff; }
+.potential-medium { opacity: 0.9; }
+.potential-low { opacity: 0.8; }
+
+.opportunity-desc {
+  font-size: 26rpx;
+  line-height: 1.6;
+  opacity: 0.95;
+  margin-bottom: 16rpx;
+}
+
+.opportunity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.opp-tag {
+  padding: 6rpx 16rpx;
+  background: rgba(255,255,255,0.2);
+  border-radius: 12rpx;
+  font-size: 22rpx;
+}
+
+/* AI洞察 */
+.insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.insight-item {
+  padding: 24rpx;
+  background: #f8f9fa;
+  border-radius: 16rpx;
+}
+
+.insight-header {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.insight-type, .insight-importance {
+  padding: 6rpx 16rpx;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+}
+
+.type-technology { background: #e6f7ff; color: #1890ff; }
+.type-market { background: #f6ffed; color: #52c41a; }
+.type-policy { background: #fff7e6; color: #fa8c16; }
+.type-opportunity { background: #f9f0ff; color: #722ed1; }
+.type-risk { background: #fff2f0; color: #ff4d4f; }
+
+.importance-critical { background: #ff4d4f; color: #fff; }
+.importance-important { background: #faad14; color: #fff; }
+.importance-normal { background: #d9d9d9; color: #666; }
+
+.insight-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.insight-content {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.7;
+  margin-bottom: 16rpx;
+}
+
+.insight-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* AI声明 */
+.ai-disclaimer {
+  padding: 30rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.ai-disclaimer text {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* 底部操作栏 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 20rpx 40rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  width: 100%;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-radius: 48rpx;
+  font-size: 30rpx;
+  border: none;
+}
+
+.share-btn::after {
+  border: none;
+}
