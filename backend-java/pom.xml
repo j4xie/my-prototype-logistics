@@ -127,6 +127,15 @@
             <artifactId>easyexcel</artifactId>
             <version>3.3.2</version>
         </dependency>
+
+        <!-- Hikvision Camera SDK -->
+        <dependency>
+            <groupId>com.hikvision</groupId>
+            <artifactId>mv-camera-control</artifactId>
+            <version>4.3.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/MvCameraControlWrapper.jar</systemPath>
+        </dependency>
     </dependencies>
 
     <build>
