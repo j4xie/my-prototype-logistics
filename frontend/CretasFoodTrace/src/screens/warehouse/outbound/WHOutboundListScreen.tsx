@@ -109,7 +109,7 @@ export function WHOutboundListScreen() {
   const loadData = useCallback(async () => {
     try {
       const [shipmentsResult, statsResult] = await Promise.allSettled([
-        shipmentApiClient.getShipments({ page: 0, size: 50 }),
+        shipmentApiClient.getShipments({ page: 1, size: 50 }),
         shipmentApiClient.getShipmentStats(),
       ]);
 

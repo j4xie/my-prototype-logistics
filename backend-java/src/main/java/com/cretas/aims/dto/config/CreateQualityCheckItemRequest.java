@@ -1,0 +1,91 @@
+package com.cretas.aims.dto.config;
+
+import com.cretas.aims.entity.enums.QualityCheckCategory;
+import com.cretas.aims.entity.enums.QualitySeverity;
+import com.cretas.aims.entity.enums.SamplingStrategy;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import java.math.BigDecimal;
+
+/**
+ * 创建质检项请求
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2025-12-29
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateQualityCheckItemRequest {
+
+    @NotBlank(message = "项目编号不能为空")
+    @Size(max = 50, message = "项目编号不能超过50个字符")
+    private String itemCode;
+
+    @NotBlank(message = "项目名称不能为空")
+    @Size(max = 100, message = "项目名称不能超过100个字符")
+    private String itemName;
+
+    @NotNull(message = "项目类别不能为空")
+    private QualityCheckCategory category;
+
+    @Size(max = 500, message = "项目描述不能超过500个字符")
+    private String description;
+
+    @Size(max = 500, message = "检测方法不能超过500个字符")
+    private String checkMethod;
+
+    @Size(max = 200, message = "检测标准不能超过200个字符")
+    private String standardReference;
+
+    // 标准值配置
+    @Builder.Default
+    private String valueType = "NUMERIC";
+
+    private String standardValue;
+    private BigDecimal minValue;
+    private BigDecimal maxValue;
+
+    @Size(max = 30, message = "单位不能超过30个字符")
+    private String unit;
+
+    private BigDecimal tolerance;
+
+    // 抽样配置
+    @Builder.Default
+    private SamplingStrategy samplingStrategy = SamplingStrategy.RANDOM;
+
+    @Builder.Default
+    private BigDecimal samplingRatio = new BigDecimal("10.00");
+
+    @Builder.Default
+    private Integer minSampleSize = 1;
+
+    private BigDecimal aqlLevel;
+
+    // 严重程度和控制
+    @Builder.Default
+    private QualitySeverity severity = QualitySeverity.MAJOR;
+
+    @Builder.Default
+    private Boolean isRequired = true;
+
+    @Builder.Default
+    private Boolean requirePhotoOnFail = false;
+
+    @Builder.Default
+    private Boolean requireNoteOnFail = true;
+
+    private Integer sortOrder;
+
+    @Builder.Default
+    private Boolean enabled = true;
+}

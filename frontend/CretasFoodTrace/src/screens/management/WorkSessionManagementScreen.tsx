@@ -70,7 +70,7 @@ export default function WorkSessionManagementScreen() {
       setLoading(true);
       const response = await workSessionApiClient.getWorkSessions({
         factoryId: user?.factoryId,
-        page: 0,
+        page: 1,
         size: 100,
       });
 

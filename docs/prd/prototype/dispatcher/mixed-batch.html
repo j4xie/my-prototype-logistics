@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>混批排产管理 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="plan-list.html" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">混批排产管理</span>
+      <a href="#" style="color: #a18cd1; text-decoration: none; font-size: 14px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        规则
+      </a>
+    </div>
+
+    <div class="content" style="background: #f5f5f5;">
+      <!-- AI检测提示 -->
+      <div style="background: linear-gradient(135deg, #722ed1 0%, #9254de 100%); border-radius: 12px; padding: 16px; margin-bottom: 16px; color: white;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12z"/>
+          </svg>
+          <span style="font-size: 14px; font-weight: 600;">AI 智能检测</span>
+        </div>
+        <div style="font-size: 15px; margin-bottom: 6px;">
+          检测到 <span style="font-size: 20px; font-weight: 600;">3</span> 组订单可合并
+        </div>
+        <div style="font-size: 13px; opacity: 0.9;">
+          预计节省换型时间 <span style="font-weight: 600;">45分钟</span>，提升产能利用率 <span style="font-weight: 600;">12%</span>
+        </div>
+      </div>
+
+      <!-- 筛选选项 -->
+      <div class="filter-chips" style="margin-bottom: 16px;">
+        <button class="filter-chip active">全部 (3)</button>
+        <button class="filter-chip">同原料 (2)</button>
+        <button class="filter-chip">同工艺 (1)</button>
+        <button class="filter-chip">已确认</button>
+        <button class="filter-chip">已拒绝</button>
+      </div>
+
+      <!-- 混批组1: 同原料不同客户 -->
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #722ed1;">
+        <!-- 头部信息 -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; font-weight: 600; color: #333;">合批组 #1</span>
+              <span style="font-size: 10px; padding: 2px 6px; background: #f9f0ff; color: #722ed1; border-radius: 3px;">同原料不同客户</span>
+              <span style="font-size: 10px; padding: 2px 6px; background: #fff7e6; color: #fa8c16; border-radius: 3px;">推荐</span>
+            </div>
+            <div style="font-size: 12px; color: #999;">原料批次: MB-20241227-001</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; color: #999;">预计节省</div>
+            <div style="font-size: 16px; font-weight: 600; color: #52c41a;">20分钟</div>
+          </div>
+        </div>
+
+        <!-- 原料信息 -->
+        <div style="padding: 10px; background: #f9f0ff; border-radius: 8px; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#722ed1" stroke-width="2">
+              <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+            </svg>
+            <span style="font-size: 13px; color: #333; font-weight: 500;">带鱼 (冷冻)</span>
+            <span style="font-size: 12px; color: #722ed1; font-weight: 600;">500kg</span>
+          </div>
+          <div style="font-size: 11px; color: #666; margin-top: 4px; padding-left: 24px;">
+            供应商: 舟山海鲜 · 入库: 12-27 08:00
+          </div>
+        </div>
+
+        <!-- 订单列表 -->
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 12px; color: #666; margin-bottom: 8px;">待合并订单 (3个)</div>
+
+          <!-- 订单1 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fafafa; border-radius: 6px; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: #722ed1;">
+              <div>
+                <div style="font-size: 12px; color: #333; font-weight: 500;">ORD-001</div>
+                <div style="font-size: 11px; color: #999;">带鱼段 200g</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; color: #1890ff; font-weight: 500;">盒马</div>
+              <div style="font-size: 11px; color: #666;">150kg · 12-29 12:00</div>
+            </div>
+          </div>
+
+          <!-- 订单2 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fafafa; border-radius: 6px; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: #722ed1;">
+              <div>
+                <div style="font-size: 12px; color: #333; font-weight: 500;">ORD-002</div>
+                <div style="font-size: 11px; color: #999;">带鱼段 300g</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; color: #1890ff; font-weight: 500;">永辉</div>
+              <div style="font-size: 11px; color: #666;">200kg · 12-29 18:00</div>
+            </div>
+          </div>
+
+          <!-- 订单3 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fafafa; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: #722ed1;">
+              <div>
+                <div style="font-size: 12px; color: #333; font-weight: 500;">ORD-003</div>
+                <div style="font-size: 11px; color: #999;">带鱼块</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; color: #1890ff; font-weight: 500;">大润发</div>
+              <div style="font-size: 11px; color: #666;">150kg · 12-30 10:00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 合并后信息 -->
+        <div style="padding: 10px; background: #f6ffed; border-radius: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 12px; color: #52c41a;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 4px;">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            合并后总量: <span style="font-weight: 600;">500kg</span>
+          </div>
+          <div style="font-size: 11px; color: #666;">
+            最早交期: 12-29 12:00
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div style="display: flex; gap: 12px;">
+          <button style="flex: 1; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px; color: #666; font-size: 13px; cursor: pointer;">
+            拒绝合批
+          </button>
+          <button style="flex: 1; padding: 10px; background: linear-gradient(135deg, #722ed1 0%, #9254de 100%); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 500; cursor: pointer;">
+            确认合批
+          </button>
+        </div>
+      </div>
+
+      <!-- 混批组2: 同原料不同客户 (另一个) -->
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #722ed1;">
+        <!-- 头部信息 -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; font-weight: 600; color: #333;">合批组 #2</span>
+              <span style="font-size: 10px; padding: 2px 6px; background: #f9f0ff; color: #722ed1; border-radius: 3px;">同原料不同客户</span>
+            </div>
+            <div style="font-size: 12px; color: #999;">原料批次: MB-20241227-003</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; color: #999;">预计节省</div>
+            <div style="font-size: 16px; font-weight: 600; color: #52c41a;">15分钟</div>
+          </div>
+        </div>
+
+        <!-- 原料信息 -->
+        <div style="padding: 10px; background: #f9f0ff; border-radius: 8px; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#722ed1" stroke-width="2">
+              <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+            </svg>
+            <span style="font-size: 13px; color: #333; font-weight: 500;">大虾仁 (冷冻)</span>
+            <span style="font-size: 12px; color: #722ed1; font-weight: 600;">300kg</span>
+          </div>
+        </div>
+
+        <!-- 订单列表 (折叠) -->
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fafafa; border-radius: 6px; cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                <polyline points="9,18 15,12 9,6"/>
+              </svg>
+              <span style="font-size: 12px; color: #666;">待合并订单 (2个)</span>
+            </div>
+            <div style="font-size: 12px; color: #722ed1;">
+              盒马 150kg + 永辉 150kg
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div style="display: flex; gap: 12px;">
+          <button style="flex: 1; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px; color: #666; font-size: 13px; cursor: pointer;">
+            拒绝合批
+          </button>
+          <button style="flex: 1; padding: 10px; background: linear-gradient(135deg, #722ed1 0%, #9254de 100%); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 500; cursor: pointer;">
+            确认合批
+          </button>
+        </div>
+      </div>
+
+      <!-- 混批组3: 同工艺不同产品 -->
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #1890ff;">
+        <!-- 头部信息 -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; font-weight: 600; color: #333;">合批组 #3</span>
+              <span style="font-size: 10px; padding: 2px 6px; background: #e6f7ff; color: #1890ff; border-radius: 3px;">同工艺不同产品</span>
+            </div>
+            <div style="font-size: 12px; color: #999;">工艺类型: 切片-清洗-包装</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; color: #999;">预计节省</div>
+            <div style="font-size: 16px; font-weight: 600; color: #52c41a;">10分钟</div>
+          </div>
+        </div>
+
+        <!-- 工艺信息 -->
+        <div style="padding: 10px; background: #e6f7ff; border-radius: 8px; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12,6 12,12 16,14"/>
+            </svg>
+            <span style="font-size: 13px; color: #333; font-weight: 500;">工艺相似度</span>
+            <span style="font-size: 12px; color: #1890ff; font-weight: 600;">92%</span>
+          </div>
+          <div style="font-size: 11px; color: #666; margin-top: 4px; padding-left: 24px;">
+            切片参数相同，仅包装规格不同
+          </div>
+        </div>
+
+        <!-- 产品列表 -->
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 12px; color: #666; margin-bottom: 8px;">待合并产品 (2种)</div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fafafa; border-radius: 6px; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: #1890ff;">
+              <div>
+                <div style="font-size: 12px; color: #333; font-weight: 500;">鱿鱼圈 200g</div>
+                <div style="font-size: 11px; color: #999;">ORD-004 · 盒马</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #666;">400袋</div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fafafa; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: #1890ff;">
+              <div>
+                <div style="font-size: 12px; color: #333; font-weight: 500;">鱿鱼圈 300g</div>
+                <div style="font-size: 11px; color: #999;">ORD-005 · 永辉</div>
+              </div>
+            </div>
+            <div style="font-size: 12px; color: #666;">300袋</div>
+          </div>
+        </div>
+
+        <!-- AI分析说明 -->
+        <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #666; padding: 10px; background: #fafafa; border-radius: 6px; margin-bottom: 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>建议生产顺序: 200g规格 → 300g规格，仅需更换包装模具，无需清洗</span>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div style="display: flex; gap: 12px;">
+          <button style="flex: 1; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px; color: #666; font-size: 13px; cursor: pointer;">
+            拒绝合批
+          </button>
+          <button style="flex: 1; padding: 10px; background: linear-gradient(135deg, #1890ff 0%, #69c0ff 100%); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 500; cursor: pointer;">
+            确认合批
+          </button>
+        </div>
+      </div>
+
+      <!-- 已确认的混批 (示例) -->
+      <div class="section-header" style="margin-top: 20px;">
+        <span class="section-title">已确认合批 (1)</span>
+      </div>
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 80px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #52c41a; opacity: 0.8;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 14px; font-weight: 500; color: #333;">合批组 #0</span>
+              <span style="font-size: 10px; padding: 2px 6px; background: #f6ffed; color: #52c41a; border-radius: 3px;">已确认</span>
+            </div>
+            <div style="font-size: 12px; color: #999;">带鱼段 350kg · 2个订单</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; color: #999;">已生成计划</div>
+            <div style="font-size: 13px; color: #1890ff; font-weight: 500;">PP20241227005</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
+      <a href="plan-list.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span>计划</span></a>
+      <a href="ai-schedule.html" class="nav-item ai-nav"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12z"/></svg><span>AI调度</span></a>
+      <a href="personnel-list.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span>人员</span></a>
+      <a href="profile.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>我的</span></a>
+    </nav>
+  </div>
+</body>
+</html>

@@ -20,6 +20,10 @@ import MainNavigator from "./MainNavigator";
 import FactoryAdminNavigator from "./FactoryAdminNavigator";
 import WorkshopSupervisorNavigator from "./WorkshopSupervisorNavigator";
 import WarehouseManagerNavigator from "./WarehouseManagerNavigator";
+import HRNavigator from "./HRNavigator";
+import DispatcherNavigator from "./DispatcherNavigator";
+import QualityInspectorNavigator from "./QualityInspectorNavigator";
+import OperatorNavigator from "./OperatorNavigator";
 
 const Stack = createNativeStackNavigator();
 
@@ -35,6 +39,11 @@ function RoleBasedNavigator() {
     return <FactoryAdminNavigator />;
   }
 
+  // hr_admin (HR管理员) 使用HR专属界面
+  if (userRole === "hr_admin") {
+    return <HRNavigator />;
+  }
+
   // workshop_supervisor (车间主任) 使用车间主任专属界面
   if (userRole === "workshop_supervisor" || userRole === "department_admin") {
     return <WorkshopSupervisorNavigator />;
@@ -43,6 +52,21 @@ function RoleBasedNavigator() {
   // warehouse_manager / warehouse_worker 使用仓储专属界面
   if (userRole === "warehouse_manager" || userRole === "warehouse_worker") {
     return <WarehouseManagerNavigator />;
+  }
+
+  // dispatcher (调度员) 使用调度专属界面
+  if (userRole === "dispatcher") {
+    return <DispatcherNavigator />;
+  }
+
+  // quality_inspector (质检员) 使用质检专属界面
+  if (userRole === "quality_inspector") {
+    return <QualityInspectorNavigator />;
+  }
+
+  // operator (操作员) 使用操作员专属界面
+  if (userRole === "operator") {
+    return <OperatorNavigator />;
   }
 
   // 其他角色使用原有界面

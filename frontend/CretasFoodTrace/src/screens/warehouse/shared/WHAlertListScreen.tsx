@@ -3,12 +3,14 @@
  * 对应原型: warehouse/alert-list.html
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Text, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +18,9 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
+import { alertApiClient, AlertDTO } from "../../../services/api/alertApiClient";
+import { handleError } from "../../../utils/errorHandler";
+import { useAuthStore } from "../../../store/authStore";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
 
@@ -36,12 +41,34 @@ interface StandardAlert {
   rows: { label: string; value: string; type?: "danger" | "warning" | "success" }[];
 }
 
+// 告警统计接口
+interface AlertStats {
+  total: number;
+  critical: number;
+  warning: number;
+  info: number;
+  resolved: number;
+}
+
 export function WHAlertListScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useAuthStore();
 
+  // 状态管理
+  const [loading, setLoading] = useState(true);
   const [alertType, setAlertType] = useState<"ai" | "standard">("ai");
+  const [urgentAlerts, setUrgentAlerts] = useState<StandardAlert[]>([]);
+  const [warningAlerts, setWarningAlerts] = useState<StandardAlert[]>([]);
+  const [alertStats, setAlertStats] = useState<AlertStats>({
+    total: 0,
+    critical: 0,
+    warning: 0,
+    info: 0,
+    resolved: 0,
+  });
 
+  // AI智能告警 (示例数据，后续可接入AI分析服务)
   const aiAlerts: AIAlert[] = [
     {
       id: "1",
@@ -84,58 +111,131 @@ export function WHAlertListScreen() {
     },
   ];
 
-  const urgentAlerts: StandardAlert[] = [
-    {
-      id: "1",
-      name: "带鱼 (鲜品)",
-      level: "urgent",
-      tags: [
-        { text: "低库存", type: "danger" },
-        { text: "3天后过期", type: "warning" },
-      ],
-      rows: [
-        { label: "当前库存", value: "85 kg", type: "danger" },
-        { label: "安全库存", value: "200 kg" },
-        { label: "缺口", value: "-115 kg", type: "danger" },
-      ],
-    },
-    {
-      id: "2",
-      name: "鲈鱼 (鲜品)",
-      level: "urgent",
-      tags: [{ text: "2天后过期", type: "danger" }],
-      rows: [
-        { label: "当前库存", value: "256 kg" },
-        { label: "过期时间", value: "2025-12-28", type: "danger" },
-        { label: "批次", value: "MB-20251223-001" },
-      ],
-    },
-  ];
+  // 将 AlertDTO 转换为 StandardAlert 格式
+  const alertToStandardAlert = (alert: AlertDTO): StandardAlert => {
+    const isUrgent = alert.level === 'CRITICAL';
+    const tags: StandardAlert['tags'] = [];
 
-  const warningAlerts: StandardAlert[] = [
-    {
-      id: "3",
-      name: "虾仁 (冻品)",
-      level: "warning",
-      tags: [{ text: "库存偏低", type: "warning" }],
-      rows: [
-        { label: "当前库存", value: "120 kg", type: "warning" },
-        { label: "安全库存", value: "150 kg" },
-        { label: "缺口", value: "-30 kg", type: "warning" },
-      ],
-    },
-    {
-      id: "4",
-      name: "蟹类 (鲜品)",
-      level: "warning",
-      tags: [{ text: "5天后过期", type: "normal" }],
-      rows: [
-        { label: "当前库存", value: "180 kg" },
-        { label: "过期时间", value: "2025-12-31" },
-        { label: "批次", value: "MB-20251225-001" },
-      ],
-    },
-  ];
+    // 根据告警类型和级别设置标签
+    if (alert.level === 'CRITICAL') {
+      tags.push({ text: '紧急', type: 'danger' });
+    } else if (alert.level === 'WARNING') {
+      tags.push({ text: '警告', type: 'warning' });
+    } else {
+      tags.push({ text: '提醒', type: 'normal' });
+    }
+
+    if (alert.alertType) {
+      tags.push({ text: alert.alertType, type: 'normal' });
+    }
+
+    const rows: StandardAlert['rows'] = [
+      { label: '设备', value: alert.equipmentName || alert.equipmentId || '-' },
+      { label: '告警信息', value: alert.message || '-' },
+      {
+        label: '触发时间',
+        value: alert.triggeredAt ? new Date(alert.triggeredAt).toLocaleString('zh-CN') : '-'
+      },
+    ];
+
+    if (alert.status === 'RESOLVED' && alert.resolvedAt) {
+      rows.push({
+        label: '解决时间',
+        value: new Date(alert.resolvedAt).toLocaleString('zh-CN'),
+        type: 'success',
+      });
+    }
+
+    return {
+      id: String(alert.id),
+      name: alert.equipmentName || `设备告警 #${alert.id}`,
+      level: isUrgent ? 'urgent' : 'warning',
+      tags,
+      rows,
+    };
+  };
+
+  // 加载告警数据
+  const loadAlerts = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // 并行获取活跃告警和统计数据
+      const [activeAlertsResponse, statsResponse] = await Promise.all([
+        alertApiClient.getEquipmentAlerts({ status: 'ACTIVE', page: 1, size: 50 }),
+        alertApiClient.getAlertStatistics(),
+      ]);
+
+      // 处理告警列表
+      const allAlerts = activeAlertsResponse?.data?.content || [];
+
+      // 分类为紧急和一般告警
+      const urgent: StandardAlert[] = [];
+      const warning: StandardAlert[] = [];
+
+      allAlerts.forEach((alert: AlertDTO) => {
+        const standardAlert = alertToStandardAlert(alert);
+        if (alert.level === 'CRITICAL') {
+          urgent.push(standardAlert);
+        } else {
+          warning.push(standardAlert);
+        }
+      });
+
+      setUrgentAlerts(urgent);
+      setWarningAlerts(warning);
+
+      // 处理统计数据
+      if (statsResponse?.data) {
+        setAlertStats({
+          total: statsResponse.data.total || 0,
+          critical: statsResponse.data.critical || 0,
+          warning: statsResponse.data.warning || 0,
+          info: statsResponse.data.info || 0,
+          resolved: statsResponse.data.resolved || 0,
+        });
+      }
+    } catch (error) {
+      handleError(error, { title: '加载告警数据失败' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAlerts();
+  }, [loadAlerts]);
+
+  // 处理忽略告警
+  const handleIgnoreAlert = async (alertId: string) => {
+    try {
+      await alertApiClient.ignoreAlert({
+        factoryId: user?.factoryId || '',
+        alertId,
+        reason: '仓储管理员忽略',
+      });
+      Alert.alert('成功', '告警已忽略');
+      loadAlerts(); // 刷新列表
+    } catch (error) {
+      handleError(error, { title: '忽略告警失败' });
+    }
+  };
+
+  // 处理解决告警
+  const handleResolveAlert = async (alertId: string) => {
+    try {
+      await alertApiClient.resolveAlert({
+        factoryId: user?.factoryId || '',
+        alertId,
+        resolvedBy: user?.id || 0,
+        resolutionNotes: '仓储管理员处理完成',
+      });
+      Alert.alert('成功', '告警已处理');
+      loadAlerts(); // 刷新列表
+    } catch (error) {
+      handleError(error, { title: '处理告警失败' });
+    }
+  };
 
   const getPriorityStyle = (priority: AIAlert["priority"]) => {
     switch (priority) {
@@ -281,6 +381,33 @@ export function WHAlertListScreen() {
     </View>
   );
 
+  const totalActiveAlerts = urgentAlerts.length + warningAlerts.length;
+
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>库存预警</Text>
+            <Text style={styles.headerSubtitle}>加载中...</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载告警数据中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
@@ -293,7 +420,9 @@ export function WHAlertListScreen() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>库存预警</Text>
-          <Text style={styles.headerSubtitle}>共 5 条预警</Text>
+          <Text style={styles.headerSubtitle}>
+            共 {totalActiveAlerts + aiAlerts.length} 条预警
+          </Text>
         </View>
         <View style={styles.headerRight} />
       </View>
@@ -317,7 +446,7 @@ export function WHAlertListScreen() {
               常规告警
             </Text>
             <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>5</Text>
+              <Text style={styles.tabBadgeText}>{totalActiveAlerts}</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity
@@ -336,7 +465,7 @@ export function WHAlertListScreen() {
               AI智能告警
             </Text>
             <View style={[styles.tabBadge, styles.tabBadgeAI]}>
-              <Text style={styles.tabBadgeText}>4</Text>
+              <Text style={styles.tabBadgeText}>{aiAlerts.length}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -347,24 +476,43 @@ export function WHAlertListScreen() {
             <Text style={[styles.sectionTitle, { color: "#7b1fa2" }]}>
               🤖 AI 智能分析告警
             </Text>
-            {aiAlerts.map(renderAIAlert)}
+            {aiAlerts.length > 0 ? (
+              aiAlerts.map(renderAIAlert)
+            ) : (
+              <View style={styles.emptyState}>
+                <MaterialCommunityIcons name="robot-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyStateText}>暂无AI智能告警</Text>
+              </View>
+            )}
           </View>
         ) : (
           <>
             {/* 紧急预警 */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, styles.sectionTitleDanger]}>
-                紧急预警
+                紧急预警 ({urgentAlerts.length})
               </Text>
-              {urgentAlerts.map((alert) => renderStandardAlert(alert, true))}
+              {urgentAlerts.length > 0 ? (
+                urgentAlerts.map((alert) => renderStandardAlert(alert, true))
+              ) : (
+                <View style={styles.emptyStateSmall}>
+                  <Text style={styles.emptyStateTextSmall}>暂无紧急预警</Text>
+                </View>
+              )}
             </View>
 
             {/* 一般预警 */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, styles.sectionTitleWarning]}>
-                一般预警
+                一般预警 ({warningAlerts.length})
               </Text>
-              {warningAlerts.map((alert) => renderStandardAlert(alert, false))}
+              {warningAlerts.length > 0 ? (
+                warningAlerts.map((alert) => renderStandardAlert(alert, false))
+              ) : (
+                <View style={styles.emptyStateSmall}>
+                  <Text style={styles.emptyStateTextSmall}>暂无一般预警</Text>
+                </View>
+              )}
             </View>
           </>
         )}
@@ -372,22 +520,28 @@ export function WHAlertListScreen() {
         {/* 预警统计 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>预警统计</Text>
-          <View style={styles.alertStats}>
+          <View style={styles.alertStatsContainer}>
             <View style={[styles.alertStatItem, styles.alertStatDanger]}>
-              <Text style={[styles.alertStatValue, { color: "#f44336" }]}>2</Text>
+              <Text style={[styles.alertStatValue, { color: "#f44336" }]}>
+                {alertStats.critical}
+              </Text>
               <Text style={styles.alertStatLabel}>紧急</Text>
             </View>
             <View style={[styles.alertStatItem, styles.alertStatWarning]}>
-              <Text style={[styles.alertStatValue, { color: "#f57c00" }]}>2</Text>
+              <Text style={[styles.alertStatValue, { color: "#f57c00" }]}>
+                {alertStats.warning}
+              </Text>
               <Text style={styles.alertStatLabel}>一般</Text>
             </View>
             <View style={styles.alertStatItem}>
-              <Text style={styles.alertStatValue}>1</Text>
+              <Text style={styles.alertStatValue}>{alertStats.info}</Text>
               <Text style={styles.alertStatLabel}>提醒</Text>
             </View>
             <View style={[styles.alertStatItem, styles.alertStatSuccess]}>
-              <Text style={[styles.alertStatValue, { color: "#4CAF50" }]}>12</Text>
-              <Text style={styles.alertStatLabel}>正常</Text>
+              <Text style={[styles.alertStatValue, { color: "#4CAF50" }]}>
+                {alertStats.resolved}
+              </Text>
+              <Text style={styles.alertStatLabel}>已解决</Text>
             </View>
           </View>
         </View>
@@ -402,6 +556,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 32,
+  },
+  emptyStateText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#999",
+  },
+  emptyStateSmall: {
+    alignItems: "center",
+    paddingVertical: 16,
+  },
+  emptyStateTextSmall: {
+    fontSize: 13,
+    color: "#999",
   },
   header: {
     backgroundColor: "#4CAF50",
@@ -637,7 +818,7 @@ const styles = StyleSheet.create({
   alertActionBtnSecondary: {
     backgroundColor: "#f5f5f5",
   },
-  alertStats: {
+  alertStatsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
   },

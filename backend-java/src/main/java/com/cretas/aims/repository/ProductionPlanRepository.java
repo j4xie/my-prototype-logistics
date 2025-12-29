@@ -1,6 +1,7 @@
 package com.cretas.aims.repository;
 
 import com.cretas.aims.entity.ProductionPlan;
+import com.cretas.aims.entity.enums.PlanSourceType;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.enums.ProductionPlanType;
 import org.springframework.data.domain.Page;
@@ -213,4 +214,187 @@ public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, 
     //                                            @Param("status") ProductionPlanStatus status,
     //                                            @Param("startDate") LocalDate startDate,
     //                                            @Param("endDate") LocalDate endDate);
+
+    // ==================== 调度员模块扩展方法 ====================
+
+    /**
+     * 根据计划来源类型查找生产计划
+     *
+     * @param factoryId 工厂ID
+     * @param sourceType 来源类型
+     * @param pageable 分页参数
+     * @return 生产计划分页数据
+     * @since 2025-12-28
+     */
+    Page<ProductionPlan> findByFactoryIdAndSourceType(
+            String factoryId,
+            PlanSourceType sourceType,
+            Pageable pageable);
+
+    /**
+     * 根据多个来源类型查找生产计划
+     *
+     * @param factoryId 工厂ID
+     * @param sourceTypes 来源类型列表
+     * @param pageable 分页参数
+     * @return 生产计划分页数据
+     * @since 2025-12-28
+     */
+    Page<ProductionPlan> findByFactoryIdAndSourceTypeIn(
+            String factoryId,
+            List<PlanSourceType> sourceTypes,
+            Pageable pageable);
+
+    /**
+     * 查找混批计划
+     *
+     * @param factoryId 工厂ID
+     * @param isMixedBatch 是否混批
+     * @param pageable 分页参数
+     * @return 生产计划分页数据
+     * @since 2025-12-28
+     */
+    Page<ProductionPlan> findByFactoryIdAndIsMixedBatch(
+            String factoryId,
+            Boolean isMixedBatch,
+            Pageable pageable);
+
+    /**
+     * 查找紧急计划 (CR < 1)
+     *
+     * @param factoryId 工厂ID
+     * @param crThreshold CR阈值
+     * @return 紧急计划列表
+     * @since 2025-12-28
+     */
+    @Query("SELECT p FROM ProductionPlan p WHERE p.factoryId = :factoryId " +
+           "AND p.crValue IS NOT NULL AND p.crValue < :crThreshold " +
+           "AND p.status NOT IN ('COMPLETED', 'CANCELLED') " +
+           "ORDER BY p.crValue ASC")
+    List<ProductionPlan> findUrgentPlans(
+            @Param("factoryId") String factoryId,
+            @Param("crThreshold") BigDecimal crThreshold);
+
+    /**
+     * 按CR值排序查找待处理计划
+     *
+     * @param factoryId 工厂ID
+     * @param status 状态
+     * @param pageable 分页参数
+     * @return 生产计划分页数据
+     * @since 2025-12-28
+     */
+    @Query("SELECT p FROM ProductionPlan p WHERE p.factoryId = :factoryId " +
+           "AND p.status = :status " +
+           "ORDER BY CASE WHEN p.crValue IS NULL THEN 999 ELSE p.crValue END ASC, " +
+           "CASE WHEN p.priority IS NULL THEN 0 ELSE p.priority END DESC")
+    Page<ProductionPlan> findByFactoryIdAndStatusOrderByCrValue(
+            @Param("factoryId") String factoryId,
+            @Param("status") ProductionPlanStatus status,
+            Pageable pageable);
+
+    /**
+     * 查找客户订单计划
+     *
+     * @param factoryId 工厂ID
+     * @param sourceOrderId 订单ID
+     * @return 关联的生产计划列表
+     * @since 2025-12-28
+     */
+    List<ProductionPlan> findByFactoryIdAndSourceOrderId(
+            String factoryId,
+            String sourceOrderId);
+
+    /**
+     * 查找AI预测计划（按置信度筛选）
+     *
+     * @param factoryId 工厂ID
+     * @param minConfidence 最低置信度
+     * @return 满足条件的AI预测计划列表
+     * @since 2025-12-28
+     */
+    @Query("SELECT p FROM ProductionPlan p WHERE p.factoryId = :factoryId " +
+           "AND p.sourceType = 'AI_FORECAST' " +
+           "AND p.aiConfidence >= :minConfidence " +
+           "ORDER BY p.aiConfidence DESC")
+    List<ProductionPlan> findAiForecastPlansWithMinConfidence(
+            @Param("factoryId") String factoryId,
+            @Param("minConfidence") Integer minConfidence);
+
+    /**
+     * 统计各来源类型的计划数量
+     *
+     * @param factoryId 工厂ID
+     * @return 来源类型与数量的映射
+     * @since 2025-12-28
+     */
+    @Query("SELECT p.sourceType, COUNT(p) FROM ProductionPlan p " +
+           "WHERE p.factoryId = :factoryId " +
+           "GROUP BY p.sourceType")
+    List<Object[]> countBySourceType(@Param("factoryId") String factoryId);
+
+    /**
+     * 统计混批计划数量
+     *
+     * @param factoryId 工厂ID
+     * @return 混批计划数量
+     * @since 2025-12-28
+     */
+    long countByFactoryIdAndIsMixedBatch(String factoryId, Boolean isMixedBatch);
+
+    /**
+     * 统计紧急计划数量
+     *
+     * @param factoryId 工厂ID
+     * @param crThreshold CR阈值
+     * @return 紧急计划数量
+     * @since 2025-12-28
+     */
+    @Query("SELECT COUNT(p) FROM ProductionPlan p WHERE p.factoryId = :factoryId " +
+           "AND p.crValue IS NOT NULL AND p.crValue < :crThreshold " +
+           "AND p.status NOT IN ('COMPLETED', 'CANCELLED')")
+    long countUrgentPlans(
+            @Param("factoryId") String factoryId,
+            @Param("crThreshold") BigDecimal crThreshold);
+
+    /**
+     * 综合筛选查询（支持来源类型、状态、混批标记）
+     *
+     * @param factoryId 工厂ID
+     * @param sourceType 来源类型（可为空）
+     * @param status 状态（可为空）
+     * @param isMixedBatch 是否混批（可为空）
+     * @param pageable 分页参数
+     * @return 生产计划分页数据
+     * @since 2025-12-28
+     */
+    @Query("SELECT p FROM ProductionPlan p WHERE p.factoryId = :factoryId " +
+           "AND (:sourceType IS NULL OR p.sourceType = :sourceType) " +
+           "AND (:status IS NULL OR p.status = :status) " +
+           "AND (:isMixedBatch IS NULL OR p.isMixedBatch = :isMixedBatch)")
+    Page<ProductionPlan> findByFactoryIdWithFilters(
+            @Param("factoryId") String factoryId,
+            @Param("sourceType") PlanSourceType sourceType,
+            @Param("status") ProductionPlanStatus status,
+            @Param("isMixedBatch") Boolean isMixedBatch,
+            Pageable pageable);
+
+    /**
+     * 查找预计完成日期在指定范围内的计划
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @param pageable 分页参数
+     * @return 生产计划分页数据
+     * @since 2025-12-28
+     */
+    @Query("SELECT p FROM ProductionPlan p WHERE p.factoryId = :factoryId " +
+           "AND p.expectedCompletionDate BETWEEN :startDate AND :endDate " +
+           "ORDER BY p.expectedCompletionDate ASC")
+    Page<ProductionPlan> findByFactoryIdAndExpectedCompletionDateBetween(
+            @Param("factoryId") String factoryId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            Pageable pageable);
 }

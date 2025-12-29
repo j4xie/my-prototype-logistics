@@ -24,11 +24,11 @@ public class UserMapper {
                 .id(user.getId())
                 .factoryId(user.getFactoryId())
                 .username(user.getUsername())
-                .email(null) // email字段已删除
+                .email(user.getEmail())
                 .phone(user.getPhone())
                 .fullName(user.getFullName())
                 .isActive(user.getIsActive())
-                .roleCode(null) // roleCode字段已删除，改用position
+                .roleCode(user.getRoleEnum())
                 .roleDisplayName(user.getPosition()) // 使用position作为显示名称
                 .department(null) // department现在是String，不是枚举
                 .departmentDisplayName(user.getDepartment()) // 直接使用department字符串
@@ -39,6 +39,19 @@ public class UserMapper {
                 .lastLogin(user.getLastLogin())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                // 调度员模块扩展字段
+                .employeeCode(user.getEmployeeCode())
+                .hireType(user.getHireType())
+                .hireTypeDisplayName(user.getHireType() != null ? user.getHireType().getDisplayName() : null)
+                .contractEndDate(user.getContractEndDate())
+                .skillLevels(user.getSkillLevels())
+                .hourlyRate(user.getHourlyRate())
+                .avatarUrl(user.getAvatarUrl())
+                .hireDate(user.getHireDate())
+                .isTemporaryWorker(user.isTemporaryWorker())
+                .workMonths(user.getWorkMonths())
+                .contractRemainingDays(user.getContractRemainingDays())
+                .isContractExpiringSoon(user.isContractExpiringSoon())
                 .build();
     }
 

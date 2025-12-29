@@ -83,12 +83,13 @@ export function WHOperationLogScreen() {
   const batchToLogItem = (batch: MaterialBatch, index: number): LogItem => {
     const createdAt = batch.createdAt ? new Date(batch.createdAt) : new Date();
     const time = `${createdAt.getHours().toString().padStart(2, '0')}:${createdAt.getMinutes().toString().padStart(2, '0')}`;
+    const batchAny = batch as unknown as Record<string, unknown>;
 
     return {
       id: `batch-${batch.id || index}`,
       type: "inbound",
       title: "确认入库",
-      description: `${batch.batchNumber} ${batch.materialName || ''} ${batch.remainingQuantity || batch.initialQuantity || 0}${batch.unit || 'kg'}`,
+      description: `${batch.batchNumber} ${batch.materialName || ''} ${batch.remainingQuantity || batchAny.initialQuantity || 0}${batchAny.unit || 'kg'}`,
       time,
       location: batch.storageLocation || "待分配",
       status: "success",
@@ -100,6 +101,7 @@ export function WHOperationLogScreen() {
   const shipmentToLogItem = (shipment: ShipmentRecord, index: number): LogItem => {
     const createdAt = shipment.createdAt ? new Date(shipment.createdAt) : new Date();
     const time = `${createdAt.getHours().toString().padStart(2, '0')}:${createdAt.getMinutes().toString().padStart(2, '0')}`;
+    const shipmentAny = shipment as unknown as Record<string, unknown>;
 
     const statusMap: Record<string, { status: LogItem["status"]; text: string }> = {
       pending: { status: "warning", text: "待处理" },
@@ -113,9 +115,9 @@ export function WHOperationLogScreen() {
       id: `shipment-${shipment.id || index}`,
       type: "outbound",
       title: "确认出库",
-      description: `${shipment.shipmentNumber} ${shipment.quantity || 0}${shipment.unit || 'kg'}`,
+      description: `${shipment.shipmentNumber} ${shipment.quantity || 0}${shipmentAny.unit || 'kg'}`,
       time,
-      location: shipment.customerName || shipment.destination || "未知目的地",
+      location: (shipmentAny.customerName || shipmentAny.destination || "未知目的地") as string,
       status: statusInfo.status,
       statusText: statusInfo.text,
     };
@@ -134,10 +136,13 @@ export function WHOperationLogScreen() {
       const [batchesResponse, shipmentsResponse] = await Promise.all([
         materialBatchApiClient.getMaterialBatches({ page: pageNum, size: 10 }),
         shipmentApiClient.getShipments({ page: pageNum, size: 10 }),
-      ]);
+      ]) as [
+        { data?: { content?: MaterialBatch[] } | MaterialBatch[] },
+        { data?: { content?: ShipmentRecord[] } | ShipmentRecord[] }
+      ];
 
-      const batches = batchesResponse.data?.content || batchesResponse.data || [];
-      const shipments = shipmentsResponse.data?.content || shipmentsResponse.data || [];
+      const batches: MaterialBatch[] = (batchesResponse.data as { content?: MaterialBatch[] })?.content || batchesResponse.data as MaterialBatch[] || [];
+      const shipments: ShipmentRecord[] = (shipmentsResponse.data as { content?: ShipmentRecord[] })?.content || shipmentsResponse.data as ShipmentRecord[] || [];
 
       // 转换为日志项
       const batchLogs = batches.map((b: MaterialBatch, i: number) => ({
@@ -172,13 +177,14 @@ export function WHOperationLogScreen() {
 
       // 转换为数组
       const newGroups: LogGroup[] = Array.from(groupMap.entries()).map(([date, items]) => {
-        const { label } = formatDateLabel(items[0]?.time ? new Date().toISOString() : new Date().toISOString());
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
 
         let dateLabel = date;
-        const [month, day] = date.split('-').map(Number);
+        const dateParts = date.split('-').map(Number);
+        const month = dateParts[0] ?? 1;
+        const day = dateParts[1] ?? 1;
         const checkDate = new Date(today.getFullYear(), month - 1, day);
 
         if (checkDate.toDateString() === today.toDateString()) {
@@ -196,7 +202,7 @@ export function WHOperationLogScreen() {
           const merged = [...prev];
           newGroups.forEach((newGroup) => {
             const existingIndex = merged.findIndex((g) => g.date === newGroup.date);
-            if (existingIndex >= 0) {
+            if (existingIndex >= 0 && merged[existingIndex]) {
               merged[existingIndex].items.push(...newGroup.items);
             } else {
               merged.push(newGroup);
@@ -306,6 +312,31 @@ export function WHOperationLogScreen() {
     );
   };
 
+  // 加载状态
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>操作记录</Text>
+            <Text style={styles.headerSubtitle}>加载中...</Text>
+          </View>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
@@ -361,16 +392,20 @@ export function WHOperationLogScreen() {
         })}
 
         {/* 加载更多 */}
-        <View style={styles.loadMore}>
-          <Button
-            mode="outlined"
-            onPress={() => {}}
-            style={styles.loadMoreBtn}
-            labelStyle={{ color: "#666" }}
-          >
-            加载更多
-          </Button>
-        </View>
+        {hasMore && (
+          <View style={styles.loadMore}>
+            <Button
+              mode="outlined"
+              onPress={handleLoadMore}
+              style={styles.loadMoreBtn}
+              labelStyle={{ color: "#666" }}
+              loading={loadingMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? '加载中...' : '加载更多'}
+            </Button>
+          </View>
+        )}
 
         <View style={{ height: 20 }} />
       </ScrollView>
@@ -382,6 +417,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
   },
   header: {
     backgroundColor: "#4CAF50",

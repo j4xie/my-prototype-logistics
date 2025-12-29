@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import javax.persistence.*;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -48,6 +49,7 @@ public class ProductionBatch extends BaseEntity {
      /**
       * 批次号
       */
+    @NotBlank(message = "批次号不能为空")
     @Column(name = "batch_number", nullable = false, unique = true, length = 50)
     private String batchNumber;
      /**
@@ -58,6 +60,7 @@ public class ProductionBatch extends BaseEntity {
      /**
       * 产品类型ID (关联 ProductType.id，类型为 String)
       */
+    @NotBlank(message = "产品类型ID不能为空")
     @Column(name = "product_type_id", nullable = false, length = 100)
     private String productTypeId;
      /**
@@ -73,11 +76,14 @@ public class ProductionBatch extends BaseEntity {
      /**
       * 数量 (数据库NOT NULL字段)
       */
+    @NotNull(message = "数量不能为空")
+    @Positive(message = "数量必须大于0")
     @Column(name = "quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity;
      /**
       * 单位 (数据库NOT NULL字段)
       */
+    @NotBlank(message = "单位不能为空")
     @Column(name = "unit", nullable = false, length = 20)
     private String unit;
      /**
