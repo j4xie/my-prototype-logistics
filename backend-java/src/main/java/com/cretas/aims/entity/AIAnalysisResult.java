@@ -85,6 +85,15 @@ public class AIAnalysisResult extends BaseEntity {
     private LocalDateTime periodEnd;
 
     /**
+     * 分析维度（时间范围分析使用）
+     * - overall: 综合分析
+     * - daily: 按日分析
+     * - weekly: 按周分析
+     */
+    @Column(name = "dimension", length = 20)
+    private String dimension;
+
+    /**
      * 过期时间（根据报告类型自动计算）
      * batch: +7天, weekly: +30天, monthly/historical: +90天
      */

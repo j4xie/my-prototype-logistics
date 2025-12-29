@@ -84,9 +84,9 @@ export function WHExpireHandleScreen() {
       const response = await materialBatchApiClient.getMaterialBatches({
         status: 'available',
         size: 100
-      });
+      }) as { data?: { content?: MaterialBatch[] } | MaterialBatch[] };
 
-      const allBatches = response.data?.content || response.data || [];
+      const allBatches: MaterialBatch[] = (response.data as { content?: MaterialBatch[] })?.content || response.data as MaterialBatch[] || [];
 
       // 筛选即将过期或已过期的批次（7天内）
       const expireBatches: ExpireBatch[] = allBatches
@@ -171,7 +171,12 @@ export function WHExpireHandleScreen() {
           setProcessing(true);
           try {
             // 调用转冻品API
-            await materialBatchApiClient.convertToFrozen(batch.id);
+            const today = new Date().toISOString().split('T')[0] || '';
+            await materialBatchApiClient.convertToFrozen(batch.id, {
+              convertedBy: 1, // 默认操作人
+              convertedDate: today,
+              storageLocation: batch.location || 'B区-冷冻库',
+            });
             Alert.alert("成功", "已转为冻品，保质期延长30天");
             loadExpireBatches(); // 刷新列表
           } catch (error) {

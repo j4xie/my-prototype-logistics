@@ -61,7 +61,7 @@ export default function ProductionReportScreen() {
 
       // 加载最近的批次列表
       const batchesResponse = await processingApiClient.getBatches({
-        page: 0,
+        page: 1,
         size: 10,
         status: 'completed', // 只看已完成的批次
         factoryId: factoryId

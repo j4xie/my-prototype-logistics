@@ -261,6 +261,49 @@
       <p>10角色权限体系原型图 - B端风格移动端界面设计<br>点击任意角色卡片查看对应原型</p>
     </div>
 
+    <!-- 测试账号信息 -->
+    <div class="test-accounts" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 24px; margin-bottom: 32px; color: #fff; box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);">
+      <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        🔑 React Native 测试账号 <span style="font-size: 12px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">统一密码: 123456</span>
+      </h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+        <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; margin-bottom: 4px;">🏭 工厂管理员</div>
+          <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; font-size: 13px;">factory_admin1</code>
+          <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">✅ 完整实现 (~21页)</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; margin-bottom: 4px;">📦 仓储管理</div>
+          <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; font-size: 13px;">warehouse_mgr1</code>
+          <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">✅ 完整实现 (~32页)</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; margin-bottom: 4px;">🔍 质检员</div>
+          <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; font-size: 13px;">quality_insp1</code>
+          <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">✅ 完整实现 (~17页)</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; margin-bottom: 4px;">🔧 车间主任</div>
+          <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; font-size: 13px;">workshop_sup1</code>
+          <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">✅ 完整实现 (20页)</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; margin-bottom: 4px;">📋 调度员</div>
+          <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; font-size: 13px;">dispatcher1</code>
+          <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">✅ 完整实现 (16页)</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; opacity: 0.7;">
+          <div style="font-weight: 600; margin-bottom: 4px;">👤 其他角色</div>
+          <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; font-size: 13px;">operator1</code>
+          <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">📋 待开发 (通用界面)</div>
+        </div>
+      </div>
+      <div style="margin-top: 12px; font-size: 12px; opacity: 0.8; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 12px;">
+        💡 服务器: <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">139.196.165.140:10010</code> |
+        前端: <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">Expo (端口 3010)</code>
+      </div>
+    </div>
+
     <!-- 设计原则 -->
     <div class="design-principles">
       <h2>设计原则</h2>
@@ -1256,7 +1299,7 @@
       </a>
 
       <!-- 5. 调度员 -->
-      <a href="5-dispatcher.html" class="role-card" data-role="dispatcher" style="--card-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+      <a href="5-dispatcher.html" class="role-card" data-role="dispatcher" style="--card-gradient: linear-gradient(135deg, #722ed1 0%, #a18cd1 50%, #fbc2eb 100%);">
         <div class="role-card-header">
           <div class="role-icon role-letter role-letter--dispatch">调</div>
           <div class="role-info">
@@ -1264,12 +1307,12 @@
             <span class="role-code">dispatcher</span>
           </div>
         </div>
-        <p class="role-desc">负责生产调度、任务分配和人员调动，协调各车间生产工作。</p>
+        <p class="role-desc">AI智能排产调度中心，优化资源分配，提升生产效率。</p>
         <div class="role-features">
+          <span class="feature-tag" style="background: linear-gradient(135deg, #722ed1, #a18cd1); color: white;">AI智能调度</span>
           <span class="feature-tag">生产计划</span>
-          <span class="feature-tag">任务分配</span>
-          <span class="feature-tag">人员调动</span>
-          <span class="feature-tag">进度监控</span>
+          <span class="feature-tag">人员优化</span>
+          <span class="feature-tag">完成预测</span>
         </div>
       </a>
 

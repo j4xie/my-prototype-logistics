@@ -80,6 +80,7 @@ export type ProcessingStackParamList = {
 
   // 原材料管理
   MaterialReceipt: undefined;
+  MaterialReceiptAI: undefined;
   MaterialBatchManagement: undefined;
 
   // Phase 3 P2: 质检统计分析
@@ -98,6 +99,9 @@ export type ProcessingStackParamList = {
   Traceability: undefined;                             // 溯源查询入口
   TraceabilityDetail: { batchNumber: string };         // 完整溯源链路
   PublicTrace: { batchNumber?: string; traceCode?: string };  // 公开溯源（消费者）
+
+  // AI语音质检 - Phase 4
+  VoiceInspection: undefined;                          // 语音质检主屏幕
 };
 
 // ==================== 考勤模块导航参数 ====================
@@ -228,6 +232,12 @@ export type FAHomeStackParamList = {
   // 详情页
   BatchDetail: { batchId: string; readonly?: boolean };
   MaterialBatchDetail: { batchId: string };
+  // 批次详情关联页面 - 从BatchDetail跳转
+  EditBatch: { batchId: string };
+  CreateQualityRecord: { batchId: string; inspectionType?: 'raw_material' | 'process' | 'final_product' };
+  CostAnalysisDashboard: { batchId?: string };
+  // Formily 演示页面
+  FormilyDemo: undefined;
 };
 
 export type FAAIStackParamList = {
@@ -257,6 +267,16 @@ export type FAManagementStackParamList = {
   ShipmentManagement: undefined;
   ConversionRate: undefined;
   DisposalRecordManagement: undefined;
+  // Schema 配置 (AI 创建字段)
+  SchemaConfig: undefined;
+  // 规则配置 (Drools 规则 + 状态机)
+  RuleConfiguration: undefined;
+  // AI 智能初始化业务数据 (P1.5)
+  AIBusinessInit: undefined;
+  // 编码规则配置
+  EncodingRuleConfig: undefined;
+  // 质检项配置
+  QualityCheckItemConfig: undefined;
 };
 
 export type FAProfileStackParamList = {

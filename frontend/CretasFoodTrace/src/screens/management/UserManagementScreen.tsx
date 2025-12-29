@@ -300,15 +300,22 @@ export default function UserManagementScreen() {
     );
   };
 
-  const getRoleName = (role: string) => {
-    switch (role) {
+  // 获取角色显示名称 - 支持大写枚举值(后端roleCode)和小写值(前端本地)
+  const getRoleName = (role?: string, roleCode?: string, roleDisplayName?: string) => {
+    // 优先使用后端返回的显示名称
+    if (roleDisplayName) return roleDisplayName;
+
+    // 标准化角色代码（转小写）
+    const normalizedRole = (roleCode ?? role ?? '').toLowerCase();
+
+    switch (normalizedRole) {
       case 'factory_super_admin': return '工厂超管';
       case 'permission_admin': return '权限管理员';
       case 'department_admin': return '部门管理员';
       case 'operator': return '操作员';
       case 'viewer': return '查看者';
       case 'unactivated': return '未激活';
-      default: return role;
+      default: return normalizedRole || '未知角色';
     }
   };
 
@@ -322,10 +329,14 @@ export default function UserManagementScreen() {
     }
   };
 
-  // 筛选用户
+  // 筛选用户 - 使用 roleCode 字段匹配（后端返回大写枚举如 OPERATOR）
   const filteredUsers = users.filter(u => {
-    if (filterRole !== 'all' && u.role !== filterRole) {
-      return false;
+    if (filterRole !== 'all') {
+      // 后端返回 roleCode 为大写枚举值（如 OPERATOR, DEPARTMENT_ADMIN, FACTORY_SUPER_ADMIN）
+      const userRoleCode = u.roleCode?.toLowerCase();
+      if (userRoleCode !== filterRole) {
+        return false;
+      }
     }
     return true;
   });
@@ -451,7 +462,7 @@ export default function UserManagementScreen() {
                         style={[styles.roleChip, { backgroundColor: '#E3F2FD' }]}
                         textStyle={{ color: '#1565C0', fontSize: 11 }}
                       >
-                        {getRoleName(userItem.role)}
+                        {getRoleName(userItem.role, userItem.roleCode, userItem.roleDisplayName)}
                       </Chip>
                     </View>
                   </View>

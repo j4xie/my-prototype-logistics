@@ -155,7 +155,7 @@ export default function ExceptionAlertScreen() {
       exceptionAlertLogger.debug('调用后端API - 获取设备告警列表', { factoryId });
       const response = await alertApiClient.getEquipmentAlerts({
         factoryId,
-        page: 0,
+        page: 1,
         size: 100,
       });
 

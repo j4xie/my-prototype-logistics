@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>质检员 - 考勤打卡</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">← 返回角色选择</a>
+
+  <div class="phone-container">
+    <!-- 头部 -->
+    <div class="subpage-header">
+      <a href="profile.html" class="back-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15,18 9,12 15,6"/>
+        </svg>
+      </a>
+      <span class="title">考勤打卡</span>
+      <a href="#" style="font-size: 13px; color: var(--qc-primary);">打卡记录</a>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content" style="padding-bottom: 20px;">
+      <!-- 日期和天气 -->
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 28px; font-weight: 700; color: #333;">12月28日 周六</div>
+        <div style="font-size: 13px; color: #999; margin-top: 6px;">
+          <span>☁️ 多云</span>
+          <span style="margin: 0 8px;">|</span>
+          <span>8°C ~ 15°C</span>
+        </div>
+      </div>
+
+      <!-- 打卡时钟 -->
+      <div style="background: var(--qc-gradient); border-radius: 50%; width: 200px; height: 200px; margin: 0 auto 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);">
+        <div style="font-size: 42px; font-weight: 700;">17:32</div>
+        <div style="font-size: 14px; opacity: 0.9; margin-top: 4px;">已工作 9小时30分</div>
+        <button style="margin-top: 16px; padding: 10px 32px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 24px; color: white; font-size: 15px; font-weight: 500;">
+          下班打卡
+        </button>
+      </div>
+
+      <!-- 今日打卡状态 -->
+      <div style="background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <span style="font-size: 15px; font-weight: 600; color: #333;">今日打卡</span>
+          <span style="font-size: 12px; color: var(--qc-primary);">正常出勤</span>
+        </div>
+        <div style="display: flex; gap: 16px;">
+          <!-- 上班打卡 -->
+          <div style="flex: 1; background: #f0fdf4; border-radius: 12px; padding: 16px; text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12,6 12,12 8,14"/>
+              </svg>
+              <span style="font-size: 13px; color: #666;">上班</span>
+            </div>
+            <div style="font-size: 20px; font-weight: 600; color: var(--qc-primary);">08:02</div>
+            <div style="font-size: 11px; color: var(--qc-primary); margin-top: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;">
+                <polyline points="20,6 9,17 4,12"/>
+              </svg>
+              正常
+            </div>
+          </div>
+          <!-- 下班打卡 -->
+          <div style="flex: 1; background: #f5f5f5; border-radius: 12px; padding: 16px; text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12,6 12,12 16,14"/>
+              </svg>
+              <span style="font-size: 13px; color: #666;">下班</span>
+            </div>
+            <div style="font-size: 20px; font-weight: 600; color: #999;">--:--</div>
+            <div style="font-size: 11px; color: #999; margin-top: 4px;">待打卡</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 位置信息 -->
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; background: #d1fae5; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; color: #333;">白垩纪食品加工厂 (质检车间)</div>
+            <div style="font-size: 12px; color: #999; margin-top: 2px;">距离打卡范围 0m</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px; color: var(--qc-primary); font-size: 12px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20,6 9,17 4,12"/>
+            </svg>
+            范围内
+          </div>
+        </div>
+      </div>
+
+      <!-- 本周统计 -->
+      <div class="section-title">本周统计</div>
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+          <div style="text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: var(--qc-primary);">5</div>
+            <div style="font-size: 12px; color: #999;">出勤</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: #ef4444;">0</div>
+            <div style="font-size: 12px; color: #999;">迟到</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: #f59e0b;">0</div>
+            <div style="font-size: 12px; color: #999;">早退</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: #333;">1</div>
+            <div style="font-size: 12px; color: #999;">休息</div>
+          </div>
+        </div>
+        <!-- 日历视图 -->
+        <div style="display: flex; justify-content: space-between;">
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">周一</div>
+            <div style="width: 32px; height: 32px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+                <polyline points="20,6 9,17 4,12"/>
+              </svg>
+            </div>
+          </div>
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">周二</div>
+            <div style="width: 32px; height: 32px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+                <polyline points="20,6 9,17 4,12"/>
+              </svg>
+            </div>
+          </div>
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">周三</div>
+            <div style="width: 32px; height: 32px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+                <polyline points="20,6 9,17 4,12"/>
+              </svg>
+            </div>
+          </div>
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">周四</div>
+            <div style="width: 32px; height: 32px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+                <polyline points="20,6 9,17 4,12"/>
+              </svg>
+            </div>
+          </div>
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">周五</div>
+            <div style="width: 32px; height: 32px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+                <polyline points="20,6 9,17 4,12"/>
+              </svg>
+            </div>
+          </div>
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">周六</div>
+            <div style="width: 32px; height: 32px; background: var(--qc-gradient); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: white; font-size: 12px; font-weight: 500;">
+              今
+            </div>
+          </div>
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 6px;">周日</div>
+            <div style="width: 32px; height: 32px; background: #f5f5f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+              <span style="font-size: 11px; color: #999;">休</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 排班信息 -->
+      <div class="section-title">排班信息</div>
+      <div style="background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid #f5f5f5;">
+          <div>
+            <span style="font-size: 14px; font-weight: 500; color: #333;">今日班次</span>
+            <span style="font-size: 12px; color: #999; margin-left: 8px;">早班</span>
+          </div>
+          <span style="font-size: 14px; color: #333;">08:00 - 17:00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px;">
+          <div>
+            <span style="font-size: 14px; font-weight: 500; color: #333;">明日班次</span>
+            <span style="font-size: 12px; color: #999; margin-left: 8px;">休息</span>
+          </div>
+          <span style="font-size: 14px; color: #999;">--</span>
+        </div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div style="display: flex; gap: 12px; margin-top: 16px;">
+        <button style="flex: 1; padding: 14px; background: white; border: 1px solid #e5e5e5; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; color: #666;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14,2 14,8 20,8"/>
+          </svg>
+          补卡申请
+        </button>
+        <button style="flex: 1; padding: 14px; background: white; border: 1px solid #e5e5e5; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; color: #666;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          请假申请
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

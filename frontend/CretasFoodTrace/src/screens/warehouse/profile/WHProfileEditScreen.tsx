@@ -60,22 +60,29 @@ export function WHProfileEditScreen() {
     try {
       // 首先使用auth store中的数据
       if (user) {
+        const userAny = user as unknown as Record<string, unknown>;
+        const phone = user.phone || '';
         setProfileData({
-          name: user.username || user.realName || "用户",
-          employeeId: user.employeeId || `WH${String(user.id || 1).padStart(3, '0')}`,
-          phone: user.phone ? `${user.phone.substring(0, 3)}****${user.phone.substring(7)}` : "",
+          name: user.username || (userAny.realName as string) || "用户",
+          employeeId: (userAny.employeeId as string) || `WH${String(user.id || 1).padStart(3, '0')}`,
+          phone: phone ? `${phone.substring(0, 3)}****${phone.substring(7)}` : "",
           email: user.email || "",
           factory: user.factoryId || "白垩纪食品加工厂",
-          department: user.departmentName || "仓储部",
-          position: user.roleName || "仓储管理员",
-          joinDate: user.createdAt ? user.createdAt.split('T')[0] : "",
+          department: (userAny.departmentName as string) || (userAny.department as string) || "仓储部",
+          position: (userAny.roleName as string) || "仓储管理员",
+          joinDate: user.createdAt ? (user.createdAt.split('T')[0] || "") : "",
         });
       }
 
       // 尝试从API获取更多详细信息
       if (user?.id) {
         try {
-          const userDetail = await userApiClient.getUserById(user.id);
+          const userDetail = await userApiClient.getUserById(user.id) as {
+            realName?: string;
+            username?: string;
+            email?: string;
+            departmentName?: string;
+          } | null;
           if (userDetail) {
             setProfileData(prev => ({
               ...prev,

@@ -1,5 +1,7 @@
 package com.cretas.aims.dto.production;
 
+import com.cretas.aims.entity.enums.MixedBatchType;
+import com.cretas.aims.entity.enums.PlanSourceType;
 import com.cretas.aims.entity.enums.ProductionPlanType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -7,6 +9,7 @@ import lombok.Data;
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 创建生产计划请求对象
@@ -76,4 +79,39 @@ public class CreateProductionPlanRequest {
 
     @Schema(description = "是否使用自动计算转换率")
     private Boolean autoCalculateConversionRate = false;
+
+    // ======= 调度员模块扩展字段 =======
+
+    @Schema(description = "计划来源类型: CUSTOMER_ORDER/AI_FORECAST/SAFETY_STOCK/MANUAL/URGENT_INSERT")
+    private PlanSourceType sourceType = PlanSourceType.MANUAL;
+
+    @Schema(description = "关联订单ID（来自客户订单时）")
+    @Size(max = 50, message = "关联订单ID不能超过50个字符")
+    private String sourceOrderId;
+
+    @Schema(description = "客户名称")
+    @Size(max = 100, message = "客户名称不能超过100个字符")
+    private String sourceCustomerName;
+
+    @Schema(description = "AI预测置信度 (0-100)，仅AI预测计划需要")
+    @Min(value = 0, message = "AI置信度最小为0")
+    @Max(value = 100, message = "AI置信度最大为100")
+    private Integer aiConfidence;
+
+    @Schema(description = "预测原因 (如: 冬季火锅需求+15%)")
+    @Size(max = 255, message = "预测原因不能超过255个字符")
+    private String forecastReason;
+
+    @Schema(description = "预估工期（天），用于计算CR值")
+    @Min(value = 1, message = "预估工期最小为1天")
+    private Integer estimatedWorkDays;
+
+    @Schema(description = "是否混批")
+    private Boolean isMixedBatch = false;
+
+    @Schema(description = "混批类型: SAME_MATERIAL/SAME_PROCESS")
+    private MixedBatchType mixedBatchType;
+
+    @Schema(description = "混批关联订单ID列表")
+    private List<String> relatedOrders;
 }

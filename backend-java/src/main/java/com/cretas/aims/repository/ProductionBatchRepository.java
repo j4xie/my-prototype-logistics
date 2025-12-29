@@ -62,6 +62,11 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
     long countByFactoryIdAndCreatedAtAfter(String factoryId, LocalDateTime createdAt);
 
     /**
+     * 查询某时间后的所有批次
+     */
+    java.util.List<ProductionBatch> findByFactoryIdAndCreatedAtAfter(String factoryId, LocalDateTime createdAt);
+
+    /**
      * 统计某状态的批次数
      */
     long countByFactoryIdAndStatus(String factoryId, ProductionBatchStatus status);
@@ -191,4 +196,12 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
     java.util.List<ProductionBatch> findBatchesInDateRange(@Param("factoryId") String factoryId,
                                                            @Param("startTime") LocalDateTime startTime,
                                                            @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 查询已完成且有开始和结束时间的批次（用于计算平均生产周期）
+     */
+    @Query("SELECT b FROM ProductionBatch b WHERE b.factoryId = :factoryId AND b.status = 'COMPLETED' " +
+           "AND b.startTime IS NOT NULL AND b.endTime IS NOT NULL AND b.createdAt >= :startDate")
+    java.util.List<ProductionBatch> findCompletedBatchesWithTimes(@Param("factoryId") String factoryId,
+                                                                   @Param("startDate") LocalDateTime startDate);
 }

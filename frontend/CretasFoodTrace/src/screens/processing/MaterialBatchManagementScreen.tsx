@@ -888,12 +888,12 @@ export default function MaterialBatchManagementScreen() {
         </Dialog>
       </Portal>
 
-      {/* P3-库存: FAB for Creating New Batch - 跳转到CreateBatch页面 */}
+      {/* P3-库存: FAB for Creating New Material Batch - 跳转到AI智能入库页面 */}
       <FAB
-        icon="plus"
+        icon="robot"
         style={styles.fab}
-        onPress={() => navigation.navigate('CreateBatch' as never)}
-        label="创建批次"
+        onPress={() => navigation.navigate('MaterialReceiptAI' as never)}
+        label="AI智能入库"
       />
     </View>
   );

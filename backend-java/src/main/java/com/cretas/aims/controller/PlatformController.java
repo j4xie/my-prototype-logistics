@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.platform.AIFactoryInitRequest;
+import com.cretas.aims.dto.platform.AIFactoryInitResponse;
 import com.cretas.aims.dto.platform.CreateFactoryRequest;
 import com.cretas.aims.dto.platform.FactoryAIQuotaDTO;
 import com.cretas.aims.dto.platform.FactoryDTO;
@@ -8,6 +10,7 @@ import com.cretas.aims.dto.platform.PlatformAIUsageStatsDTO;
 import com.cretas.aims.dto.platform.PlatformStatisticsDTO;
 import com.cretas.aims.dto.platform.UpdateAIQuotaRequest;
 import com.cretas.aims.dto.platform.UpdateFactoryRequest;
+import com.cretas.aims.service.AIEnterpriseService;
 import com.cretas.aims.service.FactoryService;
 import com.cretas.aims.service.PlatformService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,6 +46,7 @@ public class PlatformController {
 
     private final PlatformService platformService;
     private final FactoryService factoryService;
+    private final AIEnterpriseService aiEnterpriseService;
 
     /**
      * 获取所有工厂的AI配额设置
@@ -228,5 +232,116 @@ public class PlatformController {
 
         PlatformStatisticsDTO statistics = platformService.getDashboardStatistics();
         return ApiResponse.success("获取成功", statistics);
+    }
+
+    // ==================== AI 工厂初始化 API ====================
+
+    /**
+     * AI 初始化工厂配置
+     *
+     * 使用 AI 根据自然语言描述生成工厂的完整表单配置。
+     *
+     * 示例输入: "这是一个水产品加工厂，主要生产带鱼罐头，需要原料入库、生产、质检、出货全流程"
+     *
+     * 输出包含:
+     * - 所有 EntityType 的 Formily Schema (MATERIAL_BATCH, PROCESSING_BATCH, QUALITY_CHECK, SHIPMENT 等)
+     * - 建议的产品类型、原料类型、转换率配置
+     * - AI 生成的配置说明
+     *
+     * @param factoryId 工厂ID
+     * @param request   包含工厂描述的请求
+     * @return AI 生成的配置响应
+     * @since 2025-12-29
+     */
+    @PostMapping("/factories/{factoryId}/ai-initialize")
+    @Operation(summary = "AI初始化工厂配置",
+               description = "使用AI根据自然语言描述生成工厂的完整表单配置（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<AIFactoryInitResponse> aiInitializeFactory(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @Valid @RequestBody AIFactoryInitRequest request
+    ) {
+        log.info("API调用: AI初始化工厂配置 - factoryId={}, description长度={}",
+                factoryId, request.getFactoryDescription().length());
+
+        try {
+            // 获取工厂信息
+            FactoryDTO factory = factoryService.getFactoryById(factoryId);
+
+            // 调用 AI 服务生成配置
+            Map<String, Object> aiResult = aiEnterpriseService.batchInitializeFactory(
+                    factoryId,
+                    request.getFactoryName() != null ? request.getFactoryName() : factory.getName(),
+                    request.getFactoryDescription(),
+                    request.getIndustryHint(),
+                    request.getIncludeBusinessData()
+            );
+
+            // 构建响应
+            AIFactoryInitResponse response = buildAIFactoryInitResponse(aiResult);
+
+            log.info("AI初始化工厂配置成功 - factoryId={}, industryCode={}, schemasCount={}",
+                    factoryId, response.getIndustryCode(),
+                    response.getSchemas() != null ? response.getSchemas().size() : 0);
+
+            return ApiResponse.success("AI配置生成成功", response);
+
+        } catch (Exception e) {
+            log.error("AI初始化工厂配置失败 - factoryId={}, error={}", factoryId, e.getMessage(), e);
+
+            AIFactoryInitResponse errorResponse = AIFactoryInitResponse.builder()
+                    .success(false)
+                    .message("AI配置生成失败: " + e.getMessage())
+                    .build();
+
+            return ApiResponse.error("AI配置生成失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 构建 AI 工厂初始化响应
+     */
+    @SuppressWarnings("unchecked")
+    private AIFactoryInitResponse buildAIFactoryInitResponse(Map<String, Object> aiResult) {
+        AIFactoryInitResponse.AIFactoryInitResponseBuilder builder = AIFactoryInitResponse.builder();
+
+        builder.success(Boolean.TRUE.equals(aiResult.get("success")));
+        builder.industryCode((String) aiResult.get("industryCode"));
+        builder.industryName((String) aiResult.get("industryName"));
+        builder.aiSummary((String) aiResult.get("aiSummary"));
+        builder.message((String) aiResult.get("message"));
+
+        // 解析 schemas
+        Object schemasObj = aiResult.get("schemas");
+        if (schemasObj instanceof List) {
+            List<Map<String, Object>> schemasList = (List<Map<String, Object>>) schemasObj;
+            List<AIFactoryInitResponse.EntitySchemaDTO> schemas = new ArrayList<>();
+
+            for (Map<String, Object> schemaMap : schemasList) {
+                AIFactoryInitResponse.EntitySchemaDTO schemaDTO = AIFactoryInitResponse.EntitySchemaDTO.builder()
+                        .entityType((String) schemaMap.get("entityType"))
+                        .entityName((String) schemaMap.get("entityName"))
+                        .description((String) schemaMap.get("description"))
+                        .fields((List<Map<String, Object>>) schemaMap.get("fields"))
+                        .build();
+                schemas.add(schemaDTO);
+            }
+            builder.schemas(schemas);
+        }
+
+        // 解析 suggestedData
+        Object suggestedDataObj = aiResult.get("suggestedData");
+        if (suggestedDataObj instanceof Map) {
+            Map<String, Object> suggestedDataMap = (Map<String, Object>) suggestedDataObj;
+            AIFactoryInitResponse.SuggestedBusinessDataDTO suggestedData =
+                    AIFactoryInitResponse.SuggestedBusinessDataDTO.builder()
+                            .productTypes((List<Map<String, Object>>) suggestedDataMap.get("productTypes"))
+                            .materialTypes((List<Map<String, Object>>) suggestedDataMap.get("materialTypes"))
+                            .conversionRates((List<Map<String, Object>>) suggestedDataMap.get("conversionRates"))
+                            .build();
+            builder.suggestedData(suggestedData);
+        }
+
+        return builder.build();
     }
 }

@@ -56,6 +56,16 @@ export interface AttendanceAnomaly {
   date: string;
   expectedTime?: string;
   actualTime?: string;
+  /** 异常发生时间 */
+  anomalyTime: string;
+  /** 是否已处理 */
+  isResolved: boolean;
+  /** 处理时间 */
+  resolvedAt?: string;
+  /** 处理人 */
+  resolvedBy?: string;
+  /** 处理备注 */
+  resolutionNotes?: string;
 }
 
 /**
@@ -317,6 +327,8 @@ class HRApiClient {
             date: today,
             expectedTime: (record as { expectedStartTime?: string }).expectedStartTime,
             actualTime: record.startTime,
+            anomalyTime: record.startTime || today,
+            isResolved: false,
           });
         }
       }
@@ -349,6 +361,134 @@ class HRApiClient {
       status: 'PENDING',
       ...queryParams,
     });
+  }
+
+  /**
+   * 7. 获取考勤异常列表 (按日期范围)
+   * @param params 查询参数
+   */
+  async getAttendanceAnomalies(params?: {
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    page?: number;
+    size?: number;
+    factoryId?: string;
+  }): Promise<AttendanceAnomaly[]> {
+    // TODO: 对接后端 API
+    // 目前复用 getTodayAnomalies 逻辑
+    return this.getTodayAnomalies(params?.factoryId);
+  }
+
+  /**
+   * 8. 处理考勤异常
+   * @param anomalyId 异常记录ID
+   * @param resolution 处理结果
+   */
+  async resolveAnomaly(
+    anomalyId: number | string,
+    resolution: { action: string; notes?: string },
+    factoryId?: string
+  ): Promise<{ success: boolean }> {
+    // TODO: 对接后端 API
+    console.log('[hrApiClient] resolveAnomaly:', anomalyId, resolution);
+    return { success: true };
+  }
+
+  /**
+   * 9. 获取绩效统计
+   */
+  async getPerformanceStats(params?: {
+    period?: string;
+    departmentId?: string;
+    factoryId?: string;
+  }): Promise<{
+    avgScore: number;
+    excellentCount: number;
+    needAttentionCount: number;
+    needImprovementCount: number;
+    gradeDistribution: { grade: string; count: number; percentage: number }[];
+  }> {
+    // TODO: 对接后端绩效分析 API
+    return {
+      avgScore: 85,
+      excellentCount: 10,
+      needAttentionCount: 3,
+      needImprovementCount: 2,
+      gradeDistribution: [
+        { grade: 'A', count: 10, percentage: 33 },
+        { grade: 'B', count: 12, percentage: 40 },
+        { grade: 'C', count: 5, percentage: 17 },
+        { grade: 'D', count: 3, percentage: 10 },
+      ],
+    };
+  }
+
+  /**
+   * 10. 获取员工绩效列表
+   */
+  async getEmployeePerformanceList(params?: {
+    page?: number;
+    size?: number;
+    grade?: string;
+    factoryId?: string;
+  }): Promise<{
+    content: {
+      userId: number;
+      userName: string;
+      department?: string;
+      position?: string;
+      score: number;
+      grade: string;
+    }[];
+    totalElements: number;
+    totalPages: number;
+  }> {
+    // TODO: 对接后端绩效分析 API
+    return {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+    };
+  }
+
+  /**
+   * 11. 获取员工AI分析结果
+   */
+  async getEmployeeAIAnalysis(
+    userId: number,
+    factoryId?: string
+  ): Promise<{
+    userId: number;
+    analysisType: string;
+    lastUpdated: string;
+    summary: string;
+    strengths: string[];
+    improvements: string[];
+    recommendations: string[];
+    performanceScore: number;
+  } | null> {
+    // TODO: 对接后端 AI 分析 API
+    return null;
+  }
+
+  /**
+   * 12. 请求生成员工AI分析
+   */
+  async requestEmployeeAIAnalysis(
+    userId: number,
+    factoryId?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    analysisId?: string;
+  }> {
+    // TODO: 对接后端 AI 分析 API
+    return {
+      success: true,
+      message: '分析请求已提交',
+      analysisId: `AI-${userId}-${Date.now()}`,
+    };
   }
 }
 
