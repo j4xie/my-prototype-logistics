@@ -4,6 +4,7 @@ import { Text, Card, Button, ActivityIndicator, IconButton, TextInput, Divider }
 import { AIQuota } from '../../../../types/processing';
 import { QUICK_QUESTIONS } from '../constants';
 import { styles } from '../styles';
+import { MarkdownRenderer } from '../../../../components/common/MarkdownRenderer';
 
 interface AIAnalysisSectionProps {
   batchId: string | number;
@@ -91,7 +92,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
           <View style={styles.aiTitleRow}>
             <View style={{ flex: 1 }}>
               <Text variant="titleLarge" style={styles.aiTitle}>
-                🤖 AI智能分析
+                AI智能分析
               </Text>
               <Text variant="bodySmall" style={{ color: '#64748B', marginTop: 4 }}>
                 基于DeepSeek技术，为您提供成本优化建议
@@ -153,7 +154,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
             <View style={styles.aiResultCard}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text variant="titleMedium" style={styles.aiResultTitle}>
-                  💡 AI分析结果
+                  分析结果
                 </Text>
                 <IconButton
                   icon="close"
@@ -164,7 +165,8 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
 
               <Divider style={styles.aiDivider} />
 
-              <Text style={styles.aiResultText}>{analysis}</Text>
+              {/* 使用 Markdown 渲染器显示 AI 分析结果 */}
+              <MarkdownRenderer content={analysis} />
 
               {sessionId && (
                 <Text variant="bodySmall" style={{ color: '#64748B', marginTop: 12 }}>
@@ -177,7 +179,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
             {!isQuotaExceeded && (
               <View style={styles.quickQuestions}>
                 <Text variant="bodyMedium" style={styles.quickQuestionsTitle}>
-                  💬 继续提问
+                  继续提问
                 </Text>
 
                 {QUICK_QUESTIONS.map((question, index) => (
@@ -246,7 +248,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
             {/* 配额提示 */}
             {quota && quota.remaining <= 3 && quota.remaining > 0 && (
               <Text variant="bodySmall" style={{ color: '#F59E0B', marginTop: 12, textAlign: 'center' }}>
-                ⚠️ 本周还剩 {quota.remaining} 次分析机会
+                提示: 本周还剩 {quota.remaining} 次分析机会
               </Text>
             )}
           </View>

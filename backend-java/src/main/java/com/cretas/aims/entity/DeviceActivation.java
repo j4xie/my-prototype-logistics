@@ -116,7 +116,7 @@ public class DeviceActivation extends BaseEntity {
      * 激活人ID
      */
     @Column(name = "activated_by")
-    private Integer activatedBy;
+    private Long activatedBy;
 
     /**
      * 过期时间
@@ -177,7 +177,7 @@ public class DeviceActivation extends BaseEntity {
     /**
      * 激活设备
      */
-    public void activate(String deviceId, Integer userId) {
+    public void activate(String deviceId, Long userId) {
         this.deviceId = deviceId;
         this.status = "ACTIVATED";
         this.activatedAt = LocalDateTime.now();

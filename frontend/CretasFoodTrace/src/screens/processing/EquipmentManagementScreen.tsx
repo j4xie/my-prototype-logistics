@@ -93,7 +93,7 @@ export default function EquipmentManagementScreen() {
       if (searchQuery.trim()) params.keyword = searchQuery.trim();
 
       const response = await equipmentApiClient.getEquipments(params);
-      const data = response.data;
+      const data = (response as any).data;
       let equipmentList: Equipment[] = [];
 
       if (Array.isArray(data)) {
@@ -252,7 +252,7 @@ export default function EquipmentManagementScreen() {
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="设备管理" titleStyle={{ fontWeight: '600' }} />
-        <Appbar.Action icon="monitor-dashboard" onPress={() => navigation.navigate('EquipmentMonitoring', {})} />
+        <Appbar.Action icon="monitor-dashboard" onPress={() => navigation.navigate('EquipmentMonitoring')} />
       </Appbar.Header>
 
       <View style={styles.searchContainer}>

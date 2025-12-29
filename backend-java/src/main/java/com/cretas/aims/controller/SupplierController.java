@@ -58,10 +58,10 @@ public class SupplierController {
 
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
 
         log.info("创建供应商: factoryId={}, name={}", factoryId, request.getName());
-        SupplierDTO supplier = supplierService.createSupplier(factoryId, request, userId);
+        SupplierDTO supplier = supplierService.createSupplier(factoryId, request, userId.longValue());
         return ApiResponse.success("供应商创建成功", supplier);
     }
 
@@ -172,6 +172,9 @@ public class SupplierController {
 
     /**
      * 切换供应商状态
+     * 支持两种参数格式：
+     * 1. URL参数: PUT /{supplierId}/status?isActive=true
+     * 2. Request Body: PUT /{supplierId}/status {"isActive": true}
      */
     @PutMapping("/{supplierId}/status")
     @Operation(summary = "切换供应商状态")
@@ -180,12 +183,23 @@ public class SupplierController {
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "供应商ID", required = true)
             @PathVariable @NotBlank String supplierId,
-            @Parameter(description = "激活状态", required = true)
-            @RequestParam @NotNull Boolean isActive) {
+            @Parameter(description = "激活状态 (URL参数)")
+            @RequestParam(required = false) Boolean isActive,
+            @Parameter(description = "激活状态 (Body参数)")
+            @RequestBody(required = false) Map<String, Boolean> body) {
+
+        // 优先使用URL参数，如果没有则从body获取
+        Boolean activeStatus = isActive;
+        if (activeStatus == null && body != null) {
+            activeStatus = body.get("isActive");
+        }
+        if (activeStatus == null) {
+            return ApiResponse.error("参数错误: isActive 是必需的");
+        }
 
         log.info("切换供应商状态: factoryId={}, supplierId={}, isActive={}",
-                factoryId, supplierId, isActive);
-        SupplierDTO supplier = supplierService.toggleSupplierStatus(factoryId, supplierId, isActive);
+                factoryId, supplierId, activeStatus);
+        SupplierDTO supplier = supplierService.toggleSupplierStatus(factoryId, supplierId, activeStatus);
         return ApiResponse.success("供应商状态更新成功", supplier);
     }
 

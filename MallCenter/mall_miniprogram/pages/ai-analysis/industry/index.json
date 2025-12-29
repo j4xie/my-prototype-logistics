@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "行业分析报告",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "onReachBottomDistance": 50
+}

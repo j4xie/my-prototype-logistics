@@ -49,8 +49,8 @@ public class ProductTypeController {
         log.info("创建产品类型: factoryId={}, code={}", factoryId, dto.getCode());
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
-        dto.setCreatedBy(userId);
+        Long userId = mobileService.getUserFromToken(token).getId();
+        dto.setCreatedBy(userId.longValue());
         ProductTypeDTO result = productTypeService.createProductType(factoryId, dto);
         return ApiResponse.success(result);
     }
@@ -183,15 +183,24 @@ public class ProductTypeController {
 
     /**
      * 检查产品编码是否存在
+     * 兼容两种参数名：code 或 productCode
      */
     @GetMapping("/check-code")
     @Operation(summary = "检查产品编码", description = "检查产品编码是否已存在")
     public ApiResponse<Boolean> checkCodeExists(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "产品编码") String code,
+            @RequestParam(required = false) @Parameter(description = "产品编码") String code,
+            @RequestParam(required = false) @Parameter(description = "产品编码 (前端兼容参数名)", hidden = true) String productCode,
             @RequestParam(required = false) @Parameter(description = "排除的产品ID") String excludeId) {
-        log.info("检查产品编码: factoryId={}, code={}, excludeId={}", factoryId, code, excludeId);
-        boolean exists = productTypeService.checkCodeExists(factoryId, code, excludeId);
+
+        // 兼容前端发送的 productCode 参数和后端的 code 参数
+        String actualCode = code != null ? code : productCode;
+        if (actualCode == null || actualCode.isBlank()) {
+            return ApiResponse.error(400, "产品编码参数不能为空 (code 或 productCode)");
+        }
+
+        log.info("检查产品编码: factoryId={}, code={}, excludeId={}", factoryId, actualCode, excludeId);
+        boolean exists = productTypeService.checkCodeExists(factoryId, actualCode, excludeId);
         return ApiResponse.success(exists);
     }
 

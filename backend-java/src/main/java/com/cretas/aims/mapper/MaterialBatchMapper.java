@@ -42,6 +42,8 @@ public class MaterialBatchMapper {
                 .weightPerUnit(batch.getWeightPerUnit())
                 .totalWeight(batch.getTotalWeight())
                 .currentQuantity(batch.getCurrentQuantity())
+                .usedQuantity(batch.getUsedQuantity())
+                .reservedQuantity(batch.getReservedQuantity())
                 .totalValue(batch.getTotalValue())
                 .unitPrice(batch.getUnitPrice())
                 .totalPrice(batch.getTotalPrice())
@@ -61,6 +63,7 @@ public class MaterialBatchMapper {
             dto.setMaterialCode(batch.getMaterialType().getCode());
             dto.setMaterialCategory(batch.getMaterialType().getCategory());
             dto.setUnit(batch.getMaterialType().getUnit());
+            dto.setStorageType(batch.getMaterialType().getStorageType());
         }
         // 设置供应商信息
         if (batch.getSupplier() != null) {
@@ -88,7 +91,7 @@ public class MaterialBatchMapper {
     /**
      * CreateRequest 转 Entity
      */
-    public MaterialBatch toEntity(CreateMaterialBatchRequest request, String factoryId, Integer createdBy) {
+    public MaterialBatch toEntity(CreateMaterialBatchRequest request, String factoryId, Long createdBy) {
         if (request == null) {
             return null;
         }

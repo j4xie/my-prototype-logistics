@@ -8,8 +8,10 @@ import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.ProcessingService;
+import com.cretas.aims.service.ProcessingStageRecordService;
 import com.cretas.aims.service.AIAnalysisService;
 import com.cretas.aims.service.CacheService;
+import com.cretas.aims.dto.processing.ProcessingStageRecordDTO;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 /**
  * 生产加工服务实现类
@@ -41,7 +45,8 @@ public class ProcessingServiceImpl implements ProcessingService {
     private final MaterialConsumptionRepository materialConsumptionRepository;
     private final QualityInspectionRepository qualityInspectionRepository;
     private final EquipmentRepository equipmentRepository;
-    private final EquipmentUsageRepository equipmentUsageRepository;
+    private final EquipmentAlertRepository equipmentAlertRepository;
+    private final BatchEquipmentUsageRepository batchEquipmentUsageRepository;
     private final ProductionPlanRepository productionPlanRepository;
     private final SystemLogRepository systemLogRepository;
     private final RawMaterialTypeRepository rawMaterialTypeRepository;
@@ -50,6 +55,7 @@ public class ProcessingServiceImpl implements ProcessingService {
     private final SupplierRepository supplierRepository;
     private final AIAnalysisService aiAnalysisService;
     private final CacheService cacheService;
+    private final ProcessingStageRecordService processingStageRecordService;
     // ========== 批次管理 ==========
     @Override
     @Transactional
@@ -88,7 +94,7 @@ public class ProcessingServiceImpl implements ProcessingService {
         }
         batch.setStatus(ProductionBatchStatus.IN_PROGRESS);
         batch.setStartTime(LocalDateTime.now());
-        batch.setSupervisorId(supervisorId);
+        batch.setSupervisorId(supervisorId != null ? supervisorId.longValue() : null);
         return productionBatchRepository.save(batch);
     }
     public ProductionBatch pauseProduction(String factoryId, String batchId, String reason) {
@@ -299,13 +305,13 @@ public class ProcessingServiceImpl implements ProcessingService {
                 ? productionBatch.getProductionPlanId().toString()
                 : "PLAN-" + productionBatchId;  // 如果没有计划ID，生成一个临时ID
             consumptionRecord.setProductionPlanId(planId);  // 设置生产计划ID (必填字段)
-            consumptionRecord.setProductionBatchId(productionBatchId);
+            consumptionRecord.setProductionBatchId(Long.parseLong(productionBatchId));
             consumptionRecord.setQuantity(quantity);
             consumptionRecord.setUnitPrice(materialBatch.getUnitPrice());  // 从原料批次获取单价 (必填字段)
             consumptionRecord.setTotalCost(quantity.multiply(materialBatch.getUnitPrice()));  // 计算总成本 (必填字段)
             consumptionRecord.setConsumptionTime(LocalDateTime.now());  // 设置消耗时间 (必填字段)
             consumptionRecord.setConsumedAt(LocalDateTime.now());
-            consumptionRecord.setRecordedBy(productionBatch.getSupervisorId() != null ? productionBatch.getSupervisorId() : 1);  // 设置记录人 (必填字段，默认使用督导或系统用户)
+            consumptionRecord.setRecordedBy(productionBatch.getSupervisorId() != null ? productionBatch.getSupervisorId() : 1L);  // 设置记录人 (必填字段，默认使用督导或系统用户)
             materialBatchRepository.save(materialBatch);
             materialConsumptionRepository.save(consumptionRecord);
         }
@@ -326,8 +332,9 @@ public class ProcessingServiceImpl implements ProcessingService {
         log.info("提交质检记录: factoryId={}, batchId={}", factoryId, batchId);
         QualityInspection qualityInspection = new QualityInspection();
         qualityInspection.setFactoryId(factoryId);
-        qualityInspection.setProductionBatchId(batchId);
-        qualityInspection.setInspectorId((Integer) inspection.get("inspectorId"));
+        qualityInspection.setProductionBatchId(Long.parseLong(batchId));
+        qualityInspection.setInspectorId(inspection.get("inspectorId") != null ?
+                Long.valueOf(inspection.get("inspectorId").toString()) : null);
         qualityInspection.setInspectionDate(LocalDate.now());
         qualityInspection.setSampleSize(new BigDecimal(inspection.get("sampleSize").toString()));
         qualityInspection.setPassCount(new BigDecimal(inspection.get("passCount").toString()));
@@ -352,7 +359,7 @@ public class ProcessingServiceImpl implements ProcessingService {
         );
         Page<QualityInspection> page;
         if (batchId != null) {
-            page = qualityInspectionRepository.findByFactoryIdAndProductionBatchId(factoryId, batchId, pageable);
+            page = qualityInspectionRepository.findByFactoryIdAndProductionBatchId(factoryId, Long.parseLong(batchId), pageable);
         } else {
             page = qualityInspectionRepository.findByFactoryId(factoryId, pageable);
         }
@@ -366,6 +373,17 @@ public class ProcessingServiceImpl implements ProcessingService {
                 page.getTotalElements()
         );
     }
+
+    /**
+     * 获取质检详情
+     */
+    public Map<String, Object> getInspectionById(String factoryId, String inspectionId) {
+        QualityInspection inspection = qualityInspectionRepository.findById(inspectionId)
+                .filter(i -> factoryId.equals(i.getFactoryId()))
+                .orElseThrow(() -> new RuntimeException("质检记录不存在: " + inspectionId));
+        return convertInspectionToMap(inspection);
+    }
+
     public Map<String, Object> getQualityStatistics(String factoryId, LocalDate startDate, LocalDate endDate) {
         List<QualityInspection> inspections = qualityInspectionRepository.findByFactoryIdAndDateRange(
                 factoryId, startDate, endDate);
@@ -413,22 +431,26 @@ public class ProcessingServiceImpl implements ProcessingService {
         return trends;
     }
     // ========== 设备监控 ==========
-    public void recordEquipmentUsage(String factoryId, String batchId, Integer equipmentId,
+    public void recordEquipmentUsage(String factoryId, String batchId, Long equipmentId,
                                     LocalDate startTime, LocalDate endTime) {
-        // 将Integer equipmentId转换为String以匹配FactoryEquipment.id类型
-        String equipmentIdStr = String.valueOf(equipmentId);
-        FactoryEquipment equipment = equipmentRepository.findById(equipmentIdStr)
+        // equipmentId 现在是 Long 类型，与 FactoryEquipment.id 一致
+        FactoryEquipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
-        EquipmentUsage usage = new EquipmentUsage();
-        usage.setEquipmentId(equipmentIdStr);  // 使用转换后的String类型
-        usage.setProductionBatchId(batchId);
+        // 使用 BatchEquipmentUsage 替代 EquipmentUsage
+        BatchEquipmentUsage usage = new BatchEquipmentUsage();
+        usage.setEquipmentId(equipmentId);
+        usage.setBatchId(Long.parseLong(batchId));  // 转换为Long类型
         usage.setStartTime(startTime.atStartOfDay());
         usage.setEndTime(endTime.atTime(23, 59, 59));
-        usage.setDurationHours((int) ChronoUnit.HOURS.between(usage.getStartTime(), usage.getEndTime()));
-        equipmentUsageRepository.save(usage);
+        long hours = ChronoUnit.HOURS.between(usage.getStartTime(), usage.getEndTime());
+        usage.setUsageHours(new BigDecimal(hours));
+        // 使用设备的实际小时成本，如果没有则使用默认值50元/小时
+        BigDecimal hourlyCost = equipment.getHourlyCost() != null ? equipment.getHourlyCost() : new BigDecimal("50");
+        usage.setEquipmentCost(new BigDecimal(hours).multiply(hourlyCost));
+        batchEquipmentUsageRepository.save(usage);
         // 更新设备使用时长
         equipment.setTotalRunningHours(
-                (equipment.getTotalRunningHours() != null ? equipment.getTotalRunningHours() : 0) + usage.getDurationHours()
+                (equipment.getTotalRunningHours() != null ? equipment.getTotalRunningHours() : 0) + (int) hours
         );
         equipment.setLastMaintenanceDate(LocalDate.now());
         equipmentRepository.save(equipment);
@@ -443,38 +465,43 @@ public class ProcessingServiceImpl implements ProcessingService {
             monitoring.put("status", equipment.getStatus());
             monitoring.put("totalOperatingHours", equipment.getTotalRunningHours());
             monitoring.put("lastMaintenanceDate", equipment.getLastMaintenanceDate());
-            // 计算利用率
+            // 计算利用率 - 使用 BatchEquipmentUsage
             LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
-            List<EquipmentUsage> recentUsages = equipmentUsageRepository.findByEquipmentIdAndStartTimeAfter(
+            List<BatchEquipmentUsage> recentUsages = batchEquipmentUsageRepository.findByEquipmentIdAndStartTimeAfter(
                     equipment.getId(), weekAgo);
-            int totalUsageHours = recentUsages.stream()
-                    .mapToInt(EquipmentUsage::getDurationHours)
-                    .sum();
-            double utilizationRate = (totalUsageHours / 168.0) * 100; // 168 = 7天 * 24小时
+            BigDecimal totalUsageHours = recentUsages.stream()
+                    .map(BatchEquipmentUsage::getUsageHours)
+                    .filter(h -> h != null)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            double utilizationRate = (totalUsageHours.doubleValue() / 168.0) * 100; // 168 = 7天 * 24小时
             monitoring.put("weeklyUtilizationRate", utilizationRate);
             return monitoring;
         }).collect(Collectors.toList());
     }
-    public Map<String, Object> getEquipmentMetrics(String factoryId, Integer equipmentId, Integer days) {
-        // 将Integer equipmentId转换为String以匹配FactoryEquipment.id类型
-        String equipmentIdStr = String.valueOf(equipmentId);
-        FactoryEquipment equipment = equipmentRepository.findById(equipmentIdStr)
+    public Map<String, Object> getEquipmentMetrics(String factoryId, Long equipmentId, Integer days) {
+        // equipmentId 现在是 Long 类型，与 FactoryEquipment.id 一致
+        FactoryEquipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
         LocalDateTime startDate = LocalDateTime.now().minusDays(days);
-        List<EquipmentUsage> usages = equipmentUsageRepository.findByEquipmentIdAndStartTimeAfter(
-                equipmentIdStr, startDate);  // 使用转换后的String类型
+        // 使用 BatchEquipmentUsage 替代 EquipmentUsage
+        List<BatchEquipmentUsage> usages = batchEquipmentUsageRepository.findByEquipmentIdAndStartTimeAfter(
+                equipmentId, startDate);
         Map<String, Object> metrics = new HashMap<>();
         metrics.put("equipment", equipment);
-        metrics.put("totalUsageHours", usages.stream().mapToInt(EquipmentUsage::getDurationHours).sum());
+        BigDecimal totalUsageHours = usages.stream()
+                .map(BatchEquipmentUsage::getUsageHours)
+                .filter(h -> h != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        metrics.put("totalUsageHours", totalUsageHours);
         metrics.put("usageCount", usages.size());
-        metrics.put("averageUsageHours",
-                usages.isEmpty() ? 0 : usages.stream().mapToInt(EquipmentUsage::getDurationHours).average().orElse(0));
+        BigDecimal avgUsageHours = usages.isEmpty() ? BigDecimal.ZERO :
+                totalUsageHours.divide(new BigDecimal(usages.size()), 2, RoundingMode.HALF_UP);
+        metrics.put("averageUsageHours", avgUsageHours);
         return metrics;
     }
-    public void recordEquipmentMaintenance(String factoryId, Integer equipmentId, Map<String, Object> maintenance) {
-        // 将Integer equipmentId转换为String以匹配FactoryEquipment.id类型
-        String equipmentIdStr = String.valueOf(equipmentId);
-        FactoryEquipment equipment = equipmentRepository.findById(equipmentIdStr)
+    public void recordEquipmentMaintenance(String factoryId, Long equipmentId, Map<String, Object> maintenance) {
+        // equipmentId 现在是 Long 类型，与 FactoryEquipment.id 一致
+        FactoryEquipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
         equipment.setLastMaintenanceDate(LocalDate.now());
         equipment.setStatus("running");
@@ -577,7 +604,8 @@ public class ProcessingServiceImpl implements ProcessingService {
         }
 
         // ========== 3. 原材料消耗详情 ==========
-        List<MaterialConsumption> consumptions = materialConsumptionRepository.findByProductionBatchId(batchId);
+        Long batchIdLong = Long.parseLong(batchId);
+        List<MaterialConsumption> consumptions = materialConsumptionRepository.findByProductionBatchId(batchIdLong);
         List<Map<String, Object>> materialDetails = new ArrayList<>();
         BigDecimal totalMaterialCost = BigDecimal.ZERO;
 
@@ -629,35 +657,46 @@ public class ProcessingServiceImpl implements ProcessingService {
         analysis.put("totalMaterialCost", totalMaterialCost);
 
         // ========== 4. 设备使用详情 ==========
-        List<EquipmentUsage> usages = equipmentUsageRepository.findByProductionBatchId(batchId);
+        // 使用 BatchEquipmentUsage 替代 EquipmentUsage (batchId 是 Long 类型)
+        // 注: batchIdLong 已在上面定义
+        List<BatchEquipmentUsage> usages = batchEquipmentUsageRepository.findByBatchId(batchIdLong);
         List<Map<String, Object>> equipmentDetails = new ArrayList<>();
         BigDecimal totalEquipmentCost = BigDecimal.ZERO;
-        int totalEquipmentHours = 0;
+        BigDecimal totalEquipmentHours = BigDecimal.ZERO;
 
-        for (EquipmentUsage usage : usages) {
+        for (BatchEquipmentUsage usage : usages) {
             Map<String, Object> equipmentDetail = new HashMap<>();
 
-            // 将Integer equipmentId转换为String以匹配FactoryEquipment.id类型
-            String equipmentIdStr = String.valueOf(usage.getEquipmentId());
-            equipmentRepository.findById(equipmentIdStr).ifPresent(equipment -> {
+            // equipmentId 是 Long 类型
+            Long equipmentIdLong = usage.getEquipmentId();
+            final BigDecimal[] hourlyCostHolder = {new BigDecimal("50")}; // 默认值
+            equipmentRepository.findById(equipmentIdLong).ifPresent(equipment -> {
                 equipmentDetail.put("equipmentId", equipment.getId());
                 equipmentDetail.put("equipmentName", equipment.getEquipmentName());
                 equipmentDetail.put("equipmentCode", equipment.getEquipmentCode());
                 equipmentDetail.put("model", equipment.getModel());
                 equipmentDetail.put("status", equipment.getStatus());
+                equipmentDetail.put("hourlyCost", equipment.getHourlyCost());
+                // 获取设备的实际小时成本
+                if (equipment.getHourlyCost() != null) {
+                    hourlyCostHolder[0] = equipment.getHourlyCost();
+                }
             });
 
             equipmentDetail.put("usageId", usage.getId());
             equipmentDetail.put("startTime", usage.getStartTime());
             equipmentDetail.put("endTime", usage.getEndTime());
-            equipmentDetail.put("durationHours", usage.getDurationHours());
+            equipmentDetail.put("usageHours", usage.getUsageHours());
 
-            // 计算设备成本（假设每小时50元）
-            BigDecimal equipmentCost = new BigDecimal(usage.getDurationHours()).multiply(new BigDecimal("50"));
+            // 使用记录中已存储的设备成本，如果没有则按设备实际小时成本计算
+            BigDecimal equipmentCost = usage.getEquipmentCost() != null ? usage.getEquipmentCost() :
+                    (usage.getUsageHours() != null ? usage.getUsageHours().multiply(hourlyCostHolder[0]) : BigDecimal.ZERO);
             equipmentDetail.put("cost", equipmentCost);
 
             totalEquipmentCost = totalEquipmentCost.add(equipmentCost);
-            totalEquipmentHours += usage.getDurationHours();
+            if (usage.getUsageHours() != null) {
+                totalEquipmentHours = totalEquipmentHours.add(usage.getUsageHours());
+            }
 
             equipmentDetails.add(equipmentDetail);
         }
@@ -668,23 +707,62 @@ public class ProcessingServiceImpl implements ProcessingService {
         analysis.put("totalEquipmentCost", totalEquipmentCost);
 
         // ========== 5. 人工工时详情 ==========
-        // TODO-FIX: BatchWorkSession关联到ProcessingBatch(ID:Integer),而此方法接收ProductionBatch(ID:Long)
-        // 导致类型不匹配错误。暂时使用batch表中的labor_cost字段,后续需要统一数据模型。
-        // 问题详情: BatchWorkSession.batchId是Integer类型,关联processing_batches表
-        // 而这里的batchId参数是Long类型,来自production_batches表
-
+        // 查询 BatchWorkSession 获取详细的工时数据
+        List<BatchWorkSession> workSessions = batchWorkSessionRepository.findByBatchId(batchIdLong);
         List<Map<String, Object>> laborDetails = new ArrayList<>();
-        BigDecimal totalLaborCost = batch.getLaborCost() != null ? batch.getLaborCost() : BigDecimal.ZERO;
-        int totalWorkMinutes = batch.getWorkDurationMinutes() != null ? batch.getWorkDurationMinutes() : 0;
+        BigDecimal totalLaborCost = BigDecimal.ZERO;
+        int totalWorkMinutes = 0;
+        Set<Long> uniqueEmployeeIds = new HashSet<>();
 
-        // 添加汇总信息 (详细的工时会话数据需要数据模型统一后才能查询)
-        if (totalLaborCost.compareTo(BigDecimal.ZERO) > 0 || totalWorkMinutes > 0) {
-            Map<String, Object> laborSummary = new HashMap<>();
-            laborSummary.put("workMinutes", totalWorkMinutes);
-            laborSummary.put("laborCost", totalLaborCost);
-            laborSummary.put("workerCount", batch.getWorkerCount());
-            laborSummary.put("note", "工时详情需要数据模型统一后提供");
-            laborDetails.add(laborSummary);
+        for (BatchWorkSession session : workSessions) {
+            Map<String, Object> laborDetail = new HashMap<>();
+            laborDetail.put("sessionId", session.getId());
+            laborDetail.put("workMinutes", session.getWorkMinutes());
+            laborDetail.put("laborCost", session.getLaborCost());
+            laborDetail.put("employeeId", session.getEmployeeId());
+
+            // 获取员工信息
+            if (session.getEmployeeId() != null) {
+                userRepository.findById(session.getEmployeeId()).ifPresent(employee -> {
+                    laborDetail.put("employeeName", employee.getFullName());
+                    laborDetail.put("employeeRole", employee.getRole());
+                });
+                uniqueEmployeeIds.add(session.getEmployeeId());
+            }
+
+            // 获取工作会话详情
+            if (session.getWorkSession() != null) {
+                EmployeeWorkSession ws = session.getWorkSession();
+                // 从startTime提取日期
+                laborDetail.put("workDate", ws.getStartTime() != null ? ws.getStartTime().toLocalDate() : null);
+                laborDetail.put("startTime", ws.getStartTime());
+                laborDetail.put("endTime", ws.getEndTime());
+            }
+
+            laborDetails.add(laborDetail);
+
+            // 累加总计
+            if (session.getLaborCost() != null) {
+                totalLaborCost = totalLaborCost.add(session.getLaborCost());
+            }
+            if (session.getWorkMinutes() != null) {
+                totalWorkMinutes += session.getWorkMinutes();
+            }
+        }
+
+        // 如果没有 BatchWorkSession 数据，使用 ProductionBatch 中的汇总数据作为兜底
+        if (workSessions.isEmpty()) {
+            totalLaborCost = batch.getLaborCost() != null ? batch.getLaborCost() : BigDecimal.ZERO;
+            totalWorkMinutes = batch.getWorkDurationMinutes() != null ? batch.getWorkDurationMinutes() : 0;
+
+            if (totalLaborCost.compareTo(BigDecimal.ZERO) > 0 || totalWorkMinutes > 0) {
+                Map<String, Object> laborSummary = new HashMap<>();
+                laborSummary.put("workMinutes", totalWorkMinutes);
+                laborSummary.put("laborCost", totalLaborCost);
+                laborSummary.put("workerCount", batch.getWorkerCount());
+                laborSummary.put("note", "来自批次汇总数据");
+                laborDetails.add(laborSummary);
+            }
         }
 
         analysis.put("laborSessions", laborDetails);
@@ -692,10 +770,12 @@ public class ProcessingServiceImpl implements ProcessingService {
         analysis.put("totalWorkMinutes", totalWorkMinutes);
         analysis.put("totalWorkHours", totalWorkMinutes / 60.0);
         analysis.put("totalLaborCost", totalLaborCost);
+        analysis.put("uniqueWorkerCount", workSessions.isEmpty() ?
+            (batch.getWorkerCount() != null ? batch.getWorkerCount() : 0) : uniqueEmployeeIds.size());
 
         // ========== 6. 质量检验详情 ==========
         List<QualityInspection> inspections = qualityInspectionRepository.findByFactoryIdAndProductionBatchId(
-            factoryId, batchId, org.springframework.data.domain.PageRequest.of(0, 100)).getContent();
+            factoryId, batchIdLong, org.springframework.data.domain.PageRequest.of(0, 100)).getContent();
 
         List<Map<String, Object>> qualityDetails = new ArrayList<>();
 
@@ -736,7 +816,97 @@ public class ProcessingServiceImpl implements ProcessingService {
             analysis.put("averagePassRate", avgPassRate);
         }
 
-        // ========== 7. 成本汇总 ==========
+        // ========== 7. 加工环节详情 ==========
+        try {
+            List<ProcessingStageRecordDTO> stageRecords = processingStageRecordService
+                .getByBatchIdWithComparison(factoryId, batchIdLong);
+
+            List<Map<String, Object>> stageDetails = new ArrayList<>();
+
+            for (ProcessingStageRecordDTO stage : stageRecords) {
+                Map<String, Object> stageDetail = new HashMap<>();
+
+                // 基本信息
+                stageDetail.put("id", stage.getId());
+                stageDetail.put("stageType", stage.getStageType());
+                stageDetail.put("stageName", stage.getStageName());
+                stageDetail.put("stageOrder", stage.getStageOrder());
+
+                // 时间数据
+                stageDetail.put("startTime", stage.getStartTime());
+                stageDetail.put("endTime", stage.getEndTime());
+                stageDetail.put("durationMinutes", stage.getDurationMinutes());
+                stageDetail.put("avgDuration", stage.getAvgDuration());
+
+                // 重量/数量数据
+                stageDetail.put("inputWeight", stage.getInputWeight());
+                stageDetail.put("outputWeight", stage.getOutputWeight());
+                stageDetail.put("lossWeight", stage.getLossWeight());
+                stageDetail.put("lossRate", stage.getLossRate());
+                stageDetail.put("avgLossRate", stage.getAvgLossRate());
+
+                // 温度数据
+                stageDetail.put("ambientTemperature", stage.getAmbientTemperature());
+                stageDetail.put("productTemperature", stage.getProductTemperature());
+                stageDetail.put("targetTemperature", stage.getTargetTemperature());
+
+                // 质量数据
+                stageDetail.put("passCount", stage.getPassCount());
+                stageDetail.put("failCount", stage.getFailCount());
+                stageDetail.put("passRate", stage.getPassRate());
+                stageDetail.put("avgPassRate", stage.getAvgPassRate());
+                stageDetail.put("reworkCount", stage.getReworkCount());
+
+                // 设备数据
+                stageDetail.put("equipmentId", stage.getEquipmentId());
+                stageDetail.put("equipmentName", stage.getEquipmentName());
+                stageDetail.put("equipmentRunTime", stage.getEquipmentRunTime());
+                stageDetail.put("equipmentDowntime", stage.getEquipmentDowntime());
+                stageDetail.put("equipmentOee", stage.getEquipmentOee());
+
+                // 资源消耗数据
+                stageDetail.put("waterUsage", stage.getWaterUsage());
+                stageDetail.put("powerUsage", stage.getPowerUsage());
+                stageDetail.put("auxiliaryUsage", stage.getAuxiliaryUsage());
+                stageDetail.put("auxiliaryName", stage.getAuxiliaryName());
+
+                // 特殊环节数据
+                stageDetail.put("dripLoss", stage.getDripLoss());
+                stageDetail.put("thicknessSd", stage.getThicknessSd());
+                stageDetail.put("marinadeAbsorption", stage.getMarinadeAbsorption());
+                stageDetail.put("phValue", stage.getPhValue());
+                stageDetail.put("salinity", stage.getSalinity());
+                stageDetail.put("atpResult", stage.getAtpResult());
+                stageDetail.put("microPassRate", stage.getMicroPassRate());
+                stageDetail.put("ccpPassRate", stage.getCcpPassRate());
+
+                // 操作员信息
+                stageDetail.put("operatorId", stage.getOperatorId());
+                stageDetail.put("operatorName", stage.getOperatorName());
+                stageDetail.put("workerCount", stage.getWorkerCount());
+
+                // 其他
+                stageDetail.put("notes", stage.getNotes());
+
+                stageDetails.add(stageDetail);
+            }
+
+            analysis.put("processingStages", stageDetails);
+            analysis.put("processingStageCount", stageDetails.size());
+
+            // 添加AI分析格式化的环节数据
+            if (!stageRecords.isEmpty()) {
+                Map<String, String> aiFormatData = processingStageRecordService
+                    .formatForAIAnalysis(factoryId, batchIdLong);
+                analysis.put("processingStageAIFormat", aiFormatData);
+            }
+        } catch (Exception e) {
+            log.warn("获取加工环节数据失败: {}", e.getMessage());
+            analysis.put("processingStages", new ArrayList<>());
+            analysis.put("processingStageCount", 0);
+        }
+
+        // ========== 8. 成本汇总 ==========
         Map<String, Object> costSummary = new HashMap<>();
         costSummary.put("materialCost", totalMaterialCost);
         costSummary.put("laborCost", totalLaborCost);
@@ -747,10 +917,14 @@ public class ProcessingServiceImpl implements ProcessingService {
             .add(batch.getOtherCost() != null ? batch.getOtherCost() : BigDecimal.ZERO);
         costSummary.put("totalCost", totalCost);
 
-        // 单位成本
-        if (batch.getActualQuantity() != null && batch.getActualQuantity().compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal unitCost = totalCost.divide(batch.getActualQuantity(), 4, RoundingMode.HALF_UP);
+        // 单位成本 - 优先使用良品数量
+        BigDecimal quantityForUnitCost = batch.getGoodQuantity() != null && batch.getGoodQuantity().compareTo(BigDecimal.ZERO) > 0
+                ? batch.getGoodQuantity() : batch.getActualQuantity();
+        if (quantityForUnitCost != null && quantityForUnitCost.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal unitCost = totalCost.divide(quantityForUnitCost, 4, RoundingMode.HALF_UP);
             costSummary.put("unitCost", unitCost);
+            costSummary.put("unitCostBasis", batch.getGoodQuantity() != null && batch.getGoodQuantity().compareTo(BigDecimal.ZERO) > 0
+                    ? "goodQuantity" : "actualQuantity");
         }
 
         // 成本占比
@@ -765,7 +939,29 @@ public class ProcessingServiceImpl implements ProcessingService {
 
         analysis.put("costSummary", costSummary);
 
-        // ========== 8. 风险预警 ==========
+        // ========== 8.1 前端兼容的costBreakdown结构（CostAnalysisDashboard使用） ==========
+        Map<String, Object> costBreakdown = new HashMap<>();
+        costBreakdown.put("rawMaterialCost", totalMaterialCost);
+        costBreakdown.put("laborCost", totalLaborCost);
+        costBreakdown.put("equipmentCost", totalEquipmentCost);
+        costBreakdown.put("totalCost", totalCost);
+
+        // 百分比计算
+        if (totalCost.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal rawMaterialPct = totalMaterialCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100));
+            BigDecimal laborPct = totalLaborCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100));
+            BigDecimal equipmentPct = totalEquipmentCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100));
+            costBreakdown.put("rawMaterialPercentage", rawMaterialPct.setScale(1, RoundingMode.HALF_UP));
+            costBreakdown.put("laborPercentage", laborPct.setScale(1, RoundingMode.HALF_UP));
+            costBreakdown.put("equipmentPercentage", equipmentPct.setScale(1, RoundingMode.HALF_UP));
+        } else {
+            costBreakdown.put("rawMaterialPercentage", 0);
+            costBreakdown.put("laborPercentage", 0);
+            costBreakdown.put("equipmentPercentage", 0);
+        }
+        analysis.put("costBreakdown", costBreakdown);
+
+        // ========== 9. 风险预警 ==========
         List<String> risks = new ArrayList<>();
 
         // 原材料过期风险
@@ -794,25 +990,54 @@ public class ProcessingServiceImpl implements ProcessingService {
         analysis.put("risks", risks);
         analysis.put("riskCount", risks.size());
 
-        log.info("增强的批次成本分析完成: batchId={}, 原材料{}种, 设备{}台, 人工{}人次, 质检{}次",
-                 batchId, materialDetails.size(), equipmentDetails.size(), laborDetails.size(), qualityDetails.size());
+        log.info("增强的批次成本分析完成: batchId={}, 原材料{}种, 设备{}台, 人工{}人次, 质检{}次, 加工环节{}个",
+                 batchId, materialDetails.size(), equipmentDetails.size(), laborDetails.size(), qualityDetails.size(),
+                 analysis.get("processingStageCount"));
 
         return analysis;
     }
     public ProductionBatch recalculateBatchCost(String factoryId, String batchId) {
         ProductionBatch batch = getBatchById(factoryId, batchId);
+        Long batchIdLong = Long.parseLong(batchId);
+
         // 重新计算原材料成本
-        List<MaterialConsumption> consumptions = materialConsumptionRepository.findByProductionBatchId(batchId);
+        List<MaterialConsumption> consumptions = materialConsumptionRepository.findByProductionBatchId(batchIdLong);
         BigDecimal materialCost = consumptions.stream()
                 .map(c -> c.getQuantity().multiply(c.getBatch().getUnitPrice()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         batch.setMaterialCost(materialCost);
-        // 重新计算设备成本
-        List<EquipmentUsage> usages = equipmentUsageRepository.findByProductionBatchId(batchId);
-        BigDecimal equipmentCost = new BigDecimal(usages.stream()
-                .mapToInt(EquipmentUsage::getDurationHours)
-                .sum() * 50); // 假设每小时设备成本50元
+
+        // 重新计算设备成本 - 使用 BatchEquipmentUsage
+        List<BatchEquipmentUsage> usages = batchEquipmentUsageRepository.findByBatchId(batchIdLong);
+        // 优先使用记录中已存储的成本，如果没有则按设备实际小时成本计算
+        BigDecimal equipmentCost = BigDecimal.ZERO;
+        for (BatchEquipmentUsage usage : usages) {
+            if (usage.getEquipmentCost() != null) {
+                equipmentCost = equipmentCost.add(usage.getEquipmentCost());
+            } else if (usage.getUsageHours() != null) {
+                // 获取设备的实际小时成本
+                BigDecimal hourlyCost = new BigDecimal("50"); // 默认值
+                Long equipmentId = usage.getEquipmentId();
+                if (equipmentId != null) {
+                    FactoryEquipment equipment = equipmentRepository.findById(equipmentId).orElse(null);
+                    if (equipment != null && equipment.getHourlyCost() != null) {
+                        hourlyCost = equipment.getHourlyCost();
+                    }
+                }
+                equipmentCost = equipmentCost.add(usage.getUsageHours().multiply(hourlyCost));
+            }
+        }
         batch.setEquipmentCost(equipmentCost);
+
+        // 重新计算人工成本 - 使用 BatchWorkSession
+        List<BatchWorkSession> workSessions = batchWorkSessionRepository.findByBatchId(batchIdLong);
+        BigDecimal laborCost = workSessions.stream()
+                .map(s -> s.getLaborCost() != null ? s.getLaborCost() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (laborCost.compareTo(BigDecimal.ZERO) > 0) {
+            batch.setLaborCost(laborCost);
+        }
+
         // 重新计算总成本
         batch.calculateMetrics();
         return productionBatchRepository.save(batch);
@@ -842,24 +1067,91 @@ public class ProcessingServiceImpl implements ProcessingService {
     // ========== 仪表盘 ==========
     public Map<String, Object> getDashboardOverview(String factoryId) {
         Map<String, Object> overview = new HashMap<>();
-        // 今日生产批次数
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        long todayBatches = productionBatchRepository.countByFactoryIdAndCreatedAtAfter(factoryId, todayStart);
-        overview.put("todayBatches", todayBatches);
-        // 进行中批次数 - 使用枚举类型
-        long inProgressBatches = productionBatchRepository.countByFactoryIdAndStatus(
-                factoryId, ProductionBatchStatus.IN_PROGRESS);
-        overview.put("inProgressBatches", inProgressBatches);
-        // 本月产量
         LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+
+        // ===== summary (概览) =====
+        Map<String, Object> summary = new HashMap<>();
+        // 今日批次总数
+        long todayBatches = productionBatchRepository.countByFactoryIdAndCreatedAtAfter(factoryId, todayStart);
+        summary.put("totalBatches", todayBatches);
+        // 进行中批次数
+        long activeBatches = productionBatchRepository.countByFactoryIdAndStatus(
+                factoryId, ProductionBatchStatus.IN_PROGRESS);
+        summary.put("activeBatches", activeBatches);
+        // 已完成批次数
+        long completedBatches = productionBatchRepository.countByFactoryIdAndStatusAndCreatedAtAfter(
+                factoryId, ProductionBatchStatus.COMPLETED, todayStart);
+        summary.put("completedBatches", completedBatches);
+        // 今日质检数
+        long qualityInspections = qualityInspectionRepository.countByFactoryIdAndInspectionDateAfter(
+                factoryId, todayStart.toLocalDate());
+        summary.put("qualityInspections", qualityInspections);
+        // 活跃告警数
+        List<EquipmentAlert> activeAlerts = equipmentAlertRepository.findByFactoryIdAndStatusOrderByTriggeredAtDesc(
+                factoryId, AlertStatus.ACTIVE);
+        summary.put("activeAlerts", activeAlerts.size());
+        // 工人数量统计
+        long totalWorkers = userRepository.countByFactoryId(factoryId);
+        summary.put("totalWorkers", totalWorkers);
+        summary.put("onDutyWorkers", totalWorkers); // 简化处理，实际应从考勤记录获取
+        overview.put("summary", summary);
+
+        // ===== todayStats (今日统计) =====
+        Map<String, Object> todayStats = new HashMap<>();
+        todayStats.put("productionCount", todayBatches);
+        todayStats.put("qualityCheckCount", qualityInspections);
+        // 今日入库原材料数
+        long materialReceived = materialBatchRepository.countByFactoryIdAndReceiptDateAfter(factoryId, todayStart);
+        todayStats.put("materialReceived", materialReceived);
+        todayStats.put("ordersCompleted", completedBatches);
+        // 生产效率
+        BigDecimal avgEfficiency = productionBatchRepository.calculateAverageEfficiency(factoryId, todayStart);
+        todayStats.put("productionEfficiency", avgEfficiency != null ? avgEfficiency : BigDecimal.ZERO);
+        todayStats.put("activeWorkers", totalWorkers);
+        // 今日产量
+        BigDecimal todayOutput = productionBatchRepository.calculateTotalOutputAfter(factoryId, todayStart);
+        todayStats.put("todayOutputKg", todayOutput != null ? todayOutput : BigDecimal.ZERO);
+        todayStats.put("totalBatches", todayBatches);
+        todayStats.put("totalWorkers", totalWorkers);
+        // 设备统计
+        long totalEquipment = equipmentRepository.countByFactoryId(factoryId);
+        long activeEquipment = equipmentRepository.countByFactoryIdAndStatus(factoryId, "active");
+        todayStats.put("totalEquipment", totalEquipment);
+        todayStats.put("activeEquipment", activeEquipment);
+        overview.put("todayStats", todayStats);
+
+        // ===== kpi (关键绩效指标) =====
+        Map<String, Object> kpi = new HashMap<>();
+        kpi.put("productionEfficiency", avgEfficiency != null ? avgEfficiency : BigDecimal.ZERO);
+        // 质量合格率
+        BigDecimal monthlyYieldRate = productionBatchRepository.calculateAverageYieldRate(factoryId, monthStart);
+        kpi.put("qualityPassRate", monthlyYieldRate != null ? monthlyYieldRate : BigDecimal.ZERO);
+        // 设备利用率
+        BigDecimal equipmentUtilization = totalEquipment > 0 ?
+                BigDecimal.valueOf(activeEquipment * 100.0 / totalEquipment).setScale(2, RoundingMode.HALF_UP) :
+                BigDecimal.ZERO;
+        kpi.put("equipmentUtilization", equipmentUtilization);
+        overview.put("kpi", kpi);
+
+        // ===== alerts (告警状态) =====
+        Map<String, Object> alerts = new HashMap<>();
+        alerts.put("active", activeAlerts.size());
+        alerts.put("status", activeAlerts.isEmpty() ? "normal" : "warning");
+        overview.put("alerts", alerts);
+
+        // ===== period =====
+        overview.put("period", "today");
+
+        // ===== 保留旧字段（向后兼容） =====
+        overview.put("todayBatches", todayBatches);
+        overview.put("inProgressBatches", activeBatches);
         BigDecimal monthlyOutput = productionBatchRepository.calculateMonthlyOutput(factoryId, monthStart);
         overview.put("monthlyOutput", monthlyOutput != null ? monthlyOutput : BigDecimal.ZERO);
-        // 本月良品率
-        BigDecimal monthlyYieldRate = productionBatchRepository.calculateAverageYieldRate(factoryId, monthStart);
         overview.put("monthlyYieldRate", monthlyYieldRate != null ? monthlyYieldRate : BigDecimal.ZERO);
-        // 原材料库存预警
         Long lowStockMaterials = materialBatchRepository.countLowStockMaterials(factoryId);
         overview.put("lowStockMaterials", lowStockMaterials != null ? lowStockMaterials : 0L);
+
         return overview;
     }
     public Map<String, Object> getProductionStatistics(String factoryId, String period) {

@@ -1,41 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, FlatList, Alert, RefreshControl } from 'react-native';
 import {
   Text,
   Appbar,
   Card,
-  DataTable,
-  Button,
-  Portal,
-  Modal,
-  TextInput,
   List,
   ActivityIndicator,
+  Surface,
+  Divider,
   Chip,
+  IconButton,
 } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { materialTypeApiClient } from '../../services/api/materialTypeApiClient';
-import { productTypeApiClient } from '../../services/api/productTypeApiClient';
 import { conversionApiClient } from '../../services/api/conversionApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
+import { ManagementStackParamList } from '../../types/navigation';
 import { logger } from '../../utils/logger';
 
 // 创建ConversionRate专用logger
 const conversionLogger = logger.createContextLogger('ConversionRate');
+
+type NavigationProp = NativeStackNavigationProp<ManagementStackParamList, 'ConversionRate'>;
 
 interface MaterialType {
   id: string;
   name: string;
   category?: string;
   unit: string;
-}
-
-interface ProductType {
-  id: string;
-  name: string;
-  code: string;
-  category?: string;
 }
 
 interface ConversionRate {
@@ -47,36 +41,36 @@ interface ConversionRate {
   notes?: string;
 }
 
+interface MaterialWithStats extends MaterialType {
+  configuredCount: number;
+  avgConversionRate?: number;
+  avgWastageRate?: number;
+}
+
 /**
- * 转换率配置页面
- * 支持矩阵视图和快速配置
+ * 转换率配置页面 - 原料卡片列表视图
+ *
+ * 设计思路：
+ * - 以原料为中心展示（不是矩阵）
+ * - 每个原料显示为一张卡片
+ * - 点击卡片进入详情页查看/配置该原料的所有转换率
  */
 export default function ConversionRateScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const user = useAuthStore((state) => state.user);
   const factoryId = getFactoryId(user);
+
   const [loading, setLoading] = useState(true);
-  const [materials, setMaterials] = useState<MaterialType[]>([]);
-  const [products, setProducts] = useState<ProductType[]>([]);
-  const [conversions, setConversions] = useState<ConversionRate[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<MaterialType | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [materials, setMaterials] = useState<MaterialWithStats[]>([]);
+  const [totalConfigured, setTotalConfigured] = useState(0);
+  const [totalProducts, setTotalProducts] = useState(0);
 
-  const [formData, setFormData] = useState({
-    conversionRate: '',
-    wastageRate: '',
-    notes: '',
-  });
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
+  /**
+   * 加载数据
+   */
   const loadData = async () => {
     try {
-      setLoading(true);
-
       if (!factoryId) {
         conversionLogger.warn('工厂ID不存在，无法加载转换率数据');
         Alert.alert('错误', '无法获取工厂信息，请重新登录');
@@ -85,167 +79,184 @@ export default function ConversionRateScreen() {
 
       conversionLogger.info('加载转换率配置数据', { factoryId });
 
-      // 并行加载三类数据 
-      const [materialsRes, productsRes, conversionsRes] = await Promise.all([
+      // 并行加载原料和转换率数据
+      const [materialsRes, conversionsRes] = await Promise.all([
         materialTypeApiClient.getMaterialTypes({ factoryId }),
-        productTypeApiClient.getProductTypes({ factoryId }),
         conversionApiClient.getConversionRates({ factoryId }),
       ]);
 
       // 处理原料类型数据
-      if (materialsRes?.data) {
-        const materialsArray = Array.isArray(materialsRes.data)
-          ? materialsRes.data
-          : materialsRes.data.content || [];
-        const mappedMaterials: MaterialType[] = materialsArray.map((item: any) => ({
+      let materialsArray: MaterialType[] = [];
+      if (materialsRes && 'data' in materialsRes && materialsRes.data) {
+        const materialsData = materialsRes.data as unknown;
+        materialsArray = Array.isArray(materialsData)
+          ? materialsData
+          : ((materialsData as { content?: MaterialType[] })?.content ?? []);
+        materialsArray = materialsArray.map((item: MaterialType) => ({
           id: item.id,
           name: item.name,
-          category: item.category || undefined,
-          unit: item.unit || 'kg',
+          category: item.category ?? undefined,
+          unit: item.unit ?? 'kg',
         }));
-        setMaterials(mappedMaterials);
-        conversionLogger.info('加载原料类型成功', { count: mappedMaterials.length });
-      }
-
-      // 处理产品类型数据
-      if (productsRes?.data) {
-        const productsArray = Array.isArray(productsRes.data)
-          ? productsRes.data
-          : productsRes.data.content || [];
-        const mappedProducts: ProductType[] = productsArray.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          code: item.productCode || item.code || '',
-          category: item.category || undefined,
-        }));
-        setProducts(mappedProducts);
-        conversionLogger.info('加载产品类型成功', { count: mappedProducts.length });
       }
 
       // 处理转换率数据
-      if (conversionsRes?.data) {
-        const conversionsArray = Array.isArray(conversionsRes.data)
-          ? conversionsRes.data
-          : conversionsRes.data.content || [];
-        const mappedConversions: ConversionRate[] = conversionsArray.map((item: any) => ({
-          id: item.id,
-          materialTypeId: item.materialTypeId,
-          productTypeId: item.productTypeId,
-          conversionRate: item.conversionRate,
-          wastageRate: item.wastageRate || undefined,
-          notes: item.notes || undefined,
-        }));
-        setConversions(mappedConversions);
-        conversionLogger.info('加载转换率配置成功', { count: mappedConversions.length });
+      let conversionsArray: ConversionRate[] = [];
+      if (conversionsRes && typeof conversionsRes === 'object' && conversionsRes !== null && 'data' in conversionsRes && conversionsRes.data) {
+        const conversionsData = conversionsRes.data as unknown;
+        conversionsArray = Array.isArray(conversionsData)
+          ? conversionsData
+          : ((conversionsData as { content?: ConversionRate[] })?.content ?? []);
       }
 
-      conversionLogger.info('所有数据加载完成', {
-        materials: materials.length,
-        products: products.length,
-        conversions: conversions.length
+      // 计算每个原料的统计数据
+      const materialsWithStats: MaterialWithStats[] = materialsArray.map((material) => {
+        const materialConversions = conversionsArray.filter(
+          (c) => c.materialTypeId === material.id
+        );
+
+        const configuredCount = materialConversions.length;
+        let avgConversionRate: number | undefined;
+        let avgWastageRate: number | undefined;
+
+        if (configuredCount > 0) {
+          avgConversionRate = materialConversions.reduce((sum, c) => sum + c.conversionRate, 0) / configuredCount;
+          const wastageRates = materialConversions.filter((c) => c.wastageRate != null);
+          if (wastageRates.length > 0) {
+            avgWastageRate = wastageRates.reduce((sum, c) => sum + (c.wastageRate ?? 0), 0) / wastageRates.length;
+          }
+        }
+
+        return {
+          ...material,
+          configuredCount,
+          avgConversionRate,
+          avgWastageRate,
+        };
+      });
+
+      setMaterials(materialsWithStats);
+      setTotalConfigured(conversionsArray.length);
+
+      // 统计不同产品数量
+      const uniqueProducts = new Set(conversionsArray.map((c) => c.productTypeId));
+      setTotalProducts(uniqueProducts.size);
+
+      conversionLogger.info('数据加载完成', {
+        materials: materialsWithStats.length,
+        conversions: conversionsArray.length,
+        products: uniqueProducts.size,
       });
     } catch (error: unknown) {
       conversionLogger.error('加载转换率数据失败', error);
       const errorMessage = error instanceof Error ? error.message : '加载数据失败';
       Alert.alert('错误', errorMessage);
       setMaterials([]);
-      setProducts([]);
-      setConversions([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const handleCellPress = (material: MaterialType, product: ProductType) => {
-    const existing = conversions.find(
-      c => c.materialTypeId === material.id && c.productTypeId === product.id
-    );
+  // 初始加载
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    setSelectedMaterial(material);
-    setSelectedProduct(product);
-
-    if (existing) {
-      setFormData({
-        conversionRate: existing.conversionRate.toString(),
-        wastageRate: existing.wastageRate?.toString() || '',
-        notes: existing.notes || '',
-      });
-    } else {
-      setFormData({
-        conversionRate: '',
-        wastageRate: '',
-        notes: '',
-      });
-    }
-
-    setModalVisible(true);
-  };
-
-  const handleSave = async () => {
-    if (!formData.conversionRate) {
-      Alert.alert('提示', '转换率不能为空');
-      return;
-    }
-
-    const rate = parseFloat(formData.conversionRate);
-    if (rate <= 0 || rate > 100) {
-      Alert.alert('提示', '转换率必须在0-100之间');
-      return;
-    }
-
-    if (!factoryId || !selectedMaterial || !selectedProduct) {
-      Alert.alert('错误', '数据不完整，无法保存');
-      return;
-    }
-
-    try {
-      const existing = conversions.find(
-        (c) => c.materialTypeId === selectedMaterial.id && c.productTypeId === selectedProduct.id
-      );
-
-      const conversionData = {
-        materialTypeId: selectedMaterial.id,
-        productTypeId: selectedProduct.id,
-        conversionRate: rate,
-        wastageRate: formData.wastageRate ? parseFloat(formData.wastageRate) : undefined,
-        notes: formData.notes || undefined,
-      };
-
-      if (existing?.id) {
-        // 更新现有转换率
-        await conversionApiClient.updateConversionRate(existing.id, conversionData, factoryId);
-        conversionLogger.info('转换率更新成功', {
-          id: existing.id,
-          materialTypeId: selectedMaterial.id,
-          productTypeId: selectedProduct.id,
-          rate
-        });
-      } else {
-        // 创建新转换率
-        await conversionApiClient.createConversionRate(conversionData, factoryId);
-        conversionLogger.info('转换率创建成功', {
-          materialTypeId: selectedMaterial.id,
-          productTypeId: selectedProduct.id,
-          rate
-        });
-      }
-
-      Alert.alert('成功', '转换率保存成功');
-      setModalVisible(false);
+  // 页面聚焦时刷新数据
+  useFocusEffect(
+    useCallback(() => {
       loadData();
-    } catch (error: unknown) {
-      conversionLogger.error('保存转换率失败', error, {
-        materialTypeId: selectedMaterial?.id,
-        productTypeId: selectedProduct?.id
-      });
-      const errorMessage = error instanceof Error ? error.message : '保存失败';
-      Alert.alert('错误', errorMessage);
-    }
+    }, [factoryId])
+  );
+
+  /**
+   * 下拉刷新
+   */
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadData();
   };
 
-  const getConversion = (materialId: string, productId: string) => {
-    return conversions.find(
-      c => c.materialTypeId === materialId && c.productTypeId === productId
+  /**
+   * 点击原料卡片
+   */
+  const handleMaterialPress = (material: MaterialWithStats) => {
+    navigation.navigate('MaterialConversionDetail', {
+      materialTypeId: material.id,
+      materialName: material.name,
+    });
+  };
+
+  /**
+   * 渲染原料卡片
+   */
+  const renderMaterialCard = ({ item }: { item: MaterialWithStats }) => {
+    const hasConfig = item.configuredCount > 0;
+
+    return (
+      <Card
+        style={styles.materialCard}
+        mode="elevated"
+        onPress={() => handleMaterialPress(item)}
+      >
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.cardHeader}>
+            <View style={styles.materialInfo}>
+              <Text variant="titleMedium" style={styles.materialName}>
+                {item.name}
+              </Text>
+              {item.category && (
+                <Chip mode="outlined" compact style={styles.categoryChip}>
+                  {item.category}
+                </Chip>
+              )}
+            </View>
+            <View style={styles.configCount}>
+              <Text
+                style={[
+                  styles.configCountText,
+                  hasConfig ? styles.configCountActive : styles.configCountEmpty,
+                ]}
+              >
+                {item.configuredCount}
+              </Text>
+              <Text style={styles.configCountLabel}>个产品</Text>
+            </View>
+          </View>
+
+          <Divider style={styles.cardDivider} />
+
+          <View style={styles.cardStats}>
+            {hasConfig ? (
+              <>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>
+                    {item.avgConversionRate?.toFixed(1)}%
+                  </Text>
+                  <Text style={styles.statLabel}>平均转换率</Text>
+                </View>
+                {item.avgWastageRate != null && (
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {item.avgWastageRate.toFixed(1)}%
+                    </Text>
+                    <Text style={styles.statLabel}>平均损耗</Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <Text style={styles.noConfigText}>尚未配置转换率</Text>
+            )}
+          </View>
+
+          <IconButton
+            icon="chevron-right"
+            size={24}
+            style={styles.arrowIcon}
+          />
+        </Card.Content>
+      </Card>
     );
   };
 
@@ -255,195 +266,73 @@ export default function ConversionRateScreen() {
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="转换率配置" />
-        <Appbar.Action icon="refresh" onPress={loadData} />
+        <Appbar.Action icon="refresh" onPress={handleRefresh} />
       </Appbar.Header>
 
-      <ScrollView style={styles.content}>
-        {/* Info Card */}
-        <Card style={styles.infoCard}>
-          <Card.Content>
-            <View style={styles.infoRow}>
-              <List.Icon icon="information" color="#2196F3" />
-              <Text style={styles.infoText}>
-                点击表格单元格可配置转换率。转换率表示原料转换为产品的比例。
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={materials}
+          renderItem={renderMaterialCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListHeaderComponent={
+            <>
+              {/* 提示信息 */}
+              <Card style={styles.infoCard}>
+                <Card.Content>
+                  <View style={styles.infoRow}>
+                    <List.Icon icon="information" color="#2196F3" />
+                    <Text style={styles.infoText}>
+                      选择原料查看和配置转换率
+                    </Text>
+                  </View>
+                </Card.Content>
+              </Card>
+
+              {/* 统计概览 */}
+              <Surface style={styles.statsCard} elevation={1}>
+                <View style={styles.statsRow}>
+                  <View style={styles.statsItem}>
+                    <Text style={styles.statsValue}>{materials.length}</Text>
+                    <Text style={styles.statsLabel}>原料类型</Text>
+                  </View>
+                  <View style={styles.statsDivider} />
+                  <View style={styles.statsItem}>
+                    <Text style={styles.statsValue}>{totalProducts}</Text>
+                    <Text style={styles.statsLabel}>产品类型</Text>
+                  </View>
+                  <View style={styles.statsDivider} />
+                  <View style={styles.statsItem}>
+                    <Text style={[styles.statsValue, styles.statsValueHighlight]}>
+                      {totalConfigured}
+                    </Text>
+                    <Text style={styles.statsLabel}>已配置</Text>
+                  </View>
+                </View>
+              </Surface>
+
+              {/* 原料列表标题 */}
+              <Text style={styles.sectionTitle}>原料列表</Text>
+            </>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                暂无原料类型，请先在"原材料类型管理"中添加
               </Text>
             </View>
-          </Card.Content>
-        </Card>
-
-        {/* Stats */}
-        <Card style={styles.statsCard}>
-          <Card.Content>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{materials.length}</Text>
-                <Text style={styles.statLabel}>原料类型</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{products.length}</Text>
-                <Text style={styles.statLabel}>产品类型</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{conversions.length}</Text>
-                <Text style={styles.statLabel}>已配置</Text>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* Conversion Matrix */}
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" />
-            <Text style={styles.loadingText}>加载中...</Text>
-          </View>
-        ) : (
-          <Card style={styles.matrixCard}>
-            <Card.Content>
-              <Text style={styles.matrixTitle}>转换率矩阵</Text>
-              <ScrollView horizontal>
-                <DataTable>
-                  <DataTable.Header>
-                    <DataTable.Title style={styles.headerCell}>
-                      <Text style={styles.headerText}>原料 \ 产品</Text>
-                    </DataTable.Title>
-                    {products.map(product => (
-                      <DataTable.Title key={product.id} style={styles.headerCell}>
-                        <Text style={styles.headerText}>{product.name}</Text>
-                      </DataTable.Title>
-                    ))}
-                  </DataTable.Header>
-
-                  {materials.map(material => (
-                    <DataTable.Row key={material.id}>
-                      <DataTable.Cell style={styles.rowHeaderCell}>
-                        <Text style={styles.materialName}>{material.name}</Text>
-                      </DataTable.Cell>
-                      {products.map(product => {
-                        const conversion = getConversion(material.id, product.id);
-                        return (
-                          <DataTable.Cell
-                            key={product.id}
-                            style={styles.dataCell}
-                            onPress={() => handleCellPress(material, product)}
-                          >
-                            {conversion ? (
-                              <View style={styles.cellContent}>
-                                <Text style={styles.conversionValue}>
-                                  {conversion.conversionRate}%
-                                </Text>
-                                {conversion.wastageRate && (
-                                  <Text style={styles.wastageValue}>
-                                    损耗:{conversion.wastageRate}%
-                                  </Text>
-                                )}
-                              </View>
-                            ) : (
-                              <Text style={styles.emptyCellText}>点击配置</Text>
-                            )}
-                          </DataTable.Cell>
-                        );
-                      })}
-                    </DataTable.Row>
-                  ))}
-                </DataTable>
-              </ScrollView>
-
-              {materials.length === 0 || products.length === 0 ? (
-                <View style={styles.emptyMatrixHint}>
-                  <Text style={styles.emptyMatrixText}>
-                    请先在"产品类型管理"和"原料类型管理"中添加类型
-                  </Text>
-                </View>
-              ) : null}
-            </Card.Content>
-          </Card>
-        )}
-
-        <View style={styles.bottomPadding} />
-      </ScrollView>
-
-      {/* Edit Modal */}
-      <Portal>
-        <Modal
-          visible={modalVisible}
-          onDismiss={() => setModalVisible(false)}
-          contentContainerStyle={styles.modalContent}
-        >
-          <Text style={styles.modalTitle}>配置转换率</Text>
-
-          {selectedMaterial && selectedProduct && (
-            <View style={styles.conversionInfo}>
-              <Chip icon="arrow-right" mode="outlined" style={styles.infoChip}>
-                {selectedMaterial.name} → {selectedProduct.name}
-              </Chip>
-            </View>
-          )}
-
-          <TextInput
-            label="转换率 (%) *"
-            value={formData.conversionRate}
-            onChangeText={(text) => setFormData({ ...formData, conversionRate: text })}
-            mode="outlined"
-            style={styles.input}
-            keyboardType="decimal-pad"
-            placeholder="例如: 60 (表示 100kg 原料可生产 60kg 产品)"
-          />
-
-          <TextInput
-            label="损耗率 (%)"
-            value={formData.wastageRate}
-            onChangeText={(text) => setFormData({ ...formData, wastageRate: text })}
-            mode="outlined"
-            style={styles.input}
-            keyboardType="decimal-pad"
-            placeholder="例如: 5 (表示 5% 的损耗)"
-          />
-
-          <TextInput
-            label="备注"
-            value={formData.notes}
-            onChangeText={(text) => setFormData({ ...formData, notes: text })}
-            mode="outlined"
-            style={styles.input}
-            multiline
-            numberOfLines={2}
-            placeholder="可选填写备注信息"
-          />
-
-          {/* 预估示例 */}
-          {formData.conversionRate && (
-            <Card style={styles.exampleCard}>
-              <Card.Content>
-                <Text style={styles.exampleTitle}>预估示例:</Text>
-                <Text style={styles.exampleText}>
-                  生产 100kg {selectedProduct?.name}
-                </Text>
-                <Text style={styles.exampleText}>
-                  需要约 {(100 / (parseFloat(formData.conversionRate) / 100) * (1 + (parseFloat(formData.wastageRate || '0') / 100))).toFixed(1)}kg {selectedMaterial?.name}
-                </Text>
-              </Card.Content>
-            </Card>
-          )}
-
-          <View style={styles.modalActions}>
-            <Button
-              mode="outlined"
-              onPress={() => setModalVisible(false)}
-              style={styles.modalButton}
-            >
-              取消
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleSave}
-              style={styles.modalButton}
-            >
-              保存
-            </Button>
-          </View>
-        </Modal>
-      </Portal>
+          }
+          ListFooterComponent={<View style={styles.bottomPadding} />}
+        />
+      )}
     </View>
   );
 }
@@ -453,20 +342,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  content: {
-    flex: 1,
-  },
   loadingContainer: {
-    padding: 40,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     marginTop: 16,
     color: '#666',
   },
+  listContent: {
+    padding: 16,
+  },
   infoCard: {
-    margin: 16,
-    marginBottom: 8,
+    marginBottom: 12,
     backgroundColor: '#E3F2FD',
   },
   infoRow: {
@@ -480,123 +369,131 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   statsCard: {
-    margin: 16,
-    marginBottom: 8,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-  },
-  statItem: {
     alignItems: 'center',
   },
-  statValue: {
-    fontSize: 24,
+  statsItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statsValue: {
+    fontSize: 28,
     fontWeight: 'bold',
+    color: '#333',
+  },
+  statsValueHighlight: {
     color: '#2196F3',
   },
-  statLabel: {
+  statsLabel: {
     fontSize: 12,
     color: '#666',
     marginTop: 4,
   },
-  matrixCard: {
-    margin: 16,
+  statsDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#E0E0E0',
   },
-  matrixTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+    marginTop: 4,
   },
-  headerCell: {
-    minWidth: 120,
-    justifyContent: 'center',
+  materialCard: {
+    marginBottom: 12,
+    backgroundColor: '#fff',
   },
-  headerText: {
-    fontWeight: 'bold',
-    fontSize: 14,
+  cardContent: {
+    position: 'relative',
+    paddingRight: 40,
   },
-  rowHeaderCell: {
-    minWidth: 120,
-    backgroundColor: '#f5f5f5',
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  materialInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   materialName: {
     fontWeight: '600',
-    fontSize: 14,
+    color: '#333',
   },
-  dataCell: {
-    minWidth: 120,
-    justifyContent: 'center',
+  categoryChip: {
+    height: 24,
+  },
+  configCount: {
     alignItems: 'center',
+    paddingLeft: 12,
   },
-  cellContent: {
-    alignItems: 'center',
-  },
-  conversionValue: {
-    fontSize: 16,
+  configCountText: {
+    fontSize: 24,
     fontWeight: 'bold',
+  },
+  configCountActive: {
+    color: '#4CAF50',
+  },
+  configCountEmpty: {
+    color: '#BDBDBD',
+  },
+  configCountLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 2,
+  },
+  cardDivider: {
+    marginVertical: 8,
+  },
+  cardStats: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  statItem: {
+    alignItems: 'flex-start',
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#2196F3',
   },
-  wastageValue: {
+  statLabel: {
     fontSize: 11,
     color: '#999',
     marginTop: 2,
   },
-  emptyCellText: {
-    fontSize: 12,
-    color: '#bbb',
+  noConfigText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
   },
-  emptyMatrixHint: {
-    padding: 20,
+  arrowIcon: {
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+    marginTop: -12,
+  },
+  emptyContainer: {
+    padding: 40,
     alignItems: 'center',
   },
-  emptyMatrixText: {
+  emptyText: {
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  conversionInfo: {
-    marginBottom: 16,
-  },
-  infoChip: {
-    alignSelf: 'flex-start',
-  },
-  input: {
-    marginBottom: 16,
-  },
-  exampleCard: {
-    marginBottom: 16,
-    backgroundColor: '#FFF3E0',
-  },
-  exampleTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#E65100',
-  },
-  exampleText: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 4,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-  },
-  modalButton: {
-    minWidth: 100,
   },
   bottomPadding: {
     height: 20,

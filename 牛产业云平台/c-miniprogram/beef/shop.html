@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>店铺详情 - 牛产业云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      padding-bottom: 70px;
+    }
+
+    /* 店铺头部 */
+    .shop-header {
+      background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
+      padding: 60px 16px 20px;
+      position: relative;
+    }
+
+    .back-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      color: white;
+      font-size: 22px;
+      text-decoration: none;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+    }
+
+    .share-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      color: white;
+      font-size: 22px;
+      text-decoration: none;
+      padding: 8px;
+    }
+
+    .shop-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .shop-avatar {
+      width: 72px;
+      height: 72px;
+      background: white;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      color: #C62828;
+    }
+
+    .shop-detail {
+      flex: 1;
+      color: white;
+    }
+
+    .shop-name {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .shop-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px;
+    }
+
+    .shop-location {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .shop-stats {
+      display: flex;
+      gap: 20px;
+      margin-top: 8px;
+    }
+
+    .stat-item {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .stat-item span {
+      font-weight: 600;
+    }
+
+    /* 店铺数据 */
+    .shop-data {
+      display: flex;
+      background: white;
+      padding: 16px;
+      margin: -10px 16px 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .data-item {
+      flex: 1;
+      text-align: center;
+    }
+
+    .data-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #C62828;
+    }
+
+    .data-label {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .data-divider {
+      width: 1px;
+      background: #eee;
+      margin: 0 8px;
+    }
+
+    /* 店铺简介 */
+    .shop-intro {
+      background: white;
+      padding: 16px;
+      margin: 0 16px 12px;
+      border-radius: 12px;
+    }
+
+    .intro-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .intro-text {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    /* 资质展示 */
+    .cert-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .cert-item {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .cert-item .mdi {
+      color: #4CAF50;
+    }
+
+    /* 标签导航 */
+    .tab-nav {
+      display: flex;
+      background: white;
+      padding: 0 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .tab-item {
+      flex: 1;
+      text-align: center;
+      padding: 14px 0;
+      font-size: 14px;
+      color: #666;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .tab-item.active {
+      color: #C62828;
+      font-weight: 600;
+    }
+
+    .tab-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 3px;
+      background: #C62828;
+      border-radius: 2px;
+    }
+
+    /* 筛选栏 */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: white;
+      border-top: 1px solid #f5f5f5;
+    }
+
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .filter-item.active {
+      color: #C62828;
+    }
+
+    /* 商品列表 */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 12px 16px;
+    }
+
+    .product-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .product-image {
+      height: 140px;
+      background: linear-gradient(135deg, #FFCDD2 0%, #EF9A9A 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+
+    .product-info {
+      padding: 10px;
+    }
+
+    .product-title {
+      font-size: 13px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .product-price {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .price-current {
+      font-size: 16px;
+      font-weight: 700;
+      color: #C62828;
+    }
+
+    .price-unit {
+      font-size: 12px;
+      color: #C62828;
+    }
+
+    .product-sales {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    /* 底部操作 */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      background: white;
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      border-top: 1px solid #eee;
+      z-index: 100;
+    }
+
+    .bottom-actions {
+      display: flex;
+      gap: 24px;
+    }
+
+    .bottom-action {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 10px;
+      color: #666;
+      text-decoration: none;
+    }
+
+    .bottom-action .mdi {
+      font-size: 22px;
+      margin-bottom: 2px;
+    }
+
+    .bottom-buttons {
+      flex: 1;
+      display: flex;
+      gap: 10px;
+      margin-left: 20px;
+    }
+
+    .btn-follow {
+      flex: 1;
+      padding: 12px;
+      background: #FFF3E0;
+      color: #E65100;
+      border: none;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .btn-contact {
+      flex: 1;
+      padding: 12px;
+      background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
+      color: white;
+      border: none;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 店铺头部 -->
+  <div class="shop-header">
+    <a href="detail.html" class="back-btn"><i class="mdi mdi-arrow-left"></i></a>
+    <a href="javascript:void(0)" class="share-btn"><i class="mdi mdi-share-variant"></i></a>
+
+    <div class="shop-info">
+      <div class="shop-avatar">草</div>
+      <div class="shop-detail">
+        <div class="shop-name">
+          草原鲜牛食品有限公司
+          <span class="shop-badge">已认证</span>
+        </div>
+        <div class="shop-location">
+          <i class="mdi mdi-map-marker"></i>
+          内蒙古锡林郭勒盟
+        </div>
+        <div class="shop-stats">
+          <span class="stat-item">成交 <span>236</span> 单</span>
+          <span class="stat-item">好评率 <span>98%</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 店铺数据 -->
+  <div class="shop-data">
+    <div class="data-item">
+      <div class="data-value">128</div>
+      <div class="data-label">在售商品</div>
+    </div>
+    <div class="data-divider"></div>
+    <div class="data-item">
+      <div class="data-value">4.9</div>
+      <div class="data-label">店铺评分</div>
+    </div>
+    <div class="data-divider"></div>
+    <div class="data-item">
+      <div class="data-value">3年</div>
+      <div class="data-label">入驻时长</div>
+    </div>
+    <div class="data-divider"></div>
+    <div class="data-item">
+      <div class="data-value">2.3万</div>
+      <div class="data-label">累计访客</div>
+    </div>
+  </div>
+
+  <!-- 店铺简介 -->
+  <div class="shop-intro">
+    <div class="intro-title">店铺简介</div>
+    <div class="intro-text">
+      草原鲜牛食品有限公司成立于2018年，专注于内蒙古草原牛肉的加工与销售。公司拥有现代化屠宰加工车间，通过ISO22000、HACCP认证，产品远销全国各地。
+    </div>
+    <div class="cert-bar">
+      <div class="cert-item"><i class="mdi mdi-check-circle"></i>营业执照</div>
+      <div class="cert-item"><i class="mdi mdi-check-circle"></i>食品经营许可</div>
+      <div class="cert-item"><i class="mdi mdi-check-circle"></i>HACCP认证</div>
+      <div class="cert-item"><i class="mdi mdi-check-circle"></i>绿色食品</div>
+    </div>
+  </div>
+
+  <!-- 标签导航 -->
+  <div class="tab-nav">
+    <div class="tab-item active" onclick="switchTab(this, 'all')">全部商品</div>
+    <div class="tab-item" onclick="switchTab(this, 'hot')">热销推荐</div>
+    <div class="tab-item" onclick="switchTab(this, 'new')">新品上架</div>
+    <div class="tab-item" onclick="switchTab(this, 'discount')">优惠活动</div>
+  </div>
+
+  <!-- 筛选栏 -->
+  <div class="filter-bar">
+    <div class="filter-item active">
+      <span>综合排序</span>
+      <i class="mdi mdi-chevron-down"></i>
+    </div>
+    <div class="filter-item">
+      <span>销量</span>
+      <i class="mdi mdi-chevron-down"></i>
+    </div>
+    <div class="filter-item">
+      <span>价格</span>
+      <i class="mdi mdi-chevron-down"></i>
+    </div>
+    <div class="filter-item">
+      <span>筛选</span>
+      <i class="mdi mdi-filter-variant"></i>
+    </div>
+  </div>
+
+  <!-- 商品列表 -->
+  <div class="product-grid">
+    <a href="detail.html?id=1" class="product-card">
+      <div class="product-image"><i class="mdi mdi-food-steak"></i></div>
+      <div class="product-info">
+        <div class="product-title">内蒙古草原牛腩肉 新鲜冷冻 优质黄牛肉</div>
+        <div class="product-price">
+          <span class="price-current">¥68</span>
+          <span class="price-unit">/kg</span>
+        </div>
+        <div class="product-sales">已售 1,280件</div>
+      </div>
+    </a>
+
+    <a href="detail.html?id=2" class="product-card">
+      <div class="product-image"><i class="mdi mdi-food-steak"></i></div>
+      <div class="product-info">
+        <div class="product-title">草原黄牛牛腱子 健身低脂 酱卤专用</div>
+        <div class="product-price">
+          <span class="price-current">¥76</span>
+          <span class="price-unit">/kg</span>
+        </div>
+        <div class="product-sales">已售 856件</div>
+      </div>
+    </a>
+
+    <a href="detail.html?id=3" class="product-card">
+      <div class="product-image"><i class="mdi mdi-food-steak"></i></div>
+      <div class="product-info">
+        <div class="product-title">精选牛里脊 火锅涮肉 嫩滑口感</div>
+        <div class="product-price">
+          <span class="price-current">¥88</span>
+          <span class="price-unit">/kg</span>
+        </div>
+        <div class="product-sales">已售 623件</div>
+      </div>
+    </a>
+
+    <a href="detail.html?id=4" class="product-card">
+      <div class="product-image"><i class="mdi mdi-food-steak"></i></div>
+      <div class="product-info">
+        <div class="product-title">牛肋排 原切带骨 烧烤首选</div>
+        <div class="product-price">
+          <span class="price-current">¥98</span>
+          <span class="price-unit">/kg</span>
+        </div>
+        <div class="product-sales">已售 412件</div>
+      </div>
+    </a>
+
+    <a href="detail.html?id=5" class="product-card">
+      <div class="product-image"><i class="mdi mdi-food-steak"></i></div>
+      <div class="product-info">
+        <div class="product-title">牛尾骨 煲汤滋补 胶原丰富</div>
+        <div class="product-price">
+          <span class="price-current">¥38</span>
+          <span class="price-unit">/kg</span>
+        </div>
+        <div class="product-sales">已售 389件</div>
+      </div>
+    </a>
+
+    <a href="detail.html?id=6" class="product-card">
+      <div class="product-image"><i class="mdi mdi-food-steak"></i></div>
+      <div class="product-info">
+        <div class="product-title">牛百叶 火锅必备 脆嫩爽口</div>
+        <div class="product-price">
+          <span class="price-current">¥56</span>
+          <span class="price-unit">/kg</span>
+        </div>
+        <div class="product-sales">已售 567件</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- 底部操作 -->
+  <div class="bottom-bar">
+    <div class="bottom-actions">
+      <a href="javascript:void(0)" class="bottom-action">
+        <i class="mdi mdi-message-text-outline"></i>
+        <span>客服</span>
+      </a>
+      <a href="javascript:void(0)" class="bottom-action">
+        <i class="mdi mdi-star-outline"></i>
+        <span>收藏</span>
+      </a>
+    </div>
+    <div class="bottom-buttons">
+      <button class="btn-follow">关注店铺</button>
+      <button class="btn-contact" onclick="contactShop()">联系商家</button>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(el, type) {
+      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function contactShop() {
+      alert('商家电话：138-0013-8000\n微信：caoyuanxianniu888');
+    }
+  </script>
+</body>
+
+</html>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity } from 'react-native';
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator } from 'react-native-paper';
-import { userApiClient, type User } from '../../services/api/userApiClient';
+import { userApiClient, type UserDTO } from '../../services/api/userApiClient';
 
 interface SupervisorSelectorProps {
   value: string;
@@ -24,7 +24,7 @@ export const SupervisorSelector: React.FC<SupervisorSelectorProps> = ({
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [employees, setEmployees] = useState<User[]>([]);
+  const [employees, setEmployees] = useState<UserDTO[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -36,13 +36,17 @@ export const SupervisorSelector: React.FC<SupervisorSelectorProps> = ({
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      // 使用userApiClient替代employeeAPI，查询部门为processing的用户
+      // 使用userApiClient查询用户列表（返回PageResponse格式）
       const result = await userApiClient.getUsers({
-        department: 'processing',
-        role: 'operator' // 假设生产负责人角色为operator
+        keyword: '', // 可以传入关键字搜索
       });
-      console.log('✅ Users loaded:', result.length);
-      setEmployees(result);
+      // 适配后端字段名: fullName -> realName
+      const adaptedUsers = (result.content || []).map(user => ({
+        ...user,
+        realName: (user as any).fullName || user.realName || user.username,
+      }));
+      console.log('✅ Users loaded:', adaptedUsers.length);
+      setEmployees(adaptedUsers);
     } catch (error) {
       console.error('❌ Failed to fetch users:', error);
       setEmployees([]);
@@ -52,12 +56,12 @@ export const SupervisorSelector: React.FC<SupervisorSelectorProps> = ({
   };
 
   const filteredEmployees = employees.filter(emp =>
-    emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (emp.realName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSelect = (employee: User) => {
-    onSelect(employee.fullName, employee.id);
+  const handleSelect = (employee: UserDTO) => {
+    onSelect(employee.realName || employee.username, employee.id);
     setModalVisible(false);
     setSearchQuery('');
   };
@@ -117,10 +121,10 @@ export const SupervisorSelector: React.FC<SupervisorSelectorProps> = ({
                 renderItem={({ item }) => (
                   <>
                     <List.Item
-                      title={item.fullName}
+                      title={item.realName || item.username}
                       description={`${item.username}${item.department ? ` · ${item.department}` : ''}`}
                       onPress={() => handleSelect(item)}
-                      right={props => value === item.fullName ? <List.Icon {...props} icon="check" color="#2196F3" /> : null}
+                      right={props => value === (item.realName || item.username) ? <List.Icon {...props} icon="check" color="#2196F3" /> : null}
                       left={props => <List.Icon {...props} icon="account-circle" />}
                     />
                     <Divider />

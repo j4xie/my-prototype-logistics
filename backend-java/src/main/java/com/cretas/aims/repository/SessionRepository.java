@@ -29,7 +29,7 @@ public interface SessionRepository extends JpaRepository<Session, String> {
      /**
      * 查找用户的所有活动会话
       */
-    List<Session> findByUserIdAndIsRevokedFalse(Integer userId);
+    List<Session> findByUserIdAndIsRevokedFalse(Long userId);
      /**
      * 查找工厂的所有活动会话
       */
@@ -39,7 +39,7 @@ public interface SessionRepository extends JpaRepository<Session, String> {
       */
     @Modifying
     @Query("UPDATE Session s SET s.isRevoked = true WHERE s.userId = :userId")
-    void revokeAllUserSessions(@Param("userId") Integer userId);
+    void revokeAllUserSessions(@Param("userId") Long userId);
      /**
      * 撤销工厂的所有会话
       */

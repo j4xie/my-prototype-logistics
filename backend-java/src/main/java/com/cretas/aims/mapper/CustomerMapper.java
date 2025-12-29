@@ -59,7 +59,7 @@ public class CustomerMapper {
     /**
      * CreateRequest 转 Entity
      */
-    public Customer toEntity(CreateCustomerRequest request, String factoryId, Integer createdBy) {
+    public Customer toEntity(CreateCustomerRequest request, String factoryId, Long createdBy) {
         if (request == null) {
             return null;
         }

@@ -13,7 +13,7 @@ class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
-      timeout: 30000,
+      timeout: 120000, // 2分钟超时，支持AI分析等长时间操作
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -33,7 +33,7 @@ class ApiClient {
           params: config.params,
           data: config.data
         });
-        
+
         // 只使用安全存储的访问token，不允许降级
         const accessToken = await StorageService.getSecureItem('secure_access_token');
         if (accessToken) {

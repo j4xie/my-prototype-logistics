@@ -44,6 +44,14 @@ public class ProductTypeServiceImpl implements ProductTypeService {
     @Override
     @Transactional
     public ProductTypeDTO createProductType(String factoryId, ProductTypeDTO dto) {
+        // 如果没有提供 code，自动生成 SKU
+        if (dto.getCode() == null || dto.getCode().trim().isEmpty()) {
+            long count = productTypeRepository.countByFactoryId(factoryId);
+            String generatedCode = String.format("PT-%s-%03d", factoryId, count + 1);
+            dto.setCode(generatedCode);
+            log.info("自动生成产品代码: {}", generatedCode);
+        }
+
         log.info("创建产品类型: factoryId={}, code={}", factoryId, dto.getCode());
 
         // 检查产品编码是否已存在
@@ -64,7 +72,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         productType.setPackageSpec(dto.getPackageSpec());
         productType.setNotes(dto.getNotes());
         productType.setIsActive(true);
-        productType.setCreatedBy(dto.getCreatedBy());
+        productType.setCreatedBy(dto.getCreatedBy() != null ? Long.valueOf(dto.getCreatedBy()) : null);
         productType.setCreatedAt(LocalDateTime.now());
         productType.setUpdatedAt(LocalDateTime.now());
 
@@ -297,7 +305,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         productType.setProductionTimeMinutes(productionTime);
         productType.setShelfLifeDays(shelfLife);
         productType.setIsActive(true);
-        productType.setCreatedBy(1); // 系统创建
+        productType.setCreatedBy(1L); // 系统创建
         productType.setCreatedAt(LocalDateTime.now());
         productType.setUpdatedAt(LocalDateTime.now());
         return productType;

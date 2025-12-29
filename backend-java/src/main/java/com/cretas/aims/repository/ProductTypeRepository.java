@@ -40,10 +40,11 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
     List<ProductType> findByFactoryIdAndCategory(String factoryId, String category);
      /**
      * 搜索产品类型
+     * 注意：code使用右模糊（可使用索引），name/category使用双向模糊（无法使用索引）
       */
     @Query("SELECT p FROM ProductType p WHERE p.factoryId = :factoryId AND " +
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(p.code) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
            "LOWER(p.category) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<ProductType> searchProductTypes(@Param("factoryId") String factoryId,
                                          @Param("keyword") String keyword,

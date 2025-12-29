@@ -42,6 +42,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     private final ProductionPlanBatchUsageRepository planBatchUsageRepository;
     private final ProductTypeRepository productTypeRepository;
     private final ProductionPlanMapper productionPlanMapper;
+    private final ConversionRepository conversionRepository;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public ProductionPlanServiceImpl(
@@ -50,25 +51,27 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             MaterialConsumptionRepository materialConsumptionRepository,
             ProductionPlanBatchUsageRepository planBatchUsageRepository,
             ProductTypeRepository productTypeRepository,
-            ProductionPlanMapper productionPlanMapper) {
+            ProductionPlanMapper productionPlanMapper,
+            ConversionRepository conversionRepository) {
         this.productionPlanRepository = productionPlanRepository;
         this.materialBatchRepository = materialBatchRepository;
         this.materialConsumptionRepository = materialConsumptionRepository;
         this.planBatchUsageRepository = planBatchUsageRepository;
         this.productTypeRepository = productTypeRepository;
         this.productionPlanMapper = productionPlanMapper;
+        this.conversionRepository = conversionRepository;
     }
 
     @Override
     @Transactional
-    public ProductionPlanDTO createProductionPlan(String factoryId, CreateProductionPlanRequest request, Integer userId) {
+    public ProductionPlanDTO createProductionPlan(String factoryId, CreateProductionPlanRequest request, Long userId) {
         // 验证产品类型是否存在
         if (!productTypeRepository.existsById(request.getProductTypeId())) {
             throw new ResourceNotFoundException("产品类型不存在");
         }
 
         // 创建生产计划
-        ProductionPlan plan = productionPlanMapper.toEntity(request, factoryId, userId);
+        ProductionPlan plan = productionPlanMapper.toEntity(request, factoryId, userId.longValue());
         plan = productionPlanRepository.save(plan);
 
         // 如果指定了原材料批次，创建关联
@@ -77,7 +80,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         }
 
         log.info("创建生产计划成功: planNumber={}", plan.getPlanNumber());
-        return productionPlanMapper.toDTO(plan);
+        return toDTOWithConversionInfo(plan);
     }
 
     @Override
@@ -101,7 +104,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         plan = productionPlanRepository.save(plan);
 
         log.info("更新生产计划成功: planId={}", planId);
-        return productionPlanMapper.toDTO(plan);
+        return toDTOWithConversionInfo(plan);
     }
 
     @Override
@@ -135,7 +138,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             throw new BusinessException("无权查看该生产计划");
         }
 
-        return productionPlanMapper.toDTO(plan);
+        return toDTOWithConversionInfo(plan);
     }
 
     @Override
@@ -154,10 +157,24 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                 sort
             );
 
-        Page<ProductionPlan> planPage = productionPlanRepository.findByFactoryId(factoryId, pageable);
+        Page<ProductionPlan> planPage;
+
+        // 如果指定了状态过滤
+        if (pageRequest.getStatus() != null && !pageRequest.getStatus().isEmpty()) {
+            try {
+                ProductionPlanStatus status = ProductionPlanStatus.valueOf(pageRequest.getStatus().toUpperCase());
+                planPage = productionPlanRepository.findByFactoryIdAndStatus(factoryId, status, pageable);
+                log.info("按状态过滤生产计划: factoryId={}, status={}", factoryId, status);
+            } catch (IllegalArgumentException e) {
+                log.warn("无效的状态值: {}, 返回全部数据", pageRequest.getStatus());
+                planPage = productionPlanRepository.findByFactoryId(factoryId, pageable);
+            }
+        } else {
+            planPage = productionPlanRepository.findByFactoryId(factoryId, pageable);
+        }
 
         List<ProductionPlanDTO> planDTOs = planPage.getContent().stream()
-                .map(productionPlanMapper::toDTO)
+                .map(this::toDTOWithConversionInfo)
                 .collect(Collectors.toList());
 
         return PageResponse.of(
@@ -173,7 +190,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     public List<ProductionPlanDTO> getProductionPlansByStatus(String factoryId, ProductionPlanStatus status) {
         return productionPlanRepository.findByFactoryIdAndStatus(factoryId, status)
                 .stream()
-                .map(productionPlanMapper::toDTO)
+                .map(this::toDTOWithConversionInfo)
                 .collect(Collectors.toList());
     }
 
@@ -221,7 +238,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         plan = productionPlanRepository.save(plan);
 
         log.info("开始生产: planId={}", planId);
-        return productionPlanMapper.toDTO(plan);
+        return toDTOWithConversionInfo(plan);
     }
 
     @Override
@@ -246,7 +263,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         plan = productionPlanRepository.save(plan);
 
         log.info("完成生产: planId={}, actualQuantity={}", planId, actualQuantity);
-        return productionPlanMapper.toDTO(plan);
+        return toDTOWithConversionInfo(plan);
     }
 
     @Override
@@ -295,7 +312,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         plan = productionPlanRepository.save(plan);
 
         log.info("暂停生产: planId={}", planId);
-        return productionPlanMapper.toDTO(plan);
+        return toDTOWithConversionInfo(plan);
     }
 
     @Override
@@ -318,7 +335,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         plan = productionPlanRepository.save(plan);
 
         log.info("恢复生产: planId={}", planId);
-        return productionPlanMapper.toDTO(plan);
+        return toDTOWithConversionInfo(plan);
     }
 
     @Override
@@ -353,7 +370,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         plan = productionPlanRepository.save(plan);
 
         log.info("更新实际成本: planId={}", planId);
-        return productionPlanMapper.toDTO(plan);
+        return toDTOWithConversionInfo(plan);
     }
 
     @Override
@@ -458,7 +475,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @Transactional
     public List<ProductionPlanDTO> batchCreateProductionPlans(String factoryId,
                                                               List<CreateProductionPlanRequest> requests,
-                                                              Integer userId) {
+                                                              Long userId) {
         return requests.stream()
                 .map(request -> createProductionPlan(factoryId, request, userId))
                 .collect(Collectors.toList());
@@ -489,6 +506,50 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             usage.setMaterialBatchId(batchId);
             usage.setPlannedQuantity(BigDecimal.ZERO); // 需要根据实际需求设置
             planBatchUsageRepository.save(usage);
+        }
+    }
+
+    /**
+     * 将计划实体转换为DTO并填充转换率信息
+     */
+    private ProductionPlanDTO toDTOWithConversionInfo(ProductionPlan plan) {
+        ProductionPlanDTO dto = productionPlanMapper.toDTO(plan);
+        enrichWithConversionRateInfo(dto, plan.getFactoryId(), plan.getProductTypeId());
+        return dto;
+    }
+
+    /**
+     * 填充转换率配置状态到DTO
+     * 检查该产品类型是否有配置转换率
+     */
+    private void enrichWithConversionRateInfo(ProductionPlanDTO dto, String factoryId, String productTypeId) {
+        if (factoryId == null || productTypeId == null) {
+            dto.setConversionRateConfigured(false);
+            return;
+        }
+
+        // 查询该产品类型的所有转换率配置
+        List<MaterialProductConversion> conversions =
+            conversionRepository.findByFactoryIdAndProductTypeId(factoryId, productTypeId);
+
+        if (conversions != null && !conversions.isEmpty()) {
+            // 有转换率配置
+            dto.setConversionRateConfigured(true);
+
+            // 如果只有一个配置，直接返回该转换率和损耗率
+            // 如果有多个配置（多种原材料），返回第一个作为示例（前端可以点击查看详情）
+            MaterialProductConversion firstConversion = conversions.get(0);
+            dto.setConversionRate(firstConversion.getConversionRate());
+            dto.setWastageRate(firstConversion.getWastageRate());
+
+            log.debug("产品类型 {} 已配置转换率: {} 个配置", productTypeId, conversions.size());
+        } else {
+            // 没有转换率配置
+            dto.setConversionRateConfigured(false);
+            dto.setConversionRate(null);
+            dto.setWastageRate(null);
+
+            log.debug("产品类型 {} 未配置转换率", productTypeId);
         }
     }
 }

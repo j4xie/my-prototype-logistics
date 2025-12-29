@@ -1,0 +1,197 @@
+/* 数据统计样式 */
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+/* 周期切换 */
+.period-bar {
+  display: flex;
+  background: #1A1A1A;
+  padding: 20rpx 40rpx;
+}
+
+.period-item {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+  color: #999;
+  border-radius: 8rpx;
+}
+
+.period-item.active {
+  background: #C9A86C;
+  color: #1A1A1A;
+  font-weight: 500;
+}
+
+/* 核心指标 */
+.overview-section {
+  background: linear-gradient(135deg, #1A1A1A, #2D2D2D);
+  padding: 40rpx;
+  margin: 20rpx;
+  border-radius: 16rpx;
+}
+
+.overview-main {
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.overview-label {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.overview-value {
+  display: block;
+  font-size: 56rpx;
+  font-weight: bold;
+  color: #C9A86C;
+  margin-top: 10rpx;
+}
+
+.overview-grid {
+  display: flex;
+  justify-content: space-around;
+  border-top: 1rpx solid #333;
+  padding-top: 30rpx;
+}
+
+.overview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.item-value {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #fff;
+}
+
+.item-label {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+/* 区块 */
+.section {
+  background: #fff;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 订单状态 */
+.order-status-grid {
+  display: flex;
+  justify-content: space-around;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx;
+}
+
+.status-value {
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+.status-value.red { color: #FF4D4F; }
+.status-value.orange { color: #FF9800; }
+.status-value.green { color: #52c41a; }
+.status-value.gray { color: #999; }
+
+.status-label {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 8rpx;
+}
+
+/* 热销商品 */
+.product-rank {
+  padding: 0;
+}
+
+.rank-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.rank-item:last-child {
+  border-bottom: none;
+}
+
+.rank-num {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 8rpx;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  color: #999;
+  margin-right: 16rpx;
+}
+
+.rank-num.top {
+  background: #C9A86C;
+  color: #fff;
+}
+
+.rank-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.rank-name {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.rank-sales {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 4rpx;
+}
+
+.rank-amount {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #C9A86C;
+}
+
+/* 导出 */
+.export-section {
+  padding: 40rpx 20rpx;
+}
+
+
+
+
+
+
+

@@ -1,6 +1,7 @@
 package com.cretas.aims.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -42,10 +43,42 @@ public class WhitelistDTO {
     private String role;
     private List<String> permissions;
     private String notes;
-    private Integer addedBy;
+    private Long addedBy;
     private String addedByName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // ===================================================================
+    // 前端字段别名（兼容前端）
+    // ===================================================================
+
+    /**
+     * realName 别名（兼容前端）
+     * 前端使用 realName，后端使用 name
+     */
+    @JsonProperty("realName")
+    public String getRealName() {
+        return name;
+    }
+
+    /**
+     * usedCount 别名（兼容前端）
+     * 前端使用 usedCount，后端使用 usageCount
+     */
+    @JsonProperty("usedCount")
+    public Integer getUsedCount() {
+        return usageCount;
+    }
+
+    /**
+     * createdBy 别名（兼容前端）
+     * 前端使用 createdBy，后端使用 addedBy
+     */
+    @JsonProperty("createdBy")
+    public Long getCreatedBy() {
+        return addedBy;
+    }
+
     // 计算字段
     private Boolean isValid;
     private Boolean isExpiringSoon;

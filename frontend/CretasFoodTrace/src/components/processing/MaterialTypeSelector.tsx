@@ -3,11 +3,11 @@ import { View, StyleSheet, Modal, FlatList, TouchableOpacity, Alert } from 'reac
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { materialQuickAPI, MaterialType } from '../../services/api/materialQuickApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 
 interface MaterialTypeSelectorProps {
   value: string;
-  onSelect: (materialType: string) => void;
+  onSelect: (materialType: string, materialTypeId?: string) => void;
   label?: string;
   placeholder?: string;
   error?: string;
@@ -52,7 +52,7 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
       setMaterials(result);
     } catch (error) {
       console.error('❌ Failed to fetch material types:', error);
-      Alert.alert('错误', error.response?.data?.message || '加载原材料类型失败');
+      Alert.alert('错误', getErrorMsg(error) || '加载原材料类型失败');
       setMaterials([]);
     } finally {
       setLoading(false);
@@ -84,8 +84,8 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
     setModalVisible(true);
   };
 
-  const handleSelect = (type: string) => {
-    onSelect(type);
+  const handleSelect = (type: string, typeId?: string) => {
+    onSelect(type, typeId);
     handleModalClose();  // 使用统一的关闭函数
   };
 
@@ -116,7 +116,7 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
       handleModalClose();
     } catch (error) {
       console.error('❌ Failed to create material:', error);
-      Alert.alert('创建失败', error.response?.data?.message || error.message || '请重试');
+      Alert.alert('创建失败', getErrorMsg(error) || '请重试');
     } finally {
       setCreating(false);
     }
@@ -180,7 +180,7 @@ export const MaterialTypeSelector: React.FC<MaterialTypeSelectorProps> = ({
                     <List.Item
                       title={item.name}
                       description={item.category}
-                      onPress={() => handleSelect(item.name)}
+                      onPress={() => handleSelect(item.name, item.id)}
                       right={props => value === item.name ? <List.Icon {...props} icon="check" color="#2196F3" /> : null}
                     />
                     <Divider />

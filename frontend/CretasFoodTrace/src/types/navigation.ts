@@ -34,7 +34,6 @@ export type MainTabParamList = {
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;  // 个人中心
   ReportTab: NavigatorScreenParams<ReportStackParamList>;  // 报表中心
   // 未来模块预留
-  FarmingTab?: NavigatorScreenParams<FarmingStackParamList>;
   LogisticsTab?: NavigatorScreenParams<LogisticsStackParamList>;
   TraceTab?: NavigatorScreenParams<TraceStackParamList>;
 };
@@ -91,6 +90,14 @@ export type ProcessingStackParamList = {
 
   // Phase 3 P2: 异常预警
   ExceptionAlert: undefined;
+
+  // 原材料消耗记录
+  MaterialConsumptionHistory: { productionBatchId?: string };
+
+  // 溯源功能 - Phase 3 完整溯源链路
+  Traceability: undefined;                             // 溯源查询入口
+  TraceabilityDetail: { batchNumber: string };         // 完整溯源链路
+  PublicTrace: { batchNumber?: string; traceCode?: string };  // 公开溯源（消费者）
 };
 
 // ==================== 考勤模块导航参数 ====================
@@ -128,6 +135,7 @@ export type ManagementStackParamList = {
   ProductTypeManagement: undefined;
   MaterialTypeManagement: undefined;
   ConversionRate: undefined;
+  MaterialConversionDetail: { materialTypeId: string; materialName: string };  // 原料转换率详情页
   WorkTypeManagement: undefined;
   AISettings: undefined;
   DepartmentManagement: undefined;
@@ -135,8 +143,11 @@ export type ManagementStackParamList = {
   WhitelistManagement: undefined;
   SupplierManagement: undefined;
   CustomerManagement: undefined;
+  ShipmentManagement: undefined;  // 出货管理
   FactorySettings: undefined;
   MaterialSpecManagement: undefined; // Phase 4: 物料规格管理（已实现但暂未启用）
+  DisposalRecordManagement: undefined; // 报废记录管理
+  WorkSessionManagement: undefined; // 工作会话管理
 };
 
 // ==================== 个人中心模块导航参数 ====================
@@ -191,11 +202,6 @@ export type AdminStackParamList = {
 
 // ==================== 未来模块导航参数(预留) ====================
 
-export type FarmingStackParamList = {
-  FarmingDashboard: undefined;
-  // ... 养殖模块页面
-};
-
 export type LogisticsStackParamList = {
   LogisticsDashboard: undefined;
   // ... 物流模块页面
@@ -204,6 +210,14 @@ export type LogisticsStackParamList = {
 export type TraceStackParamList = {
   TraceDashboard: undefined;
   // ... 溯源模块页面
+};
+
+export type WorkStackParamList = {
+  WorkTypeList: undefined;
+  WorkTypeForm: {
+    workTypeCode: string;
+    workTypeName: string;
+  };
 };
 
 // ==================== 屏幕Props类型 ====================
@@ -283,6 +297,6 @@ export interface NavigationGuardConfig {
 
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends RootStackParamList { }
   }
 }

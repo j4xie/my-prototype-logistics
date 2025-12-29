@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>牛肉产品 - 牛产业云平台</title>
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      /* padding-bottom 由 mobile.css 的 body.has-bottom-nav 统一控制 (75px) */
+    }
+
+    /* 头部 */
+    .header {
+      background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
+      padding: 12px 16px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .header-title {
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 20px;
+      padding: 8px 16px;
+    }
+
+    .search-bar input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      background: transparent;
+    }
+
+    .search-bar input::placeholder {
+      color: #999;
+    }
+
+    .search-icon {
+      color: #999;
+      margin-right: 8px;
+    }
+
+    /* 筛选工具栏 */
+    .filter-toolbar {
+      display: flex;
+      background: white;
+      padding: 12px 16px;
+      margin-top: 98px;
+      border-bottom: 1px solid #eee;
+      position: sticky;
+      top: 98px;
+      z-index: 90;
+    }
+
+    .filter-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #666;
+      padding: 6px;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      color: #C62828;
+      font-weight: 500;
+    }
+
+    .filter-btn .arrow {
+      margin-left: 4px;
+      font-size: 10px;
+      transition: transform 0.3s;
+    }
+
+    .filter-btn.active .arrow {
+      transform: rotate(180deg);
+    }
+
+    /* 分类横向滚动 */
+    .category-bar {
+      background: white;
+      padding: 12px 0;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      border-bottom: 1px solid #eee;
+    }
+
+    .category-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-item {
+      display: inline-block;
+      padding: 6px 16px;
+      margin: 0 6px;
+      font-size: 13px;
+      color: #666;
+      background: #f5f5f5;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .category-item:first-child {
+      margin-left: 16px;
+    }
+
+    .category-item:last-child {
+      margin-right: 16px;
+    }
+
+    .category-item.active {
+      background: #FFEBEE;
+      color: #C62828;
+      font-weight: 500;
+    }
+
+    /* 筛选面板 */
+    .filter-panel {
+      display: none;
+      background: white;
+      padding: 16px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .filter-panel.show {
+      display: block;
+    }
+
+    .filter-section {
+      margin-bottom: 16px;
+    }
+
+    .filter-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .filter-label {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 10px;
+    }
+
+    .filter-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-option {
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #666;
+      background: #f5f5f5;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .filter-option.active {
+      background: #FFEBEE;
+      color: #C62828;
+    }
+
+    /* 牛肉列表 */
+    .beef-list {
+      padding: 12px;
+    }
+
+    .beef-card {
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .beef-card-inner {
+      display: flex;
+      padding: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .beef-image {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(135deg, #FFCDD2 0%, #EF9A9A 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      flex-shrink: 0;
+    }
+
+    .beef-info {
+      flex: 1;
+      margin-left: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .beef-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #333;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .beef-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .beef-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      background: #FFEBEE;
+      color: #C62828;
+      border-radius: 4px;
+    }
+
+    .beef-tag.grade {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .beef-tag.origin {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .beef-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: auto;
+      padding-top: 8px;
+    }
+
+    .beef-price {
+      font-size: 18px;
+      font-weight: 600;
+      color: #C62828;
+    }
+
+    .beef-price span {
+      font-size: 12px;
+      font-weight: normal;
+      color: #999;
+    }
+
+    .beef-specs {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .beef-seller {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-top: 1px solid #f5f5f5;
+      background: #fafafa;
+    }
+
+    .seller-info {
+      display: flex;
+      align-items: center;
+    }
+
+    .seller-avatar {
+      width: 24px;
+      height: 24px;
+      background: #FFCDD2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      margin-right: 8px;
+    }
+
+    .seller-name {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .seller-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      background: #C62828;
+      color: white;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+
+    .seller-stats {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* 加载更多 */
+    .load-more {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      font-size: 14px;
+    }
+
+    /* 浮动发布按钮 */
+    .fab-publish {
+      position: fixed;
+      right: max(16px, calc(50% - 198px));
+      bottom: 90px;
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 28px;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(198, 40, 40, 0.4);
+      z-index: 90;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .empty-text {
+      color: #999;
+      font-size: 14px;
+    }
+
+    /* 筛选标签 */
+    .active-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #fff;
+      border-bottom: 1px solid #eee;
+    }
+
+    .active-filter-tag {
+      display: flex;
+      align-items: center;
+      padding: 4px 10px;
+      background: #FFEBEE;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #C62828;
+    }
+
+    .active-filter-tag .remove {
+      margin-left: 6px;
+      cursor: pointer;
+    }
+
+    /* ==================== MDI 图标标准化 ==================== */
+    .mdi {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .nav-item .icon,
+    .nav-icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-item .mdi,
+    .nav-icon .mdi {
+      width: 100%;
+      height: 100%;
+      font-size: inherit;
+    }
+
+    .search-icon {
+      display: flex;
+      align-items: center;
+    }
+
+    .seller-avatar {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body class="theme-red has-bottom-nav">
+  <!-- 头部 -->
+  <div class="header">
+    <div class="header-title">牛肉产品</div>
+    <div class="search-bar">
+      <span class="search-icon"><i class="mdi mdi-magnify"></i></span>
+      <input type="text" placeholder="搜索牛肉产品、品牌、产地...">
+    </div>
+  </div>
+
+  <!-- 筛选工具栏 -->
+  <div class="filter-toolbar">
+    <button class="filter-btn active" onclick="toggleFilter('category')">
+      品类 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+    <button class="filter-btn" onclick="toggleFilter('grade')">
+      等级 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+    <button class="filter-btn" onclick="toggleFilter('sort')">
+      排序 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+    <button class="filter-btn" onclick="toggleFilter('more')">
+      筛选 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+  </div>
+
+  <!-- 分类横向滚动 -->
+  <div class="category-bar">
+    <span class="category-item active">全部</span>
+    <span class="category-item">鲜牛肉</span>
+    <span class="category-item">冻牛肉</span>
+    <span class="category-item">牛腩</span>
+    <span class="category-item">牛腱</span>
+    <span class="category-item">牛排</span>
+    <span class="category-item">牛筋</span>
+    <span class="category-item">牛骨</span>
+    <span class="category-item">牛杂</span>
+    <span class="category-item">加工品</span>
+  </div>
+
+  <!-- 筛选面板 - 品类 -->
+  <div class="filter-panel" id="panel-category">
+    <div class="filter-section">
+      <div class="filter-label">产品类型</div>
+      <div class="filter-options">
+        <span class="filter-option active">全部</span>
+        <span class="filter-option">鲜牛肉</span>
+        <span class="filter-option">冻牛肉</span>
+        <span class="filter-option">熟制品</span>
+        <span class="filter-option">深加工</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">部位</div>
+      <div class="filter-options">
+        <span class="filter-option">牛腩</span>
+        <span class="filter-option">牛腱</span>
+        <span class="filter-option">牛排</span>
+        <span class="filter-option">牛筋</span>
+        <span class="filter-option">牛骨</span>
+        <span class="filter-option">牛杂</span>
+        <span class="filter-option">上脑</span>
+        <span class="filter-option">眼肉</span>
+        <span class="filter-option">西冷</span>
+        <span class="filter-option">菲力</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 - 等级 -->
+  <div class="filter-panel" id="panel-grade">
+    <div class="filter-section">
+      <div class="filter-label">品质等级</div>
+      <div class="filter-options">
+        <span class="filter-option active">全部</span>
+        <span class="filter-option">特级</span>
+        <span class="filter-option">一级</span>
+        <span class="filter-option">二级</span>
+        <span class="filter-option">普通</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">认证标准</div>
+      <div class="filter-options">
+        <span class="filter-option">有机认证</span>
+        <span class="filter-option">绿色食品</span>
+        <span class="filter-option">无公害</span>
+        <span class="filter-option">清真认证</span>
+        <span class="filter-option">出口标准</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 - 排序 -->
+  <div class="filter-panel" id="panel-sort">
+    <div class="filter-section">
+      <div class="filter-options">
+        <span class="filter-option active">综合排序</span>
+        <span class="filter-option">最新发布</span>
+        <span class="filter-option">价格最低</span>
+        <span class="filter-option">价格最高</span>
+        <span class="filter-option">销量最高</span>
+        <span class="filter-option">好评最多</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 - 更多 -->
+  <div class="filter-panel" id="panel-more">
+    <div class="filter-section">
+      <div class="filter-label">产地</div>
+      <div class="filter-options">
+        <span class="filter-option">内蒙古</span>
+        <span class="filter-option">新疆</span>
+        <span class="filter-option">甘肃</span>
+        <span class="filter-option">宁夏</span>
+        <span class="filter-option">青海</span>
+        <span class="filter-option">四川</span>
+        <span class="filter-option">云南</span>
+        <span class="filter-option">进口</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">包装规格</div>
+      <div class="filter-options">
+        <span class="filter-option">散装</span>
+        <span class="filter-option">真空包装</span>
+        <span class="filter-option">礼盒装</span>
+        <span class="filter-option">整箱</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">起订量</div>
+      <div class="filter-options">
+        <span class="filter-option">1kg起</span>
+        <span class="filter-option">10kg起</span>
+        <span class="filter-option">50kg起</span>
+        <span class="filter-option">100kg起</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 牛肉列表 -->
+  <div class="beef-list">
+    <!-- 牛肉卡片1 -->
+    <div class="beef-card">
+      <a href="detail.html?id=1" class="beef-card-inner">
+        <div class="beef-image">🥩</div>
+        <div class="beef-info">
+          <div class="beef-title">内蒙古草原牛腩肉 新鲜冷冻 优质黄牛肉</div>
+          <div class="beef-tags">
+            <span class="beef-tag">冻牛肉</span>
+            <span class="beef-tag grade">特级</span>
+            <span class="beef-tag origin">内蒙古</span>
+          </div>
+          <div class="beef-meta">
+            <div class="beef-price">¥68<span>/kg</span></div>
+            <div class="beef-specs">📦 10kg起订</div>
+          </div>
+        </div>
+      </a>
+      <div class="beef-seller">
+        <div class="seller-info">
+          <div class="seller-avatar">草</div>
+          <span class="seller-name">草原鲜牛</span>
+          <span class="seller-badge">认证</span>
+        </div>
+        <div class="seller-stats">成交 236单</div>
+      </div>
+    </div>
+
+    <!-- 牛肉卡片2 -->
+    <div class="beef-card">
+      <a href="detail.html?id=2" class="beef-card-inner">
+        <div class="beef-image">🥩</div>
+        <div class="beef-info">
+          <div class="beef-title">澳洲进口眼肉牛排 M5雪花牛肉 原切冷冻</div>
+          <div class="beef-tags">
+            <span class="beef-tag">冻牛肉</span>
+            <span class="beef-tag grade">M5</span>
+            <span class="beef-tag origin">澳洲</span>
+          </div>
+          <div class="beef-meta">
+            <div class="beef-price">¥188<span>/kg</span></div>
+            <div class="beef-specs">📦 5kg起订</div>
+          </div>
+        </div>
+      </a>
+      <div class="beef-seller">
+        <div class="seller-info">
+          <div class="seller-avatar">澳</div>
+          <span class="seller-name">澳牛直供</span>
+          <span class="seller-badge">认证</span>
+        </div>
+        <div class="seller-stats">成交 189单</div>
+      </div>
+    </div>
+
+    <!-- 牛肉卡片3 -->
+    <div class="beef-card">
+      <a href="detail.html?id=3" class="beef-card-inner">
+        <div class="beef-image">🥩</div>
+        <div class="beef-info">
+          <div class="beef-title">清真黄牛肉 新疆草原散养 鲜切牛腱子</div>
+          <div class="beef-tags">
+            <span class="beef-tag">鲜牛肉</span>
+            <span class="beef-tag grade">一级</span>
+            <span class="beef-tag origin">新疆</span>
+          </div>
+          <div class="beef-meta">
+            <div class="beef-price">¥76<span>/kg</span></div>
+            <div class="beef-specs">📦 5kg起订</div>
+          </div>
+        </div>
+      </a>
+      <div class="beef-seller">
+        <div class="seller-info">
+          <div class="seller-avatar">天</div>
+          <span class="seller-name">天山牧场</span>
+          <span class="seller-badge">认证</span>
+        </div>
+        <div class="seller-stats">成交 312单</div>
+      </div>
+    </div>
+
+    <!-- 牛肉卡片4 -->
+    <div class="beef-card">
+      <a href="detail.html?id=4" class="beef-card-inner">
+        <div class="beef-image">🥩</div>
+        <div class="beef-info">
+          <div class="beef-title">四川黄牛牛骨 带肉牛脊骨 煲汤佳品</div>
+          <div class="beef-tags">
+            <span class="beef-tag">鲜牛肉</span>
+            <span class="beef-tag">牛骨</span>
+            <span class="beef-tag origin">四川</span>
+          </div>
+          <div class="beef-meta">
+            <div class="beef-price">¥28<span>/kg</span></div>
+            <div class="beef-specs">📦 20kg起订</div>
+          </div>
+        </div>
+      </a>
+      <div class="beef-seller">
+        <div class="seller-info">
+          <div class="seller-avatar">川</div>
+          <span class="seller-name">川味源</span>
+        </div>
+        <div class="seller-stats">成交 156单</div>
+      </div>
+    </div>
+
+    <!-- 牛肉卡片5 -->
+    <div class="beef-card">
+      <a href="detail.html?id=5" class="beef-card-inner">
+        <div class="beef-image">🥩</div>
+        <div class="beef-info">
+          <div class="beef-title">卤牛肉熟食 五香酱牛肉 真空即食 餐饮批发</div>
+          <div class="beef-tags">
+            <span class="beef-tag">熟食</span>
+            <span class="beef-tag">即食</span>
+            <span class="beef-tag origin">山东</span>
+          </div>
+          <div class="beef-meta">
+            <div class="beef-price">¥128<span>/kg</span></div>
+            <div class="beef-specs">📦 2kg起订</div>
+          </div>
+        </div>
+      </a>
+      <div class="beef-seller">
+        <div class="seller-info">
+          <div class="seller-avatar">老</div>
+          <span class="seller-name">老味道食品</span>
+          <span class="seller-badge">认证</span>
+        </div>
+        <div class="seller-stats">成交 428单</div>
+      </div>
+    </div>
+
+    <!-- 牛肉卡片6 -->
+    <div class="beef-card">
+      <a href="detail.html?id=6" class="beef-card-inner">
+        <div class="beef-image"><i class="mdi mdi-food-steak"></i></div>
+        <div class="beef-info">
+          <div class="beef-title">青海牦牛肉 高原生态 牦牛腩块 低脂高蛋白</div>
+          <div class="beef-tags">
+            <span class="beef-tag">冻牛肉</span>
+            <span class="beef-tag">牦牛</span>
+            <span class="beef-tag origin">青海</span>
+          </div>
+          <div class="beef-meta">
+            <div class="beef-price">¥98<span>/kg</span></div>
+            <div class="beef-specs">📦 10kg起订</div>
+          </div>
+        </div>
+      </a>
+      <div class="beef-seller">
+        <div class="seller-info">
+          <div class="seller-avatar">雪</div>
+          <span class="seller-name">雪域牦牛</span>
+          <span class="seller-badge">认证</span>
+        </div>
+        <div class="seller-stats">成交 98单</div>
+      </div>
+    </div>
+
+    <div class="load-more">加载更多...</div>
+  </div>
+
+  <!-- 浮动发布按钮 -->
+  <a href="publish.html" class="fab-publish"><i class="mdi mdi-plus"></i></a>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="../home/home.html" class="nav-item">
+      <span class="nav-icon mdi mdi-home"></span>
+      <span>首页</span>
+    </a>
+    <a href="../cattle/publish.html" class="nav-item">
+      <span class="nav-icon mdi mdi-plus-circle"></span>
+      <span>发布</span>
+    </a>
+    <a href="../ai-rag/chat.html" class="nav-item">
+      <span class="nav-icon mdi mdi-robot"></span>
+      <span>AI</span>
+    </a>
+    <a href="../enterprise/messages.html" class="nav-item">
+      <span class="nav-icon mdi mdi-bell"></span>
+      <span>消息</span>
+    </a>
+    <a href="../enterprise/center.html" class="nav-item">
+      <span class="nav-icon mdi mdi-account"></span>
+      <span>我的</span>
+    </a>
+  </nav>
+
+  <script>
+    // 消息提示
+    function showMessage() {
+      alert('消息功能开发中...');
+    }
+
+    // 分类选择
+    document.querySelectorAll('.category-item').forEach(item => {
+      item.addEventListener('click', function () {
+        document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // 筛选面板切换
+    let currentPanel = null;
+    function toggleFilter(type) {
+      const panel = document.getElementById('panel-' + type);
+      const btns = document.querySelectorAll('.filter-btn');
+
+      // 如果点击的是当前已打开的面板，则关闭
+      if (currentPanel === type) {
+        panel.classList.remove('show');
+        btns.forEach(btn => btn.classList.remove('active'));
+        currentPanel = null;
+        return;
+      }
+
+      // 关闭所有面板
+      document.querySelectorAll('.filter-panel').forEach(p => p.classList.remove('show'));
+      btns.forEach(btn => btn.classList.remove('active'));
+
+      // 打开选中的面板
+      panel.classList.add('show');
+      event.target.closest('.filter-btn').classList.add('active');
+      currentPanel = type;
+    }
+
+    // 筛选选项选择
+    document.querySelectorAll('.filter-option').forEach(option => {
+      option.addEventListener('click', function () {
+        const parent = this.closest('.filter-section');
+        const options = parent.querySelectorAll('.filter-option');
+
+        // 如果是单选类型
+        if (parent.querySelector('.filter-label')?.textContent.includes('排序') ||
+          parent.querySelector('.filter-label')?.textContent.includes('类型') ||
+          parent.querySelector('.filter-label')?.textContent.includes('等级')) {
+          options.forEach(o => o.classList.remove('active'));
+          this.classList.add('active');
+        } else {
+          // 多选类型
+          this.classList.toggle('active');
+        }
+      });
+    });
+
+    // 搜索功能
+    document.querySelector('.search-bar input').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        const keyword = this.value.trim();
+        if (keyword) {
+          alert('搜索: ' + keyword);
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

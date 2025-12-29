@@ -32,7 +32,7 @@ export default function RealtimeReportScreen() {
 
       // 并行加载多个实时数据
       const [batchesResponse, equipmentResponse] = await Promise.all([
-        processingApiClient.getBatches({ page: 0, size: 5, status: 'in_progress' }, factoryId)
+        processingApiClient.getBatches({ factoryId, page: 0, size: 5, status: 'in_progress' })
           .catch(() => ({ success: false, data: null })),
         equipmentApiClient.getStatistics(factoryId)
           .catch(() => ({ success: false, data: null })),

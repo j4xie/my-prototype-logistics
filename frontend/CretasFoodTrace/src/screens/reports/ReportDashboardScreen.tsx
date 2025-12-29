@@ -161,7 +161,7 @@ export default function ReportDashboardScreen() {
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="报表中心" />
-        <Appbar.Action icon="export" onPress={() => navigation.navigate('DataExport')} />
+        <Appbar.Action icon="export" onPress={() => navigation.navigate('DataExport', {})} />
       </Appbar.Header>
 
       <ScrollView
@@ -191,7 +191,7 @@ export default function ReportDashboardScreen() {
               style={styles.categoryCard}
               mode="elevated"
               onPress={() => {
-                navigation.navigate(category.screen);
+                navigation.navigate(category.screen as any);
               }}
             >
               <Card.Content style={styles.categoryContent}>
@@ -233,7 +233,7 @@ export default function ReportDashboardScreen() {
             <Button
               mode="outlined"
               icon="file-export"
-              onPress={() => navigation.navigate('DataExport')}
+              onPress={() => navigation.navigate('DataExport', {})}
               style={styles.actionButton}
             >
               数据导出
@@ -243,7 +243,7 @@ export default function ReportDashboardScreen() {
               mode="outlined"
               icon="calendar-month"
               onPress={() => {
-                navigation.navigate('TrendReport');
+                navigation.navigate('TrendReport' as any);
               }}
               style={styles.actionButton}
             >

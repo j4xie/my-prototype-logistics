@@ -89,7 +89,12 @@ export const platformAPI = {
   }> => {
     // apiClient拦截器已经解包了response.data，不要再次解包
     const response = await apiClient.get('/api/platform/factories');
-    return response;
+    return response as {
+      success: boolean;
+      code: number;
+      data: FactoryDTO[];
+      message?: string;
+    };
   },
 
   /**
@@ -102,7 +107,11 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.get('/api/platform/ai-quota');
-    return response;
+    return response as {
+      success: boolean;
+      data: FactoryAIQuota[];
+      message?: string;
+    };
   },
 
   /**
@@ -118,7 +127,11 @@ export const platformAPI = {
       `/api/platform/ai-quota/${params.factoryId}`,
       { weeklyQuota: params.weeklyQuota }
     );
-    return response;
+    return response as {
+      success: boolean;
+      data: { factoryId: string; weeklyQuota: number };
+      message?: string;
+    };
   },
 
   /**
@@ -131,7 +144,11 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.get('/api/platform/ai-usage-stats');
-    return response;
+    return response as {
+      success: boolean;
+      data: PlatformAIUsageStats;
+      message?: string;
+    };
   },
 
   // ==================== 工厂管理 CRUD ====================
@@ -147,7 +164,12 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.post('/api/platform/factories', factoryData);
-    return response;
+    return response as {
+      success: boolean;
+      code: number;
+      data: FactoryDTO;
+      message?: string;
+    };
   },
 
   /**
@@ -161,7 +183,12 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.get(`/api/platform/factories/${factoryId}`);
-    return response;
+    return response as {
+      success: boolean;
+      code: number;
+      data: FactoryDTO;
+      message?: string;
+    };
   },
 
   /**
@@ -178,7 +205,12 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.put(`/api/platform/factories/${factoryId}`, updateData);
-    return response;
+    return response as {
+      success: boolean;
+      code: number;
+      data: FactoryDTO;
+      message?: string;
+    };
   },
 
   /**
@@ -191,7 +223,11 @@ export const platformAPI = {
     message: string;
   }> => {
     const response = await apiClient.delete(`/api/platform/factories/${factoryId}`);
-    return response;
+    return response as {
+      success: boolean;
+      code: number;
+      message: string;
+    };
   },
 
   /**
@@ -205,7 +241,12 @@ export const platformAPI = {
     message: string;
   }> => {
     const response = await apiClient.post(`/api/platform/factories/${factoryId}/activate`);
-    return response;
+    return response as {
+      success: boolean;
+      code: number;
+      data: FactoryDTO;
+      message: string;
+    };
   },
 
   /**
@@ -219,7 +260,12 @@ export const platformAPI = {
     message: string;
   }> => {
     const response = await apiClient.post(`/api/platform/factories/${factoryId}/deactivate`);
-    return response;
+    return response as {
+      success: boolean;
+      code: number;
+      data: FactoryDTO;
+      message: string;
+    };
   },
 
   // ==================== 平台统计 ====================
@@ -236,7 +282,12 @@ export const platformAPI = {
     message?: string;
   }> => {
     const response = await apiClient.get('/api/platform/dashboard/statistics');
-    return response;
+    return response as {
+      success: boolean;
+      code: number;
+      data: PlatformStatistics;
+      message?: string;
+    };
   },
 };
 

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>帮助中心 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+
+    /* 顶部Header */
+    .header {
+      background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+      padding: 48px 16px 30px;
+      color: white;
+    }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .back-btn {
+      font-size: 22px;
+      text-decoration: none;
+      color: white;
+      padding: 4px;
+    }
+
+    .header-title {
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .header-action {
+      font-size: 14px;
+      color: white;
+      text-decoration: none;
+    }
+
+    /* 搜索框 */
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 24px;
+      padding: 10px 16px;
+      gap: 8px;
+    }
+
+    .search-box i {
+      font-size: 20px;
+      color: #9E9E9E;
+    }
+
+    .search-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      color: #212121;
+    }
+
+    .search-box input::placeholder {
+      color: #BDBDBD;
+    }
+
+    /* 快捷入口 */
+    .quick-entries {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 16px;
+      background: white;
+      margin: -20px 16px 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      position: relative;
+      z-index: 1;
+    }
+
+    .quick-entry {
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .quick-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px;
+      font-size: 20px;
+    }
+
+    .quick-icon.blue {
+      background: #E3F2FD;
+      color: #1976D2;
+    }
+
+    .quick-icon.green {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .quick-icon.orange {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .quick-icon.purple {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .quick-label {
+      font-size: 12px;
+      color: #424242;
+    }
+
+    /* 分类标题 */
+    .section-title {
+      padding: 0 16px;
+      margin-bottom: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #212121;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title i {
+      font-size: 20px;
+      color: #4CAF50;
+    }
+
+    /* FAQ 列表 */
+    .faq-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid #F5F5F5;
+    }
+
+    .faq-item:last-child {
+      border-bottom: none;
+    }
+
+    .faq-question {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      cursor: pointer;
+    }
+
+    .faq-question span {
+      font-size: 14px;
+      color: #212121;
+      flex: 1;
+    }
+
+    .faq-question i {
+      font-size: 20px;
+      color: #9E9E9E;
+      transition: transform 0.3s;
+    }
+
+    .faq-item.open .faq-question i {
+      transform: rotate(180deg);
+    }
+
+    .faq-answer {
+      padding: 0 16px 16px;
+      font-size: 13px;
+      color: #757575;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+
+    /* 分类卡片 */
+    .category-list {
+      padding: 0 16px 16px;
+    }
+
+    .category-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .category-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .category-icon.trade {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .category-icon.payment {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .category-icon.logistics {
+      background: #E3F2FD;
+      color: #1976D2;
+    }
+
+    .category-icon.account {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .category-icon.safety {
+      background: #FFEBEE;
+      color: #C62828;
+    }
+
+    .category-info {
+      flex: 1;
+    }
+
+    .category-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: #212121;
+      margin-bottom: 4px;
+    }
+
+    .category-desc {
+      font-size: 12px;
+      color: #9E9E9E;
+    }
+
+    .category-arrow {
+      font-size: 20px;
+      color: #BDBDBD;
+    }
+
+    /* 客服悬浮按钮 */
+    .service-btn {
+      position: fixed;
+      bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 396px;
+      padding: 14px;
+      background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: white;
+      font-size: 15px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    .service-btn i {
+      font-size: 20px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="theme-green">
+  <!-- 顶部Header -->
+  <header class="header">
+    <div class="header-bar">
+      <a href="center.html" class="back-btn"><i class="mdi mdi-arrow-left"></i></a>
+      <span class="header-title">帮助中心</span>
+      <a href="feedback.html" class="header-action">意见反馈</a>
+    </div>
+    <div class="search-box">
+      <i class="mdi mdi-magnify"></i>
+      <input type="text" placeholder="搜索问题，如：如何发布信息？">
+    </div>
+  </header>
+
+  <!-- 快捷入口 -->
+  <div class="quick-entries">
+    <div class="quick-entry" onclick="goTo('newbie')">
+      <div class="quick-icon blue"><i class="mdi mdi-school"></i></div>
+      <div class="quick-label">新手指南</div>
+    </div>
+    <div class="quick-entry" onclick="goTo('trade')">
+      <div class="quick-icon green"><i class="mdi mdi-handshake"></i></div>
+      <div class="quick-label">交易帮助</div>
+    </div>
+    <div class="quick-entry" onclick="goTo('payment')">
+      <div class="quick-icon orange"><i class="mdi mdi-cash"></i></div>
+      <div class="quick-label">支付问题</div>
+    </div>
+    <div class="quick-entry" onclick="goTo('contact')">
+      <div class="quick-icon purple"><i class="mdi mdi-headphones"></i></div>
+      <div class="quick-label">联系客服</div>
+    </div>
+  </div>
+
+  <!-- 热门问题 -->
+  <div class="section-title"><i class="mdi mdi-fire"></i>热门问题</div>
+  <div class="faq-section">
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span>如何发布活牛/牛肉信息？</span>
+        <i class="mdi mdi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        1. 点击首页底部的"发布"按钮<br>
+        2. 选择发布类型（活牛、牛肉、饲料等）<br>
+        3. 填写详细信息，上传图片和视频<br>
+        4. 设置价格和联系方式<br>
+        5. 提交审核，通过后即可展示
+      </div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span>如何进行企业认证？</span>
+        <i class="mdi mdi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        1. 进入"我的-企业中心-认证管理"<br>
+        2. 上传营业执照、法人身份证等资料<br>
+        3. 根据经营范围选择对应资质认证<br>
+        4. 提交后1-3个工作日完成审核<br>
+        5. 认证通过后可享受更多平台权益
+      </div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span>交易资金如何保障安全？</span>
+        <i class="mdi mdi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        平台采用担保交易模式，资金由银行托管：<br>
+        1. 买方支付到平台担保账户<br>
+        2. 卖方确认发货<br>
+        3. 买方确认收货后资金自动结算<br>
+        4. 如有纠纷可申请平台介入<br>
+        全程资金安全有保障
+      </div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span>如何查看牛的溯源信息？</span>
+        <i class="mdi mdi-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        1. 在首页点击"溯源查询"<br>
+        2. 扫描牛耳标二维码或输入溯源码<br>
+        3. 查看牛的出生、养殖、检疫、运输全记录<br>
+        4. 支持查验检疫证、产地证等证书
+      </div>
+    </div>
+  </div>
+
+  <!-- 帮助分类 -->
+  <div class="section-title"><i class="mdi mdi-folder-multiple"></i>帮助分类</div>
+  <div class="category-list">
+    <div class="category-card" onclick="openCategory('trade')">
+      <div class="category-icon trade"><i class="mdi mdi-handshake"></i></div>
+      <div class="category-info">
+        <div class="category-name">交易相关</div>
+        <div class="category-desc">询价报价、下单、合同、售后等问题</div>
+      </div>
+      <i class="mdi mdi-chevron-right category-arrow"></i>
+    </div>
+
+    <div class="category-card" onclick="openCategory('payment')">
+      <div class="category-icon payment"><i class="mdi mdi-credit-card"></i></div>
+      <div class="category-info">
+        <div class="category-name">支付与结算</div>
+        <div class="category-desc">付款方式、提现、发票、对账等问题</div>
+      </div>
+      <i class="mdi mdi-chevron-right category-arrow"></i>
+    </div>
+
+    <div class="category-card" onclick="openCategory('logistics')">
+      <div class="category-icon logistics"><i class="mdi mdi-truck"></i></div>
+      <div class="category-info">
+        <div class="category-name">物流运输</div>
+        <div class="category-desc">找车、运费、保险、在途跟踪等问题</div>
+      </div>
+      <i class="mdi mdi-chevron-right category-arrow"></i>
+    </div>
+
+    <div class="category-card" onclick="openCategory('account')">
+      <div class="category-icon account"><i class="mdi mdi-account-circle"></i></div>
+      <div class="category-info">
+        <div class="category-name">账号与设置</div>
+        <div class="category-desc">注册登录、密码找回、账号安全等问题</div>
+      </div>
+      <i class="mdi mdi-chevron-right category-arrow"></i>
+    </div>
+
+    <div class="category-card" onclick="openCategory('safety')">
+      <div class="category-icon safety"><i class="mdi mdi-shield-check"></i></div>
+      <div class="category-info">
+        <div class="category-name">安全与投诉</div>
+        <div class="category-desc">举报违规、交易纠纷、申诉处理等</div>
+      </div>
+      <i class="mdi mdi-chevron-right category-arrow"></i>
+    </div>
+  </div>
+
+  <!-- 客服按钮 -->
+  <div class="service-btn" onclick="contactService()">
+    <i class="mdi mdi-headphones"></i>
+    联系在线客服
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function toggleFaq(item) {
+      // 关闭其他展开的项
+      document.querySelectorAll('.faq-item.open').forEach(openItem => {
+        if (openItem !== item) {
+          openItem.classList.remove('open');
+        }
+      });
+      // 切换当前项
+      item.classList.toggle('open');
+    }
+
+    function goTo(page) {
+      const names = {
+        'newbie': '新手指南',
+        'trade': '交易帮助',
+        'payment': '支付问题',
+        'contact': '联系客服'
+      };
+      if (page === 'contact') {
+        contactService();
+      } else {
+        showToast('打开: ' + names[page]);
+      }
+    }
+
+    function openCategory(category) {
+      const names = {
+        'trade': '交易相关',
+        'payment': '支付与结算',
+        'logistics': '物流运输',
+        'account': '账号与设置',
+        'safety': '安全与投诉'
+      };
+      showToast('打开: ' + names[category] + ' 帮助');
+    }
+
+    function contactService() {
+      showToast('正在连接在线客服...');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+
+</html>

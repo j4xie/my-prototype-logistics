@@ -1,8 +1,10 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.dto.common.ImportResult;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.RawMaterialTypeDTO;
+import com.cretas.aims.dto.materialtype.MaterialTypeExportDTO;
 import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.exception.BusinessException;
@@ -11,6 +13,8 @@ import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ConversionRepository;
 import com.cretas.aims.service.RawMaterialTypeService;
+import com.cretas.aims.utils.ExcelUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -39,9 +44,38 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
     private final RawMaterialTypeRepository materialTypeRepository;
     private final MaterialBatchRepository materialBatchRepository;
     private final ConversionRepository conversionRepository;
-    
+    private final ExcelUtil excelUtil;
+
     @PersistenceContext
     private EntityManager entityManager;
+
+    // ========== 系统默认原材料类型数据 ==========
+    private static final List<Map<String, String>> DEFAULT_MATERIAL_TYPES = new ArrayList<>();
+
+    static {
+        // 海水鱼类
+        DEFAULT_MATERIAL_TYPES.add(createDefaultMaterial("带鱼", "DY", "海水鱼", "kg", "冷冻"));
+        DEFAULT_MATERIAL_TYPES.add(createDefaultMaterial("黄花鱼", "HHY", "海水鱼", "kg", "冷冻"));
+        DEFAULT_MATERIAL_TYPES.add(createDefaultMaterial("鲳鱼", "CY", "海水鱼", "kg", "冷冻"));
+        // 淡水鱼类
+        DEFAULT_MATERIAL_TYPES.add(createDefaultMaterial("鲈鱼", "LY", "淡水鱼", "kg", "冷藏"));
+        DEFAULT_MATERIAL_TYPES.add(createDefaultMaterial("草鱼", "CYU", "淡水鱼", "kg", "冷藏"));
+        // 虾类
+        DEFAULT_MATERIAL_TYPES.add(createDefaultMaterial("对虾", "DX", "虾类", "kg", "冷冻"));
+        DEFAULT_MATERIAL_TYPES.add(createDefaultMaterial("基围虾", "JWX", "虾类", "kg", "冷藏"));
+        // 贝类
+        DEFAULT_MATERIAL_TYPES.add(createDefaultMaterial("扇贝", "SB", "贝类", "kg", "冷藏"));
+    }
+
+    private static Map<String, String> createDefaultMaterial(String name, String code, String category, String unit, String storageType) {
+        Map<String, String> material = new HashMap<>();
+        material.put("name", name);
+        material.put("code", code);
+        material.put("category", category);
+        material.put("unit", unit);
+        material.put("storageType", storageType);
+        return material;
+    }
 
     @Override
     @Transactional
@@ -54,6 +88,14 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
         }
 
         RawMaterialType materialType = new RawMaterialType();
+        // 生成唯一ID：如果传入了ID则使用传入的，否则自动生成
+        if (dto.getId() != null && !dto.getId().isEmpty()) {
+            materialType.setId(dto.getId());
+        } else {
+            // 使用编码作为ID前缀，加上时间戳确保唯一性
+            String generatedId = "RMT_" + System.currentTimeMillis();
+            materialType.setId(generatedId);
+        }
         materialType.setFactoryId(factoryId);
         materialType.setCode(dto.getCode());
         materialType.setName(dto.getName());
@@ -67,7 +109,7 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
         materialType.setNotes(dto.getNotes());
         materialType.setIsActive(true);
         // 使用从Controller传入的createdBy，如果为null则使用默认值1
-        materialType.setCreatedBy(dto.getCreatedBy() != null ? dto.getCreatedBy() : 1);
+        materialType.setCreatedBy(dto.getCreatedBy() != null ? dto.getCreatedBy() : 1L);
         materialType.setCreatedAt(LocalDateTime.now());
         materialType.setUpdatedAt(LocalDateTime.now());
 
@@ -351,5 +393,156 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
                 .createdAt(materialType.getCreatedAt())
                 .updatedAt(materialType.getUpdatedAt())
                 .build();
+    }
+
+    // ========== 导出导入功能 ==========
+
+    @Override
+    public byte[] exportMaterialTypes(String factoryId) {
+        log.info("导出原材料类型列表: factoryId={}", factoryId);
+
+        List<RawMaterialType> materialTypes = materialTypeRepository.findByFactoryId(factoryId);
+
+        List<MaterialTypeExportDTO> exportDTOs = materialTypes.stream()
+                .map(MaterialTypeExportDTO::fromRawMaterialType)
+                .collect(Collectors.toList());
+
+        return excelUtil.exportToExcel(exportDTOs, MaterialTypeExportDTO.class, "原材料类型列表");
+    }
+
+    @Override
+    public byte[] generateImportTemplate() {
+        log.info("生成原材料类型导入模板");
+        return excelUtil.generateTemplate(MaterialTypeExportDTO.class, "原材料类型导入模板");
+    }
+
+    @Override
+    public ImportResult<RawMaterialType> importMaterialTypesFromExcel(String factoryId, InputStream inputStream) {
+        log.info("开始从Excel批量导入原材料类型: factoryId={}", factoryId);
+
+        // 1. 解析Excel文件
+        List<MaterialTypeExportDTO> excelData;
+        try {
+            excelData = excelUtil.importFromExcel(inputStream, MaterialTypeExportDTO.class);
+        } catch (Exception e) {
+            log.error("Excel文件解析失败: factoryId={}", factoryId, e);
+            throw new RuntimeException("Excel文件格式错误或无法解析: " + e.getMessage());
+        }
+
+        ImportResult<RawMaterialType> result = ImportResult.create(excelData.size());
+
+        // 2. 逐行验证并导入
+        for (int i = 0; i < excelData.size(); i++) {
+            MaterialTypeExportDTO exportDTO = excelData.get(i);
+            int rowNumber = i + 2; // Excel行号（从2开始，1是表头）
+
+            try {
+                // 2.1 验证必填字段
+                if (exportDTO.getName() == null || exportDTO.getName().trim().isEmpty()) {
+                    result.addFailure(rowNumber, "原材料名称不能为空", toJsonString(exportDTO));
+                    continue;
+                }
+
+                // 2.2 验证编码唯一性（如果提供了编码）
+                if (exportDTO.getMaterialCode() != null && !exportDTO.getMaterialCode().trim().isEmpty()) {
+                    if (materialTypeRepository.existsByFactoryIdAndCode(factoryId, exportDTO.getMaterialCode())) {
+                        result.addFailure(rowNumber, "原材料编码已存在: " + exportDTO.getMaterialCode(),
+                                toJsonString(exportDTO));
+                        continue;
+                    }
+                }
+
+                // 2.3 转换为Entity
+                RawMaterialType materialType = convertFromExportDTO(exportDTO, factoryId);
+
+                // 2.4 保存
+                RawMaterialType saved = materialTypeRepository.save(materialType);
+
+                // 2.5 记录成功
+                result.addSuccess(saved);
+
+                log.debug("成功导入原材料类型: row={}, name={}", rowNumber, exportDTO.getName());
+
+            } catch (Exception e) {
+                log.error("导入原材料类型失败: factoryId={}, row={}, data={}", factoryId, rowNumber, exportDTO, e);
+                result.addFailure(rowNumber, "保存失败: " + e.getMessage(), toJsonString(exportDTO));
+            }
+        }
+
+        log.info("原材料类型批量导入完成: factoryId={}, total={}, success={}, failure={}",
+                factoryId, result.getTotalCount(), result.getSuccessCount(), result.getFailureCount());
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public int initializeDefaults(String factoryId) {
+        log.info("初始化默认原材料类型: factoryId={}", factoryId);
+        int count = 0;
+
+        for (Map<String, String> defaultMaterial : DEFAULT_MATERIAL_TYPES) {
+            String code = defaultMaterial.get("code");
+
+            // 检查是否已存在
+            if (!materialTypeRepository.existsByFactoryIdAndCode(factoryId, code)) {
+                RawMaterialType materialType = new RawMaterialType();
+                materialType.setFactoryId(factoryId);
+                materialType.setCode(code);
+                materialType.setName(defaultMaterial.get("name"));
+                materialType.setCategory(defaultMaterial.get("category"));
+                materialType.setUnit(defaultMaterial.get("unit"));
+                materialType.setStorageType(defaultMaterial.get("storageType"));
+                materialType.setIsActive(true);
+                materialType.setCreatedBy(1L);
+                materialType.setCreatedAt(LocalDateTime.now());
+                materialType.setUpdatedAt(LocalDateTime.now());
+
+                materialTypeRepository.save(materialType);
+                count++;
+            }
+        }
+
+        log.info("初始化默认原材料类型完成: factoryId={}, count={}", factoryId, count);
+        return count;
+    }
+
+    @Override
+    public long countMaterialTypes(String factoryId, Boolean isActive) {
+        if (isActive != null) {
+            return materialTypeRepository.countByFactoryIdAndIsActive(factoryId, isActive);
+        } else {
+            return materialTypeRepository.countByFactoryId(factoryId);
+        }
+    }
+
+    /**
+     * 从MaterialTypeExportDTO转换为RawMaterialType实体
+     */
+    private RawMaterialType convertFromExportDTO(MaterialTypeExportDTO dto, String factoryId) {
+        RawMaterialType materialType = new RawMaterialType();
+        materialType.setFactoryId(factoryId);
+        materialType.setCode(dto.getMaterialCode());
+        materialType.setName(dto.getName());
+        materialType.setCategory(dto.getCategory());
+        materialType.setUnit(dto.getUnit());
+        materialType.setStorageType(dto.getStorageType());
+        materialType.setNotes(dto.getDescription());
+        materialType.setIsActive("启用".equals(dto.getStatus()));
+        materialType.setCreatedBy(1L);
+        materialType.setCreatedAt(LocalDateTime.now());
+        materialType.setUpdatedAt(LocalDateTime.now());
+        return materialType;
+    }
+
+    /**
+     * 将对象转换为JSON字符串
+     */
+    private String toJsonString(Object obj) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.writeValueAsString(obj);
+        } catch (Exception e) {
+            return obj.toString();
+        }
     }
 }

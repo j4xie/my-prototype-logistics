@@ -1,0 +1,198 @@
+<!--
+  溯源详情页
+-->
+<view class="container">
+  <!-- 加载中 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="cu-load loading"></view>
+    <text class="text-gray margin-top">加载中...</text>
+  </view>
+
+  <!-- 错误状态 -->
+  <view class="error-container" wx:if="{{error}}">
+    <text class="cuIcon-warn text-red" style="font-size: 120rpx;"></text>
+    <text class="text-gray margin-top">{{errorMsg}}</text>
+    <button class="cu-btn bg-green margin-top-lg" bindtap="reScan">重新扫码</button>
+  </view>
+
+  <!-- 溯源内容 -->
+  <view class="content" wx:if="{{!loading && !error && batchInfo}}">
+    <!-- 产品信息卡片 -->
+    <view class="product-card bg-white">
+      <view class="product-header">
+        <view class="product-badge">
+          <text class="cuIcon-safe text-green"></text>
+          <text class="text-sm text-green">已认证</text>
+        </view>
+        <text class="batch-no text-gray text-sm">批次号: {{batchNo}}</text>
+      </view>
+      <view class="product-info">
+        <text class="product-name text-bold text-xl">{{batchInfo.productName}}</text>
+        <view class="product-meta margin-top-sm">
+          <text class="text-gray text-sm">产地: {{batchInfo.origin || '未知'}}</text>
+          <text class="text-gray text-sm margin-left">规格: {{batchInfo.specification || '-'}}</text>
+        </view>
+        <view class="product-meta margin-top-xs">
+          <text class="text-gray text-sm">生产日期: {{batchInfo.productionDate || '-'}}</text>
+          <text class="text-gray text-sm margin-left">保质期至: {{batchInfo.expiryDate || '-'}}</text>
+        </view>
+      </view>
+      <!-- 认证标签 -->
+      <view class="cert-tags margin-top" wx:if="{{batchInfo.certifications}}">
+        <text class="cu-tag bg-green light sm" wx:for="{{batchInfo.certifications.split(',')}}" wx:key="index">{{item}}</text>
+      </view>
+    </view>
+
+    <!-- Tab切换 -->
+    <view class="tab-bar bg-white margin-top">
+      <view class="tab-item {{currentTab === 'timeline' ? 'active' : ''}}" bindtap="switchTab" data-tab="timeline">
+        <text class="cuIcon-time"></text>
+        <text>生产流程</text>
+      </view>
+      <view class="tab-item {{currentTab === 'materials' ? 'active' : ''}}" bindtap="switchTab" data-tab="materials">
+        <text class="cuIcon-list"></text>
+        <text>原料溯源</text>
+      </view>
+      <view class="tab-item {{currentTab === 'quality' ? 'active' : ''}}" bindtap="switchTab" data-tab="quality">
+        <text class="cuIcon-safe"></text>
+        <text>质检报告</text>
+      </view>
+      <view class="tab-item {{currentTab === 'evidence' ? 'active' : ''}}" bindtap="switchTab" data-tab="evidence">
+        <text class="cuIcon-pic"></text>
+        <text>证据留存</text>
+      </view>
+    </view>
+
+    <!-- 生产流程时间线 - 增强版 -->
+    <view class="tab-content bg-white" wx:if="{{currentTab === 'timeline'}}">
+      <view class="timeline-enhanced" wx:if="{{timeline.length > 0}}">
+        <view class="timeline-item-enhanced {{item.isFirst ? 'first' : ''}} {{item.isLast ? 'last' : ''}}"
+              wx:for="{{timeline}}" wx:key="id"
+              bindtap="toggleTimelineItem" data-index="{{index}}">
+          <!-- 时间线连接线 -->
+          <view class="timeline-line" wx:if="{{!item.isLast}}"></view>
+
+          <!-- 阶段图标 -->
+          <view class="timeline-icon-wrapper" style="background-color: {{item.stageColor}}20; border-color: {{item.stageColor}};">
+            <text class="{{item.stageIcon}}" style="color: {{item.stageColor}};"></text>
+          </view>
+
+          <!-- 内容区域 -->
+          <view class="timeline-content-enhanced">
+            <view class="timeline-header-enhanced">
+              <view class="timeline-title-row">
+                <text class="timeline-stage-name" style="color: {{item.stageColor}};">{{item.stageName}}</text>
+                <view class="timeline-status {{item.status === 'completed' ? 'completed' : 'pending'}}">
+                  <text class="cuIcon-roundcheck" wx:if="{{item.status === 'completed'}}"></text>
+                  <text>{{item.status === 'completed' ? '已完成' : '进行中'}}</text>
+                </view>
+              </view>
+              <text class="timeline-time">{{item.formattedTime}}</text>
+            </view>
+
+            <!-- 描述信息 -->
+            <view class="timeline-desc" wx:if="{{item.description}}">
+              <text>{{item.description}}</text>
+            </view>
+
+            <!-- 详细信息（可展开） -->
+            <view class="timeline-details {{expandedItems[index] ? 'expanded' : ''}}" wx:if="{{item.operator || item.workshop || item.equipment}}">
+              <view class="detail-row" wx:if="{{item.operator}}">
+                <text class="cuIcon-people"></text>
+                <text>操作人: {{item.operator}}</text>
+              </view>
+              <view class="detail-row" wx:if="{{item.workshop}}">
+                <text class="cuIcon-home"></text>
+                <text>车间: {{item.workshop}}</text>
+              </view>
+              <view class="detail-row" wx:if="{{item.equipment}}">
+                <text class="cuIcon-settings"></text>
+                <text>设备: {{item.equipment}}</text>
+              </view>
+            </view>
+
+            <!-- 展开指示器 -->
+            <view class="timeline-expand-hint" wx:if="{{item.operator || item.workshop || item.equipment}}">
+              <text class="cuIcon-{{expandedItems[index] ? 'fold' : 'unfold'}} text-gray text-sm"></text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="empty-state" wx:else>
+        <view class="empty-icon">
+          <text class="cuIcon-time text-gray" style="font-size: 100rpx;"></text>
+        </view>
+        <text class="text-gray margin-top">暂无生产流程记录</text>
+      </view>
+    </view>
+
+    <!-- 原料溯源 -->
+    <view class="tab-content bg-white" wx:if="{{currentTab === 'materials'}}">
+      <view class="material-list" wx:if="{{rawMaterials.length > 0}}">
+        <view class="material-item" wx:for="{{rawMaterials}}" wx:key="id">
+          <view class="material-header">
+            <text class="text-bold">{{item.materialName}}</text>
+            <text class="cu-tag bg-olive light sm">{{item.quantity}}{{item.unit}}</text>
+          </view>
+          <view class="material-info margin-top-xs">
+            <text class="text-gray text-sm">供应商: {{item.supplierName || '-'}}</text>
+          </view>
+          <view class="material-info margin-top-xs">
+            <text class="text-gray text-sm">批次: {{item.materialBatchNo || '-'}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="empty-state" wx:else>
+        <text class="text-gray">暂无原料信息</text>
+      </view>
+    </view>
+
+    <!-- 质检报告 -->
+    <view class="tab-content bg-white" wx:if="{{currentTab === 'quality'}}">
+      <view class="quality-list" wx:if="{{qualityReports.length > 0}}">
+        <view class="quality-item" wx:for="{{qualityReports}}" wx:key="id">
+          <view class="quality-header">
+            <text class="text-bold">{{item.reportName}}</text>
+            <text class="cu-tag {{item.result === '合格' ? 'bg-green' : 'bg-red'}} light sm">{{item.result}}</text>
+          </view>
+          <view class="quality-info margin-top-xs">
+            <text class="text-gray text-sm">检测机构: {{item.inspectionOrg || '-'}}</text>
+          </view>
+          <view class="quality-info margin-top-xs">
+            <text class="text-gray text-sm">检测日期: {{item.inspectionDate || '-'}}</text>
+          </view>
+          <view class="quality-report-link margin-top-sm" wx:if="{{item.reportUrl}}" bindtap="previewImage" data-url="{{item.reportUrl}}">
+            <text class="cuIcon-pic text-blue"></text>
+            <text class="text-blue text-sm">查看报告</text>
+          </view>
+        </view>
+      </view>
+      <view class="empty-state" wx:else>
+        <text class="text-gray">暂无质检报告</text>
+      </view>
+    </view>
+
+    <!-- 证据留存 -->
+    <view class="tab-content bg-white" wx:if="{{currentTab === 'evidence'}}">
+      <view class="evidence-grid" wx:if="{{evidences.length > 0}}">
+        <view class="evidence-item" wx:for="{{evidences}}" wx:key="id" bindtap="previewImage" data-url="{{item.fileUrl}}" data-urls="{{evidences}}">
+          <image class="evidence-image" src="{{item.fileUrl}}" mode="aspectFill"></image>
+          <text class="evidence-desc text-xs text-gray">{{item.description}}</text>
+        </view>
+      </view>
+      <view class="empty-state" wx:else>
+        <text class="text-gray">暂无证据图片</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar bg-white" wx:if="{{!loading && !error}}">
+    <button class="cu-btn bg-green flex-sub" bindtap="reScan">
+      <text class="cuIcon-scan margin-right-xs"></text>继续扫码
+    </button>
+    <button class="cu-btn bg-blue flex-sub margin-left" open-type="share">
+      <text class="cuIcon-share margin-right-xs"></text>分享
+    </button>
+  </view>
+</view>

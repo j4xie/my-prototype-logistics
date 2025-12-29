@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
+import { getErrorMsg } from '../../utils/errorHandler';
 
 /**
  * 设备管理API客户端
@@ -11,7 +12,7 @@ import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 // ========== 类型定义 ==========
 
-export type EquipmentStatus = 'active' | 'inactive' | 'maintenance' | 'scrapped';
+export type EquipmentStatus = 'active' | 'inactive' | 'maintenance' | 'fault' | 'scrapped';
 export type EquipmentType = 'processing' | 'refrigeration' | 'packaging' | 'transport' | 'other';
 
 /**
@@ -450,7 +451,7 @@ class EquipmentApiClient {
       `${this.getPath(factoryId)}/alerts/${alertId}/acknowledge`,
       request || {}
     );
-    return response.data;
+    return (response as any).data;
   }
 
   /**
@@ -470,7 +471,7 @@ class EquipmentApiClient {
       `${this.getPath(factoryId)}/alerts/${alertId}/resolve`,
       request || {}
     );
-    return response.data;
+    return (response as any).data;
   }
 
   /**
@@ -504,7 +505,15 @@ class EquipmentApiClient {
     const response = await apiClient.get(`${this.getPath(factoryId)}/alerts`, {
       params: params || {}
     });
-    return response.data;
+    return (response as any).data;
+  }
+
+  /**
+   * 获取全局设备统计信息
+   * GET /equipment/statistics
+   */
+  async getStatistics(factoryId?: string): Promise<{ success: boolean; data: EquipmentStatistics }> {
+    return await apiClient.get(`${this.getPath(factoryId)}/statistics`);
   }
 }
 
