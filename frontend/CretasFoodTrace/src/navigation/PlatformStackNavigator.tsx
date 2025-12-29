@@ -7,15 +7,21 @@ import PlatformReportsScreen from '../screens/platform/PlatformReportsScreen';
 import { AIQuotaManagementScreen } from '../screens/platform';
 import UserManagementScreen from '../screens/management/UserManagementScreen';
 import WhitelistManagementScreen from '../screens/management/WhitelistManagementScreen';
+import { FactorySetupScreen } from '../screens/platform/FactorySetupScreen';
+import { IndustryTemplateManagementScreen } from '../screens/platform/IndustryTemplateManagementScreen';
+import { IndustryTemplateEditScreen } from '../screens/platform/IndustryTemplateEditScreen';
 
 export type PlatformStackParamList = {
   PlatformDashboard: undefined;
   FactoryManagement: undefined;
+  FactorySetup: { factoryId: string; factoryName?: string };
   AIQuotaManagement: undefined;
   UserManagement: undefined;
   WhitelistManagement: undefined;
   SystemMonitoring: undefined;
   PlatformReports: undefined;
+  IndustryTemplateManagement: undefined;
+  IndustryTemplateEdit: { templateId?: string };
 };
 
 const Stack = createNativeStackNavigator<PlatformStackParamList>();
@@ -42,6 +48,12 @@ export function PlatformStackNavigator() {
       <Stack.Screen
         name="FactoryManagement"
         component={FactoryManagementScreen}
+      />
+
+      {/* 工厂模板初始化 - 选择行业模板初始化工厂 */}
+      <Stack.Screen
+        name="FactorySetup"
+        component={FactorySetupScreen}
       />
 
       {/* 用户管理 - 跨工厂用户管理 */}
@@ -72,6 +84,18 @@ export function PlatformStackNavigator() {
       <Stack.Screen
         name="PlatformReports"
         component={PlatformReportsScreen}
+      />
+
+      {/* 行业模板管理 - 管理所有行业模板包 */}
+      <Stack.Screen
+        name="IndustryTemplateManagement"
+        component={IndustryTemplateManagementScreen}
+      />
+
+      {/* 行业模板编辑 - 创建/编辑模板 */}
+      <Stack.Screen
+        name="IndustryTemplateEdit"
+        component={IndustryTemplateEditScreen}
       />
     </Stack.Navigator>
   );

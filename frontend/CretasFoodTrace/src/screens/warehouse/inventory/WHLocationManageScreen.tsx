@@ -60,9 +60,9 @@ export function WHLocationManageScreen() {
       const response = await materialBatchApiClient.getMaterialBatches({
         status: 'available',
         size: 200
-      });
+      }) as { data?: { content?: MaterialBatch[] } | MaterialBatch[] };
 
-      const allBatches = response.data?.content || response.data || [];
+      const allBatches: MaterialBatch[] = (response.data as { content?: MaterialBatch[] })?.content || response.data as MaterialBatch[] || [];
 
       // 按库位分组批次
       const locationMap = new Map<string, {

@@ -99,7 +99,15 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
         String urlFactoryId = extractFactoryIdFromUrl(requestUri);
 
         if (urlFactoryId != null && !isPublicEndpoint(requestUri)) {
-            // URL中包含factoryId，需要验证权限
+            // 首先检查是否有有效的认证信息（401 场景）
+            if (userId == null || (tokenFactoryId == null && tokenRole == null)) {
+                log.warn("未认证请求: userId={}, tokenFactoryId={}, urlFactoryId={}",
+                        userId, tokenFactoryId, urlFactoryId);
+                sendUnauthorizedResponse(response, "未授权，请先登录");
+                return false;
+            }
+
+            // URL中包含factoryId，需要验证权限（403 场景）
             if (!validateFactoryAccess(urlFactoryId, tokenFactoryId, tokenRole)) {
                 log.warn("跨工厂访问被拒绝: userId={}, tokenFactoryId={}, urlFactoryId={}, role={}",
                         userId, tokenFactoryId, urlFactoryId, tokenRole);
@@ -121,7 +129,8 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             String factoryId = matcher.group(1);
             // 排除非factoryId的路径部分
             if (!"auth".equals(factoryId) && !"activation".equals(factoryId)
-                    && !"health".equals(factoryId) && !"upload".equals(factoryId)) {
+                    && !"health".equals(factoryId) && !"upload".equals(factoryId)
+                    && !"voice".equals(factoryId)) {
                 return factoryId;
             }
         }
@@ -136,6 +145,7 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
                uri.contains("/activation/") ||
                uri.contains("/health") ||
                uri.contains("/upload") ||
+               uri.contains("/voice/") ||  // 语音识别接口（不需要工厂权限）
                uri.startsWith("/api/public/");  // 公开溯源查询接口
     }
 
@@ -160,6 +170,23 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
 
         // 普通用户只能访问自己工厂的数据
         return urlFactoryId.equals(tokenFactoryId);
+    }
+
+    /**
+     * 发送401 Unauthorized响应
+     */
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("code", 401);
+        errorResponse.put("message", message);
+        errorResponse.put("success", false);
+        errorResponse.put("timestamp", java.time.LocalDateTime.now().toString());
+
+        ObjectMapper mapper = new ObjectMapper();
+        response.getWriter().write(mapper.writeValueAsString(errorResponse));
     }
 
     /**

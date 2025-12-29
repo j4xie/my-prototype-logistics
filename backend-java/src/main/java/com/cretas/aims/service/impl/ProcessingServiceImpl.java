@@ -53,6 +53,7 @@ public class ProcessingServiceImpl implements ProcessingService {
     private final BatchWorkSessionRepository batchWorkSessionRepository;
     private final UserRepository userRepository;
     private final SupplierRepository supplierRepository;
+    private final ProductTypeRepository productTypeRepository;
     private final AIAnalysisService aiAnalysisService;
     private final CacheService cacheService;
     private final ProcessingStageRecordService processingStageRecordService;
@@ -107,6 +108,19 @@ public class ProcessingServiceImpl implements ProcessingService {
         }
         batch.setStatus(ProductionBatchStatus.PAUSED);
         batch.setNotes(batch.getNotes() != null ? batch.getNotes() + "\n暂停原因: " + reason : "暂停原因: " + reason);
+        return productionBatchRepository.save(batch);
+    }
+    @Override
+    public ProductionBatch resumeProduction(String factoryId, String batchId) {
+        log.info("恢复生产: factoryId={}, batchId={}", factoryId, batchId);
+        Long id = Long.parseLong(batchId);
+        ProductionBatch batch = productionBatchRepository.findByIdAndFactoryId(id, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("批次不存在"));
+        if (ProductionBatchStatus.PAUSED != batch.getStatus()) {
+            throw new BusinessException("只有暂停中的批次可以恢复生产");
+        }
+        batch.setStatus(ProductionBatchStatus.IN_PROGRESS);
+        batch.setNotes(batch.getNotes() != null ? batch.getNotes() + "\n恢复生产: " + LocalDateTime.now() : "恢复生产: " + LocalDateTime.now());
         return productionBatchRepository.save(batch);
     }
     public ProductionBatch completeProduction(String factoryId, String batchId, BigDecimal actualQuantity,
@@ -1120,6 +1134,9 @@ public class ProcessingServiceImpl implements ProcessingService {
         // 今日入库原材料数
         long materialReceived = materialBatchRepository.countByFactoryIdAndReceiptDateAfter(factoryId, todayStart);
         todayStats.put("materialReceived", materialReceived);
+        // 总原材料批次数（用于首页显示）
+        long totalMaterialBatches = materialBatchRepository.countByFactoryId(factoryId);
+        todayStats.put("totalMaterialBatches", totalMaterialBatches);
         todayStats.put("ordersCompleted", completedBatches);
         // 生产效率
         BigDecimal avgEfficiency = productionBatchRepository.calculateAverageEfficiency(factoryId, todayStart);
@@ -1166,6 +1183,36 @@ public class ProcessingServiceImpl implements ProcessingService {
                 BigDecimal.valueOf(activeEquipment * 100.0 / totalEquipment).setScale(2, RoundingMode.HALF_UP) :
                 BigDecimal.ZERO;
         kpi.put("equipmentUtilization", equipmentUtilization);
+
+        // 单位成本（本月成本总和 / 本月产量总和）
+        BigDecimal monthlyTotalCost = productionBatchRepository.calculateTotalCostAfter(factoryId, monthStart);
+        BigDecimal monthlyTotalOutput = productionBatchRepository.calculateTotalOutputAfter(factoryId, monthStart);
+        BigDecimal unitCost = BigDecimal.ZERO;
+        if (monthlyTotalOutput != null && monthlyTotalOutput.compareTo(BigDecimal.ZERO) > 0) {
+            unitCost = (monthlyTotalCost != null ? monthlyTotalCost : BigDecimal.ZERO)
+                    .divide(monthlyTotalOutput, 2, RoundingMode.HALF_UP);
+        }
+        kpi.put("unitCost", unitCost);
+
+        // 平均生产周期（小时）- 在Java中计算
+        BigDecimal avgCycleHours = BigDecimal.ZERO;
+        java.util.List<ProductionBatch> batchesWithTimes = productionBatchRepository.findCompletedBatchesWithTimes(factoryId, monthStart);
+        if (batchesWithTimes != null && !batchesWithTimes.isEmpty()) {
+            long totalHours = 0;
+            int cycleCount = 0;
+            for (ProductionBatch batch : batchesWithTimes) {
+                if (batch.getStartTime() != null && batch.getEndTime() != null) {
+                    long hours = java.time.Duration.between(batch.getStartTime(), batch.getEndTime()).toHours();
+                    totalHours += hours;
+                    cycleCount++;
+                }
+            }
+            if (cycleCount > 0) {
+                avgCycleHours = BigDecimal.valueOf(totalHours).divide(BigDecimal.valueOf(cycleCount), 1, RoundingMode.HALF_UP);
+            }
+        }
+        kpi.put("avgCycleHours", avgCycleHours);
+
         overview.put("kpi", kpi);
 
         // ===== alerts (告警状态) =====
@@ -1222,6 +1269,56 @@ public class ProcessingServiceImpl implements ProcessingService {
         // 效率统计
         BigDecimal avgEfficiency = productionBatchRepository.calculateAverageEfficiency(factoryId, startDate);
         statistics.put("averageEfficiency", avgEfficiency != null ? avgEfficiency : BigDecimal.ZERO);
+
+        // ===== 添加批次状态分布 (batchStatusDistribution) =====
+        List<ProductionBatch> batches = productionBatchRepository.findByFactoryIdAndCreatedAtAfter(factoryId, startDate);
+        List<Map<String, Object>> batchStatusDistribution = new ArrayList<>();
+        Map<ProductionBatchStatus, List<ProductionBatch>> byStatus = batches.stream()
+                .collect(Collectors.groupingBy(ProductionBatch::getStatus));
+        for (Map.Entry<ProductionBatchStatus, List<ProductionBatch>> entry : byStatus.entrySet()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("status", entry.getKey().name());
+            item.put("count", entry.getValue().size());
+            double totalQuantity = entry.getValue().stream()
+                    .mapToDouble(b -> b.getActualQuantity() != null ? b.getActualQuantity().doubleValue() : 0)
+                    .sum();
+            item.put("totalQuantity", totalQuantity);
+            batchStatusDistribution.add(item);
+        }
+        statistics.put("batchStatusDistribution", batchStatusDistribution);
+
+        // ===== 添加产品类型统计 (productTypeStats) =====
+        List<Map<String, Object>> productTypeStats = new ArrayList<>();
+        Map<String, List<ProductionBatch>> byProductType = batches.stream()
+                .filter(b -> b.getProductTypeId() != null)
+                .collect(Collectors.groupingBy(ProductionBatch::getProductTypeId));
+
+        // 预先查询所有产品类型名称
+        Set<String> productTypeIds = byProductType.keySet();
+        Map<String, String> productTypeNames = new HashMap<>();
+        for (String productTypeId : productTypeIds) {
+            productTypeRepository.findById(productTypeId).ifPresent(pt ->
+                productTypeNames.put(productTypeId, pt.getName())
+            );
+        }
+
+        for (Map.Entry<String, List<ProductionBatch>> entry : byProductType.entrySet()) {
+            Map<String, Object> item = new HashMap<>();
+            String productTypeId = entry.getKey();
+            item.put("productTypeId", productTypeId);
+            // 添加产品名称，如果没找到则使用ID
+            String productName = productTypeNames.getOrDefault(productTypeId, productTypeId);
+            item.put("productTypeName", productName);
+            item.put("productType", productName);  // 兼容前端字段
+            item.put("count", entry.getValue().size());
+            double quantity = entry.getValue().stream()
+                    .mapToDouble(b -> b.getActualQuantity() != null ? b.getActualQuantity().doubleValue() : 0)
+                    .sum();
+            item.put("totalQuantity", quantity);
+            productTypeStats.add(item);
+        }
+        statistics.put("productTypeStats", productTypeStats);
+
         return statistics;
     }
     public Map<String, Object> getQualityDashboard(String factoryId) {
@@ -1289,43 +1386,90 @@ public class ProcessingServiceImpl implements ProcessingService {
         return dashboard;
     }
     public Map<String, Object> getAlertsDashboard(String factoryId) {
-        Map<String, Object> alerts = new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
         List<Map<String, Object>> alertList = new ArrayList<>();
+
         // 低库存预警
         List<Object> lowStockMaterials = materialBatchRepository.findLowStockMaterials(factoryId);
         for (Object material : lowStockMaterials) {
             Map<String, Object> alert = new HashMap<>();
             alert.put("type", "LOW_STOCK");
             alert.put("level", "WARNING");
+            alert.put("status", "ACTIVE");
             alert.put("message", "原材料库存低");
             alert.put("data", material);
+            alert.put("createdAt", LocalDateTime.now());
             alertList.add(alert);
         }
+
         // 过期预警
         List<MaterialBatch> expiringSoon = materialBatchRepository.findExpiringSoon(factoryId, LocalDate.now().plusDays(7));
         for (MaterialBatch batch : expiringSoon) {
             Map<String, Object> alert = new HashMap<>();
             alert.put("type", "EXPIRING");
-            alert.put("level", "WARNING");
+            alert.put("level", "CRITICAL");
+            alert.put("status", "ACTIVE");
             alert.put("message", "原材料即将过期: " + batch.getBatchNumber());
             alert.put("data", batch);
             alert.put("expireDate", batch.getExpireDate());
+            alert.put("createdAt", LocalDateTime.now());
             alertList.add(alert);
         }
+
         // 设备维护提醒
         List<FactoryEquipment> maintenanceDue = equipmentRepository.findMaintenanceDue(factoryId, LocalDate.now().minusDays(30));
         for (FactoryEquipment equipment : maintenanceDue) {
             Map<String, Object> alert = new HashMap<>();
             alert.put("type", "MAINTENANCE");
             alert.put("level", "INFO");
+            alert.put("status", "ACTIVE");
             alert.put("message", "设备需要维护: " + equipment.getEquipmentName());
             alert.put("data", equipment);
             alert.put("lastMaintenance", equipment.getLastMaintenanceDate());
+            alert.put("createdAt", LocalDateTime.now());
             alertList.add(alert);
         }
-        alerts.put("alerts", alertList);
-        alerts.put("totalAlerts", alertList.size());
-        return alerts;
+
+        // ===== 构建 summary 对象 =====
+        int totalAlerts = alertList.size();
+        int activeAlerts = (int) alertList.stream()
+                .filter(a -> "ACTIVE".equals(a.get("status")))
+                .count();
+        int resolvedAlerts = totalAlerts - activeAlerts;
+        int criticalAlerts = (int) alertList.stream()
+                .filter(a -> "CRITICAL".equals(a.get("level")))
+                .count();
+
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalAlerts", totalAlerts);
+        summary.put("activeAlerts", activeAlerts);
+        summary.put("resolvedAlerts", resolvedAlerts);
+        summary.put("criticalAlerts", criticalAlerts);
+        result.put("summary", summary);
+
+        // ===== 构建 byType 数组 =====
+        Map<String, Long> typeCount = alertList.stream()
+                .collect(Collectors.groupingBy(
+                        a -> (String) a.get("type"),
+                        Collectors.counting()
+                ));
+        List<Map<String, Object>> byType = new ArrayList<>();
+        for (Map.Entry<String, Long> entry : typeCount.entrySet()) {
+            Map<String, Object> typeItem = new HashMap<>();
+            typeItem.put("type", entry.getKey());
+            typeItem.put("count", entry.getValue().intValue());
+            byType.add(typeItem);
+        }
+        result.put("byType", byType);
+
+        // ===== 其他字段 =====
+        result.put("period", "week");
+        result.put("recent", alertList);  // 重命名 alerts → recent
+        // 保留旧字段以便向后兼容
+        result.put("alerts", alertList);
+        result.put("totalAlerts", totalAlerts);
+
+        return result;
     }
     public Map<String, Object> getTrendAnalysis(String factoryId, String metric, Integer days) {
         Map<String, Object> analysis = new HashMap<>();

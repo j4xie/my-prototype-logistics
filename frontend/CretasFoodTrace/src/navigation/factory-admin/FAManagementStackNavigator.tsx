@@ -22,6 +22,11 @@ import ConversionRateScreen from "../../screens/management/ConversionRateScreen"
 import DisposalRecordManagementScreen from "../../screens/management/DisposalRecordManagementScreen";
 import EquipmentManagementScreen from "../../screens/processing/EquipmentManagementScreen";
 import EquipmentDetailScreen from "../../screens/processing/EquipmentDetailScreen";
+import SchemaConfigScreen from "../../screens/factory-admin/config/SchemaConfigScreen";
+import RuleConfigurationScreen from "../../screens/management/RuleConfigurationScreen";
+import AIBusinessInitScreen from "../../screens/factory-admin/config/AIBusinessInitScreen";
+import EncodingRuleConfigScreen from "../../screens/factory-admin/config/EncodingRuleConfigScreen";
+import QualityCheckItemConfigScreen from "../../screens/factory-admin/config/QualityCheckItemConfigScreen";
 
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
@@ -117,6 +122,41 @@ export function FAManagementStackNavigator() {
         name="DisposalRecordManagement"
         component={DisposalRecordManagementScreen}
         options={{ title: "报废记录" }}
+      />
+
+      {/* Schema 配置 (AI 创建字段) */}
+      <Stack.Screen
+        name="SchemaConfig"
+        component={SchemaConfigScreen}
+        options={{ title: "表单配置" }}
+      />
+
+      {/* 规则配置 (Drools 规则 + 状态机) */}
+      <Stack.Screen
+        name="RuleConfiguration"
+        component={RuleConfigurationScreen}
+        options={{ title: "规则配置" }}
+      />
+
+      {/* AI 智能初始化业务数据 (P1.5) */}
+      <Stack.Screen
+        name="AIBusinessInit"
+        component={AIBusinessInitScreen}
+        options={{ title: "AI 智能初始化" }}
+      />
+
+      {/* 编码规则配置 */}
+      <Stack.Screen
+        name="EncodingRuleConfig"
+        component={EncodingRuleConfigScreen}
+        options={{ title: "编码规则" }}
+      />
+
+      {/* 质检项配置 */}
+      <Stack.Screen
+        name="QualityCheckItemConfig"
+        component={QualityCheckItemConfigScreen}
+        options={{ title: "质检项配置" }}
       />
     </Stack.Navigator>
   );

@@ -3,10 +3,16 @@ package com.cretas.aims.mapper;
 import com.cretas.aims.dto.production.CreateProductionPlanRequest;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.entity.ProductionPlan;
+import com.cretas.aims.entity.enums.PlanSourceType;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.enums.ProductionPlanType;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 /**
  * 生产计划实体映射器
@@ -15,8 +21,11 @@ import java.util.UUID;
  * @version 1.0.0
  * @since 2025-01-09
  */
+@Slf4j
 @Component
 public class ProductionPlanMapper {
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
     /**
      * Entity 转 DTO
      */
@@ -73,7 +82,37 @@ public class ProductionPlanMapper {
         dto.setMatchingProgress(plan.getMatchingProgress());
         dto.setRemainingQuantity(plan.getRemainingQuantity());
 
+        // 设置调度员模块扩展字段
+        dto.setSourceType(plan.getSourceType());
+        dto.setSourceTypeDisplayName(plan.getSourceTypeDisplayName());
+        dto.setSourceOrderId(plan.getSourceOrderId());
+        dto.setSourceCustomerName(plan.getSourceCustomerName());
+        dto.setAiConfidence(plan.getAiConfidence());
+        dto.setAiConfidenceLevel(plan.getAiConfidenceLevel());
+        dto.setForecastReason(plan.getForecastReason());
+        dto.setCrValue(plan.getCrValue());
+        dto.setIsUrgent(plan.isUrgent());
+        dto.setIsMixedBatch(plan.getIsMixedBatch());
+        dto.setMixedBatchType(plan.getMixedBatchType());
+        dto.setMixedBatchTypeDisplayName(plan.getMixedBatchTypeDisplayName());
+        dto.setRelatedOrders(parseRelatedOrders(plan.getRelatedOrders()));
+
         return dto;
+    }
+
+    /**
+     * 解析关联订单JSON为列表
+     */
+    private List<String> parseRelatedOrders(String relatedOrdersJson) {
+        if (relatedOrdersJson == null || relatedOrdersJson.isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            return objectMapper.readValue(relatedOrdersJson, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to parse relatedOrders JSON: {}", relatedOrdersJson, e);
+            return new ArrayList<>();
+        }
     }
 
     /**
@@ -106,7 +145,38 @@ public class ProductionPlanMapper {
         } else if (request.getPlannedDate() != null) {
             plan.setExpectedCompletionDate(request.getPlannedDate().plusDays(1));
         }
+
+        // 设置调度员模块扩展字段
+        plan.setSourceType(request.getSourceType() != null ? request.getSourceType() : PlanSourceType.MANUAL);
+        plan.setSourceOrderId(request.getSourceOrderId());
+        plan.setSourceCustomerName(request.getSourceCustomerName());
+        plan.setAiConfidence(request.getAiConfidence());
+        plan.setForecastReason(request.getForecastReason());
+        plan.setIsMixedBatch(request.getIsMixedBatch() != null ? request.getIsMixedBatch() : false);
+        plan.setMixedBatchType(request.getMixedBatchType());
+        plan.setRelatedOrders(serializeRelatedOrders(request.getRelatedOrders()));
+
+        // 计算CR值
+        if (request.getEstimatedWorkDays() != null && request.getExpectedCompletionDate() != null) {
+            plan.setCrValue(plan.calculateCrValue(request.getEstimatedWorkDays()));
+        }
+
         return plan;
+    }
+
+    /**
+     * 序列化关联订单列表为JSON
+     */
+    private String serializeRelatedOrders(java.util.List<String> relatedOrders) {
+        if (relatedOrders == null || relatedOrders.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(relatedOrders);
+        } catch (Exception e) {
+            log.warn("Failed to serialize relatedOrders: {}", relatedOrders, e);
+            return null;
+        }
     }
 
     /**
@@ -145,6 +215,35 @@ public class ProductionPlanMapper {
         }
         if (request.getExpectedCompletionDate() != null) {
             plan.setExpectedCompletionDate(request.getExpectedCompletionDate());
+        }
+        // 更新调度员模块扩展字段
+        if (request.getSourceType() != null) {
+            plan.setSourceType(request.getSourceType());
+        }
+        if (request.getSourceOrderId() != null) {
+            plan.setSourceOrderId(request.getSourceOrderId());
+        }
+        if (request.getSourceCustomerName() != null) {
+            plan.setSourceCustomerName(request.getSourceCustomerName());
+        }
+        if (request.getAiConfidence() != null) {
+            plan.setAiConfidence(request.getAiConfidence());
+        }
+        if (request.getForecastReason() != null) {
+            plan.setForecastReason(request.getForecastReason());
+        }
+        if (request.getIsMixedBatch() != null) {
+            plan.setIsMixedBatch(request.getIsMixedBatch());
+        }
+        if (request.getMixedBatchType() != null) {
+            plan.setMixedBatchType(request.getMixedBatchType());
+        }
+        if (request.getRelatedOrders() != null) {
+            plan.setRelatedOrders(serializeRelatedOrders(request.getRelatedOrders()));
+        }
+        // 重新计算CR值
+        if (request.getEstimatedWorkDays() != null) {
+            plan.setCrValue(plan.calculateCrValue(request.getEstimatedWorkDays()));
         }
     }
 

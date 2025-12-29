@@ -54,6 +54,20 @@ public class WorkerAssignment {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    /**
+     * LinUCB 反馈记录ID
+     * 用于关联 WorkerAllocationFeedback，在任务完成时更新模型
+     */
+    @Column(name = "linucb_feedback_id", length = 36)
+    private String linucbFeedbackId;
+
+    /**
+     * LinUCB 预测分数
+     * AI 推荐时的 UCB 分数
+     */
+    @Column(name = "linucb_score", precision = 8, scale = 4)
+    private BigDecimal linucbScore;
+
     public enum AssignmentStatus {
         assigned, checked_in, working, checked_out, absent
     }

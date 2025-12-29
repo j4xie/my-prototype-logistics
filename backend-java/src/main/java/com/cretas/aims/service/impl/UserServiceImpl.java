@@ -6,11 +6,14 @@ import com.cretas.aims.dto.user.CreateUserRequest;
 import com.cretas.aims.dto.user.UserDTO;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.cretas.aims.entity.enums.HireType;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.mapper.UserMapper;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.UserService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -156,8 +162,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDTO> getUsersByRole(String factoryId, FactoryUserRole role) {
-        // 使用职位字段查询（roleCode已删除）
-        return userRepository.findByFactoryIdAndPosition(factoryId, role.name())
+        // 使用角色代码查询
+        return userRepository.findByFactoryIdAndRoleCode(factoryId, role.name())
                 .stream()
                 .map(userMapper::toDTO)
                 .collect(Collectors.toList());
@@ -498,5 +504,175 @@ public class UserServiceImpl implements UserService {
                 size,
                 userPage.getTotalElements()
         );
+    }
+
+    // ==================== 调度员模块扩展实现 ====================
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public UserDTO getUserByEmployeeCode(String factoryId, String employeeCode) {
+        User user = userRepository.findByFactoryIdAndEmployeeCode(factoryId, employeeCode)
+                .orElseThrow(() -> new ResourceNotFoundException("用户", "工号", employeeCode));
+        return userMapper.toDTO(user);
+    }
+
+    @Override
+    @Transactional
+    public void updateEmployeeCode(String factoryId, Long userId, String employeeCode) {
+        // 验证工号格式 (001-999)
+        if (!employeeCode.matches("^\\d{3}$")) {
+            throw new BusinessException("工号格式错误，必须是3位数字 (001-999)");
+        }
+
+        int code = Integer.parseInt(employeeCode);
+        if (code < 1 || code > 999) {
+            throw new BusinessException("工号必须在 001-999 范围内");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+
+        // 验证工厂ID
+        if (!user.getFactoryId().equals(factoryId)) {
+            throw new BusinessException("无权操作该用户");
+        }
+
+        // 检查工号是否已被其他用户使用
+        userRepository.findByEmployeeCode(employeeCode).ifPresent(existingUser -> {
+            if (!existingUser.getId().equals(userId)) {
+                throw new BusinessException("工号已被使用: " + employeeCode);
+            }
+        });
+
+        user.setEmployeeCode(employeeCode);
+        userRepository.save(user);
+        log.info("更新用户工号成功: userId={}, employeeCode={}", userId, employeeCode);
+    }
+
+    @Override
+    public Map<String, Integer> getUserSkills(String factoryId, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+
+        // 验证工厂ID
+        if (!user.getFactoryId().equals(factoryId)) {
+            throw new BusinessException("无权查看该用户");
+        }
+
+        return parseSkillLevels(user.getSkillLevels());
+    }
+
+    @Override
+    @Transactional
+    public void updateUserSkills(String factoryId, Long userId, Map<String, Integer> skillLevels) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+
+        // 验证工厂ID
+        if (!user.getFactoryId().equals(factoryId)) {
+            throw new BusinessException("无权操作该用户");
+        }
+
+        // 验证技能等级范围 (1-5)
+        for (Map.Entry<String, Integer> entry : skillLevels.entrySet()) {
+            if (entry.getValue() < 1 || entry.getValue() > 5) {
+                throw new BusinessException("技能等级必须在 1-5 范围内: " + entry.getKey());
+            }
+        }
+
+        // 转换为JSON
+        String skillLevelsJson = serializeSkillLevels(skillLevels);
+        user.setSkillLevels(skillLevelsJson);
+        userRepository.save(user);
+
+        log.info("更新用户技能成功: userId={}, skills={}", userId, skillLevels);
+    }
+
+    @Override
+    public List<UserDTO> getExpiringContracts(String factoryId, Integer daysAhead) {
+        LocalDate warningDate = LocalDate.now().plusDays(daysAhead);
+
+        List<User> users = userRepository.findByFactoryIdAndContractEndDateBefore(factoryId, warningDate);
+
+        return users.stream()
+                .filter(u -> u.getContractEndDate() != null && u.getContractEndDate().isAfter(LocalDate.now()))
+                .map(userMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<UserDTO> getUsersByHireType(String factoryId, HireType hireType) {
+        List<User> users = userRepository.findByFactoryIdAndHireType(factoryId, hireType);
+        return users.stream()
+                .map(userMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<UserDTO> getTemporaryWorkers(String factoryId) {
+        // 临时性质的雇用类型: PART_TIME, DISPATCH, INTERN, TEMPORARY
+        List<HireType> temporaryTypes = List.of(
+                HireType.PART_TIME,
+                HireType.DISPATCH,
+                HireType.INTERN,
+                HireType.TEMPORARY
+        );
+
+        List<User> users = userRepository.findByFactoryIdAndHireTypeIn(factoryId, temporaryTypes);
+        return users.stream()
+                .map(userMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public String generateNextEmployeeCode(String factoryId) {
+        // 获取当前工厂最大的工号
+        String maxCode = userRepository.findMaxEmployeeCodeByFactoryId(factoryId);
+
+        int nextCode;
+        if (maxCode == null || maxCode.isEmpty()) {
+            nextCode = 1;
+        } else {
+            nextCode = Integer.parseInt(maxCode) + 1;
+        }
+
+        if (nextCode > 999) {
+            throw new BusinessException("工号已用尽 (001-999)");
+        }
+
+        return String.format("%03d", nextCode);
+    }
+
+    /**
+     * 解析技能等级 JSON 为 Map
+     */
+    private Map<String, Integer> parseSkillLevels(String skillLevelsJson) {
+        if (skillLevelsJson == null || skillLevelsJson.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            return objectMapper.readValue(skillLevelsJson, new TypeReference<Map<String, Integer>>() {});
+        } catch (Exception e) {
+            log.warn("解析技能等级JSON失败: {}", skillLevelsJson, e);
+            return Collections.emptyMap();
+        }
+    }
+
+    /**
+     * 序列化技能等级 Map 为 JSON
+     */
+    private String serializeSkillLevels(Map<String, Integer> skillLevels) {
+        if (skillLevels == null || skillLevels.isEmpty()) {
+            return "{}";
+        }
+
+        try {
+            return objectMapper.writeValueAsString(skillLevels);
+        } catch (Exception e) {
+            log.warn("序列化技能等级失败", e);
+            return "{}";
+        }
     }
 }

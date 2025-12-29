@@ -76,7 +76,15 @@ export function WHProfileScreen() {
   // 加载今日统计数据
   const loadTodayStats = useCallback(async () => {
     try {
-      const overview = await dashboardApiClient.getDashboardOverview();
+      const overview = await dashboardApiClient.getDashboardOverview() as {
+        todayInbound?: number;
+        todayOutbound?: number;
+        todayInventoryChecks?: number;
+        pendingBatches?: number;
+        completedBatches?: number;
+        activeAlerts?: number;
+        pendingAlerts?: number;
+      } | null;
 
       if (overview) {
         setTodayStats([

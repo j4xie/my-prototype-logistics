@@ -1,11 +1,61 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { Component, ErrorInfo } from 'react';
+import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
 interface MarkdownRendererProps {
   content: string;
   style?: object;
 }
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+/**
+ * 错误边界组件 - 捕获 Markdown 渲染错误
+ */
+class MarkdownErrorBoundary extends Component<
+  { children: React.ReactNode; fallbackContent: string },
+  ErrorBoundaryState
+> {
+  constructor(props: { children: React.ReactNode; fallbackContent: string }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.warn('MarkdownRenderer Error:', error.message);
+    console.warn('Component Stack:', errorInfo.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // 渲染失败时显示纯文本
+      return (
+        <ScrollView style={fallbackStyles.container}>
+          <Text style={fallbackStyles.text}>{this.props.fallbackContent}</Text>
+        </ScrollView>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const fallbackStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  text: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#374151',
+  },
+});
 
 /**
  * AI 分析结果的 Markdown 渲染组件
@@ -18,7 +68,7 @@ interface MarkdownRendererProps {
  * - 分隔线 (---)
  * - 引用块 (>)
  *
- * @version 1.1.0
+ * @version 1.2.0 - 添加错误边界和安全渲染
  * @since 2025-12-23
  */
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, style }) => {
@@ -27,11 +77,23 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, sty
     return null;
   }
 
+  // 清理可能导致问题的内容
+  const cleanedContent = content
+    .trim()
+    // 确保内容是有效字符串
+    .replace(/\u0000/g, ''); // 移除空字符
+
+  if (!cleanedContent) {
+    return null;
+  }
+
   return (
     <View style={[styles.container, style]}>
-      <Markdown style={markdownStyles}>
-        {content}
-      </Markdown>
+      <MarkdownErrorBoundary fallbackContent={cleanedContent}>
+        <Markdown style={markdownStyles}>
+          {cleanedContent}
+        </Markdown>
+      </MarkdownErrorBoundary>
     </View>
   );
 };

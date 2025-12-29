@@ -235,7 +235,14 @@ class TimeStatsApiClient {
   }
 
   async getWeeklyStats(weekStart: string, factoryId?: string): Promise<ApiResponse<WeeklyStats>> {
-    return await apiClient.get(`${this.getPath(factoryId)}/weekly`, { params: { weekStart } });
+    // 将日期转换为年份和ISO周数
+    const date = new Date(weekStart);
+    const year = date.getFullYear();
+    // 计算ISO周数
+    const firstDayOfYear = new Date(year, 0, 1);
+    const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+    const week = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+    return await apiClient.get(`${this.getPath(factoryId)}/weekly`, { params: { year, week } });
   }
 
   async getMonthlyStats(year: number, month: number, factoryId?: string): Promise<ApiResponse<MonthlyStats>> {
@@ -307,6 +314,204 @@ class TimeStatsApiClient {
     return await apiClient.post(`${this.getPath(factoryId)}/import`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
+  }
+
+  /**
+   * 获取劳动成本汇总 (HR模块)
+   * 后端路径: GET /api/mobile/{factoryId}/time-stats/productivity
+   */
+  async getLaborCostSummary(params?: {
+    period?: string;
+    startDate?: string;
+    endDate?: string;
+    factoryId?: string;
+  }): Promise<{
+    totalCost: number;
+    totalWorkMinutes: number;
+    avgHourlyRate: number;
+    participatingBatches: number;
+    participatingEmployees: number;
+  }> {
+    const { factoryId, period, startDate, endDate } = params || {};
+
+    // 计算日期范围
+    const dates = this.calculateDateRange(period, startDate, endDate);
+
+    const response = await apiClient.get<{ success: boolean; data: Record<string, unknown> }>(`${this.getPath(factoryId)}/productivity`, {
+      params: dates
+    });
+
+    // 映射后端响应到前端期望的格式
+    const data = response.data || {};
+    return {
+      totalCost: Number(data.totalLaborCost) || 0,
+      totalWorkMinutes: Number(data.totalWorkMinutes) || 0,
+      avgHourlyRate: Number(data.avgHourlyRate) || 0,
+      participatingBatches: Number(data.batchCount) || 0,
+      participatingEmployees: Number(data.workerCount) || 0,
+    };
+  }
+
+  /**
+   * 获取按部门成本分布 (HR模块)
+   * 后端路径: GET /api/mobile/{factoryId}/time-stats/by-department
+   */
+  async getCostByDepartment(params?: {
+    period?: string;
+    startDate?: string;
+    endDate?: string;
+    factoryId?: string;
+  }): Promise<{
+    departmentId: string;
+    departmentName: string;
+    cost: number;
+    percentage: number;
+  }[]> {
+    const { factoryId, period, startDate, endDate } = params || {};
+
+    // 计算日期范围
+    const dates = this.calculateDateRange(period, startDate, endDate);
+
+    const response = await apiClient.get<{ success: boolean; data: { departmentStats?: Array<{ department?: string; totalCost?: number }> } }>(`${this.getPath(factoryId)}/by-department`, {
+      params: dates
+    });
+
+    // 映射后端响应到前端期望的格式
+    const departments = response.data?.departmentStats || [];
+    const totalCost = departments.reduce((sum: number, d: { totalCost?: number }) => sum + (d.totalCost || 0), 0);
+
+    return departments.map((dept: { department?: string; totalCost?: number }, index: number) => ({
+      departmentId: String(index + 1),
+      departmentName: dept.department || '未知部门',
+      cost: dept.totalCost || 0,
+      percentage: totalCost > 0 ? Math.round(((dept.totalCost || 0) / totalCost) * 100) : 0,
+    }));
+  }
+
+  /**
+   * 获取员工工时排行 (HR模块)
+   * 后端路径: GET /api/mobile/{factoryId}/time-stats/workers
+   */
+  async getWorkerHoursRank(params?: {
+    limit?: number;
+    period?: string;
+    factoryId?: string;
+  }): Promise<{
+    rank: number;
+    userId: number;
+    userName: string;
+    department?: string;
+    totalMinutes: number;
+    totalHours: number;
+  }[]> {
+    const { factoryId, limit = 10, period } = params || {};
+
+    // 计算日期范围
+    const dates = this.calculateDateRange(period);
+
+    const response = await apiClient.get<{ success: boolean; data: Array<{ userId?: number; workerName?: string; department?: string; totalMinutes?: number }> }>(`${this.getPath(factoryId)}/workers`, {
+      params: { ...dates, limit }
+    });
+
+    // 映射后端响应到前端期望的格式，按工时排序
+    const workers = response.data || [];
+    return workers
+      .sort((a: { totalMinutes?: number }, b: { totalMinutes?: number }) =>
+        (b.totalMinutes || 0) - (a.totalMinutes || 0))
+      .slice(0, limit)
+      .map((worker: { userId?: number; workerName?: string; department?: string; totalMinutes?: number }, index: number) => ({
+        rank: index + 1,
+        userId: worker.userId || 0,
+        userName: worker.workerName || '未知',
+        department: worker.department,
+        totalMinutes: worker.totalMinutes || 0,
+        totalHours: Math.round(((worker.totalMinutes || 0) / 60) * 10) / 10,
+      }));
+  }
+
+  /**
+   * 获取考勤统计汇总 (HR模块)
+   * 后端路径: GET /api/mobile/{factoryId}/timeclock/admin/statistics
+   *
+   * 注意: 此接口调用考勤模块的管理员统计端点
+   */
+  async getAttendanceStats(params?: {
+    period?: string;
+    startDate?: string;
+    endDate?: string;
+    factoryId?: string;
+  }): Promise<{
+    totalEmployees: number;
+    avgAttendanceRate: number;
+    totalLateCount: number;
+    totalAbsentCount: number;
+    totalEarlyLeaveCount: number;
+    dailyStats?: {
+      date: string;
+      attendanceRate: number;
+      lateCount: number;
+    }[];
+  }> {
+    const { factoryId, period, startDate, endDate } = params || {};
+
+    // 计算日期范围
+    const dates = this.calculateDateRange(period, startDate, endDate);
+
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的');
+    }
+
+    // 调用考勤模块的管理员统计端点
+    const response = await apiClient.get<{ success: boolean; data: Record<string, unknown> }>(`/api/mobile/${currentFactoryId}/timeclock/admin/statistics`, {
+      params: dates
+    });
+
+    // 映射后端响应到前端期望的格式
+    const data = response.data || {};
+    return {
+      totalEmployees: Number(data.totalEmployees) || 0,
+      avgAttendanceRate: Number(data.attendanceRate) || 0,
+      totalLateCount: Number(data.lateCount) || 0,
+      totalAbsentCount: Number(data.absentCount) || 0,
+      totalEarlyLeaveCount: Number(data.earlyLeaveCount) || 0,
+      dailyStats: Array.isArray(data.dailyStats) ? data.dailyStats as { date: string; attendanceRate: number; lateCount: number }[] : [],
+    };
+  }
+
+  /**
+   * 计算日期范围的辅助方法
+   */
+  private calculateDateRange(period?: string, startDate?: string, endDate?: string): { startDate: string; endDate: string } {
+    if (startDate && endDate) {
+      return { startDate, endDate };
+    }
+
+    const now = new Date();
+    const end = now.toISOString().split('T')[0] ?? '';
+    let start: string;
+
+    switch (period) {
+      case 'week':
+        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '';
+        break;
+      case 'month':
+        start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0] ?? '';
+        break;
+      case 'quarter': {
+        const quarter = Math.floor(now.getMonth() / 3);
+        start = new Date(now.getFullYear(), quarter * 3, 1).toISOString().split('T')[0] ?? '';
+        break;
+      }
+      case 'year':
+        start = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0] ?? '';
+        break;
+      default:
+        // 默认本月
+        start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0] ?? '';
+    }
+
+    return { startDate: start, endDate: end };
   }
 }
 

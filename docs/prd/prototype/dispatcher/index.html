@@ -7,6 +7,417 @@
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="../components.css">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* AI 智能调度中心卡片 */
+    .ai-center-card {
+      background: linear-gradient(135deg, #722ed1 0%, #a18cd1 50%, #fbc2eb 100%);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 16px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ai-center-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 200px;
+      height: 200px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+
+    .ai-center-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .ai-center-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ai-center-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .ai-center-subtitle {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+
+    .ai-probability-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+
+    .ai-gauge-mini {
+      width: 80px;
+      height: 80px;
+      position: relative;
+    }
+
+    .ai-gauge-mini svg {
+      transform: rotate(-90deg);
+    }
+
+    .ai-gauge-mini .gauge-bg {
+      fill: none;
+      stroke: rgba(255,255,255,0.2);
+      stroke-width: 8;
+    }
+
+    .ai-gauge-mini .gauge-fill {
+      fill: none;
+      stroke: white;
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 226;
+      stroke-dashoffset: 45; /* 80% = 226 - (226 * 0.8) */
+      transition: stroke-dashoffset 0.5s ease;
+    }
+
+    .ai-gauge-value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .ai-stats-list {
+      flex: 1;
+    }
+
+    .ai-stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .ai-stat-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .ai-stat-label {
+      opacity: 0.8;
+    }
+
+    .ai-stat-value {
+      font-weight: 600;
+    }
+
+    .ai-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 24px;
+      padding: 12px 24px;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .ai-action-btn:active {
+      background: rgba(255,255,255,0.3);
+      transform: scale(0.98);
+    }
+
+    /* AI 风险提示 */
+    .ai-risk-alert {
+      background: #fff2e8;
+      border: 1px solid #ffbb96;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 0 16px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .ai-risk-icon {
+      width: 32px;
+      height: 32px;
+      background: #fa8c16;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .ai-risk-content {
+      flex: 1;
+    }
+
+    .ai-risk-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #d46b08;
+      margin-bottom: 4px;
+    }
+
+    .ai-risk-desc {
+      font-size: 12px;
+      color: #ad6800;
+      line-height: 1.5;
+    }
+
+    .ai-risk-action {
+      background: #fa8c16;
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* 待处理任务卡片 */
+    .pending-tasks-card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin: 0 16px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .pending-tasks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .pending-tasks-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .pending-tasks-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .pending-task-item {
+      text-align: center;
+      padding: 12px 8px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+    }
+
+    .pending-task-item:active {
+      background: #f0f0f0;
+      transform: scale(0.98);
+    }
+
+    .pending-task-count {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .pending-task-count.danger {
+      color: #ff4d4f;
+    }
+
+    .pending-task-count.warning {
+      color: #fa8c16;
+    }
+
+    .pending-task-count.info {
+      color: #1890ff;
+    }
+
+    .pending-task-label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    /* 车间实时状态简化版 */
+    .workshop-mini-list {
+      padding: 0 16px;
+    }
+
+    .workshop-mini-card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .workshop-mini-card:active {
+      background: #fafafa;
+    }
+
+    .workshop-mini-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .workshop-mini-indicator.running {
+      background: #52c41a;
+      box-shadow: 0 0 8px rgba(82, 196, 26, 0.4);
+    }
+
+    .workshop-mini-indicator.idle {
+      background: #d9d9d9;
+    }
+
+    .workshop-mini-info {
+      flex: 1;
+    }
+
+    .workshop-mini-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .workshop-mini-meta {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .workshop-mini-progress {
+      width: 60px;
+      text-align: right;
+    }
+
+    .workshop-mini-percent {
+      font-size: 16px;
+      font-weight: 600;
+      color: #52c41a;
+    }
+
+    .workshop-mini-percent.idle {
+      color: #999;
+    }
+
+    /* 人员调配快捷入口 */
+    .quick-personnel {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin: 0 16px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .quick-personnel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .quick-personnel-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .quick-personnel-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .quick-personnel-row:last-child {
+      border-bottom: none;
+    }
+
+    .quick-personnel-workshop {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .quick-personnel-stats {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quick-personnel-count {
+      font-size: 14px;
+      font-weight: 600;
+      color: #722ed1;
+    }
+
+    .quick-personnel-bar {
+      width: 60px;
+      height: 4px;
+      background: #f0f0f0;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .quick-personnel-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #a18cd1, #fbc2eb);
+      border-radius: 2px;
+    }
+
+    /* 新底部导航样式 */
+    .bottom-nav .nav-item.ai-nav {
+      position: relative;
+    }
+
+    .bottom-nav .nav-item.ai-nav::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #722ed1 0%, #a18cd1 100%);
+      border-radius: 50%;
+      z-index: -1;
+      box-shadow: 0 4px 12px rgba(114, 46, 209, 0.3);
+    }
+
+    .bottom-nav .nav-item.ai-nav svg,
+    .bottom-nav .nav-item.ai-nav span {
+      color: white;
+    }
+  </style>
 </head>
 <body>
   <a href="../index.html" class="back-to-index">< 返回角色选择</a>
@@ -31,217 +442,228 @@
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <div style="color: rgba(255,255,255,0.8); font-size: 14px;">调度员</div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 14px;">调度员 · 2025-12-28</div>
           <div style="color: white; font-size: 20px; font-weight: 600; margin-top: 4px;">赵调度</div>
         </div>
         <div style="width: 48px; height: 48px; border-radius: 24px; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">赵</div>
       </div>
     </div>
 
-    <div class="content" style="background: #f5f5f5;">
-      <!-- 今日生产计划 -->
-      <div class="section-header">
-        <span class="section-title">今日生产计划</span>
-        <span style="font-size: 12px; color: #999;">2025-12-27</span>
+    <div class="content" style="background: #f5f5f5; padding-top: 0;">
+      <!-- 1. AI 智能调度中心 (最重要模块) -->
+      <a href="ai-schedule.html" class="ai-center-card" style="display: block; text-decoration: none; color: white;">
+        <div class="ai-center-header">
+          <div class="ai-center-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a4 4 0 014 4v1h2a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2V6a4 4 0 014-4z"/>
+              <circle cx="9" cy="13" r="1" fill="currentColor"/>
+              <circle cx="15" cy="13" r="1" fill="currentColor"/>
+              <path d="M9 17h6"/>
+            </svg>
+          </div>
+          <div>
+            <div class="ai-center-title">AI 智能调度中心</div>
+            <div class="ai-center-subtitle">Monte Carlo + OR-Tools + LLM</div>
+          </div>
+        </div>
+
+        <div class="ai-probability-section">
+          <div class="ai-gauge-mini">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle class="gauge-bg" cx="40" cy="40" r="36"/>
+              <circle class="gauge-fill" cx="40" cy="40" r="36"/>
+            </svg>
+            <div class="ai-gauge-value">80%</div>
+          </div>
+          <div class="ai-stats-list">
+            <div class="ai-stat-row">
+              <span class="ai-stat-label">今日完成概率</span>
+              <span class="ai-stat-value">80%</span>
+            </div>
+            <div class="ai-stat-row">
+              <span class="ai-stat-label">待排产批次</span>
+              <span class="ai-stat-value">5 个</span>
+            </div>
+            <div class="ai-stat-row">
+              <span class="ai-stat-label">优化空间</span>
+              <span class="ai-stat-value">+12%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ai-action-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          一键 AI 智能排产
+        </div>
+      </a>
+
+      <!-- AI 风险提示 -->
+      <div class="ai-risk-alert">
+        <div class="ai-risk-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="ai-risk-content">
+          <div class="ai-risk-title">AI 风险预警</div>
+          <div class="ai-risk-desc">检测到 2 个批次完成概率低于70%，建议调整人员配置或交期</div>
+        </div>
+        <a href="ai-completion-prob.html" class="ai-risk-action">查看</a>
       </div>
-      <div class="stats-summary">
-        <div class="stats-item">
-          <div class="stats-value purple">12</div>
-          <div class="stats-label">计划总数</div>
+
+      <!-- 2. 今日待处理任务 -->
+      <div class="pending-tasks-card">
+        <div class="pending-tasks-header">
+          <span class="pending-tasks-title">今日待处理</span>
+          <span style="font-size: 12px; color: #999;">工作优先级排序</span>
         </div>
-        <div class="stats-item">
-          <div class="stats-value green">5</div>
-          <div class="stats-label">已完成</div>
-        </div>
-        <div class="stats-item">
-          <div class="stats-value" style="color: #1890ff;">4</div>
-          <div class="stats-label">进行中</div>
-        </div>
-        <div class="stats-item">
-          <div class="stats-value orange">3</div>
-          <div class="stats-label">待开始</div>
+        <div class="pending-tasks-grid">
+          <a href="task-assignment.html" class="pending-task-item">
+            <div class="pending-task-count danger">3</div>
+            <div class="pending-task-label">待分配任务</div>
+          </a>
+          <a href="plan-list.html?status=in_progress" class="pending-task-item">
+            <div class="pending-task-count info">4</div>
+            <div class="pending-task-label">进行中任务</div>
+          </a>
+          <a href="approval-list.html" class="pending-task-item">
+            <div class="pending-task-count warning">3</div>
+            <div class="pending-task-label">待审批事项</div>
+          </a>
         </div>
       </div>
 
-      <!-- 车间任务状态 -->
-      <div class="section-header">
-        <span class="section-title">车间任务状态</span>
+      <!-- 3. 车间实时状态 -->
+      <div class="section-header" style="padding: 0 16px;">
+        <span class="section-title">车间实时状态</span>
         <a href="workshop-status.html" class="section-action section-action--dispatcher">查看全部 ></a>
       </div>
 
-      <a href="workshop-status.html" class="workshop-card running" style="text-decoration: none; color: inherit;">
-        <div class="workshop-header">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="width: 8px; height: 8px; border-radius: 50%; background: #52c41a;"></span>
-            <span class="workshop-name">切片车间</span>
+      <div class="workshop-mini-list">
+        <a href="workshop-status.html" class="workshop-mini-card">
+          <div class="workshop-mini-indicator running"></div>
+          <div class="workshop-mini-info">
+            <div class="workshop-mini-name">切片车间</div>
+            <div class="workshop-mini-meta">张主任 · 3个批次</div>
           </div>
-          <span class="workshop-status running">运行中</span>
-        </div>
-        <div class="workshop-progress">
-          <div class="workshop-progress-bar">
-            <div class="workshop-progress-fill" style="width: 75%;"></div>
+          <div class="workshop-mini-progress">
+            <div class="workshop-mini-percent">75%</div>
           </div>
-          <span class="workshop-progress-text">75%</span>
-        </div>
-        <div class="workshop-meta">
-          <span>负责人: 张主任</span>
-          <span>3个批次进行中</span>
-        </div>
-      </a>
+        </a>
 
-      <a href="workshop-status.html" class="workshop-card running" style="text-decoration: none; color: inherit;">
-        <div class="workshop-header">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="width: 8px; height: 8px; border-radius: 50%; background: #52c41a;"></span>
-            <span class="workshop-name">包装车间</span>
+        <a href="workshop-status.html" class="workshop-mini-card">
+          <div class="workshop-mini-indicator running"></div>
+          <div class="workshop-mini-info">
+            <div class="workshop-mini-name">包装车间</div>
+            <div class="workshop-mini-meta">李主任 · 2个批次</div>
           </div>
-          <span class="workshop-status running">运行中</span>
-        </div>
-        <div class="workshop-progress">
-          <div class="workshop-progress-bar">
-            <div class="workshop-progress-fill" style="width: 60%;"></div>
+          <div class="workshop-mini-progress">
+            <div class="workshop-mini-percent">60%</div>
           </div>
-          <span class="workshop-progress-text">60%</span>
-        </div>
-        <div class="workshop-meta">
-          <span>负责人: 李主任</span>
-          <span>2个批次进行中</span>
-        </div>
-      </a>
+        </a>
 
-      <a href="workshop-status.html" class="workshop-card idle" style="text-decoration: none; color: inherit;">
-        <div class="workshop-header">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="width: 8px; height: 8px; border-radius: 50%; background: #d9d9d9;"></span>
-            <span class="workshop-name">冷冻车间</span>
+        <a href="workshop-status.html" class="workshop-mini-card">
+          <div class="workshop-mini-indicator idle"></div>
+          <div class="workshop-mini-info">
+            <div class="workshop-mini-name">冷冻车间</div>
+            <div class="workshop-mini-meta">王主任 · 待分配</div>
           </div>
-          <span class="workshop-status idle">空闲</span>
-        </div>
-        <div class="workshop-progress">
-          <div class="workshop-progress-bar">
-            <div class="workshop-progress-fill" style="width: 0%;"></div>
+          <div class="workshop-mini-progress">
+            <div class="workshop-mini-percent idle">0%</div>
           </div>
-          <span class="workshop-progress-text">0%</span>
-        </div>
-        <div class="workshop-meta">
-          <span>负责人: 王主任</span>
-          <span>待分配任务</span>
-        </div>
-      </a>
-
-      <!-- 人员分配 -->
-      <div class="section-header">
-        <span class="section-title">人员分配</span>
-        <a href="personnel-transfer.html" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: white; padding: 6px 12px; border-radius: 16px; font-size: 12px; text-decoration: none;">调动人员</a>
+        </a>
       </div>
-      <div class="personnel-grid">
-        <div class="personnel-card">
-          <div class="personnel-card-header">
-            <span class="personnel-card-title">切片车间</span>
-          </div>
-          <div class="personnel-numbers">
-            <span class="personnel-count">8</span>
-            <span class="personnel-total">/ 10人</span>
+
+      <!-- 4. 人员调配快捷入口 -->
+      <div class="quick-personnel">
+        <div class="quick-personnel-header">
+          <span class="quick-personnel-title">人员配置</span>
+          <a href="personnel-transfer.html" style="color: #722ed1; font-size: 13px; text-decoration: none;">调动人员 ></a>
+        </div>
+        <div class="quick-personnel-row">
+          <span class="quick-personnel-workshop">切片车间</span>
+          <div class="quick-personnel-stats">
+            <span class="quick-personnel-count">8/10</span>
+            <div class="quick-personnel-bar">
+              <div class="quick-personnel-bar-fill" style="width: 80%;"></div>
+            </div>
           </div>
         </div>
-        <div class="personnel-card">
-          <div class="personnel-card-header">
-            <span class="personnel-card-title">包装车间</span>
-          </div>
-          <div class="personnel-numbers">
-            <span class="personnel-count">6</span>
-            <span class="personnel-total">/ 8人</span>
-          </div>
-        </div>
-        <div class="personnel-card">
-          <div class="personnel-card-header">
-            <span class="personnel-card-title">冷冻车间</span>
-          </div>
-          <div class="personnel-numbers">
-            <span class="personnel-count">2</span>
-            <span class="personnel-total">/ 6人</span>
+        <div class="quick-personnel-row">
+          <span class="quick-personnel-workshop">包装车间</span>
+          <div class="quick-personnel-stats">
+            <span class="quick-personnel-count">6/8</span>
+            <div class="quick-personnel-bar">
+              <div class="quick-personnel-bar-fill" style="width: 75%;"></div>
+            </div>
           </div>
         </div>
-        <div class="personnel-card">
-          <div class="personnel-card-header">
-            <span class="personnel-card-title">机动人员</span>
+        <div class="quick-personnel-row">
+          <span class="quick-personnel-workshop">冷冻车间</span>
+          <div class="quick-personnel-stats">
+            <span class="quick-personnel-count">2/6</span>
+            <div class="quick-personnel-bar">
+              <div class="quick-personnel-bar-fill" style="width: 33%;"></div>
+            </div>
           </div>
-          <div class="personnel-numbers">
-            <span class="personnel-count">4</span>
-            <span class="personnel-total">人</span>
+        </div>
+        <div class="quick-personnel-row">
+          <span class="quick-personnel-workshop">机动人员</span>
+          <div class="quick-personnel-stats">
+            <span class="quick-personnel-count" style="color: #52c41a;">4人</span>
+            <a href="ai-worker-optimize.html" style="color: #722ed1; font-size: 12px; text-decoration: none;">AI优化 →</a>
           </div>
         </div>
       </div>
 
-      <!-- 待审批事项 -->
-      <div class="section-header">
+      <!-- 5. 待审批快速预览 -->
+      <div class="section-header" style="padding: 0 16px;">
         <span class="section-title">待审批事项</span>
         <a href="approval-list.html" class="section-action section-action--dispatcher">3项待处理 ></a>
       </div>
 
-      <a href="approval-detail.html?type=plan" class="approval-card" style="text-decoration: none; color: inherit;">
-        <div class="approval-header">
-          <span class="approval-type plan">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-            计划
-          </span>
-          <span class="approval-status pending">待审批</span>
-        </div>
-        <div class="approval-content">新增生产计划申请</div>
-        <div class="approval-meta">带鱼片100kg · 张主任提交</div>
-        <div class="approval-actions">
-          <button class="approval-btn reject">拒绝</button>
-          <button class="approval-btn approve">通过</button>
-        </div>
-      </a>
+      <div style="padding: 0 16px; margin-bottom: 100px;">
+        <a href="approval-detail.html?type=plan" class="approval-card" style="text-decoration: none; color: inherit; display: block; margin-bottom: 10px;">
+          <div class="approval-header">
+            <span class="approval-type plan">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              计划
+            </span>
+            <span class="approval-status pending">待审批</span>
+          </div>
+          <div class="approval-content">新增生产计划申请</div>
+          <div class="approval-meta">带鱼片100kg · 张主任提交</div>
+        </a>
 
-      <a href="approval-detail.html?type=transfer" class="approval-card" style="text-decoration: none; color: inherit;">
-        <div class="approval-header">
-          <span class="approval-type transfer">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-              <path d="M16 3.13a4 4 0 010 7.75"/>
-            </svg>
-            调动
-          </span>
-          <span class="approval-status pending">待审批</span>
-        </div>
-        <div class="approval-content">人员调动申请</div>
-        <div class="approval-meta">冷冻>切片 · 2人</div>
-        <div class="approval-actions">
-          <button class="approval-btn reject">拒绝</button>
-          <button class="approval-btn approve">通过</button>
-        </div>
-      </a>
-
-      <a href="approval-detail.html?type=overtime" class="approval-card" style="text-decoration: none; color: inherit; margin-bottom: 80px;">
-        <div class="approval-header">
-          <span class="approval-type overtime">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12,6 12,12 16,14"/>
-            </svg>
-            加班
-          </span>
-          <span class="approval-status pending">待审批</span>
-        </div>
-        <div class="approval-content">加班申请</div>
-        <div class="approval-meta">包装车间 · 今晚2小时</div>
-        <div class="approval-actions">
-          <button class="approval-btn reject">拒绝</button>
-          <button class="approval-btn approve">通过</button>
-        </div>
-      </a>
+        <a href="approval-detail.html?type=transfer" class="approval-card" style="text-decoration: none; color: inherit; display: block; margin-bottom: 10px;">
+          <div class="approval-header">
+            <span class="approval-type transfer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                <path d="M16 3.13a4 4 0 010 7.75"/>
+              </svg>
+              调动
+            </span>
+            <span class="approval-status pending">待审批</span>
+          </div>
+          <div class="approval-content">人员调动申请</div>
+          <div class="approval-meta">冷冻→切片 · 2人</div>
+        </a>
+      </div>
     </div>
 
-    <!-- 底部导航 -->
+    <!-- 底部导航 (新增AI调度入口) -->
     <nav class="bottom-nav">
       <a href="index.html" class="nav-item active">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -259,11 +681,14 @@
         </svg>
         <span>计划</span>
       </a>
-      <a href="task-assignment.html" class="nav-item">
+      <a href="ai-schedule.html" class="nav-item ai-nav">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+          <path d="M12 2a4 4 0 014 4v1h2a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2V6a4 4 0 014-4z"/>
+          <circle cx="9" cy="13" r="1" fill="currentColor"/>
+          <circle cx="15" cy="13" r="1" fill="currentColor"/>
+          <path d="M9 17h6"/>
         </svg>
-        <span>分配</span>
+        <span>AI调度</span>
       </a>
       <a href="personnel-list.html" class="nav-item">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

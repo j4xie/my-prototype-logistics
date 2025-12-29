@@ -5,7 +5,6 @@ import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.PermissionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -28,14 +27,18 @@ import java.util.Optional;
 @Component
 public class PermissionInterceptor implements HandlerInterceptor {
 
-    @Autowired
-    private PermissionService permissionService;
+    private final PermissionService permissionService;
+    private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    // 构造器注入 - 确保依赖按正确顺序创建
+    public PermissionInterceptor(PermissionService permissionService,
+                                  UserRepository userRepository,
+                                  ObjectMapper objectMapper) {
+        this.permissionService = permissionService;
+        this.userRepository = userRepository;
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)

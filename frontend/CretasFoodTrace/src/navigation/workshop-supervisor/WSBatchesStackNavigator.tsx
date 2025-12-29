@@ -18,9 +18,9 @@ import MaterialConsumptionScreen from "../../screens/workshop-supervisor/batches
 // 复用现有详情页
 import BatchDetailScreen from "../../screens/processing/BatchDetailScreen";
 
-// 质检相关 (复用现有)
-import CreateQualityRecordScreen from "../../screens/processing/CreateQualityRecordScreen";
-import QualityInspectionDetailScreen from "../../screens/processing/QualityInspectionDetailScreen";
+// 质检相关 - 已迁移至 QualityInspectorNavigator
+// import CreateQualityRecordScreen from "../../screens/processing/CreateQualityRecordScreen";
+// import QualityInspectionDetailScreen from "../../screens/processing/QualityInspectionDetailScreen";
 
 const Stack = createNativeStackNavigator<WSBatchesStackParamList>();
 
@@ -69,19 +69,17 @@ export function WSBatchesStackNavigator() {
         options={{ title: "原料消耗" }}
       />
 
-      {/* 创建质检记录 (复用现有) */}
-      <Stack.Screen
+      {/* 质检已迁移至 QualityInspectorNavigator */}
+      {/* <Stack.Screen
         name="QualityCreate"
         component={CreateQualityRecordScreen}
         options={{ title: "创建质检" }}
       />
-
-      {/* 质检详情 (复用现有) */}
       <Stack.Screen
         name="QualityDetail"
         component={QualityInspectionDetailScreen}
         options={{ title: "质检详情" }}
-      />
+      /> */}
     </Stack.Navigator>
   );
 }

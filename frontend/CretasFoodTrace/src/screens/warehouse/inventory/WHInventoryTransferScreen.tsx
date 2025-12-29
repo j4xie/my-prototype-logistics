@@ -64,9 +64,9 @@ export function WHInventoryTransferScreen() {
       const response = await materialBatchApiClient.getMaterialBatches({
         status: 'available',
         size: 100
-      });
+      }) as { data?: { content?: MaterialBatch[] } | MaterialBatch[] };
 
-      const allBatches = response.data?.content || response.data || [];
+      const allBatches: MaterialBatch[] = (response.data as { content?: MaterialBatch[] })?.content || response.data as MaterialBatch[] || [];
       const batchOptions: BatchOption[] = allBatches
         .filter((batch: MaterialBatch) => (batch.remainingQuantity || 0) > 0)
         .map((batch: MaterialBatch) => ({
