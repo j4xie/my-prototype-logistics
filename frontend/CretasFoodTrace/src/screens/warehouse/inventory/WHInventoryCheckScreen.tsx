@@ -68,9 +68,9 @@ export function WHInventoryCheckScreen() {
       const response = await materialBatchApiClient.getMaterialBatches({
         status: 'available',
         size: 50
-      });
+      }) as { data?: { content?: MaterialBatch[] } | MaterialBatch[] };
 
-      const batches = response.data?.content || response.data || [];
+      const batches: MaterialBatch[] = (response.data as { content?: MaterialBatch[] })?.content || response.data as MaterialBatch[] || [];
 
       const items: CheckItem[] = batches.map((batch: MaterialBatch) => ({
         id: batch.id,

@@ -1,6 +1,5 @@
 export { default as ManagementScreen } from './ManagementScreen';
-export { default as HRDashboardScreen } from './HRDashboardScreen';
-export { default as HREmployeeAIScreen } from './HREmployeeAIScreen';
+// Note: HRDashboardScreen and HREmployeeAIScreen moved to /screens/legacy/hr/
 export { default as ProductTypeManagementScreen } from './ProductTypeManagementScreen';
 export { default as ConversionRateScreen } from './ConversionRateScreen';
 export { default as MaterialConversionDetailScreen } from './MaterialConversionDetailScreen';
@@ -16,3 +15,6 @@ export { default as EntityDataExportScreen } from './EntityDataExportScreen';
 export { default as ShipmentManagementScreen } from './ShipmentManagementScreen';
 export { default as DisposalRecordManagementScreen } from './DisposalRecordManagementScreen';
 export { default as WorkSessionManagementScreen } from './WorkSessionManagementScreen';
+export { default as RuleConfigurationScreen } from './RuleConfigurationScreen';
+export { default as MaterialSpecManagementScreen } from './MaterialSpecManagementScreen';
+export { default as FactorySettingsScreen } from './FactorySettingsScreen';

@@ -143,7 +143,14 @@ export function TodayProductionScreen() {
           <Text style={styles.sectionTitle}>产品类型统计</Text>
           {data?.productTypeStats?.map((item, index) => (
             <View key={index} style={styles.productItem}>
-              <Text style={styles.productName}>{item.productType}</Text>
+              <View style={styles.productLeft}>
+                <View style={[styles.productIcon, { backgroundColor: getProductColor(index) }]}>
+                  <Icon source="cube-outline" size={16} color="#fff" />
+                </View>
+                <Text style={styles.productName} numberOfLines={1}>
+                  {(item as any).productTypeName || item.productType || (item as any).productTypeId || '未知产品'}
+                </Text>
+              </View>
               <View style={styles.productStats}>
                 <Text style={styles.productCount}>{item.count} 批</Text>
                 <Text style={styles.productQty}>{item.totalQuantity?.toFixed(0) ?? 0} kg</Text>
@@ -163,24 +170,38 @@ export function TodayProductionScreen() {
 
 // 获取状态颜色
 function getStatusColor(status: string): string {
+  const normalizedStatus = status?.toUpperCase();
   const colors: Record<string, string> = {
-    pending: '#ed8936',
-    in_progress: '#667eea',
-    completed: '#48bb78',
-    cancelled: '#a0aec0',
+    PLANNED: '#ed8936',
+    PENDING: '#ed8936',
+    IN_PROGRESS: '#667eea',
+    PROCESSING: '#667eea',
+    COMPLETED: '#48bb78',
+    CANCELLED: '#a0aec0',
+    PAUSED: '#a0aec0',
   };
-  return colors[status] || '#a0aec0';
+  return colors[normalizedStatus] || '#a0aec0';
 }
 
-// 获取状态标签
+// 获取状态标签（中文）
 function getStatusLabel(status: string): string {
+  const normalizedStatus = status?.toUpperCase();
   const labels: Record<string, string> = {
-    pending: '待处理',
-    in_progress: '进行中',
-    completed: '已完成',
-    cancelled: '已取消',
+    PLANNED: '计划中',
+    PENDING: '待处理',
+    IN_PROGRESS: '进行中',
+    PROCESSING: '加工中',
+    COMPLETED: '已完成',
+    CANCELLED: '已取消',
+    PAUSED: '已暂停',
   };
-  return labels[status] || status;
+  return labels[normalizedStatus] || status;
+}
+
+// 获取产品颜色
+function getProductColor(index: number): string {
+  const colors = ['#667eea', '#48bb78', '#ed8936', '#e53e3e', '#9f7aea', '#38b2ac', '#f56565', '#4299e1'];
+  return colors[index % colors.length] ?? '#667eea';
 }
 
 const styles = StyleSheet.create({
@@ -322,6 +343,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#f0f0f0',
+  },
+  productLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  productIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
   productName: {
     fontSize: 15,

@@ -19,6 +19,9 @@ export const FACTORY_ROLES = {
   QUALITY_MANAGER: 'quality_manager',
   FINANCE_MANAGER: 'finance_manager',
 
+  // Level 15 - 调度管理
+  DISPATCHER: 'dispatcher',
+
   // Level 20 - 车间管理
   WORKSHOP_SUPERVISOR: 'workshop_supervisor',
 
@@ -61,6 +64,9 @@ export const ROLE_METADATA: Record<string, RoleMetadata> = {
   quality_manager: { displayName: '质量经理', description: '质量体系、质检审核', level: 10, department: 'quality' },
   finance_manager: { displayName: '财务主管', description: '成本核算、费用、报表', level: 10, department: 'finance' },
 
+  // Level 15 - 调度管理
+  dispatcher: { displayName: '调度员', description: 'AI智能调度、人员分配、生产排程', level: 15, department: 'scheduling' },
+
   // Level 20 - 车间管理
   workshop_supervisor: { displayName: '车间主任', description: '车间日常、人员调度', level: 20, department: 'workshop' },
 
@@ -97,6 +103,7 @@ export const USER_ROLES = {
   EQUIPMENT_ADMIN: 'equipment_admin',
   QUALITY_MANAGER: 'quality_manager',
   FINANCE_MANAGER: 'finance_manager',
+  DISPATCHER: 'dispatcher',
   WORKSHOP_SUPERVISOR: 'workshop_supervisor',
   QUALITY_INSPECTOR: 'quality_inspector',
   OPERATOR: 'operator',
@@ -490,6 +497,16 @@ function getDefaultPermissionsForRole(role: string): string[] {
       'finance:read', 'finance:write',
       'production:read', 'procurement:read', 'sales:read',
       'dashboard:read'
+    ],
+
+    // Level 15 - 调度管理
+    dispatcher: [
+      'scheduling:read', 'scheduling:write',
+      'production:read', 'production:write',
+      'hr:read', 'hr:write',
+      'equipment:read', 'warehouse:read',
+      'quality:read', 'dashboard:read', 'dashboard:write',
+      'processing_access', 'admin_access'
     ],
 
     // Level 20 - 车间管理

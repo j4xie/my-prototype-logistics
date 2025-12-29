@@ -164,7 +164,7 @@ export default function AttendanceHistoryScreen() {
           {
             startDate: formatDate(startDate),
             endDate: formatDate(endDate),
-            page: 0,
+            page: 1,
             size: 100, // 获取所有记录，前端做分页
           },
           factoryId

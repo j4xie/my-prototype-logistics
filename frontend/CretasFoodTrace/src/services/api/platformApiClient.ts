@@ -75,6 +75,68 @@ export interface PlatformStatistics {
   }>;
 }
 
+// ==================== AI 工厂初始化类型 ====================
+
+/**
+ * AI 工厂初始化请求
+ */
+export interface AIFactoryInitRequest {
+  /** 工厂描述 (自然语言) */
+  factoryDescription: string;
+  /** 行业提示 (可选) */
+  industryHint?: string;
+  /** 工厂名称 (可选) */
+  factoryName?: string;
+  /** 是否包含业务数据建议 */
+  includeBusinessData?: boolean;
+}
+
+/**
+ * 实体 Schema 定义
+ */
+export interface EntitySchemaDTO {
+  /** 实体类型 */
+  entityType: string;
+  /** 实体名称 */
+  entityName: string;
+  /** 描述 */
+  description: string;
+  /** Formily 格式字段列表 */
+  fields: Array<Record<string, unknown>>;
+}
+
+/**
+ * 建议的业务数据
+ */
+export interface SuggestedBusinessDataDTO {
+  /** 建议的产品类型 */
+  productTypes: Array<Record<string, unknown>>;
+  /** 建议的原料类型 */
+  materialTypes: Array<Record<string, unknown>>;
+  /** 建议的转换率配置 */
+  conversionRates: Array<Record<string, unknown>>;
+}
+
+/**
+ * AI 工厂初始化响应
+ */
+export interface AIFactoryInitResponse {
+  /** 是否成功 */
+  success: boolean;
+  /** 识别的行业代码 */
+  industryCode: string;
+  /** 行业名称 */
+  industryName: string;
+  /** 生成的表单 Schema 列表 */
+  schemas: EntitySchemaDTO[];
+  /** 建议的业务数据 */
+  suggestedData?: SuggestedBusinessDataDTO;
+  /** AI 生成的总结说明 */
+  aiSummary: string;
+  /** 消息 */
+  message: string;
+}
+
 export const platformAPI = {
   /**
    * 获取所有工厂列表
@@ -286,6 +348,43 @@ export const platformAPI = {
       success: boolean;
       code: number;
       data: PlatformStatistics;
+      message?: string;
+    };
+  },
+
+  // ==================== AI 工厂初始化 ====================
+
+  /**
+   * AI 初始化工厂配置
+   *
+   * 使用 AI 根据自然语言描述生成工厂的完整表单配置
+   *
+   * 后端API: POST /api/platform/factories/:factoryId/ai-initialize
+   *
+   * @param factoryId 工厂ID
+   * @param request 包含工厂描述的请求
+   * @returns AI 生成的配置响应
+   */
+  aiInitializeFactory: async (
+    factoryId: string,
+    request: AIFactoryInitRequest
+  ): Promise<{
+    success: boolean;
+    code?: number;
+    data: AIFactoryInitResponse;
+    message?: string;
+  }> => {
+    const response = await apiClient.post(
+      `/api/platform/factories/${factoryId}/ai-initialize`,
+      request,
+      {
+        timeout: 120000, // 2分钟超时，AI生成需要较长时间
+      }
+    );
+    return response as {
+      success: boolean;
+      code?: number;
+      data: AIFactoryInitResponse;
       message?: string;
     };
   },

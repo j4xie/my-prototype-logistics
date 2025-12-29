@@ -2,11 +2,13 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.Department;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.cretas.aims.entity.enums.HireType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +85,30 @@ public class User extends BaseEntity {
     private Integer expectedWorkMinutes;
     @Column(name = "ccr_rate", precision = 8, scale = 4)
     private BigDecimal ccrRate;
+
+    // 员工扩展字段 (调度员模块)
+    @Column(name = "employee_code", length = 10, unique = true)
+    private String employeeCode;  // 工号 001-999
+
+    @Column(name = "hire_type", length = 20)
+    @Enumerated(EnumType.STRING)
+    private HireType hireType = HireType.FULL_TIME;  // 雇用类型
+
+    @Column(name = "contract_end_date")
+    private LocalDate contractEndDate;  // 合同到期日（临时工）
+
+    @Column(name = "skill_levels", columnDefinition = "JSON")
+    private String skillLevels;  // 技能等级 JSON: {"切片": 3, "质检": 2}
+
+    @Column(name = "hourly_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyRate;  // 小时工资
+
+    @Column(name = "avatar_url", length = 255)
+    private String avatarUrl;  // 头像URL
+
+    @Column(name = "hire_date")
+    private LocalDate hireDate;  // 入职日期
+
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
@@ -166,10 +192,50 @@ public class User extends BaseEntity {
     }
 
     /**
-     * 获取头像（TODO: 添加avatar字段）
+     * 获取头像
      */
     public String getAvatar() {
-        return null; // TODO: 添加avatar字段到数据库
+        return this.avatarUrl;
+    }
+
+    /**
+     * 检查是否为临时性质员工
+     */
+    public boolean isTemporaryWorker() {
+        return this.hireType != null && this.hireType.isTemporary();
+    }
+
+    /**
+     * 获取工龄（月数）
+     */
+    public Integer getWorkMonths() {
+        if (this.hireDate == null) {
+            return null;
+        }
+        LocalDate now = LocalDate.now();
+        return (int) java.time.temporal.ChronoUnit.MONTHS.between(this.hireDate, now);
+    }
+
+    /**
+     * 检查合同是否即将到期（30天内）
+     */
+    public boolean isContractExpiringSoon() {
+        if (this.contractEndDate == null) {
+            return false;
+        }
+        LocalDate warningDate = LocalDate.now().plusDays(30);
+        return this.contractEndDate.isBefore(warningDate) || this.contractEndDate.isEqual(warningDate);
+    }
+
+    /**
+     * 获取合同剩余天数
+     */
+    public Integer getContractRemainingDays() {
+        if (this.contractEndDate == null) {
+            return null;
+        }
+        long days = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), this.contractEndDate);
+        return (int) Math.max(0, days);
     }
 
     /**

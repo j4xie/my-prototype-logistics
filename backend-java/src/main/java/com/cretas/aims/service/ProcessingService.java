@@ -30,6 +30,10 @@ public interface ProcessingService {
       */
     ProductionBatch pauseProduction(String factoryId, String batchId, String reason);
      /**
+     * 恢复生产
+      */
+    ProductionBatch resumeProduction(String factoryId, String batchId);
+     /**
      * 完成生产
       */
     ProductionBatch completeProduction(String factoryId, String batchId, BigDecimal actualQuantity,

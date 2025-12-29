@@ -19,6 +19,7 @@ import { Icon } from 'react-native-paper';
 import { FAHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
 import { dashboardAPI, DashboardOverviewData, AlertsDashboardData } from '../../../services/api/dashboardApiClient';
+import { aiApiClient } from '../../../services/api/aiApiClient';
 
 type NavigationProp = NativeStackNavigationProp<FAHomeStackParamList, 'FAHome'>;
 
@@ -104,20 +105,40 @@ export function FAHomeScreen() {
         setAlertsData(alertsRes.data);
       }
 
-      // 本地计算 AI 洞察
+      // AI 洞察：使用后端真实数据 + 获取AI报告摘要
       if (overviewRes.success && overviewRes.data) {
         const kpi = overviewRes.data.kpi;
         const qualityRate = kpi?.qualityPassRate ?? 98.5;
         const efficiency = kpi?.productionEfficiency ?? 92;
+        // 使用后端计算的真实数据
+        const unitCost = kpi?.unitCost ?? 0;
+        const avgCycle = kpi?.avgCycleHours ?? 0;
 
-        // 生成简单的洞察文字
+        // 尝试获取最新AI报告摘要作为洞察文字
         let insightMessage = '今日生产运行正常';
-        if (qualityRate < 95) {
-          insightMessage = '今日良品率偏低，建议关注质检环节';
-        } else if (efficiency < 85) {
-          insightMessage = '生产效率有提升空间，可优化排产';
-        } else if (qualityRate >= 98 && efficiency >= 95) {
-          insightMessage = '生产状态极佳，各项指标优于预期';
+        try {
+          const reportsRes = await aiApiClient.getReports({ reportType: 'custom' });
+          if (reportsRes?.reports && reportsRes.reports.length > 0) {
+            // 获取最新报告的标题作为洞察摘要
+            const latestReport = reportsRes.reports[0];
+            const title = latestReport?.title;
+            if (title && title.length > 10) {
+              insightMessage = title;
+            }
+          }
+        } catch (aiError) {
+          console.log('获取AI报告摘要失败，使用本地规则生成', aiError);
+        }
+
+        // 如果没有AI报告，使用本地规则生成洞察文字
+        if (insightMessage === '今日生产运行正常') {
+          if (qualityRate < 95) {
+            insightMessage = '今日良品率偏低，建议关注质检环节';
+          } else if (efficiency < 85) {
+            insightMessage = '生产效率有提升空间，可优化排产';
+          } else if (qualityRate >= 98 && efficiency >= 95) {
+            insightMessage = '生产状态极佳，各项指标优于预期';
+          }
         }
 
         setAIInsight({
@@ -125,8 +146,8 @@ export function FAHomeScreen() {
           message: insightMessage,
           metrics: {
             qualityRate,
-            unitCost: 12.5, // 示例值，实际应从 AI 服务获取
-            avgCycle: 4.2,  // 示例值
+            unitCost,
+            avgCycle,
           },
         });
       }
@@ -219,7 +240,7 @@ export function FAHomeScreen() {
         onPress: () => navigation.navigate('TodayBatches'),
       },
       {
-        value: todayStats?.materialReceived ?? '--',
+        value: todayStats?.totalMaterialBatches ?? todayStats?.materialReceived ?? '--',
         label: '原料批次',
         icon: 'truck-delivery',
         color: '#ed8936',
@@ -423,6 +444,21 @@ export function FAHomeScreen() {
             {quickActions.map(renderQuickAction)}
           </View>
         </View>
+
+        {/* 开发者工具 - 仅在开发模式显示 */}
+        {__DEV__ && (
+          <View style={styles.quickActionsSection}>
+            <Text style={styles.sectionTitle}>🛠️ 开发者工具</Text>
+            <TouchableOpacity
+              style={[styles.quickAction, { backgroundColor: '#8B5CF6' }]}
+              onPress={() => navigation.navigate('FormilyDemo')}
+              activeOpacity={0.8}
+            >
+              <Icon source="form-select" size={24} color="#fff" />
+              <Text style={styles.quickActionLabel}>Formily 演示</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* 底部间距 */}
         <View style={{ height: 32 }} />

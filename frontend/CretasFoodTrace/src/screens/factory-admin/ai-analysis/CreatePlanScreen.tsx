@@ -341,15 +341,15 @@ export function CreatePlanScreen() {
             disabled={loading}
           >
             {loading ? (
-              <>
+              <View style={styles.buttonContent}>
                 <ActivityIndicator size="small" color="#fff" />
                 <Text style={styles.submitBtnText}>创建中...</Text>
-              </>
+              </View>
             ) : (
-              <>
+              <View style={styles.buttonContent}>
                 <Icon source="check" size={20} color="#fff" />
                 <Text style={styles.submitBtnText}>创建计划</Text>
-              </>
+              </View>
             )}
           </TouchableOpacity>
 
@@ -560,15 +560,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: '#667eea',
     borderRadius: 12,
-    gap: 8,
   },
   submitBtnDisabled: {
     opacity: 0.7,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   submitBtnText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+    marginLeft: 8,
   },
 });
 

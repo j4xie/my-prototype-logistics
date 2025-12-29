@@ -48,6 +48,35 @@ export interface TimeRangeCostAnalysisRequest {
 }
 
 /**
+ * SSE 流式响应事件类型
+ */
+export type SSEEventType = 'start' | 'progress' | 'thinking' | 'answer' | 'complete' | 'error';
+
+/**
+ * SSE 流式响应事件数据
+ */
+export interface SSEEventData {
+  type: SSEEventType;
+  message?: string;
+  content?: string;
+  analysis?: string;
+  sessionId?: string;
+  responseTimeMs?: number;
+}
+
+/**
+ * SSE 流式响应回调函数
+ */
+export interface SSECallbacks {
+  onStart?: () => void;
+  onProgress?: (message: string) => void;
+  onThinking?: (content: string) => void;
+  onAnswer?: (content: string) => void;
+  onComplete?: (data: { analysis: string; sessionId?: string; responseTimeMs?: number }) => void;
+  onError?: (message: string) => void;
+}
+
+/**
  * AI批次对比分析请求
  */
 export interface ComparativeCostAnalysisRequest {
@@ -174,11 +203,21 @@ function transformQuotaResponse(backendQuota: AIQuotaInfoBackend | null | undefi
 
 /**
  * 转换后端分析响应为前端格式
+ * 加强空值处理，防止后端响应格式不符时崩溃
  */
-function transformAnalysisResponse(backendResponse: AICostAnalysisResponseBackend): AICostAnalysisResponse {
+function transformAnalysisResponse(backendResponse: AICostAnalysisResponseBackend | null | undefined): AICostAnalysisResponse {
+  // 空值保护
+  if (!backendResponse) {
+    return {
+      success: false,
+      analysis: '',
+      errorMessage: '服务响应格式错误',
+    };
+  }
+
   return {
-    success: backendResponse.success,
-    analysis: backendResponse.analysis,
+    success: backendResponse.success ?? false,
+    analysis: backendResponse.analysis ?? '',
     session_id: backendResponse.session_id,
     messageCount: backendResponse.messageCount,
     quota: transformQuotaResponse(backendResponse.quota),
@@ -290,8 +329,9 @@ class AIApiClient {
       `${this.getBasePath(factoryId)}/analysis/cost/batch`,
       request
     );
-    // 从响应包装中提取实际数据并转换为前端格式
-    return transformAnalysisResponse(response.data);
+    // 安全提取数据：优先使用 response.data，兼容直接返回数据的情况
+    const data = response?.data ?? (response as unknown as AICostAnalysisResponseBackend);
+    return transformAnalysisResponse(data);
   }
 
   /**
@@ -311,8 +351,153 @@ class AIApiClient {
       `${this.getBasePath(factoryId)}/analysis/cost/time-range`,
       request
     );
-    // 从响应包装中提取实际数据并转换为前端格式
-    return transformAnalysisResponse(response.data);
+
+    // DEBUG: 打印原始响应
+    console.log('=== aiApiClient 原始响应 ===');
+    console.log('response:', JSON.stringify(response, null, 2));
+    console.log('response?.data:', JSON.stringify(response?.data, null, 2));
+
+    // 安全提取数据：优先使用 response.data，兼容直接返回数据的情况
+    const data = response?.data ?? (response as unknown as AICostAnalysisResponseBackend);
+    console.log('data to transform:', JSON.stringify(data, null, 2));
+
+    return transformAnalysisResponse(data);
+  }
+
+  /**
+   * AI时间范围成本分析 - 流式响应版本 (SSE)
+   *
+   * 实时返回AI分析过程，包括思考过程和最终答案
+   * 适用于需要实时展示分析进度的场景
+   *
+   * @param request 时间范围分析请求
+   * @param callbacks SSE事件回调函数
+   * @param factoryId 工厂ID（可选）
+   * @returns Promise<void> - 流式处理完成后resolve
+   */
+  async analyzeTimeRangeCostStream(
+    request: TimeRangeCostAnalysisRequest,
+    callbacks: SSECallbacks,
+    factoryId?: string
+  ): Promise<void> {
+    const url = `${this.getBasePath(factoryId)}/analysis/cost/time-range/stream`;
+
+    // 获取 token（需要从 apiClient 获取或从 store 获取）
+    const token = await this.getAuthToken();
+
+    // 获取完整的 API 基础 URL
+    const baseUrl = await this.getBaseUrl();
+    const fullUrl = `${baseUrl}${url}`;
+
+    console.log('=== SSE 流式请求开始 ===');
+    console.log('URL:', fullUrl);
+    console.log('Request:', JSON.stringify(request, null, 2));
+
+    let fullAnalysis = '';
+    let fullThinking = '';
+
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('无法获取响应流');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // 保留不完整的行
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData: SSEEventData = JSON.parse(line.substring(6));
+              console.log('SSE Event:', eventData.type, eventData.message || eventData.content?.substring(0, 50));
+
+              switch (eventData.type) {
+                case 'start':
+                  callbacks.onStart?.();
+                  break;
+                case 'progress':
+                  callbacks.onProgress?.(eventData.message || '处理中...');
+                  break;
+                case 'thinking':
+                  if (eventData.content) {
+                    fullThinking += eventData.content;
+                    callbacks.onThinking?.(eventData.content);
+                  }
+                  break;
+                case 'answer':
+                  if (eventData.content) {
+                    fullAnalysis += eventData.content;
+                    callbacks.onAnswer?.(eventData.content);
+                  }
+                  break;
+                case 'complete':
+                  callbacks.onComplete?.({
+                    analysis: eventData.analysis || fullAnalysis,
+                    sessionId: eventData.sessionId,
+                    responseTimeMs: eventData.responseTimeMs,
+                  });
+                  break;
+                case 'error':
+                  callbacks.onError?.(eventData.message || '分析失败');
+                  break;
+              }
+            } catch (parseError) {
+              console.warn('SSE 事件解析失败:', line, parseError);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('SSE 流式请求失败:', error);
+      callbacks.onError?.(error instanceof Error ? error.message : '流式请求失败');
+      throw error;
+    }
+  }
+
+  /**
+   * 获取认证 token
+   */
+  private async getAuthToken(): Promise<string> {
+    // 从 SecureStore 或 zustand store 获取 token
+    try {
+      const SecureStore = await import('expo-secure-store');
+      const token = await SecureStore.getItemAsync('access_token');
+      return token || '';
+    } catch {
+      console.warn('无法获取 token');
+      return '';
+    }
+  }
+
+  /**
+   * 获取 API 基础 URL
+   */
+  private async getBaseUrl(): Promise<string> {
+    // 使用与 apiClient 相同的配置
+    // 默认使用生产服务器
+    return 'http://139.196.165.140:10010';
   }
 
   /**
@@ -332,8 +517,9 @@ class AIApiClient {
       `${this.getBasePath(factoryId)}/analysis/cost/compare`,
       request
     );
-    // 从响应包装中提取实际数据并转换为前端格式
-    return transformAnalysisResponse(response.data);
+    // 安全提取数据：优先使用 response.data，兼容直接返回数据的情况
+    const data = response?.data ?? (response as unknown as AICostAnalysisResponseBackend);
+    return transformAnalysisResponse(data);
   }
 
   // ========== 配额管理接口 ==========
@@ -408,8 +594,9 @@ class AIApiClient {
       `${this.getBasePath(factoryId)}/conversations/continue`,
       request
     );
-    // 从响应包装中提取实际数据并转换为前端格式
-    return transformAnalysisResponse(response.data);
+    // 安全提取数据：优先使用 response.data，兼容直接返回数据的情况
+    const data = response?.data ?? (response as unknown as AICostAnalysisResponseBackend);
+    return transformAnalysisResponse(data);
   }
 
   /**
@@ -493,11 +680,9 @@ class AIApiClient {
       `${this.getBasePath(factoryId)}/reports/${reportId}`
     );
 
-    // 从响应包装中提取实际数据
-    const backendData = response.data;
-
-    // 转换后端响应为前端格式
-    return transformAnalysisResponse(backendData);
+    // 安全提取数据：优先使用 response.data，兼容直接返回数据的情况
+    const data = response?.data ?? (response as unknown as AICostAnalysisResponseBackend);
+    return transformAnalysisResponse(data);
   }
 
   /**
@@ -515,8 +700,9 @@ class AIApiClient {
       `${this.getBasePath(factoryId)}/reports/generate`,
       request
     );
-    // 从响应包装中提取实际数据并转换为前端格式
-    return transformAnalysisResponse(response.data);
+    // 安全提取数据：优先使用 response.data，兼容直接返回数据的情况
+    const data = response?.data ?? (response as unknown as AICostAnalysisResponseBackend);
+    return transformAnalysisResponse(data);
   }
 
   // ========== 健康检查接口 ==========

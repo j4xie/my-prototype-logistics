@@ -18,7 +18,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { WHInventoryStackParamList } from "../../../types/navigation";
-import { equipmentAlertsApiClient, EquipmentAlert } from "../../../services/api/equipmentAlertsApiClient";
+import { alertApiClient, AlertDTO } from "../../../services/api/alertApiClient";
 import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
@@ -93,35 +93,34 @@ export function WHTempMonitorScreen() {
   // 加载告警记录
   const loadAlertData = useCallback(async () => {
     try {
-      const response = await equipmentAlertsApiClient.getAlerts({
+      const response = await alertApiClient.getEquipmentAlerts({
         page: 1,
         size: 10,
-        alertType: 'temperature'
       });
 
-      const alerts = response.data?.content || response.data || [];
+      const alerts = response.data?.content || [];
 
       // 转换为告警记录格式
-      const records: AlertRecord[] = alerts.map((alert: EquipmentAlert) => {
+      const records: AlertRecord[] = alerts.map((alert: AlertDTO) => {
         // 根据告警状态确定level
         let level: 'warning' | 'success' | 'info' = 'info';
-        if (alert.status === 'resolved' || alert.status === 'handled') {
+        if (alert.status === 'RESOLVED') {
           level = 'success';
-        } else if (alert.alertLevel === 'critical' || alert.alertLevel === 'high') {
+        } else if (alert.level === 'CRITICAL') {
           level = 'warning';
         }
 
         // 格式化时间
-        const date = new Date(alert.createdAt || Date.now());
+        const date = new Date(alert.triggeredAt || Date.now());
         const timeStr = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 
         return {
-          id: alert.id,
+          id: String(alert.id),
           time: timeStr,
           level,
-          title: alert.alertTitle || alert.alertType || '温度告警',
-          description: alert.alertMessage || alert.description || '-',
-          handled: alert.status === 'resolved' ? `已处理: ${alert.resolvedNote || '问题已解决'}` : undefined,
+          title: alert.alertType || '温度告警',
+          description: alert.message || '-',
+          handled: alert.status === 'RESOLVED' ? `已处理: ${alert.resolutionNotes || '问题已解决'}` : undefined,
         };
       });
 

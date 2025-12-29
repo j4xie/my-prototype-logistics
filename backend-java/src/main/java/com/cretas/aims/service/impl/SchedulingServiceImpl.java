@@ -3,6 +3,8 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.scheduling.*;
 import com.cretas.aims.entity.*;
 import com.cretas.aims.repository.*;
+import com.cretas.aims.service.FeatureEngineeringService;
+import com.cretas.aims.service.LinUCBService;
 import com.cretas.aims.service.SchedulingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,8 @@ public class SchedulingServiceImpl implements SchedulingService {
     private final UserRepository userRepository;
     private final ProductionBatchRepository batchRepository;
     private final RestTemplate restTemplate;
+    private final FeatureEngineeringService featureEngineeringService;
+    private final LinUCBService linUCBService;
 
     @Value("${ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -283,6 +287,28 @@ public class SchedulingServiceImpl implements SchedulingService {
         LineSchedule schedule = scheduleRepository.findById(request.getScheduleId())
             .orElseThrow(() -> new RuntimeException("排程不存在"));
 
+        // === Phase 5B: LinUCB 集成 ===
+        // 1. 提取任务特征 (从排程/批次)
+        double[] taskFeatures = extractTaskFeaturesFromSchedule(factoryId, schedule);
+
+        // 2. 获取 LinUCB 推荐分数 (按 UCB 值排序)
+        Map<Long, BigDecimal> workerScores = new HashMap<>();
+        try {
+            List<LinUCBService.WorkerRecommendation> recommendations =
+                linUCBService.recommendWorkers(factoryId, taskFeatures, request.getWorkerIds());
+            for (LinUCBService.WorkerRecommendation rec : recommendations) {
+                workerScores.put(rec.getWorkerId(), rec.getUcbScore());
+            }
+            log.info("LinUCB 推荐完成: scheduleId={}, 候选工人数={}, 推荐数={}",
+                request.getScheduleId(), request.getWorkerIds().size(), recommendations.size());
+        } catch (Exception e) {
+            log.warn("LinUCB 推荐失败，使用原始顺序: {}", e.getMessage());
+            // 降级: 使用默认分数
+            for (Long workerId : request.getWorkerIds()) {
+                workerScores.put(workerId, BigDecimal.valueOf(0.5));
+            }
+        }
+
         List<WorkerAssignment> assignments = new ArrayList<>();
         for (Long userId : request.getWorkerIds()) {
             // 检查是否已分配
@@ -290,11 +316,39 @@ public class SchedulingServiceImpl implements SchedulingService {
                 continue;
             }
 
+            // 3. 获取工人特征，构建上下文
+            double[] workerFeatures = featureEngineeringService.extractWorkerFeatures(factoryId, userId);
+            double[] context = featureEngineeringService.combineFeatures(taskFeatures, workerFeatures);
+
+            // 4. 记录分配上下文到 LinUCB 反馈表
+            BigDecimal ucbScore = workerScores.getOrDefault(userId, BigDecimal.valueOf(0.5));
+            String feedbackId = null;
+            try {
+                User worker = userRepository.findById(userId).orElse(null);
+                String workerCode = worker != null ? worker.getEmployeeCode() : null;
+                feedbackId = linUCBService.recordAllocation(
+                    factoryId,
+                    schedule.getId(),                    // taskId
+                    "LINE_SCHEDULE",                     // taskType
+                    userId,
+                    workerCode,
+                    context,
+                    ucbScore,
+                    schedule.getPlannedQuantity() != null ? BigDecimal.valueOf(schedule.getPlannedQuantity()) : BigDecimal.ZERO,       // plannedQuantity
+                    calculatePlannedHours(schedule)      // plannedHours
+                );
+                log.debug("LinUCB 分配记录成功: userId={}, feedbackId={}", userId, feedbackId);
+            } catch (Exception e) {
+                log.warn("LinUCB 分配记录失败: userId={}, error={}", userId, e.getMessage());
+            }
+
             WorkerAssignment assignment = new WorkerAssignment();
             assignment.setSchedule(schedule);
             assignment.setUserId(userId);
             assignment.setIsTemporary(request.getIsTemporary());
             assignment.setStatus(WorkerAssignment.AssignmentStatus.assigned);
+            assignment.setLinucbFeedbackId(feedbackId);  // 保存 feedbackId 用于后续反馈
+            assignment.setLinucbScore(ucbScore);         // 保存 UCB 分数
             assignments.add(assignment);
         }
 
@@ -307,6 +361,65 @@ public class SchedulingServiceImpl implements SchedulingService {
         return assignments.stream()
             .map(this::enrichAssignmentDTO)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * 从排程中提取任务特征 (6维)
+     */
+    private double[] extractTaskFeaturesFromSchedule(String factoryId, LineSchedule schedule) {
+        Map<String, Object> taskInfo = new HashMap<>();
+
+        // 数量
+        taskInfo.put("quantity", schedule.getPlannedQuantity() != null ?
+            schedule.getPlannedQuantity().doubleValue() : 100.0);
+
+        // 截止时间 (小时)
+        if (schedule.getPlannedEndTime() != null && schedule.getPlannedStartTime() != null) {
+            long hours = Duration.between(schedule.getPlannedStartTime(), schedule.getPlannedEndTime()).toHours();
+            taskInfo.put("deadlineHours", hours);
+        } else {
+            taskInfo.put("deadlineHours", 8);
+        }
+
+        // 产品类型 (从批次获取)
+        if (schedule.getBatchId() != null) {
+            batchRepository.findById(schedule.getBatchId()).ifPresent(batch -> {
+                taskInfo.put("productType", batch.getProductTypeId());
+            });
+        }
+
+        // 优先级 (从关联计划获取)
+        if (schedule.getPlan() != null) {
+            SchedulingPlan plan = schedule.getPlan();
+            taskInfo.put("priority", 5); // 默认中等优先级
+        }
+
+        // 复杂度 (从产品类型获取)
+        String productTypeId = (String) taskInfo.get("productType");
+        if (productTypeId != null) {
+            int complexity = featureEngineeringService.getProductComplexity(factoryId, productTypeId);
+            taskInfo.put("complexity", complexity);
+        } else {
+            taskInfo.put("complexity", 3);
+        }
+
+        // 车间 (从产线获取 - 暂时使用产线ID作为workshopId)
+        if (schedule.getProductionLineId() != null) {
+            taskInfo.put("workshopId", schedule.getProductionLineId().toString());
+        }
+
+        return featureEngineeringService.extractTaskFeatures(factoryId, taskInfo);
+    }
+
+    /**
+     * 计算计划工时
+     */
+    private BigDecimal calculatePlannedHours(LineSchedule schedule) {
+        if (schedule.getPlannedStartTime() != null && schedule.getPlannedEndTime() != null) {
+            long minutes = Duration.between(schedule.getPlannedStartTime(), schedule.getPlannedEndTime()).toMinutes();
+            return BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+        }
+        return BigDecimal.valueOf(8); // 默认8小时
     }
 
     @Override
@@ -352,7 +465,65 @@ public class SchedulingServiceImpl implements SchedulingService {
         }
         assignment = assignmentRepository.save(assignment);
 
+        // === Phase 5B: LinUCB 反馈收集 ===
+        completeLinUCBFeedback(assignment, performanceScore);
+
         return enrichAssignmentDTO(assignment);
+    }
+
+    /**
+     * 完成 LinUCB 反馈，更新模型
+     *
+     * @param assignment 工人分配记录
+     * @param performanceScore 绩效分数 (1-100)
+     */
+    private void completeLinUCBFeedback(WorkerAssignment assignment, Integer performanceScore) {
+        String feedbackId = assignment.getLinucbFeedbackId();
+        if (feedbackId == null || feedbackId.isEmpty()) {
+            log.debug("跳过 LinUCB 反馈: 无 feedbackId, assignmentId={}", assignment.getId());
+            return;
+        }
+
+        try {
+            // 计算实际工时
+            BigDecimal actualHours = BigDecimal.valueOf(8); // 默认
+            if (assignment.getActualStartTime() != null && assignment.getActualEndTime() != null) {
+                long minutes = Duration.between(assignment.getActualStartTime(), assignment.getActualEndTime()).toMinutes();
+                actualHours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+            }
+
+            // 获取排程的实际产量 (如果有)
+            BigDecimal actualQuantity = BigDecimal.ZERO;
+            LineSchedule schedule = assignment.getSchedule();
+            if (schedule != null && schedule.getCompletedQuantity() != null) {
+                // 按工人数分摊产量
+                int workerCount = schedule.getAssignedWorkers() != null ? schedule.getAssignedWorkers() : 1;
+                actualQuantity = BigDecimal.valueOf(schedule.getCompletedQuantity()).divide(
+                    BigDecimal.valueOf(workerCount), 2, RoundingMode.HALF_UP);
+            }
+
+            // 质量分数转换为 0-1 范围
+            BigDecimal qualityScore = BigDecimal.ONE; // 默认满分
+            if (performanceScore != null) {
+                qualityScore = BigDecimal.valueOf(performanceScore).divide(
+                    BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+            }
+
+            // 调用 LinUCB 完成反馈
+            BigDecimal reward = linUCBService.completeFeedback(
+                feedbackId,
+                actualQuantity,
+                actualHours,
+                qualityScore
+            );
+
+            log.info("LinUCB 反馈完成: feedbackId={}, userId={}, reward={}, actualHours={}, qualityScore={}",
+                feedbackId, assignment.getUserId(), reward, actualHours, qualityScore);
+
+        } catch (Exception e) {
+            log.warn("LinUCB 反馈失败: feedbackId={}, error={}", feedbackId, e.getMessage());
+            // 不抛出异常，避免影响主业务
+        }
     }
 
     @Override
@@ -741,8 +912,8 @@ public class SchedulingServiceImpl implements SchedulingService {
         request.put("deadline_hours", deadlineHours);
         request.put("available_workers", workers);
 
-        // 添加特征数据
-        Map<String, Object> features = buildPredictionFeatures(schedule, workers);
+        // 添加特征数据 (使用统一特征工程服务)
+        Map<String, Object> features = buildPredictionFeatures(factoryId, schedule, workers);
         request.put("features", features);
 
         String url = aiServiceUrl + "/scheduling/hybrid-predict";
@@ -808,39 +979,99 @@ public class SchedulingServiceImpl implements SchedulingService {
     }
 
     /**
-     * 构建预测特征数据
+     * 构建预测特征数据 (使用统一特征工程服务)
      */
-    private Map<String, Object> buildPredictionFeatures(LineSchedule schedule, int workers) {
+    private Map<String, Object> buildPredictionFeatures(String factoryId, LineSchedule schedule, int workers) {
         Map<String, Object> features = new HashMap<>();
         LocalDateTime now = LocalDateTime.now();
 
+        // 时间特征
         features.put("hour_of_day", now.getHour());
         features.put("day_of_week", now.getDayOfWeek().getValue());
         features.put("is_overtime", now.getHour() >= 18 || now.getHour() < 6);
         features.put("worker_count", workers);
 
-        // 工人特征（默认值，可从实际工人数据获取）
-        features.put("avg_worker_experience_days", 90);
-        features.put("avg_skill_level", 3.0);
-        features.put("temporary_worker_ratio", 0.1);
+        // 获取分配给此排程的工人列表
+        List<Long> workerIds = getWorkerIdsForSchedule(schedule);
 
-        // 产品复杂度（默认值）
-        features.put("product_complexity", 5);
+        // 使用统一特征工程服务获取精确的工人组特征
+        if (!workerIds.isEmpty()) {
+            Map<String, Object> workerGroupFeatures =
+                    featureEngineeringService.extractWorkerGroupFeatures(factoryId, workerIds);
+            features.putAll(workerGroupFeatures);
+        } else {
+            // 无法获取工人信息时使用默认值
+            features.put("avg_worker_experience_days", 90);
+            features.put("avg_skill_level", 3.0);
+            features.put("temporary_worker_ratio", 0.1);
+            features.put("avg_recent_efficiency", 0.8);
+        }
 
-        // 设备特征（默认值）
-        features.put("equipment_age_days", 365);
-        features.put("equipment_utilization", 0.7);
-
-        // 如果有批次信息，尝试获取更详细的特征
+        // 产品复杂度 (从统一服务获取)
+        String productTypeId = null;
         if (schedule.getBatchId() != null) {
-            batchRepository.findById(schedule.getBatchId()).ifPresent(batch -> {
-                if (batch.getProductTypeId() != null) {
-                    features.put("product_type", batch.getProductTypeId());
+            Optional<ProductionBatch> batchOpt = batchRepository.findById(schedule.getBatchId());
+            if (batchOpt.isPresent()) {
+                ProductionBatch batch = batchOpt.get();
+                productTypeId = batch.getProductTypeId();
+                if (productTypeId != null) {
+                    features.put("product_type", productTypeId);
+                    int complexity = featureEngineeringService.getProductComplexity(factoryId, productTypeId);
+                    features.put("product_complexity", complexity);
                 }
-            });
+            }
+        }
+        if (!features.containsKey("product_complexity")) {
+            features.put("product_complexity", 3); // 默认中等复杂度
+        }
+
+        // 设备特征 (从统一服务获取)
+        if (schedule.getProductionLineId() != null) {
+            List<String> equipmentIds = getEquipmentIdsForLine(schedule.getProductionLineId());
+            if (!equipmentIds.isEmpty()) {
+                Map<String, Object> equipmentFeatures =
+                        featureEngineeringService.extractEquipmentFeatures(factoryId, equipmentIds);
+                features.putAll(equipmentFeatures);
+            } else {
+                features.put("equipment_age_days", 365);
+                features.put("equipment_utilization", 0.7);
+            }
+        } else {
+            features.put("equipment_age_days", 365);
+            features.put("equipment_utilization", 0.7);
         }
 
         return features;
+    }
+
+    /**
+     * 获取排程分配的工人ID列表
+     */
+    private List<Long> getWorkerIdsForSchedule(LineSchedule schedule) {
+        if (schedule.getId() == null) {
+            return Collections.emptyList();
+        }
+        try {
+            // 从 WorkerAssignment 表获取分配给此排程的工人
+            List<WorkerAssignment> assignments =
+                    assignmentRepository.findByScheduleId(schedule.getId());
+            return assignments.stream()
+                    .map(WorkerAssignment::getUserId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.debug("获取排程工人列表失败: scheduleId={}", schedule.getId());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 获取产线关联的设备ID列表
+     */
+    private List<String> getEquipmentIdsForLine(String productionLineId) {
+        // TODO: 实现从产线获取设备列表的逻辑
+        // 当前简化返回空列表，使用默认设备特征
+        return Collections.emptyList();
     }
 
     /**

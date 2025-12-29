@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>质检员 - 消息通知</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">← 返回角色选择</a>
+
+  <div class="phone-container">
+    <!-- 头部 -->
+    <div class="subpage-header">
+      <a href="profile.html" class="back-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15,18 9,12 15,6"/>
+        </svg>
+      </a>
+      <span class="title">消息通知</span>
+      <button style="font-size: 13px; color: var(--qc-primary); background: none; border: none;">全部已读</button>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content" style="padding-bottom: 20px;">
+      <!-- 消息分类 -->
+      <div style="display: flex; gap: 10px; margin-bottom: 16px; overflow-x: auto;">
+        <button style="padding: 8px 16px; background: var(--qc-gradient); color: white; border: none; border-radius: 20px; font-size: 13px; white-space: nowrap;">
+          全部 (12)
+        </button>
+        <button style="padding: 8px 16px; background: white; color: #666; border: 1px solid #e5e5e5; border-radius: 20px; font-size: 13px; white-space: nowrap;">
+          系统 (3)
+        </button>
+        <button style="padding: 8px 16px; background: white; color: #666; border: 1px solid #e5e5e5; border-radius: 20px; font-size: 13px; white-space: nowrap;">
+          质检 (6)
+        </button>
+        <button style="padding: 8px 16px; background: white; color: #666; border: 1px solid #e5e5e5; border-radius: 20px; font-size: 13px; white-space: nowrap;">
+          任务 (3)
+        </button>
+      </div>
+
+      <!-- 今日消息 -->
+      <div class="section-title">今天</div>
+
+      <!-- 紧急通知 -->
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 0 12px 12px 0; padding: 14px 16px; margin-bottom: 12px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 36px; height: 36px; background: #fee2e2; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 14px; font-weight: 600; color: #ef4444;">紧急质检任务</span>
+              <span style="padding: 2px 6px; background: #ef4444; color: white; border-radius: 8px; font-size: 10px;">紧急</span>
+            </div>
+            <p style="font-size: 13px; color: #666; margin: 0 0 6px 0; line-height: 1.5;">
+              PB-20251228-020 (鳕鱼块) 急需复检，原料供应商反馈可能存在异常，请尽快处理。
+            </p>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 11px; color: #999;">5分钟前</span>
+              <button style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 12px;">立即处理</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI 洞察通知 -->
+      <div style="background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 36px; height: 36px; background: #d1fae5; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+              <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 14px; font-weight: 600; color: #333;">AI质量洞察</span>
+              <span style="padding: 2px 6px; background: #d1fae5; color: var(--qc-primary); border-radius: 8px; font-size: 10px;">AI</span>
+            </div>
+            <p style="font-size: 13px; color: #666; margin: 0 0 6px 0; line-height: 1.5;">
+              系统检测到带鱼片产品线近3天合格率持续下降(82%→78%)，建议关注切片工序参数设置。
+            </p>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 11px; color: #999;">30分钟前</span>
+              <a href="analysis-trend.html" style="font-size: 12px; color: var(--qc-primary);">查看详情</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 普通质检通知 -->
+      <div style="background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 36px; height: 36px; background: #dbeafe; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333; margin-bottom: 4px;">新批次等待检验</div>
+            <p style="font-size: 13px; color: #666; margin: 0 0 6px 0;">
+              3个新批次已加入待检队列，请及时处理。
+            </p>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 11px; color: #999;">1小时前</span>
+              <a href="inspect-select.html" style="font-size: 12px; color: var(--qc-primary);">去检验</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 昨天 -->
+      <div class="section-title">昨天</div>
+
+      <div style="background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 36px; height: 36px; background: #fef3c7; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26 12,2"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333; margin-bottom: 4px;">绩效提醒</div>
+            <p style="font-size: 13px; color: #666; margin: 0 0 6px 0;">
+              恭喜！您的本周检验效率排名第2，平均用时6.2分钟。
+            </p>
+            <span style="font-size: 11px; color: #999;">昨天 18:30</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 36px; height: 36px; background: #f5f5f5; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #333; margin-bottom: 4px;">系统更新</div>
+            <p style="font-size: 13px; color: #666; margin: 0 0 6px 0;">
+              质检系统已更新至v2.1.0，新增AI辅助检测功能。
+            </p>
+            <span style="font-size: 11px; color: #999;">昨天 09:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 更早 -->
+      <div class="section-title">更早</div>
+
+      <div style="background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); opacity: 0.8;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 36px; height: 36px; background: #f5f5f5; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #666; margin-bottom: 4px;">培训通知</div>
+            <p style="font-size: 13px; color: #999; margin: 0 0 6px 0;">
+              HACCP标准培训将于12月30日举行，请准时参加。
+            </p>
+            <span style="font-size: 11px; color: #ccc;">12月25日</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); opacity: 0.8;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 36px; height: 36px; background: #f5f5f5; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22,4 12,14.01 9,11.01"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #666; margin-bottom: 4px;">认证完成</div>
+            <p style="font-size: 13px; color: #999; margin: 0 0 6px 0;">
+              您已通过"高级质检员"认证考核。
+            </p>
+            <span style="font-size: 11px; color: #ccc;">12月20日</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 加载更多 -->
+      <div style="text-align: center; padding: 16px;">
+        <span style="font-size: 13px; color: #999;">加载更多历史消息</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

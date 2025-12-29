@@ -61,7 +61,7 @@ export default function CostReportScreen() {
       // 加载批次列表（包含成本信息）
       const batchesResponse = await processingApiClient.getBatches({
         factoryId,
-        page: 0,
+        page: 1,
         size: 20
       });
 
