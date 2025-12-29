@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>质检员 - 个人中心</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">← 返回角色选择</a>
+
+  <div class="phone-container">
+    <!-- 头部个人信息 -->
+    <div class="header--qc" style="padding-bottom: 20px; border-radius: 0;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 600;">
+          张
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 18px; font-weight: 600;">张质检</div>
+          <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">工号: QC-001 | 质检员</div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+            <span style="padding: 3px 8px; background: rgba(255,255,255,0.2); border-radius: 12px; font-size: 11px;">高级质检员</span>
+            <span style="padding: 3px 8px; background: rgba(255,255,255,0.2); border-radius: 12px; font-size: 11px;">3年经验</span>
+          </div>
+        </div>
+        <a href="settings.html" style="width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- 本月统计 -->
+      <div style="display: flex; justify-content: space-around; padding: 16px 0; margin-top: 16px; background: rgba(255,255,255,0.1); border-radius: 12px;">
+        <div style="text-align: center;">
+          <div style="font-size: 22px; font-weight: 700;">268</div>
+          <div style="font-size: 11px; opacity: 0.9;">本月检验</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 22px; font-weight: 700;">91.2%</div>
+          <div style="font-size: 11px; opacity: 0.9;">平均合格率</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 22px; font-weight: 700;">6.5min</div>
+          <div style="font-size: 11px; opacity: 0.9;">平均用时</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 22px; font-weight: 700;">23</div>
+          <div style="font-size: 11px; opacity: 0.9;">出勤天数</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+      <!-- 今日打卡状态 -->
+      <a href="clock-in.html" style="display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); text-decoration: none;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 44px; height: 44px; background: #d1fae5; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12,6 12,12 16,14"/>
+              </svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 500; color: #333;">今日考勤</div>
+              <div style="font-size: 12px; color: #999; margin-top: 2px;">上班 08:02 | 下班 --:--</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="padding: 4px 10px; background: #d1fae5; color: var(--qc-primary); border-radius: 12px; font-size: 12px;">已上班</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <polyline points="9,18 15,12 9,6"/>
+            </svg>
+          </div>
+        </div>
+      </a>
+
+      <!-- 功能菜单 -->
+      <div class="section-title">常用功能</div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+        <a href="records.html" class="quick-action-item">
+          <div class="quick-action-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+            </svg>
+          </div>
+          <span>检验记录</span>
+        </a>
+        <a href="analysis.html" class="quick-action-item">
+          <div class="quick-action-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </div>
+          <span>数据分析</span>
+        </a>
+        <a href="notifications.html" class="quick-action-item">
+          <div class="quick-action-icon" style="position: relative;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span style="position: absolute; top: -4px; right: -4px; width: 16px; height: 16px; background: #ef4444; border-radius: 50%; font-size: 10px; color: white; display: flex; align-items: center; justify-content: center;">3</span>
+          </div>
+          <span>消息通知</span>
+        </a>
+        <a href="clock-in.html" class="quick-action-item">
+          <div class="quick-action-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--qc-primary)" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <span>考勤打卡</span>
+        </a>
+      </div>
+
+      <!-- 菜单列表 -->
+      <div class="section-title">个人服务</div>
+      <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <a href="#" style="display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; text-decoration: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span style="flex: 1; margin-left: 12px; font-size: 14px; color: #333;">个人资料</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </a>
+        <a href="#" style="display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; text-decoration: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22,4 12,14.01 9,11.01"/>
+          </svg>
+          <span style="flex: 1; margin-left: 12px; font-size: 14px; color: #333;">技能认证</span>
+          <span style="font-size: 12px; color: var(--qc-primary); margin-right: 8px;">已认证3项</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </a>
+        <a href="#" style="display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; text-decoration: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          <span style="flex: 1; margin-left: 12px; font-size: 14px; color: #333;">培训记录</span>
+          <span style="font-size: 12px; color: #999; margin-right: 8px;">12次</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </a>
+        <a href="#" style="display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; text-decoration: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26 12,2"/>
+          </svg>
+          <span style="flex: 1; margin-left: 12px; font-size: 14px; color: #333;">绩效考核</span>
+          <span style="font-size: 12px; color: var(--qc-primary); margin-right: 8px;">A级</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </a>
+        <a href="#" style="display: flex; align-items: center; padding: 14px 16px; text-decoration: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span style="flex: 1; margin-left: 12px; font-size: 14px; color: #333;">帮助中心</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- 工作成就 -->
+      <div class="section-title">工作成就</div>
+      <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;">
+        <div style="min-width: 100px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="font-size: 28px; margin-bottom: 8px;">🏆</div>
+          <div style="font-size: 12px; color: #92400e; font-weight: 500;">月度标兵</div>
+          <div style="font-size: 11px; color: #b45309;">2025年11月</div>
+        </div>
+        <div style="min-width: 100px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="font-size: 28px; margin-bottom: 8px;">✅</div>
+          <div style="font-size: 12px; color: #065f46; font-weight: 500;">零失误</div>
+          <div style="font-size: 11px; color: #047857;">连续30天</div>
+        </div>
+        <div style="min-width: 100px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="font-size: 28px; margin-bottom: 8px;">⚡</div>
+          <div style="font-size: 12px; color: #1e40af; font-weight: 500;">高效达人</div>
+          <div style="font-size: 11px; color: #1d4ed8;">效率Top 3</div>
+        </div>
+        <div style="min-width: 100px; background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="font-size: 28px; margin-bottom: 8px;">📚</div>
+          <div style="font-size: 12px; color: #9d174d; font-weight: 500;">学习达人</div>
+          <div style="font-size: 11px; color: #be185d;">10+培训</div>
+        </div>
+      </div>
+
+      <!-- 系统设置 -->
+      <div class="section-title">系统</div>
+      <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <a href="settings.html" style="display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; text-decoration: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span style="flex: 1; margin-left: 12px; font-size: 14px; color: #333;">设置</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </a>
+        <a href="#" style="display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; text-decoration: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span style="flex: 1; margin-left: 12px; font-size: 14px; color: #333;">意见反馈</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </a>
+        <a href="#" style="display: flex; align-items: center; padding: 14px 16px; text-decoration: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16,17 21,12 16,7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          <span style="flex: 1; margin-left: 12px; font-size: 14px; color: #ef4444;">退出登录</span>
+        </a>
+      </div>
+
+      <!-- 版本信息 -->
+      <div style="text-align: center; padding: 24px 0; color: #999; font-size: 12px;">
+        白垩纪食品溯源系统 v2.1.0
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="inspect.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        <span>质检</span>
+      </a>
+      <a href="records.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>记录</span>
+      </a>
+      <a href="analysis.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>分析</span>
+      </a>
+      <a href="profile.html" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

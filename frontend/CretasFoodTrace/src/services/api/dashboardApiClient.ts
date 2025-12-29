@@ -37,11 +37,14 @@ export interface DashboardOverviewData {
     totalWorkers: number;
     activeEquipment: number;      // 活跃设备数
     totalEquipment: number;       // 总设备数
+    totalMaterialBatches?: number; // 总原材料批次数
   };
   kpi: {
     productionEfficiency: number;
     qualityPassRate: number;
     equipmentUtilization: number;
+    unitCost?: number;        // 单位成本 (本月成本/产量)
+    avgCycleHours?: number;   // 平均生产周期（小时）
   };
   alerts: {
     active: number;
@@ -74,17 +77,31 @@ export interface ProductionStatisticsData {
 
 /**
  * 设备统计数据
+ * 与后端 ReportController.getEquipmentDashboard 返回结构匹配
  */
 export interface EquipmentDashboardData {
-  statusDistribution: Array<{
+  totalEquipments: number;
+  runningEquipments: number;
+  maintenanceEquipments: number;
+  averageUtilization: number;
+  monitoring: Array<{
+    equipmentId: number;
+    name: string;
+    status: string;
+    weeklyUtilizationRate: number;
+    totalOperatingHours: number | null;
+    lastMaintenanceDate: string | null;
+  }>;
+  // 兼容旧结构（可选）
+  statusDistribution?: Array<{
     status: string;
     count: number;
   }>;
-  departmentDistribution: Array<{
+  departmentDistribution?: Array<{
     department: string;
     count: number;
   }>;
-  summary: {
+  summary?: {
     totalEquipment: number;
     activeEquipment: number;
     utilizationRate: number;
@@ -94,22 +111,46 @@ export interface EquipmentDashboardData {
 
 /**
  * 质量统计数据
+ * 与后端 ReportController.getQualityDashboard 返回结构匹配
  */
 export interface QualityDashboardData {
-  period: string;
-  summary: {
-    totalInspections: number;
-    passedInspections: number;
-    failedInspections: number;
-    passRate: number;
-  };
+  totalInspections: number;
+  passedInspections: number;
+  failedInspections: number;
+  passRate: number;
+  defectRate: number;
+  qualityGrade: string;
+  avgPassRate: number;
+  recentInspections: Array<{
+    id: string;
+    productionBatchId: number;
+    inspectorId: number;
+    inspectionDate: string;
+    sampleSize: number;
+    passCount?: number;
+    failCount: number;
+    passRate: number | null;
+    result: string;
+    qualityGrade: string | null;
+    defectRate: number;
+    notes: string;
+  }>;
+  monthlyStatistics: Record<string, unknown>;
   trends: Array<{
     date: string;
     inspections: number;
     passed: number;
     passRate: number;
   }>;
-  issueDistribution: Array<{
+  // 兼容旧结构（可选）
+  period?: string;
+  summary?: {
+    totalInspections: number;
+    passedInspections: number;
+    failedInspections: number;
+    passRate: number;
+  };
+  issueDistribution?: Array<{
     issueType: string;
     count: number;
   }>;

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人中心 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 个人信息头部 -->
+    <div class="profile-header">
+      <div class="profile-avatar">赵</div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="profile-name">赵调度</div>
+        <span style="font-size: 14px; color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px;">(099)</span>
+      </div>
+      <div class="profile-role">调度员 · 生产调度部</div>
+      <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 4px;">入职: 2022-06-15 · 工龄: 2年6个月</div>
+    </div>
+
+    <div class="content" style="background: #f5f5f5; padding-top: 0;">
+      <!-- 今日工作统计 -->
+      <div class="stats-summary" style="margin-top: -20px; position: relative; z-index: 1; margin-left: 0; margin-right: 0;">
+        <div class="stats-item">
+          <div class="stats-value orange">8</div>
+          <div class="stats-label">待审批</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value green">5</div>
+          <div class="stats-label">已处理</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value purple">3</div>
+          <div class="stats-label">调动</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value" style="color: #1890ff;">12</div>
+          <div class="stats-label">计划</div>
+        </div>
+      </div>
+
+      <!-- 绩效指标 -->
+      <div class="section-header" style="margin-top: 16px;">
+        <span class="section-title">本月绩效</span>
+        <span style="font-size: 12px; color: #a18cd1; cursor: pointer;">查看详情 ></span>
+      </div>
+      <div style="background: white; border-radius: 12px; padding: 16px; margin: 0 16px;">
+        <!-- 计划完成率 -->
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; color: #666;">计划完成率</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px; font-weight: 600; color: #333;">87%</span>
+              <span style="font-size: 11px; color: #52c41a; display: flex; align-items: center;">↑5%</span>
+            </div>
+          </div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 87%; height: 100%; background: linear-gradient(90deg, #52c41a 0%, #95de64 100%); border-radius: 3px;"></div>
+          </div>
+        </div>
+
+        <!-- 准时交付率 OTD -->
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; color: #666;">准时交付率(OTD)</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px; font-weight: 600; color: #333;">94%</span>
+              <span style="font-size: 11px; color: #52c41a; display: flex; align-items: center;">↑2%</span>
+            </div>
+          </div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 94%; height: 100%; background: linear-gradient(90deg, #1890ff 0%, #69c0ff 100%); border-radius: 3px;"></div>
+          </div>
+        </div>
+
+        <!-- 人员调配效率 -->
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; color: #666;">人员调配效率</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px; font-weight: 600; color: #333;">90%</span>
+              <span style="font-size: 11px; color: #52c41a; display: flex; align-items: center;">↑3%</span>
+            </div>
+          </div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 90%; height: 100%; background: linear-gradient(90deg, #a18cd1 0%, #fbc2eb 100%); border-radius: 3px;"></div>
+          </div>
+        </div>
+
+        <!-- 紧急响应时间 -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 13px; color: #666;">平均紧急响应时间</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 16px; font-weight: 600; color: #333;">15分钟</span>
+              <span style="font-size: 11px; color: #52c41a; display: flex; align-items: center;">↓3分钟</span>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: #999;">目标: <20分钟 · 达成</div>
+        </div>
+      </div>
+
+      <!-- 功能菜单 -->
+      <div class="section-header" style="margin-top: 16px;">
+        <span class="section-title">功能菜单</span>
+      </div>
+      <div class="menu-list">
+        <a href="approval-list.html" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+          <span class="menu-text">我的审批记录</span>
+          <span class="menu-arrow">></span>
+        </a>
+        <a href="statistics.html" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span class="menu-text">调度统计</span>
+          <span class="menu-arrow">></span>
+        </a>
+        <a href="personnel-list.html" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+            <path d="M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+          <span class="menu-text">人员管理</span>
+          <span class="menu-arrow">></span>
+        </a>
+        <a href="personnel-schedule.html" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="menu-text">排班日历</span>
+          <span class="menu-arrow">></span>
+        </a>
+        <a href="#" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12,6 12,12 16,14"/>
+          </svg>
+          <span class="menu-text">考勤打卡</span>
+          <span class="menu-arrow">></span>
+        </a>
+      </div>
+
+      <!-- 技能与工号管理 -->
+      <div class="section-header">
+        <span class="section-title">账号管理</span>
+      </div>
+      <div class="menu-list">
+        <a href="#" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+          </svg>
+          <span class="menu-text">技能认证管理</span>
+          <span style="font-size: 11px; color: #52c41a; margin-right: 8px;">4项已认证</span>
+          <span class="menu-arrow">></span>
+        </a>
+        <a href="#" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+          <span class="menu-text">工号绑定设置</span>
+          <span style="font-size: 11px; color: #a18cd1; margin-right: 8px;">(099) 已绑定</span>
+          <span class="menu-arrow">></span>
+        </a>
+      </div>
+
+      <!-- 系统设置 -->
+      <div class="section-header">
+        <span class="section-title">系统设置</span>
+      </div>
+      <div class="menu-list">
+        <a href="#" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          <span class="menu-text">消息通知</span>
+          <span class="menu-arrow">></span>
+        </a>
+        <a href="#" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+          <span class="menu-text">修改密码</span>
+          <span class="menu-arrow">></span>
+        </a>
+        <a href="#" class="menu-item">
+          <svg class="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span class="menu-text">关于系统</span>
+          <span class="menu-arrow">></span>
+        </a>
+      </div>
+
+      <!-- 退出按钮 -->
+      <button class="logout-btn" style="margin-bottom: 80px;">退出登录</button>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
+      <a href="plan-list.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span>计划</span></a>
+      <a href="ai-schedule.html" class="nav-item ai-nav"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12z"/></svg><span>AI调度</span></a>
+      <a href="personnel-list.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span>人员</span></a>
+      <a href="profile.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>我的</span></a>
+    </nav>
+  </div>
+</body>
+</html>

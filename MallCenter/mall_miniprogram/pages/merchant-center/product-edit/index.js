@@ -1,7 +1,9 @@
 /**
  * 商品发布/编辑页面
+ * 支持图片上传到服务器
  */
 const app = getApp()
+const api = require('../../../utils/api')
 
 Page({
   data: {
@@ -9,6 +11,7 @@ Page({
     productId: null,
     loading: false,
     submitting: false,
+    uploadingImages: false,
     form: {
       name: '',
       categoryId: '',
@@ -18,7 +21,8 @@ Page({
       stock: '',
       unit: '件',
       description: '',
-      images: [],
+      images: [],        // 本地临时图片路径
+      uploadedUrls: [],  // 已上传到服务器的图片URL
       hasTraceability: false,
       batchNo: ''
     },
@@ -42,8 +46,8 @@ Page({
         duration: 1500
       })
       setTimeout(() => {
-        wx.switchTab({
-          url: '/pages/home/index'
+        wx.navigateTo({
+          url: '/pages/auth/login/index'
         })
       }, 500)
       return
@@ -64,21 +68,42 @@ Page({
   async loadProduct(id) {
     this.setData({ loading: true })
     try {
-      // 模拟加载商品数据
-      const product = {
-        name: '精选牛肉',
-        categoryId: 1,
-        categoryName: '生鲜肉类',
-        price: '128.00',
-        originalPrice: '158.00',
-        stock: '50',
-        unit: '斤',
-        description: '优质进口牛肉，新鲜直达',
-        images: ['/public/img/no_pic.png'],
-        hasTraceability: true,
-        batchNo: 'FAC001-20250125-001'
+      const res = await api.goodsGet(id)
+      if (res.code === 200 && res.data) {
+        const product = res.data
+        // 处理图片URL
+        let images = []
+        let uploadedUrls = []
+        if (product.picUrls) {
+          if (typeof product.picUrls === 'string') {
+            try {
+              uploadedUrls = JSON.parse(product.picUrls)
+            } catch (e) {
+              uploadedUrls = product.picUrls.split(',').filter(u => u)
+            }
+          } else if (Array.isArray(product.picUrls)) {
+            uploadedUrls = product.picUrls
+          }
+          images = [...uploadedUrls]
+        }
+
+        this.setData({
+          form: {
+            name: product.name || '',
+            categoryId: product.categoryId || '',
+            categoryName: product.categoryName || '',
+            price: product.salesPrice ? String(product.salesPrice) : '',
+            originalPrice: product.marketPrice ? String(product.marketPrice) : '',
+            stock: product.stock ? String(product.stock) : '',
+            unit: product.unit || '件',
+            description: product.description || '',
+            images: images,
+            uploadedUrls: uploadedUrls,
+            hasTraceability: !!product.batchNo,
+            batchNo: product.batchNo || ''
+          }
+        })
       }
-      this.setData({ form: product })
     } catch (error) {
       console.error('加载商品失败:', error)
       wx.showToast({ title: '加载失败', icon: 'none' })
@@ -145,8 +170,20 @@ Page({
   deleteImage(e) {
     const index = e.currentTarget.dataset.index
     const images = [...this.data.form.images]
+    const uploadedUrls = [...this.data.form.uploadedUrls]
+
+    // 如果删除的是已上传的图片，也要从uploadedUrls中移除
+    const deletedImage = images[index]
+    const uploadedIndex = uploadedUrls.indexOf(deletedImage)
+    if (uploadedIndex > -1) {
+      uploadedUrls.splice(uploadedIndex, 1)
+    }
+
     images.splice(index, 1)
-    this.setData({ 'form.images': images })
+    this.setData({
+      'form.images': images,
+      'form.uploadedUrls': uploadedUrls
+    })
   },
 
   // 预览图片
@@ -156,6 +193,68 @@ Page({
       current: url,
       urls: this.data.form.images
     })
+  },
+
+  // 上传单张图片
+  uploadSingleImage(filePath) {
+    return new Promise((resolve, reject) => {
+      wx.uploadFile({
+        url: app.globalData.config.baseUrl + '/weixin/api/ma/upload',
+        filePath: filePath,
+        name: 'file',
+        header: {
+          'Authorization': 'Bearer ' + (wx.getStorageSync('token') || '')
+        },
+        success: (res) => {
+          try {
+            const data = JSON.parse(res.data)
+            if (data.code === 200 && data.data) {
+              resolve(data.data.url || data.data)
+            } else if (data.url) {
+              resolve(data.url)
+            } else {
+              reject(new Error(data.msg || '上传失败'))
+            }
+          } catch (e) {
+            reject(new Error('解析响应失败'))
+          }
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
+    })
+  },
+
+  // 上传所有新图片
+  async uploadAllImages() {
+    const { images, uploadedUrls } = this.data.form
+    const finalUrls = [...uploadedUrls]
+
+    // 找出需要上传的新图片（本地临时路径）
+    const newImages = images.filter(img =>
+      img.startsWith('wxfile://') ||
+      img.startsWith('http://tmp') ||
+      img.startsWith('tmp')
+    )
+
+    if (newImages.length === 0) {
+      return finalUrls
+    }
+
+    this.setData({ uploadingImages: true })
+    wx.showLoading({ title: '上传图片中...' })
+
+    try {
+      for (const img of newImages) {
+        const url = await this.uploadSingleImage(img)
+        finalUrls.push(url)
+      }
+      return finalUrls
+    } finally {
+      this.setData({ uploadingImages: false })
+      wx.hideLoading()
+    }
   },
 
   // 验证表单
@@ -187,31 +286,58 @@ Page({
   // 提交表单
   async submitForm() {
     if (!this.validateForm()) return
-    
+
     this.setData({ submitting: true })
     try {
-      // 模拟提交
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      wx.showToast({
-        title: this.data.isEdit ? '修改成功' : '发布成功',
-        icon: 'success'
-      })
-      
-      setTimeout(() => {
-        wx.navigateBack()
-      }, 1500)
+      // 1. 先上传图片
+      const uploadedUrls = await this.uploadAllImages()
+
+      // 2. 构建商品数据
+      const { form, isEdit, productId } = this.data
+      const productData = {
+        name: form.name,
+        categoryId: form.categoryId,
+        salesPrice: parseFloat(form.price),
+        marketPrice: form.originalPrice ? parseFloat(form.originalPrice) : null,
+        stock: parseInt(form.stock),
+        unit: form.unit,
+        description: form.description,
+        picUrls: uploadedUrls,
+        batchNo: form.hasTraceability ? form.batchNo : null
+      }
+
+      // 3. 调用API保存商品
+      let res
+      if (isEdit) {
+        productData.id = productId
+        res = await api.goodsEdit(productData)
+      } else {
+        res = await api.goodsAdd(productData)
+      }
+
+      if (res.code === 200) {
+        wx.showToast({
+          title: isEdit ? '修改成功' : '发布成功',
+          icon: 'success'
+        })
+
+        setTimeout(() => {
+          wx.navigateBack()
+        }, 1500)
+      } else {
+        throw new Error(res.msg || '保存失败')
+      }
     } catch (error) {
       console.error('提交失败:', error)
-      wx.showToast({ title: '提交失败', icon: 'none' })
+      wx.showToast({
+        title: error.message || '提交失败',
+        icon: 'none'
+      })
     } finally {
       this.setData({ submitting: false })
     }
   }
 })
-
-
-
 
 
 

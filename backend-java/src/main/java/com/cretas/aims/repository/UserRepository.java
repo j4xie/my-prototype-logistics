@@ -3,6 +3,7 @@ package com.cretas.aims.repository;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.Department;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.cretas.aims.entity.enums.HireType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +68,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * 根据职位查找用户
      */
     List<User> findByFactoryIdAndPosition(String factoryId, String position);
+
+    /**
+     * 根据角色代码查找用户
+     */
+    List<User> findByFactoryIdAndRoleCode(String factoryId, String roleCode);
     /**
      * 模糊搜索用户
      * 注意：username/phone使用右模糊（可使用索引），fullName使用双向模糊（无法使用索引）
@@ -126,4 +133,139 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @since 2025-11-20
      */
     long countByIsActive(Boolean isActive);
+
+    /**
+     * 根据入职日期范围查询用户（分页）
+     * 使用 createdAt 字段作为入职日期
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate   结束日期
+     * @param pageable  分页参数
+     * @return 用户分页数据
+     * @since 2025-12-27
+     */
+    @Query("SELECT u FROM User u WHERE u.factoryId = :factoryId " +
+           "AND u.createdAt >= :startDate AND u.createdAt < :endDate " +
+           "ORDER BY u.createdAt DESC")
+    Page<User> findByFactoryIdAndCreatedAtBetween(
+            @Param("factoryId") String factoryId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            Pageable pageable);
+
+    /**
+     * 统计指定日期范围内入职的用户数量
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate   结束日期
+     * @return 用户数量
+     * @since 2025-12-27
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.factoryId = :factoryId " +
+           "AND u.createdAt >= :startDate AND u.createdAt < :endDate")
+    long countByFactoryIdAndCreatedAtBetween(
+            @Param("factoryId") String factoryId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+    // ==================== 调度员模块扩展方法 ====================
+
+    /**
+     * 根据工厂ID和工号查找用户
+     *
+     * @param factoryId 工厂ID
+     * @param employeeCode 工号
+     * @return 用户
+     * @since 2025-12-28
+     */
+    Optional<User> findByFactoryIdAndEmployeeCode(String factoryId, String employeeCode);
+
+    /**
+     * 根据工号查找用户 (全局唯一)
+     *
+     * @param employeeCode 工号
+     * @return 用户
+     * @since 2025-12-28
+     */
+    Optional<User> findByEmployeeCode(String employeeCode);
+
+    /**
+     * 查找合同即将到期的员工
+     *
+     * @param factoryId 工厂ID
+     * @param warningDate 预警日期
+     * @return 用户列表
+     * @since 2025-12-28
+     */
+    @Query("SELECT u FROM User u WHERE u.factoryId = :factoryId " +
+           "AND u.contractEndDate IS NOT NULL " +
+           "AND u.contractEndDate <= :warningDate " +
+           "ORDER BY u.contractEndDate ASC")
+    List<User> findByFactoryIdAndContractEndDateBefore(
+            @Param("factoryId") String factoryId,
+            @Param("warningDate") LocalDate warningDate);
+
+    /**
+     * 根据雇用类型查找用户
+     *
+     * @param factoryId 工厂ID
+     * @param hireType 雇用类型
+     * @return 用户列表
+     * @since 2025-12-28
+     */
+    List<User> findByFactoryIdAndHireType(String factoryId, HireType hireType);
+
+    /**
+     * 根据多个雇用类型查找用户
+     *
+     * @param factoryId 工厂ID
+     * @param hireTypes 雇用类型列表
+     * @return 用户列表
+     * @since 2025-12-28
+     */
+    List<User> findByFactoryIdAndHireTypeIn(String factoryId, List<HireType> hireTypes);
+
+    /**
+     * 获取工厂最大的工号
+     *
+     * @param factoryId 工厂ID
+     * @return 最大工号
+     * @since 2025-12-28
+     */
+    @Query("SELECT MAX(u.employeeCode) FROM User u WHERE u.factoryId = :factoryId AND u.employeeCode IS NOT NULL")
+    String findMaxEmployeeCodeByFactoryId(@Param("factoryId") String factoryId);
+
+    /**
+     * 统计工厂临时工数量
+     *
+     * @param factoryId 工厂ID
+     * @param hireTypes 临时性质的雇用类型列表
+     * @return 临时工数量
+     * @since 2025-12-28
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.factoryId = :factoryId " +
+           "AND u.hireType IN :hireTypes AND u.isActive = true")
+    long countTemporaryWorkers(
+            @Param("factoryId") String factoryId,
+            @Param("hireTypes") List<HireType> hireTypes);
+
+    /**
+     * 模糊搜索用户（支持工号搜索）
+     *
+     * @param factoryId 工厂ID
+     * @param keyword 关键词
+     * @param pageable 分页参数
+     * @return 用户分页数据
+     * @since 2025-12-28
+     */
+    @Query("SELECT u FROM User u WHERE u.factoryId = :factoryId AND " +
+           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
+           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "u.phone LIKE CONCAT(:keyword, '%') OR " +
+           "u.employeeCode LIKE CONCAT(:keyword, '%'))")
+    Page<User> searchUsersWithEmployeeCode(@Param("factoryId") String factoryId,
+                                           @Param("keyword") String keyword,
+                                           Pageable pageable);
 }

@@ -56,7 +56,7 @@ public class ProcessingController {
     @Operation(summary = "创建生产批次", description = "创建新的生产批次")
     public ApiResponse<ProductionBatch> createBatch(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestBody @Parameter(description = "批次信息") ProductionBatch batch) {
+            @RequestBody @Valid @Parameter(description = "批次信息") ProductionBatch batch) {
         log.info("创建生产批次: factoryId={}, batchNumber={}", factoryId, batch.getBatchNumber());
         ProductionBatch result = processingService.createBatch(factoryId, batch);
         return ApiResponse.success(result);
@@ -87,6 +87,19 @@ public class ProcessingController {
             @RequestParam @Parameter(description = "暂停原因") String reason) {
         log.info("暂停生产: factoryId={}, batchId={}, reason={}", factoryId, batchId, reason);
         ProductionBatch result = processingService.pauseProduction(factoryId, batchId, reason);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 恢复生产
+     */
+    @PostMapping("/batches/{batchId}/resume")
+    @Operation(summary = "恢复生产", description = "恢复已暂停的批次生产")
+    public ApiResponse<ProductionBatch> resumeProduction(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "批次ID") String batchId) {
+        log.info("恢复生产: factoryId={}, batchId={}", factoryId, batchId);
+        ProductionBatch result = processingService.resumeProduction(factoryId, batchId);
         return ApiResponse.success(result);
     }
 

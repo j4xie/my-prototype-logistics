@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人员管理 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* 员工类型标签样式 */
+    .employee-type-tag {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+    .employee-type-tag.temp {
+      background: #fff3e0;
+      color: #e65100;
+      border: 1px solid #ffcc80;
+    }
+    .employee-type-tag.dispatch {
+      background: #e3f2fd;
+      color: #1565c0;
+      border: 1px solid #90caf9;
+    }
+    .employee-type-tag.intern {
+      background: #f3e5f5;
+      color: #7b1fa2;
+      border: 1px solid #ce93d8;
+    }
+
+    /* 工号样式 */
+    .employee-code {
+      color: #666;
+      font-size: 12px;
+      margin-left: 4px;
+    }
+
+    /* 技能等级样式 */
+    .skill-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 6px;
+      margin-bottom: 4px;
+    }
+    .skill-badge.primary {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .skill-badge .level {
+      color: #ff9800;
+      margin-left: 2px;
+      font-weight: 600;
+    }
+
+    /* 效率指标 */
+    .efficiency-badge {
+      font-size: 11px;
+      color: #4caf50;
+      font-weight: 600;
+    }
+    .efficiency-badge.low {
+      color: #ff5722;
+    }
+
+    /* 合同到期提醒 */
+    .contract-warning {
+      display: flex;
+      align-items: center;
+      font-size: 11px;
+      color: #f57c00;
+      background: #fff8e1;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-top: 6px;
+    }
+    .contract-warning svg {
+      margin-right: 4px;
+    }
+
+    /* 任务组分组 */
+    .task-group {
+      background: #fafafa;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin: 8px 16px;
+    }
+    .task-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .task-group-title {
+      font-weight: 500;
+      color: #333;
+    }
+    .task-group-status {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    .task-group-status.idle {
+      background: #f5f5f5;
+      color: #757575;
+    }
+
+    /* 临时工卡片边框 */
+    .personnel-card.temp-worker {
+      border-left: 3px solid #ff9800;
+    }
+
+    /* 员工详情增强 */
+    .personnel-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed #e0e0e0;
+    }
+    .personnel-meta-item {
+      font-size: 11px;
+      color: #757575;
+    }
+
+    /* 统计卡片临时工数量 */
+    .stats-sub {
+      font-size: 11px;
+      color: #ff9800;
+      margin-top: 2px;
+    }
+
+    /* 合同到期提醒卡片 */
+    .contract-alert-card {
+      background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .contract-alert-info {
+      display: flex;
+      align-items: center;
+    }
+    .contract-alert-icon {
+      width: 32px;
+      height: 32px;
+      background: #f57c00;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+    }
+    .contract-alert-text {
+      font-size: 13px;
+      color: #e65100;
+    }
+    .contract-alert-count {
+      font-weight: 600;
+    }
+    .contract-alert-action {
+      color: #e65100;
+      font-size: 12px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="index.html" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">人员管理</span>
+      <a href="personnel-transfer.html" style="color: #a18cd1; font-size: 14px; text-decoration: none;">调动</a>
+    </div>
+
+    <div class="content" style="background: #f5f5f5;">
+      <!-- 人员统计 (增强版) -->
+      <div class="stats-summary">
+        <div class="stats-item">
+          <div class="stats-value">30</div>
+          <div class="stats-label">总人数</div>
+          <div class="stats-sub">临时5</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value" style="color: #1890ff;">24</div>
+          <div class="stats-label">工作中</div>
+          <div class="stats-sub">临时4</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value green">4</div>
+          <div class="stats-label">空闲</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value orange">2</div>
+          <div class="stats-label">请假</div>
+        </div>
+      </div>
+
+      <!-- 合同到期提醒 -->
+      <div class="contract-alert-card">
+        <div class="contract-alert-info">
+          <div class="contract-alert-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+            </svg>
+          </div>
+          <div class="contract-alert-text">
+            <span class="contract-alert-count">3名</span> 临时工合同即将到期
+          </div>
+        </div>
+        <a href="contract-expiring.html" class="contract-alert-action">查看 ></a>
+      </div>
+
+      <!-- 筛选 (增强版 - 增加员工类型) -->
+      <div class="filter-row">
+        <select class="filter-select">
+          <option>全部车间</option>
+          <option>切片车间</option>
+          <option>包装车间</option>
+          <option>冷冻车间</option>
+        </select>
+        <select class="filter-select">
+          <option>全部类型</option>
+          <option>正式工</option>
+          <option>临时工</option>
+          <option>派遣工</option>
+          <option>实习生</option>
+        </select>
+        <select class="filter-select">
+          <option>全部状态</option>
+          <option>工作中</option>
+          <option>空闲</option>
+          <option>请假</option>
+        </select>
+      </div>
+
+      <!-- 搜索栏 (支持工号搜索) -->
+      <div class="search-bar" style="margin: 0 16px 16px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" placeholder="输入工号(如001)或姓名搜索..." style="border: none; outline: none; flex: 1; font-size: 14px;">
+      </div>
+
+      <!-- 切片车间 - 任务组分组模式 -->
+      <div class="section-header">
+        <span class="section-title">切片车间 (10人 | 任务组: 2)</span>
+      </div>
+
+      <!-- 任务组 PB001 -->
+      <div class="task-group">
+        <div class="task-group-header">
+          <span class="task-group-title">任务组 PB20241227001 (6人)</span>
+          <span class="task-group-status">运行中 75%</span>
+        </div>
+      </div>
+
+      <!-- 任务组内员工 -->
+      <div class="personnel-card">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px;">张</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              张三丰 <span class="employee-code">(001)</span>
+            </div>
+            <div class="personnel-id">切片组长</div>
+          </div>
+          <span class="personnel-status working">工作中</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">
+            <span class="skill-badge primary">切片 <span class="level">★Lv.5</span></span>
+            <span class="skill-badge">质检 <span class="level">Lv.3</span></span>
+          </div>
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">类型: 正式工</span>
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">98%</span></span>
+          <span class="personnel-meta-item">本周工时: 38h/40h</span>
+        </div>
+      </div>
+
+      <div class="personnel-card">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px;">李</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              李四海 <span class="employee-code">(002)</span>
+            </div>
+            <div class="personnel-id">切片工</div>
+          </div>
+          <span class="personnel-status working">工作中</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">
+            <span class="skill-badge primary">切片 <span class="level">★Lv.4</span></span>
+          </div>
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">类型: 正式工</span>
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">92%</span></span>
+        </div>
+      </div>
+
+      <!-- 临时工卡片 -->
+      <div class="personnel-card temp-worker">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px; background: #ff9800;">刘</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              刘临时 <span class="employee-code">(088)</span>
+              <span class="employee-type-tag temp">临时</span>
+            </div>
+            <div class="personnel-id">切片工</div>
+          </div>
+          <span class="personnel-status working">工作中</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">
+            <span class="skill-badge">切片 <span class="level">Lv.2</span></span>
+          </div>
+        </div>
+        <div class="contract-warning">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#f57c00">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+          合同到期: 2025-01-15 (剩余18天)
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">78%</span></span>
+          <span class="personnel-meta-item">本周工时: 24h</span>
+        </div>
+      </div>
+
+      <div style="text-align: center; color: #999; font-size: 13px; padding: 8px;">
+        +3 更多成员...
+      </div>
+
+      <!-- 任务组 PB002 -->
+      <div class="task-group">
+        <div class="task-group-header">
+          <span class="task-group-title">任务组 PB20241227002 (2人)</span>
+          <span class="task-group-status">运行中 30%</span>
+        </div>
+      </div>
+
+      <div class="personnel-card">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px;">周</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              周正明 <span class="employee-code">(005)</span>
+            </div>
+            <div class="personnel-id">切片工</div>
+          </div>
+          <span class="personnel-status working">工作中</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <span class="skill-badge primary">切片 <span class="level">★Lv.3</span></span>
+            <span class="skill-badge">包装 <span class="level">Lv.2</span></span>
+          </div>
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">类型: 正式工</span>
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">88%</span></span>
+        </div>
+      </div>
+
+      <!-- 空闲人员 -->
+      <div class="task-group">
+        <div class="task-group-header">
+          <span class="task-group-title">空闲人员 (2人)</span>
+          <span class="task-group-status idle">可调动</span>
+        </div>
+      </div>
+
+      <div class="personnel-card">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px;">王</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              王五行 <span class="employee-code">(003)</span>
+            </div>
+            <div class="personnel-id">切片工</div>
+          </div>
+          <span class="personnel-status idle">空闲</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <span class="skill-badge primary">切片 <span class="level">★Lv.3</span></span>
+            <span class="skill-badge">包装 <span class="level">Lv.2</span></span>
+          </div>
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">类型: 正式工</span>
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">95%</span></span>
+          <span class="personnel-meta-item">本周工时: 32h/40h</span>
+          <span class="personnel-meta-item" style="color: #4caf50;">可加班: 8h</span>
+        </div>
+      </div>
+
+      <!-- 包装车间 -->
+      <div class="section-header">
+        <span class="section-title">包装车间 (8人 | 任务组: 1)</span>
+      </div>
+
+      <div class="task-group">
+        <div class="task-group-header">
+          <span class="task-group-title">任务组 PB20241227004 (6人)</span>
+          <span class="task-group-status">运行中 45%</span>
+        </div>
+      </div>
+
+      <div class="personnel-card">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px;">赵</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              赵六顺 <span class="employee-code">(010)</span>
+            </div>
+            <div class="personnel-id">包装组长</div>
+          </div>
+          <span class="personnel-status working">工作中</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <span class="skill-badge primary">包装 <span class="level">★Lv.5</span></span>
+            <span class="skill-badge">质检 <span class="level">Lv.3</span></span>
+          </div>
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">类型: 正式工</span>
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">96%</span></span>
+        </div>
+      </div>
+
+      <!-- 派遣工卡片 -->
+      <div class="personnel-card">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px; background: #2196f3;">吴</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              吴派遣 <span class="employee-code">(089)</span>
+              <span class="employee-type-tag dispatch">派遣</span>
+            </div>
+            <div class="personnel-id">包装工</div>
+          </div>
+          <span class="personnel-status working">工作中</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <span class="skill-badge">包装 <span class="level">Lv.3</span></span>
+          </div>
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">派遣公司: 鑫达人力</span>
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">82%</span></span>
+        </div>
+      </div>
+
+      <div class="personnel-card">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px;">陈</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              陈七星 <span class="employee-code">(011)</span>
+            </div>
+            <div class="personnel-id">包装工</div>
+          </div>
+          <span class="personnel-status idle">空闲</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <span class="skill-badge primary">包装 <span class="level">★Lv.4</span></span>
+            <span class="skill-badge">质检 <span class="level">Lv.2</span></span>
+          </div>
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">类型: 正式工</span>
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">91%</span></span>
+        </div>
+      </div>
+
+      <div style="text-align: center; color: #999; font-size: 13px; padding: 12px;">
+        +5 更多...
+      </div>
+
+      <!-- 冷冻车间 -->
+      <div class="section-header">
+        <span class="section-title">冷冻车间 (6人 | 任务组: 1)</span>
+      </div>
+
+      <div class="task-group">
+        <div class="task-group-header">
+          <span class="task-group-title">任务组 PB20241227005 (4人)</span>
+          <span class="task-group-status">运行中 60%</span>
+        </div>
+      </div>
+
+      <div class="personnel-card">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px;">孙</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              孙九天 <span class="employee-code">(021)</span>
+            </div>
+            <div class="personnel-id">冷冻组长</div>
+          </div>
+          <span class="personnel-status working">工作中</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <span class="skill-badge primary">冷冻 <span class="level">★Lv.5</span></span>
+            <span class="skill-badge">包装 <span class="level">Lv.2</span></span>
+          </div>
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">类型: 正式工</span>
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">94%</span></span>
+        </div>
+      </div>
+
+      <div class="personnel-card" style="margin-bottom: 100px;">
+        <div class="personnel-header">
+          <div class="avatar-item" style="margin: 0; width: 40px; height: 40px; border-radius: 20px;">刘</div>
+          <div class="personnel-info">
+            <div class="personnel-name">
+              刘八方 <span class="employee-code">(020)</span>
+            </div>
+            <div class="personnel-id">冷冻工</div>
+          </div>
+          <span class="personnel-status leave">请假</span>
+        </div>
+        <div class="personnel-details">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">
+            <span class="skill-badge">冷冻 <span class="level">Lv.3</span></span>
+          </div>
+          <span style="font-size: 12px; color: #ff5722;">请假原因: 病假 | 预计返岗: 明天</span>
+        </div>
+        <div class="personnel-meta">
+          <span class="personnel-meta-item">类型: 正式工</span>
+          <span class="personnel-meta-item">效率: <span class="efficiency-badge">85%</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
+      <a href="plan-list.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span>计划</span></a>
+      <a href="ai-schedule.html" class="nav-item ai-nav"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12z"/></svg><span>AI调度</span></a>
+      <a href="personnel-list.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span>人员</span></a>
+      <a href="profile.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>我的</span></a>
+    </nav>
+  </div>
+</body>
+</html>

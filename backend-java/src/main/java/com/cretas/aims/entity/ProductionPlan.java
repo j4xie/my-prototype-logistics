@@ -1,5 +1,7 @@
 package com.cretas.aims.entity;
 
+import com.cretas.aims.entity.enums.MixedBatchType;
+import com.cretas.aims.entity.enums.PlanSourceType;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.enums.ProductionPlanType;
 import lombok.*;
@@ -93,6 +95,67 @@ public class ProductionPlan extends BaseEntity {
     private BigDecimal actualOtherCost;
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
+
+    // ==================== 调度员模块扩展字段 ====================
+
+    /**
+     * 计划来源类型
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", length = 30)
+    private PlanSourceType sourceType = PlanSourceType.MANUAL;
+
+    /**
+     * 关联订单ID
+     */
+    @Column(name = "source_order_id", length = 50)
+    private String sourceOrderId;
+
+    /**
+     * 客户名称
+     */
+    @Column(name = "source_customer_name", length = 100)
+    private String sourceCustomerName;
+
+    /**
+     * AI预测置信度 (0-100)
+     */
+    @Column(name = "ai_confidence")
+    private Integer aiConfidence;
+
+    /**
+     * 预测原因 (如: 冬季火锅需求+15%)
+     */
+    @Column(name = "forecast_reason", length = 255)
+    private String forecastReason;
+
+    /**
+     * CR值 (Critical Ratio)
+     * CR = (交期-今日) / 工期，越小越紧急
+     */
+    @Column(name = "cr_value", precision = 5, scale = 2)
+    private BigDecimal crValue;
+
+    /**
+     * 是否混批
+     */
+    @Column(name = "is_mixed_batch")
+    private Boolean isMixedBatch = false;
+
+    /**
+     * 混批类型
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mixed_batch_type", length = 30)
+    private MixedBatchType mixedBatchType;
+
+    /**
+     * 混批关联订单 (JSON格式)
+     * 格式: ["ORD-001", "ORD-002", "ORD-003"]
+     */
+    @Column(name = "related_orders", columnDefinition = "JSON")
+    private String relatedOrders;
+
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
@@ -132,5 +195,80 @@ public class ProductionPlan extends BaseEntity {
         return allocatedQuantity.multiply(new BigDecimal(100))
                 .divide(plannedQuantity, 0, java.math.RoundingMode.HALF_UP)
                 .intValue();
+    }
+
+    // ==================== 调度员模块辅助方法 ====================
+
+    /**
+     * 计算CR值 (Critical Ratio)
+     * CR = (交期-今日) / 预估工期
+     * CR < 1 表示紧急, CR > 1 表示有余裕
+     *
+     * @param estimatedWorkDays 预估工期（天数）
+     * @return CR值
+     */
+    public BigDecimal calculateCrValue(int estimatedWorkDays) {
+        if (expectedCompletionDate == null || estimatedWorkDays <= 0) {
+            return null;
+        }
+        long daysUntilDeadline = java.time.temporal.ChronoUnit.DAYS.between(
+                LocalDate.now(), expectedCompletionDate);
+        if (daysUntilDeadline < 0) {
+            return BigDecimal.ZERO; // 已超期
+        }
+        return new BigDecimal(daysUntilDeadline)
+                .divide(new BigDecimal(estimatedWorkDays), 2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 判断是否紧急 (CR < 1)
+     */
+    public boolean isUrgent() {
+        return crValue != null && crValue.compareTo(BigDecimal.ONE) < 0;
+    }
+
+    /**
+     * 判断是否来自客户订单
+     */
+    public boolean isFromCustomerOrder() {
+        return sourceType == PlanSourceType.CUSTOMER_ORDER;
+    }
+
+    /**
+     * 判断是否来自AI预测
+     */
+    public boolean isFromAiPrediction() {
+        return sourceType == PlanSourceType.AI_FORECAST;
+    }
+
+    /**
+     * 获取计划来源显示名称
+     */
+    public String getSourceTypeDisplayName() {
+        return sourceType != null ? sourceType.getDisplayName() : "手动创建";
+    }
+
+    /**
+     * 获取混批类型显示名称
+     */
+    public String getMixedBatchTypeDisplayName() {
+        return mixedBatchType != null ? mixedBatchType.getDisplayName() : null;
+    }
+
+    /**
+     * 获取AI预测置信度等级
+     * @return HIGH(>85%), MEDIUM(60-85%), LOW(<60%)
+     */
+    public String getAiConfidenceLevel() {
+        if (aiConfidence == null) {
+            return null;
+        }
+        if (aiConfidence >= 85) {
+            return "HIGH";
+        } else if (aiConfidence >= 60) {
+            return "MEDIUM";
+        } else {
+            return "LOW";
+        }
     }
 }

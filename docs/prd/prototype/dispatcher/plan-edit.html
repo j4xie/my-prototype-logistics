@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑生产计划 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+
+    .mobile-container {
+      max-width: 375px;
+      margin: 0 auto;
+      background: #fff;
+      min-height: 100vh;
+      position: relative;
+      padding-bottom: 70px;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+      padding: 48px 16px 20px;
+      color: #fff;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .back-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .back-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: #fff;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    /* Plan Info Card */
+    .plan-info-card {
+      margin: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 16px;
+      color: #fff;
+    }
+
+    .plan-info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .plan-number {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .plan-status {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .plan-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .plan-info-item {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .plan-info-item strong {
+      display: block;
+      font-size: 14px;
+      opacity: 1;
+      margin-top: 2px;
+    }
+
+    /* Form Section */
+    .form-section {
+      padding: 0 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 3px;
+      height: 14px;
+      background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+      border-radius: 2px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .form-label.required::after {
+      content: ' *';
+      color: #ff4d4f;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fafafa;
+      transition: all 0.3s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #a18cd1;
+      background: #fff;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fafafa url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M2 4l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 12px center;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fafafa;
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    /* Priority Selector */
+    .priority-selector {
+      display: flex;
+      gap: 8px;
+    }
+
+    .priority-option {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .priority-option.high {
+      color: #ff4d4f;
+    }
+
+    .priority-option.medium {
+      color: #fa8c16;
+    }
+
+    .priority-option.low {
+      color: #52c41a;
+    }
+
+    .priority-option.active {
+      background: currentColor;
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .priority-option.high.active {
+      background: #ff4d4f;
+    }
+
+    .priority-option.medium.active {
+      background: #fa8c16;
+    }
+
+    .priority-option.low.active {
+      background: #52c41a;
+    }
+
+    /* Resource Adjustment */
+    .resource-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .resource-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .resource-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .resource-icon.workshop {
+      background: #e6f7ff;
+    }
+
+    .resource-icon.workshop svg {
+      fill: #1890ff;
+    }
+
+    .resource-icon.line {
+      background: #f6ffed;
+    }
+
+    .resource-icon.line svg {
+      fill: #52c41a;
+    }
+
+    .resource-name {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .resource-current {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .resource-change-btn {
+      padding: 6px 12px;
+      background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* AI Suggestion Card */
+    .ai-suggestion {
+      margin: 16px;
+      background: linear-gradient(135deg, #722ed1 0%, #a18cd1 50%, #fbc2eb 100%);
+      border-radius: 12px;
+      padding: 14px;
+      color: #fff;
+    }
+
+    .ai-suggestion-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .ai-suggestion-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .ai-suggestion-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .ai-suggestion-content {
+      font-size: 13px;
+      opacity: 0.95;
+      line-height: 1.5;
+    }
+
+    .ai-suggestion-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 10px;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+      text-align: center;
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #666;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+      color: #fff;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 375px;
+      background: #fff;
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      color: #999;
+      font-size: 10px;
+      position: relative;
+    }
+
+    .nav-item.active {
+      color: #a18cd1;
+    }
+
+    .nav-item svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .nav-item.ai-nav {
+      color: #fff;
+    }
+
+    .nav-item.ai-nav::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #722ed1 0%, #a18cd1 100%);
+      border-radius: 50%;
+      z-index: -1;
+      box-shadow: 0 4px 12px rgba(114, 46, 209, 0.3);
+    }
+
+    .nav-item.ai-nav svg {
+      fill: #fff;
+      position: relative;
+      top: 4px;
+    }
+
+    .nav-item.ai-nav span {
+      position: relative;
+      top: 4px;
+      color: #722ed1;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-content">
+        <div class="back-btn" onclick="history.back()">
+          <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </div>
+        <h1>编辑生产计划</h1>
+      </div>
+    </div>
+
+    <!-- Plan Info Card -->
+    <div class="plan-info-card">
+      <div class="plan-info-header">
+        <div class="plan-number">PP-2024-0128</div>
+        <div class="plan-status">进行中</div>
+      </div>
+      <div class="plan-info-grid">
+        <div class="plan-info-item">
+          产品类型
+          <strong>带鱼切片</strong>
+        </div>
+        <div class="plan-info-item">
+          目标产量
+          <strong>5,000 kg</strong>
+        </div>
+        <div class="plan-info-item">
+          开始日期
+          <strong>2024-12-28</strong>
+        </div>
+        <div class="plan-info-item">
+          预计完成
+          <strong>2024-12-30</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Basic Info Form -->
+    <div class="form-section">
+      <div class="section-title">基本信息</div>
+
+      <div class="form-group">
+        <label class="form-label required">目标产量 (kg)</label>
+        <input type="number" class="form-input" value="5000" placeholder="请输入目标产量">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label required">开始日期</label>
+          <input type="date" class="form-input" value="2024-12-28">
+        </div>
+        <div class="form-group">
+          <label class="form-label required">结束日期</label>
+          <input type="date" class="form-input" value="2024-12-30">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">优先级</label>
+        <div class="priority-selector">
+          <div class="priority-option high active">紧急</div>
+          <div class="priority-option medium">普通</div>
+          <div class="priority-option low">低</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resource Assignment -->
+    <div class="form-section">
+      <div class="section-title">资源分配</div>
+
+      <div class="resource-item">
+        <div class="resource-info">
+          <div class="resource-icon workshop">
+            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
+          </div>
+          <div>
+            <div class="resource-name">切片车间</div>
+            <div class="resource-current">当前: A1产线</div>
+          </div>
+        </div>
+        <button class="resource-change-btn">更换</button>
+      </div>
+
+      <div class="resource-item">
+        <div class="resource-info">
+          <div class="resource-icon line">
+            <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+          </div>
+          <div>
+            <div class="resource-name">生产班组</div>
+            <div class="resource-current">当前: 早班A组 (8人)</div>
+          </div>
+        </div>
+        <button class="resource-change-btn">调整</button>
+      </div>
+    </div>
+
+    <!-- Remarks -->
+    <div class="form-section">
+      <div class="section-title">备注说明</div>
+      <textarea class="form-textarea" placeholder="请输入备注信息...">客户要求本周五前交付，需优先安排生产。</textarea>
+    </div>
+
+    <!-- AI Suggestion -->
+    <div class="ai-suggestion">
+      <div class="ai-suggestion-header">
+        <svg class="ai-suggestion-icon" viewBox="0 0 24 24" fill="#fff">
+          <path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12z"/>
+        </svg>
+        <span class="ai-suggestion-title">AI 优化建议</span>
+      </div>
+      <div class="ai-suggestion-content">
+        根据当前产能分析，建议将目标产量调整为 <strong>4,800 kg</strong>，可将完成概率从 72% 提升至 89%。
+      </div>
+      <div class="ai-suggestion-action">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+        应用建议
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button class="btn btn-secondary" onclick="history.back()">取消</button>
+      <button class="btn btn-primary">保存修改</button>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>首页</span>
+      </a>
+      <a href="plan-list.html" class="nav-item active">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        <span>计划</span>
+      </a>
+      <a href="ai-schedule.html" class="nav-item ai-nav">
+        <svg viewBox="0 0 24 24"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12z"/></svg>
+        <span>AI调度</span>
+      </a>
+      <a href="personnel-list.html" class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        <span>人员</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    // Priority selector interaction
+    document.querySelectorAll('.priority-option').forEach(option => {
+      option.addEventListener('click', function() {
+        document.querySelectorAll('.priority-option').forEach(o => o.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

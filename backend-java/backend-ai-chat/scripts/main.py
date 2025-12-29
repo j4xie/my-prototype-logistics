@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 import os
 import json
 from dotenv import load_dotenv
@@ -398,6 +398,129 @@ async def cost_analysis(request: CostAnalysisRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI分析失败: {str(e)}")
 
+
+@app.post("/api/ai/chat/stream")
+async def cost_analysis_stream(request: CostAnalysisRequest):
+    """
+    成本分析专用接口 - 流式响应版本 (SSE)
+
+    实时返回AI分析过程，包括思考过程和最终答案
+    """
+    import uuid
+    import time
+
+    async def event_generator():
+        try:
+            # 发送开始事件
+            yield f"data: {json.dumps({'type': 'start', 'timestamp': int(time.time() * 1000)})}\n\n"
+
+            # 构建专门的成本分析消息
+            messages = [
+                {
+                    "role": "system",
+                    "content": """你是食品加工企业的成本分析专家。
+
+你的任务是分析生产批次的成本数据，提供专业的成本优化建议。
+
+分析要点：
+1. 成本结构合理性：评估原材料、人工、设备成本的占比是否合理
+2. 异常识别：找出成本数据中的异常点和风险
+3. 对比分析：将当前成本与行业标准或历史数据对比
+4. 优化建议：提供具体可行的成本降低措施
+5. 效率评估：分析生产效率、良品率、人均产能等指标
+
+输出要求：
+- 使用中文
+- 简洁专业，条理清晰
+- 提供具体数字和百分比
+- 给出可量化的改进目标
+- 分析要深入，建议要具体
+
+输出格式：
+📊 **成本结构分析**
+[分析各项成本占比的合理性]
+
+⚠️ **发现的问题**
+1. [问题点及影响]
+
+💡 **优化建议**
+1. [具体的改进措施]
+
+📈 **预期效果**
+[实施建议后的预期成本节省]"""
+                },
+                {
+                    "role": "user",
+                    "content": request.message
+                }
+            ]
+
+            # 获取思考模式配置
+            enable_thinking = request.enable_thinking if request.enable_thinking is not None else True
+            thinking_budget = request.thinking_budget if request.thinking_budget else 50
+
+            if not client:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'DASHSCOPE_API_KEY未配置'})}\n\n"
+                return
+
+            reasoning_content = ""
+            answer_content = ""
+
+            try:
+                # 开启流式模式
+                completion = client.chat.completions.create(
+                    model=DASHSCOPE_MODEL,
+                    messages=messages,
+                    extra_body={
+                        "enable_thinking": enable_thinking,
+                        "thinking_budget": thinking_budget
+                    } if enable_thinking else {},
+                    stream=True,
+                    stream_options={"include_usage": True} if enable_thinking else None,
+                )
+
+                # 逐块发送响应
+                for chunk in completion:
+                    if chunk.choices and len(chunk.choices) > 0:
+                        choice = chunk.choices[0]
+                        delta = choice.delta
+
+                        # 发送思考内容
+                        if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                            reasoning_content += delta.reasoning_content
+                            yield f"data: {json.dumps({'type': 'thinking', 'content': delta.reasoning_content})}\n\n"
+
+                        # 发送回答内容
+                        elif hasattr(delta, 'content') and delta.content:
+                            answer_content += delta.content
+                            yield f"data: {json.dumps({'type': 'answer', 'content': delta.content})}\n\n"
+
+            except Exception as ai_error:
+                print(f"[WARN] 流式AI调用失败: {ai_error}")
+                # 回退到模拟分析
+                answer_content = generate_mock_analysis(request.message)
+                yield f"data: {json.dumps({'type': 'answer', 'content': answer_content})}\n\n"
+
+            # 生成会话ID
+            session_id = request.session_id if request.session_id else f"session_{uuid.uuid4().hex[:16]}"
+
+            # 发送完成事件
+            yield f"data: {json.dumps({'type': 'complete', 'sessionId': session_id, 'reasoningContent': reasoning_content, 'answerContent': answer_content, 'timestamp': int(time.time() * 1000)})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # 禁用nginx缓冲
+        }
+    )
+
+
 def generate_mock_analysis(cost_data: str) -> str:
     """
     生成模拟的成本分析（用于演示，当AI API不可用时）
@@ -530,6 +653,1631 @@ def generate_mock_analysis(cost_data: str) -> str:
     analysis += "\n\n---\n💡 *本分析基于提供的成本数据生成，具体实施请结合工厂实际情况调整*"
 
     return analysis
+
+
+# ==================== AI表单助手服务 ====================
+
+class FormParseRequest(BaseModel):
+    """表单解析请求"""
+    user_input: str  # 用户输入的文本（语音转文字后的内容）
+    form_fields: List[Dict]  # 表单字段定义 [{"name": "materialType", "title": "原料类型", "type": "string"}]
+    entity_type: str  # 实体类型，如 MATERIAL_BATCH, QUALITY_CHECK
+    factory_id: Optional[str] = None
+    context: Optional[Dict] = None  # 可选的上下文信息
+
+class FormParseResponse(BaseModel):
+    """表单解析响应"""
+    success: bool
+    field_values: Dict  # 解析出的字段值 {"materialType": "带鱼", "quantity": 500}
+    confidence: float  # 置信度 0-1
+    unparsed_text: Optional[str] = None  # 未能解析的部分
+    message: Optional[str] = None
+
+class OCRParseRequest(BaseModel):
+    """OCR解析请求"""
+    image_base64: str  # Base64编码的图片
+    form_fields: List[Dict]  # 表单字段定义
+    entity_type: str
+    factory_id: Optional[str] = None
+
+class OCRParseResponse(BaseModel):
+    """OCR解析响应"""
+    success: bool
+    extracted_text: str  # OCR识别的原始文本
+
+
+# ==================== AI 工厂批量初始化服务 ====================
+
+class FactoryBatchInitRequest(BaseModel):
+    """工厂批量初始化请求"""
+    factory_description: str  # 用户对工厂的描述 (如: "这是一个水产加工厂，主要生产带鱼罐头，需要原料入库、生产、质检、出货全流程")
+    industry_hint: Optional[str] = None  # 行业提示 (seafood_processing, prepared_food, etc.)
+    factory_id: Optional[str] = None
+    factory_name: Optional[str] = None
+    include_business_data: Optional[bool] = True  # 是否包含建议的业务数据
+
+
+class EntitySchemaDefinition(BaseModel):
+    """单个实体类型的完整 Schema"""
+    entity_type: str  # MATERIAL_BATCH, QUALITY_CHECK, etc.
+    entity_name: str  # 原材料批次, 质检记录, etc.
+    fields: List[Dict]  # Formily 格式的字段列表
+    description: Optional[str] = None
+
+
+class SuggestedBusinessData(BaseModel):
+    """建议的业务数据"""
+    product_types: List[Dict]  # [{"code": "PT001", "name": "带鱼罐头", "description": "..."}]
+    material_types: List[Dict]  # [{"code": "MT001", "name": "带鱼", "unit": "kg", ...}]
+    conversion_rates: Optional[List[Dict]] = None  # [{"materialType": "MT001", "productType": "PT001", "rate": 0.7}]
+
+
+class FactoryBatchInitResponse(BaseModel):
+    """工厂批量初始化响应"""
+    success: bool
+    schemas: List[EntitySchemaDefinition]  # 所有实体类型的 Schema
+    suggested_data: Optional[SuggestedBusinessData] = None  # 建议的业务数据
+    industry_code: str  # 识别的行业代码
+    industry_name: str  # 行业名称
+    ai_summary: Optional[str] = None  # AI 总结
+    message: Optional[str] = None
+
+
+def build_factory_init_prompt() -> str:
+    """
+    构建工厂初始化的系统提示词
+    """
+    return """你是白垩纪食品溯源系统的工厂初始化助手。
+
+你的任务是根据用户对工厂的描述，生成完整的表单配置和业务数据建议。
+
+支持的表单类型 (EntityType):
+1. MATERIAL_BATCH - 原材料批次入库
+2. PROCESSING_BATCH - 生产加工批次
+3. QUALITY_CHECK - 质检记录
+4. SHIPMENT - 出货记录
+5. EQUIPMENT - 设备信息
+6. DISPOSAL_RECORD - 报废/处置记录
+
+每个表单类型需要生成的字段应该包含:
+- 基本信息字段 (编号、名称、日期等)
+- 行业特有字段 (如水产的温度、冻品类型；预制菜的辣度、口味等)
+- 质量控制字段 (检测项目、合格标准等)
+
+可用的 Formily 组件:
+- Input: 单行文本
+- Input.TextArea: 多行文本
+- NumberPicker: 数字 (支持 min, max)
+- Select: 下拉选择 (需要 enum)
+- DatePicker: 日期选择
+- Switch: 开关
+- Upload: 文件上传
+- Rate: 评分
+
+输出格式 (严格JSON):
+{
+  "industry_code": "seafood_processing",
+  "industry_name": "水产加工",
+  "schemas": [
+    {
+      "entity_type": "MATERIAL_BATCH",
+      "entity_name": "原材料批次",
+      "description": "记录原材料入库信息",
+      "fields": [
+        {
+          "name": "materialType",
+          "title": "原料类型",
+          "type": "string",
+          "x_component": "Select",
+          "enum": [{"label": "带鱼", "value": "daiyu"}, {"label": "酸菜", "value": "suancai"}],
+          "required": true
+        }
+      ]
+    }
+  ],
+  "suggested_data": {
+    "product_types": [
+      {"code": "PT001", "name": "带鱼罐头", "description": "经典带鱼罐头产品"}
+    ],
+    "material_types": [
+      {"code": "MT001", "name": "带鱼", "unit": "kg", "description": "新鲜或冷冻带鱼"}
+    ],
+    "conversion_rates": [
+      {"materialTypeCode": "MT001", "productTypeCode": "PT001", "rate": 0.7, "description": "1kg带鱼产出0.7kg罐头"}
+    ]
+  },
+  "ai_summary": "根据您的描述，已为水产加工厂生成6个表单模板，包含带鱼罐头的全流程配置..."
+}
+
+注意:
+- 字段名使用 camelCase
+- 根据行业特点添加行业特有字段
+- 质检表单要包含行业常见的检测项目
+- 建议的业务数据要符合用户描述的产品
+- 转换率根据行业经验给出合理估计"""
+
+
+@app.post("/api/ai/factory/batch-initialize", response_model=FactoryBatchInitResponse)
+async def batch_initialize_factory(request: FactoryBatchInitRequest):
+    """
+    AI 工厂批量初始化 - 根据自然语言描述一次性生成所有表单配置
+
+    用途:
+    - 新工厂快速上线 (5分钟)
+    - 根据 SOP 文档描述生成完整配置
+    - 包含产品类型、原料类型等业务数据建议
+
+    示例输入:
+    "这是一个水产品加工厂，主要生产带鱼罐头，需要原料入库、生产、质检、出货全流程"
+
+    示例输出:
+    - 6个 EntityType 的完整 Schema (MATERIAL_BATCH, PROCESSING_BATCH, QUALITY_CHECK, SHIPMENT, EQUIPMENT, DISPOSAL_RECORD)
+    - 建议的产品类型: [带鱼罐头]
+    - 建议的原料类型: [带鱼]
+    - 建议的转换率配置
+    """
+    try:
+        if not request.factory_description or not request.factory_description.strip():
+            return FactoryBatchInitResponse(
+                success=False,
+                schemas=[],
+                industry_code="",
+                industry_name="",
+                message="工厂描述不能为空"
+            )
+
+        # 构建提示词
+        system_prompt = build_factory_init_prompt()
+
+        # 添加行业提示
+        user_content = f"工厂描述: {request.factory_description}"
+        if request.industry_hint:
+            user_content += f"\n行业提示: {request.industry_hint}"
+        if request.factory_name:
+            user_content += f"\n工厂名称: {request.factory_name}"
+
+        user_content += "\n\n请生成完整的表单配置和业务数据建议。"
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content}
+        ]
+
+        # 调用AI (使用较高 token 限制，因为输出较长)
+        try:
+            if not client:
+                raise Exception("DASHSCOPE_API_KEY未配置")
+
+            completion = client.chat.completions.create(
+                model=DASHSCOPE_MODEL,
+                messages=messages,
+                max_tokens=4000,  # 较长输出
+                temperature=0.7,
+            )
+            response_text = completion.choices[0].message.content.strip()
+
+        except Exception as ai_error:
+            # AI 调用失败，返回默认模板
+            print(f"[WARN] AI调用失败: {ai_error}")
+            return generate_default_factory_config(request)
+
+        # 解析JSON响应
+        try:
+            # 清理可能的markdown代码块
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            parsed = json.loads(response_text)
+
+            # 提取 schemas
+            schemas = []
+            for s in parsed.get("schemas", []):
+                schema = EntitySchemaDefinition(
+                    entity_type=s.get("entity_type", ""),
+                    entity_name=s.get("entity_name", ""),
+                    fields=s.get("fields", []),
+                    description=s.get("description")
+                )
+                schemas.append(schema)
+
+            # 提取建议的业务数据
+            suggested_data = None
+            if request.include_business_data and "suggested_data" in parsed:
+                sd = parsed["suggested_data"]
+                suggested_data = SuggestedBusinessData(
+                    product_types=sd.get("product_types", []),
+                    material_types=sd.get("material_types", []),
+                    conversion_rates=sd.get("conversion_rates")
+                )
+
+            return FactoryBatchInitResponse(
+                success=True,
+                schemas=schemas,
+                suggested_data=suggested_data,
+                industry_code=parsed.get("industry_code", "general"),
+                industry_name=parsed.get("industry_name", "通用加工"),
+                ai_summary=parsed.get("ai_summary"),
+                message=f"成功生成 {len(schemas)} 个表单模板"
+            )
+
+        except json.JSONDecodeError as e:
+            return FactoryBatchInitResponse(
+                success=False,
+                schemas=[],
+                industry_code="",
+                industry_name="",
+                message=f"AI返回格式错误: {str(e)}"
+            )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        return FactoryBatchInitResponse(
+            success=False,
+            schemas=[],
+            industry_code="",
+            industry_name="",
+            message=f"工厂初始化失败: {str(e)}"
+        )
+
+
+def generate_default_factory_config(request: FactoryBatchInitRequest) -> FactoryBatchInitResponse:
+    """
+    生成默认的工厂配置 (当AI不可用时的回退)
+    """
+    # 默认水产加工模板
+    default_schemas = [
+        EntitySchemaDefinition(
+            entity_type="MATERIAL_BATCH",
+            entity_name="原材料批次",
+            description="记录原材料入库信息",
+            fields=[
+                {"name": "batchNumber", "title": "批次编号", "type": "string", "x_component": "Input", "required": True},
+                {"name": "materialType", "title": "原料类型", "type": "string", "x_component": "Select", "required": True},
+                {"name": "quantity", "title": "数量", "type": "number", "x_component": "NumberPicker", "required": True},
+                {"name": "unit", "title": "单位", "type": "string", "x_component": "Select", "enum": [{"label": "kg", "value": "kg"}, {"label": "个", "value": "pcs"}]},
+                {"name": "temperature", "title": "温度(°C)", "type": "number", "x_component": "NumberPicker"},
+                {"name": "supplierId", "title": "供应商", "type": "string", "x_component": "Select"},
+                {"name": "receivedDate", "title": "入库日期", "type": "string", "x_component": "DatePicker", "required": True},
+            ]
+        ),
+        EntitySchemaDefinition(
+            entity_type="PROCESSING_BATCH",
+            entity_name="生产批次",
+            description="记录生产加工信息",
+            fields=[
+                {"name": "batchNumber", "title": "批次编号", "type": "string", "x_component": "Input", "required": True},
+                {"name": "productType", "title": "产品类型", "type": "string", "x_component": "Select", "required": True},
+                {"name": "plannedQuantity", "title": "计划数量", "type": "number", "x_component": "NumberPicker", "required": True},
+                {"name": "actualQuantity", "title": "实际产出", "type": "number", "x_component": "NumberPicker"},
+                {"name": "startTime", "title": "开始时间", "type": "string", "x_component": "DatePicker"},
+                {"name": "endTime", "title": "结束时间", "type": "string", "x_component": "DatePicker"},
+            ]
+        ),
+        EntitySchemaDefinition(
+            entity_type="QUALITY_CHECK",
+            entity_name="质检记录",
+            description="记录质量检验信息",
+            fields=[
+                {"name": "checkNumber", "title": "检验编号", "type": "string", "x_component": "Input", "required": True},
+                {"name": "batchId", "title": "关联批次", "type": "string", "x_component": "Select", "required": True},
+                {"name": "temperature", "title": "温度检测(°C)", "type": "number", "x_component": "NumberPicker"},
+                {"name": "appearance", "title": "外观检查", "type": "string", "x_component": "Select", "enum": [{"label": "合格", "value": "pass"}, {"label": "不合格", "value": "fail"}]},
+                {"name": "result", "title": "检验结果", "type": "string", "x_component": "Select", "enum": [{"label": "合格", "value": "pass"}, {"label": "不合格", "value": "fail"}], "required": True},
+                {"name": "remarks", "title": "备注", "type": "string", "x_component": "Input.TextArea"},
+            ]
+        ),
+        EntitySchemaDefinition(
+            entity_type="SHIPMENT",
+            entity_name="出货记录",
+            description="记录产品出货信息",
+            fields=[
+                {"name": "shipmentNumber", "title": "出货单号", "type": "string", "x_component": "Input", "required": True},
+                {"name": "customerId", "title": "客户", "type": "string", "x_component": "Select", "required": True},
+                {"name": "productBatchId", "title": "产品批次", "type": "string", "x_component": "Select", "required": True},
+                {"name": "quantity", "title": "出货数量", "type": "number", "x_component": "NumberPicker", "required": True},
+                {"name": "shipmentDate", "title": "出货日期", "type": "string", "x_component": "DatePicker", "required": True},
+            ]
+        ),
+    ]
+
+    return FactoryBatchInitResponse(
+        success=True,
+        schemas=default_schemas,
+        suggested_data=SuggestedBusinessData(
+            product_types=[
+                {"code": "PT001", "name": "默认产品", "description": "默认产品类型"}
+            ],
+            material_types=[
+                {"code": "MT001", "name": "默认原料", "unit": "kg", "description": "默认原料类型"}
+            ],
+            conversion_rates=None
+        ),
+        industry_code="general",
+        industry_name="通用加工",
+        ai_summary="由于AI服务不可用，已生成默认通用配置模板。您可以稍后手动调整。",
+        message="已生成默认配置 (AI不可用)"
+    )
+
+
+# ==================== AI Schema 生成服务 ====================
+
+class SchemaFieldDefinition(BaseModel):
+    """生成的单个字段定义"""
+    name: str  # 字段英文名 (camelCase)
+    title: str  # 字段中文名
+    type: str  # string, number, boolean, array
+    description: Optional[str] = None  # 字段描述
+    x_component: str  # Formily 组件名
+    x_component_props: Optional[Dict] = None  # 组件属性
+    x_decorator: str = "FormItem"  # 装饰器
+    x_decorator_props: Optional[Dict] = None  # 装饰器属性
+    x_validator: Optional[List[Dict]] = None  # 验证规则
+    x_reactions: Optional[Dict] = None  # 联动规则
+    enum: Optional[List[Dict]] = None  # 枚举值 (下拉选项)
+    default: Optional[Any] = None  # 默认值
+
+class SchemaGenerateRequest(BaseModel):
+    """Schema生成请求"""
+    user_input: str  # 用户自然语言描述 (例如: "加一个辣度评分字段，1-5分，3分以上合格")
+    entity_type: str  # 表单类型: QUALITY_CHECK, MATERIAL_BATCH, etc.
+    existing_fields: Optional[List[str]] = None  # 现有字段名列表，避免重复
+    factory_id: Optional[str] = None
+    context: Optional[Dict] = None  # 可选的上下文信息
+
+class SchemaGenerateResponse(BaseModel):
+    """Schema生成响应"""
+    success: bool
+    fields: List[SchemaFieldDefinition]  # 生成的字段列表
+    validation_rules: Optional[List[Dict]] = None  # 额外的验证规则
+    suggestions: Optional[List[str]] = None  # AI建议 (如: "建议添加不合格原因字段")
+    message: Optional[str] = None
+
+
+def build_form_parse_prompt(form_fields: List[Dict], entity_type: str) -> str:
+    """
+    构建表单解析的系统提示词
+    """
+    field_descriptions = []
+    for field in form_fields:
+        name = field.get('name', '')
+        title = field.get('title', name)
+        field_type = field.get('type', 'string')
+        required = field.get('required', False)
+        enum_values = field.get('enum', [])
+
+        desc = f"- {name} ({title}): 类型={field_type}"
+        if required:
+            desc += ", 必填"
+        if enum_values:
+            enum_labels = [e.get('label', e) if isinstance(e, dict) else str(e) for e in enum_values]
+            desc += f", 可选值=[{', '.join(enum_labels)}]"
+        field_descriptions.append(desc)
+
+    fields_text = "\n".join(field_descriptions)
+
+    entity_type_chinese = {
+        'MATERIAL_BATCH': '原材料批次',
+        'QUALITY_CHECK': '质检记录',
+        'PROCESSING_BATCH': '生产批次',
+        'SHIPMENT': '出货记录',
+        'EQUIPMENT': '设备信息',
+        'DISPOSAL_RECORD': '处置记录'
+    }.get(entity_type, entity_type)
+
+    return f"""你是白垩纪食品溯源系统的智能表单助手。
+
+你的任务是从用户的自然语言输入中提取表单字段值。
+
+当前正在填写: {entity_type_chinese}
+
+表单字段定义:
+{fields_text}
+
+提取规则:
+1. 仅提取用户明确提到的字段值
+2. 数值类型需要转换为数字
+3. 日期时间使用 ISO 8601 格式 (YYYY-MM-DDTHH:mm:ss)
+4. 枚举类型需要匹配可选值
+5. 如果用户没有提到某个字段，不要猜测，直接不填
+
+输出格式 (严格JSON):
+{{
+  "fieldName1": "value1",
+  "fieldName2": 123,
+  ...
+}}
+
+注意:
+- 只输出JSON，不要有其他文字
+- 没有提到的字段不要包含
+- 温度单位默认摄氏度，重量单位根据上下文判断（克/公斤/吨）
+- 如果用户说的是简称或别名，需要识别并转换为标准值"""
+
+
+@app.post("/api/ai/form/parse", response_model=FormParseResponse)
+async def parse_form_input(request: FormParseRequest):
+    """
+    AI表单解析 - 将用户自然语言输入解析为表单字段值
+
+    用途:
+    - 语音转文字后的内容解析
+    - 用户文本输入的解析
+
+    示例:
+    输入: "帮我填一个带鱼批次，500公斤，温度零下18度"
+    输出: {"materialType": "带鱼", "quantity": 500, "unit": "kg", "temperature": -18}
+    """
+    try:
+        if not request.user_input or not request.user_input.strip():
+            return FormParseResponse(
+                success=False,
+                field_values={},
+                confidence=0,
+                message="用户输入不能为空"
+            )
+
+        # 构建提示词
+        system_prompt = build_form_parse_prompt(request.form_fields, request.entity_type)
+
+        # 添加上下文信息
+        context_text = ""
+        if request.context:
+            context_items = []
+            if request.context.get('factoryName'):
+                context_items.append(f"当前工厂: {request.context['factoryName']}")
+            if request.context.get('userName'):
+                context_items.append(f"操作人: {request.context['userName']}")
+            if request.context.get('recentMaterials'):
+                context_items.append(f"常用原料: {', '.join(request.context['recentMaterials'][:5])}")
+            if context_items:
+                context_text = "\n\n背景信息:\n" + "\n".join(context_items)
+
+        messages = [
+            {"role": "system", "content": system_prompt + context_text},
+            {"role": "user", "content": request.user_input}
+        ]
+
+        # 调用AI
+        result = query_qwen(messages, enable_thinking=False)
+        response_text = result["content"].strip()
+
+        # 解析JSON响应
+        try:
+            # 清理可能的markdown代码块
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            field_values = json.loads(response_text)
+
+            # 计算置信度（基于解析出的字段数量和用户输入长度的比例）
+            parsed_count = len(field_values)
+            total_fields = len(request.form_fields)
+            input_length = len(request.user_input)
+
+            # 简单的置信度计算
+            if parsed_count == 0:
+                confidence = 0.3
+            elif parsed_count >= total_fields * 0.5:
+                confidence = 0.9
+            else:
+                confidence = 0.6 + (parsed_count / max(total_fields, 1)) * 0.3
+
+            return FormParseResponse(
+                success=True,
+                field_values=field_values,
+                confidence=confidence,
+                message=f"成功解析 {parsed_count} 个字段"
+            )
+
+        except json.JSONDecodeError as e:
+            return FormParseResponse(
+                success=False,
+                field_values={},
+                confidence=0,
+                unparsed_text=response_text,
+                message=f"AI返回格式错误: {str(e)}"
+            )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        return FormParseResponse(
+            success=False,
+            field_values={},
+            confidence=0,
+            message=f"解析失败: {str(e)}"
+        )
+
+
+@app.post("/api/ai/form/ocr", response_model=OCRParseResponse)
+async def parse_form_ocr(request: OCRParseRequest):
+    """
+    AI表单OCR解析 - 从图片中提取表单字段值
+
+    用途:
+    - 拍照识别送货单、质检报告等
+    - 扫描文档自动填充表单
+
+    流程:
+    1. 调用阿里云OCR识别图片文字
+    2. 将识别结果发送给LLM进行结构化提取
+    3. 返回解析出的字段值
+
+    注意: 当前使用模拟OCR，实际生产环境需要集成阿里云OCR API
+    """
+    try:
+        if not request.image_base64:
+            return OCRParseResponse(
+                success=False,
+                extracted_text="",
+                field_values={},
+                confidence=0,
+                message="图片数据不能为空"
+            )
+
+        # TODO: 集成阿里云OCR API
+        # 当前使用模拟OCR结果（用于开发测试）
+        # 实际生产环境需要替换为真实OCR调用:
+        # https://help.aliyun.com/document_detail/442323.html
+
+        # 模拟OCR结果（根据图片类型返回不同的模拟文本）
+        mock_ocr_text = f"""送货单
+日期: 2025-12-28
+供应商: 东海渔业有限公司
+产品: 带鱼 (精选)
+数量: 500 kg
+批次号: MB-2025-12-28-001
+温度记录: -18°C
+检验员: 张三
+备注: 冷链运输，质量合格"""
+
+        extracted_text = mock_ocr_text
+
+        # 构建提示词
+        system_prompt = build_form_parse_prompt(request.form_fields, request.entity_type)
+
+        messages = [
+            {"role": "system", "content": system_prompt + "\n\n以下是从单据图片中OCR识别的文字:"},
+            {"role": "user", "content": extracted_text}
+        ]
+
+        # 调用AI进行结构化提取
+        result = query_qwen(messages, enable_thinking=False)
+        response_text = result["content"].strip()
+
+        try:
+            # 清理markdown代码块
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            field_values = json.loads(response_text)
+
+            return OCRParseResponse(
+                success=True,
+                extracted_text=extracted_text,
+                field_values=field_values,
+                confidence=0.85,  # OCR有额外的不确定性
+                message=f"成功从图片解析 {len(field_values)} 个字段"
+            )
+
+        except json.JSONDecodeError as e:
+            return OCRParseResponse(
+                success=False,
+                extracted_text=extracted_text,
+                field_values={},
+                confidence=0,
+                message=f"结构化提取失败: {str(e)}"
+            )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        return OCRParseResponse(
+            success=False,
+            extracted_text="",
+            field_values={},
+            confidence=0,
+            message=f"OCR解析失败: {str(e)}"
+        )
+
+
+@app.get("/api/ai/form/health")
+async def form_assistant_health():
+    """
+    表单助手服务健康检查
+    """
+    return {
+        "service": "form_assistant",
+        "status": "running",
+        "llm_available": bool(client),
+        "ocr_enabled": False,  # TODO: 集成阿里云OCR后改为True
+        "schema_generation_enabled": True,  # AI Schema 生成功能
+        "supported_entity_types": [
+            "MATERIAL_BATCH",
+            "QUALITY_CHECK",
+            "PROCESSING_BATCH",
+            "SHIPMENT",
+            "EQUIPMENT",
+            "DISPOSAL_RECORD"
+        ],
+        "capabilities": [
+            "form_parse",       # 语音/文本解析填充表单
+            "ocr_parse",        # OCR图片解析 (待集成)
+            "schema_generate"   # AI生成Schema字段 (新功能)
+        ]
+    }
+
+
+# ==================== AI Schema 生成端点 ====================
+
+def build_schema_generate_prompt(entity_type: str, existing_fields: List[str] = None) -> str:
+    """
+    构建 Schema 生成的系统提示词
+    """
+    entity_type_chinese = {
+        'MATERIAL_BATCH': '原材料批次',
+        'QUALITY_CHECK': '质检记录',
+        'PROCESSING_BATCH': '生产批次',
+        'SHIPMENT': '出货记录',
+        'EQUIPMENT': '设备信息',
+        'DISPOSAL_RECORD': '处置记录'
+    }.get(entity_type, entity_type)
+
+    existing_fields_text = ""
+    if existing_fields:
+        existing_fields_text = f"\n\n现有字段 (避免重复): {', '.join(existing_fields)}"
+
+    # 可用的 Formily 组件映射
+    component_guide = """
+可用的组件类型:
+- Input: 单行文本输入
+- Input.TextArea: 多行文本输入
+- NumberPicker: 数字输入 (支持 min, max, step)
+- Select: 下拉选择 (需要 enum)
+- Radio.Group: 单选按钮组 (需要 enum)
+- Checkbox.Group: 多选框组 (需要 enum)
+- DatePicker: 日期选择
+- DatePicker.RangePicker: 日期范围选择
+- Switch: 开关 (布尔值)
+- Upload: 文件/图片上传
+- Rate: 评分 (1-5星)
+"""
+
+    return f"""你是白垩纪食品溯源系统的表单配置助手。
+
+你的任务是根据用户的自然语言描述，生成 Formily JSON Schema 格式的字段定义。
+
+当前正在配置: {entity_type_chinese} 表单
+{existing_fields_text}
+
+{component_guide}
+
+生成规则:
+1. 字段名 (name) 使用 camelCase 英文命名，简洁有意义
+2. 中文名 (title) 直接使用用户描述的名称
+3. 根据用户描述选择合适的组件类型
+4. 如果用户提到数值范围，添加 x-validator 验证规则
+5. 如果用户提到条件显示/隐藏，添加 x-reactions 联动规则
+6. 如果用户提到"合格标准"，可以建议添加关联字段
+
+输出格式 (严格JSON):
+{{
+  "fields": [
+    {{
+      "name": "字段英文名",
+      "title": "字段中文名",
+      "type": "string|number|boolean|array",
+      "description": "字段描述(可选)",
+      "x_component": "组件名",
+      "x_component_props": {{}},
+      "x_decorator": "FormItem",
+      "x_decorator_props": {{"label": "字段中文名"}},
+      "x_validator": [],
+      "x_reactions": {{}},
+      "enum": null,
+      "default": null
+    }}
+  ],
+  "validation_rules": [
+    {{"field": "字段名", "passCondition": "条件描述"}}
+  ],
+  "suggestions": ["建议1", "建议2"]
+}}
+
+注意:
+- 只输出JSON，不要有其他文字
+- 字段名不要与现有字段重复
+- x_reactions 用于条件显示逻辑，格式为 {{"when": "条件", "fulfill": {{"state": {{"visible": true}}}}}}
+- 如果用户描述复杂，可以拆分成多个字段"""
+
+
+@app.post("/api/ai/form/generate-schema", response_model=SchemaGenerateResponse)
+async def generate_schema(request: SchemaGenerateRequest):
+    """
+    AI表单Schema生成 - 根据自然语言描述生成 Formily JSON Schema 字段
+
+    用途:
+    - 动态创建新的表单字段
+    - 根据业务需求扩展表单结构
+    - 工厂自定义配置
+
+    示例:
+    输入: "加一个辣度评分字段，1-5分，3分以上合格"
+    输出: Formily 格式的字段定义 + 验证规则
+    """
+    try:
+        if not request.user_input or not request.user_input.strip():
+            return SchemaGenerateResponse(
+                success=False,
+                fields=[],
+                message="用户输入不能为空"
+            )
+
+        # 构建提示词
+        system_prompt = build_schema_generate_prompt(
+            request.entity_type,
+            request.existing_fields
+        )
+
+        # 添加上下文信息
+        context_text = ""
+        if request.context:
+            context_items = []
+            if request.context.get('factoryName'):
+                context_items.append(f"工厂: {request.context['factoryName']}")
+            if request.context.get('industry'):
+                context_items.append(f"行业: {request.context['industry']}")
+            if context_items:
+                context_text = "\n\n背景信息:\n" + "\n".join(context_items)
+
+        messages = [
+            {"role": "system", "content": system_prompt + context_text},
+            {"role": "user", "content": request.user_input}
+        ]
+
+        # 调用AI (不启用思考模式，提高速度)
+        result = query_qwen(messages, enable_thinking=False)
+        response_text = result["content"].strip()
+
+        # 解析JSON响应
+        try:
+            # 清理可能的markdown代码块
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            parsed = json.loads(response_text)
+
+            # 提取字段列表
+            raw_fields = parsed.get("fields", [])
+            fields = []
+
+            for f in raw_fields:
+                # 将 x_component 等下划线命名转换
+                field = SchemaFieldDefinition(
+                    name=f.get("name", ""),
+                    title=f.get("title", ""),
+                    type=f.get("type", "string"),
+                    description=f.get("description"),
+                    x_component=f.get("x_component", "Input"),
+                    x_component_props=f.get("x_component_props"),
+                    x_decorator=f.get("x_decorator", "FormItem"),
+                    x_decorator_props=f.get("x_decorator_props"),
+                    x_validator=f.get("x_validator"),
+                    x_reactions=f.get("x_reactions"),
+                    enum=f.get("enum"),
+                    default=f.get("default")
+                )
+                fields.append(field)
+
+            return SchemaGenerateResponse(
+                success=True,
+                fields=fields,
+                validation_rules=parsed.get("validation_rules"),
+                suggestions=parsed.get("suggestions"),
+                message=f"成功生成 {len(fields)} 个字段定义"
+            )
+
+        except json.JSONDecodeError as e:
+            return SchemaGenerateResponse(
+                success=False,
+                fields=[],
+                message=f"AI返回格式错误: {str(e)}. 原始响应: {response_text[:200]}"
+            )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        return SchemaGenerateResponse(
+            success=False,
+            fields=[],
+            message=f"Schema生成失败: {str(e)}"
+        )
+
+
+# ==================== AI 规则解析服务 ====================
+
+class RuleParseRequest(BaseModel):
+    """规则解析请求"""
+    user_input: str  # 用户自然语言描述 (例如: "库存低于500kg时通知采购")
+    rule_group: Optional[str] = None  # 规则组 (validation, workflow, costing, quality)
+    entity_type: Optional[str] = None  # 实体类型 (MaterialBatch, QualityCheck, etc.)
+    factory_id: Optional[str] = None
+    context: Optional[Dict] = None  # 可选的上下文信息
+
+
+class RuleParseResponse(BaseModel):
+    """规则解析响应"""
+    success: bool
+    rule_name: Optional[str] = None  # 生成的规则名称
+    rule_description: Optional[str] = None  # 规则描述
+    drl_content: Optional[str] = None  # 生成的 DRL 规则内容
+    rule_group: Optional[str] = None  # 推荐的规则组
+    priority: Optional[int] = None  # 推荐的优先级
+    entity_types: Optional[List[str]] = None  # 涉及的实体类型
+    ai_explanation: Optional[str] = None  # AI 解释
+    suggestions: Optional[List[str]] = None  # 建议
+    message: Optional[str] = None
+
+
+def build_rule_parse_prompt() -> str:
+    """
+    构建规则解析的系统提示词
+    """
+    return """你是白垩纪食品溯源系统的规则引擎配置助手。
+
+你的任务是将用户的自然语言描述转换为 Drools DRL 规则。
+
+支持的实体类型 (Fact Types):
+1. MaterialBatch - 原材料批次
+   - 属性: batchNumber, materialTypeId, quantity, currentQuantity, status, temperature, supplierId, expiryDate
+2. ProcessingBatch - 生产批次
+   - 属性: batchNumber, productTypeId, plannedQuantity, actualQuantity, status, yieldRate
+3. QualityInspection - 质检记录
+   - 属性: inspectionNumber, batchId, result, temperature, bacteriaCount, appearance
+4. Equipment - 设备
+   - 属性: equipmentCode, equipmentName, status, lastMaintenanceDate, operatingHours
+5. Shipment - 出货记录
+   - 属性: shipmentNumber, customerId, quantity, status, shipmentDate
+
+规则组类型:
+- validation: 数据验证规则
+- workflow: 工作流规则 (状态转换触发)
+- costing: 成本计算规则
+- quality: 质量控制规则
+- alert: 告警通知规则
+
+可用的内置服务:
+- alertService.send(level, title, message) - 发送告警 (level: INFO/WARNING/CRITICAL)
+- notifyService.notify(department, message) - 通知部门
+- logService.log(entityId, action, details) - 记录日志
+
+DRL 规则格式示例:
+```
+package com.cretas.aims.rules.{rule_group}
+
+import com.cretas.aims.entity.*;
+import com.cretas.aims.service.AlertService;
+import com.cretas.aims.service.NotifyService;
+
+global AlertService alertService;
+global NotifyService notifyService;
+
+rule "规则中文名"
+    salience 10  // 优先级，数字越大越先执行
+    when
+        $batch : MaterialBatch(currentQuantity < 500)
+    then
+        alertService.send("WARNING", "库存预警",
+            "原材料 " + $batch.getMaterialTypeId() + " 库存不足500kg，当前: " + $batch.getCurrentQuantity() + "kg");
+        notifyService.notify("采购部", "请及时补充库存");
+end
+```
+
+输出格式 (严格JSON):
+{
+  "rule_name": "低库存预警",
+  "rule_description": "当原材料库存低于500kg时发送预警通知",
+  "drl_content": "完整的DRL规则内容",
+  "rule_group": "alert",
+  "priority": 10,
+  "entity_types": ["MaterialBatch"],
+  "ai_explanation": "这个规则会监控所有原材料批次的当前库存量...",
+  "suggestions": ["建议同时添加临界值可配置功能", "可以为不同原料设置不同阈值"]
+}
+
+注意:
+- 只输出JSON，不要有其他文字
+- DRL内容中的引号需要正确转义
+- 规则名使用中文
+- 优先级(salience)范围: 0-100，数字越大越先执行
+- 根据规则语义推断合适的rule_group"""
+
+
+@app.post("/api/ai/rule/parse", response_model=RuleParseResponse)
+async def parse_rule(request: RuleParseRequest):
+    """
+    AI规则解析 - 将自然语言描述转换为 Drools DRL 规则
+
+    用途:
+    - 快速创建业务规则
+    - 非技术人员配置规则
+    - 规则模板生成
+
+    示例输入:
+    "库存低于500kg时通知采购"
+    "质检温度超过-15°C时标记不合格"
+    "设备运行超过1000小时时提醒维护"
+
+    示例输出:
+    完整的 Drools DRL 规则代码
+    """
+    try:
+        if not request.user_input or not request.user_input.strip():
+            return RuleParseResponse(
+                success=False,
+                message="用户输入不能为空"
+            )
+
+        # 构建提示词
+        system_prompt = build_rule_parse_prompt()
+
+        # 添加上下文信息
+        context_text = ""
+        if request.rule_group:
+            context_text += f"\n用户指定规则组: {request.rule_group}"
+        if request.entity_type:
+            context_text += f"\n用户指定实体类型: {request.entity_type}"
+        if request.context:
+            if request.context.get('factoryName'):
+                context_text += f"\n工厂: {request.context['factoryName']}"
+            if request.context.get('industry'):
+                context_text += f"\n行业: {request.context['industry']}"
+
+        messages = [
+            {"role": "system", "content": system_prompt + context_text},
+            {"role": "user", "content": request.user_input}
+        ]
+
+        # 调用AI
+        result = query_qwen(messages, enable_thinking=False)
+        response_text = result["content"].strip()
+
+        # 解析JSON响应
+        try:
+            # 清理可能的markdown代码块
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            parsed = json.loads(response_text)
+
+            return RuleParseResponse(
+                success=True,
+                rule_name=parsed.get("rule_name"),
+                rule_description=parsed.get("rule_description"),
+                drl_content=parsed.get("drl_content"),
+                rule_group=parsed.get("rule_group", request.rule_group or "validation"),
+                priority=parsed.get("priority", 10),
+                entity_types=parsed.get("entity_types", []),
+                ai_explanation=parsed.get("ai_explanation"),
+                suggestions=parsed.get("suggestions"),
+                message="规则解析成功"
+            )
+
+        except json.JSONDecodeError as e:
+            return RuleParseResponse(
+                success=False,
+                message=f"AI返回格式错误: {str(e)}. 原始响应: {response_text[:300]}"
+            )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        return RuleParseResponse(
+            success=False,
+            message=f"规则解析失败: {str(e)}"
+        )
+
+
+class StateMachineParseRequest(BaseModel):
+    """状态机解析请求"""
+    user_input: str  # 用户自然语言描述 (例如: "质检单有待检、合格、不合格、复检四个状态")
+    entity_type: str  # 实体类型 (QualityInspection, ProcessingBatch, etc.)
+    factory_id: Optional[str] = None
+    context: Optional[Dict] = None
+
+
+class StateDefinition(BaseModel):
+    """状态定义"""
+    code: str
+    name: str
+    description: Optional[str] = None
+    color: Optional[str] = None
+    is_final: bool = False
+
+
+class TransitionDefinition(BaseModel):
+    """转换定义"""
+    from_state: str
+    to_state: str
+    event: str
+    guard: Optional[str] = None
+    action: Optional[str] = None
+    description: Optional[str] = None
+
+
+class StateMachineParseResponse(BaseModel):
+    """状态机解析响应"""
+    success: bool
+    machine_name: Optional[str] = None
+    machine_description: Optional[str] = None
+    initial_state: Optional[str] = None
+    states: Optional[List[StateDefinition]] = None
+    transitions: Optional[List[TransitionDefinition]] = None
+    ai_explanation: Optional[str] = None
+    suggestions: Optional[List[str]] = None
+    message: Optional[str] = None
+
+
+def build_state_machine_parse_prompt() -> str:
+    """
+    构建状态机解析的系统提示词
+    """
+    return """你是白垩纪食品溯源系统的状态机配置助手。
+
+你的任务是根据用户的自然语言描述，生成完整的状态机配置。
+
+状态机用于管理实体的生命周期，例如：
+- 质检单: 待检 → 检验中 → 合格/不合格 → (不合格可复检) → 最终结果
+- 生产批次: 计划中 → 生产中 → 完成/暂停/取消
+- 出货单: 待发货 → 发货中 → 已签收/异常
+
+状态设计规则:
+1. 每个状态有唯一的 code (英文小写下划线) 和 name (中文名)
+2. 必须有一个初始状态 (initial_state)
+3. 可以有多个最终状态 (is_final=true)
+4. 转换需要定义触发事件 (event)
+
+状态颜色建议:
+- 待处理状态: #F5A623 (橙色)
+- 进行中状态: #4A90E2 (蓝色)
+- 成功状态: #7ED321 (绿色)
+- 失败状态: #D0021B (红色)
+- 暂停状态: #9B9B9B (灰色)
+
+输出格式 (严格JSON):
+{
+  "machine_name": "质检状态机",
+  "machine_description": "管理质检单的状态流转",
+  "initial_state": "pending",
+  "states": [
+    {"code": "pending", "name": "待检", "color": "#F5A623", "is_final": false},
+    {"code": "inspecting", "name": "检验中", "color": "#4A90E2", "is_final": false},
+    {"code": "passed", "name": "合格", "color": "#7ED321", "is_final": true},
+    {"code": "failed", "name": "不合格", "color": "#D0021B", "is_final": false},
+    {"code": "reinspection", "name": "复检中", "color": "#4A90E2", "is_final": false}
+  ],
+  "transitions": [
+    {"from_state": "pending", "to_state": "inspecting", "event": "START_INSPECTION", "description": "开始检验"},
+    {"from_state": "inspecting", "to_state": "passed", "event": "MARK_PASSED", "guard": "result == 'pass'", "description": "标记合格"},
+    {"from_state": "inspecting", "to_state": "failed", "event": "MARK_FAILED", "guard": "result == 'fail'", "description": "标记不合格"},
+    {"from_state": "failed", "to_state": "reinspection", "event": "REQUEST_REINSPECTION", "description": "申请复检"}
+  ],
+  "ai_explanation": "根据描述生成了5个状态和4个转换...",
+  "suggestions": ["建议添加不合格处置状态", "可以添加审批流程"]
+}
+
+注意:
+- 只输出JSON，不要有其他文字
+- 状态code使用英文小写下划线命名
+- 事件event使用英文大写下划线命名
+- guard是可选的守卫条件表达式
+- action是可选的动作名称"""
+
+
+@app.post("/api/ai/state-machine/parse", response_model=StateMachineParseResponse)
+async def parse_state_machine(request: StateMachineParseRequest):
+    """
+    AI状态机解析 - 将自然语言描述转换为状态机配置
+
+    用途:
+    - 快速创建实体状态机
+    - 可视化状态流程设计
+    - 业务流程配置
+
+    示例输入:
+    "质检单有待检、合格、不合格三个状态，不合格可以申请复检"
+
+    示例输出:
+    完整的状态机配置 (状态列表 + 转换规则)
+    """
+    try:
+        if not request.user_input or not request.user_input.strip():
+            return StateMachineParseResponse(
+                success=False,
+                message="用户输入不能为空"
+            )
+
+        # 构建提示词
+        system_prompt = build_state_machine_parse_prompt()
+
+        # 添加上下文信息
+        context_text = f"\n正在配置的实体类型: {request.entity_type}"
+        if request.context:
+            if request.context.get('factoryName'):
+                context_text += f"\n工厂: {request.context['factoryName']}"
+            if request.context.get('industry'):
+                context_text += f"\n行业: {request.context['industry']}"
+
+        messages = [
+            {"role": "system", "content": system_prompt + context_text},
+            {"role": "user", "content": request.user_input}
+        ]
+
+        # 调用AI
+        result = query_qwen(messages, enable_thinking=False)
+        response_text = result["content"].strip()
+
+        # 解析JSON响应
+        try:
+            # 清理可能的markdown代码块
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            parsed = json.loads(response_text)
+
+            # 解析状态列表
+            states = []
+            for s in parsed.get("states", []):
+                states.append(StateDefinition(
+                    code=s.get("code", ""),
+                    name=s.get("name", ""),
+                    description=s.get("description"),
+                    color=s.get("color"),
+                    is_final=s.get("is_final", False)
+                ))
+
+            # 解析转换列表
+            transitions = []
+            for t in parsed.get("transitions", []):
+                transitions.append(TransitionDefinition(
+                    from_state=t.get("from_state", ""),
+                    to_state=t.get("to_state", ""),
+                    event=t.get("event", ""),
+                    guard=t.get("guard"),
+                    action=t.get("action"),
+                    description=t.get("description")
+                ))
+
+            return StateMachineParseResponse(
+                success=True,
+                machine_name=parsed.get("machine_name"),
+                machine_description=parsed.get("machine_description"),
+                initial_state=parsed.get("initial_state"),
+                states=states,
+                transitions=transitions,
+                ai_explanation=parsed.get("ai_explanation"),
+                suggestions=parsed.get("suggestions"),
+                message=f"成功生成 {len(states)} 个状态和 {len(transitions)} 个转换"
+            )
+
+        except json.JSONDecodeError as e:
+            return StateMachineParseResponse(
+                success=False,
+                message=f"AI返回格式错误: {str(e)}"
+            )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        return StateMachineParseResponse(
+            success=False,
+            message=f"状态机解析失败: {str(e)}"
+        )
+
+
+@app.get("/api/ai/rule/health")
+async def rule_service_health():
+    """
+    规则解析服务健康检查
+    """
+    return {
+        "service": "rule_parser",
+        "status": "running",
+        "llm_available": bool(client),
+        "capabilities": [
+            "drl_generation",       # DRL 规则生成
+            "state_machine_design", # 状态机设计
+            "rule_validation"       # 规则验证 (TODO)
+        ],
+        "supported_rule_groups": [
+            "validation",
+            "workflow",
+            "costing",
+            "quality",
+            "alert"
+        ],
+        "supported_entity_types": [
+            "MaterialBatch",
+            "ProcessingBatch",
+            "QualityInspection",
+            "Equipment",
+            "Shipment"
+        ]
+    }
+
+
+# ==================== 调度服务端点 ====================
+
+# 导入调度服务模块
+try:
+    from scheduling_service import (
+        CompletionProbabilityRequest,
+        CompletionProbabilityResponse,
+        OptimizeWorkersRequest,
+        OptimizeWorkersResponse,
+        GenerateScheduleRequest,
+        RescheduleRequest,
+        calculate_completion_probability,
+        optimize_workers,
+        generate_schedule,
+        reschedule,
+        insight_generator
+    )
+    SCHEDULING_SERVICE_AVAILABLE = True
+except ImportError as e:
+    print(f"[WARN] Scheduling service not available: {e}")
+    SCHEDULING_SERVICE_AVAILABLE = False
+
+
+@app.post("/scheduling/completion-probability")
+async def scheduling_completion_probability(request: dict):
+    """
+    Monte Carlo 模拟 - 计算生产完成概率
+
+    输入:
+    - factory_id: 工厂ID
+    - schedule_id: 排程ID
+    - remaining_quantity: 剩余数量
+    - deadline: 截止时间 (ISO格式)
+    - assigned_workers: 分配工人数
+    - efficiency_mean: 效率均值 (可选)
+    - efficiency_std: 效率标准差 (可选)
+
+    输出:
+    - probability: 按时完成概率
+    - mean_hours: 预计完成时间均值
+    - confidence_lower/upper: 置信区间
+    - insight: AI 洞察文本
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        from scheduling_service import CompletionProbabilityRequest as CPRequest
+        req = CPRequest(**request)
+        result = calculate_completion_probability(req)
+        return result.dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"计算完成概率失败: {str(e)}")
+
+
+@app.post("/scheduling/optimize-workers")
+async def scheduling_optimize_workers(request: dict):
+    """
+    OR-Tools 优化 - 工人分配优化
+
+    输入:
+    - factory_id: 工厂ID
+    - plan_id: 计划ID
+    - workers: 工人列表 [{'id', 'skill', 'cost_per_hour', 'is_temporary'}]
+    - schedules: 排程列表 [{'id', 'required_skill', 'min_workers', 'max_workers'}]
+    - objective: 优化目标 (minimize_cost/maximize_efficiency/balanced)
+    - max_temporary_ratio: 最大临时工比例
+
+    输出:
+    - assignments: 分配结果 [{'worker_id', 'schedule_id', 'assignment_type'}]
+    - total_cost: 总成本
+    - efficiency_score: 效率评分
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        from scheduling_service import OptimizeWorkersRequest as OWRequest
+        req = OWRequest(**request)
+        result = optimize_workers(req)
+        return result.dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"人员优化失败: {str(e)}")
+
+
+@app.post("/scheduling/generate")
+async def scheduling_generate(request: dict):
+    """
+    AI 生成调度建议
+
+    输入:
+    - factory_id: 工厂ID
+    - plan_date: 计划日期 (YYYY-MM-DD)
+    - batch_ids: 批次ID列表
+    - production_line_ids: 产线ID列表 (可选)
+    - available_worker_ids: 可用工人ID列表 (可选)
+    - target_completion_probability: 目标完成概率
+
+    输出:
+    - schedules: 生成的排程列表
+    - confidence: AI 置信度
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        from scheduling_service import GenerateScheduleRequest as GSRequest
+        req = GSRequest(**request)
+        result = generate_schedule(req)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"生成调度失败: {str(e)}")
+
+
+@app.post("/scheduling/reschedule")
+async def scheduling_reschedule(request: dict):
+    """
+    重新调度
+
+    输入:
+    - factory_id: 工厂ID
+    - plan_id: 计划ID
+    - reason: 重新调度原因
+    - keep_completed: 是否保留已完成的排程
+    - schedule_ids_to_reschedule: 需要重新调度的排程ID
+    - unavailable_worker_ids: 不可用工人ID
+
+    输出:
+    - updated_schedules: 更新后的排程列表
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        from scheduling_service import RescheduleRequest as RSRequest
+        req = RSRequest(**request)
+        result = reschedule(req)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"重新调度失败: {str(e)}")
+
+
+@app.post("/scheduling/explain-alert")
+async def scheduling_explain_alert(request: dict):
+    """
+    LLM 解释告警原因
+
+    输入:
+    - alert_type: 告警类型
+    - schedule_data: 排程数据
+    - probability: 完成概率
+
+    输出:
+    - explanation: 告警解释文本
+    - recommendations: 建议措施
+    """
+    if not SCHEDULING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="调度服务不可用")
+
+    try:
+        alert_type = request.get('alert_type', 'low_probability')
+        schedule_data = request.get('schedule_data', {})
+        probability = request.get('probability', 0.5)
+
+        explanation = insight_generator.explain_alert(alert_type, schedule_data, probability)
+
+        return {
+            'success': True,
+            'explanation': explanation,
+            'alert_type': alert_type,
+            'probability': probability
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"解释告警失败: {str(e)}")
+
+
+@app.get("/scheduling/health")
+async def scheduling_health():
+    """
+    调度服务健康检查
+    """
+    return {
+        'service': 'scheduling',
+        'status': 'running' if SCHEDULING_SERVICE_AVAILABLE else 'unavailable',
+        'monte_carlo': True,
+        'ortools': SCHEDULING_SERVICE_AVAILABLE,
+        'llm_available': bool(client)
+    }
+
+
+# ==================== ML训练和混合预测 ====================
+
+# 导入ML模块
+ML_SERVICE_AVAILABLE = False
+try:
+    from ml_trainer import train_models, model_loader
+    from hybrid_predictor import (
+        hybrid_predictor, predict_with_hybrid,
+        predict_completion, get_model_status
+    )
+    ML_SERVICE_AVAILABLE = True
+except ImportError as e:
+    print(f"[WARN] ML服务未加载: {e}")
+
+
+@app.post("/ml/train")
+async def ml_train_models(request: dict):
+    """
+    触发模型训练
+
+    输入:
+    - factory_id: 工厂ID
+    - model_types: 模型类型列表 ["efficiency", "duration", "quality"]
+
+    输出:
+    - success: 是否成功
+    - results: 各模型训练结果
+    """
+    if not ML_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="ML服务不可用")
+
+    try:
+        factory_id = request.get('factory_id')
+        model_types = request.get('model_types', ['efficiency', 'duration', 'quality'])
+
+        if not factory_id:
+            raise HTTPException(status_code=400, detail="factory_id 不能为空")
+
+        result = train_models(factory_id, model_types)
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"训练失败: {str(e)}")
+
+
+@app.post("/ml/predict")
+async def ml_predict(request: dict):
+    """
+    使用ML模型进行预测
+
+    输入:
+    - factory_id: 工厂ID
+    - prediction_type: 预测类型 (efficiency/duration/quality)
+    - features: 特征数据
+
+    输出:
+    - prediction: 预测值
+    - confidence: 置信度
+    - model_version: 模型版本
+    """
+    if not ML_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=500, detail="ML服务不可用")
+
+    try:
+        factory_id = request.get('factory_id')
+        prediction_type = request.get('prediction_type', 'efficiency')
+        features = request.get('features', {})
+
+        result = predict_with_hybrid(factory_id, features, prediction_type)
+        return {
+            'success': True,
+            **result
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"预测失败: {str(e)}")
+
+
+@app.post("/scheduling/hybrid-predict")
+async def scheduling_hybrid_predict(request: dict):
+    """
+    混合预测完成概率 (ML + Monte Carlo + LLM)
+
+    输入:
+    - factory_id: 工厂ID
+    - remaining_quantity: 剩余数量
+    - deadline_hours: 截止时间(小时)
+    - available_workers: 可用工人数
+    - 其他特征...
+
+    输出:
+    - probability: 完成概率
+    - mean_hours: 预计平均时长
+    - mode: 预测模式 (hybrid/llm_only)
+    - explanation: 解释
+    """
+    if not ML_SERVICE_AVAILABLE:
+        # 回退到基础Monte Carlo
+        raise HTTPException(status_code=500, detail="ML服务不可用，请使用 /scheduling/completion-probability")
+
+    try:
+        factory_id = request.get('factory_id')
+        if not factory_id:
+            raise HTTPException(status_code=400, detail="factory_id 不能为空")
+
+        result = predict_completion(factory_id, request)
+        return {
+            'success': True,
+            **result
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"混合预测失败: {str(e)}")
+
+
+@app.get("/ml/status/{factory_id}")
+async def ml_model_status(factory_id: str):
+    """
+    获取工厂的ML模型状态
+
+    输出:
+    - models: 各类型模型的可用状态
+    """
+    if not ML_SERVICE_AVAILABLE:
+        return {
+            'factory_id': factory_id,
+            'ml_service_available': False,
+            'models': {}
+        }
+
+    try:
+        status = get_model_status(factory_id)
+        status['ml_service_available'] = True
+        return status
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取状态失败: {str(e)}")
+
+
+@app.get("/ml/health")
+async def ml_health():
+    """
+    ML服务健康检查
+    """
+    return {
+        'service': 'ml',
+        'status': 'running' if ML_SERVICE_AVAILABLE else 'unavailable',
+        'lightgbm_available': ML_SERVICE_AVAILABLE,
+        'hybrid_predictor_available': ML_SERVICE_AVAILABLE
+    }
+
 
 # ==================== 启动 ====================
 if __name__ == "__main__":
