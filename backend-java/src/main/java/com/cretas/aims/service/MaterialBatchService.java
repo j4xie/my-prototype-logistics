@@ -22,7 +22,7 @@ public interface MaterialBatchService {
     /**
      * 创建原材料批次（入库）
      */
-    MaterialBatchDTO createMaterialBatch(String factoryId, CreateMaterialBatchRequest request, Integer userId);
+    MaterialBatchDTO createMaterialBatch(String factoryId, CreateMaterialBatchRequest request, Long userId);
      /**
      * 更新原材料批次
       */
@@ -98,7 +98,7 @@ public interface MaterialBatchService {
      /**
      * 批量入库
       */
-    List<MaterialBatchDTO> batchCreateMaterialBatches(String factoryId, List<CreateMaterialBatchRequest> requests, Integer userId);
+    List<MaterialBatchDTO> batchCreateMaterialBatches(String factoryId, List<CreateMaterialBatchRequest> requests, Long userId);
      /**
      * 导出库存报表
       */
@@ -134,7 +134,7 @@ public interface MaterialBatchService {
      /**
      * 调整批次数量（带操作人）
       */
-    MaterialBatchDTO adjustBatchQuantity(String factoryId, String batchId, BigDecimal newQuantity, String reason, Integer adjustedBy);
+    MaterialBatchDTO adjustBatchQuantity(String factoryId, String batchId, BigDecimal newQuantity, String reason, Long adjustedBy);
      /**
      * 更新批次状态
       */

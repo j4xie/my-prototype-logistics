@@ -1,6 +1,7 @@
 package com.cretas.aims.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -64,6 +65,20 @@ public class WorkTypeDTO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // ===================================================================
+    // 前端字段别名（兼容前端）
+    // ===================================================================
+
+    /**
+     * overtimeMultiplier 别名（兼容前端）
+     * 前端使用 overtimeMultiplier，后端使用 overtimeRateMultiplier
+     */
+    @JsonProperty("overtimeMultiplier")
+    public BigDecimal getOvertimeMultiplier() {
+        return overtimeRateMultiplier;
+    }
+
     // 计算字段
     private Integer activeEmployeeCount;
     private BigDecimal totalWorkHours;

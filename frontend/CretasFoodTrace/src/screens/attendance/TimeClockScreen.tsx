@@ -14,6 +14,7 @@ import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
+import { handleError } from '../../utils/errorHandler';
 
 export default function TimeClockScreen() {
   const navigation = useNavigation();
@@ -174,7 +175,7 @@ export default function TimeClockScreen() {
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="考勤打卡" />
-        <Appbar.Action icon="history" onPress={() => navigation.navigate('AttendanceHistory')} />
+        <Appbar.Action icon="history" onPress={() => (navigation as any).navigate('AttendanceHistory')} />
         <Appbar.Action icon="refresh" onPress={loadTodayRecords} />
       </Appbar.Header>
 
@@ -214,7 +215,7 @@ export default function TimeClockScreen() {
         {/* Action Buttons */}
         <View style={styles.buttonRow}>
           <NeoButton
-            variant="success"
+            variant="primary"
             size="large"
             onPress={handleClockIn}
             disabled={clockInDisabled}
@@ -271,10 +272,10 @@ export default function TimeClockScreen() {
         <NeoCard style={styles.card} padding="m">
           <Text style={styles.sectionTitle}>常用功能</Text>
           <View style={styles.grid}>
-            <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('ClockHistory')} style={styles.gridBtn}>历史记录</NeoButton>
-            <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('TimeStatistics')} style={styles.gridBtn}>工时统计</NeoButton>
-            <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('WorkRecords')} style={styles.gridBtn}>工作记录</NeoButton>
-            <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('DepartmentAttendance')} style={styles.gridBtn}>部门考勤</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('AttendanceHistory')} style={styles.gridBtn}>历史记录</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('TimeStatistics')} style={styles.gridBtn}>工时统计</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('WorkRecords')} style={styles.gridBtn}>工作记录</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('DepartmentAttendance')} style={styles.gridBtn}>部门考勤</NeoButton>
           </View>
         </NeoCard>
 

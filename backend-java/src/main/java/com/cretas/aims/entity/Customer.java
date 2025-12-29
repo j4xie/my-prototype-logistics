@@ -4,6 +4,7 @@ import lombok.*;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 /**
  * 客户实体类
  *
@@ -28,9 +29,15 @@ import java.util.List;
 )
 public class Customer extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false, length = 11)
+    @Column(name = "id", nullable = false, length = 191)
     private String id;
+
+    @PrePersist
+    void assignUUID() {
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+        }
+    }
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
     @Column(name = "code", nullable = false, length = 50)
@@ -78,11 +85,12 @@ public class Customer extends BaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
     @Column(name = "created_by", nullable = false)
-    private Integer createdBy;
+    private Long createdBy;
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
     private User createdByUser;
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

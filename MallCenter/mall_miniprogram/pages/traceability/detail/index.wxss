@@ -1,0 +1,385 @@
+/* 溯源详情页样式 */
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 120rpx;
+}
+
+/* 加载状态 */
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 200rpx;
+}
+
+/* 产品卡片 */
+.product-card {
+  margin: 20rpx;
+  padding: 30rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.product-badge {
+  display: flex;
+  align-items: center;
+  background: #f0fff4;
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.product-badge text:first-child {
+  margin-right: 8rpx;
+}
+
+.batch-no {
+  color: #999;
+}
+
+.product-name {
+  color: #333;
+  line-height: 1.4;
+}
+
+.product-meta {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.cert-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+/* Tab切换 */
+.tab-bar {
+  display: flex;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 0;
+  color: #666;
+  font-size: 24rpx;
+}
+
+.tab-item text:first-child {
+  font-size: 36rpx;
+  margin-bottom: 8rpx;
+}
+
+.tab-item.active {
+  color: #52c41a;
+  background: #f0fff4;
+}
+
+/* Tab内容 */
+.tab-content {
+  margin: 0 20rpx;
+  padding: 30rpx;
+  border-radius: 16rpx;
+  min-height: 300rpx;
+}
+
+/* 增强版时间线 */
+.timeline-enhanced {
+  position: relative;
+  padding: 10rpx 0;
+}
+
+.timeline-item-enhanced {
+  position: relative;
+  display: flex;
+  padding: 20rpx 0;
+  margin-left: 50rpx;
+}
+
+.timeline-item-enhanced.first {
+  padding-top: 0;
+}
+
+.timeline-item-enhanced.last {
+  padding-bottom: 0;
+}
+
+/* 时间线连接线 */
+.timeline-line {
+  position: absolute;
+  left: 25rpx;
+  top: 70rpx;
+  bottom: -20rpx;
+  width: 4rpx;
+  background: linear-gradient(to bottom, #52c41a, #e8e8e8);
+  border-radius: 2rpx;
+}
+
+/* 阶段图标容器 */
+.timeline-icon-wrapper {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3rpx solid;
+  background-color: #fff;
+  z-index: 1;
+}
+
+.timeline-icon-wrapper text {
+  font-size: 28rpx;
+}
+
+/* 时间线内容区域 */
+.timeline-content-enhanced {
+  flex: 1;
+  margin-left: 20rpx;
+  background: #fafafa;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  position: relative;
+}
+
+.timeline-content-enhanced::before {
+  content: '';
+  position: absolute;
+  left: -12rpx;
+  top: 18rpx;
+  width: 0;
+  height: 0;
+  border-top: 10rpx solid transparent;
+  border-bottom: 10rpx solid transparent;
+  border-right: 12rpx solid #fafafa;
+}
+
+.timeline-header-enhanced {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timeline-stage-name {
+  font-size: 30rpx;
+  font-weight: bold;
+}
+
+.timeline-status {
+  display: flex;
+  align-items: center;
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+}
+
+.timeline-status.completed {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.timeline-status.pending {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.timeline-status text:first-child {
+  margin-right: 6rpx;
+  font-size: 20rpx;
+}
+
+.timeline-time {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+.timeline-desc {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* 详细信息区域 */
+.timeline-details {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx dashed #e8e8e8;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.timeline-details.expanded {
+  max-height: 300rpx;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: #888;
+  margin-bottom: 10rpx;
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-row text:first-child {
+  font-size: 26rpx;
+  margin-right: 10rpx;
+  color: #bbb;
+}
+
+/* 展开提示 */
+.timeline-expand-hint {
+  display: flex;
+  justify-content: center;
+  margin-top: 10rpx;
+}
+
+/* 空状态图标 */
+.empty-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20rpx;
+}
+
+/* 旧版时间线样式（保留兼容） */
+.timeline {
+  position: relative;
+  padding-left: 40rpx;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 40rpx;
+  border-left: 2rpx solid #e8e8e8;
+  padding-left: 30rpx;
+}
+
+.timeline-item:last-child {
+  border-left-color: transparent;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -10rpx;
+  top: 0;
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background: #d9d9d9;
+  border: 4rpx solid #fff;
+  box-shadow: 0 0 0 4rpx #e8e8e8;
+}
+
+.timeline-dot.completed {
+  background: #52c41a;
+  box-shadow: 0 0 0 4rpx #b7eb8f;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 原料列表 */
+.material-item,
+.quality-item {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.material-item:last-child,
+.quality-item:last-child {
+  border-bottom: none;
+}
+
+.material-header,
+.quality-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quality-report-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.quality-report-link text:first-child {
+  margin-right: 8rpx;
+}
+
+/* 证据图片 */
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+}
+
+.evidence-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.evidence-image {
+  width: 100%;
+  height: 180rpx;
+  border-radius: 8rpx;
+}
+
+.evidence-desc {
+  margin-top: 8rpx;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200rpx;
+}
+
+/* 底部操作栏 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  padding: 20rpx 30rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+}

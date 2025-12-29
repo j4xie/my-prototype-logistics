@@ -20,7 +20,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { workTypeApiClient, WorkType, CreateWorkTypeRequest } from '../../services/api/workTypeApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 import { getFactoryId } from '../../types/auth';
 
@@ -45,7 +45,7 @@ export default function WorkTypeManagementScreen() {
 
   // 权限控制
   const userType = user?.userType || 'factory';
-  const roleCode = user?.factoryUser?.role || user?.factoryUser?.roleCode || user?.roleCode || 'viewer';
+  const roleCode = user?.factoryUser?.role || 'viewer';
   const isPlatformAdmin = userType === 'platform';
   const isSuperAdmin = roleCode === 'factory_super_admin';
   const isPermissionAdmin = roleCode === 'permission_admin';
@@ -54,14 +54,14 @@ export default function WorkTypeManagementScreen() {
   const factoryId = getFactoryId(user);
 
   // 表单状态
-  const [formData, setFormData] = useState<Partial<CreateWorkTypeRequest>>({
+  const [formData, setFormData] = useState<Partial<CreateWorkTypeRequest> & { isActive?: boolean }>({
     code: '',
     name: '',
     description: '',
     hourlyRate: 0,
-    overtimeRateMultiplier: 1.5,
+    overtimeMultiplier: 1.5,
     department: 'processing',
-    isActive: -1,
+    isActive: true,
   });
 
   useEffect(() => {
@@ -72,26 +72,26 @@ export default function WorkTypeManagementScreen() {
     try {
       setLoading(true);
       const response = await workTypeApiClient.getWorkTypes({
-        factoryId: factoryId//user?.factoryId,
+        factoryId: factoryId
       });
       console.log("response=", response);
-      if (response.data) {
+      if (response.data && Array.isArray(response.data)) {
         workTypeLogger.info('工种类型列表加载成功', {
-          workTypeCount: response.data.content.length,
-          factoryId: factoryId,//user?.factoryId,
+          workTypeCount: response.data.length,
+          factoryId: factoryId,
         });
-        setWorkTypes(response.data.content);
+        setWorkTypes(response.data);
       } else if (Array.isArray(response)) {
         // 兼容直接返回数组的情况
         workTypeLogger.info('工种类型列表加载成功', {
           workTypeCount: response.length,
-          factoryId: factoryId,//user?.factoryId,
+          factoryId: factoryId,
         });
         setWorkTypes(response);
       }
     } catch (error) {
       workTypeLogger.error('加载工种类型失败', error as Error, {
-        factoryId: factoryId,//user?.factoryId,
+        factoryId: factoryId,
       });
       Alert.alert('错误', (error as any).response?.data?.message || '加载工种类型失败');
     } finally {
@@ -116,8 +116,8 @@ export default function WorkTypeManagementScreen() {
       let workTypeList: WorkType[] = [];
       if (Array.isArray(results)) {
         workTypeList = results;
-      } else if (results?.data) {
-        workTypeList = Array.isArray(results.data) ? results.data : [];
+      } else if ((results as any)?.data) {
+        workTypeList = Array.isArray((results as any).data) ? (results as any).data : [];
       }
 
       workTypeLogger.info('工种搜索完成', {
@@ -143,9 +143,9 @@ export default function WorkTypeManagementScreen() {
       name: '',
       description: '',
       hourlyRate: 0,
-      overtimeRateMultiplier: 1.5,
+      overtimeMultiplier: 1.5,
       department: 'processing',
-      isActive: -1,
+      isActive: true,
     });
     setModalVisible(true);
   };
@@ -157,7 +157,7 @@ export default function WorkTypeManagementScreen() {
       name: item.name,
       description: item.description || '',
       hourlyRate: item.hourlyRate || 0,
-      overtimeRateMultiplier: item.overtimeRateMultiplier || 1.5,
+      overtimeMultiplier: item.overtimeMultiplier || 1.5,
       department: item.department || 'processing',
       isActive: item.isActive,
     });
@@ -243,9 +243,9 @@ export default function WorkTypeManagementScreen() {
       workTypeLogger.info('工种状态已切换', {
         workTypeId: item.id,
         workTypeName: item.name,
-        newStatus: !item.isActive == 1 ? '启用' : '停用',
+        newStatus: !item.isActive ? '启用' : '停用',
       });
-      Alert.alert('成功', item.isActive == 1 ? '已停用' : '已启用');
+      Alert.alert('成功', item.isActive ? '已停用' : '已启用');
       loadWorkTypes();
     } catch (error) {
       workTypeLogger.error('切换工种状态失败', error as Error, {
@@ -259,7 +259,6 @@ export default function WorkTypeManagementScreen() {
   const getDepartmentName = (dept?: string) => {
     switch (dept) {
       case 'processing': return '加工部';
-      case 'farming': return '养殖部';
       case 'logistics': return '物流部';
       case 'quality': return '质检部';
       case 'management': return '管理层';
@@ -270,7 +269,6 @@ export default function WorkTypeManagementScreen() {
   const getDepartmentColor = (dept?: string) => {
     switch (dept) {
       case 'processing': return '#E3F2FD';
-      case 'farming': return '#E8F5E9';
       case 'logistics': return '#FFF3E0';
       case 'quality': return '#F3E5F5';
       case 'management': return '#FCE4EC';
@@ -348,7 +346,7 @@ export default function WorkTypeManagementScreen() {
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {workTypes.filter(w => w.isActive == 1).length}
+                  {workTypes.filter(w => w.isActive === true).length}
                 </Text>
                 <Text style={styles.statLabel}>启用中</Text>
               </View>
@@ -393,7 +391,7 @@ export default function WorkTypeManagementScreen() {
                   </View>
                   <View style={styles.itemActions}>
                     <IconButton
-                      icon={item.isActive == 1 ? 'eye' : 'eye-off'}
+                      icon={item.isActive ? 'eye' : 'eye-off'}
                       size={20}
                       onPress={() => handleToggleStatus(item)}
                     />
@@ -434,7 +432,7 @@ export default function WorkTypeManagementScreen() {
                   <View style={styles.payItem}>
                     <List.Icon icon="clock-time-eight" style={styles.payIcon} />
                     <Text style={styles.payLabel}>加班倍率: </Text>
-                    <Text style={styles.payValue}>{item.overtimeRateMultiplier || 1.5}x</Text>
+                    <Text style={styles.payValue}>{item.overtimeMultiplier || 1.5}x</Text>
                   </View>
                 </View>
 
@@ -444,18 +442,18 @@ export default function WorkTypeManagementScreen() {
 
                 <View style={styles.itemFooter}>
                   <Chip
-                    icon={item.isActive == 1 ? 'check-circle' : 'close-circle'}
+                    icon={item.isActive ? 'check-circle' : 'close-circle'}
                     mode="flat"
                     compact
                     style={[
                       styles.statusChip,
-                      { backgroundColor: item.isActive == 1 ? '#E8F5E9' : '#FFEBEE' },
+                      { backgroundColor: item.isActive ? '#E8F5E9' : '#FFEBEE' },
                     ]}
                     textStyle={{
-                      color: item.isActive == 1 ? '#4CAF50' : '#F44336',
+                      color: item.isActive ? '#4CAF50' : '#F44336',
                     }}
                   >
-                    {item.isActive == 1 ? '启用中' : '已停用'}
+                    {item.isActive ? '启用中' : '已停用'}
                   </Chip>
                 </View>
               </Card.Content>
@@ -519,8 +517,8 @@ export default function WorkTypeManagementScreen() {
 
             <TextInput
               label="加班倍率"
-              value={formData.overtimeRateMultiplier?.toString() || ''}
-              onChangeText={(text) => setFormData({ ...formData, overtimeRateMultiplier: parseFloat(text) || 1.5 })}
+              value={formData.overtimeMultiplier?.toString() || ''}
+              onChangeText={(text) => setFormData({ ...formData, overtimeMultiplier: parseFloat(text) || 1.5 })}
               mode="outlined"
               style={styles.input}
               keyboardType="decimal-pad"
@@ -541,7 +539,7 @@ export default function WorkTypeManagementScreen() {
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>是否启用</Text>
               <Switch
-                value={formData.isActive}
+                value={formData.isActive ?? true}
                 onValueChange={(value) => setFormData({ ...formData, isActive: value })}
               />
             </View>

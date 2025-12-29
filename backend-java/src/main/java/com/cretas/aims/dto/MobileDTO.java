@@ -80,7 +80,7 @@ public class MobileDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LoginResponse {
-        private Integer userId;
+        private Long userId;
         private String username;
         private String factoryId;
         private String factoryName;
@@ -467,7 +467,7 @@ public class MobileDTO {
     @AllArgsConstructor
     public static class RegisterPhaseTwoResponse {
         private Boolean success;
-        private Integer userId;
+        private Long userId;
         private String username;
         private String role;
         private String token;
@@ -880,7 +880,7 @@ public class MobileDTO {
         /**
          * 用户ID
          */
-        private Integer userId;
+        private Long userId;
 
         /**
          * 用户名
@@ -926,7 +926,7 @@ public class MobileDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class OvertimeEmployeeItem {
-        private Integer userId;
+        private Long userId;
         private String userName;
         private Double overtimeHours;
     }
@@ -971,7 +971,7 @@ public class MobileDTO {
         /**
          * 用户ID
          */
-        private Integer userId;
+        private Long userId;
 
         /**
          * 用户名

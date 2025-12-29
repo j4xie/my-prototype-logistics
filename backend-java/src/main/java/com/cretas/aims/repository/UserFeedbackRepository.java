@@ -23,7 +23,7 @@ public interface UserFeedbackRepository extends JpaRepository<UserFeedback, Inte
     /**
      * 根据工厂ID和用户ID查找反馈列表
      */
-    List<UserFeedback> findByFactoryIdAndUserIdOrderByCreatedAtDesc(String factoryId, Integer userId);
+    List<UserFeedback> findByFactoryIdAndUserIdOrderByCreatedAtDesc(String factoryId, Long userId);
 
     /**
      * 根据工厂ID和状态查找反馈列表

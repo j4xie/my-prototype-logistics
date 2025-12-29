@@ -44,6 +44,7 @@ public class ProductionPlanBatchUsage extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "production_plan_id", referencedColumnName = "id", insertable = false, updatable = false)
     private ProductionPlan productionPlan;
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "material_batch_id", referencedColumnName = "id", insertable = false, updatable = false)
     private MaterialBatch materialBatch;
 }

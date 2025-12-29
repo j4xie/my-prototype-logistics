@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.ConversionDTO;
+import com.cretas.aims.dto.ConversionChangeHistoryDTO;
+import com.cretas.aims.dto.ConversionHistoryAnalysisDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.service.ConversionService;
@@ -14,8 +16,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.format.annotation.DateTimeFormat;
+
 import javax.validation.Valid;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -49,7 +54,7 @@ public class ConversionController {
     @Operation(summary = "更新转换率配置")
     public ApiResponse<ConversionDTO> updateConversion(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "转换率ID") Integer id,
+            @PathVariable @Parameter(description = "转换率ID") String id,
             @RequestBody @Valid ConversionDTO dto) {
         log.info("更新转换率配置: factoryId={}, id={}", factoryId, id);
         ConversionDTO result = conversionService.updateConversion(factoryId, id, dto);
@@ -60,7 +65,7 @@ public class ConversionController {
     @Operation(summary = "删除转换率配置")
     public ApiResponse<Void> deleteConversion(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "转换率ID") Integer id) {
+            @PathVariable @Parameter(description = "转换率ID") String id) {
         log.info("删除转换率配置: factoryId={}, id={}", factoryId, id);
         conversionService.deleteConversion(factoryId, id);
         return ApiResponse.success();
@@ -70,7 +75,7 @@ public class ConversionController {
     @Operation(summary = "获取转换率详情")
     public ApiResponse<ConversionDTO> getConversion(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "转换率ID") Integer id) {
+            @PathVariable @Parameter(description = "转换率ID") String id) {
         log.debug("获取转换率详情: factoryId={}, id={}", factoryId, id);
         ConversionDTO result = conversionService.getConversion(factoryId, id);
         return ApiResponse.success(result);
@@ -158,7 +163,7 @@ public class ConversionController {
     @Operation(summary = "批量激活/停用转换率配置")
     public ApiResponse<Void> updateActiveStatus(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestBody @Parameter(description = "转换率ID列表") List<Integer> ids,
+            @RequestBody @Parameter(description = "转换率ID列表") List<String> ids,
             @RequestParam @Parameter(description = "激活状态") Boolean isActive) {
         log.info("批量更新激活状态: factoryId={}, ids={}, isActive={}", factoryId, ids, isActive);
         conversionService.updateActiveStatus(factoryId, ids, isActive);
@@ -201,5 +206,67 @@ public class ConversionController {
         log.debug("获取转换率统计: factoryId={}", factoryId);
         ConversionService.ConversionStatistics stats = conversionService.getStatistics(factoryId);
         return ApiResponse.success(stats);
+    }
+
+    @GetMapping("/suggest")
+    @Operation(summary = "基于历史数据建议转换率", description = "根据已完成生产批次的历史数据自动计算建议的转换率和损耗率")
+    public ApiResponse<ConversionService.SuggestedConversion> suggestConversionFromHistory(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam @Parameter(description = "原材料类型ID") String materialTypeId,
+            @RequestParam @Parameter(description = "产品类型ID") String productTypeId) {
+        log.info("获取建议转换率: factoryId={}, materialTypeId={}, productTypeId={}",
+                factoryId, materialTypeId, productTypeId);
+        ConversionService.SuggestedConversion suggestion =
+                conversionService.suggestConversionFromHistory(factoryId, materialTypeId, productTypeId);
+        return ApiResponse.success(suggestion);
+    }
+
+    // ========== 变更历史相关接口 ==========
+
+    @GetMapping("/{id}/history")
+    @Operation(summary = "获取转换率变更历史", description = "获取单个转换率配置的变更历史记录")
+    public ApiResponse<PageResponse<ConversionChangeHistoryDTO>> getChangeHistory(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "转换率ID") String id,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+        log.debug("获取转换率变更历史: factoryId={}, conversionId={}", factoryId, id);
+        Pageable pageable = PageRequest.of(page - 1, size);
+        PageResponse<ConversionChangeHistoryDTO> result = conversionService.getChangeHistory(factoryId, id, pageable);
+        return ApiResponse.success(result);
+    }
+
+    @GetMapping("/{id}/history/count")
+    @Operation(summary = "获取变更次数", description = "获取单个转换率配置的变更次数")
+    public ApiResponse<Long> getChangeCount(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "转换率ID") String id) {
+        log.debug("获取转换率变更次数: conversionId={}", id);
+        long count = conversionService.getChangeCount(id);
+        return ApiResponse.success(count);
+    }
+
+    @GetMapping("/material/{materialTypeId}/history")
+    @Operation(summary = "获取原料类型的变更历史", description = "获取某原料类型所有转换率配置的变更历史")
+    public ApiResponse<PageResponse<ConversionChangeHistoryDTO>> getMaterialHistory(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "原材料类型ID") String materialTypeId,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+        log.debug("获取原料类型变更历史: factoryId={}, materialTypeId={}", factoryId, materialTypeId);
+        Pageable pageable = PageRequest.of(page - 1, size);
+        PageResponse<ConversionChangeHistoryDTO> result = conversionService.getMaterialHistory(factoryId, materialTypeId, pageable);
+        return ApiResponse.success(result);
+    }
+
+    @GetMapping("/history/analysis")
+    @Operation(summary = "获取变更历史分析数据", description = "用于AI分析的转换率变更趋势数据")
+    public ApiResponse<ConversionHistoryAnalysisDTO> getHistoryForAnalysis(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam @Parameter(description = "开始日期") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @Parameter(description = "结束日期") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        log.info("获取变更历史分析数据: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+        ConversionHistoryAnalysisDTO result = conversionService.getHistoryForAnalysis(factoryId, startDate, endDate);
+        return ApiResponse.success(result);
     }
 }

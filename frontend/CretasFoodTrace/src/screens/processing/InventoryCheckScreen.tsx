@@ -17,7 +17,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { materialBatchApiClient, MaterialBatch as MaterialBatchType } from '../../services/api/materialBatchApiClient';
 import { getFactoryId } from '../../types/auth';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建InventoryCheck专用logger
@@ -93,19 +93,19 @@ export default function InventoryCheckScreen() {
       // 调用后端API获取可用批次
       const response = await materialBatchApiClient.getBatchesByStatus('available', factoryId);
 
-      if (response.success && response.data) {
-        const backendBatches: MaterialBatchType[] = Array.isArray(response.data)
-          ? response.data
+      if ((response as any).success && (response as any).data) {
+        const backendBatches: MaterialBatchType[] = Array.isArray((response as any).data)
+          ? (response as any).data
           : [];
 
         // 转换为前端格式
         const frontendBatches: MaterialBatch[] = backendBatches.map((batch) => ({
-          id: String(batch.id),
-          batchNumber: batch.batchNumber,
-          materialTypeId: String(batch.materialTypeId),
-          systemQuantity: batch.remainingQuantity,
+          id: String((batch as any).id),
+          batchNumber: (batch as any).batchNumber,
+          materialTypeId: String((batch as any).materialTypeId),
+          systemQuantity: (batch as any).remainingQuantity,
           unit: 'kg', // 默认单位，后端如有单位字段可使用
-          status: batch.status === 'available' ? 'available' : 'in_use',
+          status: (batch as any).status === 'available' ? 'available' : 'in_use',
         }));
 
         setBatches(frontendBatches);
@@ -116,7 +116,7 @@ export default function InventoryCheckScreen() {
         });
       } else {
         inventoryCheckLogger.warn('获取批次失败', {
-          message: response.message,
+          message: (response as any).message,
           factoryId,
         });
         setBatches([]);
@@ -276,7 +276,7 @@ export default function InventoryCheckScreen() {
         factoryId: getCurrentFactoryId(),
         recordCount: checkRecords.length,
       });
-      Alert.alert('保存失败', error.message || '保存盘点记录时出现错误');
+      Alert.alert('保存失败', (error as any).message || '保存盘点记录时出现错误');
     } finally {
       setSaving(false);
     }
@@ -324,9 +324,9 @@ export default function InventoryCheckScreen() {
             >
               {batches.map((batch) => (
                 <Menu.Item
-                  key={batch.id}
+                  key={(batch as any).id}
                   onPress={() => handleSelectBatch(batch)}
-                  title={`${batch.batchNumber} - ${batch.materialTypeId}`}
+                  title={`${(batch as any).batchNumber} - ${(batch as any).materialTypeId}`}
                   leadingIcon="package-variant"
                 />
               ))}

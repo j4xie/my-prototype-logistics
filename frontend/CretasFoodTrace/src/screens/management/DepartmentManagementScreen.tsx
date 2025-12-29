@@ -110,7 +110,7 @@ export default function DepartmentManagementScreen() {
   const handleInitializeDefaults = () => {
     Alert.alert(
       '初始化默认部门',
-      '将创建5个默认部门（养殖、加工、物流、质量、管理）。已有部门的工厂将跳过此操作。',
+      '将创建4个默认部门（加工、物流、质量、管理）。已有部门的工厂将跳过此操作。',
       [
         { text: '取消', style: 'cancel' },
         {

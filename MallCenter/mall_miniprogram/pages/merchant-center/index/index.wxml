@@ -1,0 +1,124 @@
+<!--
+  商家工作台首页
+-->
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-mask" wx:if="{{loading}}">
+    <view class="cu-load loading"></view>
+  </view>
+
+  <!-- 顶部商户信息 -->
+  <view class="merchant-header">
+    <view class="merchant-info">
+      <image class="merchant-avatar" src="{{merchantInfo.logoUrl || '/public/img/no_pic.png'}}" mode="aspectFill"></image>
+      <view class="merchant-detail">
+        <text class="merchant-name">{{merchantInfo.merchantName || '我的店铺'}}</text>
+        <view class="merchant-status">
+          <text class="cu-tag bg-green sm">营业中</text>
+          <text class="merchant-rating">评分 {{merchantInfo.rating || '5.0'}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="quick-actions">
+      <view class="action-btn" bindtap="scanVerify">
+        <text class="cuIcon-scan"></text>
+        <text>扫码</text>
+      </view>
+      <view class="action-btn" bindtap="contactService">
+        <text class="cuIcon-service"></text>
+        <text>客服</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 统计卡片 -->
+  <view class="stats-section">
+    <view class="stats-card">
+      <view class="stat-item">
+        <text class="stat-value">{{stats.todayOrders}}</text>
+        <text class="stat-label">今日订单</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-value gold">¥{{stats.todaySales}}</text>
+        <text class="stat-label">今日销售额</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-value red">{{stats.pendingOrders}}</text>
+        <text class="stat-label">待处理</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-value">{{stats.totalProducts}}</text>
+        <text class="stat-label">商品总数</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="menu-section">
+    <view class="section-title">常用功能</view>
+    <view class="menu-grid">
+      <view class="menu-item" wx:for="{{menuItems}}" wx:key="title" 
+            bindtap="navigateTo" data-path="{{item.path}}">
+        <view class="menu-icon-wrapper">
+          <text class="{{item.icon}}"></text>
+          <view class="menu-badge" wx:if="{{item.badge > 0}}">{{item.badge > 99 ? '99+' : item.badge}}</view>
+        </view>
+        <text class="menu-title">{{item.title}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 最近订单 -->
+  <view class="orders-section">
+    <view class="section-header">
+      <text class="section-title">最近订单</text>
+      <view class="section-more" bindtap="viewAllOrders">
+        <text>全部</text>
+        <text class="cuIcon-right"></text>
+      </view>
+    </view>
+    
+    <view class="orders-list" wx:if="{{recentOrders.length > 0}}">
+      <view class="order-item" wx:for="{{recentOrders}}" wx:key="id"
+            bindtap="viewOrderDetail" data-id="{{item.id}}">
+        <view class="order-info">
+          <text class="order-no">{{item.orderNo}}</text>
+          <text class="order-time">{{item.time}}</text>
+        </view>
+        <view class="order-detail">
+          <text class="order-amount">¥{{item.amount}}</text>
+          <text class="order-status {{item.status === '待发货' ? 'pending' : ''}}">{{item.status}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <view class="empty-orders" wx:else>
+      <text class="cuIcon-news text-gray"></text>
+      <text class="text-gray">暂无订单</text>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="quick-entry-section">
+    <view class="quick-entry" bindtap="navigateTo" data-path="/pages/merchant-center/product-edit/index">
+      <view class="entry-icon bg-green">
+        <text class="cuIcon-add"></text>
+      </view>
+      <view class="entry-content">
+        <text class="entry-title">快速发布商品</text>
+        <text class="entry-desc">上架新商品，开始销售</text>
+      </view>
+      <text class="cuIcon-right text-gray"></text>
+    </view>
+  </view>
+</view>
+
+
+
+
+
+
+

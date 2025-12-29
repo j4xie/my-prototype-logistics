@@ -246,11 +246,11 @@ export class NetworkManager {
         // 执行操作
         const result = await Promise.race([
           operation(),
-          this.createTimeoutPromise(opts.timeout),
+          this.createTimeoutPromise<T>(opts.timeout),
         ]);
 
         console.log(`✅ Network operation succeeded on attempt ${attempt + 1}`);
-        return result;
+        return result as T;
 
       } catch (error) {
         lastError = error;
@@ -265,7 +265,8 @@ export class NetworkManager {
         }
 
         const delay = this.calculateDelay(attempt, opts);
-        console.log(`⚠️ Network operation failed (attempt ${attempt + 1}), retrying in ${delay}ms:`, error.message);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(`⚠️ Network operation failed (attempt ${attempt + 1}), retrying in ${delay}ms:`, errorMessage);
         
         await this.delay(delay);
       }
@@ -323,7 +324,7 @@ export class NetworkManager {
         networkType: NetInfoStateType.none,
         signalStrength: null,
         responseTime: null,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }

@@ -141,4 +141,34 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
     BigDecimal calculateDailyCost(@Param("factoryId") String factoryId,
                                   @Param("startDate") LocalDateTime startDate,
                                   @Param("endDate") LocalDateTime endDate);
+
+    // ========== 扩展查询方法 ==========
+
+    /**
+     * 按工厂ID查询（不分页）
+     */
+    java.util.List<ProductionBatch> findByFactoryId(String factoryId);
+
+    /**
+     * 统计指定工厂的批次数量
+     */
+    long countByFactoryId(String factoryId);
+
+    /**
+     * 按创建时间范围查询（跨所有工厂，用于平台统计）
+     */
+    java.util.List<ProductionBatch> findByCreatedAtBetween(LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * 统计指定状态的批次数量（跨所有工厂）
+     */
+    long countByStatus(ProductionBatchStatus status);
+
+    /**
+     * 获取时间范围内的批次（用于成本分析和绩效计算）
+     */
+    @Query("SELECT b FROM ProductionBatch b WHERE b.factoryId = :factoryId AND b.startTime BETWEEN :startTime AND :endTime ORDER BY b.startTime DESC")
+    java.util.List<ProductionBatch> findBatchesInDateRange(@Param("factoryId") String factoryId,
+                                                           @Param("startTime") LocalDateTime startTime,
+                                                           @Param("endTime") LocalDateTime endTime);
 }

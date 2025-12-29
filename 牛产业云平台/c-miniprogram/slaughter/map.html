@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>地图找屠宰场 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+    }
+
+    /* 顶部导航 */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: linear-gradient(135deg, #C62828 0%, #E53935 100%);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .back-btn {
+      color: white;
+      font-size: 22px;
+      text-decoration: none;
+      padding: 4px;
+    }
+
+    .header-title {
+      flex: 1;
+      color: white;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .header-action {
+      color: white;
+      font-size: 14px;
+      text-decoration: none;
+    }
+
+    /* 搜索栏 */
+    .search-bar {
+      position: fixed;
+      top: 52px;
+      left: 0;
+      right: 0;
+      z-index: 99;
+      background: white;
+      padding: 12px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .search-input {
+      display: flex;
+      align-items: center;
+      background: #F5F5F5;
+      border-radius: 20px;
+      padding: 0 16px;
+      height: 40px;
+    }
+
+    .search-input i {
+      color: #9E9E9E;
+      margin-right: 8px;
+    }
+
+    .search-input input {
+      flex: 1;
+      border: none;
+      background: none;
+      outline: none;
+      font-size: 14px;
+    }
+
+    /* 地图容器 */
+    .map-container {
+      position: fixed;
+      top: 116px;
+      left: 0;
+      right: 0;
+      bottom: 200px;
+      background: #FFEBEE;
+      max-width: 428px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    .map-placeholder {
+      text-align: center;
+      color: #E53935;
+    }
+
+    .map-placeholder i {
+      font-size: 80px;
+      margin-bottom: 16px;
+    }
+
+    .map-placeholder p {
+      font-size: 14px;
+      color: #EF5350;
+    }
+
+    /* 地图标记点 */
+    .map-markers {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    .marker {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      background: #C62828;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(198, 40, 40, 0.4);
+      cursor: pointer;
+    }
+
+    .marker span {
+      transform: rotate(45deg);
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .marker.active {
+      background: #1565C0;
+      width: 44px;
+      height: 44px;
+    }
+
+    /* 底部屠宰场列表 */
+    .slaughter-list {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 200px;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-bottom: 1px solid #F0F0F0;
+    }
+
+    .list-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #212121;
+    }
+
+    .list-count {
+      font-size: 13px;
+      color: #9E9E9E;
+    }
+
+    .slaughter-scroll {
+      display: flex;
+      gap: 12px;
+      padding: 12px 16px;
+      overflow-x: auto;
+    }
+
+    .slaughter-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .slaughter-card {
+      flex-shrink: 0;
+      width: 200px;
+      background: #FAFAFA;
+      border-radius: 12px;
+      padding: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .slaughter-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #212121;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .slaughter-info {
+      font-size: 12px;
+      color: #757575;
+      margin-bottom: 8px;
+    }
+
+    .slaughter-distance {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #C62828;
+    }
+
+    .slaughter-distance i {
+      font-size: 14px;
+    }
+
+    /* 筛选按钮 */
+    .filter-btns {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      width: 40px;
+      height: 40px;
+      background: white;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      color: #424242;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      background: #C62828;
+      color: white;
+    }
+
+    /* 定位按钮 */
+    .locate-btn {
+      position: absolute;
+      bottom: 220px;
+      right: max(16px, calc(50% - 198px));
+      width: 48px;
+      height: 48px;
+      background: white;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      color: #C62828;
+      font-size: 22px;
+      cursor: pointer;
+      z-index: 50;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 顶部导航 -->
+  <header class="header">
+    <a href="list.html" class="back-btn"><i class="mdi mdi-arrow-left"></i></a>
+    <span class="header-title">地图找屠宰场</span>
+    <a href="javascript:void(0)" class="header-action" onclick="showFilter()">筛选</a>
+  </header>
+
+  <!-- 搜索栏 -->
+  <div class="search-bar">
+    <div class="search-input">
+      <i class="mdi mdi-magnify"></i>
+      <input type="text" placeholder="搜索屠宰场名称或地址..." id="searchInput">
+    </div>
+  </div>
+
+  <!-- 地图容器 -->
+  <div class="map-container">
+    <div class="map-placeholder">
+      <i class="mdi mdi-map-marker-radius"></i>
+      <p>地图加载中...</p>
+    </div>
+
+    <!-- 模拟标记点 -->
+    <div class="map-markers">
+      <div class="marker active" style="top: 25%; left: 30%;" onclick="selectSlaughter(1)"><span>1</span></div>
+      <div class="marker" style="top: 40%; left: 60%;" onclick="selectSlaughter(2)"><span>2</span></div>
+      <div class="marker" style="top: 55%; left: 40%;" onclick="selectSlaughter(3)"><span>3</span></div>
+      <div class="marker" style="top: 30%; left: 75%;" onclick="selectSlaughter(4)"><span>4</span></div>
+      <div class="marker" style="top: 65%; left: 55%;" onclick="selectSlaughter(5)"><span>5</span></div>
+    </div>
+
+    <!-- 筛选按钮 -->
+    <div class="filter-btns">
+      <div class="filter-btn active" onclick="toggleLayer('slaughter')"><i class="mdi mdi-knife"></i></div>
+      <div class="filter-btn" onclick="toggleLayer('cold')"><i class="mdi mdi-snowflake"></i></div>
+      <div class="filter-btn" onclick="toggleLayer('process')"><i class="mdi mdi-factory"></i></div>
+    </div>
+  </div>
+
+  <!-- 定位按钮 -->
+  <div class="locate-btn" onclick="locateMe()">
+    <i class="mdi mdi-crosshairs-gps"></i>
+  </div>
+
+  <!-- 底部屠宰场列表 -->
+  <div class="slaughter-list">
+    <div class="list-header">
+      <span class="list-title">附近屠宰场</span>
+      <span class="list-count">共 8 家</span>
+    </div>
+    <div class="slaughter-scroll">
+      <a href="detail.html?id=1" class="slaughter-card">
+        <div class="slaughter-name">锡林郭勒肉联厂</div>
+        <div class="slaughter-info">日处理 500 头 · A级认证</div>
+        <div class="slaughter-distance">
+          <i class="mdi mdi-map-marker-distance"></i>
+          <span>距您 12.5 km</span>
+        </div>
+      </a>
+      <a href="detail.html?id=2" class="slaughter-card">
+        <div class="slaughter-name">呼伦贝尔清真屠宰场</div>
+        <div class="slaughter-info">日处理 800 头 · 清真认证</div>
+        <div class="slaughter-distance">
+          <i class="mdi mdi-map-marker-distance"></i>
+          <span>距您 25.8 km</span>
+        </div>
+      </a>
+      <a href="detail.html?id=3" class="slaughter-card">
+        <div class="slaughter-name">科尔沁现代化屠宰中心</div>
+        <div class="slaughter-info">日处理 1200 头 · ISO认证</div>
+        <div class="slaughter-distance">
+          <i class="mdi mdi-map-marker-distance"></i>
+          <span>距您 38.2 km</span>
+        </div>
+      </a>
+      <a href="detail.html?id=4" class="slaughter-card">
+        <div class="slaughter-name">通辽牛羊定点屠宰场</div>
+        <div class="slaughter-info">日处理 600 头 · 省级定点</div>
+        <div class="slaughter-distance">
+          <i class="mdi mdi-map-marker-distance"></i>
+          <span>距您 52.6 km</span>
+        </div>
+      </a>
+      <a href="detail.html?id=5" class="slaughter-card">
+        <div class="slaughter-name">赤峰绿色食品加工厂</div>
+        <div class="slaughter-info">日处理 400 头 · 有机认证</div>
+        <div class="slaughter-distance">
+          <i class="mdi mdi-map-marker-distance"></i>
+          <span>距您 68.9 km</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function selectSlaughter(id) {
+      // 移除其他激活状态
+      document.querySelectorAll('.marker').forEach(m => m.classList.remove('active'));
+      // 添加当前激活状态
+      event.currentTarget.classList.add('active');
+      showToast('选中屠宰场 #' + id);
+    }
+
+    function toggleLayer(type) {
+      const btn = event.currentTarget;
+      btn.classList.toggle('active');
+      const names = { slaughter: '屠宰场', cold: '冷链仓储', process: '加工厂' };
+      const isActive = btn.classList.contains('active');
+      showToast((isActive ? '显示' : '隐藏') + names[type] + '标记');
+    }
+
+    function locateMe() {
+      showToast('正在获取您的位置...');
+      // 模拟定位
+      setTimeout(() => {
+        showToast('已定位到当前位置');
+      }, 1500);
+    }
+
+    function showFilter() {
+      showToast('筛选功能开发中');
+    }
+
+    // 搜索功能
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+      const keyword = e.target.value;
+      if (keyword.length > 0) {
+        showToast('搜索: ' + keyword);
+      }
+    });
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    console.log('地图找屠宰场页面加载完成');
+  </script>
+</body>
+
+</html>

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { Text, Appbar, Divider, ActivityIndicator, IconButton, Menu } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, FlatList } from 'react-native';
+import { Text, Appbar, Divider, ActivityIndicator, IconButton, Menu, SegmentedButtons, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { BatchStatusBadge, BatchStatus } from '../../components/processing';
-import { processingAPI, BatchResponse } from '../../services/api/processingApiClient';
+import { processingApiClient, ProcessingBatch } from '../../services/api/processingApiClient';
+import { materialConsumptionApiClient, MaterialConsumption } from '../../services/api/materialConsumptionApiClient';
 import { handleError } from '../../utils/errorHandler';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
@@ -21,24 +22,46 @@ export default function BatchDetailScreen() {
   const route = useRoute<BatchDetailScreenProps['route']>();
   const { batchId, readonly } = route.params;
 
-  const [batch, setBatch] = useState<BatchResponse | null>(null);
+  // 扩展类型以包含后端可能返回的额外字段
+  interface ExtendedBatch extends ProcessingBatch {
+    completedAt?: string;
+    rawMaterials?: Array<{ materialType?: string; type?: string; quantity: number; unit?: string }>;
+  }
+  const [batch, setBatch] = useState<ExtendedBatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [qualityMenuVisible, setQualityMenuVisible] = useState(false);
   const [error, setError] = useState<ErrorState | null>(null);
 
+  // Tab 状态
+  const [activeTab, setActiveTab] = useState<'detail' | 'consumption'>('detail');
+  const [consumptions, setConsumptions] = useState<MaterialConsumption[]>([]);
+  const [consumptionLoading, setConsumptionLoading] = useState(false);
+  const [consumptionStats, setConsumptionStats] = useState<{ totalQuantity: number; totalCost: number } | null>(null);
+
   useFocusEffect(
     React.useCallback(() => {
       fetchBatchDetail();
-    }, [batchId])
+      if (activeTab === 'consumption') {
+        fetchConsumptions();
+      }
+    }, [batchId, activeTab])
   );
+
+  // 当切换到消耗 Tab 时加载数据
+  React.useEffect(() => {
+    if (activeTab === 'consumption' && consumptions.length === 0) {
+      fetchConsumptions();
+    }
+  }, [activeTab]);
 
   const fetchBatchDetail = async () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await processingAPI.getBatchDetail(batchId);
-      setBatch(result);
+      const response = await processingApiClient.getBatchById(batchId);
+      const result = response.data;
+      setBatch(result as ExtendedBatch);
     } catch (error) {
       handleError(error, { showAlert: false, logError: true });
       setError({
@@ -51,10 +74,43 @@ export default function BatchDetailScreen() {
     }
   };
 
+  const fetchConsumptions = async () => {
+    try {
+      setConsumptionLoading(true);
+      const response = await materialConsumptionApiClient.getConsumptionsByBatch(batchId);
+      if (response.success && response.data) {
+        setConsumptions(response.data);
+        // 计算统计
+        const totalQuantity = response.data.reduce((sum, item) => sum + item.quantity, 0);
+        const totalCost = response.data.reduce((sum, item) => sum + item.totalCost, 0);
+        setConsumptionStats({ totalQuantity, totalCost });
+      }
+    } catch (error) {
+      handleError(error, { showAlert: false, logError: true });
+    } finally {
+      setConsumptionLoading(false);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchBatchDetail();
+    if (activeTab === 'consumption') {
+      await fetchConsumptions();
+    }
     setRefreshing(false);
+  };
+
+  const formatCurrency = (amount: number) => `¥${amount.toFixed(2)}`;
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   if (loading && !batch) {
@@ -113,6 +169,93 @@ export default function BatchDetailScreen() {
           </View>
         </NeoCard>
 
+        {/* Tab Bar */}
+        <SegmentedButtons
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as 'detail' | 'consumption')}
+          buttons={[
+            { value: 'detail', label: '详情', icon: 'information-outline' },
+            { value: 'consumption', label: '消耗记录', icon: 'package-down' },
+          ]}
+          style={styles.tabBar}
+        />
+
+        {activeTab === 'consumption' ? (
+          /* 消耗记录 Tab */
+          <>
+            {/* 消耗统计 */}
+            {consumptionStats && (
+              <Surface style={styles.statsCard} elevation={1}>
+                <View style={styles.statsRow}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>{consumptions.length}</Text>
+                    <Text style={styles.statLabel}>消耗次数</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>{consumptionStats.totalQuantity.toFixed(2)} kg</Text>
+                    <Text style={styles.statLabel}>总消耗量</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <Text style={[styles.statValue, styles.costValue]}>{formatCurrency(consumptionStats.totalCost)}</Text>
+                    <Text style={styles.statLabel}>总成本</Text>
+                  </View>
+                </View>
+              </Surface>
+            )}
+
+            {/* 消耗记录列表 */}
+            {consumptionLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+                <Text style={styles.loadingText}>加载中...</Text>
+              </View>
+            ) : consumptions.length === 0 ? (
+              <NeoCard style={styles.card} padding="m">
+                <View style={styles.emptyContainer}>
+                  <IconButton icon="package-variant" size={40} iconColor={theme.colors.onSurfaceVariant} />
+                  <Text style={styles.emptyText}>暂无消耗记录</Text>
+                  <Text style={styles.emptyHint}>生产过程中的原材料消耗会显示在这里</Text>
+                </View>
+              </NeoCard>
+            ) : (
+              consumptions.map((item) => (
+                <NeoCard key={item.id} style={styles.card} padding="m">
+                  <View style={styles.consumptionHeader}>
+                    <View>
+                      <Text style={styles.consumptionBatch}>{item.batchNumber ?? item.batchId}</Text>
+                      <Text style={styles.consumptionMaterial}>{item.materialTypeName ?? '原材料'}</Text>
+                    </View>
+                    <Text style={styles.consumptionCost}>{formatCurrency(item.totalCost)}</Text>
+                  </View>
+                  <View style={styles.consumptionDetails}>
+                    <View style={styles.consumptionRow}>
+                      <Text style={styles.consumptionLabel}>消耗数量</Text>
+                      <Text style={styles.consumptionValue}>{item.quantity} kg</Text>
+                    </View>
+                    <View style={styles.consumptionRow}>
+                      <Text style={styles.consumptionLabel}>单价</Text>
+                      <Text style={styles.consumptionValue}>{formatCurrency(item.unitPrice)}/kg</Text>
+                    </View>
+                    <View style={styles.consumptionRow}>
+                      <Text style={styles.consumptionLabel}>消耗时间</Text>
+                      <Text style={styles.consumptionValue}>{formatDate(item.consumptionTime)}</Text>
+                    </View>
+                    {item.notes && (
+                      <View style={styles.consumptionRow}>
+                        <Text style={styles.consumptionLabel}>备注</Text>
+                        <Text style={styles.consumptionValue} numberOfLines={2}>{item.notes}</Text>
+                      </View>
+                    )}
+                  </View>
+                </NeoCard>
+              ))
+            )}
+          </>
+        ) : (
+          /* 详情 Tab */
+          <>
         {/* Basic Info */}
         <NeoCard style={styles.card} padding="m">
           <Text variant="titleMedium" style={styles.sectionTitle}>基本信息</Text>
@@ -124,7 +267,7 @@ export default function BatchDetailScreen() {
              </View>
              <View style={styles.infoItem}>
                 <Text style={styles.label}>负责人</Text>
-                <Text style={styles.value}>{batch.supervisor?.fullName || batch.supervisor?.username || '未指定'}</Text>
+                <Text style={styles.value}>{typeof batch.supervisor === 'object' ? ((batch.supervisor as any)?.fullName || (batch.supervisor as any)?.username) : batch.supervisor || '未指定'}</Text>
              </View>
              <View style={styles.infoItem}>
                 <Text style={styles.label}>目标产量</Text>
@@ -181,16 +324,18 @@ export default function BatchDetailScreen() {
               <Menu.Item onPress={() => { setQualityMenuVisible(false); navigation.navigate('CreateQualityRecord', { batchId: batch!.id.toString(), inspectionType: 'final_product' }); }} title="成品检验" />
             </Menu>
             
-            <NeoButton 
-                variant="outline" 
-                style={styles.actionButton} 
-                onPress={() => navigation.navigate('CostAnalysisDashboard', { batchId: batch.id.toString() })} 
+            <NeoButton
+                variant="outline"
+                style={styles.actionButton}
+                onPress={() => navigation.navigate('CostAnalysisDashboard', { batchId: batch.id.toString() })}
                 icon="cash"
             >
                 成本分析
             </NeoButton>
           </View>
         </NeoCard>
+          </>
+        )}
 
       </ScrollView>
     </ScreenWrapper>
@@ -217,12 +362,12 @@ const styles = StyleSheet.create({
   },
   batchNumber: {
       fontWeight: '700',
-      color: theme.colors.text,
+      color: theme.colors.onSurface,
   },
   sectionTitle: {
       fontWeight: '600',
       marginBottom: 16,
-      color: theme.colors.text,
+      color: theme.colors.onSurface,
   },
   infoGrid: {
       flexDirection: 'row',
@@ -234,17 +379,17 @@ const styles = StyleSheet.create({
   },
   label: {
       fontSize: 12,
-      color: theme.colors.textSecondary,
+      color: theme.colors.onSurfaceVariant,
       marginBottom: 2,
   },
   value: {
       fontSize: 14,
-      color: theme.colors.text,
+      color: theme.colors.onSurface,
       fontWeight: '500',
   },
   valueSmall: {
       fontSize: 13,
-      color: theme.colors.text,
+      color: theme.colors.onSurface,
   },
   highlight: {
       color: theme.colors.primary,
@@ -275,5 +420,103 @@ const styles = StyleSheet.create({
   errorText: {
       color: theme.colors.error,
       marginBottom: 16,
+  },
+  // Tab styles
+  tabBar: {
+      marginBottom: 16,
+  },
+  // Stats card styles
+  statsCard: {
+      backgroundColor: '#FFF',
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+  },
+  statsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+  },
+  statItem: {
+      alignItems: 'center',
+      flex: 1,
+  },
+  statValue: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.colors.onSurface,
+      marginBottom: 4,
+  },
+  statLabel: {
+      fontSize: 12,
+      color: theme.colors.onSurfaceVariant,
+  },
+  statDivider: {
+      width: 1,
+      height: 32,
+      backgroundColor: theme.colors.outlineVariant,
+  },
+  costValue: {
+      color: '#E65100',
+  },
+  // Consumption list styles
+  loadingContainer: {
+      padding: 32,
+      alignItems: 'center',
+  },
+  loadingText: {
+      marginTop: 8,
+      color: theme.colors.onSurfaceVariant,
+  },
+  emptyContainer: {
+      alignItems: 'center',
+      paddingVertical: 24,
+  },
+  emptyText: {
+      color: theme.colors.onSurfaceVariant,
+      marginTop: 8,
+  },
+  emptyHint: {
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 12,
+      marginTop: 4,
+  },
+  consumptionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 12,
+  },
+  consumptionBatch: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.colors.onSurface,
+  },
+  consumptionMaterial: {
+      fontSize: 12,
+      color: theme.colors.onSurfaceVariant,
+      marginTop: 2,
+  },
+  consumptionCost: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#E65100',
+  },
+  consumptionDetails: {
+      gap: 8,
+  },
+  consumptionRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+  },
+  consumptionLabel: {
+      fontSize: 13,
+      color: theme.colors.onSurfaceVariant,
+  },
+  consumptionValue: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.colors.onSurface,
   },
 });

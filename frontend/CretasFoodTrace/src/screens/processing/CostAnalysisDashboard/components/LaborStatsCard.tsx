@@ -16,7 +16,7 @@ export const LaborStatsCard = React.memo<LaborStatsCardProps>(({ laborStats }) =
   return (
     <Card style={styles.card} mode="elevated">
       <Card.Title
-        title="👥 人工详情"
+        title="人工详情"
         subtitle={`${laborStats.totalSessions}人 • 总工时${Math.floor(laborStats.totalMinutes / 60)}h`}
       />
       <Card.Content>

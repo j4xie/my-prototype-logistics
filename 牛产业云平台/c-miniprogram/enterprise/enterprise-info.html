@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>企业信息 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* 顶部Header */
+    .header {
+      background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+      padding: 48px 16px 20px;
+      color: white;
+    }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-btn {
+      font-size: 22px;
+      text-decoration: none;
+      color: white;
+      padding: 4px;
+    }
+
+    .header-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .header-action {
+      font-size: 14px;
+      color: white;
+      text-decoration: none;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+    }
+
+    /* 企业头部 */
+    .company-header {
+      background: white;
+      padding: 20px 16px;
+      margin: -20px 16px 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      position: relative;
+      z-index: 1;
+    }
+
+    .company-main {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .company-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 600;
+      color: #2E7D32;
+      flex-shrink: 0;
+    }
+
+    .company-basic {
+      flex: 1;
+    }
+
+    .company-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #212121;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .verify-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 11px;
+      padding: 2px 8px;
+      background: #E8F5E9;
+      color: #2E7D32;
+      border-radius: 10px;
+      font-weight: 400;
+    }
+
+    .company-type {
+      font-size: 13px;
+      color: #757575;
+      margin-bottom: 4px;
+    }
+
+    .company-id {
+      font-size: 12px;
+      color: #9E9E9E;
+    }
+
+    .company-stats {
+      display: flex;
+      justify-content: space-around;
+      padding-top: 16px;
+      border-top: 1px solid #F0F0F0;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 600;
+      color: #212121;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #9E9E9E;
+    }
+
+    /* 信息分组 */
+    .info-section {
+      background: white;
+      margin: 0 16px 12px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .section-title {
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #212121;
+      border-bottom: 1px solid #F0F0F0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title i {
+      color: #4CAF50;
+    }
+
+    .info-list {
+      padding: 0 16px;
+    }
+
+    .info-item {
+      display: flex;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid #F5F5F5;
+    }
+
+    .info-item:last-child {
+      border-bottom: none;
+    }
+
+    .info-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-right: 12px;
+    }
+
+    .info-icon.blue {
+      background: #E3F2FD;
+      color: #1976D2;
+    }
+
+    .info-icon.green {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .info-icon.orange {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .info-icon.purple {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .info-content {
+      flex: 1;
+    }
+
+    .info-label {
+      font-size: 13px;
+      color: #9E9E9E;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: #212121;
+    }
+
+    .info-arrow {
+      font-size: 20px;
+      color: #BDBDBD;
+    }
+
+    /* 资质展示 */
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .cert-item {
+      text-align: center;
+    }
+
+    .cert-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 8px;
+      border-radius: 12px;
+      background: #E8F5E9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #2E7D32;
+    }
+
+    .cert-icon.blue {
+      background: #E3F2FD;
+      color: #1976D2;
+    }
+
+    .cert-icon.orange {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .cert-icon.purple {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .cert-icon.gray {
+      background: #F5F5F5;
+      color: #9E9E9E;
+    }
+
+    .cert-name {
+      font-size: 12px;
+      color: #424242;
+    }
+
+    .cert-status {
+      font-size: 10px;
+      color: #4CAF50;
+      margin-top: 2px;
+    }
+
+    .cert-status.pending {
+      color: #FF9800;
+    }
+
+    /* 底部按钮 */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      background: white;
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      display: flex;
+      gap: 12px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      box-sizing: border-box;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 24px;
+      font-size: 15px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn.secondary {
+      background: #F5F5F5;
+      color: #424242;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+      color: white;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="theme-green">
+  <!-- 顶部Header -->
+  <header class="header">
+    <div class="header-bar">
+      <a href="center.html" class="back-btn"><i class="mdi mdi-arrow-left"></i></a>
+      <span class="header-title">企业信息</span>
+      <a href="#" class="header-action" onclick="editInfo()">编辑</a>
+    </div>
+  </header>
+
+  <!-- 企业头部 -->
+  <div class="company-header">
+    <div class="company-main">
+      <div class="company-logo">牧</div>
+      <div class="company-basic">
+        <div class="company-name">
+          草原牧业有限公司
+          <span class="verify-badge"><i class="mdi mdi-check-circle"></i> 已认证</span>
+        </div>
+        <div class="company-type">经营范围: 活牛养殖、销售</div>
+        <div class="company-id">企业ID: QY20241001001</div>
+      </div>
+    </div>
+    <div class="company-stats">
+      <div class="stat-item">
+        <div class="stat-value">3</div>
+        <div class="stat-label">入驻年限</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">156</div>
+        <div class="stat-label">成交订单</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">98%</div>
+        <div class="stat-label">好评率</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">42</div>
+        <div class="stat-label">合作商</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 基本信息 -->
+  <div class="info-section">
+    <div class="section-title"><i class="mdi mdi-office-building"></i> 基本信息</div>
+    <div class="info-list">
+      <div class="info-item" onclick="editField('name')">
+        <div class="info-icon green"><i class="mdi mdi-domain"></i></div>
+        <div class="info-content">
+          <div class="info-label">企业全称</div>
+          <div class="info-value">内蒙古草原牧业有限责任公司</div>
+        </div>
+        <i class="mdi mdi-chevron-right info-arrow"></i>
+      </div>
+      <div class="info-item" onclick="editField('credit')">
+        <div class="info-icon blue"><i class="mdi mdi-card-account-details"></i></div>
+        <div class="info-content">
+          <div class="info-label">统一社会信用代码</div>
+          <div class="info-value">91150100MA0NXXXXXX</div>
+        </div>
+        <i class="mdi mdi-chevron-right info-arrow"></i>
+      </div>
+      <div class="info-item" onclick="editField('legal')">
+        <div class="info-icon orange"><i class="mdi mdi-account-tie"></i></div>
+        <div class="info-content">
+          <div class="info-label">法定代表人</div>
+          <div class="info-value">王建国</div>
+        </div>
+        <i class="mdi mdi-chevron-right info-arrow"></i>
+      </div>
+      <div class="info-item" onclick="editField('capital')">
+        <div class="info-icon purple"><i class="mdi mdi-cash"></i></div>
+        <div class="info-content">
+          <div class="info-label">注册资本</div>
+          <div class="info-value">500万元人民币</div>
+        </div>
+        <i class="mdi mdi-chevron-right info-arrow"></i>
+      </div>
+      <div class="info-item" onclick="editField('date')">
+        <div class="info-icon green"><i class="mdi mdi-calendar"></i></div>
+        <div class="info-content">
+          <div class="info-label">成立日期</div>
+          <div class="info-value">2018年03月15日</div>
+        </div>
+        <i class="mdi mdi-chevron-right info-arrow"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- 联系信息 -->
+  <div class="info-section">
+    <div class="section-title"><i class="mdi mdi-phone-classic"></i> 联系信息</div>
+    <div class="info-list">
+      <div class="info-item" onclick="editField('address')">
+        <div class="info-icon blue"><i class="mdi mdi-map-marker"></i></div>
+        <div class="info-content">
+          <div class="info-label">经营地址</div>
+          <div class="info-value">内蒙古自治区通辽市科尔沁区XX镇XX村</div>
+        </div>
+        <i class="mdi mdi-chevron-right info-arrow"></i>
+      </div>
+      <div class="info-item" onclick="editField('phone')">
+        <div class="info-icon green"><i class="mdi mdi-phone"></i></div>
+        <div class="info-content">
+          <div class="info-label">联系电话</div>
+          <div class="info-value">0475-8XXXXXXX</div>
+        </div>
+        <i class="mdi mdi-chevron-right info-arrow"></i>
+      </div>
+      <div class="info-item" onclick="editField('mobile')">
+        <div class="info-icon orange"><i class="mdi mdi-cellphone"></i></div>
+        <div class="info-content">
+          <div class="info-label">手机号码</div>
+          <div class="info-value">139****1234</div>
+        </div>
+        <i class="mdi mdi-chevron-right info-arrow"></i>
+      </div>
+      <div class="info-item" onclick="editField('email')">
+        <div class="info-icon purple"><i class="mdi mdi-email"></i></div>
+        <div class="info-content">
+          <div class="info-label">电子邮箱</div>
+          <div class="info-value">contact@caoyuan-muye.com</div>
+        </div>
+        <i class="mdi mdi-chevron-right info-arrow"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- 资质证书 -->
+  <div class="info-section">
+    <div class="section-title"><i class="mdi mdi-certificate"></i> 资质证书</div>
+    <div class="cert-grid">
+      <div class="cert-item" onclick="viewCert('license')">
+        <div class="cert-icon"><i class="mdi mdi-certificate"></i></div>
+        <div class="cert-name">营业执照</div>
+        <div class="cert-status"><i class="mdi mdi-check-circle"></i> 已认证</div>
+      </div>
+      <div class="cert-item" onclick="viewCert('animal')">
+        <div class="cert-icon blue"><i class="mdi mdi-shield-check"></i></div>
+        <div class="cert-name">动物防疫证</div>
+        <div class="cert-status"><i class="mdi mdi-check-circle"></i> 已认证</div>
+      </div>
+      <div class="cert-item" onclick="viewCert('breed')">
+        <div class="cert-icon orange"><i class="mdi mdi-cow"></i></div>
+        <div class="cert-name">种畜经营证</div>
+        <div class="cert-status"><i class="mdi mdi-check-circle"></i> 已认证</div>
+      </div>
+      <div class="cert-item" onclick="viewCert('food')">
+        <div class="cert-icon purple"><i class="mdi mdi-food-apple"></i></div>
+        <div class="cert-name">食品经营证</div>
+        <div class="cert-status pending"><i class="mdi mdi-clock-outline"></i> 待上传</div>
+      </div>
+      <div class="cert-item" onclick="viewCert('organic')">
+        <div class="cert-icon"><i class="mdi mdi-leaf"></i></div>
+        <div class="cert-name">有机认证</div>
+        <div class="cert-status pending"><i class="mdi mdi-clock-outline"></i> 待上传</div>
+      </div>
+      <div class="cert-item" onclick="viewCert('more')">
+        <div class="cert-icon gray"><i class="mdi mdi-plus"></i></div>
+        <div class="cert-name">添加更多</div>
+        <div class="cert-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部按钮 -->
+  <div class="bottom-bar">
+    <button class="btn secondary" onclick="previewPage()">
+      <i class="mdi mdi-eye"></i> 预览主页
+    </button>
+    <button class="btn primary" onclick="shareInfo()">
+      <i class="mdi mdi-share-variant"></i> 分享名片
+    </button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function editInfo() {
+      showToast('进入编辑模式');
+    }
+
+    function editField(field) {
+      const fieldNames = {
+        'name': '企业全称',
+        'credit': '信用代码',
+        'legal': '法定代表人',
+        'capital': '注册资本',
+        'date': '成立日期',
+        'address': '经营地址',
+        'phone': '联系电话',
+        'mobile': '手机号码',
+        'email': '电子邮箱'
+      };
+      showToast('编辑: ' + fieldNames[field]);
+    }
+
+    function viewCert(type) {
+      const certNames = {
+        'license': '营业执照',
+        'animal': '动物防疫证',
+        'breed': '种畜经营证',
+        'food': '食品经营证',
+        'organic': '有机认证',
+        'more': '添加资质'
+      };
+      showToast(type === 'more' ? '添加新资质' : '查看: ' + certNames[type]);
+    }
+
+    function previewPage() {
+      showToast('预览企业主页');
+    }
+
+    function shareInfo() {
+      showToast('分享企业名片');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+
+</html>

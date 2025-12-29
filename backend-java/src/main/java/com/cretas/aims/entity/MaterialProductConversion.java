@@ -31,9 +31,8 @@ import java.math.BigDecimal;
 )
 public class MaterialProductConversion extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Integer id;
+    @Column(name = "id", nullable = false, length = 191)
+    private String id;
 
     /**
      * 工厂ID
@@ -103,13 +102,13 @@ public class MaterialProductConversion extends BaseEntity {
      * 创建人ID
      */
     @Column(name = "created_by")
-    private Integer createdBy;
+    private Long createdBy;
 
     /**
      * 更新人ID
      */
     @Column(name = "updated_by")
-    private Integer updatedBy;
+    private Long updatedBy;
 
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
@@ -125,11 +124,16 @@ public class MaterialProductConversion extends BaseEntity {
     private ProductType productType;
 
     /**
-     * 计算标准用量（基于转换率）
+     * 计算标准用量（基于转换率）并生成ID
      */
     @PrePersist
     @PreUpdate
-    public void calculateStandardUsage() {
+    public void prePersistUpdate() {
+        // 生成UUID作为ID (仅在新建时)
+        if (this.id == null) {
+            this.id = java.util.UUID.randomUUID().toString();
+        }
+        // 计算标准用量
         if (conversionRate != null && conversionRate.compareTo(BigDecimal.ZERO) > 0) {
             // 标准用量 = 1 / 转换率
             this.standardUsage = BigDecimal.ONE.divide(conversionRate, 4, BigDecimal.ROUND_HALF_UP);

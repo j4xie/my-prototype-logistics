@@ -153,11 +153,12 @@ export default function QualityInspectionListScreen() {
     // If batchId is provided, navigate directly to create screen
     if (batchId) {
       navigation.navigate('CreateQualityRecord', {
-        batchId: Number(batchId),
+        batchId: String(batchId),
+        inspectionType: 'process'
       });
     } else {
       // Otherwise, navigate to batch list to select a batch
-      navigation.navigate('BatchList');
+      navigation.navigate('BatchList', {});
     }
   };
 
@@ -394,7 +395,7 @@ export default function QualityInspectionListScreen() {
         <FlatList
           data={filteredInspections}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />

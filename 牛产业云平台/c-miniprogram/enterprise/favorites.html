@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的收藏 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+    }
+
+    /* 顶部Header */
+    .header {
+      background: white;
+      padding: 48px 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+    }
+
+    .back-btn {
+      font-size: 22px;
+      text-decoration: none;
+      color: #212121;
+      padding: 4px;
+    }
+
+    .header-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #212121;
+    }
+
+    .header-action {
+      font-size: 14px;
+      color: #757575;
+      text-decoration: none;
+    }
+
+    /* Tab切换 */
+    .tabs {
+      display: flex;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab {
+      flex-shrink: 0;
+      padding: 14px 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #757575;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .tab.active {
+      color: #2E7D32;
+      font-weight: 600;
+      border-bottom-color: #2E7D32;
+    }
+
+    .tab .count {
+      font-size: 12px;
+      color: #9E9E9E;
+      margin-left: 4px;
+    }
+
+    .tab.active .count {
+      color: #2E7D32;
+    }
+
+    /* 列表 */
+    .list-container {
+      padding: 16px;
+    }
+
+    .favorite-card {
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .favorite-content {
+      display: flex;
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .favorite-image {
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      color: #4CAF50;
+      flex-shrink: 0;
+    }
+
+    .favorite-image.beef {
+      background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+      color: #C62828;
+    }
+
+    .favorite-image.feed {
+      background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+      color: #E65100;
+    }
+
+    .favorite-image.farm {
+      background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+      color: #1976D2;
+    }
+
+    .favorite-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .favorite-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #212121;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .favorite-spec {
+      font-size: 12px;
+      color: #9E9E9E;
+      margin-bottom: 8px;
+    }
+
+    .favorite-price-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-top: auto;
+    }
+
+    .favorite-price {
+      font-size: 16px;
+      font-weight: 600;
+      color: #C62828;
+    }
+
+    .favorite-location {
+      font-size: 12px;
+      color: #9E9E9E;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .favorite-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #FAFAFA;
+      border-top: 1px solid #F0F0F0;
+    }
+
+    .seller-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .seller-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #E0E0E0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #757575;
+    }
+
+    .seller-name {
+      font-size: 13px;
+      color: #424242;
+    }
+
+    .favorite-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .action-btn.delete {
+      background: #FFEBEE;
+      color: #C62828;
+    }
+
+    .action-btn.contact {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    /* 编辑模式 */
+    .edit-mode .favorite-card {
+      position: relative;
+    }
+
+    .edit-mode .favorite-card::before {
+      content: '';
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #E0E0E0;
+      border-radius: 4px;
+      background: white;
+      z-index: 1;
+    }
+
+    .edit-mode .favorite-card.selected::before {
+      background: #2E7D32;
+      border-color: #2E7D32;
+    }
+
+    .edit-mode .favorite-card.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+      z-index: 2;
+    }
+
+    .edit-mode .favorite-content {
+      padding-left: 48px;
+    }
+
+    /* 底部操作栏 */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 428px;
+      background: white;
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+      box-sizing: border-box;
+      display: none;
+    }
+
+    .bottom-bar.show {
+      display: flex;
+    }
+
+    .select-all {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #424242;
+    }
+
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #E0E0E0;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .checkbox.checked {
+      background: #2E7D32;
+      border-color: #2E7D32;
+      color: white;
+      font-size: 12px;
+    }
+
+    .delete-btn {
+      padding: 10px 24px;
+      background: #C62828;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      color: #E0E0E0;
+      margin-bottom: 16px;
+    }
+
+    .empty-title {
+      font-size: 16px;
+      color: #757575;
+      margin-bottom: 8px;
+    }
+
+    .empty-desc {
+      font-size: 14px;
+      color: #9E9E9E;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="theme-green">
+  <!-- 顶部Header -->
+  <header class="header">
+    <div class="header-bar">
+      <a href="center.html" class="back-btn"><i class="mdi mdi-arrow-left"></i></a>
+      <span class="header-title">我的收藏</span>
+      <a href="#" class="header-action" id="editBtn" onclick="toggleEditMode()">管理</a>
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-type="all" onclick="switchTab(this)">全部<span class="count">(8)</span></div>
+      <div class="tab" data-type="cattle" onclick="switchTab(this)">活牛<span class="count">(4)</span></div>
+      <div class="tab" data-type="beef" onclick="switchTab(this)">牛肉<span class="count">(2)</span></div>
+      <div class="tab" data-type="feed" onclick="switchTab(this)">饲料<span class="count">(1)</span></div>
+      <div class="tab" data-type="farm" onclick="switchTab(this)">牧场<span class="count">(1)</span></div>
+    </div>
+  </header>
+
+  <!-- 列表容器 -->
+  <div class="list-container" id="listContainer">
+    <!-- 活牛收藏1 -->
+    <div class="favorite-card" data-id="1" onclick="handleCardClick(this)">
+      <div class="favorite-content">
+        <div class="favorite-image"><i class="mdi mdi-cow"></i></div>
+        <div class="favorite-info">
+          <div class="favorite-title">西门塔尔牛 育肥牛 800-1000斤</div>
+          <div class="favorite-spec">品种: 西门塔尔 | 存栏: 200头</div>
+          <div class="favorite-price-row">
+            <span class="favorite-price">¥18.5/斤</span>
+            <span class="favorite-location"><i class="mdi mdi-map-marker"></i>内蒙古通辽</span>
+          </div>
+        </div>
+      </div>
+      <div class="favorite-footer">
+        <div class="seller-info">
+          <div class="seller-avatar"><i class="mdi mdi-account"></i></div>
+          <span class="seller-name">草原牧业有限公司</span>
+        </div>
+        <div class="favorite-actions">
+          <button class="action-btn delete" onclick="deleteFavorite(event, 1)"><i class="mdi mdi-heart-off"></i></button>
+          <button class="action-btn contact" onclick="contactSeller(event, 1)"><i class="mdi mdi-phone"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 活牛收藏2 -->
+    <div class="favorite-card" data-id="2" onclick="handleCardClick(this)">
+      <div class="favorite-content">
+        <div class="favorite-image"><i class="mdi mdi-cow"></i></div>
+        <div class="favorite-info">
+          <div class="favorite-title">夏洛莱牛 架子牛 500-600斤</div>
+          <div class="favorite-spec">品种: 夏洛莱 | 存栏: 150头</div>
+          <div class="favorite-price-row">
+            <span class="favorite-price">¥16.8/斤</span>
+            <span class="favorite-location"><i class="mdi mdi-map-marker"></i>山东菏泽</span>
+          </div>
+        </div>
+      </div>
+      <div class="favorite-footer">
+        <div class="seller-info">
+          <div class="seller-avatar"><i class="mdi mdi-account"></i></div>
+          <span class="seller-name">鲁西黄牛合作社</span>
+        </div>
+        <div class="favorite-actions">
+          <button class="action-btn delete" onclick="deleteFavorite(event, 2)"><i class="mdi mdi-heart-off"></i></button>
+          <button class="action-btn contact" onclick="contactSeller(event, 2)"><i class="mdi mdi-phone"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 牛肉收藏 -->
+    <div class="favorite-card" data-id="3" onclick="handleCardClick(this)">
+      <div class="favorite-content">
+        <div class="favorite-image beef"><i class="mdi mdi-food-steak"></i></div>
+        <div class="favorite-info">
+          <div class="favorite-title">雪花牛肉 M5级别 整块销售</div>
+          <div class="favorite-spec">部位: 眼肉 | 规格: 5kg/块</div>
+          <div class="favorite-price-row">
+            <span class="favorite-price">¥298/kg</span>
+            <span class="favorite-location"><i class="mdi mdi-map-marker"></i>北京朝阳</span>
+          </div>
+        </div>
+      </div>
+      <div class="favorite-footer">
+        <div class="seller-info">
+          <div class="seller-avatar"><i class="mdi mdi-account"></i></div>
+          <span class="seller-name">北方肉牛加工厂</span>
+        </div>
+        <div class="favorite-actions">
+          <button class="action-btn delete" onclick="deleteFavorite(event, 3)"><i class="mdi mdi-heart-off"></i></button>
+          <button class="action-btn contact" onclick="contactSeller(event, 3)"><i class="mdi mdi-phone"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 饲料收藏 -->
+    <div class="favorite-card" data-id="4" onclick="handleCardClick(this)">
+      <div class="favorite-content">
+        <div class="favorite-image feed"><i class="mdi mdi-barley"></i></div>
+        <div class="favorite-info">
+          <div class="favorite-title">育肥牛精料 蛋白含量18%</div>
+          <div class="favorite-spec">规格: 40kg/袋 | 起订量: 1吨</div>
+          <div class="favorite-price-row">
+            <span class="favorite-price">¥3,200/吨</span>
+            <span class="favorite-location"><i class="mdi mdi-map-marker"></i>河南郑州</span>
+          </div>
+        </div>
+      </div>
+      <div class="favorite-footer">
+        <div class="seller-info">
+          <div class="seller-avatar"><i class="mdi mdi-account"></i></div>
+          <span class="seller-name">中原饲料有限公司</span>
+        </div>
+        <div class="favorite-actions">
+          <button class="action-btn delete" onclick="deleteFavorite(event, 4)"><i class="mdi mdi-heart-off"></i></button>
+          <button class="action-btn contact" onclick="contactSeller(event, 4)"><i class="mdi mdi-phone"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 牧场收藏 -->
+    <div class="favorite-card" data-id="5" onclick="handleCardClick(this)">
+      <div class="favorite-content">
+        <div class="favorite-image farm"><i class="mdi mdi-home-variant"></i></div>
+        <div class="favorite-info">
+          <div class="favorite-title">草原生态牧场 1000亩 可承包</div>
+          <div class="favorite-spec">设施: 完善 | 可养殖: 500头</div>
+          <div class="favorite-price-row">
+            <span class="favorite-price">¥50万/年</span>
+            <span class="favorite-location"><i class="mdi mdi-map-marker"></i>内蒙古锡林郭勒</span>
+          </div>
+        </div>
+      </div>
+      <div class="favorite-footer">
+        <div class="seller-info">
+          <div class="seller-avatar"><i class="mdi mdi-account"></i></div>
+          <span class="seller-name">王老板</span>
+        </div>
+        <div class="favorite-actions">
+          <button class="action-btn delete" onclick="deleteFavorite(event, 5)"><i class="mdi mdi-heart-off"></i></button>
+          <button class="action-btn contact" onclick="contactSeller(event, 5)"><i class="mdi mdi-phone"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部操作栏(编辑模式) -->
+  <div class="bottom-bar" id="bottomBar">
+    <div class="select-all" onclick="toggleSelectAll()">
+      <div class="checkbox" id="selectAllCheckbox"></div>
+      <span>全选</span>
+    </div>
+    <button class="delete-btn" onclick="deleteSelected()">删除 (<span id="selectedCount">0</span>)</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let isEditMode = false;
+    let selectedItems = new Set();
+
+    // Tab切换
+    function switchTab(el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      const type = el.dataset.type;
+      filterFavorites(type);
+    }
+
+    function filterFavorites(type) {
+      showToast('筛选: ' + type);
+    }
+
+    // 编辑模式切换
+    function toggleEditMode() {
+      isEditMode = !isEditMode;
+      const container = document.getElementById('listContainer');
+      const bottomBar = document.getElementById('bottomBar');
+      const editBtn = document.getElementById('editBtn');
+
+      if (isEditMode) {
+        container.classList.add('edit-mode');
+        bottomBar.classList.add('show');
+        editBtn.textContent = '完成';
+        editBtn.style.color = '#2E7D32';
+      } else {
+        container.classList.remove('edit-mode');
+        bottomBar.classList.remove('show');
+        editBtn.textContent = '管理';
+        editBtn.style.color = '#757575';
+        // 清除选择
+        selectedItems.clear();
+        document.querySelectorAll('.favorite-card.selected').forEach(card => {
+          card.classList.remove('selected');
+        });
+        updateSelectedCount();
+      }
+    }
+
+    // 卡片点击
+    function handleCardClick(card) {
+      if (isEditMode) {
+        const id = card.dataset.id;
+        if (selectedItems.has(id)) {
+          selectedItems.delete(id);
+          card.classList.remove('selected');
+        } else {
+          selectedItems.add(id);
+          card.classList.add('selected');
+        }
+        updateSelectedCount();
+      } else {
+        showToast('查看商品详情');
+      }
+    }
+
+    // 更新选中数量
+    function updateSelectedCount() {
+      document.getElementById('selectedCount').textContent = selectedItems.size;
+      const checkbox = document.getElementById('selectAllCheckbox');
+      const cards = document.querySelectorAll('.favorite-card');
+      if (selectedItems.size === cards.length && cards.length > 0) {
+        checkbox.classList.add('checked');
+        checkbox.innerHTML = '✓';
+      } else {
+        checkbox.classList.remove('checked');
+        checkbox.innerHTML = '';
+      }
+    }
+
+    // 全选切换
+    function toggleSelectAll() {
+      const cards = document.querySelectorAll('.favorite-card');
+      const checkbox = document.getElementById('selectAllCheckbox');
+
+      if (selectedItems.size === cards.length) {
+        // 取消全选
+        selectedItems.clear();
+        cards.forEach(card => card.classList.remove('selected'));
+      } else {
+        // 全选
+        cards.forEach(card => {
+          selectedItems.add(card.dataset.id);
+          card.classList.add('selected');
+        });
+      }
+      updateSelectedCount();
+    }
+
+    // 删除选中
+    function deleteSelected() {
+      if (selectedItems.size === 0) {
+        showToast('请先选择要删除的收藏');
+        return;
+      }
+      if (confirm(`确定要删除 ${selectedItems.size} 个收藏吗？`)) {
+        showToast(`已删除 ${selectedItems.size} 个收藏`);
+        toggleEditMode();
+      }
+    }
+
+    // 删除单个收藏
+    function deleteFavorite(event, id) {
+      event.stopPropagation();
+      if (confirm('确定要取消收藏吗？')) {
+        showToast('已取消收藏');
+      }
+    }
+
+    // 联系卖家
+    function contactSeller(event, id) {
+      event.stopPropagation();
+      showToast('拨打电话中...');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+
+</html>

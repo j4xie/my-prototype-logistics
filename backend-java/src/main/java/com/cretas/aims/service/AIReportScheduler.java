@@ -57,10 +57,8 @@ public class AIReportScheduler {
         long startTime = System.currentTimeMillis();
 
         try {
-            // 1. 获取所有活跃的工厂
-            List<Factory> activeFactories = factoryRepository.findAll().stream()
-                    .filter(f -> Boolean.TRUE.equals(f.getIsActive()))
-                    .collect(java.util.stream.Collectors.toList());
+            // 1. 获取所有活跃的工厂（直接使用findByIsActiveTrue，避免全表扫描后过滤）
+            List<Factory> activeFactories = factoryRepository.findByIsActiveTrue();
 
             log.info("找到 {} 个活跃工厂，开始生成周报告", activeFactories.size());
 
@@ -119,10 +117,8 @@ public class AIReportScheduler {
         long startTime = System.currentTimeMillis();
 
         try {
-            // 1. 获取所有活跃的工厂
-            List<Factory> activeFactories = factoryRepository.findAll().stream()
-                    .filter(f -> Boolean.TRUE.equals(f.getIsActive()))
-                    .collect(java.util.stream.Collectors.toList());
+            // 1. 获取所有活跃的工厂（直接使用findByIsActiveTrue，避免全表扫描后过滤）
+            List<Factory> activeFactories = factoryRepository.findByIsActiveTrue();
 
             log.info("找到 {} 个活跃工厂，开始生成月报告", activeFactories.size());
 

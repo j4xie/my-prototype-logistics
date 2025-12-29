@@ -1,8 +1,8 @@
 <!--
   - Copyright (C) 2018-2019
-  - All rights reserved, Designed By www.joolun.com
+  - 食品商城小程序
   - 注意：
-  - 本软件为www.joolun.com开发研制，项目使用请保留此说明
+  - 基于 JooLun 框架二次开发
 -->
 <view class="cu-bar search bg-white fixed">
   <view class="search-form round">
@@ -48,11 +48,42 @@
   </view>
 </view>
 <view style="margin-top:200rpx">
-  <view wx:if="{{viewType}}">
-    <goods-card goodsList="{{goodsList}}"/>
+  <!-- 无结果提示面板 -->
+  <view wx:if="{{noResult}}" class="no-result-panel">
+    <view class="no-result-icon">
+      <text class="cuIcon-searchlist text-gray" style="font-size: 120rpx;"></text>
+    </view>
+    <view class="no-result-title">未找到「{{searchKeyword}}」相关商品</view>
+    <view class="no-result-desc">我们已记录您的需求，有新品上架会第一时间通知您</view>
+
+    <!-- AI助手按钮 -->
+    <view class="ai-chat-btn" bindtap="goToAiChat">
+      <text class="cuIcon-message margin-right-xs"></text>
+      问问AI助手
+    </view>
+
+    <!-- 已记录提示 -->
+    <view wx:if="{{showAiTip}}" class="ai-tip">
+      <text class="cuIcon-check text-green margin-right-xs"></text>
+      已记录需求，有新品会通知您
+    </view>
+
+    <view class="no-result-tips margin-top-lg">
+      <view class="text-sm text-gray">您可以尝试：</view>
+      <view class="text-sm text-gray margin-top-xs">• 使用其他关键词搜索</view>
+      <view class="text-sm text-gray margin-top-xs">• 浏览商品分类</view>
+      <view class="text-sm text-gray margin-top-xs">• 咨询AI助手获取推荐</view>
+    </view>
   </view>
-  <view wx:if="{{!viewType}}">
-    <goods-row goodsList="{{goodsList}}"/>
+
+  <!-- 正常商品列表 -->
+  <view wx:if="{{!noResult}}">
+    <view wx:if="{{viewType}}">
+      <goods-card goodsList="{{goodsList}}" source="{{source}}"/>
+    </view>
+    <view wx:if="{{!viewType}}">
+      <goods-row goodsList="{{goodsList}}" source="{{source}}"/>
+    </view>
+    <view class="cu-load bg-gray {{loadmore?'loading':'over'}}"></view>
   </view>
-  <view class="cu-load bg-gray {{loadmore?'loading':'over'}}"></view>
 </view>

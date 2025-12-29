@@ -15,7 +15,7 @@ interface ProfitAnalysisCardProps {
 export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitAnalysis }) => {
   return (
     <Card style={styles.card} mode="elevated">
-      <Card.Title title="📊 利润分析" />
+      <Card.Title title="利润分析" />
       <Card.Content>
         <View style={styles.detailRow}>
           <Text variant="bodyMedium">预期收入</Text>

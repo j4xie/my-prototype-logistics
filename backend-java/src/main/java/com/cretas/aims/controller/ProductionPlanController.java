@@ -56,7 +56,7 @@ public class ProductionPlanController {
 
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
 
         log.info("创建生产计划: factoryId={}, productTypeId={}", factoryId, request.getProductTypeId());
         ProductionPlanDTO plan = productionPlanService.createProductionPlan(factoryId, request, userId);
@@ -362,7 +362,7 @@ public class ProductionPlanController {
 
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
-        Integer userId = mobileService.getUserFromToken(token).getId();
+        Long userId = mobileService.getUserFromToken(token).getId();
 
         log.info("批量创建生产计划: factoryId={}, count={}", factoryId, requests.size());
         List<ProductionPlanDTO> plans = productionPlanService.batchCreateProductionPlans(factoryId, requests, userId);

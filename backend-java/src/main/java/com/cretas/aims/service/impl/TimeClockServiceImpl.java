@@ -54,9 +54,9 @@ public class TimeClockServiceImpl implements TimeClockService {
     @Transactional
     public TimeClockRecord clockIn(String factoryId, Long userId, String location, String device) {
         log.info("上班打卡: factoryId={}, userId={}, location={}, device={}", factoryId, userId, location, device);
-        
+
         // 验证用户是否存在
-        User user = userRepository.findById(userId.intValue())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         
         // 验证用户是否属于该工厂
@@ -132,18 +132,90 @@ public class TimeClockServiceImpl implements TimeClockService {
 
     @Override
     @Transactional
-    public TimeClockRecord clockOut(String factoryId, Long userId) {
-        log.info("下班打卡: factoryId={}, userId={}", factoryId, userId);
-        
+    public TimeClockRecord clockIn(String factoryId, Long userId, String location, String device,
+                                   Double latitude, Double longitude) {
+        log.info("上班打卡(带GPS): factoryId={}, userId={}, lat={}, lng={}", factoryId, userId, latitude, longitude);
+
         // 验证用户是否存在
-        User user = userRepository.findById(userId.intValue())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        
+
         // 验证用户是否属于该工厂
         if (!user.getFactoryId().equals(factoryId)) {
             throw new BusinessException("用户不属于该工厂");
         }
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+
+        // 查找今日是否已有打卡记录
+        Optional<TimeClockRecord> existingRecord = timeClockRecordRepository
+                .findByFactoryIdAndUserIdAndClockDate(factoryId, userId, startOfDay, endOfDay);
+
+        TimeClockRecord record;
+        if (existingRecord.isPresent()) {
+            record = existingRecord.get();
+            if (record.getClockOutTime() != null) {
+                // 已打过下班卡，重置记录
+                record.setClockInTime(now);
+                record.setClockOutTime(null);
+                record.setBreakStartTime(null);
+                record.setBreakEndTime(null);
+                record.setClockLocation(location);
+                record.setClockDevice(device);
+                record.setLatitude(latitude);
+                record.setLongitude(longitude);
+                record.setStatus("WORKING");
+                record.setAttendanceStatus(now.toLocalTime().isAfter(STANDARD_START_TIME) ? "LATE" : "NORMAL");
+            } else if (record.getClockInTime() != null) {
+                throw new BusinessException("您已经打过上班卡了，请先进行下班打卡");
+            } else {
+                record.setClockInTime(now);
+                record.setClockLocation(location);
+                record.setClockDevice(device);
+                record.setLatitude(latitude);
+                record.setLongitude(longitude);
+                record.setStatus("WORKING");
+                record.setAttendanceStatus(now.toLocalTime().isAfter(STANDARD_START_TIME) ? "LATE" : "NORMAL");
+            }
+        } else {
+            // 创建新记录（带GPS坐标）
+            record = TimeClockRecord.builder()
+                    .factoryId(factoryId)
+                    .userId(userId)
+                    .username(user.getUsername())
+                    .clockDate(today)
+                    .clockInTime(now)
+                    .clockLocation(location)
+                    .clockDevice(device)
+                    .latitude(latitude)
+                    .longitude(longitude)
+                    .status("WORKING")
+                    .attendanceStatus(now.toLocalTime().isAfter(STANDARD_START_TIME) ? "LATE" : "NORMAL")
+                    .build();
+        }
+
+        record = timeClockRecordRepository.save(record);
+        log.info("上班打卡(带GPS)成功: recordId={}, lat={}, lng={}", record.getId(), latitude, longitude);
+        return record;
+    }
+
+    @Override
+    @Transactional
+    public TimeClockRecord clockOut(String factoryId, Long userId) {
+        log.info("下班打卡: factoryId={}, userId={}", factoryId, userId);
         
+        // 验证用户是否存在
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        // 验证用户是否属于该工厂
+        if (!user.getFactoryId().equals(factoryId)) {
+            throw new BusinessException("用户不属于该工厂");
+        }
+
         LocalDate today = LocalDate.now();
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfDay = today.atStartOfDay();
@@ -374,14 +446,14 @@ public class TimeClockServiceImpl implements TimeClockService {
         if (record.getNotes() != null) {
             existingRecord.setNotes(record.getNotes());
         }
-        
+
         existingRecord.setIsManualEdit(true);
-        existingRecord.setEditedBy(editedBy != null ? editedBy.intValue() : null);
+        existingRecord.setEditedBy(editedBy.intValue());
         existingRecord.setEditReason(reason);
-        
+
         // 重新计算工作时长
         existingRecord.calculateWorkDuration();
-        
+
         return timeClockRecordRepository.save(existingRecord);
     }
 

@@ -1,0 +1,128 @@
+<!--
+  下单结算页面
+-->
+<view class="container">
+  <!-- 加载中 -->
+  <view class="loading-mask" wx:if="{{loading}}">
+    <view class="cu-load loading"></view>
+  </view>
+
+  <!-- 收货地址 -->
+  <view class="address-section" bindtap="selectAddress">
+    <view class="address-content" wx:if="{{address}}">
+      <view class="address-header">
+        <text class="address-name">{{address.name}}</text>
+        <text class="address-phone">{{address.phone}}</text>
+        <text class="cu-tag sm bg-red" wx:if="{{address.isDefault}}">默认</text>
+      </view>
+      <text class="address-detail">{{address.provinceName}}{{address.cityName}}{{address.districtName}}{{address.address}}</text>
+    </view>
+    <view class="address-empty" wx:else>
+      <text class="cuIcon-add"></text>
+      <text>添加收货地址</text>
+    </view>
+    <text class="cuIcon-right"></text>
+  </view>
+
+  <!-- 商品列表 -->
+  <view class="goods-section">
+    <view class="section-title">商品信息</view>
+    <view class="goods-list">
+      <view class="goods-item" wx:for="{{goods}}" wx:key="id">
+        <image class="goods-image" src="{{item.image}}" mode="aspectFill"></image>
+        <view class="goods-info">
+          <text class="goods-name">{{item.name}}</text>
+          <text class="goods-spec">{{item.spec}}</text>
+          <view class="goods-price-row">
+            <text class="goods-price">¥{{item.price}}</text>
+            <text class="goods-quantity">x{{item.quantity}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 优惠券 -->
+  <view class="coupon-section" bindtap="selectCoupon">
+    <view class="coupon-label">
+      <text class="cuIcon-ticket"></text>
+      <text>优惠券</text>
+    </view>
+    <view class="coupon-value">
+      <text class="{{selectedCoupon ? 'has-coupon' : 'no-coupon'}}">
+        {{selectedCoupon ? selectedCoupon.name : (availableCoupons.length > 0 ? availableCoupons.length + '张可用' : '暂无可用')}}
+      </text>
+      <text class="cuIcon-right"></text>
+    </view>
+  </view>
+
+  <!-- 订单备注 -->
+  <view class="remark-section">
+    <text class="remark-label">订单备注</text>
+    <input class="remark-input" placeholder="选填，可填写您的特殊要求" value="{{remark}}" bindinput="onRemarkInput" />
+  </view>
+
+  <!-- 金额明细 -->
+  <view class="amount-section">
+    <view class="amount-row">
+      <text>商品金额</text>
+      <text>¥{{goodsAmount}}</text>
+    </view>
+    <view class="amount-row" wx:if="{{discountAmount > 0}}">
+      <text>优惠券</text>
+      <text class="discount">-¥{{discountAmount}}</text>
+    </view>
+    <view class="amount-row">
+      <text>运费</text>
+      <text>{{freightAmount > 0 ? '¥' + freightAmount : '免运费'}}</text>
+    </view>
+  </view>
+
+  <!-- 底部栏 -->
+  <view class="bottom-bar">
+    <view class="total-info">
+      <text class="total-label">合计:</text>
+      <text class="total-amount">¥{{totalAmount}}</text>
+    </view>
+    <button class="submit-btn cu-btn bg-red lg" bindtap="submitOrder" loading="{{submitting}}" disabled="{{submitting}}">
+      提交订单
+    </button>
+  </view>
+
+  <!-- 优惠券选择弹窗 -->
+  <view class="coupon-modal {{showCouponPicker ? 'show' : ''}}" catchtap="closeCouponPicker">
+    <view class="coupon-modal-content" catchtap="">
+      <view class="modal-header">
+        <text class="modal-title">选择优惠券</text>
+        <text class="cuIcon-close" bindtap="closeCouponPicker"></text>
+      </view>
+      <scroll-view class="coupon-list" scroll-y>
+        <view class="coupon-item {{selectedCoupon && selectedCoupon.id === item.id ? 'selected' : ''}}" 
+              wx:for="{{availableCoupons}}" wx:key="id"
+              bindtap="confirmCoupon" data-id="{{item.id}}">
+          <view class="coupon-left">
+            <text class="coupon-value-text">¥{{item.value}}</text>
+            <text class="coupon-condition">满{{item.minAmount}}可用</text>
+          </view>
+          <view class="coupon-right">
+            <text class="coupon-name">{{item.name}}</text>
+            <text class="coupon-expire">有效期至 {{item.expireDate}}</text>
+          </view>
+          <view class="coupon-check" wx:if="{{selectedCoupon && selectedCoupon.id === item.id}}">
+            <text class="cuIcon-check"></text>
+          </view>
+        </view>
+        <view class="coupon-item no-use" bindtap="clearCoupon">
+          <text>不使用优惠券</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+</view>
+
+
+
+
+
+
+

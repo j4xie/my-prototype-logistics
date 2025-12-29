@@ -14,7 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { timeStatsApiClient, DailyStats, MonthlyStats, EmployeeTimeStats } from '../../services/api/timeStatsApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError } from '../../utils/errorHandler';
+import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
 // 创建AttendanceStatistics专用logger
@@ -55,7 +55,7 @@ export default function AttendanceStatisticsScreen() {
 
   // 权限控制
   const userType = user?.userType || 'factory';
-  const roleCode = user?.factoryUser?.role || user?.factoryUser?.roleCode || user?.roleCode || 'viewer';
+  const roleCode = user?.factoryUser?.role || 'viewer';
   const isPlatformAdmin = userType === 'platform';
   const isSuperAdmin = roleCode === 'factory_super_admin';
   const isDepartmentAdmin = roleCode === 'department_admin';
@@ -100,8 +100,8 @@ export default function AttendanceStatisticsScreen() {
     }
 
     return {
-      startDate: startDate.toISOString().split('T')[0], // YYYY-MM-DD格式
-      endDate: endDate.toISOString().split('T')[0],
+      startDate: startDate.toISOString().split('T')[0] as string, // YYYY-MM-DD格式
+      endDate: endDate.toISOString().split('T')[0] as string,
     };
   };
 
@@ -127,7 +127,7 @@ export default function AttendanceStatisticsScreen() {
         userId: user?.id,
         factoryId: user?.factoryId,
       });
-      Alert.alert('错误', error.response?.data?.message || '加载统计数据失败');
+      Alert.alert('错误', getErrorMsg(error) || '加载统计数据失败');
     } finally {
       setLoading(false);
     }
@@ -155,9 +155,9 @@ export default function AttendanceStatisticsScreen() {
         const data = response.data;
         setStats({
           totalHours: data.totalHours || 0,
-          regularHours: data.regularHours || 0,
+          regularHours: (data.totalHours || 0) - (data.overtimeHours || 0),
           overtimeHours: data.overtimeHours || 0,
-          averageDailyHours: data.averageDailyHours || 0,
+          averageDailyHours: data.workDays ? (data.totalHours / data.workDays) : 0,
           period: timePeriod,
         });
         setEmployeeRecords([]);
@@ -205,18 +205,18 @@ export default function AttendanceStatisticsScreen() {
         const data = response.data;
         setStats({
           totalHours: data.totalHours || 0,
-          regularHours: data.regularHours || 0,
-          overtimeHours: data.overtimeHours || 0,
-          averageDailyHours: data.averageDailyHours || 0,
+          regularHours: data.totalHours || 0,
+          overtimeHours: 0,
+          averageDailyHours: data.averageHours || 0,
           period: timePeriod,
         });
-        setEmployeeRecords(data.employeeRecords || []);
+        setEmployeeRecords([]);
 
         attendanceStatsLogger.info('部门工时统计加载成功', {
           department: user?.factoryUser?.department,
           timePeriod,
           totalHours: data.totalHours || 0,
-          employeeCount: (data.employeeRecords || []).length,
+          employeeCount: data.totalEmployees || 0,
         });
       }
     } catch (error) {
@@ -246,34 +246,33 @@ export default function AttendanceStatisticsScreen() {
       // 获取全厂工时统计 (使用月度统计或日度统计)
       let response;
       if (timePeriod === 'month') {
-        response = await timeStatsApiClient.getMonthlyStats({
-          factoryId: user?.factoryId,
-          year: new Date().getFullYear(),
-          month: new Date().getMonth() + 1,
-        });
+        response = await timeStatsApiClient.getMonthlyStats(
+          new Date().getFullYear(),
+          new Date().getMonth() + 1,
+          user?.factoryId
+        );
       } else {
-        response = await timeStatsApiClient.getDailyStats({
-          factoryId: user?.factoryId,
-          date: new Date().toISOString().split('T')[0],
-        });
+        response = await timeStatsApiClient.getDailyStats(
+          new Date().toISOString().split('T')[0] as string,
+          user?.factoryId
+        );
       }
 
       if (response.data) {
         const data = response.data;
         setStats({
           totalHours: data.totalHours || 0,
-          regularHours: data.regularHours || 0,
-          overtimeHours: data.overtimeHours || 0,
-          averageDailyHours: data.averageDailyHours || 0,
+          regularHours: data.totalHours || 0,
+          overtimeHours: 0,
+          averageDailyHours: (timePeriod === 'month' && 'averageDailyHours' in data) ? data.averageDailyHours : 0,
           period: timePeriod,
         });
-        setEmployeeRecords(data.employeeRecords || []);
+        setEmployeeRecords([]);
 
         attendanceStatsLogger.info('全厂工时统计加载成功', {
           factoryId: user?.factoryId,
           timePeriod,
           totalHours: data.totalHours || 0,
-          employeeCount: (data.employeeRecords || []).length,
         });
       }
     } catch (error) {

@@ -35,7 +35,6 @@ const getSupervisorName = (supervisor: SupervisorData | undefined): string => {
 export default function BatchListScreen() {
   const navigation = useNavigation<BatchListScreenProps['navigation']>();
   const route = useRoute<BatchListScreenProps['route']>();
-  const showCostAnalysis = route.params?.showCostAnalysis ?? false;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -61,9 +60,8 @@ export default function BatchListScreen() {
 
       const result = await processingAPI.getBatches(params);
       let batchList: BatchResponse[] = [];
-      if (result.data?.batches) batchList = result.data.batches;
-      else if (result.batches) batchList = result.batches;
-      else if (result.data) batchList = result.data;
+      if (result.data?.content) batchList = result.data.content;
+      else if (Array.isArray(result.data)) batchList = result.data;
       else if (Array.isArray(result)) batchList = result;
 
       setBatches(batchList);
@@ -88,10 +86,13 @@ export default function BatchListScreen() {
   const filteredBatches = batches.filter(batch => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+      const supervisorName = typeof batch.supervisor === 'string'
+        ? batch.supervisor
+        : batch.supervisor?.fullName || batch.supervisor?.username || '';
       return (
         batch.batchNumber?.toLowerCase().includes(query) ||
         batch.productType?.toLowerCase().includes(query) ||
-        batch.supervisor?.toLowerCase().includes(query)
+        supervisorName.toLowerCase().includes(query)
       );
     }
     return true;
@@ -100,11 +101,7 @@ export default function BatchListScreen() {
   const renderBatchCard = ({ item }: { item: BatchResponse }) => (
     <TouchableOpacity
       onPress={() => {
-        if (showCostAnalysis) {
-          navigation.navigate('CostAnalysisDashboard', { batchId: item.id.toString() });
-        } else {
-          navigation.navigate('BatchDetail', { batchId: item.id.toString() });
-        }
+        navigation.navigate('BatchDetail', { batchId: item.id.toString() });
       }}
       activeOpacity={0.7}
     >
@@ -144,12 +141,6 @@ export default function BatchListScreen() {
              </View>
           </View>
         </View>
-        
-        {showCostAnalysis && (
-            <View style={styles.footer}>
-                <StatusBadge status="点击分析成本" variant="success" />
-            </View>
-        )}
       </NeoCard>
     </TouchableOpacity>
   );
@@ -158,7 +149,7 @@ export default function BatchListScreen() {
     <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title={showCostAnalysis ? "选择批次" : "批次列表"} titleStyle={{ fontWeight: '600' }} />
+        <Appbar.Content title="批次列表" titleStyle={{ fontWeight: '600' }} />
       </Appbar.Header>
 
       <View style={styles.searchContainer}>
@@ -206,10 +197,10 @@ export default function BatchListScreen() {
                 <Text style={styles.emptyText}>
                   {searchQuery ? '未找到匹配的批次' : loading ? '加载中...' : '暂无批次数据'}
                 </Text>
-                {!loading && !searchQuery && !showCostAnalysis && (
-                  <NeoButton 
-                    variant="primary" 
-                    onPress={() => navigation.navigate('ProductionPlanManagement')}
+                {!loading && !searchQuery && (
+                  <NeoButton
+                    variant="primary"
+                    onPress={() => (navigation as any).navigate('ProductionPlanManagement')}
                     style={styles.emptyButton}
                   >
                     前往生产计划

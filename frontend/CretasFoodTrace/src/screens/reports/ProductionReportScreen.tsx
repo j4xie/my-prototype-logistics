@@ -60,14 +60,12 @@ export default function ProductionReportScreen() {
       productionReportLogger.debug('加载生产报表数据', { timeRange, factoryId });
 
       // 加载最近的批次列表
-      const batchesResponse = await processingApiClient.getBatches(
-        {
-          page: 0,
-          size: 10,
-          status: 'completed', // 只看已完成的批次
-        },
-        factoryId
-      );
+      const batchesResponse = await processingApiClient.getBatches({
+        page: 0,
+        size: 10,
+        status: 'completed', // 只看已完成的批次
+        factoryId: factoryId
+      });
 
       if (batchesResponse.success && batchesResponse.data) {
         const batches = batchesResponse.data.content || batchesResponse.data || [];
@@ -182,7 +180,7 @@ export default function ProductionReportScreen() {
       cancelled: { label: '已取消', color: '#F44336', bgColor: '#FFEBEE' },
     };
 
-    const config = statusMap[status] || statusMap['pending'];
+    const config = statusMap[status] || statusMap['pending'] || { label: '未知', color: '#666', bgColor: '#f5f5f5' };
 
     return (
       <Chip

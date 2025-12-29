@@ -42,7 +42,7 @@ public class AIUsageLog {
      * 用户ID（可选）
      */
     @Column(name = "user_id")
-    private Integer userId;
+    private Long userId;
 
     /**
      * 请求类型

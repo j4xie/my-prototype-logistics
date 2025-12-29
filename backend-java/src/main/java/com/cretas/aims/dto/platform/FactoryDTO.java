@@ -1,5 +1,6 @@
 package com.cretas.aims.dto.platform;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -61,4 +62,35 @@ public class FactoryDTO {
 
     @Schema(description = "更新时间", example = "2025-01-01T00:00:00")
     private LocalDateTime updatedAt;
+
+    // ===================================================================
+    // 前端字段别名（兼容前端）
+    // ===================================================================
+
+    /**
+     * contactPerson 别名（兼容前端）
+     * 前端使用 contactPerson，后端使用 contactName
+     */
+    @JsonProperty("contactPerson")
+    public String getContactPerson() {
+        return contactName;
+    }
+
+    /**
+     * status 别名（兼容前端）
+     * 前端使用 status ('active'/'inactive')，后端使用 isActive (Boolean)
+     */
+    @JsonProperty("status")
+    public String getStatus() {
+        return isActive != null && isActive ? "active" : "inactive";
+    }
+
+    /**
+     * factoryName 别名（兼容前端）
+     * 前端可能使用 factoryName，后端使用 name
+     */
+    @JsonProperty("factoryName")
+    public String getFactoryName() {
+        return name;
+    }
 }

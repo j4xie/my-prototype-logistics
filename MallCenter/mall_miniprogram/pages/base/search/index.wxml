@@ -1,36 +1,181 @@
 <!--
-  - Copyright (C) 2018-2019
-  - All rights reserved, Designed By www.joolun.com
-  - 注意：
-  - 本软件为www.joolun.com开发研制，项目使用请保留此说明
+  搜索页面 - 增强版
+  包含搜索历史、热门关键词、搜索建议、高级筛选
 -->
-<view class="cu-bar search bg-white">
-  <view class="search-form round">
-    <text class="cuIcon-search"></text>
-    <input type="text" placeholder="请输入商品名" confirm-type="search" bindconfirm="searchHandle" focus></input>
-  </view>
-</view>
-<view wx:if="{{searchHistory.length > 0}}">
-  <view class="cu-bar bg-white">
-    <view class="action"><text class="cuIcon-time"></text>历史搜索</view>
-    <view class="action">
-      <text class="cuIcon-delete lg text-gray" bindtap="clearSearchHistory"></text>
+<view class="search-page">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrapper">
+      <text class="cuIcon-search search-icon"></text>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="搜索商品、品牌、产地..."
+        confirm-type="search"
+        value="{{searchValue}}"
+        bindinput="onSearchInput"
+        bindconfirm="searchHandle"
+        bindblur="hideSuggestions"
+        focus
+      />
+      <text
+        class="cuIcon-close clear-icon"
+        wx:if="{{searchValue}}"
+        bindtap="clearSearchInput"
+      ></text>
+    </view>
+    <view class="filter-btn" bindtap="toggleFilter">
+      <text class="cuIcon-filter"></text>
+      <text>筛选</text>
     </view>
   </view>
-  <view class="padding-sm flex flex-wrap bg-white">
-    <view class="padding-xs" wx:for="{{searchHistory}}" wx:key="index">
-      <view class="cu-tag round" bindtap="searchHandle" data-name="{{item.name}}">{{item.name}}</view>
+
+  <!-- 搜索建议 -->
+  <view class="suggestions-panel" wx:if="{{showSuggestions && suggestions.length > 0}}">
+    <view
+      class="suggestion-item"
+      wx:for="{{suggestions}}"
+      wx:key="keyword"
+      bindtap="selectSuggestion"
+      data-keyword="{{item.keyword}}"
+    >
+      <text class="cuIcon-search"></text>
+      <text class="suggestion-text">{{item.keyword}}</text>
+      <text class="suggestion-count" wx:if="{{item.count}}">约{{item.count}}个结果</text>
     </view>
   </view>
-</view>
-<view wx:if="{{goodsList}}">
-  <view class="cu-bar bg-white">
-    <view class="action"><text class="cuIcon-hot text-orange"></text>全网热榜</view>
+
+  <!-- 高级筛选面板 -->
+  <view class="filter-panel {{showFilter ? 'show' : ''}}">
+    <view class="filter-mask" bindtap="toggleFilter" wx:if="{{showFilter}}"></view>
+    <view class="filter-content">
+      <view class="filter-header">
+        <text>高级筛选</text>
+        <text class="reset-btn" bindtap="resetFilter">重置</text>
+      </view>
+
+      <!-- 分类筛选 -->
+      <view class="filter-section" wx:if="{{filterOptions.categories.length > 0}}">
+        <view class="filter-title">商品分类</view>
+        <view class="filter-tags">
+          <view
+            class="filter-tag {{filterOptions.selectedCategory === item.id ? 'active' : ''}}"
+            wx:for="{{filterOptions.categories}}"
+            wx:key="id"
+            bindtap="selectCategory"
+            data-id="{{item.id}}"
+          >{{item.name}}</view>
+        </view>
+      </view>
+
+      <!-- 价格区间 -->
+      <view class="filter-section">
+        <view class="filter-title">价格区间</view>
+        <view class="price-range">
+          <input
+            class="price-input"
+            type="digit"
+            placeholder="最低价"
+            value="{{filterOptions.priceRange.min}}"
+            bindinput="onPriceMinInput"
+          />
+          <text class="price-separator">-</text>
+          <input
+            class="price-input"
+            type="digit"
+            placeholder="最高价"
+            value="{{filterOptions.priceRange.max}}"
+            bindinput="onPriceMaxInput"
+          />
+        </view>
+      </view>
+
+      <!-- 排序方式 -->
+      <view class="filter-section">
+        <view class="filter-title">排序方式</view>
+        <view class="filter-tags">
+          <view
+            class="filter-tag {{filterOptions.sortBy === item.value ? 'active' : ''}}"
+            wx:for="{{sortOptions}}"
+            wx:key="value"
+            bindtap="selectSort"
+            data-sort="{{item.value}}"
+          >{{item.label}}</view>
+        </view>
+      </view>
+
+      <button class="apply-btn" bindtap="applyFilter">应用筛选</button>
+    </view>
   </view>
-  <view class="cu-list menu card-menu sm-border margin-top-sm">
-    <view class="cu-item" wx:for="{{goodsList}}" wx:key="index">
-      <navigator hover-class='none' url='/pages/goods/goods-detail/index?id={{item.id}}' class="content overflow-1" data-name="{{item.name}}">
-        <text class="margin-right-sm text-bold text-orange">{{index+1}}</text>{{item.name}}
+
+  <!-- 搜索历史 -->
+  <view class="history-section" wx:if="{{searchHistory.length > 0}}">
+    <view class="section-header">
+      <view class="section-title">
+        <text class="cuIcon-time"></text>
+        <text>搜索历史</text>
+      </view>
+      <text class="cuIcon-delete clear-all" bindtap="clearSearchHistory"></text>
+    </view>
+    <view class="history-tags">
+      <view
+        class="history-tag"
+        wx:for="{{searchHistory}}"
+        wx:key="index"
+      >
+        <text bindtap="searchHandle" data-name="{{item.name}}">{{item.name}}</text>
+        <text class="cuIcon-close tag-close" catchtap="clearSingleHistory" data-index="{{index}}"></text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 热门搜索 -->
+  <view class="hot-section" wx:if="{{hotKeywords.length > 0}}">
+    <view class="section-header">
+      <view class="section-title">
+        <text class="cuIcon-hot text-orange"></text>
+        <text>热门搜索</text>
+      </view>
+    </view>
+    <view class="hot-list">
+      <view
+        class="hot-item"
+        wx:for="{{hotKeywords}}"
+        wx:key="index"
+        bindtap="onHotKeywordTap"
+        data-keyword="{{item.keyword || item.name}}"
+      >
+        <text class="hot-rank {{index < 3 ? 'top' : ''}}">{{index + 1}}</text>
+        <text class="hot-keyword">{{item.keyword || item.name}}</text>
+        <text class="hot-count" wx:if="{{item.count}}">{{item.count}}次搜索</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 热销推荐 -->
+  <view class="recommend-section" wx:if="{{goodsList.length > 0}}">
+    <view class="section-header">
+      <view class="section-title">
+        <text class="cuIcon-favorfill text-red"></text>
+        <text>热销推荐</text>
+      </view>
+    </view>
+    <view class="goods-list">
+      <navigator
+        class="goods-item"
+        hover-class="none"
+        url="/pages/goods/goods-detail/index?id={{item.id}}"
+        wx:for="{{goodsList}}"
+        wx:key="id"
+      >
+        <image class="goods-image" src="{{item.picUrl}}" mode="aspectFill"></image>
+        <view class="goods-info">
+          <text class="goods-name">{{item.name}}</text>
+          <view class="goods-meta">
+            <text class="goods-price">{{item.salesPrice}}</text>
+            <text class="goods-sales">{{item.saleNum || 0}}人购买</text>
+          </view>
+        </view>
       </navigator>
     </view>
   </view>

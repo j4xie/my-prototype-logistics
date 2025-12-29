@@ -1,0 +1,74 @@
+<!--
+  - Copyright (C) 2024-2025
+  - 食品商城小程序
+  - 冷启动偏好设置弹窗
+  - 首次使用小程序时显示，帮助了解用户偏好
+-->
+<view class="cold-start-mask" wx:if="{{show}}">
+  <view class="cold-start-popup">
+    <!-- 标题区域 -->
+    <view class="popup-header">
+      <view class="popup-title">欢迎来到食品商城</view>
+      <view class="popup-subtitle">选择您感兴趣的内容，为您推荐更合适的商品</view>
+      <view class="step-indicator">
+        <view class="step {{step >= 1 ? 'active' : ''}}">1</view>
+        <view class="step-line {{step >= 2 ? 'active' : ''}}"></view>
+        <view class="step {{step >= 2 ? 'active' : ''}}">2</view>
+      </view>
+    </view>
+
+    <!-- 步骤1: 选择喜欢的分类 -->
+    <view class="popup-content" wx:if="{{step === 1}}">
+      <view class="section-title">您喜欢哪些品类？（可多选）</view>
+      <view class="category-grid">
+        <view
+          class="category-item {{item.selected ? 'selected' : ''}}"
+          wx:for="{{categories}}"
+          wx:key="id"
+          data-index="{{index}}"
+          bindtap="toggleCategory"
+        >
+          <image class="category-icon" src="{{item.icon}}" mode="aspectFill" />
+          <view class="category-name">{{item.name}}</view>
+          <view class="check-icon" wx:if="{{item.selected}}">✓</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 步骤2: 选择价格偏好 -->
+    <view class="popup-content" wx:if="{{step === 2}}">
+      <view class="section-title">您的消费偏好是？</view>
+      <view class="price-list">
+        <view
+          class="price-item {{item.selected ? 'selected' : ''}}"
+          wx:for="{{priceRanges}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="selectPriceRange"
+        >
+          <view class="price-info">
+            <view class="price-name">{{item.name}}</view>
+            <view class="price-desc">{{item.desc}}</view>
+          </view>
+          <view class="radio-icon {{item.selected ? 'checked' : ''}}"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部按钮 -->
+    <view class="popup-footer">
+      <view wx:if="{{step === 1}}" class="footer-buttons">
+        <view class="btn-skip" bindtap="skip">跳过</view>
+        <view class="btn-next" bindtap="nextStep">
+          下一步 ({{selectedCategories.length}}/{{categories.length}})
+        </view>
+      </view>
+      <view wx:if="{{step === 2}}" class="footer-buttons">
+        <view class="btn-prev" bindtap="prevStep">上一步</view>
+        <view class="btn-complete {{submitting ? 'disabled' : ''}}" bindtap="complete">
+          {{submitting ? '提交中...' : '开始探索'}}
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

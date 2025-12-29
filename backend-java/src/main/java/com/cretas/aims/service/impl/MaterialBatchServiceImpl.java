@@ -6,6 +6,8 @@ import com.cretas.aims.dto.material.ConvertToFrozenRequest;
 import com.cretas.aims.dto.material.UndoFrozenRequest;
 import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
+import com.cretas.aims.dto.material.MaterialBatchExportDTO;
+import com.cretas.aims.utils.ExcelUtil;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.MaterialBatchAdjustment;
 import com.cretas.aims.entity.MaterialConsumption;
@@ -19,6 +21,7 @@ import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.MaterialConsumptionRepository;
 import com.cretas.aims.repository.ProductionPlanBatchUsageRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
+import com.cretas.aims.service.FuturePlanMatchingService;
 import com.cretas.aims.service.MaterialBatchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,6 +118,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     private final MaterialBatchMapper materialBatchMapper;
     private final MaterialConsumptionRepository materialConsumptionRepository;
     private final ProductionPlanBatchUsageRepository productionPlanBatchUsageRepository;
+    private final ExcelUtil excelUtil;
+    private final FuturePlanMatchingService futurePlanMatchingService;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public MaterialBatchServiceImpl(
@@ -123,24 +128,28 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             RawMaterialTypeRepository materialTypeRepository,
             MaterialBatchMapper materialBatchMapper,
             MaterialConsumptionRepository materialConsumptionRepository,
-            ProductionPlanBatchUsageRepository productionPlanBatchUsageRepository) {
+            ProductionPlanBatchUsageRepository productionPlanBatchUsageRepository,
+            ExcelUtil excelUtil,
+            FuturePlanMatchingService futurePlanMatchingService) {
         this.materialBatchRepository = materialBatchRepository;
         this.materialBatchAdjustmentRepository = materialBatchAdjustmentRepository;
         this.materialTypeRepository = materialTypeRepository;
         this.materialBatchMapper = materialBatchMapper;
         this.materialConsumptionRepository = materialConsumptionRepository;
         this.productionPlanBatchUsageRepository = productionPlanBatchUsageRepository;
+        this.excelUtil = excelUtil;
+        this.futurePlanMatchingService = futurePlanMatchingService;
     }
 
     @Override
     @Transactional
-    public MaterialBatchDTO createMaterialBatch(String factoryId, CreateMaterialBatchRequest request, Integer userId) {
+    public MaterialBatchDTO createMaterialBatch(String factoryId, CreateMaterialBatchRequest request, Long userId) {
         // 验证并获取原材料类型
         var materialType = materialTypeRepository.findById(request.getMaterialTypeId())
             .orElseThrow(() -> new ResourceNotFoundException("原材料类型不存在"));
 
         // 创建批次
-        MaterialBatch batch = materialBatchMapper.toEntity(request, factoryId, userId);
+        MaterialBatch batch = materialBatchMapper.toEntity(request, factoryId, userId.longValue());
         // 生成UUID作为ID
         batch.setId(java.util.UUID.randomUUID().toString());
 
@@ -157,6 +166,18 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         batch.setBatchNumber(batchNumber);
         batch = materialBatchRepository.save(batch);
         log.info("创建原材料批次成功: batchNumber={}", batch.getBatchNumber());
+
+        // 自动匹配到未来生产计划
+        try {
+            var matchResults = futurePlanMatchingService.matchBatchToFuturePlans(batch);
+            if (!matchResults.isEmpty()) {
+                log.info("批次 {} 自动匹配到 {} 个未来计划", batch.getBatchNumber(), matchResults.size());
+            }
+        } catch (Exception e) {
+            // 匹配失败不影响批次创建，只记录日志
+            log.warn("批次 {} 自动匹配未来计划失败: {}", batch.getBatchNumber(), e.getMessage());
+        }
+
         return materialBatchMapper.toDTO(batch);
     }
 
@@ -345,7 +366,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         adjustment.setQuantityAfter(newQuantity);
         adjustment.setReason(reason);
         adjustment.setAdjustmentTime(LocalDateTime.now());
-        adjustment.setAdjustedBy(1); // TODO: 从上下文获取用户ID
+        adjustment.setAdjustedBy(1L); // TODO: 从上下文获取用户ID
         materialBatchAdjustmentRepository.save(adjustment);
 
         // 更新批次数量
@@ -488,7 +509,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     @Transactional
-    public List<MaterialBatchDTO> batchCreateMaterialBatches(String factoryId, List<CreateMaterialBatchRequest> requests, Integer userId) {
+    public List<MaterialBatchDTO> batchCreateMaterialBatches(String factoryId, List<CreateMaterialBatchRequest> requests, Long userId) {
         return requests.stream()
                 .map(request -> createMaterialBatch(factoryId, request, userId))
                 .collect(Collectors.toList());
@@ -496,8 +517,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     public byte[] exportInventoryReport(String factoryId) {
-        // TODO: 实现库存报表导出
-        throw new UnsupportedOperationException("库存报表导出功能暂未实现");
+        return exportInventoryReport(factoryId, null, null);
     }
 
     @Override
@@ -516,12 +536,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     public void autoCheckAndUpdateExpiredBatches() {
         log.info("开始自动检查过期批次");
 
-        // 查找所有工厂的过期批次
-        List<MaterialBatch> expiredBatches = materialBatchRepository.findAll().stream()
-                .filter(batch -> batch.getStatus() == MaterialBatchStatus.AVAILABLE)
-                .filter(batch -> batch.getExpireDate() != null)
-                .filter(batch -> batch.getExpireDate().isBefore(LocalDate.now()))
-                .collect(Collectors.toList());
+        // 使用优化查询直接获取过期批次，避免全表扫描后过滤
+        List<MaterialBatch> expiredBatches = materialBatchRepository.findAllExpiredAvailableBatches(LocalDate.now());
 
         for (MaterialBatch batch : expiredBatches) {
             batch.setStatus(MaterialBatchStatus.EXPIRED);
@@ -534,8 +550,76 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     public byte[] exportInventoryReport(String factoryId, LocalDate startDate, LocalDate endDate) {
-        // TODO: 实现带日期范围的库存报表导出
-        throw new UnsupportedOperationException("库存报表导出功能待实现");
+        log.info("开始导出库存报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+
+        // 使用分页查询避免内存问题，每页1000条
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10000);
+        Page<MaterialBatch> batchPage = materialBatchRepository.findByFactoryId(factoryId, pageable);
+        List<MaterialBatch> batches = batchPage.getContent();
+
+        // 如果有日期范围，过滤批次
+        if (startDate != null || endDate != null) {
+            batches = batches.stream()
+                    .filter(batch -> {
+                        LocalDate receiptDate = batch.getReceiptDate();
+                        if (receiptDate == null) return true;
+                        if (startDate != null && receiptDate.isBefore(startDate)) return false;
+                        if (endDate != null && receiptDate.isAfter(endDate)) return false;
+                        return true;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        // 转换为导出DTO
+        List<MaterialBatchExportDTO> exportData = batches.stream()
+                .map(this::convertToExportDTO)
+                .collect(Collectors.toList());
+
+        log.info("准备导出 {} 条批次记录", exportData.size());
+
+        // 使用ExcelUtil生成Excel文件
+        return excelUtil.exportToExcel(exportData, MaterialBatchExportDTO.class, "库存报表");
+    }
+
+    /**
+     * 将MaterialBatch转换为导出DTO
+     */
+    private MaterialBatchExportDTO convertToExportDTO(MaterialBatch batch) {
+        // 获取关联的原材料类型名称（避免N+1，已通过@BatchSize优化）
+        String materialTypeName = null;
+        if (batch.getMaterialType() != null) {
+            materialTypeName = batch.getMaterialType().getName();
+        }
+
+        // 获取关联的供应商名称
+        String supplierName = null;
+        if (batch.getSupplier() != null) {
+            supplierName = batch.getSupplier().getName();
+        }
+
+        MaterialBatchExportDTO dto = MaterialBatchExportDTO.builder()
+                .batchNumber(batch.getBatchNumber())
+                .materialTypeName(materialTypeName)
+                .supplierName(supplierName)
+                .initialQuantity(batch.getInitialQuantity())
+                .currentQuantity(batch.getCurrentQuantity())
+                .usedQuantity(batch.getUsedQuantity())
+                .reservedQuantity(batch.getReservedQuantity())
+                .unit(batch.getQuantityUnit())
+                .status(batch.getStatus() != null ? batch.getStatus().name() : "UNKNOWN")
+                .storageLocation(batch.getStorageLocation())
+                .purchasePrice(batch.getUnitPrice())
+                .receiveDate(batch.getReceiptDate())
+                .expiryDate(batch.getExpireDate())
+                .qualityGrade(batch.getQualityCertificate())
+                .notes(batch.getNotes())
+                .build();
+
+        // 计算库存价值和剩余天数
+        dto.calculateInventoryValue();
+        dto.calculateRemainingDays();
+
+        return dto;
     }
 
     @Override
@@ -602,7 +686,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     @Override
     @Transactional
     public MaterialBatchDTO adjustBatchQuantity(String factoryId, String batchId, BigDecimal newQuantity,
-                                                String reason, Integer adjustedBy) {
+                                                String reason, Long adjustedBy) {
         MaterialBatch batch = materialBatchRepository.findById(batchId)
                 .orElseThrow(() -> new ResourceNotFoundException("原材料批次", "id", batchId));
 
@@ -627,7 +711,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         adjustmentRecord.setQuantityAfter(newQuantity);
         adjustmentRecord.setAdjustmentQuantity(adjustment.abs());
         adjustmentRecord.setReason(reason);
-        adjustmentRecord.setAdjustedBy(adjustedBy);
+        adjustmentRecord.setAdjustedBy(adjustedBy.longValue());
         adjustmentRecord.setAdjustmentTime(LocalDateTime.now());
         materialBatchAdjustmentRepository.save(adjustmentRecord);
 
@@ -939,18 +1023,23 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         // 5. 恢复为FRESH状态
         batch.setStatus(MaterialBatchStatus.FRESH);
 
-        // 6. 从notes中提取并恢复原始存储位置
-        String originalStorageLocation = extractOriginalStorageLocation(notes);
-        if (originalStorageLocation != null && !originalStorageLocation.equals("未知")) {
-            batch.setStorageLocation(originalStorageLocation);
-            log.info("恢复原始存储位置: {}", originalStorageLocation);
+        // 6. 恢复存储位置（优先使用请求中指定的位置，其次从notes中提取原始位置）
+        String targetStorageLocation = request.getStorageLocation();
+        if (targetStorageLocation == null || targetStorageLocation.isBlank()) {
+            targetStorageLocation = extractOriginalStorageLocation(notes);
+        }
+        if (targetStorageLocation != null && !targetStorageLocation.equals("未知")) {
+            batch.setStorageLocation(targetStorageLocation);
+            log.info("恢复存储位置: {}", targetStorageLocation);
         }
 
-        // 7. 在notes中记录撤销信息
-        String undoNote = String.format("\n[%s] 撤销转冻品操作 - 操作人ID:%d, 原因: %s",
+        // 7. 在notes中记录撤销信息（使用兼容方法获取有效值）
+        Integer effectiveOperatorId = request.getEffectiveOperatorId();
+        String effectiveReason = request.getEffectiveReason();
+        String undoNote = String.format("\n[%s] 撤销转冻品操作 - 操作人ID:%s, 原因: %s",
                 LocalDateTime.now().toString(),
-                request.getOperatorId(),
-                request.getReason());
+                effectiveOperatorId != null ? effectiveOperatorId.toString() : "未知",
+                effectiveReason);
         batch.setNotes(notes + undoNote);
 
         // 7. 保存批次

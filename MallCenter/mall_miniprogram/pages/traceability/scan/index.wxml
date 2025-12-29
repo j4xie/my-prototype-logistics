@@ -1,0 +1,122 @@
+<!--
+  扫码溯源页面
+-->
+<view class="container">
+  <!-- 顶部说明 -->
+  <view class="header-section">
+    <view class="header-icon">
+      <text class="cuIcon-scan"></text>
+    </view>
+    <text class="header-title">扫描产品溯源码</text>
+    <text class="header-desc">扫描产品包装上的二维码或条形码，查看完整的生产溯源信息</text>
+  </view>
+
+  <!-- 扫码区域 -->
+  <view class="scan-section">
+    <!-- 扫码按钮 -->
+    <view class="scan-button {{scanning ? 'scanning' : ''}}" bindtap="startScan">
+      <view class="scan-icon-wrapper">
+        <text class="cuIcon-scan"></text>
+        <view class="scan-animation" wx:if="{{scanning}}"></view>
+      </view>
+      <text class="scan-text">{{scanning ? '扫码中...' : '点击扫码'}}</text>
+    </view>
+
+    <!-- 分隔线 -->
+    <view class="divider">
+      <view class="divider-line"></view>
+      <text class="divider-text">或</text>
+      <view class="divider-line"></view>
+    </view>
+
+    <!-- 手动输入 -->
+    <view class="input-section">
+      <view class="input-wrapper {{inputMode ? 'active' : ''}}">
+        <text class="cuIcon-edit input-icon"></text>
+        <input 
+          class="batch-input" 
+          placeholder="手动输入批次号" 
+          value="{{batchNo}}"
+          bindinput="onInputChange"
+          bindconfirm="onInputConfirm"
+          focus="{{focus}}"
+          confirm-type="search"
+        />
+        <view class="input-clear" wx:if="{{batchNo}}" bindtap="clearInput">
+          <text class="cuIcon-close"></text>
+        </view>
+      </view>
+      <button class="submit-btn cu-btn bg-green" bindtap="submitManualInput" disabled="{{!batchNo}}">
+        查询
+      </button>
+    </view>
+  </view>
+
+  <!-- 扫码历史 -->
+  <view class="history-section" wx:if="{{scanHistory.length > 0}}">
+    <view class="section-header" bindtap="toggleHistory">
+      <view class="section-title">
+        <text class="cuIcon-time"></text>
+        <text>扫码记录</text>
+      </view>
+      <view class="section-action">
+        <text class="cuIcon-{{showHistory ? 'fold' : 'unfold'}}"></text>
+      </view>
+    </view>
+
+    <view class="history-list {{showHistory ? 'expanded' : ''}}">
+      <view class="history-item" 
+            wx:for="{{scanHistory}}" 
+            wx:key="batchNo"
+            bindtap="selectFromHistory"
+            data-batchno="{{item.batchNo}}">
+        <view class="history-info">
+          <text class="history-batchno">{{item.batchNo}}</text>
+          <text class="history-time">{{item.time}}</text>
+        </view>
+        <text class="cuIcon-right text-gray"></text>
+      </view>
+    </view>
+
+    <view class="history-footer" wx:if="{{showHistory && scanHistory.length > 0}}">
+      <button class="clear-btn cu-btn line-red sm" bindtap="clearHistory">
+        <text class="cuIcon-delete"></text> 清除记录
+      </button>
+    </view>
+  </view>
+
+  <!-- 使用说明 -->
+  <view class="tips-section">
+    <view class="tips-title">
+      <text class="cuIcon-infofill text-green"></text>
+      <text>使用说明</text>
+    </view>
+    <view class="tips-list">
+      <view class="tips-item">
+        <text class="tips-num">1</text>
+        <text>点击扫码按钮，对准产品包装上的二维码或条形码</text>
+      </view>
+      <view class="tips-item">
+        <text class="tips-num">2</text>
+        <text>也可以手动输入产品批次号进行查询</text>
+      </view>
+      <view class="tips-item">
+        <text class="tips-num">3</text>
+        <text>查看产品的原料来源、生产过程、质检报告等信息</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部品牌 -->
+  <view class="footer-brand">
+    <text class="cuIcon-safe text-green"></text>
+    <text>食品安全溯源系统</text>
+  </view>
+</view>
+
+
+
+
+
+
+
