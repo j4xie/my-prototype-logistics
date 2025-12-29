@@ -1,6 +1,5 @@
 package com.cretas.aims.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -16,11 +15,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    @Autowired
-    private JwtAuthInterceptor jwtAuthInterceptor;
+    private final JwtAuthInterceptor jwtAuthInterceptor;
+    private final PermissionInterceptor permissionInterceptor;
 
-    @Autowired
-    private PermissionInterceptor permissionInterceptor;
+    // 构造器注入 - Spring 确保依赖已就绪
+    public WebMvcConfig(JwtAuthInterceptor jwtAuthInterceptor,
+                        PermissionInterceptor permissionInterceptor) {
+        this.jwtAuthInterceptor = jwtAuthInterceptor;
+        this.permissionInterceptor = permissionInterceptor;
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

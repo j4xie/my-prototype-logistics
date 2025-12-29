@@ -87,7 +87,7 @@ export function WHInboundListScreen() {
     try {
       logger.info('[WHInboundListScreen] 开始加载入库列表');
 
-      const response = await materialBatchApiClient.getMaterialBatches({ page: 0, size: 50 }) as
+      const response = await materialBatchApiClient.getMaterialBatches({ page: 1, size: 50 }) as
         { data?: { content?: MaterialBatch[] }; content?: MaterialBatch[] } | undefined;
 
       // 处理响应数据

@@ -18,6 +18,15 @@ import AIAlertsScreen from "../../screens/factory-admin/home/AIAlertsScreen";
 import BatchDetailScreen from "../../screens/processing/BatchDetailScreen";
 import MaterialBatchDetailScreen from "../../screens/factory-admin/home/MaterialBatchDetailScreen";
 
+// 批次详情关联页面 - 从BatchDetail跳转
+import CreateBatchScreen from "../../screens/processing/CreateBatchScreen";
+// CreateQualityRecordScreen 已迁移至 QualityInspectorNavigator
+// import CreateQualityRecordScreen from "../../screens/processing/CreateQualityRecordScreen";
+import CostAnalysisDashboard from "../../screens/processing/CostAnalysisDashboard";
+
+// Formily 演示页面
+import { FormilyDemoScreen } from "../../screens/demo";
+
 const Stack = createNativeStackNavigator<FAHomeStackParamList>();
 
 export function FAHomeStackNavigator() {
@@ -70,6 +79,31 @@ export function FAHomeStackNavigator() {
         name="MaterialBatchDetail"
         component={MaterialBatchDetailScreen}
         options={{ title: "原材料详情" }}
+      />
+
+      {/* 批次详情关联页面 - 从BatchDetail跳转 */}
+      <Stack.Screen
+        name="EditBatch"
+        component={CreateBatchScreen}
+        options={{ title: "编辑批次" }}
+      />
+      {/* 质检已迁移至 QualityInspectorNavigator */}
+      {/* <Stack.Screen
+        name="CreateQualityRecord"
+        component={CreateQualityRecordScreen}
+        options={{ title: "创建质检记录" }}
+      /> */}
+      <Stack.Screen
+        name="CostAnalysisDashboard"
+        component={CostAnalysisDashboard}
+        options={{ title: "成本分析" }}
+      />
+
+      {/* Formily 演示页面 - 用于验证动态表单功能 */}
+      <Stack.Screen
+        name="FormilyDemo"
+        component={FormilyDemoScreen}
+        options={{ title: "Formily演示" }}
       />
     </Stack.Navigator>
   );

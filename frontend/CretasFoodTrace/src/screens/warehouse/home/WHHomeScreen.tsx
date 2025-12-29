@@ -122,9 +122,9 @@ export default function WHHomeScreen() {
         dashboardResult,
       ] = await Promise.allSettled([
         // 1. 获取出货任务 (待发货/已发货)
-        shipmentApiClient.getShipments({ status: 'pending', page: 0, size: 10 }),
+        shipmentApiClient.getShipments({ status: 'pending', page: 1, size: 10 }),
         // 2. 获取入库批次 (今日创建的)
-        materialBatchApiClient.getMaterialBatches({ page: 0, size: 10 }),
+        materialBatchApiClient.getMaterialBatches({ page: 1, size: 10 }),
         // 3. 获取低库存预警
         materialBatchApiClient.getLowStockBatches(),
         // 4. 获取即将过期批次

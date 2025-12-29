@@ -948,3 +948,32 @@
   font-size: 14px;
   cursor: pointer;
 }
+
+/* AI 智能调度导航按钮 */
+.nav-item.ai-nav {
+  color: #fff;
+  position: relative;
+}
+.nav-item.ai-nav::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #722ed1 0%, #a18cd1 100%);
+  border-radius: 50%;
+  z-index: -1;
+  box-shadow: 0 4px 12px rgba(114, 46, 209, 0.3);
+}
+.nav-item.ai-nav svg {
+  fill: #fff;
+  position: relative;
+  top: 4px;
+}
+.nav-item.ai-nav span {
+  position: relative;
+  top: 4px;
+  color: #722ed1;
+}

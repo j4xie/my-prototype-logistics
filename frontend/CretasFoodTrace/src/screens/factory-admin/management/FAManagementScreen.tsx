@@ -116,6 +116,43 @@ export function FAManagementScreen() {
           </View>
         </View>
 
+        {/* 系统配置 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>系统配置</Text>
+          <View style={styles.grid}>
+            <GridItem
+              icon="form-select"
+              title="表单配置"
+              color="#667eea"
+              onPress={() => navigation.navigate('SchemaConfig')}
+            />
+            <GridItem
+              icon="code-braces"
+              title="规则配置"
+              color="#9c27b0"
+              onPress={() => navigation.navigate('RuleConfiguration')}
+            />
+            <GridItem
+              icon="robot"
+              title="AI智能初始化"
+              color="#1890ff"
+              onPress={() => navigation.navigate('AIBusinessInit')}
+            />
+            <GridItem
+              icon="barcode"
+              title="编码规则"
+              color="#fa8c16"
+              onPress={() => navigation.navigate('EncodingRuleConfig')}
+            />
+            <GridItem
+              icon="clipboard-check-outline"
+              title="质检项配置"
+              color="#52c41a"
+              onPress={() => navigation.navigate('QualityCheckItemConfig')}
+            />
+          </View>
+        </View>
+
         {/* 其他 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>其他</Text>

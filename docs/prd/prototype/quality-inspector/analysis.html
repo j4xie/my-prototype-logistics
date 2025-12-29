@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>质检员 - AI分析</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">← 返回角色选择</a>
+
+  <div class="phone-container">
+    <!-- 头部 -->
+    <div class="header--qc" style="padding-bottom: 16px; border-radius: 0;">
+      <div class="header-top">
+        <span></span>
+        <h1>AI分析</h1>
+        <button class="icon-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+      <!-- 合格率趋势 -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>合格率趋势</h3>
+          <a href="analysis-trend.html" class="chart-action">查看详情 ></a>
+        </div>
+        <div class="chart-placeholder">
+          <div class="chart-bar" style="height: 70%;"></div>
+          <div class="chart-bar" style="height: 75%;"></div>
+          <div class="chart-bar" style="height: 65%;"></div>
+          <div class="chart-bar" style="height: 80%;"></div>
+          <div class="chart-bar" style="height: 85%;"></div>
+          <div class="chart-bar" style="height: 78%;"></div>
+          <div class="chart-bar" style="height: 82%; background: var(--qc-primary-dark);"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 16px; font-size: 11px; color: #999;">
+          <span>12/22</span>
+          <span>12/23</span>
+          <span>12/24</span>
+          <span>12/25</span>
+          <span>12/26</span>
+          <span>12/27</span>
+          <span style="color: var(--qc-primary); font-weight: 600;">今日</span>
+        </div>
+        <div class="trend-indicator">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/>
+            <polyline points="17,6 23,6 23,12"/>
+          </svg>
+          7日合格率稳步上升，当前87.3%，较上周提升2.1%
+        </div>
+      </div>
+
+      <!-- 异常检测 -->
+      <div class="alert-section" style="background: #fffbeb; border-color: #fde68a;">
+        <div class="alert-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+          </svg>
+          <h3 style="color: #b45309;">AI异常检测</h3>
+        </div>
+        <div class="alert-list">
+          <div class="alert-item">
+            <div class="alert-item-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div class="alert-item-content">
+              <div class="alert-item-text">带鱼片规格评分连续3批下降</div>
+              <div style="font-size: 12px; color: #666; margin-bottom: 4px;">可能原因: 切片机刀片磨损</div>
+              <div class="alert-item-action">建议: 检查设备参数 →</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-item-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <div class="alert-item-content">
+              <div class="alert-item-text">虾仁外观合格率低于平均水平</div>
+              <div style="font-size: 12px; color: #666; margin-bottom: 4px;">今日: 82% | 平均: 91%</div>
+              <div class="alert-item-action">建议: 确认原料质量 →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快速报表 -->
+      <div class="section-title">快速报表</div>
+      <div class="report-grid">
+        <a href="analysis-report.html?type=daily" class="report-btn">
+          <div class="report-btn-icon daily">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <span class="report-btn-text">日报</span>
+        </a>
+        <a href="analysis-report.html?type=weekly" class="report-btn">
+          <div class="report-btn-icon weekly">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+              <line x1="8" y1="14" x2="8" y2="14"/>
+              <line x1="12" y1="14" x2="12" y2="14"/>
+              <line x1="16" y1="14" x2="16" y2="14"/>
+            </svg>
+          </div>
+          <span class="report-btn-text">周报</span>
+        </a>
+        <a href="analysis-report.html?type=monthly" class="report-btn">
+          <div class="report-btn-icon monthly">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <span class="report-btn-text">月报</span>
+        </a>
+        <a href="analysis-report.html?type=custom" class="report-btn">
+          <div class="report-btn-icon custom">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2">
+              <polygon points="12,2 2,7 12,12 22,7 12,2"/>
+              <polyline points="2,17 12,22 22,17"/>
+              <polyline points="2,12 12,17 22,12"/>
+            </svg>
+          </div>
+          <span class="report-btn-text">自定义</span>
+        </a>
+      </div>
+
+      <!-- 产品分析 -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>产品合格率分布</h3>
+        </div>
+        <div style="padding: 8px 0;">
+          <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <span style="width: 70px; font-size: 13px; color: #666;">三文鱼排</span>
+            <div style="flex: 1; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin: 0 10px;">
+              <div style="width: 94%; height: 100%; background: var(--qc-gradient); border-radius: 10px;"></div>
+            </div>
+            <span style="font-size: 14px; font-weight: 600; color: var(--qc-primary);">94%</span>
+          </div>
+          <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <span style="width: 70px; font-size: 13px; color: #666;">鳕鱼块</span>
+            <div style="flex: 1; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin: 0 10px;">
+              <div style="width: 91%; height: 100%; background: var(--qc-gradient); border-radius: 10px;"></div>
+            </div>
+            <span style="font-size: 14px; font-weight: 600; color: var(--qc-primary);">91%</span>
+          </div>
+          <div style="display: flex; align-items: center; margin-bottom: 12px;">
+            <span style="width: 70px; font-size: 13px; color: #666;">虾仁</span>
+            <div style="flex: 1; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin: 0 10px;">
+              <div style="width: 86%; height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 10px;"></div>
+            </div>
+            <span style="font-size: 14px; font-weight: 600; color: #f59e0b;">86%</span>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <span style="width: 70px; font-size: 13px; color: #666;">带鱼片</span>
+            <div style="flex: 1; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin: 0 10px;">
+              <div style="width: 82%; height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 10px;"></div>
+            </div>
+            <span style="font-size: 14px; font-weight: 600; color: #f59e0b;">82%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 效率排行 -->
+      <div class="ranking-list">
+        <div class="ranking-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+          <h3>质检效率排行</h3>
+        </div>
+
+        <div class="ranking-item">
+          <span class="ranking-number first">1</span>
+          <div class="ranking-avatar">张</div>
+          <div class="ranking-info">
+            <div class="ranking-name">张质检 (我)</div>
+            <div class="ranking-stats">今日18批 | 准确率95%</div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#fbbf24" stroke="none">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+        </div>
+
+        <div class="ranking-item">
+          <span class="ranking-number second">2</span>
+          <div class="ranking-avatar" style="background: #e0e7ff; color: #4f46e5;">李</div>
+          <div class="ranking-info">
+            <div class="ranking-name">李质检</div>
+            <div class="ranking-stats">今日15批 | 准确率92%</div>
+          </div>
+        </div>
+
+        <div class="ranking-item">
+          <span class="ranking-number third">3</span>
+          <div class="ranking-avatar" style="background: #fef3c7; color: #d97706;">王</div>
+          <div class="ranking-info">
+            <div class="ranking-name">王质检</div>
+            <div class="ranking-stats">今日12批 | 准确率90%</div>
+          </div>
+        </div>
+
+        <div class="ranking-item">
+          <span class="ranking-number other">4</span>
+          <div class="ranking-avatar" style="background: #f3f4f6; color: #6b7280;">赵</div>
+          <div class="ranking-info">
+            <div class="ranking-name">赵质检</div>
+            <div class="ranking-stats">今日10批 | 准确率88%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="inspect.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        <span>质检</span>
+      </a>
+      <a href="records.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        <span>记录</span>
+      </a>
+      <a href="analysis.html" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>分析</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

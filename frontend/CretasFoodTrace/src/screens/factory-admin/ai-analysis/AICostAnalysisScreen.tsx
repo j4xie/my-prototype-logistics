@@ -1,8 +1,9 @@
 /**
  * AI成本分析页面
  * 支持时间范围选择和多维度分析
+ * 支持流式响应，实时显示AI分析进度
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,12 +13,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
 import { FAAIStackParamList } from '../../../types/navigation';
-import { aiApiClient, AICostAnalysisResponse } from '../../../services/api/aiApiClient';
+import { aiApiClient, AICostAnalysisResponse, SSECallbacks } from '../../../services/api/aiApiClient';
 import { MarkdownRenderer } from '../../../components/common/MarkdownRenderer';
 
 type NavigationProp = NativeStackNavigationProp<FAAIStackParamList, 'AICostAnalysis'>;
@@ -31,6 +33,7 @@ interface DateRange {
 
 export function AICostAnalysisScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [loading, setLoading] = useState(false);
   const [dimension, setDimension] = useState<Dimension>('overall');
@@ -42,6 +45,13 @@ export function AICostAnalysisScreen() {
   });
   const [result, setResult] = useState<AICostAnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // 流式响应状态
+  const [useStreaming, setUseStreaming] = useState(true);
+  const [progressMessage, setProgressMessage] = useState<string>('');
+  const [thinkingContent, setThinkingContent] = useState<string>('');
+  const [partialAnswer, setPartialAnswer] = useState<string>('');
+  const [showThinking, setShowThinking] = useState(false);
 
   // 快速日期范围选项
   const quickRanges = [
@@ -84,25 +94,74 @@ export function AICostAnalysisScreen() {
       setLoading(true);
       setError(null);
       setResult(null);
+      setProgressMessage('');
+      setThinkingContent('');
+      setPartialAnswer('');
 
-      const response = await aiApiClient.analyzeTimeRangeCost({
-        startDate: formatDate(dateRange.startDate),
-        endDate: formatDate(dateRange.endDate),
-        dimension,
-      });
+      if (useStreaming) {
+        // 流式响应模式
+        const callbacks: SSECallbacks = {
+          onStart: () => {
+            setProgressMessage('开始分析...');
+          },
+          onProgress: (message: string) => {
+            setProgressMessage(message);
+          },
+          onThinking: (content: string) => {
+            setThinkingContent((prev) => prev + content);
+            // 自动滚动到底部
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          },
+          onAnswer: (content: string) => {
+            setPartialAnswer((prev) => prev + content);
+            // 自动滚动到底部
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          },
+          onComplete: (data) => {
+            setResult({
+              success: true,
+              analysis: data.analysis,
+              session_id: data.sessionId,
+              responseTimeMs: data.responseTimeMs,
+            });
+            setProgressMessage('');
+            setLoading(false);
+          },
+          onError: (message: string) => {
+            setError(message);
+            setLoading(false);
+          },
+        };
 
-      if (response.success) {
-        setResult(response);
+        await aiApiClient.analyzeTimeRangeCostStream(
+          {
+            startDate: formatDate(dateRange.startDate),
+            endDate: formatDate(dateRange.endDate),
+            dimension,
+          },
+          callbacks
+        );
       } else {
-        setError(response.errorMessage || '分析失败，请稍后重试');
+        // 非流式响应模式
+        const response = await aiApiClient.analyzeTimeRangeCost({
+          startDate: formatDate(dateRange.startDate),
+          endDate: formatDate(dateRange.endDate),
+          dimension,
+        });
+
+        if (response.success) {
+          setResult(response);
+        } else {
+          setError(response.errorMessage || '分析失败，请稍后重试');
+        }
+        setLoading(false);
       }
     } catch (err) {
       console.error('成本分析失败:', err);
       setError('分析请求失败，请检查网络连接');
-    } finally {
       setLoading(false);
     }
-  }, [dateRange, dimension]);
+  }, [dateRange, dimension, useStreaming]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -115,7 +174,11 @@ export function AICostAnalysisScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* 时间范围选择 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>时间范围</Text>
@@ -179,6 +242,25 @@ export function AICostAnalysisScreen() {
           </View>
         </View>
 
+        {/* 流式响应开关 */}
+        <View style={styles.section}>
+          <View style={styles.streamingToggle}>
+            <View style={styles.streamingToggleLeft}>
+              <Icon source="lightning-bolt" size={20} color="#667eea" />
+              <Text style={styles.streamingToggleLabel}>实时流式显示</Text>
+            </View>
+            <Switch
+              value={useStreaming}
+              onValueChange={setUseStreaming}
+              trackColor={{ false: '#ccc', true: '#667eea' }}
+              thumbColor={useStreaming ? '#fff' : '#f4f3f4'}
+            />
+          </View>
+          <Text style={styles.streamingHint}>
+            {useStreaming ? '开启后可实时查看AI思考过程' : '关闭后等待完整结果'}
+          </Text>
+        </View>
+
         {/* 开始分析按钮 */}
         <TouchableOpacity
           style={[styles.analyzeBtn, loading && styles.analyzeBtnDisabled]}
@@ -186,15 +268,15 @@ export function AICostAnalysisScreen() {
           disabled={loading}
         >
           {loading ? (
-            <>
+            <View style={styles.buttonContent}>
               <ActivityIndicator size="small" color="#fff" />
               <Text style={styles.analyzeBtnText}>分析中...</Text>
-            </>
+            </View>
           ) : (
-            <>
+            <View style={styles.buttonContent}>
               <Icon source="robot" size={20} color="#fff" />
               <Text style={styles.analyzeBtnText}>开始 AI 分析</Text>
-            </>
+            </View>
           )}
         </TouchableOpacity>
 
@@ -206,24 +288,69 @@ export function AICostAnalysisScreen() {
           </View>
         )}
 
+        {/* 流式进度显示 */}
+        {loading && useStreaming && progressMessage && (
+          <View style={styles.progressSection}>
+            <View style={styles.progressCard}>
+              <ActivityIndicator size="small" color="#667eea" />
+              <Text style={styles.progressText}>{progressMessage}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* 思考过程显示 */}
+        {useStreaming && thinkingContent && (
+          <View style={styles.thinkingSection}>
+            <TouchableOpacity
+              style={styles.thinkingHeader}
+              onPress={() => setShowThinking(!showThinking)}
+            >
+              <View style={styles.thinkingHeaderLeft}>
+                <Icon source="brain" size={18} color="#805ad5" />
+                <Text style={styles.thinkingTitle}>AI 思考过程</Text>
+              </View>
+              <Icon
+                source={showThinking ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#805ad5"
+              />
+            </TouchableOpacity>
+            {showThinking && (
+              <View style={styles.thinkingCard}>
+                <Text style={styles.thinkingText}>{thinkingContent}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* 流式答案显示 */}
+        {useStreaming && loading && partialAnswer && (
+          <View style={styles.streamingSection}>
+            <Text style={styles.streamingTitle}>AI 正在回答...</Text>
+            <View style={styles.streamingCard}>
+              <MarkdownRenderer content={partialAnswer} />
+              <View style={styles.cursorBlink} />
+            </View>
+          </View>
+        )}
+
         {/* 分析结果 */}
         {result && (
           <View style={styles.resultSection}>
             <View style={styles.resultHeader}>
               <Text style={styles.resultTitle}>分析结果</Text>
-              {result.quota && (
+              {result.quota && typeof result.quota.remainingQuota === 'number' && (
                 <Text style={styles.quotaInfo}>
-                  配额: {result.quota.remainingQuota}/{result.quota.weeklyQuota}
+                  {`配额: ${result.quota.remainingQuota ?? 0}/${result.quota.weeklyQuota ?? 0}`}
                 </Text>
               )}
             </View>
             <View style={styles.resultCard}>
-              <MarkdownRenderer content={result.analysis} />
+              <MarkdownRenderer content={typeof result.analysis === 'string' ? result.analysis : '暂无分析结果'} />
             </View>
-            {result.responseTimeMs && (
+            {typeof result.responseTimeMs === 'number' && result.responseTimeMs > 0 && (
               <Text style={styles.responseTime}>
-                响应时间: {result.responseTimeMs}ms
-                {result.cacheHit ? ' (缓存)' : ''}
+                {`响应时间: ${result.responseTimeMs}ms${result.cacheHit === true ? ' (缓存)' : ''}`}
               </Text>
             )}
           </View>
@@ -318,7 +445,7 @@ const styles = StyleSheet.create({
   },
   dimensionGrid: {
     flexDirection: 'row',
-    gap: 12,
+    marginHorizontal: -6,
   },
   dimensionItem: {
     flex: 1,
@@ -328,6 +455,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
+    marginHorizontal: 6,
   },
   dimensionItemActive: {
     backgroundColor: '#667eea',
@@ -351,15 +479,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: '#667eea',
     borderRadius: 12,
-    gap: 8,
   },
   analyzeBtnDisabled: {
     opacity: 0.7,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   analyzeBtnText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+    marginLeft: 8,
   },
   errorCard: {
     flexDirection: 'row',
@@ -369,12 +501,12 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fed7d7',
     borderRadius: 12,
-    gap: 8,
   },
   errorText: {
     flex: 1,
     fontSize: 14,
     color: '#c53030',
+    marginLeft: 8,
   },
   resultSection: {
     marginHorizontal: 16,
@@ -405,6 +537,110 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     textAlign: 'right',
+  },
+  // 流式模式开关样式
+  streamingToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+  },
+  streamingToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  streamingToggleLabel: {
+    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#333',
+  },
+  streamingHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#999',
+    paddingHorizontal: 4,
+  },
+  // 进度显示样式
+  progressSection: {
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  progressCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f3ff',
+    borderRadius: 12,
+    padding: 16,
+  },
+  progressText: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: '#667eea',
+    fontWeight: '500',
+  },
+  // 思考过程样式
+  thinkingSection: {
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  thinkingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#faf5ff',
+    borderRadius: 12,
+    padding: 12,
+  },
+  thinkingHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  thinkingTitle: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#805ad5',
+  },
+  thinkingCard: {
+    marginTop: 8,
+    backgroundColor: '#faf5ff',
+    borderRadius: 12,
+    padding: 12,
+    maxHeight: 200,
+  },
+  thinkingText: {
+    fontSize: 13,
+    color: '#6b46c1',
+    lineHeight: 20,
+    fontStyle: 'italic',
+  },
+  // 流式答案样式
+  streamingSection: {
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  streamingTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#667eea',
+    marginBottom: 8,
+  },
+  streamingCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#667eea',
+    borderStyle: 'dashed',
+  },
+  cursorBlink: {
+    width: 2,
+    height: 16,
+    backgroundColor: '#667eea',
+    marginTop: 8,
   },
 });
 

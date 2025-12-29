@@ -62,7 +62,7 @@ export default function QualityReportScreen() {
       // 加载质检记录列表
       const inspectionsResponse = await qualityInspectionApiClient.getInspections(
         {
-          page: 0,
+          page: 1,
           size: 20,
         },
         factoryId
