@@ -85,7 +85,7 @@ export default function ShipmentManagementScreen() {
       const [shipmentsRes, customersRes, statsRes] = await Promise.all([
         shipmentApiClient.getShipments({
           factoryId: user?.factoryId,
-          page: 0,
+          page: 1,
           size: 100,
         }),
         customerApiClient.getCustomers({

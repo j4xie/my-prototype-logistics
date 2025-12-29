@@ -250,11 +250,12 @@ export default function ConversionRateScreen() {
             )}
           </View>
 
-          <IconButton
-            icon="chevron-right"
-            size={24}
-            style={styles.arrowIcon}
-          />
+          <View style={styles.arrowIcon} pointerEvents="none">
+            <IconButton
+              icon="chevron-right"
+              size={24}
+            />
+          </View>
         </Card.Content>
       </Card>
     );

@@ -18,7 +18,9 @@ import {
   TextInput,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { platformAPI, FactoryDTO, CreateFactoryRequest } from '../../services/api/platformApiClient';
+import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import { handleError } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
@@ -29,8 +31,10 @@ const factoryMgmtLogger = logger.createContextLogger('FactoryManagement');
  * 工厂管理页面
  * 平台管理员管理所有工厂
  */
+type NavigationProp = NativeStackNavigationProp<PlatformStackParamList, 'FactoryManagement'>;
+
 export default function FactoryManagementScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const [factories, setFactories] = useState<any[]>([]);
   const [filteredFactories, setFilteredFactories] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,8 +149,8 @@ export default function FactoryManagementScreen() {
       `ID: ${factory.id}\n行业: ${factory.industry}\n地区: ${factory.region}\n用户数: ${factory.totalUsers}\nAI配额: ${factory.aiQuota}次/周`,
       [
         { text: '取消', style: 'cancel' },
+        { text: '初始化模板', onPress: () => handleSetupTemplates(factory) },
         { text: '编辑', onPress: () => handleEditFactory(factory) },
-        { text: '查看详情', onPress: () => handleViewDetails(factory) },
       ]
     );
   };
@@ -167,6 +171,13 @@ export default function FactoryManagementScreen() {
 
   const handleViewDetails = (factory: any) => {
     Alert.alert('工厂详情', `详情页面开发中\n工厂: ${factory.name}`);
+  };
+
+  const handleSetupTemplates = (factory: any) => {
+    navigation.navigate('FactorySetup', {
+      factoryId: factory.id,
+      factoryName: factory.name,
+    });
   };
 
   const handleAddFactory = () => {
@@ -323,6 +334,11 @@ export default function FactoryManagementScreen() {
                 创建: {factory.createdAt}
               </Text>
               <View style={styles.actionButtons}>
+                <IconButton
+                  icon="file-document-outline"
+                  size={20}
+                  onPress={() => handleSetupTemplates(factory)}
+                />
                 <IconButton
                   icon="pencil"
                   size={20}

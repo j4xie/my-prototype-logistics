@@ -1,5 +1,7 @@
 package com.cretas.aims.dto.production;
 
+import com.cretas.aims.entity.enums.MixedBatchType;
+import com.cretas.aims.entity.enums.PlanSourceType;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.enums.ProductionPlanType;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,6 +13,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 生产计划数据传输对象
@@ -144,4 +147,45 @@ public class ProductionPlanDTO {
 
     @Schema(description = "剩余需求量")
     private BigDecimal remainingQuantity;
+
+    // ======= 调度员模块扩展字段 =======
+
+    @Schema(description = "计划来源类型: CUSTOMER_ORDER/AI_FORECAST/SAFETY_STOCK/MANUAL/URGENT_INSERT")
+    private PlanSourceType sourceType;
+
+    @Schema(description = "计划来源显示名称")
+    private String sourceTypeDisplayName;
+
+    @Schema(description = "关联订单ID")
+    private String sourceOrderId;
+
+    @Schema(description = "客户名称")
+    private String sourceCustomerName;
+
+    @Schema(description = "AI预测置信度 (0-100)")
+    private Integer aiConfidence;
+
+    @Schema(description = "AI预测置信度等级: HIGH/MEDIUM/LOW")
+    private String aiConfidenceLevel;
+
+    @Schema(description = "预测原因 (如: 冬季火锅需求+15%)")
+    private String forecastReason;
+
+    @Schema(description = "CR值 (Critical Ratio): (交期-今日) / 工期，越小越紧急")
+    private BigDecimal crValue;
+
+    @Schema(description = "是否紧急 (CR < 1)")
+    private Boolean isUrgent;
+
+    @Schema(description = "是否混批")
+    private Boolean isMixedBatch;
+
+    @Schema(description = "混批类型: SAME_MATERIAL/SAME_PROCESS")
+    private MixedBatchType mixedBatchType;
+
+    @Schema(description = "混批类型显示名称")
+    private String mixedBatchTypeDisplayName;
+
+    @Schema(description = "混批关联订单ID列表")
+    private List<String> relatedOrders;
 }

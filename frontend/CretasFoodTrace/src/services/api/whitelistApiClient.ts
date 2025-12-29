@@ -66,7 +66,41 @@ class WhitelistApiClient {
   }
 
   /**
-   * 1. 获取白名单列表（分页）
+   * 1. 添加单个白名单
+   * POST /api/{factoryId}/whitelist
+   */
+  async addWhitelist(params: {
+    phoneNumber: string;
+    presetRole: string;
+    presetRoleName?: string;
+    notes?: string;
+    status?: string;
+    factoryId?: string;
+  }): Promise<{ success: boolean; message?: string; data?: WhitelistDTO }> {
+    const { factoryId, phoneNumber, presetRole, presetRoleName, notes } = params;
+    try {
+      // 使用批量添加接口，添加单个条目
+      const request: BatchAddRequest = {
+        whitelists: [{
+          phoneNumber,
+          role: presetRole,
+          realName: presetRoleName || '待注册',
+          department: notes,
+        }]
+      };
+      const result = await this.batchAddWhitelist(request, factoryId);
+      return {
+        success: result.success > 0,
+        message: result.success > 0 ? '添加成功' : (result.errors?.[0] || '添加失败'),
+      };
+    } catch (error) {
+      console.error('添加白名单失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 2. 获取白名单列表（分页）
    * GET /api/{factoryId}/whitelist
    */
   async getWhitelist(params?: {

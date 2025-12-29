@@ -17,9 +17,13 @@ export interface UserDTO {
   username: string;
   email?: string;
   realName: string;
+  fullName?: string;  // 后端可能返回 fullName 替代 realName
   phone?: string;
-  role: string;
+  role?: string;       // 保留兼容
+  roleCode: string;    // 后端实际返回的角色枚举值 (OPERATOR, DEPARTMENT_ADMIN, FACTORY_SUPER_ADMIN)
+  roleDisplayName?: string;  // 角色显示名称
   department?: string;
+  departmentDisplayName?: string;  // 部门显示名称
   position?: string;
   isActive: boolean;
   createdAt: string;

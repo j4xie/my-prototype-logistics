@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人员排班 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* 视图切换 */
+    .view-tabs {
+      display: flex;
+      background: white;
+      margin: 16px;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .view-tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .view-tab.active {
+      background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+      color: white;
+      font-weight: 500;
+    }
+
+    /* 周选择器 */
+    .week-selector {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 0 16px 16px;
+    }
+
+    .week-nav-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: #f5f5f5;
+      color: #722ed1;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .week-nav-btn:active {
+      background: #e8e8e8;
+    }
+
+    .week-info {
+      text-align: center;
+    }
+
+    .week-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .week-range {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    /* 周历表格 */
+    .week-calendar {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .calendar-header {
+      display: grid;
+      grid-template-columns: 60px repeat(7, 1fr);
+      background: #f8f9fa;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .calendar-header-cell {
+      padding: 10px 4px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .calendar-header-cell .day-name {
+      color: #999;
+    }
+
+    .calendar-header-cell .day-num {
+      font-weight: 500;
+      color: #333;
+      margin-top: 2px;
+    }
+
+    .calendar-header-cell.today .day-num {
+      background: #722ed1;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .calendar-body {
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .calendar-row {
+      display: grid;
+      grid-template-columns: 60px repeat(7, 1fr);
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .calendar-row:last-child {
+      border-bottom: none;
+    }
+
+    .shift-label {
+      padding: 12px 8px;
+      font-size: 12px;
+      color: #666;
+      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .shift-label .shift-name {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .shift-label .shift-time {
+      font-size: 10px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .calendar-cell {
+      padding: 8px 4px;
+      text-align: center;
+      border-left: 1px solid #f0f0f0;
+      min-height: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .calendar-cell:hover {
+      background: #f8f0ff;
+    }
+
+    .calendar-cell.today {
+      background: #f8f0ff;
+    }
+
+    .cell-count {
+      font-size: 16px;
+      font-weight: 600;
+      color: #722ed1;
+    }
+
+    .cell-count.warning {
+      color: #fa8c16;
+    }
+
+    .cell-count.empty {
+      color: #d9d9d9;
+    }
+
+    .cell-status {
+      font-size: 10px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    /* 班次详情 */
+    .shift-detail-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 0 16px 12px;
+    }
+
+    .shift-detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .shift-detail-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .shift-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .shift-badge.morning {
+      background: #e6f4ff;
+      color: #1890ff;
+    }
+
+    .shift-badge.afternoon {
+      background: #fff7e6;
+      color: #fa8c16;
+    }
+
+    .shift-badge.overtime {
+      background: #fff1f0;
+      color: #ff4d4f;
+    }
+
+    .shift-time-label {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .shift-count {
+      font-size: 14px;
+      font-weight: 600;
+      color: #722ed1;
+    }
+
+    .worker-avatars {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .worker-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .worker-avatar.pending {
+      background: #fff7e6;
+      border: 1px dashed #fa8c16;
+      color: #fa8c16;
+    }
+
+    .add-worker-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #f5f5f5;
+      border: 1px dashed #d9d9d9;
+      color: #999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    /* 快捷操作 */
+    .quick-actions {
+      display: flex;
+      gap: 12px;
+      padding: 0 16px;
+      margin-bottom: 100px;
+    }
+
+    .quick-action-btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .quick-action-btn.secondary {
+      background: #f5f5f5;
+      color: #666;
+    }
+
+    .quick-action-btn.primary {
+      background: linear-gradient(135deg, #722ed1 0%, #a18cd1 100%);
+      color: white;
+    }
+
+    /* AI 智能排班底部导航 */
+    .bottom-nav .nav-item.ai-nav {
+      position: relative;
+    }
+
+    .bottom-nav .nav-item.ai-nav::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #722ed1 0%, #a18cd1 100%);
+      border-radius: 50%;
+      z-index: -1;
+      box-shadow: 0 4px 12px rgba(114, 46, 209, 0.3);
+    }
+
+    .bottom-nav .nav-item.ai-nav svg,
+    .bottom-nav .nav-item.ai-nav span {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="personnel-list.html" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">人员排班</span>
+      <a href="shift-schedule.html" style="color: #722ed1; font-size: 14px; text-decoration: none;">+新增</a>
+    </div>
+
+    <div class="content" style="background: #f5f5f5; padding-top: 0;">
+      <!-- 视图切换 -->
+      <div class="view-tabs">
+        <button class="view-tab active">周视图</button>
+        <button class="view-tab">月视图</button>
+        <button class="view-tab">列表</button>
+      </div>
+
+      <!-- 周选择器 -->
+      <div class="week-selector">
+        <button class="week-nav-btn"><</button>
+        <div class="week-info">
+          <div class="week-title">2025年12月 第4周</div>
+          <div class="week-range">12月23日 - 12月29日</div>
+        </div>
+        <button class="week-nav-btn">></button>
+      </div>
+
+      <!-- 班次统计 -->
+      <div class="stats-summary" style="margin: 0 16px 16px;">
+        <div class="stats-item">
+          <div class="stats-value purple">42</div>
+          <div class="stats-label">本周排班</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value green">38</div>
+          <div class="stats-label">已确认</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value orange">4</div>
+          <div class="stats-label">待确认</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value" style="color: #ff4d4f;">0</div>
+          <div class="stats-label">冲突</div>
+        </div>
+      </div>
+
+      <!-- 车间筛选 -->
+      <div class="filter-chips" style="padding: 0 16px; margin-bottom: 16px;">
+        <button class="filter-chip">全部</button>
+        <button class="filter-chip active">切片</button>
+        <button class="filter-chip">包装</button>
+        <button class="filter-chip">冷冻</button>
+      </div>
+
+      <!-- 周历表格 -->
+      <div class="week-calendar">
+        <div class="calendar-header">
+          <div class="calendar-header-cell"></div>
+          <div class="calendar-header-cell">
+            <div class="day-name">周一</div>
+            <div class="day-num">23</div>
+          </div>
+          <div class="calendar-header-cell">
+            <div class="day-name">周二</div>
+            <div class="day-num">24</div>
+          </div>
+          <div class="calendar-header-cell">
+            <div class="day-name">周三</div>
+            <div class="day-num">25</div>
+          </div>
+          <div class="calendar-header-cell">
+            <div class="day-name">周四</div>
+            <div class="day-num">26</div>
+          </div>
+          <div class="calendar-header-cell">
+            <div class="day-name">周五</div>
+            <div class="day-num">27</div>
+          </div>
+          <div class="calendar-header-cell today">
+            <div class="day-name">周六</div>
+            <div class="day-num">28</div>
+          </div>
+          <div class="calendar-header-cell">
+            <div class="day-name">周日</div>
+            <div class="day-num">29</div>
+          </div>
+        </div>
+        <div class="calendar-body">
+          <!-- 早班 -->
+          <div class="calendar-row">
+            <div class="shift-label">
+              <span class="shift-name">早班</span>
+              <span class="shift-time">08-12</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">8</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">8</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">7</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">8</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">8</span>
+            </div>
+            <div class="calendar-cell today">
+              <span class="cell-count">6</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count warning">4</span>
+            </div>
+          </div>
+          <!-- 午班 -->
+          <div class="calendar-row">
+            <div class="shift-label">
+              <span class="shift-name">午班</span>
+              <span class="shift-time">12-18</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">7</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">6</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">7</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">7</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">7</span>
+            </div>
+            <div class="calendar-cell today">
+              <span class="cell-count">5</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count warning">3</span>
+            </div>
+          </div>
+          <!-- 晚班 -->
+          <div class="calendar-row">
+            <div class="shift-label">
+              <span class="shift-name">晚班</span>
+              <span class="shift-time">18-22</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count empty">-</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count empty">-</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count">2</span>
+              <span class="cell-status">加班</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count empty">-</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count warning">2</span>
+              <span class="cell-status">待审</span>
+            </div>
+            <div class="calendar-cell today">
+              <span class="cell-count empty">-</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="cell-count empty">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今日班次详情 -->
+      <div class="section-header" style="padding: 0 16px;">
+        <span class="section-title">今日排班 (12.28 周六)</span>
+        <span style="font-size: 12px; color: #999;">切片车间</span>
+      </div>
+
+      <!-- 早班 -->
+      <div class="shift-detail-card">
+        <div class="shift-detail-header">
+          <div class="shift-detail-title">
+            <span class="shift-badge morning">早班</span>
+            <span class="shift-time-label">08:00-12:00</span>
+          </div>
+          <span class="shift-count">6人</span>
+        </div>
+        <div class="worker-avatars">
+          <div class="worker-avatar">张</div>
+          <div class="worker-avatar">李</div>
+          <div class="worker-avatar">王</div>
+          <div class="worker-avatar">赵</div>
+          <div class="worker-avatar">陈</div>
+          <div class="worker-avatar">刘</div>
+          <button class="add-worker-btn">+</button>
+        </div>
+      </div>
+
+      <!-- 午班 -->
+      <div class="shift-detail-card">
+        <div class="shift-detail-header">
+          <div class="shift-detail-title">
+            <span class="shift-badge afternoon">午班</span>
+            <span class="shift-time-label">12:00-18:00</span>
+          </div>
+          <span class="shift-count">5人</span>
+        </div>
+        <div class="worker-avatars">
+          <div class="worker-avatar">钱</div>
+          <div class="worker-avatar">吴</div>
+          <div class="worker-avatar">郑</div>
+          <div class="worker-avatar">冯</div>
+          <div class="worker-avatar">褚</div>
+          <button class="add-worker-btn">+</button>
+        </div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="quick-actions">
+        <button class="quick-action-btn secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+          复制上周
+        </button>
+        <a href="ai-worker-optimize.html" class="quick-action-btn primary" style="text-decoration: none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a4 4 0 014 4v1h2a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2V6a4 4 0 014-4z"/>
+            <circle cx="9" cy="13" r="1" fill="currentColor"/>
+            <circle cx="15" cy="13" r="1" fill="currentColor"/>
+          </svg>
+          AI 智能排班
+        </a>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+        <span>首页</span>
+      </a>
+      <a href="plan-list.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>计划</span>
+      </a>
+      <a href="ai-schedule.html" class="nav-item ai-nav">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a4 4 0 014 4v1h2a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2V6a4 4 0 014-4z"/>
+          <circle cx="9" cy="13" r="1" fill="currentColor"/>
+          <circle cx="15" cy="13" r="1" fill="currentColor"/>
+          <path d="M9 17h6"/>
+        </svg>
+        <span>AI调度</span>
+      </a>
+      <a href="personnel-list.html" class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+          <path d="M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span>人员</span>
+      </a>
+      <a href="profile.html" class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

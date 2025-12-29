@@ -17,6 +17,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.time.LocalDateTime;
@@ -126,6 +128,46 @@ public class AIController {
         );
 
         return ApiResponse.success(response);
+    }
+
+    /**
+     * AI时间范围成本分析 - 流式响应版本 (SSE)
+     *
+     * 实时返回AI分析过程，包括思考过程和最终答案
+     * 适用于需要实时展示分析进度的场景
+     */
+    @PostMapping("/analysis/cost/time-range/stream")
+    @Operation(summary = "AI时间范围成本分析 - 流式响应",
+               description = "流式返回AI分析过程，支持实时显示思考过程和答案")
+    public SseEmitter analyzeTimeRangeCostStream(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @Valid @RequestBody @Parameter(description = "时间范围分析请求")
+            AIRequestDTO.TimeRangeAnalysisRequest request,
+            HttpServletRequest httpRequest) {
+
+        // 从Token获取用户ID
+        String token = TokenUtils.extractToken(httpRequest.getHeader("Authorization"));
+        Long userId = (long) mobileService.getUserFromToken(token).getId();
+
+        log.info("AI时间范围成本分析(流式): factoryId={}, userId={}, startDate={}, endDate={}, dimension={}",
+                factoryId, userId, request.getStartDate(), request.getEndDate(), request.getDimension());
+
+        // 转换LocalDate为LocalDateTime
+        LocalDateTime startDateTime = request.getStartDate().atStartOfDay();
+        LocalDateTime endDateTime = request.getEndDate().atTime(23, 59, 59);
+
+        // 调用企业级AI服务进行流式时间范围成本分析
+        SseEmitter emitter = aiEnterpriseService.analyzeTimeRangeCostStream(
+                factoryId,
+                userId,
+                startDateTime,
+                endDateTime,
+                request.getDimension(),
+                request.getQuestion(),
+                httpRequest
+        );
+
+        return emitter;
     }
 
     /**

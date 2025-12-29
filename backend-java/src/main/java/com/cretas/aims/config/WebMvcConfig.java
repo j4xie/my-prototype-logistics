@@ -1,6 +1,5 @@
 package com.cretas.aims.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -10,20 +9,33 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * 注册Interceptor和其他Web相关配置
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-11-20
  */
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    @Autowired
-    private JwtAuthInterceptor jwtAuthInterceptor;
+    private final JwtAuthInterceptor jwtAuthInterceptor;
+    private final PermissionInterceptor permissionInterceptor;
+
+    // 构造器注入 - Spring 确保依赖已就绪
+    public WebMvcConfig(JwtAuthInterceptor jwtAuthInterceptor,
+                        PermissionInterceptor permissionInterceptor) {
+        this.jwtAuthInterceptor = jwtAuthInterceptor;
+        this.permissionInterceptor = permissionInterceptor;
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 1. JWT认证拦截器 - 验证Token，设置用户信息
         registry.addInterceptor(jwtAuthInterceptor)
                 .addPathPatterns("/api/mobile/**")  // 拦截所有mobile API
-                .order(1);  // 设置最高优先级，确保在其他Interceptor之前执行
+                .order(1);  // 最高优先级
+
+        // 2. 权限检查拦截器 - 检查 @RequirePermission 注解
+        registry.addInterceptor(permissionInterceptor)
+                .addPathPatterns("/api/mobile/**")  // 拦截所有mobile API
+                .order(2);  // 在JWT之后执行
 
         WebMvcConfigurer.super.addInterceptors(registry);
     }

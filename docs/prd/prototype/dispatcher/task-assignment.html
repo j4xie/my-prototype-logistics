@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>任务分配 - 调度员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">< 返回角色选择</a>
+
+  <div class="mobile-container">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <div class="subpage-header">
+      <a href="index.html" class="back-btn" style="text-decoration: none; color: inherit;"><</a>
+      <span class="title">任务分配</span>
+      <span></span>
+    </div>
+
+    <div class="content" style="background: #f5f5f5;">
+      <!-- 今日任务统计 -->
+      <div class="stats-summary">
+        <div class="stats-item">
+          <div class="stats-value orange">8</div>
+          <div class="stats-label">待分配</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value" style="color: #1890ff;">5</div>
+          <div class="stats-label">进行中</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value purple">15</div>
+          <div class="stats-label">已分配</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value green">3</div>
+          <div class="stats-label">已完成</div>
+        </div>
+      </div>
+
+      <!-- 筛选标签 -->
+      <div class="filter-chips">
+        <button class="filter-chip active">待分配</button>
+        <button class="filter-chip">进行中</button>
+        <button class="filter-chip">已完成</button>
+        <button class="filter-chip">全部</button>
+      </div>
+
+      <!-- 待分配任务 -->
+      <div class="section-header">
+        <span class="section-title">待分配任务 (8个)</span>
+      </div>
+
+      <div class="task-card needs-assignment">
+        <div class="task-header">
+          <span class="task-id">PB20241227002</span>
+          <span class="plan-status pending">待分配</span>
+        </div>
+        <div class="task-info">冷冻大虾仁 · 200kg</div>
+        <div style="font-size: 12px; color: #999; margin-bottom: 12px;">冷冻车间 · 建议4-6人</div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12,6 12,12 16,14"/>
+          </svg>
+          <span style="font-size: 13px; color: #fa8c16;">预计开始: 14:00</span>
+        </div>
+        <a href="batch-workers.html" style="display: block; width: 100%; padding: 10px; background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: white; border: none; border-radius: 8px; font-size: 14px; text-align: center; text-decoration: none;">立即分配</a>
+      </div>
+
+      <div class="task-card needs-assignment">
+        <div class="task-header">
+          <span class="task-id">PB20241227003</span>
+          <span class="plan-status pending">待分配</span>
+        </div>
+        <div class="task-info">鱿鱼圈包装 · 500袋</div>
+        <div style="font-size: 12px; color: #999; margin-bottom: 12px;">包装车间 · 建议3-4人</div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12,6 12,12 16,14"/>
+          </svg>
+          <span style="font-size: 13px; color: #fa8c16;">预计开始: 15:00</span>
+        </div>
+        <a href="batch-workers.html" style="display: block; width: 100%; padding: 10px; background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: white; border: none; border-radius: 8px; font-size: 14px; text-align: center; text-decoration: none;">立即分配</a>
+      </div>
+
+      <!-- 进行中任务 -->
+      <div class="section-header">
+        <span class="section-title">进行中任务 (5个)</span>
+      </div>
+
+      <a href="task-detail.html" class="task-card" style="text-decoration: none; color: inherit;">
+        <div class="task-header">
+          <span class="task-id">PB20241227001</span>
+          <span class="plan-status in-progress">生产中</span>
+        </div>
+        <div class="task-info">冷冻带鱼段 · 500kg</div>
+        <div style="font-size: 12px; color: #999; margin-bottom: 12px;">切片车间 · 已分配5人</div>
+        <div class="plan-progress" style="margin-bottom: 12px;">
+          <div class="plan-progress-fill" style="width: 65%;"></div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <span style="flex: 1; text-align: center; padding: 8px; background: #f5f5f5; border-radius: 6px; font-size: 12px; color: #666;">查看详情</span>
+          <a href="batch-workers.html" style="flex: 1; text-align: center; padding: 8px; background: #fff7e6; border-radius: 6px; font-size: 12px; color: #fa8c16; text-decoration: none;">追加人员</a>
+        </div>
+      </a>
+
+      <a href="task-detail.html" class="task-card" style="text-decoration: none; color: inherit; margin-bottom: 80px;">
+        <div class="task-header">
+          <span class="task-id">PB20241227004</span>
+          <span class="plan-status in-progress">生产中</span>
+        </div>
+        <div class="task-info">带鱼段切片 · 400kg</div>
+        <div style="font-size: 12px; color: #999; margin-bottom: 12px;">切片车间 · 已分配3人</div>
+        <div class="plan-progress" style="margin-bottom: 12px;">
+          <div class="plan-progress-fill" style="width: 30%;"></div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <span style="flex: 1; text-align: center; padding: 8px; background: #f5f5f5; border-radius: 6px; font-size: 12px; color: #666;">查看详情</span>
+          <a href="batch-workers.html" style="flex: 1; text-align: center; padding: 8px; background: #fff7e6; border-radius: 6px; font-size: 12px; color: #fa8c16; text-decoration: none;">追加人员</a>
+        </div>
+      </a>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
+      <a href="plan-list.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span>计划</span></a>
+      <a href="ai-schedule.html" class="nav-item ai-nav"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12z"/></svg><span>AI调度</span></a>
+      <a href="personnel-list.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span>人员</span></a>
+      <a href="profile.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>我的</span></a>
+    </nav>
+  </div>
+</body>
+</html>

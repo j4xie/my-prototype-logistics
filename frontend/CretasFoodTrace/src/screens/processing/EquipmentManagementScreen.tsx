@@ -82,7 +82,7 @@ export default function EquipmentManagementScreen() {
 
       const params: any = {
         factoryId,
-        page: 0,
+        page: 1,
         size: 50,
         sortBy: 'createdAt',
         sortDirection: 'DESC',

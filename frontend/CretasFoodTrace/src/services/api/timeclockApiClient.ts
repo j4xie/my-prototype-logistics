@@ -304,6 +304,77 @@ class TimeClockApiClient {
       responseType: 'blob',
     });
   }
+
+  // ==================== HR 模块方法 (管理员端点) ====================
+
+  /**
+   * 【管理员】获取今日部门打卡记录 (HR模块)
+   * 后端路径: GET /api/mobile/{factoryId}/timeclock/department/{department}
+   *
+   * 注意: 后端没有 /today-all 端点，使用 department 端点查询今日数据
+   */
+  async getTodayRecords(params?: {
+    department?: string;
+    status?: string;
+    factoryId?: string;
+  }): Promise<ApiResponse<DepartmentAttendance>> {
+    const { factoryId, department = 'all', ...query } = params || {};
+    const today = new Date().toISOString().split('T')[0];
+    return await apiClient.get(`${this.getPath(factoryId)}/department/${department}`, {
+      params: { date: today, ...query },
+    });
+  }
+
+  /**
+   * 【管理员】获取所有员工打卡历史 (HR模块)
+   * 后端路径: GET /api/mobile/{factoryId}/timeclock/admin/history
+   */
+  async getHistoryRecords(params?: {
+    startDate?: string;
+    endDate?: string;
+    userId?: number;
+    department?: string;
+    page?: number;
+    size?: number;
+    factoryId?: string;
+  }): Promise<ApiResponse<PagedResponse<ClockRecord>>> {
+    const { factoryId, ...query } = params || {};
+    // 使用管理员端点 /admin/history
+    return await apiClient.get(`${this.getPath(factoryId)}/admin/history`, { params: query });
+  }
+
+  /**
+   * 获取月度考勤汇总 (HR模块)
+   * 后端路径: GET /api/mobile/{factoryId}/timeclock/statistics
+   *
+   * @param userId - 用户ID
+   * @param yearMonth - 年月 (格式: YYYY-MM)，默认当月
+   * @param factoryId - 工厂ID
+   */
+  async getMonthSummary(userId: number, yearMonth?: string, factoryId?: string): Promise<AttendanceStatistics> {
+    // 解析年月，默认当月
+    const now = new Date();
+    let year: number;
+    let month: number;
+
+    if (yearMonth) {
+      const parts = yearMonth.split('-').map(Number);
+      year = parts[0] ?? now.getFullYear();
+      month = parts[1] ?? (now.getMonth() + 1);
+    } else {
+      year = now.getFullYear();
+      month = now.getMonth() + 1;
+    }
+
+    // 计算月份起止日期
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    // 使用 statistics 端点获取考勤统计
+    const response = await this.getAttendanceStatistics(userId, { startDate, endDate }, factoryId);
+    return response.data;
+  }
 }
 
 export const timeclockApiClient = new TimeClockApiClient();

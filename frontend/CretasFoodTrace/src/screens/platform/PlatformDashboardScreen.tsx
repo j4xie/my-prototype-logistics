@@ -23,6 +23,9 @@ const platformDashboardLogger = logger.createContextLogger('PlatformDashboard');
 
 type NavigationProp = NativeStackNavigationProp<PlatformStackParamList>;
 
+// 不需要参数的路由类型 (用于快捷入口)
+type SimpleRoutes = Exclude<keyof PlatformStackParamList, 'FactorySetup' | 'IndustryTemplateEdit'>;
+
 /**
  * 平台管理主仪表板
  * 平台管理员的功能入口页面
@@ -143,13 +146,21 @@ export default function PlatformDashboardScreen() {
   };
 
   // 管理功能列表
-  const managementFeatures = [
+  const managementFeatures: Array<{
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+    route: SimpleRoutes;
+    count?: number | string;
+    color: string;
+  }> = [
     {
       id: 'factories',
       title: '工厂管理',
       description: '管理所有工厂信息、配置',
       icon: 'factory',
-      route: 'FactoryManagement' as keyof PlatformStackParamList,
+      route: 'FactoryManagement',
       count: stats.totalFactories,
       color: '#2196F3',
     },
@@ -158,7 +169,7 @@ export default function PlatformDashboardScreen() {
       title: '用户管理',
       description: '跨工厂用户管理、权限设置',
       icon: 'account-group',
-      route: 'UserManagement' as keyof PlatformStackParamList,
+      route: 'UserManagement',
       count: stats.totalUsers,
       color: '#4CAF50',
     },
@@ -167,7 +178,7 @@ export default function PlatformDashboardScreen() {
       title: '白名单管理',
       description: '注册白名单、邀请码管理',
       icon: 'shield-check',
-      route: 'WhitelistManagement' as keyof PlatformStackParamList,
+      route: 'WhitelistManagement',
       color: '#607D8B',
     },
     {
@@ -175,7 +186,7 @@ export default function PlatformDashboardScreen() {
       title: 'AI配额管理',
       description: '管理各工厂AI调用配额',
       icon: 'robot',
-      route: 'AIQuotaManagement' as keyof PlatformStackParamList,
+      route: 'AIQuotaManagement',
       count: `${stats.aiUsageThisWeek}/${stats.aiQuotaTotal}`,
       color: '#9C27B0',
     },
@@ -184,7 +195,7 @@ export default function PlatformDashboardScreen() {
       title: '系统监控',
       description: '平台运营数据、性能监控',
       icon: 'monitor-dashboard',
-      route: 'SystemMonitoring' as keyof PlatformStackParamList,
+      route: 'SystemMonitoring',
       color: '#FF9800',
     },
     {
@@ -192,20 +203,29 @@ export default function PlatformDashboardScreen() {
       title: '平台报表',
       description: '数据统计、导出报表',
       icon: 'chart-bar',
-      route: 'PlatformReports' as keyof PlatformStackParamList,
+      route: 'PlatformReports',
       color: '#00BCD4',
+    },
+    {
+      id: 'industry-templates',
+      title: '行业模板管理',
+      description: '管理行业模板包，配置表单结构',
+      icon: 'file-document-multiple',
+      route: 'IndustryTemplateManagement',
+      color: '#673AB7',
     },
   ];
 
-  const handleFeaturePress = (route: keyof PlatformStackParamList) => {
+  const handleFeaturePress = (route: SimpleRoutes) => {
     // 检查路由是否已实现
-    const implementedRoutes: (keyof PlatformStackParamList)[] = [
+    const implementedRoutes: SimpleRoutes[] = [
       'FactoryManagement',
       'UserManagement',
       'WhitelistManagement',
       'AIQuotaManagement',
       'SystemMonitoring',
       'PlatformReports',
+      'IndustryTemplateManagement',
     ];
 
     if (implementedRoutes.includes(route)) {

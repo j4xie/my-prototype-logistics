@@ -2,10 +2,13 @@ package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.Department;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.cretas.aims.entity.enums.HireType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +49,10 @@ public class User extends BaseEntity {
     private String passwordHash;
     @Column(name = "phone")
     private String phone;
+
+    @Column(name = "email", length = 100)
+    private String email;
+
     @Column(name = "full_name")
     private String fullName;
     @Column(name = "is_active", nullable = false)
@@ -56,6 +63,19 @@ public class User extends BaseEntity {
     private String position;
     @Column(name = "role_code")
     private String roleCode;
+
+    @Column(name = "level")
+    private Integer level;  // 权限级别 (0最高, 99最低)
+
+    @Column(name = "platform_type", length = 20)
+    private String platformType = "web,mobile";  // 支持的平台: web, mobile, web,mobile
+
+    @Column(name = "reports_to")
+    private Long reportsTo;  // 汇报对象用户ID
+
+    @Column(name = "secondary_reports_to")
+    private Long secondaryReportsTo;  // 质检员双重汇报 (质量经理ID)
+
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
     // 薪资和成本相关字段
@@ -65,30 +85,75 @@ public class User extends BaseEntity {
     private Integer expectedWorkMinutes;
     @Column(name = "ccr_rate", precision = 8, scale = 4)
     private BigDecimal ccrRate;
+
+    // 员工扩展字段 (调度员模块)
+    @Column(name = "employee_code", length = 10, unique = true)
+    private String employeeCode;  // 工号 001-999
+
+    @Column(name = "hire_type", length = 20)
+    @Enumerated(EnumType.STRING)
+    private HireType hireType = HireType.FULL_TIME;  // 雇用类型
+
+    @Column(name = "contract_end_date")
+    private LocalDate contractEndDate;  // 合同到期日（临时工）
+
+    @Column(name = "skill_levels", columnDefinition = "JSON")
+    private String skillLevels;  // 技能等级 JSON: {"切片": 3, "质检": 2}
+
+    @Column(name = "hourly_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyRate;  // 小时工资
+
+    @Column(name = "avatar_url", length = 255)
+    private String avatarUrl;  // 头像URL
+
+    @Column(name = "hire_date")
+    private LocalDate hireDate;  // 入职日期
+
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Session> sessions = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<EmployeeWorkSession> workSessions = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "recorder", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialConsumption> materialConsumptions = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BatchWorkSession> batchWorkSessions = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RawMaterialType> createdMaterialTypes = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductType> createdProductTypes = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Supplier> createdSuppliers = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Customer> createdCustomers = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductionPlan> createdProductionPlans = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatch> createdMaterialBatches = new ArrayList<>();
+
+    @JsonIgnore
     @OneToMany(mappedBy = "adjustedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatchAdjustment> batchAdjustments = new ArrayList<>();
     // 便捷方法
@@ -127,31 +192,119 @@ public class User extends BaseEntity {
     }
 
     /**
-     * 获取头像（TODO: 添加avatar字段）
+     * 获取头像
      */
     public String getAvatar() {
-        return null; // TODO: 添加avatar字段到数据库
+        return this.avatarUrl;
     }
 
     /**
-     * 获取权限字符串（基于职位）
+     * 检查是否为临时性质员工
+     */
+    public boolean isTemporaryWorker() {
+        return this.hireType != null && this.hireType.isTemporary();
+    }
+
+    /**
+     * 获取工龄（月数）
+     */
+    public Integer getWorkMonths() {
+        if (this.hireDate == null) {
+            return null;
+        }
+        LocalDate now = LocalDate.now();
+        return (int) java.time.temporal.ChronoUnit.MONTHS.between(this.hireDate, now);
+    }
+
+    /**
+     * 检查合同是否即将到期（30天内）
+     */
+    public boolean isContractExpiringSoon() {
+        if (this.contractEndDate == null) {
+            return false;
+        }
+        LocalDate warningDate = LocalDate.now().plusDays(30);
+        return this.contractEndDate.isBefore(warningDate) || this.contractEndDate.isEqual(warningDate);
+    }
+
+    /**
+     * 获取合同剩余天数
+     */
+    public Integer getContractRemainingDays() {
+        if (this.contractEndDate == null) {
+            return null;
+        }
+        long days = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), this.contractEndDate);
+        return (int) Math.max(0, days);
+    }
+
+    /**
+     * 获取权限字符串（基于角色）
      */
     public String getPermissions() {
-        // 根据职位返回默认权限
-        if (this.position == null) {
+        FactoryUserRole role = getRoleEnum();
+        if (role == null) {
             return "";
         }
-        switch (this.position) {
-            case "super_admin":
-                return "admin:all";
-            case "permission_admin":
-                return "admin:users,admin:permissions";
-            case "supervisor":
-                return "manager:all,production:all,employee:all";
-            case "operator":
-                return "production:view,production:manage,timeclock:manage";
-            default:
-                return "";
+        return role.getPermissionPrefix() + ":*";
+    }
+
+    /**
+     * 获取角色枚举
+     */
+    public FactoryUserRole getRoleEnum() {
+        return FactoryUserRole.fromRoleCode(this.roleCode);
+    }
+
+    /**
+     * 检查是否为管理层
+     */
+    public boolean isManager() {
+        FactoryUserRole role = getRoleEnum();
+        return role != null && role.isManager();
+    }
+
+    /**
+     * 检查是否为一线员工
+     */
+    public boolean isWorker() {
+        FactoryUserRole role = getRoleEnum();
+        return role != null && role.isWorker();
+    }
+
+    /**
+     * 检查是否可以管理目标用户
+     */
+    public boolean canManage(User target) {
+        if (target == null) return false;
+        FactoryUserRole myRole = getRoleEnum();
+        FactoryUserRole targetRole = target.getRoleEnum();
+        if (myRole == null || targetRole == null) return false;
+        return myRole.canManage(targetRole);
+    }
+
+    /**
+     * 获取权限级别 (从角色自动获取)
+     */
+    public int getEffectiveLevel() {
+        if (this.level != null) {
+            return this.level;
         }
+        FactoryUserRole role = getRoleEnum();
+        return role != null ? role.getLevel() : 99;
+    }
+
+    /**
+     * 检查是否支持Web平台
+     */
+    public boolean supportsWeb() {
+        return this.platformType == null || this.platformType.contains("web");
+    }
+
+    /**
+     * 检查是否支持Mobile平台
+     */
+    public boolean supportsMobile() {
+        return this.platformType == null || this.platformType.contains("mobile");
     }
 }

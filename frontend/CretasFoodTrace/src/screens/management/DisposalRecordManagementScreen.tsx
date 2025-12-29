@@ -79,8 +79,8 @@ export default function DisposalRecordManagementScreen() {
       setLoading(true);
       const response = await disposalRecordApiClient.getDisposalRecords({
         factoryId: user?.factoryId,
-        page: 0,
-        size: 100,
+        page: 1,
+        size: 20,  // 优化: 减少每页数量，提升加载速度
       });
 
       setDisposals(response.data || []);

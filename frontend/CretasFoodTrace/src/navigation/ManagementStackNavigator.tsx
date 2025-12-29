@@ -3,6 +3,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ManagementStackParamList } from '../types/navigation';
 import {
   ManagementScreen,
+  // HRDashboardScreen and HREmployeeAIScreen moved to /screens/legacy/hr/
+  // HR admin now uses HRNavigator with dedicated screens
   ProductTypeManagementScreen,
   ConversionRateScreen,
   MaterialConversionDetailScreen,
@@ -115,6 +117,21 @@ export function ManagementStackNavigator() {
         name="FactorySettings"
         component={FactorySettingsScreen}
         options={{ title: '工厂设置' }}
+      />
+
+      {/* HR管理员模块 - 已迁移到 HRNavigator
+      HR admin now has dedicated navigation: HRNavigator.tsx
+      HRDashboardScreen and HREmployeeAIScreen moved to /screens/legacy/hr/
+      */}
+      <Stack.Screen
+        name="UserCreate"
+        component={UserManagementScreen}
+        options={{ title: '添加员工' }}
+      />
+      <Stack.Screen
+        name="AttendanceStats"
+        component={ManagementScreen}
+        options={{ title: '考勤统计' }}
       />
 
       {/* Phase 4启用：规格配置管理

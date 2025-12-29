@@ -7,12 +7,14 @@ import ProcessingDashboard from '../screens/processing/ProcessingDashboard';
 import BatchListScreen from '../screens/processing/BatchListScreen';
 import BatchDetailScreen from '../screens/processing/BatchDetailScreen';
 import CreateBatchScreen from '../screens/processing/CreateBatchScreen';
-import QualityInspectionListScreen from '../screens/processing/QualityInspectionListScreen';
+// Legacy质检页面已移至 QualityInspectorNavigator
+// import QualityInspectionListScreen from '../screens/legacy/quality-inspection/QualityInspectionListScreen';
 import CostAnalysisDashboard from '../screens/processing/CostAnalysisDashboard';
 import TimeRangeCostAnalysisScreen from '../screens/processing/TimeRangeCostAnalysisScreen';
 import ProductionPlanManagementScreen from '../screens/processing/ProductionPlanManagementScreen';
 import MaterialBatchManagementScreen from '../screens/processing/MaterialBatchManagementScreen';
 import MaterialReceiptScreen from '../screens/processing/MaterialReceiptScreen';
+import MaterialReceiptAIScreen from '../screens/processing/MaterialReceiptAIScreen';
 
 // AI智能分析页面 - Phase 3
 import AIReportListScreen from '../screens/processing/AIReportListScreen';
@@ -29,9 +31,9 @@ import EquipmentManagementScreen from '../screens/processing/EquipmentManagement
 // DeepSeek AI分析详情页 - Phase 3 P1-001
 import DeepSeekAnalysisScreen from '../screens/processing/DeepSeekAnalysisScreen';
 
-// 质检记录页面 - Phase 3 P1-002
-import CreateQualityRecordScreen from '../screens/processing/CreateQualityRecordScreen';
-import QualityInspectionDetailScreen from '../screens/processing/QualityInspectionDetailScreen';
+// 质检记录页面 - 已迁移至 QualityInspectorNavigator
+// import CreateQualityRecordScreen from '../screens/legacy/quality-inspection/CreateQualityRecordScreen';
+// import QualityInspectionDetailScreen from '../screens/legacy/quality-inspection/QualityInspectionDetailScreen';
 
 // 成本对比分析 - Phase 3 P1-003
 import CostComparisonScreen from '../screens/processing/CostComparisonScreen';
@@ -42,8 +44,8 @@ import EquipmentAlertsScreen from '../screens/processing/EquipmentAlertsScreen';
 // 设备详情页 - Phase 3 P1-005
 import EquipmentDetailScreen from '../screens/processing/EquipmentDetailScreen';
 
-// Phase 3 P2 - 质检统计分析
-import QualityAnalyticsScreen from '../screens/processing/QualityAnalyticsScreen';
+// Phase 3 P2 - 质检统计分析 (已迁移至 QualityInspectorNavigator)
+// import QualityAnalyticsScreen from '../screens/processing/QualityAnalyticsScreen';
 
 // Phase 3 P2 - 库存盘点
 import InventoryCheckScreen from '../screens/processing/InventoryCheckScreen';
@@ -60,6 +62,9 @@ import {
   TraceabilityDetailScreen,
   PublicTraceScreen,
 } from '../screens/traceability';
+
+// AI语音质检 - Phase 4 (已迁移至 QualityInspectorNavigator)
+// import { VoiceInspectionScreen } from '../screens/processing/VoiceInspectionScreen';
 
 const Stack = createNativeStackNavigator<ProcessingStackParamList>();
 
@@ -99,8 +104,8 @@ export function ProcessingStackNavigator() {
         options={{ title: '编辑批次' }}
       />
 
-      {/* 质检管理 */}
-      <Stack.Screen
+      {/* 质检管理 - 已迁移至 QualityInspectorNavigator */}
+      {/* <Stack.Screen
         name="QualityInspectionList"
         component={QualityInspectionListScreen}
       />
@@ -111,7 +116,7 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="QualityInspectionDetail"
         component={QualityInspectionDetailScreen}
-      />
+      /> */}
 
       {/* 成本分析 */}
       <Stack.Screen
@@ -141,6 +146,10 @@ export function ProcessingStackNavigator() {
       <Stack.Screen
         name="MaterialReceipt"
         component={MaterialReceiptScreen}
+      />
+      <Stack.Screen
+        name="MaterialReceiptAI"
+        component={MaterialReceiptAIScreen}
       />
 
       {/* AI智能分析 - Phase 3新增 */}
@@ -185,11 +194,11 @@ export function ProcessingStackNavigator() {
         component={DeepSeekAnalysisScreen}
       />
 
-      {/* Phase 3 P2 - 质检统计分析 */}
-      <Stack.Screen
+      {/* Phase 3 P2 - 质检统计分析 (已迁移至 QualityInspectorNavigator) */}
+      {/* <Stack.Screen
         name="QualityAnalytics"
         component={QualityAnalyticsScreen}
-      />
+      /> */}
 
       {/* Phase 3 P2 - 库存盘点 */}
       <Stack.Screen
@@ -222,6 +231,12 @@ export function ProcessingStackNavigator() {
         name="PublicTrace"
         component={PublicTraceScreen}
       />
+
+      {/* AI语音质检 - Phase 4 (已迁移至 QualityInspectorNavigator) */}
+      {/* <Stack.Screen
+        name="VoiceInspection"
+        component={VoiceInspectionScreen}
+      /> */}
     </Stack.Navigator>
   );
 }
