@@ -105,9 +105,11 @@ class WhitelistApiClient {
     factoryId?: string
   ): Promise<BatchResult> {
     // apiClient拦截器已统一返回data
+    console.log("----", request);
+    var _data = {entries: request.whitelists}
     return await apiClient.post<BatchResult>(
       `${this.getFactoryPath(factoryId)}/whitelist/batch`,
-      request
+      _data
     );
   }
 
