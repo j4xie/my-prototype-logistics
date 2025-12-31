@@ -86,9 +86,7 @@ export default function DSHomeScreen() {
           style={styles.header}
         >
           <View style={styles.headerTop}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
-            </TouchableOpacity>
+            <View style={{ width: 24 }} />
             <Text style={styles.headerTitle}>调度工作台</Text>
             <TouchableOpacity
               style={styles.notificationBtn}
@@ -121,7 +119,7 @@ export default function DSHomeScreen() {
 
         {/* AI智能调度中心入口 */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('AIScheduleGenerate')}
+          onPress={() => navigation.navigate('AITab', { screen: 'AISchedule' })}
           activeOpacity={0.9}
         >
           <LinearGradient
@@ -171,10 +169,7 @@ export default function DSHomeScreen() {
 
         {/* AI风险提示 */}
         {riskLevel !== 'low' && (
-          <TouchableOpacity
-            style={styles.aiRiskAlert}
-            onPress={() => navigation.navigate('AICompletionProb', { scheduleId: 'today' })}
-          >
+          <View style={styles.aiRiskAlert}>
             <View style={styles.aiRiskIcon}>
               <MaterialCommunityIcons name="alert" size={16} color="white" />
             </View>
@@ -184,10 +179,13 @@ export default function DSHomeScreen() {
                 检测到 {dashboard?.overview?.delayedPlans ?? 2} 个批次完成概率低于70%，建议调整人员配置或交期
               </Text>
             </View>
-            <TouchableOpacity style={styles.aiRiskAction}>
+            <TouchableOpacity
+              style={styles.aiRiskAction}
+              onPress={() => navigation.navigate('AITab', { screen: 'AICompletionProb' })}
+            >
               <Text style={styles.aiRiskActionText}>查看</Text>
             </TouchableOpacity>
-          </TouchableOpacity>
+          </View>
         )}
 
         {/* 今日待处理任务 */}
@@ -296,7 +294,7 @@ export default function DSHomeScreen() {
               <Text style={[styles.quickPersonnelCount, { color: DISPATCHER_THEME.success }]}>
                 {dashboard?.workers?.idle ?? 4}人
               </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('AIWorkerOptimize')}>
+              <TouchableOpacity onPress={() => navigation.navigate('AI', { screen: 'AIWorkerOptimize' })}>
                 <Text style={styles.aiOptimizeLink}>AI优化 →</Text>
               </TouchableOpacity>
             </View>

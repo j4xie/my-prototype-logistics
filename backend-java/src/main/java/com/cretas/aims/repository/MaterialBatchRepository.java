@@ -296,4 +296,19 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
      */
     @Query("SELECT COUNT(m) FROM MaterialBatch m WHERE m.factoryId = :factoryId AND m.createdAt >= :dateTime")
     long countByFactoryIdAndReceiptDateAfter(@Param("factoryId") String factoryId, @Param("dateTime") java.time.LocalDateTime dateTime);
+
+    /**
+     * 计算指定时间范围内已消耗的原材料价值
+     * 用于计算库存周转率
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 消耗价值（已用数量 * 单价）
+     */
+    @Query("SELECT COALESCE(SUM(m.usedQuantity * m.unitPrice), 0) FROM MaterialBatch m " +
+           "WHERE m.factoryId = :factoryId " +
+           "AND m.updatedAt BETWEEN :startDate AND :endDate")
+    BigDecimal calculateConsumedValue(@Param("factoryId") String factoryId,
+                                       @Param("startDate") LocalDate startDate,
+                                       @Param("endDate") LocalDate endDate);
 }

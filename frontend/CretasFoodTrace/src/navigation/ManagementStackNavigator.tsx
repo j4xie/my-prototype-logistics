@@ -11,6 +11,7 @@ import {
   UserManagementScreen,
   WhitelistManagementScreen,
   SupplierManagementScreen,
+  SupplierAdmissionScreen,
   CustomerManagementScreen,
   MaterialTypeManagementScreen,
   WorkTypeManagementScreen,
@@ -90,6 +91,11 @@ export function ManagementStackNavigator() {
         name="SupplierManagement"
         component={SupplierManagementScreen}
         options={{ title: '供应商管理' }}
+      />
+      <Stack.Screen
+        name="SupplierAdmission"
+        component={SupplierAdmissionScreen}
+        options={{ title: '供应商准入管理' }}
       />
       <Stack.Screen
         name="CustomerManagement"

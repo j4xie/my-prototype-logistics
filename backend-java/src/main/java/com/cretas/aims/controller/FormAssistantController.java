@@ -59,6 +59,9 @@ public class FormAssistantController {
     @Value("${cretas.ai.service.connect-timeout:10000}")
     private int connectTimeout;
 
+    @Value("${cretas.ai.service.fallback-enabled:true}")
+    private boolean fallbackEnabled;
+
     private RestTemplate restTemplate;
 
     @Autowired
@@ -132,6 +135,14 @@ public class FormAssistantController {
         private double confidence;
         private String unparsedText;
         private String message;
+
+        // P1-1: 缺字段自动追问
+        /** 缺失的必填字段名列表 */
+        private List<String> missingRequiredFields;
+        /** AI生成的追问问题列表 */
+        private List<String> suggestedQuestions;
+        /** 主要追问问题 (便于简单场景使用) */
+        private String followUpQuestion;
     }
 
     /**
@@ -207,6 +218,50 @@ public class FormAssistantController {
         private String message;
     }
 
+    /**
+     * 校验反馈请求 - 用于表单校验失败时的AI修正
+     */
+    @Data
+    public static class ValidationFeedbackRequest {
+        private String sessionId;  // 会话ID，用于多轮对话
+
+        @NotBlank(message = "实体类型不能为空")
+        private String entityType;
+
+        private List<FormField> formFields;  // 表单字段定义
+
+        private Map<String, Object> submittedValues;  // 用户提交的值
+
+        private List<ValidationError> validationErrors;  // 校验错误列表
+
+        private String userInstruction;  // 用户补充说明
+    }
+
+    /**
+     * 校验错误详情
+     */
+    @Data
+    public static class ValidationError {
+        private String field;       // 字段名
+        private String message;     // 错误信息
+        private String rule;        // 违反的规则（可选）
+        private Object currentValue; // 当前值（可选）
+    }
+
+    /**
+     * 校验反馈响应
+     */
+    @Data
+    public static class ValidationFeedbackResponse {
+        private boolean success;
+        private Map<String, String> correctionHints;  // 字段修正建议
+        private Map<String, Object> correctedValues;  // AI建议的修正值
+        private String explanation;  // AI解释
+        private double confidence;
+        private String sessionId;
+        private String message;
+    }
+
     // ==================== API端点 ====================
 
     /**
@@ -271,10 +326,22 @@ public class FormAssistantController {
                 result.setUnparsedText((String) body.get("unparsed_text"));
                 result.setMessage((String) body.get("message"));
 
-                log.info("AI表单解析成功: factoryId={}, fieldCount={}, confidence={}",
+                // P1-1: 提取缺字段自动追问相关字段
+                if (body.get("missing_required_fields") != null) {
+                    result.setMissingRequiredFields((List<String>) body.get("missing_required_fields"));
+                }
+                if (body.get("suggested_questions") != null) {
+                    result.setSuggestedQuestions((List<String>) body.get("suggested_questions"));
+                }
+                if (body.get("follow_up_question") != null) {
+                    result.setFollowUpQuestion((String) body.get("follow_up_question"));
+                }
+
+                log.info("AI表单解析成功: factoryId={}, fieldCount={}, confidence={}, missingFields={}",
                         factoryId,
                         result.getFieldValues() != null ? result.getFieldValues().size() : 0,
-                        result.getConfidence());
+                        result.getConfidence(),
+                        result.getMissingRequiredFields() != null ? result.getMissingRequiredFields().size() : 0);
 
                 return ApiResponse.success(result);
             } else {
@@ -282,14 +349,16 @@ public class FormAssistantController {
             }
 
         } catch (Exception e) {
-            log.error("AI表单解析失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-
-            FormParseResponse errorResult = new FormParseResponse();
-            errorResult.setSuccess(false);
-            errorResult.setFieldValues(new HashMap<>());
-            errorResult.setConfidence(0.0);
-            errorResult.setMessage("AI服务暂时不可用: " + e.getMessage());
-
+            log.warn("AI服务不可用，使用降级响应: {}", e.getMessage());
+            if (fallbackEnabled) {
+                FormParseResponse fallback = new FormParseResponse();
+                fallback.setSuccess(false);
+                fallback.setMessage("AI服务暂时不可用，请手动填写表单");
+                fallback.setConfidence(0.0);
+                // 返回空的字段值，让前端显示手动填写提示
+                fallback.setFieldValues(new HashMap<>());
+                return ApiResponse.success(fallback);
+            }
             return ApiResponse.error("AI表单解析失败: " + e.getMessage());
         }
     }
@@ -364,15 +433,16 @@ public class FormAssistantController {
             }
 
         } catch (Exception e) {
-            log.error("AI表单OCR解析失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-
-            OCRParseResponse errorResult = new OCRParseResponse();
-            errorResult.setSuccess(false);
-            errorResult.setExtractedText("");
-            errorResult.setFieldValues(new HashMap<>());
-            errorResult.setConfidence(0.0);
-            errorResult.setMessage("AI服务暂时不可用: " + e.getMessage());
-
+            log.warn("AI服务不可用，使用降级响应: {}", e.getMessage());
+            if (fallbackEnabled) {
+                OCRParseResponse fallback = new OCRParseResponse();
+                fallback.setSuccess(false);
+                fallback.setMessage("AI服务暂时不可用，请手动填写表单");
+                fallback.setExtractedText("");
+                fallback.setFieldValues(new HashMap<>());
+                fallback.setConfidence(0.0);
+                return ApiResponse.success(fallback);
+            }
             return ApiResponse.error("AI表单OCR解析失败: " + e.getMessage());
         }
     }
@@ -518,14 +588,131 @@ public class FormAssistantController {
             }
 
         } catch (Exception e) {
-            log.error("AI生成Schema失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-
-            SchemaGenerateResponse errorResult = new SchemaGenerateResponse();
-            errorResult.setSuccess(false);
-            errorResult.setFields(List.of());
-            errorResult.setMessage("AI服务暂时不可用: " + e.getMessage());
-
+            log.warn("AI服务不可用，使用降级响应: {}", e.getMessage());
+            if (fallbackEnabled) {
+                SchemaGenerateResponse fallback = new SchemaGenerateResponse();
+                fallback.setSuccess(false);
+                fallback.setMessage("AI服务暂时不可用，请手动配置字段");
+                fallback.setFields(List.of());
+                return ApiResponse.success(fallback);
+            }
             return ApiResponse.error("AI生成Schema失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 校验失败反馈 - AI修正建议
+     *
+     * 当表单校验失败时，将错误信息反馈给AI，获取修正建议。
+     * 支持多轮对话，可通过sessionId保持上下文。
+     *
+     * @param factoryId 工厂ID
+     * @param request 校验反馈请求
+     * @return AI修正建议
+     */
+    @PostMapping("/validation-feedback")
+    @Operation(summary = "校验失败反馈",
+               description = "表单校验失败时，将错误信息反馈给AI，获取修正建议和可能的修正值")
+    public ApiResponse<ValidationFeedbackResponse> submitValidationFeedback(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @Valid @RequestBody @Parameter(description = "校验反馈请求") ValidationFeedbackRequest request,
+            HttpServletRequest httpRequest) {
+
+        // 1. 验证Token获取用户信息
+        String token = TokenUtils.extractToken(httpRequest.getHeader("Authorization"));
+        Object user = mobileService.getUserFromToken(token);
+
+        log.info("校验失败反馈: factoryId={}, entityType={}, errorCount={}",
+                factoryId, request.getEntityType(),
+                request.getValidationErrors() != null ? request.getValidationErrors().size() : 0);
+
+        try {
+            // 2. 构建请求发送到Python AI服务
+            String url = aiServiceUrl + "/api/ai/form/parse/feedback";
+
+            Map<String, Object> aiRequest = new HashMap<>();
+            aiRequest.put("entity_type", request.getEntityType());
+            aiRequest.put("factory_id", factoryId);
+
+            if (request.getSessionId() != null) {
+                aiRequest.put("session_id", request.getSessionId());
+            }
+
+            if (request.getFormFields() != null && !request.getFormFields().isEmpty()) {
+                aiRequest.put("form_fields", convertFormFields(request.getFormFields()));
+            }
+
+            if (request.getSubmittedValues() != null) {
+                aiRequest.put("submitted_values", request.getSubmittedValues());
+            }
+
+            // 转换校验错误列表
+            if (request.getValidationErrors() != null) {
+                List<Map<String, Object>> errors = request.getValidationErrors().stream()
+                        .map(err -> {
+                            Map<String, Object> errorMap = new HashMap<>();
+                            errorMap.put("field", err.getField());
+                            errorMap.put("message", err.getMessage());
+                            if (err.getRule() != null) {
+                                errorMap.put("rule", err.getRule());
+                            }
+                            if (err.getCurrentValue() != null) {
+                                errorMap.put("current_value", err.getCurrentValue());
+                            }
+                            return errorMap;
+                        })
+                        .toList();
+                aiRequest.put("validation_errors", errors);
+            }
+
+            if (request.getUserInstruction() != null) {
+                aiRequest.put("user_instruction", request.getUserInstruction());
+            }
+
+            // 3. 调用AI服务
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(aiRequest, headers);
+
+            log.info("调用AI校验反馈服务: url={}", url);
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url, HttpMethod.POST, entity, Map.class);
+
+            // 4. 处理响应
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> body = response.getBody();
+
+                ValidationFeedbackResponse result = new ValidationFeedbackResponse();
+                result.setSuccess(Boolean.TRUE.equals(body.get("success")));
+                result.setCorrectionHints((Map<String, String>) body.get("correction_hints"));
+                result.setCorrectedValues((Map<String, Object>) body.get("corrected_values"));
+                result.setExplanation((String) body.get("explanation"));
+                result.setConfidence(body.get("confidence") != null ?
+                        ((Number) body.get("confidence")).doubleValue() : 0.0);
+                result.setSessionId((String) body.get("session_id"));
+                result.setMessage((String) body.get("message"));
+
+                log.info("校验反馈成功: factoryId={}, hintsCount={}, hasCorrectedValues={}",
+                        factoryId,
+                        result.getCorrectionHints() != null ? result.getCorrectionHints().size() : 0,
+                        result.getCorrectedValues() != null && !result.getCorrectedValues().isEmpty());
+
+                return ApiResponse.success(result);
+            } else {
+                throw new RuntimeException("AI服务返回错误: " + response.getStatusCode());
+            }
+
+        } catch (Exception e) {
+            log.warn("AI服务不可用，使用降级响应: {}", e.getMessage());
+            if (fallbackEnabled) {
+                ValidationFeedbackResponse fallback = new ValidationFeedbackResponse();
+                fallback.setSuccess(false);
+                fallback.setMessage("AI服务暂时不可用，请手动检查并修正");
+                fallback.setCorrectionHints(new HashMap<>());
+                fallback.setConfidence(0.0);
+                return ApiResponse.success(fallback);
+            }
+            return ApiResponse.error("校验反馈处理失败: " + e.getMessage());
         }
     }
 

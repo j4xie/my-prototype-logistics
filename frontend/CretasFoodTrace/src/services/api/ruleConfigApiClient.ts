@@ -171,6 +171,52 @@ export interface RuleValidationResult {
 }
 
 /**
+ * Dry-Run 请求
+ */
+export interface DryRunRequest {
+  /** DRL 规则内容 (完整的 Drools 规则定义) */
+  ruleContent: string;
+  /** 实体类型 (如 MATERIAL_BATCH, PROCESSING_BATCH) */
+  entityType?: string;
+  /** Hook 触发点 (如 beforeCreate, beforeSubmit) */
+  hookPoint?: string;
+  /** 测试数据 - 用于规则执行的事实对象 */
+  testData?: Record<string, unknown>;
+}
+
+/**
+ * Dry-Run 响应
+ */
+export interface DryRunResult {
+  /** 是否执行成功 */
+  success: boolean;
+  /** 匹配到的规则名称列表 */
+  rulesMatched: string[];
+  /** 规则执行结果 (如 ALLOW, DENY, CONTINUE) */
+  result: string;
+  /** 触发的规则数量 */
+  firedCount: number;
+  /** 模拟的数据变更 */
+  simulatedChanges: Record<string, unknown>;
+  /** 验证错误 */
+  validationErrors?: string[];
+  /** 警告信息 */
+  warnings?: string[];
+  /** 执行时间 (毫秒) */
+  executionTimeMs?: number;
+  /** 工厂ID */
+  factoryId?: string;
+  /** 实体类型 */
+  entityType?: string;
+  /** Hook 触发点 */
+  hookPoint?: string;
+  /** 时间戳 */
+  timestamp?: string;
+  /** 错误信息 (执行失败时) */
+  error?: string;
+}
+
+/**
  * 规则执行结果
  */
 export interface RuleExecutionResult {
@@ -425,6 +471,64 @@ class RuleConfigApiClient {
       null,
       { params: ruleGroup ? { ruleGroup } : undefined }
     );
+  }
+
+  /**
+   * Dry-Run 规则执行 (沙箱环境)
+   *
+   * 在不保存规则的情况下测试规则效果
+   * 用于规则发布前预览执行结果
+   *
+   * POST /api/mobile/{factoryId}/rules/dry-run
+   */
+  async dryRun(
+    request: DryRunRequest,
+    factoryId?: string
+  ): Promise<DryRunResult> {
+    if (!request.ruleContent || request.ruleContent.trim() === '') {
+      return {
+        success: false,
+        rulesMatched: [],
+        result: 'ERROR',
+        firedCount: 0,
+        simulatedChanges: {},
+        validationErrors: ['规则内容不能为空'],
+        warnings: [],
+      };
+    }
+
+    try {
+      const response = await apiClient.post<ApiResponse<DryRunResult>>(
+        `${this.getRulePath(factoryId)}/dry-run`,
+        request
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      return {
+        success: false,
+        rulesMatched: [],
+        result: 'ERROR',
+        firedCount: 0,
+        simulatedChanges: {},
+        validationErrors: [response.message || 'Dry-Run 执行失败'],
+        warnings: [],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Dry-Run 请求失败';
+      return {
+        success: false,
+        rulesMatched: [],
+        result: 'ERROR',
+        firedCount: 0,
+        simulatedChanges: {},
+        error: errorMessage,
+        validationErrors: [errorMessage],
+        warnings: [],
+      };
+    }
   }
 
   // ========== 状态机 CRUD ==========

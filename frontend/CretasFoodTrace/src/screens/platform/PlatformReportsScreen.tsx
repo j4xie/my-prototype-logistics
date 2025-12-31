@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Alert, ActivityIndicator } from 'react-native';
 import {
   Text,
   Appbar,
@@ -9,11 +9,13 @@ import {
   Divider,
   SegmentedButtons,
   DataTable,
+  Button,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import { logger } from '../../utils/logger';
+import { platformAPI, PlatformReportDTO, ReportSummary, TrendData, FactoryRanking } from '../../services/api/platformApiClient';
 
 // 创建PlatformReports专用logger
 const platformReportsLogger = logger.createContextLogger('PlatformReports');
@@ -23,38 +25,33 @@ type NavigationProp = NativeStackNavigationProp<PlatformStackParamList>;
 type ReportType = 'production' | 'financial' | 'quality' | 'user';
 type TimePeriod = 'week' | 'month' | 'quarter' | 'year';
 
+// 默认报表数据
+const DEFAULT_REPORT_DATA: PlatformReportDTO = {
+  summary: {
+    totalRevenue: 0,
+    totalProduction: 0,
+    totalOrders: 0,
+    averageQualityScore: 0,
+    changePercentage: 0,
+  },
+  trends: [],
+  topFactories: [],
+  reportType: 'production',
+  timePeriod: 'month',
+};
+
 /**
  * 平台报表页面
  * 展示各类数据统计报表
  */
 export default function PlatformReportsScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [reportType, setReportType] = useState<ReportType>('production');
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
-
-  // Mock数据 - 实际应从后端API获取
-  const [reportData, setReportData] = useState({
-    summary: {
-      totalRevenue: 1258600,
-      totalProduction: 3420.5,
-      totalOrders: 856,
-      averageQualityScore: 96.8,
-    },
-    trends: [
-      { period: '第1周', value: 285.3, change: 12.5 },
-      { period: '第2周', value: 312.8, change: 9.6 },
-      { period: '第3周', value: 298.4, change: -4.6 },
-      { period: '第4周', value: 324.0, change: 8.6 },
-    ],
-    topFactories: [
-      { id: 1, name: '上海工厂', production: 856.2, revenue: 345600, efficiency: 94.5 },
-      { id: 2, name: '北京工厂', production: 742.8, revenue: 298400, efficiency: 92.3 },
-      { id: 3, name: '广州工厂', production: 698.5, revenue: 281200, efficiency: 89.8 },
-      { id: 4, name: '深圳工厂', production: 612.3, revenue: 246800, efficiency: 88.2 },
-      { id: 5, name: '成都工厂', production: 510.7, revenue: 205600, efficiency: 85.6 },
-    ],
-  });
+  const [reportData, setReportData] = useState<PlatformReportDTO>(DEFAULT_REPORT_DATA);
 
   useEffect(() => {
     loadReportData();
@@ -62,8 +59,27 @@ export default function PlatformReportsScreen() {
 
   const loadReportData = async () => {
     platformReportsLogger.info('加载报表数据', { reportType, timePeriod });
-    // TODO: 从后端API加载真实数据
-    // const response = await platformAPI.getReportData(reportType, timePeriod);
+    try {
+      setError(null);
+      const response = await platformAPI.getPlatformReport(reportType, timePeriod);
+      if (response.success && response.data) {
+        setReportData(response.data);
+        platformReportsLogger.info('报表数据加载成功', {
+          factoryCount: response.data.topFactories?.length || 0,
+          trendCount: response.data.trends?.length || 0,
+        });
+      } else {
+        const errorMsg = response.message || '加载报表数据失败';
+        setError(errorMsg);
+        platformReportsLogger.error('加载报表数据失败', { message: errorMsg });
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : '网络请求失败';
+      setError(errorMsg);
+      platformReportsLogger.error('加载报表数据异常', { error: errorMsg });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRefresh = async () => {
@@ -158,7 +174,37 @@ export default function PlatformReportsScreen() {
           </Text>
         </View>
 
+        {/* 加载状态 */}
+        {loading && (
+          <Card style={styles.card} mode="elevated">
+            <Card.Content style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#1976D2" />
+              <Text style={styles.loadingText}>加载报表数据中...</Text>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* 错误状态 */}
+        {!loading && error && (
+          <Card style={[styles.card, styles.errorCard]} mode="elevated">
+            <Card.Content style={styles.errorContent}>
+              <Avatar.Icon icon="alert-circle" size={48} color="#D32F2F" style={styles.errorIcon} />
+              <Text style={styles.errorText}>{error}</Text>
+              <Button
+                mode="outlined"
+                onPress={() => loadReportData()}
+                style={styles.retryButton}
+                textColor="#1976D2"
+              >
+                重试
+              </Button>
+            </Card.Content>
+          </Card>
+        )}
+
         {/* 概览数据 */}
+        {!loading && !error && (
+        <>
         <Card style={styles.card} mode="elevated">
           <Card.Title title="📊 数据概览" />
           <Card.Content>
@@ -251,7 +297,7 @@ export default function PlatformReportsScreen() {
               </DataTable.Header>
 
               {reportData.topFactories.map((factory, index) => (
-                <DataTable.Row key={factory.id}>
+                <DataTable.Row key={factory.factoryId || index}>
                   <DataTable.Cell>
                     <View style={styles.factoryCell}>
                       <Chip
@@ -316,6 +362,8 @@ export default function PlatformReportsScreen() {
             </View>
           </Card.Content>
         </Card>
+        </>
+        )}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -411,5 +459,34 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    color: '#757575',
+  },
+  errorCard: {
+    backgroundColor: '#FFF3F3',
+  },
+  errorContent: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  errorIcon: {
+    backgroundColor: 'transparent',
+    marginBottom: 12,
+  },
+  errorText: {
+    color: '#D32F2F',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    borderColor: '#1976D2',
   },
 });

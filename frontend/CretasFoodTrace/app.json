@@ -34,8 +34,11 @@
         "INTERNET",
         "ACCESS_NETWORK_STATE",
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "USE_FINGERPRINT",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
       ],
+      "useNextNotificationsApi": true,
       "config": {
         "googleMaps": {
           "apiKey": ""
@@ -50,6 +53,14 @@
     },
     "plugins": [
       "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1976D2",
+          "sounds": ["./assets/notification-sound.wav"]
+        }
+      ],
       [
         "expo-location",
         {
