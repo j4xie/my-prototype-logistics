@@ -32,6 +32,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { DISPATCHER_THEME, ProductionPlan, LineSchedule } from '../../../types/dispatcher';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { productionPlanApiClient } from '../../../services/api/productionPlanApiClient';
 
 // 班次类型
 type ShiftType = 'day' | 'night' | 'full_day';
@@ -42,64 +43,7 @@ const SHIFT_OPTIONS: { value: ShiftType; label: string; hours: string; icon: str
   { value: 'full_day', label: '全天', hours: '08:00 - 22:00', icon: 'hours-24' },
 ];
 
-// Mock 生产计划
-const mockPlans: ProductionPlan[] = [
-  {
-    id: '1',
-    factoryId: 'F001',
-    planNumber: 'PP-2025-001',
-    productTypeId: 'PT001',
-    productTypeName: '带鱼片',
-    plannedQuantity: 500,
-    unit: 'kg',
-    plannedStartTime: '2025-12-30T08:00:00',
-    plannedEndTime: '2025-12-30T17:00:00',
-    status: 'pending',
-    priority: 8,
-    sourceType: 'customer_order',
-    sourceCustomerName: '永辉超市',
-    crValue: 0.8,
-    createdAt: '2025-12-29T10:00:00',
-    updatedAt: '2025-12-29T10:00:00',
-  },
-  {
-    id: '2',
-    factoryId: 'F001',
-    planNumber: 'PP-2025-002',
-    productTypeId: 'PT002',
-    productTypeName: '鱿鱼圈',
-    plannedQuantity: 300,
-    unit: 'kg',
-    plannedStartTime: '2025-12-30T08:00:00',
-    plannedEndTime: '2025-12-30T17:00:00',
-    status: 'pending',
-    priority: 5,
-    sourceType: 'ai_forecast',
-    aiConfidence: 85,
-    forecastReason: '冬季火锅需求增长',
-    createdAt: '2025-12-29T10:00:00',
-    updatedAt: '2025-12-29T10:00:00',
-  },
-  {
-    id: '3',
-    factoryId: 'F001',
-    planNumber: 'PP-2025-003',
-    productTypeId: 'PT003',
-    productTypeName: '虾仁',
-    plannedQuantity: 200,
-    unit: 'kg',
-    plannedStartTime: '2025-12-30T08:00:00',
-    plannedEndTime: '2025-12-30T17:00:00',
-    status: 'pending',
-    priority: 10,
-    sourceType: 'urgent_insert',
-    crValue: 0.5,
-    createdAt: '2025-12-29T10:00:00',
-    updatedAt: '2025-12-29T10:00:00',
-  },
-];
-
-// Mock 生成的排程
+// 生成的排程接口
 interface GeneratedSchedule {
   planId: string;
   planNumber: string;
@@ -112,45 +56,6 @@ interface GeneratedSchedule {
   estimatedEfficiency: number;
   completionProbability: number;
 }
-
-const mockGeneratedSchedules: GeneratedSchedule[] = [
-  {
-    planId: '1',
-    planNumber: 'PP-2025-001',
-    productName: '带鱼片',
-    lineName: '切片A线',
-    lineId: 'L1',
-    workerCount: 6,
-    startTime: '08:00',
-    endTime: '14:00',
-    estimatedEfficiency: 92,
-    completionProbability: 95,
-  },
-  {
-    planId: '2',
-    planNumber: 'PP-2025-002',
-    productName: '鱿鱼圈',
-    lineName: '包装B线',
-    lineId: 'L2',
-    workerCount: 4,
-    startTime: '08:00',
-    endTime: '12:00',
-    estimatedEfficiency: 88,
-    completionProbability: 90,
-  },
-  {
-    planId: '3',
-    planNumber: 'PP-2025-003',
-    productName: '虾仁',
-    lineName: '切片A线',
-    lineId: 'L1',
-    workerCount: 5,
-    startTime: '14:00',
-    endTime: '17:00',
-    estimatedEfficiency: 90,
-    completionProbability: 88,
-  },
-];
 
 export default function AIScheduleGenerateScreen() {
   const navigation = useNavigation<any>();
@@ -170,27 +75,59 @@ export default function AIScheduleGenerateScreen() {
   const [optimizeByLinUCB, setOptimizeByLinUCB] = useState(true);
 
   // 数据
-  const [plans, setPlans] = useState<ProductionPlan[]>(mockPlans);
-  const [selectedPlanIds, setSelectedPlanIds] = useState<Set<string>>(new Set(['1', '2', '3']));
+  const [plans, setPlans] = useState<ProductionPlan[]>([]);
+  const [selectedPlanIds, setSelectedPlanIds] = useState<Set<string>>(new Set());
   const [generatedSchedules, setGeneratedSchedules] = useState<GeneratedSchedule[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // 统计数据
   const [totalWorkers, setTotalWorkers] = useState(0);
   const [avgEfficiency, setAvgEfficiency] = useState(0);
   const [avgProbability, setAvgProbability] = useState(0);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
+  const loadPlans = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setInitialLoading(true);
+    }
+    setError(null);
+
     try {
-      // 加载待排产的生产计划
-      // const data = await schedulingApiClient.getPendingPlans(scheduleDate);
-      // setPlans(data);
-    } catch (error) {
-      console.error('Failed to refresh:', error);
+      // 加载待排产的生产计划 (状态为 pending 或 confirmed)
+      const response = await productionPlanApiClient.getProductionPlans({
+        status: 'PENDING',
+        page: 1,
+        size: 50,
+      });
+
+      if (response.success && response.data) {
+        // response.data 是 PagedResponse<ProductionPlan>
+        const planList = response.data.content ?? [];
+        // 兼容两种类型，将 productionPlanApiClient 的结果转换为 dispatcher 的 ProductionPlan
+        setPlans(planList as unknown as ProductionPlan[]);
+        // 默认不选中任何计划，让用户手动选择
+        setSelectedPlanIds(new Set());
+      } else {
+        setError('加载生产计划失败');
+      }
+    } catch (err) {
+      console.error('Failed to load plans:', err);
+      setError('加载生产计划失败，请稍后重试');
     } finally {
       setRefreshing(false);
+      setInitialLoading(false);
     }
-  }, [scheduleDate]);
+  }, []);
+
+  useEffect(() => {
+    loadPlans();
+  }, [loadPlans]);
+
+  const onRefresh = useCallback(() => {
+    loadPlans(true);
+  }, [loadPlans]);
 
   const togglePlanSelection = (planId: string) => {
     const newSelection = new Set(selectedPlanIds);
@@ -219,35 +156,67 @@ export default function AIScheduleGenerateScreen() {
     setShowGenerating(true);
 
     try {
-      // 模拟 AI 生成过程
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // 调用 AI 生成排程 API
+      const response = await schedulingApiClient.generateSchedule({
+        planDate: scheduleDate,
+        shiftType,
+        planIds: Array.from(selectedPlanIds),
+        autoAssignWorkers,
+        enableLinUCB: optimizeByLinUCB,
+      });
 
-      // 实际实现:
-      // const result = await schedulingApiClient.generateSchedule({
-      //   planDate: scheduleDate,
-      //   shiftType,
-      //   planIds: Array.from(selectedPlanIds),
-      //   autoAssignWorkers,
-      //   optimizeByLinUCB,
-      // });
-      // setGeneratedSchedules(result.schedules);
+      if (response.success && response.data) {
+        // 转换 API 响应为组件所需格式
+        // AISchedulingResult 包含: plan, completionProbability, lineAssignments, workerSuggestions 等
+        const result = response.data;
+        const plan = result.plan;
 
-      // Mock 结果
-      const filtered = mockGeneratedSchedules.filter(s => selectedPlanIds.has(s.planId));
-      setGeneratedSchedules(filtered);
+        // 从 lineAssignments 构建每条产线的排程详情，或使用主 plan 作为单条记录
+        const schedules: GeneratedSchedule[] = (result.lineAssignments && result.lineAssignments.length > 0)
+          ? result.lineAssignments.map((line) => ({
+              planId: plan.id,
+              planNumber: plan.batchNumber ?? '-',
+              productName: plan.productTypeName ?? '-',
+              lineName: line.lineName ?? '默认产线',
+              lineId: line.lineId ?? '',
+              workerCount: result.workerSuggestions?.filter(w => w.targetLine === line.lineName).length ?? 0,
+              startTime: plan.plannedStartTime ? new Date(plan.plannedStartTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
+              endTime: plan.plannedEndTime ? new Date(plan.plannedEndTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
+              estimatedEfficiency: Math.round(100 - (line.load || 0)),
+              completionProbability: result.completionProbability ?? 80,
+            }))
+          : [{
+              planId: plan.id,
+              planNumber: plan.batchNumber ?? '-',
+              productName: plan.productTypeName ?? '-',
+              lineName: '默认产线',
+              lineId: '',
+              workerCount: plan.totalWorkers ?? 0,
+              startTime: plan.plannedStartTime ? new Date(plan.plannedStartTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
+              endTime: plan.plannedEndTime ? new Date(plan.plannedEndTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
+              estimatedEfficiency: result.efficiencyImprovement ?? 85,
+              completionProbability: result.completionProbability ?? 80,
+            }];
 
-      // 计算统计
-      const workers = filtered.reduce((sum, s) => sum + s.workerCount, 0);
-      const efficiency = filtered.reduce((sum, s) => sum + s.estimatedEfficiency, 0) / filtered.length;
-      const probability = filtered.reduce((sum, s) => sum + s.completionProbability, 0) / filtered.length;
+        setGeneratedSchedules(schedules);
 
-      setTotalWorkers(workers);
-      setAvgEfficiency(Math.round(efficiency));
-      setAvgProbability(Math.round(probability));
+        // 计算统计
+        if (schedules.length > 0) {
+          const workers = schedules.reduce((sum, s) => sum + s.workerCount, 0);
+          const efficiency = schedules.reduce((sum, s) => sum + s.estimatedEfficiency, 0) / schedules.length;
+          const probability = schedules.reduce((sum, s) => sum + s.completionProbability, 0) / schedules.length;
 
-      setShowResult(true);
-    } catch (error) {
-      console.error('Generate schedule failed:', error);
+          setTotalWorkers(workers);
+          setAvgEfficiency(Math.round(efficiency));
+          setAvgProbability(Math.round(probability));
+        }
+
+        setShowResult(true);
+      } else {
+        Alert.alert('错误', response.message ?? '排程生成失败');
+      }
+    } catch (err) {
+      console.error('Generate schedule failed:', err);
       Alert.alert('错误', '排程生成失败，请稍后重试');
     } finally {
       setShowGenerating(false);
@@ -258,19 +227,26 @@ export default function AIScheduleGenerateScreen() {
     try {
       setLoading(true);
 
-      // 实际实现:
-      // await schedulingApiClient.confirmSchedule(scheduleId);
+      // 确认生成的排程 - 调用 API 保存
+      // 由于 generate API 已经创建了排程，这里主要是确认/保存状态
+      const planIds = generatedSchedules.map(s => s.planId);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 批量确认这些计划的排程
+      for (const planId of planIds) {
+        const response = await schedulingApiClient.confirmPlan(planId);
+        if (!response.success) {
+          throw new Error(response.message ?? '确认排程失败');
+        }
+      }
 
       Alert.alert(
         '排程已保存',
         `成功创建 ${generatedSchedules.length} 个产线排程`,
         [{ text: '确定', onPress: () => navigation.goBack() }]
       );
-    } catch (error) {
-      console.error('Confirm schedule failed:', error);
-      Alert.alert('错误', '保存排程失败');
+    } catch (err) {
+      console.error('Confirm schedule failed:', err);
+      Alert.alert('错误', '保存排程失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -325,7 +301,20 @@ export default function AIScheduleGenerateScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        {!showResult ? (
+        {initialLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={DISPATCHER_THEME.primary} />
+            <Text style={styles.loadingText}>加载生产计划...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#ff4d4f" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={() => loadPlans()}>
+              <Text style={styles.retryButtonText}>重新加载</Text>
+            </TouchableOpacity>
+          </View>
+        ) : !showResult ? (
           <>
             {/* 配置区域 */}
             <View style={styles.card}>
@@ -422,7 +411,13 @@ export default function AIScheduleGenerateScreen() {
                 </TouchableOpacity>
               </View>
 
-              {plans.map((plan) => {
+              {plans.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <MaterialCommunityIcons name="clipboard-text-outline" size={48} color="#d9d9d9" />
+                  <Text style={styles.emptyStateText}>暂无待排产的生产计划</Text>
+                  <Text style={styles.emptyStateSubtext}>请先创建生产计划</Text>
+                </View>
+              ) : plans.map((plan) => {
                 const priorityStyle = getPriorityColor(plan.priority);
                 const sourceStyle = getSourceLabel(plan);
                 return (
@@ -1017,5 +1012,55 @@ const styles = StyleSheet.create({
   loadingStepText: {
     fontSize: 13,
     color: '#333',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#ff4d4f',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: DISPATCHER_THEME.primary,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  emptyState: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyStateText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#999',
+  },
+  emptyStateSubtext: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#bbb',
   },
 });

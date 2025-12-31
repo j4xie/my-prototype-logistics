@@ -106,4 +106,25 @@ public interface UrgentInsertService {
      * @return 统计信息
      */
     Map<String, Object> getUrgentInsertStatistics(String factoryId);
+
+    /**
+     * 审批强制插单
+     *
+     * @param factoryId   工厂ID
+     * @param planId      计划ID
+     * @param approverId  审批人ID
+     * @param approved    是否批准
+     * @param comment     审批备注
+     * @return 更新后的计划
+     */
+    ProductionPlanDTO approveForceInsert(
+            String factoryId, String planId, Long approverId, boolean approved, String comment);
+
+    /**
+     * 获取待审批的强制插单列表
+     *
+     * @param factoryId 工厂ID
+     * @return 待审批计划列表
+     */
+    List<ProductionPlanDTO> getPendingForceInsertApprovals(String factoryId);
 }

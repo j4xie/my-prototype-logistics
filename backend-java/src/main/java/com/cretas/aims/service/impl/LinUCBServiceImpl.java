@@ -52,7 +52,7 @@ public class LinUCBServiceImpl implements LinUCBService {
 
     // LinUCB 超参数
     private static final double ALPHA = 0.5;           // 探索参数
-    private static final int FEATURE_DIM = 12;         // 特征维度
+    private static final int FEATURE_DIM = 16;         // 特征维度 (Phase 4: 从12扩展到16)
     private static final double REGULARIZATION = 1.0;  // 正则化参数 (A初始化为I*λ)
 
     // ==================== 核心推荐算法 ====================

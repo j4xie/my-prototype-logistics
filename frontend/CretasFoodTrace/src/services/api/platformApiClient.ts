@@ -8,7 +8,10 @@ import { NotImplementedError } from '../../errors';
 import type {
   FactoryAIQuota,
   PlatformAIUsageStats,
-  AIQuotaUpdate
+  AIQuotaUpdate,
+  AIQuotaRule,
+  CreateAIQuotaRuleRequest,
+  UpdateAIQuotaRuleRequest
 } from '../../types/processing';
 
 // Factory类型定义
@@ -75,6 +78,67 @@ export interface PlatformStatistics {
   }>;
 }
 
+// ==================== 系统监控类型 ====================
+
+/**
+ * 连接池状态
+ */
+export interface ConnectionPoolStatus {
+  activeConnections: number;
+  idleConnections: number;
+  maxConnections: number;
+  utilizationPercent: number;
+}
+
+/**
+ * 服务健康状态
+ */
+export interface ServiceHealthStatus {
+  serviceName: string;
+  status: 'UP' | 'DOWN' | 'DEGRADED';
+  message: string;
+  responseTimeMs: number;
+}
+
+/**
+ * 活动日志
+ */
+export interface ActivityLog {
+  id: number;
+  type: 'info' | 'warning' | 'error' | 'success';
+  message: string;
+  time: string;
+  icon: string;
+  color: string;
+}
+
+/**
+ * 系统监控指标
+ */
+export interface SystemMetrics {
+  cpuUsage: number;
+  memoryUsage: number;
+  usedMemoryMB: number;
+  maxMemoryMB: number;
+  diskUsage: number;
+  networkIn: number;
+  networkOut: number;
+  activeConnections: number;
+  requestsPerMinute: number;
+  averageResponseTime: number;
+  errorRate: number;
+  uptime: string;
+  uptimeMs: number;
+  availableProcessors: number;
+  javaVersion: string;
+  osName: string;
+  osArch: string;
+  appVersion: string;
+  connectionPool: ConnectionPoolStatus;
+  serviceHealthStatus: ServiceHealthStatus[];
+  recentActivity: ActivityLog[];
+}
+
 // ==================== AI 工厂初始化类型 ====================
 
 /**
@@ -135,6 +199,72 @@ export interface AIFactoryInitResponse {
   aiSummary: string;
   /** 消息 */
   message: string;
+}
+
+// ==================== 平台报表类型 ====================
+
+/**
+ * 平台报表数据
+ */
+export interface PlatformReportDTO {
+  /** 报表摘要 */
+  summary: ReportSummary;
+  /** 趋势数据 */
+  trends: TrendData[];
+  /** 工厂排行榜 */
+  topFactories: FactoryRanking[];
+  /** 报表类型 */
+  reportType: string;
+  /** 时间周期 */
+  timePeriod: string;
+}
+
+/**
+ * 报表摘要
+ */
+export interface ReportSummary {
+  /** 总营收 (元) */
+  totalRevenue: number;
+  /** 总产量 (吨) */
+  totalProduction: number;
+  /** 总订单数 */
+  totalOrders: number;
+  /** 平均质量分数 */
+  averageQualityScore: number;
+  /** 同比变化率 (%) */
+  changePercentage: number;
+}
+
+/**
+ * 趋势数据
+ */
+export interface TrendData {
+  /** 周期标签 */
+  period: string;
+  /** 数值 */
+  value: number;
+  /** 变化率 (%) */
+  change: number;
+}
+
+/**
+ * 工厂排行
+ */
+export interface FactoryRanking {
+  /** 工厂ID */
+  factoryId: string;
+  /** 工厂名称 */
+  name: string;
+  /** 产量 (吨) */
+  production: number;
+  /** 营收 (元) */
+  revenue: number;
+  /** 效率 (%) */
+  efficiency: number;
+  /** 质量分数 */
+  qualityScore: number;
+  /** 排名 */
+  rank: number;
 }
 
 export const platformAPI = {
@@ -385,6 +515,203 @@ export const platformAPI = {
       success: boolean;
       code?: number;
       data: AIFactoryInitResponse;
+      message?: string;
+    };
+  },
+
+  // ==================== AI 配额规则管理 ====================
+
+  /**
+   * 获取所有配额规则
+   * 后端API: GET /api/platform/ai-quota-rules
+   */
+  getAllQuotaRules: async (): Promise<{
+    success: boolean;
+    data: AIQuotaRule[];
+    message?: string;
+  }> => {
+    const response = await apiClient.get('/api/platform/ai-quota-rules');
+    return response as {
+      success: boolean;
+      data: AIQuotaRule[];
+      message?: string;
+    };
+  },
+
+  /**
+   * 获取工厂的配额规则
+   * 后端API: GET /api/platform/ai-quota-rules/factory/:factoryId
+   */
+  getFactoryQuotaRule: async (factoryId: string): Promise<{
+    success: boolean;
+    data: AIQuotaRule;
+    message?: string;
+  }> => {
+    const response = await apiClient.get(`/api/platform/ai-quota-rules/factory/${factoryId}`);
+    return response as {
+      success: boolean;
+      data: AIQuotaRule;
+      message?: string;
+    };
+  },
+
+  /**
+   * 获取全局默认配额规则
+   * 后端API: GET /api/platform/ai-quota-rules/default
+   */
+  getGlobalDefaultQuotaRule: async (): Promise<{
+    success: boolean;
+    data: AIQuotaRule;
+    message?: string;
+  }> => {
+    const response = await apiClient.get('/api/platform/ai-quota-rules/default');
+    return response as {
+      success: boolean;
+      data: AIQuotaRule;
+      message?: string;
+    };
+  },
+
+  /**
+   * 创建配额规则
+   * 后端API: POST /api/platform/ai-quota-rules
+   */
+  createQuotaRule: async (request: CreateAIQuotaRuleRequest): Promise<{
+    success: boolean;
+    data: AIQuotaRule;
+    message?: string;
+  }> => {
+    const response = await apiClient.post('/api/platform/ai-quota-rules', request);
+    return response as {
+      success: boolean;
+      data: AIQuotaRule;
+      message?: string;
+    };
+  },
+
+  /**
+   * 更新配额规则
+   * 后端API: PUT /api/platform/ai-quota-rules/:ruleId
+   */
+  updateQuotaRule: async (
+    ruleId: number,
+    request: UpdateAIQuotaRuleRequest
+  ): Promise<{
+    success: boolean;
+    data: AIQuotaRule;
+    message?: string;
+  }> => {
+    const response = await apiClient.put(`/api/platform/ai-quota-rules/${ruleId}`, request);
+    return response as {
+      success: boolean;
+      data: AIQuotaRule;
+      message?: string;
+    };
+  },
+
+  /**
+   * 删除配额规则
+   * 后端API: DELETE /api/platform/ai-quota-rules/:ruleId
+   */
+  deleteQuotaRule: async (ruleId: number): Promise<{
+    success: boolean;
+    message: string;
+  }> => {
+    const response = await apiClient.delete(`/api/platform/ai-quota-rules/${ruleId}`);
+    return response as {
+      success: boolean;
+      message: string;
+    };
+  },
+
+  /**
+   * 创建或更新全局默认配额规则
+   * 后端API: POST /api/platform/ai-quota-rules/default
+   */
+  createOrUpdateGlobalDefaultRule: async (
+    request: CreateAIQuotaRuleRequest
+  ): Promise<{
+    success: boolean;
+    data: AIQuotaRule;
+    message?: string;
+  }> => {
+    const response = await apiClient.post('/api/platform/ai-quota-rules/default', request);
+    return response as {
+      success: boolean;
+      data: AIQuotaRule;
+      message?: string;
+    };
+  },
+
+  /**
+   * 计算用户配额
+   * 后端API: GET /api/platform/ai-quota-rules/calculate
+   */
+  calculateUserQuota: async (params: {
+    factoryId: string;
+    role: string;
+  }): Promise<{
+    success: boolean;
+    data: {
+      factoryId: string;
+      role: string;
+      calculatedQuota: number;
+    };
+    message?: string;
+  }> => {
+    const response = await apiClient.get('/api/platform/ai-quota-rules/calculate', { params });
+    return response as {
+      success: boolean;
+      data: {
+        factoryId: string;
+        role: string;
+        calculatedQuota: number;
+      };
+      message?: string;
+    };
+  },
+
+  // ==================== 系统监控 ====================
+
+  /**
+   * 获取系统监控指标
+   * 后端API: GET /api/platform/system/metrics
+   */
+  getSystemMetrics: async (): Promise<{
+    success: boolean;
+    data: SystemMetrics;
+    message?: string;
+  }> => {
+    const response = await apiClient.get('/api/platform/system/metrics');
+    return response as {
+      success: boolean;
+      data: SystemMetrics;
+      message?: string;
+    };
+  },
+
+  // ==================== 平台报表 ====================
+
+  /**
+   * 获取平台报表数据
+   * 后端API: GET /api/platform/reports
+   * @param reportType 报表类型 (production, financial, quality, user)
+   * @param timePeriod 时间周期 (week, month, quarter, year)
+   */
+  getPlatformReport: async (
+    reportType: string = 'production',
+    timePeriod: string = 'month'
+  ): Promise<{
+    success: boolean;
+    data: PlatformReportDTO;
+    message?: string;
+  }> => {
+    const response = await apiClient.get('/api/platform/reports', {
+      params: { reportType, timePeriod },
+    });
+    return response as {
+      success: boolean;
+      data: PlatformReportDTO;
       message?: string;
     };
   },

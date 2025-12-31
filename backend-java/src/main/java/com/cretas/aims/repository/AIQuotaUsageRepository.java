@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -46,6 +47,7 @@ public interface AIQuotaUsageRepository extends JpaRepository<AIQuotaUsage, Long
      * 增加配额使用次数
      */
     @Modifying
+    @Transactional
     @Query("UPDATE AIQuotaUsage q SET q.usedCount = q.usedCount + :count " +
            "WHERE q.factoryId = :factoryId AND q.weekStart = :weekStart")
     int incrementUsedCount(@Param("factoryId") String factoryId,
@@ -83,6 +85,7 @@ public interface AIQuotaUsageRepository extends JpaRepository<AIQuotaUsage, Long
      * 删除旧的配额记录（保留最近26周即半年）
      */
     @Modifying
+    @Transactional
     @Query("DELETE FROM AIQuotaUsage q WHERE q.weekStart < :cutoffDate")
     int deleteOldQuotaRecords(@Param("cutoffDate") LocalDate cutoffDate);
 }

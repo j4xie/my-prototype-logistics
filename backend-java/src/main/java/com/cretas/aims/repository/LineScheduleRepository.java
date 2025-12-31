@@ -52,4 +52,9 @@ public interface LineScheduleRepository extends JpaRepository<LineSchedule, Stri
     @Query("SELECT ls FROM LineSchedule ls WHERE ls.plan.factoryId = :factoryId " +
            "AND ls.status = 'in_progress' ORDER BY ls.plannedEndTime")
     List<LineSchedule> findInProgressSchedules(@Param("factoryId") String factoryId);
+
+    /**
+     * 按状态查询所有排程（用于定时任务延期检测）
+     */
+    List<LineSchedule> findByStatus(LineSchedule.ScheduleStatus status);
 }

@@ -1,5 +1,6 @@
 package com.cretas.aims.repository;
 
+import com.cretas.aims.entity.enums.ProcessingStageType;
 import com.cretas.aims.entity.ml.WorkerAllocationFeedback;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -112,4 +113,42 @@ public interface WorkerAllocationFeedbackRepository extends JpaRepository<Worker
     @Query("SELECT COUNT(f) FROM WorkerAllocationFeedback f WHERE f.factoryId = :factoryId " +
            "AND f.isProcessed = false AND f.completedAt IS NOT NULL")
     long countUnprocessedFeedbacks(@Param("factoryId") String factoryId);
+
+    // ==================== Phase 3: 工艺维度查询方法 ====================
+
+    /**
+     * 根据工厂ID和工艺类型查找反馈
+     * 用于个人效率分解计算
+     */
+    @Query("SELECT f FROM WorkerAllocationFeedback f WHERE f.factoryId = :factoryId " +
+           "AND f.stageType = :stageType AND f.completedAt IS NOT NULL")
+    List<WorkerAllocationFeedback> findByFactoryIdAndStageType(
+            @Param("factoryId") String factoryId,
+            @Param("stageType") ProcessingStageType stageType);
+
+    /**
+     * 统计工厂指定工艺类型的反馈数
+     * 用于判断是否有足够数据进行效率计算
+     */
+    @Query("SELECT COUNT(f) FROM WorkerAllocationFeedback f WHERE f.factoryId = :factoryId " +
+           "AND f.stageType = :stageType AND f.completedAt IS NOT NULL")
+    long countByFactoryIdAndStageType(
+            @Param("factoryId") String factoryId,
+            @Param("stageType") ProcessingStageType stageType);
+
+    /**
+     * 根据工艺类型查找所有工厂的反馈 (用于跨工厂分析)
+     */
+    List<WorkerAllocationFeedback> findByStageType(ProcessingStageType stageType);
+
+    /**
+     * 计算工人在特定工艺上的平均效率
+     */
+    @Query("SELECT AVG(f.actualEfficiency) FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.workerId = :workerId " +
+           "AND f.stageType = :stageType AND f.actualEfficiency IS NOT NULL")
+    Double calculateAvgEfficiencyByStage(
+            @Param("factoryId") String factoryId,
+            @Param("workerId") Long workerId,
+            @Param("stageType") ProcessingStageType stageType);
 }

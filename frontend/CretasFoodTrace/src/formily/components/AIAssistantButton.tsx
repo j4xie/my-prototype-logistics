@@ -47,6 +47,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFormAIAssistant } from '../hooks/useFormAIAssistant';
 import { EntityType } from '../../services/api/formTemplateApiClient';
 import { speechRecognitionService } from '../../services/voice/SpeechRecognitionService';
+import { MissingFieldsPrompt } from '../../components/form/MissingFieldsPrompt';
 import type { DynamicFormRef, FormSchema } from '../core/DynamicForm';
 
 // ========== 类型定义 ==========
@@ -93,6 +94,13 @@ export const AIAssistantButton: React.FC<AIAssistantButtonProps> = ({
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
 
+  // P1-1: 缺失字段追问状态
+  const [isMissingFieldsPromptVisible, setIsMissingFieldsPromptVisible] = useState(false);
+  const [currentMissingFields, setCurrentMissingFields] = useState<string[]>([]);
+  const [currentSuggestedQuestions, setCurrentSuggestedQuestions] = useState<string[]>([]);
+  const [currentFollowUpQuestion, setCurrentFollowUpQuestion] = useState<string | undefined>();
+  const [isProcessingFollowUp, setIsProcessingFollowUp] = useState(false);
+
   // 动画
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
@@ -116,6 +124,14 @@ export const AIAssistantButton: React.FC<AIAssistantButtonProps> = ({
     onError: (err) => {
       showSnackbar(err, 'error');
       onAIFillError?.(err);
+    },
+    // P1-1: 缺失字段追问回调
+    onMissingFields: (missingFields, suggestedQuestions, followUpQuestion) => {
+      console.log('[AIAssistantButton] 检测到缺失字段，打开追问弹窗');
+      setCurrentMissingFields(missingFields);
+      setCurrentSuggestedQuestions(suggestedQuestions);
+      setCurrentFollowUpQuestion(followUpQuestion);
+      setIsMissingFieldsPromptVisible(true);
     },
   });
 
@@ -259,6 +275,52 @@ export const AIAssistantButton: React.FC<AIAssistantButtonProps> = ({
       await parseWithOCR(result.assets[0].base64);
     }
   }, [parseWithOCR, showSnackbar]);
+
+  /**
+   * P1-1: 处理缺失字段追问提交
+   * 用户补充的答案会被合并成一段文本，再次调用 AI 解析
+   */
+  const handleMissingFieldsSubmit = useCallback(async (answers: Record<string, string>) => {
+    console.log('[AIAssistantButton] 用户补充答案:', answers);
+
+    setIsProcessingFollowUp(true);
+
+    try {
+      // 将答案转换为自然语言
+      const answerText = Object.entries(answers)
+        .map(([field, value]) => `${field}: ${value}`)
+        .join('，');
+
+      console.log('[AIAssistantButton] 补充信息:', answerText);
+
+      // 获取当前表单值
+      const currentValues = formRef.current?.getValues() || {};
+
+      // 再次调用 AI 解析，合并上下文
+      const result = await parseWithAI(answerText);
+
+      // 关闭追问弹窗
+      setIsMissingFieldsPromptVisible(false);
+
+      if (result.success) {
+        showSnackbar('补充信息已成功填充', 'success');
+      }
+    } catch (err) {
+      console.error('[AIAssistantButton] 处理补充信息失败:', err);
+      showSnackbar('处理补充信息失败', 'error');
+    } finally {
+      setIsProcessingFollowUp(false);
+    }
+  }, [formRef, parseWithAI, showSnackbar]);
+
+  /**
+   * P1-1: 取消缺失字段追问
+   */
+  const handleMissingFieldsCancel = useCallback(() => {
+    console.log('[AIAssistantButton] 用户跳过补充信息');
+    setIsMissingFieldsPromptVisible(false);
+    showSnackbar('已跳过补充信息，您可以手动填写', 'success');
+  }, [showSnackbar]);
 
   // 计算位置样式
   const positionStyle = {
@@ -491,6 +553,18 @@ export const AIAssistantButton: React.FC<AIAssistantButtonProps> = ({
       >
         {snackbarMessage}
       </Snackbar>
+
+      {/* P1-1: 缺失字段追问弹窗 */}
+      <MissingFieldsPrompt
+        visible={isMissingFieldsPromptVisible}
+        onDismiss={handleMissingFieldsCancel}
+        missingFields={currentMissingFields}
+        suggestedQuestions={currentSuggestedQuestions}
+        followUpQuestion={currentFollowUpQuestion}
+        onSubmit={handleMissingFieldsSubmit}
+        onCancel={handleMissingFieldsCancel}
+        isLoading={isProcessingFollowUp}
+      />
     </>
   );
 };

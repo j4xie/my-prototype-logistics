@@ -1,5 +1,7 @@
 package com.cretas.aims.service;
 
+import com.cretas.aims.entity.enums.ProcessingStageType;
+
 import java.util.List;
 import java.util.Map;
 
@@ -9,13 +11,15 @@ import java.util.Map;
  * 为 LinUCB 人员推荐和 LLM+ML 混合预测提供统一的特征提取能力，
  * 消除硬编码默认值，确保特征计算的一致性和准确性。
  *
+ * Phase 4 更新: 特征维度从 12 扩展到 16
+ *
  * 特征维度说明:
- * - 任务特征 (6维): 任务量、截止时间、产品类型、优先级、复杂度、车间
- * - 工人特征 (6维): 技能等级、经验天数、近期效率、临时工标记、今日工时、疲劳度
- * - 组合特征 (12维): 任务特征 + 工人特征
+ * - 任务特征 (8维): 任务量、截止时间、产品类型、优先级、复杂度、车间、工艺类型、工艺所需技能
+ * - 工人特征 (8维): 技能等级、经验天数、近期效率、临时工标记、今日工时、疲劳度、工艺专项技能、工艺历史效率
+ * - 组合特征 (16维): 任务特征 + 工人特征
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-12-28
  */
 public interface FeatureEngineeringService {
@@ -23,7 +27,9 @@ public interface FeatureEngineeringService {
     // ==================== 任务特征提取 ====================
 
     /**
-     * 从任务信息中提取特征向量 (6维)
+     * 从任务信息中提取特征向量 (8维)
+     *
+     * Phase 4 扩展: 从 6 维扩展到 8 维
      *
      * 特征说明:
      * [0] 任务量 (归一化到 0-1)
@@ -32,6 +38,8 @@ public interface FeatureEngineeringService {
      * [3] 优先级 (0-1, 原值/10)
      * [4] 复杂度 (0-1, 原值/5)
      * [5] 车间编码 (hash编码 0-1)
+     * [6] 工艺类型编码 (ProcessingStageType ordinal / count, 0-1)  [NEW]
+     * [7] 工艺所需技能等级 (归一化 1-5 → 0-1)  [NEW]
      *
      * @param factoryId 工厂ID
      * @param taskInfo 任务信息Map，支持的key:
@@ -41,7 +49,8 @@ public interface FeatureEngineeringService {
      *                 - priority: 优先级 1-10
      *                 - complexity: 复杂度 1-5
      *                 - workshopId: 车间ID
-     * @return 6维特征向量
+     *                 - stageType: 工艺类型 (ProcessingStageType 或 String)  [NEW]
+     * @return 8维特征向量
      */
     double[] extractTaskFeatures(String factoryId, Map<String, Object> taskInfo);
 
@@ -50,7 +59,7 @@ public interface FeatureEngineeringService {
      *
      * @param factoryId 工厂ID
      * @param planId 生产计划ID
-     * @return 6维特征向量
+     * @return 8维特征向量
      */
     double[] extractTaskFeaturesFromPlan(String factoryId, String planId);
 
@@ -59,14 +68,16 @@ public interface FeatureEngineeringService {
      *
      * @param factoryId 工厂ID
      * @param batchId 加工批次ID
-     * @return 6维特征向量
+     * @return 8维特征向量
      */
     double[] extractTaskFeaturesFromBatch(String factoryId, Long batchId);
 
     // ==================== 工人特征提取 ====================
 
     /**
-     * 从工人ID提取特征向量 (6维)
+     * 从工人ID提取特征向量 (8维)
+     *
+     * Phase 4 扩展: 从 6 维扩展到 8 维
      *
      * 特征说明:
      * [0] 技能等级 (归一化 1-5 → 0-1)
@@ -75,15 +86,29 @@ public interface FeatureEngineeringService {
      * [3] 是否临时工 (0=正式工, 0.5=临时工)
      * [4] 今日已工作时长 (归一化到 0-1, 上限12小时)
      * [5] 疲劳度 (根据工作时长计算, 0-1)
+     * [6] 工艺专项技能 (从 User.skillLevels 解析, 归一化 1-5 → 0-1)  [NEW]
+     * [7] 工艺历史效率 (从 IndividualEfficiencyService 获取, 0-1)  [NEW]
      *
      * @param factoryId 工厂ID
      * @param workerId 工人ID
-     * @return 6维特征向量
+     * @return 8维特征向量
      */
     double[] extractWorkerFeatures(String factoryId, Long workerId);
 
     /**
-     * 从工人信息Map提取特征向量 (6维)
+     * 从工人ID提取特征向量 (8维)，支持工艺上下文
+     *
+     * Phase 4 新增: 支持工艺维度的特征提取
+     *
+     * @param factoryId 工厂ID
+     * @param workerId 工人ID
+     * @param stageType 工艺类型，用于提取工艺相关特征 [6] 和 [7]
+     * @return 8维特征向量
+     */
+    double[] extractWorkerFeatures(String factoryId, Long workerId, ProcessingStageType stageType);
+
+    /**
+     * 从工人信息Map提取特征向量 (8维)
      * 用于无法查询数据库的场景
      *
      * @param workerInfo 工人信息Map，支持的key:
@@ -93,18 +118,22 @@ public interface FeatureEngineeringService {
      *                   - isTemporary: 是否临时工
      *                   - todayWorkHours: 今日工时
      *                   - fatigueLevel: 疲劳度 0-1
-     * @return 6维特征向量
+     *                   - stageSkillLevel: 工艺专项技能 1-5  [NEW]
+     *                   - stageEfficiency: 工艺历史效率 0-1  [NEW]
+     * @return 8维特征向量
      */
     double[] extractWorkerFeatures(Map<String, Object> workerInfo);
 
     // ==================== 特征组合 ====================
 
     /**
-     * 合并任务特征和工人特征为上下文向量 (12维)
+     * 合并任务特征和工人特征为上下文向量 (16维)
      *
-     * @param taskFeatures 6维任务特征
-     * @param workerFeatures 6维工人特征
-     * @return 12维组合特征向量
+     * Phase 4 更新: 从 12 维扩展到 16 维
+     *
+     * @param taskFeatures 8维任务特征
+     * @param workerFeatures 8维工人特征
+     * @return 16维组合特征向量
      */
     double[] combineFeatures(double[] taskFeatures, double[] workerFeatures);
 
@@ -133,7 +162,7 @@ public interface FeatureEngineeringService {
      *
      * @param factoryId 工厂ID
      * @param workerIds 工人ID列表
-     * @return workerId -> 6维特征向量 的映射
+     * @return workerId -> 8维特征向量 的映射
      */
     Map<Long, double[]> extractMultipleWorkerFeatures(String factoryId, List<Long> workerIds);
 

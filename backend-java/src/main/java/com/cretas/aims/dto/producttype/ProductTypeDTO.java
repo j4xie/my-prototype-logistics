@@ -8,12 +8,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+
 /**
  * 产品类型数据传输对象
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-01-09
+ * @updated 2025-12-30 Phase 5: Added SKU configuration fields
  */
 @Data
 @Builder
@@ -35,9 +38,81 @@ public class ProductTypeDTO {
     private Long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // ==================== Sprint 2 S2-1: Form Template Association ====================
+
+    /**
+     * Associated form template ID for this product type
+     * Allows different product types to have specialized input forms
+     */
+    @Schema(description = "关联的表单模板ID")
+    private String formTemplateId;
+
+    /**
+     * Form template name (for display purposes)
+     */
+    @Schema(description = "表单模板名称")
+    private String formTemplateName;
+
+    // ==================== Sprint 2 S2-5: SOP Configuration Association ====================
+
+    /**
+     * Default SOP configuration ID for this product type
+     * Links to SopConfig entity for standardized operating procedures
+     */
+    @Schema(description = "默认SOP配置ID")
+    private String defaultSopConfigId;
+
+    /**
+     * SOP configuration name (for display purposes)
+     */
+    @Schema(description = "SOP配置名称")
+    private String defaultSopConfigName;
+
+    // ==================== Phase 5: SKU Configuration Fields ====================
+
+    /**
+     * Standard work hours to produce one unit
+     */
+    @Schema(description = "Standard work hours per unit")
+    private BigDecimal workHours;
+
+    /**
+     * Processing steps with stage type, order, and skill requirements
+     */
+    @Schema(description = "Processing steps configuration")
+    private List<ProcessingStepDTO> processingSteps;
+
+    /**
+     * Skill requirements for production
+     */
+    @Schema(description = "Skill requirements")
+    private SkillRequirementDTO skillRequirements;
+
+    /**
+     * Required equipment IDs
+     */
+    @Schema(description = "Required equipment IDs")
+    private List<String> equipmentIds;
+
+    /**
+     * Associated quality check item IDs
+     */
+    @Schema(description = "Quality check item IDs")
+    private List<String> qualityCheckIds;
+
+    /**
+     * Production complexity score (1-5)
+     */
+    @Schema(description = "Complexity score 1-5 for LinUCB")
+    private Integer complexityScore;
+
+    // ==================== End Phase 5 Fields ====================
+
     // 关联信息
     private String factoryName;
     private String createdByName;
+
     // 统计信息
     private Integer totalProductionPlans;
     private Integer activePlans;
@@ -53,5 +128,73 @@ public class ProductTypeDTO {
     @Schema(description = "产品编码(前端别名)")
     public String getProductCode() {
         return code;
+    }
+
+    // ==================== Inner DTOs ====================
+
+    /**
+     * Processing step configuration
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ProcessingStepDTO {
+        /**
+         * Processing stage type (e.g., SLICING, PACKAGING)
+         */
+        @Schema(description = "Processing stage type from ProcessingStageType enum")
+        private String stageType;
+
+        /**
+         * Order index (1-based)
+         */
+        @Schema(description = "Step order, 1-based")
+        private Integer orderIndex;
+
+        /**
+         * Required skill level (1-5)
+         */
+        @Schema(description = "Required skill level 1-5")
+        private Integer requiredSkillLevel;
+
+        /**
+         * Estimated time in minutes
+         */
+        @Schema(description = "Estimated time in minutes")
+        private Integer estimatedMinutes;
+
+        /**
+         * Optional notes for this step
+         */
+        @Schema(description = "Optional notes")
+        private String notes;
+    }
+
+    /**
+     * Skill requirements configuration
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SkillRequirementDTO {
+        /**
+         * Minimum skill level required (1-5)
+         */
+        @Schema(description = "Minimum skill level 1-5")
+        private Integer minLevel;
+
+        /**
+         * Preferred skill level (1-5)
+         */
+        @Schema(description = "Preferred skill level 1-5")
+        private Integer preferredLevel;
+
+        /**
+         * Special skills required (e.g., knife_handling, quality_inspection)
+         */
+        @Schema(description = "List of special skill tags")
+        private List<String> specialSkills;
     }
 }
