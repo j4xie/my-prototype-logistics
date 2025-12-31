@@ -73,6 +73,14 @@ export interface FormParseResponse {
   unparsedText?: string;
   /** 消息/提示 */
   message?: string;
+
+  // P1-1: 缺字段自动追问
+  /** 缺失的必填字段名列表 */
+  missingRequiredFields?: string[];
+  /** AI生成的追问问题列表 */
+  suggestedQuestions?: string[];
+  /** 主要追问问题 (便于简单场景使用) */
+  followUpQuestion?: string;
 }
 
 /**
@@ -186,6 +194,63 @@ interface ApiResponse<T> {
   success: boolean;
   data: T;
   message: string;
+}
+
+// ========== 校验反馈类型 (Phase 1.2) ==========
+
+/**
+ * 校验错误
+ * 表单提交失败时的单个错误信息
+ */
+export interface ValidationError {
+  /** 字段名 */
+  field: string;
+  /** 错误消息 */
+  message: string;
+  /** 校验规则 (如 "required", "min", "max", "pattern") */
+  rule?: string;
+  /** 当前值 */
+  currentValue?: unknown;
+}
+
+/**
+ * 校验反馈请求
+ * 将表单校验错误反馈给AI，获取修正建议
+ */
+export interface ValidationFeedbackRequest {
+  /** 会话ID (用于多轮对话) */
+  sessionId?: string;
+  /** 实体类型 */
+  entityType: EntityType;
+  /** 表单字段定义 */
+  formFields?: FormFieldDefinition[];
+  /** 用户提交的值 */
+  submittedValues: Record<string, unknown>;
+  /** 校验错误列表 */
+  validationErrors: ValidationError[];
+  /** 用户补充说明 (可选) */
+  userInstruction?: string;
+}
+
+/**
+ * 校验反馈响应
+ * AI返回的修正建议
+ */
+export interface ValidationFeedbackResponse {
+  /** 是否成功 */
+  success: boolean;
+  /** 字段修正提示 (field -> hint) */
+  correctionHints?: Record<string, string>;
+  /** 修正后的值 (field -> correctedValue) */
+  correctedValues?: Record<string, unknown>;
+  /** AI解释说明 */
+  explanation?: string;
+  /** 置信度 (0-1) */
+  confidence: number;
+  /** 会话ID (用于继续对话) */
+  sessionId?: string;
+  /** 消息 */
+  message?: string;
 }
 
 // ========== API客户端类 ==========
@@ -374,6 +439,54 @@ class FormAssistantApiClient {
       return {
         success: false,
         fields: [],
+        message: error instanceof Error ? error.message : 'AI服务暂时不可用',
+      };
+    }
+  }
+
+  /**
+   * 提交校验反馈 - 获取AI修正建议
+   *
+   * 当表单校验失败时，将错误信息反馈给AI
+   * AI会分析错误并给出修正建议
+   *
+   * 示例:
+   * - 错误: "数量必须大于0"，当前值: -10
+   * - AI建议: "检测到负数，已自动修正为正数 10"
+   *
+   * @param request 校验反馈请求
+   * @param factoryId 工厂ID (可选)
+   * @returns AI修正建议
+   */
+  async submitValidationFeedback(
+    request: ValidationFeedbackRequest,
+    factoryId?: string
+  ): Promise<ValidationFeedbackResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse<ValidationFeedbackResponse>>(
+        `${this.getBasePath(factoryId)}/validation-feedback`,
+        request
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      // 兼容直接返回数据的情况
+      if ('correctionHints' in response || 'correctedValues' in response) {
+        return response as unknown as ValidationFeedbackResponse;
+      }
+
+      return {
+        success: false,
+        confidence: 0,
+        message: response.message || '获取AI修正建议失败',
+      };
+    } catch (error) {
+      console.error('[FormAssistantApiClient] submitValidationFeedback error:', error);
+      return {
+        success: false,
+        confidence: 0,
         message: error instanceof Error ? error.message : 'AI服务暂时不可用',
       };
     }

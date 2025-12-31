@@ -1,10 +1,14 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.dto.scheduling.*;
 import com.cretas.aims.entity.*;
+import com.cretas.aims.entity.enums.ProductionPlanStatus;
+import com.cretas.aims.entity.rules.DroolsRule;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.FeatureEngineeringService;
 import com.cretas.aims.service.LinUCBService;
+import com.cretas.aims.service.NotificationService;
 import com.cretas.aims.service.SchedulingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,12 +20,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import org.springframework.scheduling.annotation.Async;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -40,9 +47,12 @@ public class SchedulingServiceImpl implements SchedulingService {
     private final SchedulingPredictionRepository predictionRepository;
     private final UserRepository userRepository;
     private final ProductionBatchRepository batchRepository;
+    private final ProductionPlanRepository productionPlanRepository;
+    private final DroolsRuleRepository droolsRuleRepository;
     private final RestTemplate restTemplate;
     private final FeatureEngineeringService featureEngineeringService;
     private final LinUCBService linUCBService;
+    private final NotificationService notificationService;
 
     @Value("${ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -97,6 +107,20 @@ public class SchedulingServiceImpl implements SchedulingService {
             plan.setTotalBatches(schedules.size());
             plan.setTotalWorkers(totalWorkers);
             planRepository.save(plan);
+        }
+
+        // 发送调度计划创建通知
+        try {
+            Map<String, Object> planDetails = new HashMap<>();
+            planDetails.put("planName", plan.getPlanName());
+            planDetails.put("planDate", plan.getPlanDate());
+            planDetails.put("totalBatches", plan.getTotalBatches());
+            planDetails.put("totalWorkers", plan.getTotalWorkers());
+            notificationService.notifyScheduleCreated(factoryId, plan.getId(), planDetails);
+            log.info("调度计划创建通知已发送: planId={}", plan.getId());
+        } catch (Exception e) {
+            log.error("发送调度计划创建通知失败: planId={}", plan.getId(), e);
+            // 不阻塞创建流程
         }
 
         return enrichPlanDTO(SchedulingPlanDTO.fromEntity(plan));
@@ -171,6 +195,18 @@ public class SchedulingServiceImpl implements SchedulingService {
         plan.setConfirmedBy(userId);
         plan.setConfirmedAt(LocalDateTime.now());
         planRepository.save(plan);
+
+        // 发送调度计划确认通知
+        try {
+            String confirmerName = userRepository.findById(userId)
+                .map(User::getFullName)
+                .orElse("未知用户");
+            notificationService.notifyScheduleConfirmed(factoryId, planId, confirmerName);
+            log.info("调度计划确认通知已发送: planId={}, confirmedBy={}", planId, confirmerName);
+        } catch (Exception e) {
+            log.error("发送调度计划确认通知失败: planId={}", planId, e);
+            // 不阻塞确认流程
+        }
 
         return enrichPlanDTO(SchedulingPlanDTO.fromEntity(plan));
     }
@@ -275,8 +311,467 @@ public class SchedulingServiceImpl implements SchedulingService {
             .orElseThrow(() -> new RuntimeException("排程不存在"));
 
         schedule.setCompletedQuantity(completedQuantity);
+
+        // ========== Phase 2: 效率计算与延期检测 ==========
+        try {
+            // 1. 计算预期进度 (基于时间比例)
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startTime = schedule.getActualStartTime() != null
+                ? schedule.getActualStartTime()
+                : schedule.getPlannedStartTime();
+            LocalDateTime endTime = schedule.getPlannedEndTime();
+
+            if (startTime != null && endTime != null && schedule.getPlannedQuantity() != null
+                && schedule.getPlannedQuantity() > 0) {
+
+                // 计算时间进度比例
+                long totalMinutes = java.time.Duration.between(startTime, endTime).toMinutes();
+                long elapsedMinutes = java.time.Duration.between(startTime, now).toMinutes();
+
+                if (totalMinutes > 0 && elapsedMinutes > 0) {
+                    // 时间进度比例 (最大为1.0，即100%)
+                    double timeProgressRatio = Math.min(1.0, (double) elapsedMinutes / totalMinutes);
+
+                    // 2. 计算预期产量
+                    int expectedByNow = (int) Math.ceil(schedule.getPlannedQuantity() * timeProgressRatio);
+
+                    // 3. 计算实际效率
+                    double actualEfficiency = expectedByNow > 0
+                        ? (double) completedQuantity / expectedByNow
+                        : 1.0;
+
+                    // 更新实际效率字段
+                    schedule.setActualEfficiency(BigDecimal.valueOf(actualEfficiency));
+
+                    log.info("效率计算: scheduleId={}, 已完成={}, 预期={}, 效率={}%",
+                        scheduleId, completedQuantity, expectedByNow,
+                        String.format("%.2f", actualEfficiency * 100));
+
+                    // 4. 获取效率阈值（默认0.8 = 80%）
+                    double efficiencyThreshold = getEfficiencyThreshold(factoryId);
+
+                    // 5. 效率低于阈值时自动标记延期
+                    if (actualEfficiency < efficiencyThreshold
+                        && schedule.getStatus() != LineSchedule.ScheduleStatus.delayed
+                        && schedule.getStatus() != LineSchedule.ScheduleStatus.completed
+                        && schedule.getStatus() != LineSchedule.ScheduleStatus.cancelled) {
+
+                        // 设置延期状态
+                        schedule.setStatus(LineSchedule.ScheduleStatus.delayed);
+
+                        // 填充延期原因
+                        String delayReason = String.format(
+                            "效率低于预期: 当前效率 %.1f%% (阈值 %.0f%%)，已完成 %d / 预期 %d",
+                            actualEfficiency * 100, efficiencyThreshold * 100,
+                            completedQuantity, expectedByNow);
+                        schedule.setDelayReason(delayReason);
+
+                        log.warn("排程 {} 效率 {}% 低于阈值 {}%，已标记为延期",
+                            scheduleId,
+                            String.format("%.1f", actualEfficiency * 100),
+                            String.format("%.0f", efficiencyThreshold * 100));
+
+                        // 6. 发送延期通知
+                        try {
+                            notificationService.notifyScheduleDelayed(
+                                factoryId, scheduleId, delayReason, actualEfficiency);
+                        } catch (Exception notifyEx) {
+                            log.error("发送延期通知失败: scheduleId={}", scheduleId, notifyEx);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("效率计算失败: scheduleId={}", scheduleId, e);
+            // 不阻塞进度更新，只记录错误
+        }
+
         schedule = scheduleRepository.save(schedule);
+
+        // ========== 紧急状态监控 (基于完成概率) ==========
+        try {
+            CompletionProbabilityResponse probability = calculateCompletionProbability(factoryId, scheduleId);
+
+            double urgentThreshold = getUrgentThreshold(factoryId);
+
+            if (probability.getProbability() != null &&
+                probability.getProbability().doubleValue() < urgentThreshold) {
+
+                createUrgentAlert(factoryId, scheduleId, schedule.getPlanId(),
+                    probability.getProbability().doubleValue(), urgentThreshold);
+
+                log.warn("排程 {} 完成概率 {}% 低于紧急阈值 {}%，已创建告警",
+                    scheduleId, probability.getProbability(), urgentThreshold * 100);
+            }
+        } catch (Exception e) {
+            log.error("紧急状态监控失败: scheduleId={}", scheduleId, e);
+        }
+
         return enrichScheduleDTO(schedule);
+    }
+
+    /**
+     * 获取紧急阈值配置（三级回退）
+     * 1. 工厂级配置
+     * 2. 系统级配置 (factory_id='SYSTEM')
+     * 3. 默认值 0.6
+     */
+    @Override
+    public double getUrgentThreshold(String factoryId) {
+        // 1. 尝试工厂级配置
+        Optional<DroolsRule> factoryRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "urgent_threshold");
+
+        if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
+            try {
+                return Double.parseDouble(factoryRule.get().getRuleContent());
+            } catch (NumberFormatException e) {
+                log.warn("工厂 {} 的紧急阈值配置格式错误: {}", factoryId,
+                         factoryRule.get().getRuleContent(), e);
+            }
+        }
+
+        // 2. 尝试系统级配置
+        Optional<DroolsRule> systemRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName("SYSTEM", "scheduling", "urgent_threshold");
+
+        if (systemRule.isPresent() && systemRule.get().getEnabled()) {
+            try {
+                return Double.parseDouble(systemRule.get().getRuleContent());
+            } catch (NumberFormatException e) {
+                log.warn("系统级紧急阈值配置格式错误: {}", systemRule.get().getRuleContent(), e);
+            }
+        }
+
+        // 3. 默认值
+        return 0.6;
+    }
+
+    /**
+     * 获取效率阈值配置（三级回退）
+     * 效率低于此阈值时自动标记为延期
+     * 1. 工厂级配置
+     * 2. 系统级配置 (factory_id='SYSTEM')
+     * 3. 默认值 0.8 (80%)
+     */
+    public double getEfficiencyThreshold(String factoryId) {
+        // 1. 尝试工厂级配置
+        Optional<DroolsRule> factoryRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "efficiency_threshold");
+
+        if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
+            try {
+                return Double.parseDouble(factoryRule.get().getRuleContent());
+            } catch (NumberFormatException e) {
+                log.warn("工厂 {} 的效率阈值配置格式错误: {}", factoryId,
+                         factoryRule.get().getRuleContent(), e);
+            }
+        }
+
+        // 2. 尝试系统级配置
+        Optional<DroolsRule> systemRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName("SYSTEM", "scheduling", "efficiency_threshold");
+
+        if (systemRule.isPresent() && systemRule.get().getEnabled()) {
+            try {
+                return Double.parseDouble(systemRule.get().getRuleContent());
+            } catch (NumberFormatException e) {
+                log.warn("系统级效率阈值配置格式错误: {}", systemRule.get().getRuleContent(), e);
+            }
+        }
+
+        // 3. 默认值 0.8 (80%)
+        return 0.8;
+    }
+
+    @Override
+    @Transactional
+    public void updateUrgentThreshold(String factoryId, Double threshold, Long userId) {
+        // 查找或创建工厂级配置
+        Optional<DroolsRule> existingRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "urgent_threshold");
+
+        DroolsRule rule;
+        if (existingRule.isPresent()) {
+            // 更新现有规则
+            rule = existingRule.get();
+            rule.setRuleContent(String.valueOf(threshold));
+            rule.setVersion(rule.getVersion() + 1);
+            rule.setUpdatedBy(userId);
+            rule.setUpdatedAt(LocalDateTime.now());
+        } else {
+            // 创建新规则
+            rule = new DroolsRule();
+            rule.setId(UUID.randomUUID().toString());
+            rule.setFactoryId(factoryId);
+            rule.setRuleGroup("scheduling");
+            rule.setRuleName("urgent_threshold");
+            rule.setRuleDescription("生产计划紧急阈值：完成概率低于此值时标记为紧急");
+            rule.setRuleContent(String.valueOf(threshold));
+            rule.setEnabled(true);
+            rule.setPriority(100);
+            rule.setVersion(1);
+            rule.setCreatedBy(userId);
+            rule.setCreatedAt(LocalDateTime.now());
+            rule.setUpdatedAt(LocalDateTime.now());
+        }
+
+        droolsRuleRepository.save(rule);
+
+        log.info("更新紧急阈值配置成功: factoryId={}, threshold={}, userId={}", factoryId, threshold, userId);
+    }
+
+    /**
+     * 计算生产计划完成概率（复杂加权算法）
+     *
+     * 权重分配：
+     * - CR值: 40% (时间充裕度)
+     * - 材料匹配: 30% (原料保障度)
+     * - AI置信度: 20% (预测可靠性)
+     * - 混批影响: 10% (复杂度惩罚)
+     *
+     * @return 0-1之间的概率值
+     */
+    @Async
+    @Transactional
+    public CompletableFuture<BigDecimal> calculatePlanProbability(ProductionPlan plan) {
+        try {
+            BigDecimal probability = BigDecimal.ZERO;
+
+            // 1. CR值贡献 (40%)
+            BigDecimal crScore = calculateCrScore(plan.getCrValue());
+            probability = probability.add(crScore.multiply(new BigDecimal("0.40")));
+
+            // 2. 材料匹配贡献 (30%)
+            BigDecimal materialScore = calculateMaterialScore(plan);
+            probability = probability.add(materialScore.multiply(new BigDecimal("0.30")));
+
+            // 3. AI置信度贡献 (20%)
+            BigDecimal aiScore = calculateAiScore(plan.getAiConfidence());
+            probability = probability.add(aiScore.multiply(new BigDecimal("0.20")));
+
+            // 4. 混批影响 (10%)
+            BigDecimal mixedBatchScore = calculateMixedBatchScore(plan.getIsMixedBatch());
+            probability = probability.add(mixedBatchScore.multiply(new BigDecimal("0.10")));
+
+            // 限制在 [0, 1] 范围
+            if (probability.compareTo(BigDecimal.ONE) > 0) {
+                probability = BigDecimal.ONE;
+            }
+            if (probability.compareTo(BigDecimal.ZERO) < 0) {
+                probability = BigDecimal.ZERO;
+            }
+
+            // 更新实体
+            plan.setCurrentProbability(probability);
+            plan.setProbabilityUpdatedAt(LocalDateTime.now());
+            productionPlanRepository.save(plan);
+
+            log.debug("计划 {} 概率计算完成: CR={}, 材料={}, AI={}, 混批={}, 最终={}",
+                     plan.getPlanNumber(), crScore, materialScore, aiScore,
+                     mixedBatchScore, probability);
+
+            return CompletableFuture.completedFuture(probability);
+
+        } catch (Exception e) {
+            log.error("计算计划 {} 概率失败", plan.getPlanNumber(), e);
+            return CompletableFuture.completedFuture(new BigDecimal("0.5")); // 失败时返回中性值
+        }
+    }
+
+    /**
+     * 计算CR值得分 (0-1)
+     * CR > 1.5: 1.0 (时间充裕)
+     * CR = 1.0: 0.5 (刚好)
+     * CR < 0.5: 0.0 (严重紧急)
+     */
+    private BigDecimal calculateCrScore(BigDecimal crValue) {
+        if (crValue == null) {
+            return new BigDecimal("0.5"); // 未知CR，返回中性值
+        }
+
+        if (crValue.compareTo(new BigDecimal("1.5")) >= 0) {
+            return BigDecimal.ONE; // 时间充裕
+        }
+        if (crValue.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO; // 已超期
+        }
+
+        // 线性映射: CR ∈ [0, 1.5] → Score ∈ [0, 1]
+        return crValue.divide(new BigDecimal("1.5"), 4, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 计算材料匹配得分 (0-1)
+     * 已分配 / 计划数量
+     */
+    private BigDecimal calculateMaterialScore(ProductionPlan plan) {
+        if (plan.getPlannedQuantity() == null ||
+            plan.getPlannedQuantity().compareTo(BigDecimal.ZERO) == 0) {
+            return new BigDecimal("0.5");
+        }
+
+        BigDecimal allocated = plan.getAllocatedQuantity() != null
+            ? plan.getAllocatedQuantity()
+            : BigDecimal.ZERO;
+
+        BigDecimal score = allocated.divide(plan.getPlannedQuantity(), 4,
+                                           java.math.RoundingMode.HALF_UP);
+
+        return score.compareTo(BigDecimal.ONE) > 0 ? BigDecimal.ONE : score;
+    }
+
+    /**
+     * 计算AI置信度得分 (0-1)
+     * aiConfidence ∈ [0, 100] → Score ∈ [0, 1]
+     */
+    private BigDecimal calculateAiScore(Integer aiConfidence) {
+        if (aiConfidence == null) {
+            return new BigDecimal("0.5"); // 非AI预测，返回中性值
+        }
+        return new BigDecimal(aiConfidence).divide(new BigDecimal("100"), 4,
+                                                   java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 计算混批影响得分
+     * 非混批: 1.0 (无惩罚)
+     * 混批: 0.7 (复杂度惩罚-30%)
+     */
+    private BigDecimal calculateMixedBatchScore(Boolean isMixedBatch) {
+        if (isMixedBatch != null && isMixedBatch) {
+            return new BigDecimal("0.70"); // 混批复杂度惩罚
+        }
+        return BigDecimal.ONE; // 非混批，无惩罚
+    }
+
+    /**
+     * 获取待排产批次列表（带紧急状态）
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期（可选）
+     * @param endDate 结束日期（可选）
+     * @return 待排产批次列表
+     */
+    @Override
+    public List<ProductionPlanDTO> getPendingBatches(String factoryId,
+                                                      LocalDate startDate,
+                                                      LocalDate endDate) {
+        // 1. 查询PENDING状态的生产计划
+        List<ProductionPlan> plans = productionPlanRepository
+            .findByFactoryIdAndStatusAndExpectedCompletionDateBetween(
+                factoryId,
+                ProductionPlanStatus.PENDING,
+                startDate != null ? startDate : LocalDate.now(),
+                endDate != null ? endDate : LocalDate.now().plusMonths(1)
+            );
+
+        // 2. 获取紧急阈值
+        double threshold = getUrgentThreshold(factoryId);
+
+        // 3. 更新过期的概率并转换为DTO
+        List<ProductionPlanDTO> dtos = new ArrayList<>();
+        for (ProductionPlan plan : plans) {
+            // 如果概率过期，异步重新计算
+            if (plan.isProbabilityStale()) {
+                calculatePlanProbability(plan); // 异步执行，不阻塞响应
+            }
+
+            ProductionPlanDTO dto = enrichProductionPlanDTO(plan, threshold);
+            dtos.add(dto);
+        }
+
+        // 4. 排序：紧急批次置顶，再按CR值升序
+        dtos.sort((a, b) -> {
+            // 紧急优先
+            if (a.getIsUrgent() != b.getIsUrgent()) {
+                return a.getIsUrgent() ? -1 : 1;
+            }
+            // 相同紧急状态，按CR值升序（CR越小越紧急）
+            BigDecimal crA = a.getCrValue() != null ? a.getCrValue() : BigDecimal.valueOf(999);
+            BigDecimal crB = b.getCrValue() != null ? b.getCrValue() : BigDecimal.valueOf(999);
+            return crA.compareTo(crB);
+        });
+
+        log.info("工厂 {} 查询到 {} 个待排产批次，其中紧急: {}",
+                 factoryId, dtos.size(),
+                 dtos.stream().filter(ProductionPlanDTO::getIsUrgent).count());
+
+        return dtos;
+    }
+
+    /**
+     * 丰富ProductionPlanDTO（添加紧急状态和概率）
+     */
+    private ProductionPlanDTO enrichProductionPlanDTO(ProductionPlan plan, double threshold) {
+        ProductionPlanDTO dto = new ProductionPlanDTO();
+
+        // 基础字段
+        dto.setId(plan.getId());
+        dto.setPlanNumber(plan.getPlanNumber());
+        dto.setProductTypeId(plan.getProductTypeId());
+        dto.setPlannedQuantity(plan.getPlannedQuantity());
+        dto.setExpectedCompletionDate(plan.getExpectedCompletionDate());
+        dto.setStatus(plan.getStatus());
+        dto.setPriority(plan.getPriority());
+        dto.setSourceType(plan.getSourceType());
+        dto.setCustomerOrderNumber(plan.getCustomerOrderNumber());
+        dto.setSourceCustomerName(plan.getSourceCustomerName());
+
+        // 调度相关字段
+        dto.setCrValue(plan.getCrValue());
+        dto.setAiConfidence(plan.getAiConfidence());
+        dto.setForecastReason(plan.getForecastReason());
+        dto.setIsMixedBatch(plan.getIsMixedBatch());
+        dto.setAllocatedQuantity(plan.getAllocatedQuantity());
+        dto.setIsFullyMatched(plan.getIsFullyMatched());
+        dto.setMatchingProgress(plan.getMatchingProgress());
+
+        // 紧急状态字段
+        dto.setCurrentProbability(plan.getCurrentProbability());
+        dto.setProbabilityUpdatedAt(plan.getProbabilityUpdatedAt());
+        dto.setIsUrgent(plan.isUrgent(threshold));
+
+        // 时间戳
+        dto.setCreatedAt(plan.getCreatedAt());
+        dto.setUpdatedAt(plan.getUpdatedAt());
+
+        // 如果有关联的ProductType，设置名称
+        if (plan.getProductType() != null) {
+            dto.setProductTypeName(plan.getProductType().getName());
+        }
+
+        return dto;
+    }
+
+    /**
+     * 创建紧急告警
+     */
+    private void createUrgentAlert(String factoryId, String scheduleId, String planId,
+                                  double currentProbability, double threshold) {
+        SchedulingAlert alert = new SchedulingAlert();
+        alert.setFactoryId(factoryId);
+        alert.setScheduleId(scheduleId);
+        alert.setPlanId(planId);
+        alert.setAlertType(SchedulingAlert.AlertType.low_probability);
+        alert.setSeverity(SchedulingAlert.Severity.warning);
+        alert.setMessage(String.format("排程完成概率已降至 %.1f%%，低于紧急阈值 %.1f%%",
+            currentProbability * 100, threshold * 100));
+        alert.setSuggestedAction("建议调度员重新分析该批次，调整产线或人员配置");
+        alert.setIsResolved(false);
+
+        alertRepository.save(alert);
+
+        // 发送延期预警通知
+        try {
+            String delayReason = String.format("完成概率 %.1f%% 低于阈值 %.1f%%",
+                currentProbability * 100, threshold * 100);
+            notificationService.notifyScheduleDelayed(factoryId, scheduleId, delayReason, currentProbability);
+            log.info("延期预警通知已发送: scheduleId={}, probability={}", scheduleId, currentProbability);
+        } catch (Exception e) {
+            log.error("发送延期预警通知失败: scheduleId={}", scheduleId, e);
+            // 不阻塞告警创建流程
+        }
     }
 
     // ==================== 工人分配 ====================

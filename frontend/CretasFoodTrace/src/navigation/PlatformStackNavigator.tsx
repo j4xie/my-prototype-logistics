@@ -10,6 +10,7 @@ import WhitelistManagementScreen from '../screens/management/WhitelistManagement
 import { FactorySetupScreen } from '../screens/platform/FactorySetupScreen';
 import { IndustryTemplateManagementScreen } from '../screens/platform/IndustryTemplateManagementScreen';
 import { IndustryTemplateEditScreen } from '../screens/platform/IndustryTemplateEditScreen';
+import { BlueprintManagementScreen } from '../screens/platform/BlueprintManagementScreen';
 
 export type PlatformStackParamList = {
   PlatformDashboard: undefined;
@@ -22,6 +23,7 @@ export type PlatformStackParamList = {
   PlatformReports: undefined;
   IndustryTemplateManagement: undefined;
   IndustryTemplateEdit: { templateId?: string };
+  BlueprintManagement: { blueprintId?: string; blueprintName?: string };
 };
 
 const Stack = createNativeStackNavigator<PlatformStackParamList>();
@@ -96,6 +98,12 @@ export function PlatformStackNavigator() {
       <Stack.Screen
         name="IndustryTemplateEdit"
         component={IndustryTemplateEditScreen}
+      />
+
+      {/* 蓝图版本管理 - 管理工厂蓝图版本 */}
+      <Stack.Screen
+        name="BlueprintManagement"
+        component={BlueprintManagementScreen}
       />
     </Stack.Navigator>
   );

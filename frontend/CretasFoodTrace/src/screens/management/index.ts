@@ -7,6 +7,7 @@ export { default as AISettingsScreen } from './AISettingsScreen';
 export { default as UserManagementScreen } from './UserManagementScreen';
 export { default as WhitelistManagementScreen } from './WhitelistManagementScreen';
 export { default as SupplierManagementScreen } from './SupplierManagementScreen';
+export { default as SupplierAdmissionScreen } from './SupplierAdmissionScreen';
 export { default as CustomerManagementScreen } from './CustomerManagementScreen';
 export { default as MaterialTypeManagementScreen } from './MaterialTypeManagementScreen';
 export { default as WorkTypeManagementScreen } from './WorkTypeManagementScreen';
@@ -18,3 +19,4 @@ export { default as WorkSessionManagementScreen } from './WorkSessionManagementS
 export { default as RuleConfigurationScreen } from './RuleConfigurationScreen';
 export { default as MaterialSpecManagementScreen } from './MaterialSpecManagementScreen';
 export { default as FactorySettingsScreen } from './FactorySettingsScreen';
+export { default as SopConfigScreen } from './SopConfigScreen';

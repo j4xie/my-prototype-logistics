@@ -13,7 +13,7 @@
  * @since 2025-12-29
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import {
   RefreshControl,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -35,6 +36,7 @@ import {
   AttendanceStatistics,
   DepartmentAttendance
 } from '../../../services/api/timeclockApiClient';
+import { useAuthStore } from '../../../store/authStore';
 
 // Types
 type AttendanceStatus = 'normal' | 'late' | 'early' | 'absent' | 'overtime';
@@ -65,120 +67,223 @@ interface DepartmentStats {
   onLeave: number;
 }
 
-// Mock data
-const mockStatistics: AttendanceStatistics = {
-  totalWorkDays: 22,
-  totalWorkHours: 176,
-  averageWorkHours: 8.0,
-  overtimeHours: 12.5,
-  lateCount: 3,
-  earlyLeaveCount: 1,
+// 默认空统计数据
+const emptyStatistics: AttendanceStatistics = {
+  totalWorkDays: 0,
+  totalWorkHours: 0,
+  averageWorkHours: 0,
+  overtimeHours: 0,
+  lateCount: 0,
+  earlyLeaveCount: 0,
   absentCount: 0,
   period: {
-    startDate: '2024-12-01',
-    endDate: '2024-12-31',
+    startDate: '',
+    endDate: '',
   },
 };
 
-const mockDepartmentStats: DepartmentStats[] = [
-  { id: 'D1', name: '切片车间', total: 12, present: 10, absent: 0, late: 1, onLeave: 1 },
-  { id: 'D2', name: '包装车间', total: 8, present: 7, absent: 1, late: 0, onLeave: 0 },
-  { id: 'D3', name: '冷冻车间', total: 6, present: 6, absent: 0, late: 0, onLeave: 0 },
-  { id: 'D4', name: '质检部门', total: 4, present: 4, absent: 0, late: 1, onLeave: 0 },
-];
-
-const mockRecords: AttendanceRecord[] = [
-  {
-    id: '1',
-    employeeId: 'E001',
-    employeeName: '张三丰',
-    employeeCode: '001',
-    department: '切片车间',
-    date: '2024-12-27',
-    clockInTime: '08:02',
-    clockOutTime: '17:35',
-    workHours: 8.5,
-    overtimeHours: 0.5,
-    status: 'overtime',
-    anomalies: [],
-  },
-  {
-    id: '2',
-    employeeId: 'E002',
-    employeeName: '李四海',
-    employeeCode: '002',
-    department: '切片车间',
-    date: '2024-12-27',
-    clockInTime: '08:15',
-    clockOutTime: '17:00',
-    workHours: 7.75,
-    status: 'late',
-    anomalies: ['迟到15分钟'],
-  },
-  {
-    id: '3',
-    employeeId: 'E003',
-    employeeName: '王五行',
-    employeeCode: '003',
-    department: '包装车间',
-    date: '2024-12-27',
-    clockInTime: '07:55',
-    clockOutTime: '16:30',
-    workHours: 7.5,
-    status: 'early',
-    anomalies: ['早退30分钟'],
-  },
-  {
-    id: '4',
-    employeeId: 'E004',
-    employeeName: '赵六顺',
-    employeeCode: '004',
-    department: '包装车间',
-    date: '2024-12-27',
-    status: 'absent',
-    anomalies: ['未打卡'],
-  },
-  {
-    id: '5',
-    employeeId: 'E005',
-    employeeName: '陈七星',
-    employeeCode: '005',
-    department: '质检部门',
-    date: '2024-12-27',
-    clockInTime: '08:00',
-    clockOutTime: '17:00',
-    workHours: 8.0,
-    status: 'normal',
-    anomalies: [],
-  },
-];
-
 export default function PersonnelAttendanceScreen() {
   const navigation = useNavigation();
+  const { user } = useAuthStore();
 
   // State
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRangeType>('today');
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
-  const [statistics, setStatistics] = useState<AttendanceStatistics>(mockStatistics);
-  const [departmentStats, setDepartmentStats] = useState<DepartmentStats[]>(mockDepartmentStats);
-  const [records, setRecords] = useState<AttendanceRecord[]>(mockRecords);
+  const [statistics, setStatistics] = useState<AttendanceStatistics>(emptyStatistics);
+  const [departmentStats, setDepartmentStats] = useState<DepartmentStats[]>([]);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+
+  // 计算日期范围
+  const getDateRange = useCallback((range: DateRangeType): { startDate: string; endDate: string } => {
+    const now = new Date();
+    const formatDate = (date: Date): string => date.toISOString().split('T')[0] ?? '';
+
+    const today = formatDate(now);
+
+    switch (range) {
+      case 'today':
+        return { startDate: today, endDate: today };
+      case 'week': {
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay() + 1); // 周一
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6); // 周日
+        return {
+          startDate: formatDate(weekStart),
+          endDate: formatDate(weekEnd),
+        };
+      }
+      case 'month': {
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const lastDay = new Date(year, month, 0).getDate();
+        return {
+          startDate: `${year}-${String(month).padStart(2, '0')}-01`,
+          endDate: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
+        };
+      }
+      default:
+        return { startDate: today, endDate: today };
+    }
+  }, []);
+
+  // 转换 ClockRecord 为 AttendanceRecord
+  const transformClockRecord = (record: ClockRecord): AttendanceRecord => {
+    const clockIn = record.clockInTime ? new Date(record.clockInTime) : null;
+    const clockOut = record.clockOutTime ? new Date(record.clockOutTime) : null;
+
+    // 计算状态和异常
+    let status: AttendanceStatus = 'normal';
+    const anomalies: string[] = [];
+
+    if (!clockIn) {
+      status = 'absent';
+      anomalies.push('未打卡');
+    } else {
+      const clockInHour = clockIn.getHours();
+      const clockInMinute = clockIn.getMinutes();
+
+      // 检查迟到（假设8:00上班）
+      if (clockInHour > 8 || (clockInHour === 8 && clockInMinute > 0)) {
+        status = 'late';
+        const lateMinutes = (clockInHour - 8) * 60 + clockInMinute;
+        anomalies.push(`迟到${lateMinutes}分钟`);
+      }
+
+      // 检查早退（假设17:00下班）
+      if (clockOut) {
+        const clockOutHour = clockOut.getHours();
+        if (clockOutHour < 17) {
+          status = 'early';
+          const earlyMinutes = (17 - clockOutHour) * 60 - clockOut.getMinutes();
+          anomalies.push(`早退${earlyMinutes}分钟`);
+        } else if (clockOutHour > 17 || (clockOutHour === 17 && clockOut.getMinutes() > 0)) {
+          status = 'overtime';
+        }
+      }
+    }
+
+    // 计算工时
+    let workHours: number | undefined;
+    let overtimeHours: number | undefined;
+    if (record.workDuration) {
+      workHours = Math.round(record.workDuration / 60 * 100) / 100;
+      if (workHours > 8) {
+        overtimeHours = Math.round((workHours - 8) * 100) / 100;
+      }
+    }
+
+    return {
+      id: String(record.id ?? record.userId),
+      employeeId: `E${String(record.userId).padStart(3, '0')}`,
+      employeeName: `员工${record.userId}`,
+      employeeCode: String(record.userId).padStart(3, '0'),
+      department: '生产部门',
+      date: clockIn ? (clockIn.toISOString().split('T')[0] ?? '') : (new Date().toISOString().split('T')[0] ?? ''),
+      clockInTime: clockIn ? `${String(clockIn.getHours()).padStart(2, '0')}:${String(clockIn.getMinutes()).padStart(2, '0')}` : undefined,
+      clockOutTime: clockOut ? `${String(clockOut.getHours()).padStart(2, '0')}:${String(clockOut.getMinutes()).padStart(2, '0')}` : undefined,
+      workHours,
+      overtimeHours,
+      status,
+      anomalies,
+    };
+  };
+
+  // 加载考勤数据
+  const loadAttendanceData = useCallback(async (isRefresh = false) => {
+    if (!user?.id) {
+      setError('请先登录');
+      setInitialLoading(false);
+      return;
+    }
+
+    if (!isRefresh) {
+      setInitialLoading(true);
+    }
+    setError(null);
+
+    try {
+      const { startDate, endDate } = getDateRange(dateRange);
+      const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
+
+      // 并行加载统计和记录数据
+      const [statsResponse, recordsResponse] = await Promise.all([
+        timeclockApiClient.getAttendanceStatistics(userId, { startDate, endDate }),
+        timeclockApiClient.getHistoryRecords({
+          startDate,
+          endDate,
+          department: selectedDepartment ?? undefined,
+          page: 1,
+          size: 50,
+        }),
+      ]);
+
+      // 处理统计数据
+      if (statsResponse.success && statsResponse.data) {
+        setStatistics(statsResponse.data);
+      }
+
+      // 处理考勤记录
+      if (recordsResponse.success && recordsResponse.data?.content) {
+        const transformedRecords = recordsResponse.data.content.map(transformClockRecord);
+        setRecords(transformedRecords);
+
+        // 从记录中计算部门统计（简化实现）
+        const deptMap = new Map<string, DepartmentStats>();
+        transformedRecords.forEach(record => {
+          const deptId = record.department;
+          if (!deptMap.has(deptId)) {
+            deptMap.set(deptId, {
+              id: deptId,
+              name: record.department,
+              total: 0,
+              present: 0,
+              absent: 0,
+              late: 0,
+              onLeave: 0,
+            });
+          }
+          const dept = deptMap.get(deptId)!;
+          dept.total++;
+          if (record.status === 'absent') {
+            dept.absent++;
+          } else if (record.status === 'late') {
+            dept.present++;
+            dept.late++;
+          } else {
+            dept.present++;
+          }
+        });
+        setDepartmentStats(Array.from(deptMap.values()));
+      }
+
+    } catch (err) {
+      console.error('加载考勤数据失败:', err);
+      setError('加载考勤数据失败，请稍后重试');
+    } finally {
+      setInitialLoading(false);
+      setRefreshing(false);
+    }
+  }, [user, dateRange, selectedDepartment, getDateRange]);
+
+  // 初始加载
+  useEffect(() => {
+    loadAttendanceData();
+  }, [loadAttendanceData]);
 
   // Callbacks
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      // TODO: Fetch real data from API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
+    await loadAttendanceData(true);
+  }, [loadAttendanceData]);
 
   const handleDateRangeChange = (range: DateRangeType) => {
     setDateRange(range);
-    // TODO: Fetch data for the selected range
+    // dateRange 改变会触发 loadAttendanceData 的 useEffect
   };
 
   const handleDepartmentSelect = (deptId: string | null) => {
@@ -560,27 +665,61 @@ export default function PersonnelAttendanceScreen() {
     </Modal>
   );
 
+  // 渲染加载状态
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={DISPATCHER_THEME.primary} />
+      <Text style={styles.loadingText}>加载考勤数据...</Text>
+    </View>
+  );
+
+  // 渲染错误状态
+  const renderError = () => (
+    <View style={styles.errorContainer}>
+      <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#ff4d4f" />
+      <Text style={styles.errorText}>{error}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={() => loadAttendanceData()}>
+        <Text style={styles.retryButtonText}>重试</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // 渲染空状态
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <MaterialCommunityIcons name="calendar-blank-outline" size={64} color="#ccc" />
+      <Text style={styles.emptyText}>暂无考勤记录</Text>
+      <Text style={styles.emptySubtext}>请调整日期范围或检查打卡数据</Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {renderHeader()}
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[DISPATCHER_THEME.primary]}
-            tintColor={DISPATCHER_THEME.primary}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      >
-        {renderStatisticsCards()}
-        {renderDepartmentOverview()}
-        {renderRecordsList()}
-      </ScrollView>
+      {initialLoading ? (
+        renderLoading()
+      ) : error ? (
+        renderError()
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[DISPATCHER_THEME.primary]}
+              tintColor={DISPATCHER_THEME.primary}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {renderStatisticsCards()}
+          {renderDepartmentOverview()}
+          {records.length === 0 ? renderEmpty() : renderRecordsList()}
+        </ScrollView>
+      )}
 
       {renderDepartmentModal()}
     </SafeAreaView>
@@ -951,5 +1090,59 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#999',
     marginRight: 8,
+  },
+  // Loading, Error, Empty states
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    fontSize: 15,
+    color: '#e74c3c',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: DISPATCHER_THEME.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
 });

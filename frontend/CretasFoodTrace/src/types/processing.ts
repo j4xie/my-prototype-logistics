@@ -149,6 +149,39 @@ export interface FactoryAIQuota {
   };
 }
 
+export interface AIQuotaRule {
+  id?: number;
+  factoryId?: string | null;
+  factoryName?: string;
+  weeklyQuota: number;
+  roleMultipliers?: Record<string, number>;
+  resetDayOfWeek: number;
+  enabled: boolean;
+  priority: number;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateAIQuotaRuleRequest {
+  factoryId?: string | null;
+  weeklyQuota: number;
+  roleMultipliers?: Record<string, number>;
+  resetDayOfWeek?: number;
+  enabled?: boolean;
+  priority?: number;
+  description?: string;
+}
+
+export interface UpdateAIQuotaRuleRequest {
+  weeklyQuota?: number;
+  roleMultipliers?: Record<string, number>;
+  resetDayOfWeek?: number;
+  enabled?: boolean;
+  priority?: number;
+  description?: string;
+}
+
 export interface PlatformAIUsageStats {
   currentWeek: string;          // '2025-W2'
   totalUsed: number;

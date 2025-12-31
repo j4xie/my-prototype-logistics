@@ -8,6 +8,9 @@ import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.service.ProductTypeService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,10 +40,12 @@ public class ProductTypeServiceImpl implements ProductTypeService {
     private static final Logger log = LoggerFactory.getLogger(ProductTypeServiceImpl.class);
 
     private final ProductTypeRepository productTypeRepository;
+    private final ObjectMapper objectMapper;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
-    public ProductTypeServiceImpl(ProductTypeRepository productTypeRepository) {
+    public ProductTypeServiceImpl(ProductTypeRepository productTypeRepository, ObjectMapper objectMapper) {
         this.productTypeRepository = productTypeRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -76,6 +83,20 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         productType.setCreatedAt(LocalDateTime.now());
         productType.setUpdatedAt(LocalDateTime.now());
 
+        // Sprint 2 S2-1: Form Template Association
+        productType.setFormTemplateId(dto.getFormTemplateId());
+
+        // Sprint 2 S2-5: SOP Configuration Association
+        productType.setDefaultSopConfigId(dto.getDefaultSopConfigId());
+
+        // Phase 5: SKU Configuration fields
+        productType.setWorkHours(dto.getWorkHours() != null ? dto.getWorkHours() : BigDecimal.ONE);
+        productType.setComplexityScore(dto.getComplexityScore() != null ? dto.getComplexityScore() : 3);
+        productType.setProcessingSteps(serializeToJson(dto.getProcessingSteps()));
+        productType.setSkillRequirements(serializeToJson(dto.getSkillRequirements()));
+        productType.setEquipmentIds(serializeToJson(dto.getEquipmentIds()));
+        productType.setQualityCheckIds(serializeToJson(dto.getQualityCheckIds()));
+
         productType = productTypeRepository.save(productType);
         log.info("产品类型创建成功: id={}", productType.getId());
 
@@ -112,6 +133,20 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         if (dto.getPackageSpec() != null) productType.setPackageSpec(dto.getPackageSpec());
         if (dto.getNotes() != null) productType.setNotes(dto.getNotes());
         if (dto.getIsActive() != null) productType.setIsActive(dto.getIsActive());
+
+        // Sprint 2 S2-1: Form Template Association
+        if (dto.getFormTemplateId() != null) productType.setFormTemplateId(dto.getFormTemplateId());
+
+        // Sprint 2 S2-5: SOP Configuration Association
+        if (dto.getDefaultSopConfigId() != null) productType.setDefaultSopConfigId(dto.getDefaultSopConfigId());
+
+        // Phase 5: SKU Configuration fields
+        if (dto.getWorkHours() != null) productType.setWorkHours(dto.getWorkHours());
+        if (dto.getComplexityScore() != null) productType.setComplexityScore(dto.getComplexityScore());
+        if (dto.getProcessingSteps() != null) productType.setProcessingSteps(serializeToJson(dto.getProcessingSteps()));
+        if (dto.getSkillRequirements() != null) productType.setSkillRequirements(serializeToJson(dto.getSkillRequirements()));
+        if (dto.getEquipmentIds() != null) productType.setEquipmentIds(serializeToJson(dto.getEquipmentIds()));
+        if (dto.getQualityCheckIds() != null) productType.setQualityCheckIds(serializeToJson(dto.getQualityCheckIds()));
 
         productType.setUpdatedAt(LocalDateTime.now());
         productType = productTypeRepository.save(productType);
@@ -328,6 +363,80 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                 .createdBy(productType.getCreatedBy())
                 .createdAt(productType.getCreatedAt())
                 .updatedAt(productType.getUpdatedAt())
+                // Sprint 2 S2-1: Form Template Association
+                .formTemplateId(productType.getFormTemplateId())
+                // Sprint 2 S2-5: SOP Configuration Association
+                .defaultSopConfigId(productType.getDefaultSopConfigId())
+                // Phase 5: SKU Configuration fields
+                .workHours(productType.getWorkHours())
+                .complexityScore(productType.getComplexityScore())
+                .processingSteps(parseProcessingSteps(productType.getProcessingSteps()))
+                .skillRequirements(parseSkillRequirements(productType.getSkillRequirements()))
+                .equipmentIds(parseStringList(productType.getEquipmentIds()))
+                .qualityCheckIds(parseStringList(productType.getQualityCheckIds()))
                 .build();
+    }
+
+    // ==================== Phase 5: JSON Serialization/Deserialization Helpers ====================
+
+    /**
+     * Serialize object to JSON string
+     */
+    private String serializeToJson(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.error("JSON序列化失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Parse processing steps from JSON string
+     */
+    private List<ProductTypeDTO.ProcessingStepDTO> parseProcessingSteps(String json) {
+        if (json == null || json.isEmpty() || "[]".equals(json)) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(json,
+                    new TypeReference<List<ProductTypeDTO.ProcessingStepDTO>>() {});
+        } catch (JsonProcessingException e) {
+            log.error("解析 processingSteps JSON 失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Parse skill requirements from JSON string
+     */
+    private ProductTypeDTO.SkillRequirementDTO parseSkillRequirements(String json) {
+        if (json == null || json.isEmpty() || "{}".equals(json)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, ProductTypeDTO.SkillRequirementDTO.class);
+        } catch (JsonProcessingException e) {
+            log.error("解析 skillRequirements JSON 失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Parse string list from JSON string
+     */
+    private List<String> parseStringList(String json) {
+        if (json == null || json.isEmpty() || "[]".equals(json)) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            log.error("解析 JSON 数组失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 }

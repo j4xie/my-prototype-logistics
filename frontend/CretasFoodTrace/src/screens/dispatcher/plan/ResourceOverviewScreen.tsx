@@ -1,0 +1,1209 @@
+/**
+ * 资源总览屏幕
+ *
+ * 功能：
+ * - 车间级资源利用率监控
+ * - 人员配置与可用性
+ * - 设备状态实时显示
+ * - 产能瓶颈分析
+ * - 资源预警提示
+ *
+ * @version 1.0.0
+ * @since 2025-12-29
+ */
+
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  Dimensions,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+
+const { width } = Dimensions.get('window');
+
+// 主题色
+const DISPATCHER_THEME = {
+  primary: '#722ed1',
+  secondary: '#a18cd1',
+  accent: '#fbc2eb',
+  gradientStart: '#722ed1',
+  gradientEnd: '#a18cd1',
+};
+
+// 资源类型
+interface Workshop {
+  id: string;
+  name: string;
+  productionLines: ProductionLineResource[];
+  totalWorkers: number;
+  availableWorkers: number;
+  utilization: number;
+}
+
+interface ProductionLineResource {
+  id: string;
+  name: string;
+  status: 'running' | 'idle' | 'maintenance' | 'error';
+  currentTask?: string;
+  progress?: number;
+  capacity: number;
+  currentOutput: number;
+  workers: number;
+  maxWorkers: number;
+}
+
+interface Equipment {
+  id: string;
+  name: string;
+  type: string;
+  status: 'normal' | 'warning' | 'error' | 'offline';
+  workshopId: string;
+  workshopName: string;
+  lastMaintenance?: string;
+  nextMaintenance?: string;
+  runtime: number;
+  alerts?: string[];
+}
+
+interface ResourceAlert {
+  id: string;
+  type: 'capacity' | 'worker' | 'equipment' | 'material';
+  level: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  resourceId: string;
+  resourceName: string;
+  timestamp: string;
+}
+
+// 模拟数据
+const mockWorkshops: Workshop[] = [
+  {
+    id: 'W1',
+    name: '切片车间',
+    productionLines: [
+      {
+        id: 'L1',
+        name: '切片A线',
+        status: 'running',
+        currentTask: '带鱼片 100kg',
+        progress: 75,
+        capacity: 100,
+        currentOutput: 75,
+        workers: 5,
+        maxWorkers: 6,
+      },
+      {
+        id: 'L2',
+        name: '切片B线',
+        status: 'running',
+        currentTask: '鲅鱼片 80kg',
+        progress: 40,
+        capacity: 100,
+        currentOutput: 40,
+        workers: 4,
+        maxWorkers: 6,
+      },
+    ],
+    totalWorkers: 12,
+    availableWorkers: 3,
+    utilization: 85,
+  },
+  {
+    id: 'W2',
+    name: '包装车间',
+    productionLines: [
+      {
+        id: 'L3',
+        name: '包装线1',
+        status: 'idle',
+        capacity: 150,
+        currentOutput: 0,
+        workers: 0,
+        maxWorkers: 4,
+      },
+      {
+        id: 'L4',
+        name: '包装线2',
+        status: 'maintenance',
+        capacity: 150,
+        currentOutput: 0,
+        workers: 1,
+        maxWorkers: 4,
+      },
+    ],
+    totalWorkers: 8,
+    availableWorkers: 7,
+    utilization: 25,
+  },
+  {
+    id: 'W3',
+    name: '速冻车间',
+    productionLines: [
+      {
+        id: 'L5',
+        name: '速冻线1',
+        status: 'running',
+        currentTask: '带鱼片冷冻',
+        progress: 60,
+        capacity: 200,
+        currentOutput: 120,
+        workers: 3,
+        maxWorkers: 4,
+      },
+    ],
+    totalWorkers: 6,
+    availableWorkers: 2,
+    utilization: 60,
+  },
+];
+
+const mockEquipments: Equipment[] = [
+  {
+    id: 'E1',
+    name: '切片机A',
+    type: '切片设备',
+    status: 'normal',
+    workshopId: 'W1',
+    workshopName: '切片车间',
+    lastMaintenance: '2025-12-20',
+    nextMaintenance: '2026-01-20',
+    runtime: 156,
+  },
+  {
+    id: 'E2',
+    name: '切片机B',
+    type: '切片设备',
+    status: 'warning',
+    workshopId: 'W1',
+    workshopName: '切片车间',
+    lastMaintenance: '2025-11-15',
+    nextMaintenance: '2025-12-30',
+    runtime: 423,
+    alerts: ['即将到期保养'],
+  },
+  {
+    id: 'E3',
+    name: '包装机1',
+    type: '包装设备',
+    status: 'error',
+    workshopId: 'W2',
+    workshopName: '包装车间',
+    lastMaintenance: '2025-12-10',
+    runtime: 89,
+    alerts: ['传感器故障', '需要更换配件'],
+  },
+  {
+    id: 'E4',
+    name: '速冻机1',
+    type: '冷冻设备',
+    status: 'normal',
+    workshopId: 'W3',
+    workshopName: '速冻车间',
+    lastMaintenance: '2025-12-25',
+    nextMaintenance: '2026-01-25',
+    runtime: 48,
+  },
+];
+
+const mockAlerts: ResourceAlert[] = [
+  {
+    id: 'A1',
+    type: 'equipment',
+    level: 'critical',
+    title: '设备故障',
+    message: '包装机1传感器故障，需要紧急维修',
+    resourceId: 'E3',
+    resourceName: '包装机1',
+    timestamp: '2025-12-29 09:30',
+  },
+  {
+    id: 'A2',
+    type: 'capacity',
+    level: 'warning',
+    title: '产能瓶颈',
+    message: '切片车间产能利用率达85%，接近饱和',
+    resourceId: 'W1',
+    resourceName: '切片车间',
+    timestamp: '2025-12-29 10:00',
+  },
+  {
+    id: 'A3',
+    type: 'worker',
+    level: 'info',
+    title: '人员不足',
+    message: '切片A线缺少1名工人，建议调配',
+    resourceId: 'L1',
+    resourceName: '切片A线',
+    timestamp: '2025-12-29 10:15',
+  },
+  {
+    id: 'A4',
+    type: 'equipment',
+    level: 'warning',
+    title: '保养提醒',
+    message: '切片机B即将到期保养，请安排维护',
+    resourceId: 'E2',
+    resourceName: '切片机B',
+    timestamp: '2025-12-29 08:00',
+  },
+];
+
+export default function ResourceOverviewScreen() {
+  const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [workshops, setWorkshops] = useState<Workshop[]>(mockWorkshops);
+  const [equipments, setEquipments] = useState<Equipment[]>(mockEquipments);
+  const [alerts, setAlerts] = useState<ResourceAlert[]>(mockAlerts);
+  const [selectedTab, setSelectedTab] = useState<'workshop' | 'equipment' | 'alert'>('workshop');
+
+  // 加载数据
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      // TODO: 调用API获取资源数据
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setWorkshops(mockWorkshops);
+      setEquipments(mockEquipments);
+      setAlerts(mockAlerts);
+    } catch (error) {
+      console.error('加载资源数据失败:', error);
+      Alert.alert('错误', '加载资源数据失败，请重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 下拉刷新
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // 获取产线状态信息
+  const getLineStatusInfo = (status: string) => {
+    switch (status) {
+      case 'running':
+        return { label: '运行中', color: '#52c41a', bgColor: '#f6ffed', icon: 'play-circle' };
+      case 'idle':
+        return { label: '空闲', color: '#8c8c8c', bgColor: '#f5f5f5', icon: 'pause-circle' };
+      case 'maintenance':
+        return { label: '维护中', color: '#fa8c16', bgColor: '#fff7e6', icon: 'wrench' };
+      case 'error':
+        return { label: '故障', color: '#ff4d4f', bgColor: '#fff1f0', icon: 'alert-circle' };
+      default:
+        return { label: '未知', color: '#666', bgColor: '#f5f5f5', icon: 'help-circle' };
+    }
+  };
+
+  // 获取设备状态信息
+  const getEquipmentStatusInfo = (status: string) => {
+    switch (status) {
+      case 'normal':
+        return { label: '正常', color: '#52c41a', bgColor: '#f6ffed' };
+      case 'warning':
+        return { label: '注意', color: '#fa8c16', bgColor: '#fff7e6' };
+      case 'error':
+        return { label: '故障', color: '#ff4d4f', bgColor: '#fff1f0' };
+      case 'offline':
+        return { label: '离线', color: '#8c8c8c', bgColor: '#f5f5f5' };
+      default:
+        return { label: '未知', color: '#666', bgColor: '#f5f5f5' };
+    }
+  };
+
+  // 获取预警级别信息
+  const getAlertLevelInfo = (level: string) => {
+    switch (level) {
+      case 'critical':
+        return { label: '紧急', color: '#ff4d4f', bgColor: '#fff1f0', icon: 'alert-octagon' };
+      case 'warning':
+        return { label: '警告', color: '#fa8c16', bgColor: '#fff7e6', icon: 'alert' };
+      case 'info':
+        return { label: '提示', color: '#1890ff', bgColor: '#e6f7ff', icon: 'information' };
+      default:
+        return { label: '未知', color: '#666', bgColor: '#f5f5f5', icon: 'help-circle' };
+    }
+  };
+
+  // 获取预警类型信息
+  const getAlertTypeInfo = (type: string) => {
+    switch (type) {
+      case 'capacity':
+        return { label: '产能', icon: 'chart-line' };
+      case 'worker':
+        return { label: '人员', icon: 'account-group' };
+      case 'equipment':
+        return { label: '设备', icon: 'cog' };
+      case 'material':
+        return { label: '物料', icon: 'package-variant' };
+      default:
+        return { label: '其他', icon: 'dots-horizontal' };
+    }
+  };
+
+  // 计算总体统计
+  const stats = {
+    totalLines: workshops.reduce((sum, w) => sum + w.productionLines.length, 0),
+    runningLines: workshops.reduce(
+      (sum, w) => sum + w.productionLines.filter(l => l.status === 'running').length,
+      0
+    ),
+    totalWorkers: workshops.reduce((sum, w) => sum + w.totalWorkers, 0),
+    availableWorkers: workshops.reduce((sum, w) => sum + w.availableWorkers, 0),
+    normalEquipments: equipments.filter(e => e.status === 'normal').length,
+    alertEquipments: equipments.filter(e => e.status === 'warning' || e.status === 'error').length,
+    criticalAlerts: alerts.filter(a => a.level === 'critical').length,
+    avgUtilization: Math.round(
+      workshops.reduce((sum, w) => sum + w.utilization, 0) / workshops.length
+    ),
+  };
+
+  // 渲染车间卡片
+  const renderWorkshopCard = (workshop: Workshop) => {
+    const utilizationColor =
+      workshop.utilization >= 80 ? '#ff4d4f' :
+      workshop.utilization >= 60 ? '#fa8c16' :
+      workshop.utilization >= 40 ? '#52c41a' : '#8c8c8c';
+
+    return (
+      <View key={workshop.id} style={styles.workshopCard}>
+        {/* 车间头部 */}
+        <View style={styles.workshopHeader}>
+          <View style={styles.workshopInfo}>
+            <Text style={styles.workshopName}>{workshop.name}</Text>
+            <Text style={styles.workshopMeta}>
+              {workshop.productionLines.length} 条产线
+            </Text>
+          </View>
+          <View style={styles.utilizationContainer}>
+            <Text style={[styles.utilizationValue, { color: utilizationColor }]}>
+              {workshop.utilization}%
+            </Text>
+            <Text style={styles.utilizationLabel}>利用率</Text>
+          </View>
+        </View>
+
+        {/* 产线列表 */}
+        <View style={styles.productionLines}>
+          {workshop.productionLines.map((line) => {
+            const statusInfo = getLineStatusInfo(line.status);
+            return (
+              <View key={line.id} style={styles.lineItem}>
+                <View style={styles.lineHeader}>
+                  <View style={styles.lineNameContainer}>
+                    <MaterialCommunityIcons
+                      name={statusInfo.icon as any}
+                      size={16}
+                      color={statusInfo.color}
+                    />
+                    <Text style={styles.lineName}>{line.name}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: statusInfo.bgColor }]}>
+                      <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                        {statusInfo.label}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.lineWorkers}>
+                    <MaterialCommunityIcons name="account" size={14} color="#999" />
+                    {' '}{line.workers}/{line.maxWorkers}
+                  </Text>
+                </View>
+
+                {line.status === 'running' && line.currentTask && (
+                  <View style={styles.lineTask}>
+                    <Text style={styles.taskName}>{line.currentTask}</Text>
+                    <View style={styles.progressBar}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: `${line.progress ?? 0}%`, backgroundColor: DISPATCHER_THEME.primary },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.progressText}>{line.progress ?? 0}%</Text>
+                  </View>
+                )}
+
+                <View style={styles.lineCapacity}>
+                  <Text style={styles.capacityText}>
+                    产能: {line.currentOutput}/{line.capacity} kg/h
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* 人员信息 */}
+        <View style={styles.workerInfo}>
+          <MaterialCommunityIcons name="account-group" size={18} color="#666" />
+          <Text style={styles.workerText}>
+            人员: {workshop.totalWorkers - workshop.availableWorkers}/{workshop.totalWorkers}
+            <Text style={styles.workerAvailable}> (可用 {workshop.availableWorkers})</Text>
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  // 渲染设备卡片
+  const renderEquipmentCard = (equipment: Equipment) => {
+    const statusInfo = getEquipmentStatusInfo(equipment.status);
+
+    return (
+      <View key={equipment.id} style={styles.equipmentCard}>
+        <View style={styles.equipmentHeader}>
+          <View style={styles.equipmentInfo}>
+            <Text style={styles.equipmentName}>{equipment.name}</Text>
+            <Text style={styles.equipmentType}>{equipment.type}</Text>
+            <Text style={styles.equipmentWorkshop}>{equipment.workshopName}</Text>
+          </View>
+          <View style={[styles.equipmentStatusBadge, { backgroundColor: statusInfo.bgColor }]}>
+            <Text style={[styles.equipmentStatusText, { color: statusInfo.color }]}>
+              {statusInfo.label}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.equipmentDetails}>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>运行时长</Text>
+            <Text style={styles.detailValue}>{equipment.runtime} 小时</Text>
+          </View>
+          {equipment.lastMaintenance && (
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>上次保养</Text>
+              <Text style={styles.detailValue}>{equipment.lastMaintenance}</Text>
+            </View>
+          )}
+          {equipment.nextMaintenance && (
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>下次保养</Text>
+              <Text style={styles.detailValue}>{equipment.nextMaintenance}</Text>
+            </View>
+          )}
+        </View>
+
+        {equipment.alerts && equipment.alerts.length > 0 && (
+          <View style={styles.equipmentAlerts}>
+            {equipment.alerts.map((alert, index) => (
+              <View key={index} style={styles.alertTag}>
+                <MaterialCommunityIcons name="alert" size={12} color="#fa8c16" />
+                <Text style={styles.alertTagText}>{alert}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // 渲染预警卡片
+  const renderAlertCard = (alert: ResourceAlert) => {
+    const levelInfo = getAlertLevelInfo(alert.level);
+    const typeInfo = getAlertTypeInfo(alert.type);
+
+    return (
+      <View key={alert.id} style={[styles.alertCard, { borderLeftColor: levelInfo.color }]}>
+        <View style={styles.alertHeader}>
+          <View style={styles.alertTitleContainer}>
+            <MaterialCommunityIcons
+              name={levelInfo.icon as any}
+              size={20}
+              color={levelInfo.color}
+            />
+            <Text style={styles.alertTitle}>{alert.title}</Text>
+          </View>
+          <View style={[styles.levelBadge, { backgroundColor: levelInfo.bgColor }]}>
+            <Text style={[styles.levelText, { color: levelInfo.color }]}>{levelInfo.label}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.alertMessage}>{alert.message}</Text>
+
+        <View style={styles.alertFooter}>
+          <View style={styles.alertResource}>
+            <MaterialCommunityIcons name={typeInfo.icon as any} size={14} color="#999" />
+            <Text style={styles.resourceText}>{alert.resourceName}</Text>
+          </View>
+          <Text style={styles.alertTime}>{alert.timestamp}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* 头部 */}
+      <LinearGradient
+        colors={[DISPATCHER_THEME.gradientStart, DISPATCHER_THEME.gradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>资源总览</Text>
+            <Text style={styles.headerSubtitle}>实时监控车间资源状态</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={loadData}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <MaterialCommunityIcons name="refresh" size={24} color="#fff" />
+            )}
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      {/* 统计概览 */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <View style={styles.statIconContainer}>
+              <MaterialCommunityIcons name="factory" size={20} color={DISPATCHER_THEME.primary} />
+            </View>
+            <View>
+              <Text style={styles.statValue}>{stats.runningLines}/{stats.totalLines}</Text>
+              <Text style={styles.statLabel}>运行产线</Text>
+            </View>
+          </View>
+          <View style={styles.statItem}>
+            <View style={styles.statIconContainer}>
+              <MaterialCommunityIcons name="account-group" size={20} color="#1890ff" />
+            </View>
+            <View>
+              <Text style={styles.statValue}>{stats.totalWorkers - stats.availableWorkers}/{stats.totalWorkers}</Text>
+              <Text style={styles.statLabel}>在岗人员</Text>
+            </View>
+          </View>
+        </View>
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <View style={styles.statIconContainer}>
+              <MaterialCommunityIcons name="cog" size={20} color="#52c41a" />
+            </View>
+            <View>
+              <Text style={styles.statValue}>
+                {stats.normalEquipments}
+                {stats.alertEquipments > 0 && (
+                  <Text style={{ color: '#fa8c16' }}> / {stats.alertEquipments}</Text>
+                )}
+              </Text>
+              <Text style={styles.statLabel}>正常/异常设备</Text>
+            </View>
+          </View>
+          <View style={styles.statItem}>
+            <View style={styles.statIconContainer}>
+              <MaterialCommunityIcons name="gauge" size={20} color="#fa8c16" />
+            </View>
+            <View>
+              <Text style={styles.statValue}>{stats.avgUtilization}%</Text>
+              <Text style={styles.statLabel}>平均利用率</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 紧急预警提示 */}
+        {stats.criticalAlerts > 0 && (
+          <TouchableOpacity
+            style={styles.criticalBanner}
+            onPress={() => setSelectedTab('alert')}
+          >
+            <MaterialCommunityIcons name="alert-octagon" size={20} color="#ff4d4f" />
+            <Text style={styles.criticalText}>
+              {stats.criticalAlerts} 个紧急预警需要处理
+            </Text>
+            <MaterialCommunityIcons name="chevron-right" size={20} color="#ff4d4f" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* 标签切换 */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'workshop' && styles.tabActive]}
+          onPress={() => setSelectedTab('workshop')}
+        >
+          <MaterialCommunityIcons
+            name="factory"
+            size={18}
+            color={selectedTab === 'workshop' ? DISPATCHER_THEME.primary : '#666'}
+          />
+          <Text style={[styles.tabText, selectedTab === 'workshop' && styles.tabTextActive]}>
+            车间
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'equipment' && styles.tabActive]}
+          onPress={() => setSelectedTab('equipment')}
+        >
+          <MaterialCommunityIcons
+            name="cog"
+            size={18}
+            color={selectedTab === 'equipment' ? DISPATCHER_THEME.primary : '#666'}
+          />
+          <Text style={[styles.tabText, selectedTab === 'equipment' && styles.tabTextActive]}>
+            设备
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === 'alert' && styles.tabActive]}
+          onPress={() => setSelectedTab('alert')}
+        >
+          <MaterialCommunityIcons
+            name="bell"
+            size={18}
+            color={selectedTab === 'alert' ? DISPATCHER_THEME.primary : '#666'}
+          />
+          <Text style={[styles.tabText, selectedTab === 'alert' && styles.tabTextActive]}>
+            预警
+          </Text>
+          {alerts.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{alerts.length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* 内容区 */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={DISPATCHER_THEME.primary} />
+            <Text style={styles.loadingText}>加载中...</Text>
+          </View>
+        ) : selectedTab === 'workshop' ? (
+          workshops.map(workshop => renderWorkshopCard(workshop))
+        ) : selectedTab === 'equipment' ? (
+          equipments.map(equipment => renderEquipmentCard(equipment))
+        ) : (
+          alerts.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons name="check-circle" size={64} color="#52c41a" />
+              <Text style={styles.emptyText}>暂无预警</Text>
+              <Text style={styles.emptySubtext}>所有资源运行正常</Text>
+            </View>
+          ) : (
+            alerts.map(alert => renderAlertCard(alert))
+          )
+        )}
+      </ScrollView>
+
+      {/* 实时数据标识 */}
+      <View style={styles.realtimeBadge}>
+        <View style={styles.realtimeDot} />
+        <Text style={styles.realtimeText}>实时数据</Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statsContainer: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: -10,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  statItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  criticalBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff1f0',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 4,
+    gap: 8,
+  },
+  criticalText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#ff4d4f',
+    fontWeight: '500',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  tabActive: {
+    backgroundColor: `${DISPATCHER_THEME.primary}15`,
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  tabTextActive: {
+    color: DISPATCHER_THEME.primary,
+    fontWeight: '500',
+  },
+  badge: {
+    backgroundColor: '#ff4d4f',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 4,
+  },
+  badgeText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  content: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#666',
+    fontSize: 14,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#52c41a',
+    fontWeight: '500',
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#999',
+  },
+  // Workshop styles
+  workshopCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  workshopHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  workshopInfo: {
+    flex: 1,
+  },
+  workshopName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  workshopMeta: {
+    fontSize: 13,
+    color: '#999',
+    marginTop: 4,
+  },
+  utilizationContainer: {
+    alignItems: 'center',
+  },
+  utilizationValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  utilizationLabel: {
+    fontSize: 12,
+    color: '#999',
+  },
+  productionLines: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#eee',
+    paddingTop: 12,
+    gap: 12,
+  },
+  lineItem: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 12,
+  },
+  lineHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  lineNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  lineName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  lineWorkers: {
+    fontSize: 12,
+    color: '#999',
+  },
+  lineTask: {
+    marginTop: 10,
+  },
+  taskName: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 6,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#eee',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+    textAlign: 'right',
+  },
+  lineCapacity: {
+    marginTop: 8,
+  },
+  capacityText: {
+    fontSize: 12,
+    color: '#999',
+  },
+  workerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#eee',
+    paddingTop: 12,
+    marginTop: 12,
+    gap: 8,
+  },
+  workerText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  workerAvailable: {
+    color: '#52c41a',
+  },
+  // Equipment styles
+  equipmentCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  equipmentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  equipmentInfo: {
+    flex: 1,
+  },
+  equipmentName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  equipmentType: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  equipmentWorkshop: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  equipmentStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  equipmentStatusText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  equipmentDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+    gap: 16,
+  },
+  detailItem: {
+    minWidth: '30%',
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#999',
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#333',
+    marginTop: 2,
+  },
+  equipmentAlerts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+    gap: 8,
+  },
+  alertTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff7e6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    gap: 4,
+  },
+  alertTagText: {
+    fontSize: 12,
+    color: '#fa8c16',
+  },
+  // Alert styles
+  alertCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  alertTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  alertTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  levelBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  levelText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  alertMessage: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 10,
+    lineHeight: 20,
+  },
+  alertFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  alertResource: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  resourceText: {
+    fontSize: 12,
+    color: '#999',
+  },
+  alertTime: {
+    fontSize: 12,
+    color: '#999',
+  },
+  // Realtime badge
+  realtimeBadge: {
+    position: 'absolute',
+    bottom: 24,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    gap: 6,
+  },
+  realtimeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#52c41a',
+  },
+  realtimeText: {
+    fontSize: 12,
+    color: '#666',
+  },
+});
