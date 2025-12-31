@@ -1,9 +1,10 @@
 /**
  * 商品发布/编辑页面
- * 支持图片上传到服务器
+ * 支持图片直传到阿里云OSS
  */
 const app = getApp()
 const api = require('../../../utils/api')
+const ossUpload = require('../../../utils/oss')
 
 Page({
   data: {
@@ -195,35 +196,15 @@ Page({
     })
   },
 
-  // 上传单张图片
-  uploadSingleImage(filePath) {
-    return new Promise((resolve, reject) => {
-      wx.uploadFile({
-        url: app.globalData.config.baseUrl + '/weixin/api/ma/upload',
-        filePath: filePath,
-        name: 'file',
-        header: {
-          'Authorization': 'Bearer ' + (wx.getStorageSync('token') || '')
-        },
-        success: (res) => {
-          try {
-            const data = JSON.parse(res.data)
-            if (data.code === 200 && data.data) {
-              resolve(data.data.url || data.data)
-            } else if (data.url) {
-              resolve(data.url)
-            } else {
-              reject(new Error(data.msg || '上传失败'))
-            }
-          } catch (e) {
-            reject(new Error('解析响应失败'))
-          }
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
-    })
+  // 上传单张图片到OSS
+  async uploadSingleImage(filePath) {
+    try {
+      const url = await ossUpload.uploadImage(filePath, 'product')
+      return url
+    } catch (error) {
+      console.error('OSS上传失败:', error)
+      throw error
+    }
   },
 
   // 上传所有新图片
@@ -338,6 +319,11 @@ Page({
     }
   }
 })
+
+
+
+
+
 
 
 

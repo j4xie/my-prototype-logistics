@@ -56,6 +56,13 @@ public class ConfirmUrgentInsertRequest {
     @Size(max = 500, message = "备注不能超过500个字符")
     private String notes;
 
+    @Schema(description = "紧急原因", required = true)
+    @NotBlank(message = "紧急原因不能为空")
+    private String urgentReason;
+
+    @Schema(description = "请求交期")
+    private String requestedDeadline;
+
     @Schema(description = "优先级 (1-10)")
     @Min(value = 1, message = "优先级最小为1")
     @Max(value = 10, message = "优先级最大为10")

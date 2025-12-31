@@ -664,6 +664,9 @@ class FormParseRequest(BaseModel):
     entity_type: str  # 实体类型，如 MATERIAL_BATCH, QUALITY_CHECK
     factory_id: Optional[str] = None
     context: Optional[Dict] = None  # 可选的上下文信息
+    session_id: Optional[str] = None  # 会话ID，用于多轮对话
+    validation_errors: Optional[List[str]] = None  # 校验错误列表（用于反馈修正）
+    previous_values: Optional[Dict] = None  # 之前填写的值（用于反馈修正）
 
 class FormParseResponse(BaseModel):
     """表单解析响应"""
@@ -672,6 +675,32 @@ class FormParseResponse(BaseModel):
     confidence: float  # 置信度 0-1
     unparsed_text: Optional[str] = None  # 未能解析的部分
     message: Optional[str] = None
+    session_id: Optional[str] = None  # 会话ID
+    validation_errors: Optional[List[str]] = None  # 校验错误列表
+    correction_hints: Optional[Dict[str, str]] = None  # 字段修正建议 {"quantity": "请输入有效的数量，如：500公斤"}
+    missing_required_fields: Optional[List[str]] = None  # 缺失的必填字段
+    suggested_questions: Optional[List[str]] = None  # AI生成的追问
+
+
+class ValidationFeedbackRequest(BaseModel):
+    """校验反馈请求 - 用于表单校验失败时的AI修正"""
+    session_id: Optional[str] = None  # 会话ID
+    entity_type: str  # 实体类型
+    form_fields: List[Dict]  # 表单字段定义
+    submitted_values: Dict  # 用户提交的值
+    validation_errors: List[Dict]  # 校验错误 [{"field": "quantity", "message": "必须大于0"}]
+    user_instruction: Optional[str] = None  # 用户补充说明
+    factory_id: Optional[str] = None
+
+
+class ValidationFeedbackResponse(BaseModel):
+    """校验反馈响应"""
+    success: bool
+    correction_hints: Dict[str, str]  # 字段修正建议
+    corrected_values: Optional[Dict] = None  # AI建议的修正值
+    explanation: Optional[str] = None  # AI解释
+    confidence: float = 0.0
+    session_id: Optional[str] = None
 
 class OCRParseRequest(BaseModel):
     """OCR解析请求"""
@@ -1173,11 +1202,48 @@ async def parse_form_input(request: FormParseRequest):
             else:
                 confidence = 0.6 + (parsed_count / max(total_fields, 1)) * 0.3
 
+            # P1-1: 检测缺失的必填字段
+            missing_required_fields = []
+            suggested_questions = []
+            for field in request.form_fields:
+                field_name = field.get('name', '')
+                is_required = field.get('required', False)
+                if is_required and field_name not in field_values:
+                    missing_required_fields.append(field_name)
+                    field_title = field.get('title', field_name)
+                    field_type = field.get('type', 'string')
+                    # 根据字段类型生成追问
+                    if field.get('enum'):
+                        options = ', '.join(str(v) for v in field['enum'][:5])
+                        suggested_questions.append(f"请选择{field_title}（可选: {options}）")
+                    elif field_type == 'number':
+                        suggested_questions.append(f"请告诉我{field_title}的数值")
+                    elif field_type == 'date':
+                        suggested_questions.append(f"请提供{field_title}（日期格式）")
+                    else:
+                        suggested_questions.append(f"请提供{field_title}")
+
+            # 生成主要追问问题
+            follow_up_question = None
+            if missing_required_fields:
+                if len(missing_required_fields) == 1:
+                    follow_up_question = suggested_questions[0]
+                else:
+                    field_titles = []
+                    for fn in missing_required_fields[:3]:  # 最多展示3个
+                        for f in request.form_fields:
+                            if f.get('name') == fn:
+                                field_titles.append(f.get('title', fn))
+                                break
+                    follow_up_question = f"请补充以下信息: {', '.join(field_titles)}"
+
             return FormParseResponse(
                 success=True,
                 field_values=field_values,
                 confidence=confidence,
-                message=f"成功解析 {parsed_count} 个字段"
+                message=f"成功解析 {parsed_count} 个字段",
+                missing_required_fields=missing_required_fields if missing_required_fields else None,
+                suggested_questions=suggested_questions if suggested_questions else None
             )
 
         except json.JSONDecodeError as e:
@@ -1197,6 +1263,203 @@ async def parse_form_input(request: FormParseRequest):
             field_values={},
             confidence=0,
             message=f"解析失败: {str(e)}"
+        )
+
+
+def build_validation_feedback_prompt(
+    form_fields: List[Dict],
+    entity_type: str,
+    submitted_values: Dict,
+    validation_errors: List[Dict]
+) -> str:
+    """构建校验反馈的AI提示词"""
+    # 格式化字段信息
+    fields_info = []
+    for field in form_fields:
+        field_name = field.get('name', '')
+        field_title = field.get('title', field_name)
+        field_type = field.get('type', 'string')
+        required = field.get('required', False)
+        constraints = []
+        if field.get('minimum') is not None:
+            constraints.append(f"最小值: {field['minimum']}")
+        if field.get('maximum') is not None:
+            constraints.append(f"最大值: {field['maximum']}")
+        if field.get('enum'):
+            constraints.append(f"可选值: {', '.join(map(str, field['enum']))}")
+        if field.get('pattern'):
+            constraints.append(f"格式: {field['pattern']}")
+
+        constraint_text = f" ({', '.join(constraints)})" if constraints else ""
+        required_text = " [必填]" if required else ""
+        fields_info.append(f"- {field_name} ({field_title}): {field_type}{constraint_text}{required_text}")
+
+    fields_text = "\n".join(fields_info)
+
+    # 格式化用户提交的值
+    submitted_text = json.dumps(submitted_values, ensure_ascii=False, indent=2)
+
+    # 格式化校验错误
+    errors_text = "\n".join([
+        f"- 字段 '{e.get('field', '未知')}': {e.get('message', '校验失败')}"
+        for e in validation_errors
+    ])
+
+    entity_type_chinese = {
+        "MATERIAL_BATCH": "原材料批次",
+        "QUALITY_CHECK": "质检记录",
+        "PROCESSING_BATCH": "加工批次",
+        "SHIPMENT": "出货记录",
+    }.get(entity_type, entity_type)
+
+    return f"""你是白垩纪食品溯源系统的智能表单校验助手。
+
+用户正在填写: {entity_type_chinese}
+
+表单字段定义:
+{fields_text}
+
+用户提交的值:
+{submitted_text}
+
+校验失败的错误:
+{errors_text}
+
+你的任务是:
+1. 分析每个校验错误的原因
+2. 给出具体的修正建议，帮助用户正确填写
+3. 如果可能，推测用户的意图并给出正确的值
+
+输出格式 (严格JSON):
+{{
+  "correction_hints": {{
+    "字段名1": "修正建议1",
+    "字段名2": "修正建议2"
+  }},
+  "corrected_values": {{
+    "字段名1": 修正后的值,
+    "字段名2": 修正后的值
+  }},
+  "explanation": "整体解释"
+}}
+
+注意:
+- correction_hints 必须包含所有出错字段的建议
+- corrected_values 只包含你有信心修正的值
+- 如果无法确定正确值，不要猜测
+- 建议要具体、友好、易于理解"""
+
+
+@app.post("/api/ai/form/parse/feedback", response_model=ValidationFeedbackResponse)
+async def parse_form_validation_feedback(request: ValidationFeedbackRequest):
+    """
+    校验反馈端点 - 表单校验失败时，AI生成修正建议
+
+    用途:
+    - 表单提交校验失败后，调用此端点获取AI修正建议
+    - AI分析错误原因，给出具体的修正方案
+
+    示例:
+    输入: {"quantity": -10} + 错误 [{"field": "quantity", "message": "必须大于0"}]
+    输出: {
+        "correction_hints": {"quantity": "数量必须是正数，请输入正确的数量，如 500"},
+        "corrected_values": {"quantity": 10},
+        "explanation": "您输入的数量是负数，已自动修正为正数"
+    }
+    """
+    try:
+        if not request.validation_errors:
+            return ValidationFeedbackResponse(
+                success=True,
+                correction_hints={},
+                explanation="没有校验错误需要处理",
+                confidence=1.0,
+                session_id=request.session_id
+            )
+
+        # 构建提示词
+        system_prompt = build_validation_feedback_prompt(
+            request.form_fields,
+            request.entity_type,
+            request.submitted_values,
+            request.validation_errors
+        )
+
+        # 添加用户补充说明
+        user_message = "请分析以上校验错误并给出修正建议。"
+        if request.user_instruction:
+            user_message += f"\n\n用户补充说明: {request.user_instruction}"
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
+
+        # 调用AI
+        result = query_qwen(messages, enable_thinking=True)
+        response_text = result["content"].strip()
+
+        # 解析JSON响应
+        try:
+            # 清理可能的markdown代码块
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            parsed_response = json.loads(response_text)
+
+            correction_hints = parsed_response.get("correction_hints", {})
+            corrected_values = parsed_response.get("corrected_values", {})
+            explanation = parsed_response.get("explanation", "")
+
+            # 计算置信度
+            error_count = len(request.validation_errors)
+            hint_count = len(correction_hints)
+            corrected_count = len(corrected_values)
+
+            if hint_count >= error_count:
+                confidence = 0.8 + (corrected_count / max(error_count, 1)) * 0.2
+            else:
+                confidence = 0.5 + (hint_count / max(error_count, 1)) * 0.3
+
+            return ValidationFeedbackResponse(
+                success=True,
+                correction_hints=correction_hints,
+                corrected_values=corrected_values if corrected_values else None,
+                explanation=explanation,
+                confidence=min(confidence, 1.0),
+                session_id=request.session_id or str(uuid.uuid4())
+            )
+
+        except json.JSONDecodeError as e:
+            # AI返回格式错误，尝试生成通用建议
+            generic_hints = {}
+            for error in request.validation_errors:
+                field = error.get("field", "unknown")
+                message = error.get("message", "校验失败")
+                generic_hints[field] = f"请检查此字段: {message}"
+
+            return ValidationFeedbackResponse(
+                success=True,
+                correction_hints=generic_hints,
+                explanation=f"AI格式解析失败，已生成通用建议: {str(e)}",
+                confidence=0.3,
+                session_id=request.session_id
+            )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        return ValidationFeedbackResponse(
+            success=False,
+            correction_hints={},
+            explanation=f"生成修正建议失败: {str(e)}",
+            confidence=0,
+            session_id=request.session_id
         )
 
 

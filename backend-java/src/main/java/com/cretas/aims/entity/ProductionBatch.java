@@ -204,6 +204,29 @@ public class ProductionBatch extends BaseEntity {
     @Column(name = "created_by")
     private Long createdBy;
 
+    // ==================== Sprint 2 S2-4: 拍照证据 ====================
+
+    /**
+     * 是否需要拍照证据
+     * 来自 SopConfig.photoConfig 或 ProductType 配置
+     */
+    @Builder.Default
+    @Column(name = "photo_required")
+    private Boolean photoRequired = false;
+
+    /**
+     * 关联的 SOP 配置 ID
+     */
+    @Column(name = "sop_config_id", length = 50)
+    private String sopConfigId;
+
+    /**
+     * 已完成拍照的环节列表 (JSON数组)
+     * 格式: ["RECEIVING", "SLICING", "PACKAGING"]
+     */
+    @Column(name = "photo_completed_stages", columnDefinition = "JSON")
+    private String photoCompletedStages;
+
     // ==========================================
     // 注意: createdAt 和 updatedAt 字段已从 BaseEntity 继承
     // 不再需要在此定义，避免字段重复

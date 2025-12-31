@@ -188,4 +188,47 @@ public class ProductionPlanDTO {
 
     @Schema(description = "混批关联订单ID列表")
     private List<String> relatedOrders;
+
+    // ======= 强制插单审批字段 =======
+
+    @Schema(description = "是否为强制插单")
+    private Boolean isForceInserted;
+
+    @Schema(description = "是否需要审批")
+    private Boolean requiresApproval;
+
+    @Schema(description = "审批状态: PENDING/APPROVED/REJECTED")
+    private String approvalStatus;
+
+    @Schema(description = "审批人ID")
+    private Long approverId;
+
+    @Schema(description = "审批人姓名")
+    private String approverName;
+
+    @Schema(description = "审批时间")
+    private LocalDateTime approvedAt;
+
+    @Schema(description = "审批备注/理由")
+    private String approvalComment;
+
+    @Schema(description = "强制插单原因")
+    private String forceInsertReason;
+
+    @Schema(description = "强制插单操作人ID")
+    private Long forceInsertBy;
+
+    @Schema(description = "强制插单时间")
+    private LocalDateTime forceInsertedAt;
+
+    // ======= 紧急调度相关字段 =======
+
+    @Schema(description = "当前完成概率 (0-1)")
+    private BigDecimal currentProbability;
+
+    @Schema(description = "概率更新时间")
+    private LocalDateTime probabilityUpdatedAt;
+
+    @Schema(description = "产品类型名称")
+    private String productTypeName;
 }

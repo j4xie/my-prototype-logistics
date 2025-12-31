@@ -10,6 +10,7 @@ import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import com.cretas.aims.entity.enums.ProcessingStageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -17,7 +18,11 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 产品类型控制器
@@ -214,5 +219,140 @@ public class ProductTypeController {
         log.info("初始化默认产品类型: factoryId={}", factoryId);
         productTypeService.initializeDefaultProductTypes(factoryId);
         return ApiResponse.success();
+    }
+
+    // ==================== Phase 5: SKU Configuration Endpoints ====================
+
+    /**
+     * 获取所有可用的加工环节类型
+     * 用于前端下拉选择
+     */
+    @GetMapping("/processing-stages")
+    @Operation(summary = "获取加工环节类型列表", description = "获取所有可用的加工环节类型，用于配置产品加工步骤")
+    public ApiResponse<List<Map<String, String>>> getProcessingStages(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+        log.info("获取加工环节类型列表: factoryId={}", factoryId);
+
+        List<Map<String, String>> stages = Arrays.stream(ProcessingStageType.values())
+                .map(stage -> {
+                    Map<String, String> map = new HashMap<>();
+                    map.put("value", stage.name());
+                    map.put("label", stage.getName());
+                    map.put("description", stage.getDescription());
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponse.success(stages);
+    }
+
+    /**
+     * 更新产品类型的 SKU 配置
+     * 仅更新调度相关字段：workHours, processingSteps, skillRequirements, equipmentIds, qualityCheckIds, complexityScore
+     */
+    @PutMapping("/{id}/config")
+    @Operation(summary = "更新SKU配置", description = "更新产品类型的调度相关配置（工时、加工步骤、技能要求等）")
+    public ApiResponse<ProductTypeDTO> updateProductTypeConfig(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "产品类型ID") String id,
+            @RequestBody @Valid @Parameter(description = "SKU配置信息") ProductTypeDTO configDto) {
+        log.info("更新SKU配置: factoryId={}, id={}", factoryId, id);
+
+        // 获取现有产品类型
+        ProductTypeDTO existing = productTypeService.getProductTypeById(factoryId, id);
+        if (existing == null) {
+            return ApiResponse.error(404, "产品类型不存在");
+        }
+
+        // 仅更新 SKU 配置字段，保留其他字段不变
+        existing.setWorkHours(configDto.getWorkHours());
+        existing.setProcessingSteps(configDto.getProcessingSteps());
+        existing.setSkillRequirements(configDto.getSkillRequirements());
+        existing.setEquipmentIds(configDto.getEquipmentIds());
+        existing.setQualityCheckIds(configDto.getQualityCheckIds());
+        existing.setComplexityScore(configDto.getComplexityScore());
+
+        ProductTypeDTO result = productTypeService.updateProductType(factoryId, id, existing);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取产品类型的调度信息
+     * 返回调度系统所需的关键字段，格式化为调度服务可用的结构
+     */
+    @GetMapping("/{id}/scheduling-info")
+    @Operation(summary = "获取调度信息", description = "获取产品类型的调度相关信息，供调度系统使用")
+    public ApiResponse<Map<String, Object>> getSchedulingInfo(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "产品类型ID") String id) {
+        log.info("获取产品类型调度信息: factoryId={}, id={}", factoryId, id);
+
+        ProductTypeDTO productType = productTypeService.getProductTypeById(factoryId, id);
+        if (productType == null) {
+            return ApiResponse.error(404, "产品类型不存在");
+        }
+
+        // 构建调度系统所需的信息
+        Map<String, Object> schedulingInfo = new HashMap<>();
+        schedulingInfo.put("productTypeId", productType.getId());
+        schedulingInfo.put("productCode", productType.getCode());
+        schedulingInfo.put("productName", productType.getName());
+        schedulingInfo.put("category", productType.getCategory());
+
+        // 调度相关字段
+        schedulingInfo.put("workHours", productType.getWorkHours());
+        schedulingInfo.put("productionTimeMinutes", productType.getProductionTimeMinutes());
+        schedulingInfo.put("complexityScore", productType.getComplexityScore());
+
+        // 加工步骤
+        schedulingInfo.put("processingSteps", productType.getProcessingSteps());
+        schedulingInfo.put("stepCount", productType.getProcessingSteps() != null
+                ? productType.getProcessingSteps().size() : 0);
+
+        // 技能要求
+        schedulingInfo.put("skillRequirements", productType.getSkillRequirements());
+
+        // 资源关联
+        schedulingInfo.put("equipmentIds", productType.getEquipmentIds());
+        schedulingInfo.put("qualityCheckIds", productType.getQualityCheckIds());
+
+        return ApiResponse.success(schedulingInfo);
+    }
+
+    /**
+     * 批量获取产品类型的调度信息
+     * 用于调度系统一次性加载多个产品类型
+     */
+    @PostMapping("/scheduling-info/batch")
+    @Operation(summary = "批量获取调度信息", description = "批量获取多个产品类型的调度相关信息")
+    public ApiResponse<List<Map<String, Object>>> getSchedulingInfoBatch(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestBody @NotEmpty @Parameter(description = "产品类型ID列表") List<String> productTypeIds) {
+        log.info("批量获取产品类型调度信息: factoryId={}, count={}", factoryId, productTypeIds.size());
+
+        List<Map<String, Object>> result = productTypeIds.stream()
+                .map(id -> {
+                    ProductTypeDTO productType = productTypeService.getProductTypeById(factoryId, id);
+                    if (productType == null) {
+                        Map<String, Object> notFound = new HashMap<>();
+                        notFound.put("productTypeId", id);
+                        notFound.put("error", "产品类型不存在");
+                        return notFound;
+                    }
+
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("productTypeId", productType.getId());
+                    info.put("productCode", productType.getCode());
+                    info.put("productName", productType.getName());
+                    info.put("workHours", productType.getWorkHours());
+                    info.put("complexityScore", productType.getComplexityScore());
+                    info.put("processingSteps", productType.getProcessingSteps());
+                    info.put("skillRequirements", productType.getSkillRequirements());
+                    info.put("equipmentIds", productType.getEquipmentIds());
+                    return info;
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponse.success(result);
     }
 }

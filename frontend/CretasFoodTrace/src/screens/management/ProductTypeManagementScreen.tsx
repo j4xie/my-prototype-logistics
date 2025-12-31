@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import {
   Text,
@@ -14,13 +14,18 @@ import {
   Button,
   ActivityIndicator,
   Menu,
+  Divider,
+  SegmentedButtons,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import { productTypeApiClient } from '../../services/api/productTypeApiClient';
+import { productTypeApiClient, ProcessingStep, SkillRequirement, ProcessingStageOption } from '../../services/api/productTypeApiClient';
+import { equipmentApiClient, Equipment } from '../../services/api/equipmentApiClient';
+import qualityCheckItemApi, { QualityCheckItem } from '../../services/api/qualityCheckItemApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
 import { logger } from '../../utils/logger';
 import { canManageBasicData, getPermissionDebugInfo } from '../../utils/permissionHelper';
+import { ProcessingStepsEditor } from '../../components/processing';
 
 // 创建ProductTypeManagement专用logger
 const productTypeLogger = logger.createContextLogger('ProductTypeManagement');
@@ -28,6 +33,13 @@ const productTypeLogger = logger.createContextLogger('ProductTypeManagement');
 // 下拉选项常量
 const UNIT_OPTIONS = ['kg', '件', '盒', '包', '条', '桶'] as const;
 const CATEGORY_OPTIONS = ['海鲜', '冷冻水产', '加工成品', '半成品'] as const;
+const COMPLEXITY_OPTIONS = [
+  { value: 1, label: '1 - 简单' },
+  { value: 2, label: '2 - 较简单' },
+  { value: 3, label: '3 - 中等' },
+  { value: 4, label: '4 - 较复杂' },
+  { value: 5, label: '5 - 复杂' },
+];
 
 interface ProductType {
   id: string;
@@ -37,10 +49,19 @@ interface ProductType {
   unit?: string;
   isActive: boolean;
   createdAt: string;
+  // SKU Configuration fields
+  workHours?: number;
+  processingSteps?: ProcessingStep[];
+  skillRequirements?: SkillRequirement;
+  equipmentIds?: string[];
+  qualityCheckIds?: string[];
+  complexityScore?: number;
+  productionTimeMinutes?: number;
 }
 
 /**
  * 产品类型管理页面
+ * Phase 5: 增强 SKU 配置功能
  */
 export default function ProductTypeManagementScreen() {
   const navigation = useNavigation();
@@ -51,12 +72,40 @@ export default function ProductTypeManagementScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<ProductType | null>(null);
 
+  // SKU Config Modal
+  const [skuConfigModalVisible, setSkuConfigModalVisible] = useState(false);
+  const [configItem, setConfigItem] = useState<ProductType | null>(null);
+  const [savingConfig, setSavingConfig] = useState(false);
+
+  // Available options for SKU config
+  const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
+  const [qualityCheckList, setQualityCheckList] = useState<QualityCheckItem[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+
   // 下拉菜单可见状态
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [unitMenuVisible, setUnitMenuVisible] = useState(false);
+  const [complexityMenuVisible, setComplexityMenuVisible] = useState(false);
 
   // 权限检查
   const canManage = canManageBasicData(user);
+
+  // SKU Config form state
+  const [skuConfig, setSkuConfig] = useState<{
+    workHours: string;
+    processingSteps: ProcessingStep[];
+    skillRequirements: SkillRequirement;
+    equipmentIds: string[];
+    qualityCheckIds: string[];
+    complexityScore: number;
+  }>({
+    workHours: '',
+    processingSteps: [],
+    skillRequirements: { minLevel: 1, preferredLevel: 3, specialSkills: [] },
+    equipmentIds: [],
+    qualityCheckIds: [],
+    complexityScore: 3,
+  });
 
   // 权限检查日志
   useEffect(() => {
@@ -105,6 +154,14 @@ export default function ProductTypeManagementScreen() {
           unit: item.unit || 'kg',
           isActive: item.isActive !== false,
           createdAt: item.createdAt || new Date().toISOString(),
+          // SKU Config fields
+          workHours: item.workHours,
+          processingSteps: item.processingSteps || [],
+          skillRequirements: item.skillRequirements || { minLevel: 1, preferredLevel: 3, specialSkills: [] },
+          equipmentIds: item.equipmentIds || [],
+          qualityCheckIds: item.qualityCheckIds || [],
+          complexityScore: item.complexityScore || 3,
+          productionTimeMinutes: item.productionTimeMinutes,
         }));
         setProductTypes(mappedTypes);
       } else {
@@ -121,6 +178,41 @@ export default function ProductTypeManagementScreen() {
     }
   };
 
+  // Load equipment and quality check items for SKU config
+  const loadSkuConfigOptions = useCallback(async () => {
+    if (!factoryId) return;
+
+    setLoadingOptions(true);
+    try {
+      const [equipmentRes, qcRes] = await Promise.allSettled([
+        equipmentApiClient.getEquipments({ factoryId, status: 'active' }),
+        qualityCheckItemApi.list(factoryId, 1, 100),
+      ]);
+
+      if (equipmentRes.status === 'fulfilled') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const eqResult = equipmentRes.value as any;
+        const eqData = eqResult?.data?.content || eqResult?.data || eqResult?.content || eqResult || [];
+        setEquipmentList(Array.isArray(eqData) ? eqData : []);
+      } else {
+        productTypeLogger.warn('加载设备列表失败', { reason: equipmentRes.reason });
+      }
+
+      if (qcRes.status === 'fulfilled') {
+        // qualityCheckItemApi.list returns PaginatedResponse<QualityCheckItem>
+        const qcResult = qcRes.value;
+        const qcData = qcResult?.content || [];
+        setQualityCheckList(Array.isArray(qcData) ? qcData : []);
+      } else {
+        productTypeLogger.warn('加载质检项失败', { reason: qcRes.reason });
+      }
+    } catch (error) {
+      productTypeLogger.error('加载SKU配置选项失败', error as Error);
+    } finally {
+      setLoadingOptions(false);
+    }
+  }, [factoryId]);
+
   const handleAdd = () => {
     setEditingItem(null);
     setFormData({ name: '', unit: 'kg', category: '海鲜' });
@@ -135,6 +227,48 @@ export default function ProductTypeManagementScreen() {
       category: item.category || '海鲜',
     });
     setModalVisible(true);
+  };
+
+  const handleConfigSku = (item: ProductType) => {
+    setConfigItem(item);
+    setSkuConfig({
+      workHours: item.workHours?.toString() || '',
+      processingSteps: item.processingSteps || [],
+      skillRequirements: item.skillRequirements || { minLevel: 1, preferredLevel: 3, specialSkills: [] },
+      equipmentIds: item.equipmentIds || [],
+      qualityCheckIds: item.qualityCheckIds || [],
+      complexityScore: item.complexityScore || 3,
+    });
+    loadSkuConfigOptions();
+    setSkuConfigModalVisible(true);
+  };
+
+  const handleSaveSkuConfig = async () => {
+    if (!configItem) return;
+
+    setSavingConfig(true);
+    try {
+      const config = {
+        workHours: skuConfig.workHours ? parseFloat(skuConfig.workHours) : undefined,
+        processingSteps: skuConfig.processingSteps,
+        skillRequirements: skuConfig.skillRequirements,
+        equipmentIds: skuConfig.equipmentIds,
+        qualityCheckIds: skuConfig.qualityCheckIds,
+        complexityScore: skuConfig.complexityScore,
+      };
+
+      await productTypeApiClient.updateProductTypeConfig(configItem.id, config, factoryId);
+      Alert.alert('成功', 'SKU配置已保存');
+      productTypeLogger.info('SKU配置保存成功', { id: configItem.id, name: configItem.name });
+      setSkuConfigModalVisible(false);
+      loadProductTypes();
+    } catch (error) {
+      productTypeLogger.error('保存SKU配置失败', error as Error, { id: configItem.id });
+      const errorMessage = error instanceof Error ? error.message : '保存失败';
+      Alert.alert('错误', errorMessage);
+    } finally {
+      setSavingConfig(false);
+    }
   };
 
   const handleSave = async () => {
@@ -219,6 +353,24 @@ export default function ProductTypeManagementScreen() {
     }
   };
 
+  const toggleEquipmentSelection = (eqId: string) => {
+    setSkuConfig(prev => ({
+      ...prev,
+      equipmentIds: prev.equipmentIds.includes(eqId)
+        ? prev.equipmentIds.filter(id => id !== eqId)
+        : [...prev.equipmentIds, eqId],
+    }));
+  };
+
+  const toggleQualityCheckSelection = (qcId: string) => {
+    setSkuConfig(prev => ({
+      ...prev,
+      qualityCheckIds: prev.qualityCheckIds.includes(qcId)
+        ? prev.qualityCheckIds.filter(id => id !== qcId)
+        : [...prev.qualityCheckIds, qcId],
+    }));
+  };
+
   // 无权限界面
   if (!canManage) {
     return (
@@ -263,9 +415,9 @@ export default function ProductTypeManagementScreen() {
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {new Set(productTypes.map(p => p.category)).size}
+                  {productTypes.filter(p => (p.processingSteps?.length ?? 0) > 0).length}
                 </Text>
-                <Text style={styles.statLabel}>分类数</Text>
+                <Text style={styles.statLabel}>已配置SKU</Text>
               </View>
             </View>
           </Card.Content>
@@ -332,6 +484,27 @@ export default function ProductTypeManagementScreen() {
                   )}
                 </View>
 
+                {/* SKU Config Summary */}
+                {(item.processingSteps?.length ?? 0) > 0 && (
+                  <View style={styles.skuSummary}>
+                    <View style={styles.skuChipRow}>
+                      <Chip icon="cog" compact style={styles.skuChip}>
+                        {item.processingSteps?.length || 0}个工序
+                      </Chip>
+                      {item.complexityScore && (
+                        <Chip icon="star" compact style={styles.skuChip}>
+                          复杂度 {item.complexityScore}
+                        </Chip>
+                      )}
+                      {item.workHours && (
+                        <Chip icon="clock" compact style={styles.skuChip}>
+                          {item.workHours}h
+                        </Chip>
+                      )}
+                    </View>
+                  </View>
+                )}
+
                 <View style={styles.itemFooter}>
                   <Chip
                     icon={item.isActive ? 'check-circle' : 'close-circle'}
@@ -347,6 +520,15 @@ export default function ProductTypeManagementScreen() {
                   >
                     {item.isActive ? '启用中' : '已停用'}
                   </Chip>
+                  <Button
+                    mode="outlined"
+                    compact
+                    icon="cog"
+                    onPress={() => handleConfigSku(item)}
+                    style={styles.configButton}
+                  >
+                    配置SKU
+                  </Button>
                 </View>
               </Card.Content>
             </Card>
@@ -467,6 +649,205 @@ export default function ProductTypeManagementScreen() {
               {editingItem ? '更新' : '创建'}
             </Button>
           </View>
+        </Modal>
+
+        {/* SKU Config Modal */}
+        <Modal
+          visible={skuConfigModalVisible}
+          onDismiss={() => setSkuConfigModalVisible(false)}
+          contentContainerStyle={styles.skuModalContent}
+        >
+          <ScrollView>
+            <Text style={styles.modalTitle}>
+              配置 SKU: {configItem?.name}
+            </Text>
+
+            {loadingOptions ? (
+              <ActivityIndicator style={{ marginVertical: 20 }} />
+            ) : (
+              <>
+                {/* 工时配置 */}
+                <View style={styles.configSection}>
+                  <Text style={styles.sectionTitle}>工时配置</Text>
+                  <TextInput
+                    label="标准工时 (小时)"
+                    value={skuConfig.workHours}
+                    onChangeText={(text) => setSkuConfig({ ...skuConfig, workHours: text })}
+                    mode="outlined"
+                    keyboardType="decimal-pad"
+                    placeholder="例如: 2.5"
+                    style={styles.input}
+                  />
+                </View>
+
+                <Divider style={styles.divider} />
+
+                {/* 复杂度评分 */}
+                <View style={styles.configSection}>
+                  <Text style={styles.sectionTitle}>复杂度评分 (LinUCB 特征)</Text>
+                  <View style={styles.dropdownContainer}>
+                    <Menu
+                      visible={complexityMenuVisible}
+                      onDismiss={() => setComplexityMenuVisible(false)}
+                      anchor={
+                        <TouchableOpacity
+                          style={styles.dropdownButton}
+                          onPress={() => setComplexityMenuVisible(true)}
+                        >
+                          <Text style={styles.dropdownButtonText}>
+                            {COMPLEXITY_OPTIONS.find(o => o.value === skuConfig.complexityScore)?.label || `${skuConfig.complexityScore}`}
+                          </Text>
+                          <List.Icon icon="chevron-down" />
+                        </TouchableOpacity>
+                      }
+                    >
+                      {COMPLEXITY_OPTIONS.map((option) => (
+                        <Menu.Item
+                          key={option.value}
+                          onPress={() => {
+                            setSkuConfig({ ...skuConfig, complexityScore: option.value });
+                            setComplexityMenuVisible(false);
+                          }}
+                          title={option.label}
+                        />
+                      ))}
+                    </Menu>
+                  </View>
+                </View>
+
+                <Divider style={styles.divider} />
+
+                {/* 加工步骤 */}
+                <View style={styles.configSection}>
+                  <Text style={styles.sectionTitle}>加工步骤</Text>
+                  <ProcessingStepsEditor
+                    value={skuConfig.processingSteps}
+                    onChange={(steps) => setSkuConfig({ ...skuConfig, processingSteps: steps })}
+                    label=""
+                  />
+                </View>
+
+                <Divider style={styles.divider} />
+
+                {/* 技能要求 */}
+                <View style={styles.configSection}>
+                  <Text style={styles.sectionTitle}>技能要求</Text>
+                  <View style={styles.skillRow}>
+                    <View style={styles.skillInput}>
+                      <TextInput
+                        label="最低等级"
+                        value={skuConfig.skillRequirements.minLevel?.toString() || '1'}
+                        onChangeText={(text) => {
+                          const val = parseInt(text) || 1;
+                          setSkuConfig({
+                            ...skuConfig,
+                            skillRequirements: { ...skuConfig.skillRequirements, minLevel: Math.min(5, Math.max(1, val)) },
+                          });
+                        }}
+                        mode="outlined"
+                        keyboardType="number-pad"
+                        style={styles.halfInput}
+                      />
+                    </View>
+                    <View style={styles.skillInput}>
+                      <TextInput
+                        label="建议等级"
+                        value={skuConfig.skillRequirements.preferredLevel?.toString() || '3'}
+                        onChangeText={(text) => {
+                          const val = parseInt(text) || 3;
+                          setSkuConfig({
+                            ...skuConfig,
+                            skillRequirements: { ...skuConfig.skillRequirements, preferredLevel: Math.min(5, Math.max(1, val)) },
+                          });
+                        }}
+                        mode="outlined"
+                        keyboardType="number-pad"
+                        style={styles.halfInput}
+                      />
+                    </View>
+                  </View>
+                  <Text style={styles.hintText}>等级范围 1-5</Text>
+                </View>
+
+                <Divider style={styles.divider} />
+
+                {/* 关联设备 */}
+                <View style={styles.configSection}>
+                  <Text style={styles.sectionTitle}>关联设备</Text>
+                  {equipmentList.length === 0 ? (
+                    <Text style={styles.emptyListText}>暂无可用设备</Text>
+                  ) : (
+                    <View style={styles.selectionList}>
+                      {equipmentList.slice(0, 10).map((eq) => {
+                        const eqId = eq.id?.toString() || '';
+                        const isSelected = skuConfig.equipmentIds.includes(eqId);
+                        return (
+                          <Chip
+                            key={eqId}
+                            mode={isSelected ? 'flat' : 'outlined'}
+                            selected={isSelected}
+                            onPress={() => toggleEquipmentSelection(eqId)}
+                            style={styles.selectChip}
+                            icon={isSelected ? 'check' : 'plus'}
+                          >
+                            {eq.equipmentName || eq.name || eq.code}
+                          </Chip>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+
+                <Divider style={styles.divider} />
+
+                {/* 关联质检项 */}
+                <View style={styles.configSection}>
+                  <Text style={styles.sectionTitle}>关联质检项</Text>
+                  {qualityCheckList.length === 0 ? (
+                    <Text style={styles.emptyListText}>暂无可用质检项</Text>
+                  ) : (
+                    <View style={styles.selectionList}>
+                      {qualityCheckList.slice(0, 10).map((qc) => {
+                        const isSelected = skuConfig.qualityCheckIds.includes(qc.id);
+                        return (
+                          <Chip
+                            key={qc.id}
+                            mode={isSelected ? 'flat' : 'outlined'}
+                            selected={isSelected}
+                            onPress={() => toggleQualityCheckSelection(qc.id)}
+                            style={styles.selectChip}
+                            icon={isSelected ? 'check' : 'plus'}
+                          >
+                            {qc.itemName}
+                          </Chip>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
+
+            <View style={styles.modalActions}>
+              <Button
+                mode="outlined"
+                onPress={() => setSkuConfigModalVisible(false)}
+                style={styles.modalButton}
+                disabled={savingConfig}
+              >
+                取消
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleSaveSkuConfig}
+                style={styles.modalButton}
+                loading={savingConfig}
+                disabled={savingConfig}
+              >
+                保存配置
+              </Button>
+            </View>
+          </ScrollView>
         </Modal>
       </Portal>
 
@@ -598,12 +979,28 @@ const styles = StyleSheet.create({
     height: 31,
     backgroundColor: '#E3F2FD',
   },
+  skuSummary: {
+    marginBottom: 8,
+  },
+  skuChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  skuChip: {
+    height: 28,
+    backgroundColor: '#FFF3E0',
+  },
   itemFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   statusChip: {
     height: 31,
+  },
+  configButton: {
+    borderColor: '#FF9800',
   },
   fab: {
     position: 'absolute',
@@ -617,6 +1014,14 @@ const styles = StyleSheet.create({
     margin: 20,
     borderRadius: 8,
   },
+  skuModalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 16,
+    marginVertical: 40,
+    borderRadius: 8,
+    maxHeight: '90%',
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -624,6 +1029,9 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 16,
+  },
+  halfInput: {
+    flex: 1,
   },
   dropdownContainer: {
     marginBottom: 16,
@@ -658,12 +1066,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12,
-    marginTop: 8,
+    marginTop: 16,
   },
   modalButton: {
     minWidth: 100,
   },
   bottomPadding: {
     height: 80,
+  },
+  configSection: {
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  divider: {
+    marginVertical: 16,
+  },
+  skillRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  skillInput: {
+    flex: 1,
+  },
+  selectionList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  selectChip: {
+    marginBottom: 4,
+  },
+  emptyListText: {
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 12,
   },
 });

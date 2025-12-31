@@ -1,6 +1,6 @@
 package com.cretas.aims.controller;
 
-import com.cretas.aims.dto.ApiResponse;
+import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.config.*;
 import com.cretas.aims.entity.enums.QualityCheckCategory;
 import com.cretas.aims.service.QualityCheckItemService;
@@ -44,7 +44,7 @@ public class QualityCheckItemController {
             HttpServletRequest httpRequest) {
         Long userId = getUserId(httpRequest);
         QualityCheckItemDTO item = qualityCheckItemService.createQualityCheckItem(factoryId, request, userId);
-        return ResponseEntity.ok(ApiResponse.success(item, "创建成功"));
+        return ResponseEntity.ok(ApiResponse.success("创建成功", item));
     }
 
     /**
@@ -56,7 +56,7 @@ public class QualityCheckItemController {
             @PathVariable String itemId,
             @Valid @RequestBody UpdateQualityCheckItemRequest request) {
         QualityCheckItemDTO item = qualityCheckItemService.updateQualityCheckItem(factoryId, itemId, request);
-        return ResponseEntity.ok(ApiResponse.success(item, "更新成功"));
+        return ResponseEntity.ok(ApiResponse.success("更新成功", item));
     }
 
     /**
@@ -67,7 +67,7 @@ public class QualityCheckItemController {
             @PathVariable String factoryId,
             @PathVariable String itemId) {
         qualityCheckItemService.deleteQualityCheckItem(factoryId, itemId);
-        return ResponseEntity.ok(ApiResponse.success(null, "删除成功"));
+        return ResponseEntity.ok(ApiResponse.success("删除成功", null));
     }
 
     /**
@@ -179,7 +179,7 @@ public class QualityCheckItemController {
             @PathVariable String factoryId,
             @RequestBody List<String> itemIds) {
         int count = qualityCheckItemService.batchUpdateEnabled(itemIds, true);
-        return ResponseEntity.ok(ApiResponse.success(count, "批量启用成功，共 " + count + " 项"));
+        return ResponseEntity.ok(ApiResponse.success("批量启用成功，共 " + count + " 项", count));
     }
 
     /**
@@ -190,7 +190,7 @@ public class QualityCheckItemController {
             @PathVariable String factoryId,
             @RequestBody List<String> itemIds) {
         int count = qualityCheckItemService.batchUpdateEnabled(itemIds, false);
-        return ResponseEntity.ok(ApiResponse.success(count, "批量禁用成功，共 " + count + " 项"));
+        return ResponseEntity.ok(ApiResponse.success("批量禁用成功，共 " + count + " 项", count));
     }
 
     /**
@@ -202,7 +202,7 @@ public class QualityCheckItemController {
             HttpServletRequest httpRequest) {
         Long userId = getUserId(httpRequest);
         List<QualityCheckItemDTO> items = qualityCheckItemService.copyFromSystemTemplate(factoryId, userId);
-        return ResponseEntity.ok(ApiResponse.success(items, "复制成功，共 " + items.size() + " 项"));
+        return ResponseEntity.ok(ApiResponse.success("复制成功，共 " + items.size() + " 项", items));
     }
 
     // ==================== 绑定管理 ====================
@@ -215,7 +215,7 @@ public class QualityCheckItemController {
             @PathVariable String factoryId,
             @Valid @RequestBody BindQualityCheckItemRequest request) {
         QualityCheckItemBindingDTO binding = qualityCheckItemService.bindToProduct(factoryId, request);
-        return ResponseEntity.ok(ApiResponse.success(binding, "绑定成功"));
+        return ResponseEntity.ok(ApiResponse.success("绑定成功", binding));
     }
 
     /**
@@ -226,7 +226,7 @@ public class QualityCheckItemController {
             @PathVariable String factoryId,
             @PathVariable String bindingId) {
         qualityCheckItemService.unbindFromProduct(factoryId, bindingId);
-        return ResponseEntity.ok(ApiResponse.success(null, "解除绑定成功"));
+        return ResponseEntity.ok(ApiResponse.success("解除绑定成功", null));
     }
 
     /**
@@ -238,7 +238,7 @@ public class QualityCheckItemController {
             @PathVariable String bindingId,
             @Valid @RequestBody BindQualityCheckItemRequest request) {
         QualityCheckItemBindingDTO binding = qualityCheckItemService.updateBinding(factoryId, bindingId, request);
-        return ResponseEntity.ok(ApiResponse.success(binding, "更新成功"));
+        return ResponseEntity.ok(ApiResponse.success("更新成功", binding));
     }
 
     /**
@@ -261,7 +261,7 @@ public class QualityCheckItemController {
             @RequestParam String productTypeId,
             @RequestBody List<String> itemIds) {
         List<QualityCheckItemBindingDTO> bindings = qualityCheckItemService.batchBindToProduct(factoryId, productTypeId, itemIds);
-        return ResponseEntity.ok(ApiResponse.success(bindings, "批量绑定成功，共 " + bindings.size() + " 项"));
+        return ResponseEntity.ok(ApiResponse.success("批量绑定成功，共 " + bindings.size() + " 项", bindings));
     }
 
     /**
@@ -286,7 +286,7 @@ public class QualityCheckItemController {
             @RequestParam(required = false) String productTypeId,
             @RequestBody Object value) {
         boolean valid = qualityCheckItemService.validateCheckValue(factoryId, itemId, productTypeId, value);
-        return ResponseEntity.ok(ApiResponse.success(valid, valid ? "合格" : "不合格"));
+        return ResponseEntity.ok(ApiResponse.success(valid ? "合格" : "不合格", valid));
     }
 
     // ==================== 辅助方法 ====================

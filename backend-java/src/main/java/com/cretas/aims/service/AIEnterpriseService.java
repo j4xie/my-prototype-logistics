@@ -4,9 +4,13 @@ import com.cretas.aims.dto.MobileDTO;
 import com.cretas.aims.entity.AIAnalysisResult;
 import com.cretas.aims.entity.AIAuditLog;
 import com.cretas.aims.entity.AIQuotaUsage;
+import com.cretas.aims.entity.config.AIQuotaConfig;
 import com.cretas.aims.repository.AIAnalysisResultRepository;
 import com.cretas.aims.repository.AIAuditLogRepository;
 import com.cretas.aims.repository.AIQuotaUsageRepository;
+import com.cretas.aims.repository.config.AIQuotaConfigRepository;
+import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.exception.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +70,16 @@ public class AIEnterpriseService {
     private AIAuditLogRepository auditLogRepository;
 
     @Autowired
+    private AIQuotaConfigRepository quotaConfigRepository;
+
+    @Autowired
     private ProcessingService processingService;
+
+    @Autowired
+    private AIIntentService aiIntentService;
+
+    @Autowired
+    private com.cretas.aims.utils.JwtUtil jwtUtil;
 
     @Value("${cretas.ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -88,7 +101,7 @@ public class AIEnterpriseService {
                                                          MobileDTO.AICostAnalysisRequest request,
                                                          HttpServletRequest httpRequest) {
         long startTime = System.currentTimeMillis();
-        String questionType = determineQuestionType(request);
+        String questionType = determineQuestionType(request, httpRequest);
         boolean cacheHit = false;
         boolean success = false;
         String errorMessage = null;
@@ -148,10 +161,9 @@ public class AIEnterpriseService {
             }
 
             // 4. 消耗配额
-            if ("followup".equals(questionType)) {
-                consumeQuota(factoryId, 1);
-            } else if ("historical".equals(questionType)) {
-                consumeQuota(factoryId, 5);
+            if ("followup".equals(questionType) || "historical".equals(questionType)) {
+                int quotaCost = getQuotaCostFromConfig(factoryId, questionType);
+                consumeQuota(factoryId, quotaCost);
             }
 
             // 5. 保存结果到缓存
@@ -159,7 +171,8 @@ public class AIEnterpriseService {
                     factoryId, request.getBatchId(), questionType, aiAnalysis, sessionId, request);
 
             // 6. 记录审计日志
-            int quotaCost = "followup".equals(questionType) ? 1 : ("historical".equals(questionType) ? 5 : 0);
+            int quotaCost = ("followup".equals(questionType) || "historical".equals(questionType))
+                    ? getQuotaCostFromConfig(factoryId, questionType) : 0;
             logAuditRecord(factoryId, userId, request, questionType, true, quotaCost,
                            System.currentTimeMillis() - startTime, false, httpRequest);
 
@@ -424,8 +437,9 @@ public class AIEnterpriseService {
             String aiAnalysis = (String) aiResult.get("aiAnalysis");
             String sessionId = (String) aiResult.get("sessionId");
 
-            // 6. 消耗配额（时间范围分析消耗2次）
-            consumeQuota(factoryId, 2);
+            // 6. 消耗配额（从配置读取）
+            int quotaCost = getQuotaCostFromConfig(factoryId, "time_range");
+            consumeQuota(factoryId, quotaCost);
 
             // 7. 保存结果到缓存（7天有效期，包含维度信息）
             AIAnalysisResult result = AIAnalysisResult.builder()
@@ -442,7 +456,7 @@ public class AIEnterpriseService {
             analysisResultRepository.save(result);
 
             // 8. 记录审计日志
-            logAuditRecord(factoryId, userId, null, "time_range", true, 2,
+            logAuditRecord(factoryId, userId, null, "time_range", true, quotaCost,
                     System.currentTimeMillis() - startTime, false, httpRequest);
 
             log.info("时间范围成本分析完成: factoryId={}, reportId={}, 批次数={}",
@@ -548,10 +562,11 @@ public class AIEnterpriseService {
                 connectToPythonSSE(streamUrl, promptMessage, factoryId, emitter);
 
                 // 6. 消耗配额
-                consumeQuota(factoryId, 2);
+                int quotaCost = getQuotaCostFromConfig(factoryId, "time_range");
+                consumeQuota(factoryId, quotaCost);
 
                 // 7. 记录审计日志
-                logAuditRecord(factoryId, userId, null, "time_range_stream", true, 2,
+                logAuditRecord(factoryId, userId, null, "time_range_stream", true, quotaCost,
                         System.currentTimeMillis() - startTime, false, httpRequest);
 
                 log.info("流式时间范围成本分析完成: factoryId={}, 批次数={}, 耗时={}ms",
@@ -982,8 +997,9 @@ public class AIEnterpriseService {
             String sessionId = (String) aiResult.get("sessionId");
             Integer messageCount = (Integer) aiResult.getOrDefault("messageCount", 1);
 
-            // 8. 消耗配额（对比分析消耗3次）
-            consumeQuota(factoryId, 3);
+            // 8. 消耗配额（从配置读取）
+            int quotaCost = getQuotaCostFromConfig(factoryId, "comparison");
+            consumeQuota(factoryId, quotaCost);
 
             // 9. 保存结果到缓存（7天有效期）
             String cacheKey = String.join(",", batchIds);
@@ -1001,7 +1017,7 @@ public class AIEnterpriseService {
             MobileDTO.AICostAnalysisRequest dummyRequest = new MobileDTO.AICostAnalysisRequest();
             dummyRequest.setBatchId(cacheKey);
             dummyRequest.setQuestion(question);
-            logAuditRecord(factoryId, userId, dummyRequest, "comparison", true, 3,
+            logAuditRecord(factoryId, userId, dummyRequest, "comparison", true, quotaCost,
                           System.currentTimeMillis() - startTime, false, httpRequest);
 
             log.info("批次对比分析完成: reportId={}", result.getId());
@@ -1014,7 +1030,7 @@ public class AIEnterpriseService {
                     .messageCount(messageCount)
                     .generatedAt(LocalDateTime.now())
                     .processingTimeMs(System.currentTimeMillis() - startTime)
-                    .quotaConsumed(3)
+                    .quotaConsumed(quotaCost)
                     .build();
 
         } catch (QuotaExceededException e) {
@@ -1101,15 +1117,77 @@ public class AIEnterpriseService {
 
     /**
      * 判断问题类型
+     *
+     * 增强版：使用AI意图识别服务进行智能路由
+     * 1. 优先使用显式指定的reportType
+     * 2. 尝试通过关键词/正则匹配意图
+     * 3. 验证用户角色权限
+     * 4. 根据敏感度决定是否需要审批
+     *
+     * @param request 请求参数
+     * @param httpRequest HTTP请求 (用于提取用户角色)
+     * @return 问题类型/意图代码
      */
-    private String determineQuestionType(MobileDTO.AICostAnalysisRequest request) {
-        if (request.getReportType() != null) {
+    private String determineQuestionType(MobileDTO.AICostAnalysisRequest request, HttpServletRequest httpRequest) {
+        // 1. 优先使用显式指定的reportType (向后兼容)
+        if (request.getReportType() != null && !request.getReportType().isEmpty()) {
             return request.getReportType();
         }
-        if (request.getQuestion() != null && !request.getQuestion().trim().isEmpty()) {
+
+        // 2. 如果没有问题，返回默认
+        String question = request.getQuestion();
+        if (question == null || question.trim().isEmpty()) {
+            return "default";
+        }
+
+        // 3. 使用AI意图识别服务匹配意图
+        Optional<AIIntentConfig> matchedIntent = aiIntentService.recognizeIntent(question);
+        if (matchedIntent.isEmpty()) {
+            log.debug("No intent matched for question: {}, falling back to 'followup'", question);
             return "followup";
         }
-        return "default";
+
+        AIIntentConfig intent = matchedIntent.get();
+        String intentCode = intent.getIntentCode();
+
+        // 4. 验证用户角色权限
+        String userRole = extractUserRoleFromRequest(httpRequest);
+        if (userRole != null && !aiIntentService.hasPermission(intentCode, userRole)) {
+            log.warn("User role '{}' does not have permission for intent: {}", userRole, intentCode);
+            throw new BusinessException("您没有权限执行此类AI操作: " + intent.getIntentName());
+        }
+
+        // 5. 检查是否需要审批 (CRITICAL敏感度)
+        if (aiIntentService.requiresApproval(intentCode)) {
+            log.info("Intent '{}' requires approval, sensitivity level: {}",
+                    intentCode, intent.getSensitivityLevel());
+            // 这里可以触发审批流程，暂时记录日志
+            // TODO: 集成 ApprovalChainService 触发审批
+        }
+
+        log.debug("Intent recognized: {} (category={}, sensitivity={}) for question: {}",
+                intentCode, intent.getIntentCategory(), intent.getSensitivityLevel(), question);
+
+        return intentCode;
+    }
+
+    /**
+     * 从HTTP请求中提取用户角色
+     */
+    private String extractUserRoleFromRequest(HttpServletRequest httpRequest) {
+        if (httpRequest == null) {
+            return null;
+        }
+        try {
+            String authorization = httpRequest.getHeader("Authorization");
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                String token = authorization.substring(7);
+                return jwtUtil.getRoleFromToken(token);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract user role from request: {}", e.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -1136,21 +1214,48 @@ public class AIEnterpriseService {
                 .findByFactoryIdAndWeekStart(factoryId, weekStart)
                 .orElseGet(() -> createNewQuota(factoryId, weekStart));
 
-        // 不同类型消耗不同配额
-        int required = 1;  // 默认1次
-        if ("historical".equals(questionType)) {
-            required = 5;
-        } else if ("comparison".equals(questionType)) {
-            required = 3;
-        } else if ("time_range".equals(questionType)) {
-            required = 2;
-        }
+        // 从数据库获取配额消耗规则
+        int required = getQuotaCostFromConfig(factoryId, questionType);
 
         if (quota.getUsedCount() + required > quota.getQuotaLimit()) {
             throw new QuotaExceededException(
                     String.format("本周配额不足。已使用: %d/%d，需要: %d",
                             quota.getUsedCount(), quota.getQuotaLimit(), required));
         }
+    }
+
+    /**
+     * 从数据库配置获取配额消耗次数
+     * 优先使用工厂级别配置，否则使用全局默认配置
+     */
+    private int getQuotaCostFromConfig(String factoryId, String questionType) {
+        List<AIQuotaConfig> configs = quotaConfigRepository
+                .findByFactoryIdAndQuestionType(factoryId, questionType);
+
+        if (!configs.isEmpty()) {
+            // 返回第一个匹配的配置 (已按优先级排序)
+            return configs.get(0).getQuotaCost();
+        }
+
+        // 如果没有工厂级别配置，查询全局默认配置
+        return getGlobalDefaultQuotaCost(questionType);
+    }
+
+    /**
+     * 获取全局默认配额成本 (从 factory_id='*' 的配置读取)
+     * V-001 修复: 移除硬编码默认值，从数据库配置表读取
+     */
+    private int getGlobalDefaultQuotaCost(String questionType) {
+        List<AIQuotaConfig> globalConfigs = quotaConfigRepository
+                .findByFactoryIdAndQuestionType("*", questionType);
+
+        if (!globalConfigs.isEmpty()) {
+            return globalConfigs.get(0).getQuotaCost();
+        }
+
+        // 仅作为最后保底（理论上不应到达这里，因为初始化脚本已插入全局默认值）
+        log.warn("未找到全局配额配置: questionType={}, 使用保底默认值1", questionType);
+        return 1;
     }
 
     /**
@@ -1399,15 +1504,45 @@ public class AIEnterpriseService {
 
     /**
      * 创建新配额记录
+     * V-001 修复: 从配置表读取默认周配额限制，而非硬编码
      */
     private AIQuotaUsage createNewQuota(String factoryId, LocalDate weekStart) {
+        int weeklyLimit = getDefaultWeeklyLimit(factoryId);
         AIQuotaUsage newQuota = AIQuotaUsage.builder()
                 .factoryId(factoryId)
                 .weekStart(weekStart)
                 .usedCount(0)
-                .quotaLimit(100)
+                .quotaLimit(weeklyLimit)
                 .build();
         return quotaUsageRepository.save(newQuota);
+    }
+
+    /**
+     * 获取默认周配额限制 (优先工厂级别，然后全局默认)
+     * V-001 修复: 从数据库配置表读取，而非硬编码 100
+     */
+    private int getDefaultWeeklyLimit(String factoryId) {
+        // 1. 先查工厂级别的 weeklyLimit 配置
+        List<AIQuotaConfig> factoryConfigs = quotaConfigRepository
+                .findByFactoryIdAndQuestionType(factoryId, "default");
+        for (AIQuotaConfig config : factoryConfigs) {
+            if (config.getWeeklyLimit() != null && config.getEnabled()) {
+                return config.getWeeklyLimit();
+            }
+        }
+
+        // 2. 再查全局默认配置
+        List<AIQuotaConfig> globalConfigs = quotaConfigRepository
+                .findByFactoryIdAndQuestionType("*", "default");
+        for (AIQuotaConfig config : globalConfigs) {
+            if (config.getWeeklyLimit() != null && config.getEnabled()) {
+                return config.getWeeklyLimit();
+            }
+        }
+
+        // 3. 仅作为最后保底
+        log.warn("未找到周配额限制配置: factoryId={}, 使用保底默认值100", factoryId);
+        return 100;
     }
 
     /**

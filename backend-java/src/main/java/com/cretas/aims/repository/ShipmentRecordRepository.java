@@ -83,4 +83,39 @@ public interface ShipmentRecordRepository extends JpaRepository<ShipmentRecord, 
            "AND s.productName LIKE %:batchNumber% ORDER BY s.shipmentDate DESC")
     List<ShipmentRecord> findByFactoryIdAndBatchNumber(@Param("factoryId") String factoryId,
                                                         @Param("batchNumber") String batchNumber);
+
+    /**
+     * 计算指定日期范围内的总收入
+     */
+    @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM ShipmentRecord s WHERE s.factoryId = :factoryId " +
+           "AND s.shipmentDate BETWEEN :startDate AND :endDate AND s.status IN ('shipped', 'delivered')")
+    java.math.BigDecimal calculateTotalRevenue(@Param("factoryId") String factoryId,
+                                                @Param("startDate") LocalDate startDate,
+                                                @Param("endDate") LocalDate endDate);
+
+    /**
+     * 统计指定日期范围内的订单数量
+     */
+    @Query("SELECT COUNT(s) FROM ShipmentRecord s WHERE s.factoryId = :factoryId " +
+           "AND s.shipmentDate BETWEEN :startDate AND :endDate")
+    long countByFactoryIdAndDateRange(@Param("factoryId") String factoryId,
+                                      @Param("startDate") LocalDate startDate,
+                                      @Param("endDate") LocalDate endDate);
+
+    /**
+     * 计算平均订单金额
+     */
+    @Query("SELECT COALESCE(AVG(s.totalAmount), 0) FROM ShipmentRecord s WHERE s.factoryId = :factoryId " +
+           "AND s.shipmentDate BETWEEN :startDate AND :endDate AND s.totalAmount IS NOT NULL")
+    java.math.BigDecimal calculateAverageOrderValue(@Param("factoryId") String factoryId,
+                                                     @Param("startDate") LocalDate startDate,
+                                                     @Param("endDate") LocalDate endDate);
+
+    /**
+     * 计算指定日期的收入（用于趋势分析）
+     */
+    @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM ShipmentRecord s WHERE s.factoryId = :factoryId " +
+           "AND s.shipmentDate = :date AND s.status IN ('shipped', 'delivered')")
+    java.math.BigDecimal calculateDailyRevenue(@Param("factoryId") String factoryId,
+                                                @Param("date") LocalDate date);
 }

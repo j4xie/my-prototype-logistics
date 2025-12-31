@@ -16,6 +16,9 @@ import type {
   GetInsertSlotsRequest,
   ConfirmInsertRequest,
   DetectMixedBatchRequest,
+  ProductionPlanDTO,
+  ConfirmUrgentInsertRequest,
+  UrgentInsertImpactAnalysis,
 } from '../../types/dispatcher';
 
 /**
@@ -73,6 +76,62 @@ export interface CompletionProbabilityResponse {
   };
   suggestions?: string[];
   llmAnalysis?: string;
+}
+
+/** 排程配置 (用于 AI 排产) */
+export interface ScheduleConfig {
+  startDate?: string;
+  endDate?: string;
+  shiftType: 'day' | 'night' | 'full_day';
+  autoAssignWorkers: boolean;
+  enableLinUCB?: boolean;
+  optimizeByLinUCB?: boolean;
+  optimizeFor?: 'efficiency' | 'cost' | 'balanced';
+  batchIds?: string[];
+  planIds?: string[];
+}
+
+/** 产线分配建议 */
+export interface LineAssignment {
+  lineId: string;
+  lineName: string;
+  load: number;
+  loadLevel: 'low' | 'medium' | 'high';
+  batches: string[];
+}
+
+/** 工人优化建议 */
+export interface WorkerSuggestion {
+  workerId: number;
+  workerName: string;
+  currentPosition: string;
+  skill: string;
+  targetLine: string;
+  ucbScore: number;
+}
+
+/** AI 排产结果（扩展 SchedulingPlan） */
+export interface AISchedulingResult {
+  plan: SchedulingPlan;
+  completionProbability: number;
+  simulationRuns: number;
+  lineAssignments: LineAssignment[];
+  workerSuggestions: WorkerSuggestion[];
+  efficiencyImprovement: number;
+  improvedProbability: number;
+}
+
+/** 待排产批次 */
+export interface PendingBatch {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  orderId?: string;
+  deadline: string;
+  priority: 'high' | 'normal' | 'low';
+  isUrgent?: boolean;
+  currentProbability?: number;
 }
 
 // ========== API 客户端类 ==========
@@ -274,17 +333,36 @@ class SchedulingApiClient {
 
   /**
    * 17. AI 生成调度计划
+   * 支持两种调用方式:
+   * - 传统方式: { planDate, shiftType, productionPlanIds, optimizeFor }
+   * - 扩展方式: ScheduleConfig (包含 batchIds/planIds)
    */
   async generateSchedule(
     data: {
-      planDate: string;
+      planDate?: string;
+      startDate?: string;
+      endDate?: string;
       shiftType?: 'day' | 'night' | 'full_day';
       productionPlanIds?: string[];
+      planIds?: string[];
+      batchIds?: string[];
       optimizeFor?: 'efficiency' | 'cost' | 'balanced';
+      autoAssignWorkers?: boolean;
+      enableLinUCB?: boolean;
     },
     factoryId?: string
-  ): Promise<ApiResponse<SchedulingPlan>> {
-    return await apiClient.post(`${this.getPath(factoryId)}/generate`, data);
+  ): Promise<ApiResponse<AISchedulingResult>> {
+    // 构建后端所需的请求参数
+    const requestData = {
+      planDate: data.planDate || data.startDate || new Date().toISOString().split('T')[0],
+      shiftType: data.shiftType,
+      productionPlanIds: data.productionPlanIds || data.planIds,
+      batchIds: data.batchIds,
+      optimizeFor: data.optimizeFor,
+      autoAssignWorkers: data.autoAssignWorkers,
+      enableLinUCB: data.enableLinUCB,
+    };
+    return await apiClient.post(`${this.getPath(factoryId)}/generate`, requestData);
   }
 
   /**
@@ -455,6 +533,55 @@ class SchedulingApiClient {
     return await apiClient.get(`${this.getPath(factoryId)}/realtime/${planId}`);
   }
 
+  // ==================== 待排产批次 (AI 排产) ====================
+
+  /**
+   * 获取待排产批次列表（带紧急状态）
+   * 使用新的 /scheduling/pending-batches 端点
+   * 返回包含紧急状态和完成概率的生产计划列表
+   */
+  async getPendingBatches(params?: {
+    startDate?: string;  // YYYY-MM-DD
+    endDate?: string;    // YYYY-MM-DD
+    factoryId?: string;
+  }): Promise<ApiResponse<ProductionPlanDTO[]>> {
+    const { factoryId, ...query } = params || {};
+    return await apiClient.get(`${this.getPath(factoryId)}/pending-batches`, {
+      params: query
+    });
+  }
+
+  /**
+   * 获取紧急阈值配置
+   * 返回当前工厂的紧急阈值设置（完成概率低于此值时标记为紧急）
+   */
+  async getUrgentThresholdConfig(factoryId?: string): Promise<ApiResponse<{
+    threshold: number;
+    factoryId: string;
+    description: string;
+  }>> {
+    return await apiClient.get(`${this.getPath(factoryId)}/config/urgent-threshold`);
+  }
+
+  /**
+   * 更新紧急阈值配置（仅限管理员）
+   * @param threshold 新的阈值 (0-1之间)
+   * @param factoryId 工厂ID（可选）
+   */
+  async updateUrgentThresholdConfig(
+    threshold: number,
+    factoryId?: string
+  ): Promise<ApiResponse<{
+    threshold: number;
+    factoryId: string;
+    updatedAt: string;
+  }>> {
+    return await apiClient.put(
+      `${this.getPath(factoryId)}/config/urgent-threshold`,
+      { threshold }
+    );
+  }
+
   // ==================== 员工管理 (扩展) ====================
 
   /**
@@ -515,48 +642,172 @@ class SchedulingApiClient {
     );
   }
 
-  // ==================== 紧急插单 (扩展) ====================
+  // ==================== 紧急插单 (Phase C 增强版) ====================
 
   /**
-   * 获取可插单时段
+   * 获取可用插单时段 (新版 - 多维度评分)
+   * GET /api/mobile/{factoryId}/scheduling/urgent-insert/slots
+   *
+   * @param days 查询天数 (1-7, 默认3)
+   * @param factoryId 工厂ID
+   * @returns 12个可用时段，包含多维度推荐评分和影响分析
+   */
+  async getAvailableSlots(
+    days: number = 3,
+    factoryId?: string
+  ): Promise<ApiResponse<InsertSlot[]>> {
+    return await apiClient.get(
+      `${this.getPath(factoryId)}/urgent-insert/slots`,
+      { params: { days } }
+    );
+  }
+
+  /**
+   * 分析时段插单影响 (链式影响分析)
+   * GET /api/mobile/{factoryId}/scheduling/urgent-insert/slots/{slotId}/impact
+   *
+   * @param slotId 时段ID
+   * @param productTypeId 产品类型ID
+   * @param quantity 计划数量 (kg)
+   * @param factoryId 工厂ID
+   * @returns 完整的链式影响分析结果
+   */
+  async analyzeSlotImpact(
+    slotId: string,
+    productTypeId: string,
+    quantity: number,
+    factoryId?: string
+  ): Promise<ApiResponse<UrgentInsertImpactAnalysis>> {
+    return await apiClient.get(
+      `${this.getPath(factoryId)}/urgent-insert/slots/${slotId}/impact`,
+      { params: { productTypeId, quantity } }
+    );
+  }
+
+  /**
+   * 确认紧急插单 (创建紧急生产计划)
+   * POST /api/mobile/{factoryId}/scheduling/urgent-insert/confirm
+   *
+   * @param request 确认插单请求
+   * @param factoryId 工厂ID
+   * @returns 创建的生产计划
+   */
+  async confirmUrgentInsert(
+    request: ConfirmUrgentInsertRequest,
+    factoryId?: string
+  ): Promise<ApiResponse<ProductionPlanDTO>> {
+    return await apiClient.post(
+      `${this.getPath(factoryId)}/urgent-insert/confirm`,
+      request
+    );
+  }
+
+  /**
+   * 强制插单 (需要审批)
+   * POST /api/mobile/{factoryId}/scheduling/urgent-insert/force
+   *
+   * @param request 强制插单请求 (forceInsert=true)
+   * @param factoryId 工厂ID
+   * @returns 创建的待审批生产计划
+   */
+  async forceUrgentInsert(
+    request: ConfirmUrgentInsertRequest,
+    factoryId?: string
+  ): Promise<ApiResponse<ProductionPlanDTO>> {
+    return await apiClient.post(
+      `${this.getPath(factoryId)}/urgent-insert/force`,
+      { ...request, forceInsert: true }
+    );
+  }
+
+  /**
+   * [兼容] 获取可插单时段 (旧版API，保留向后兼容)
+   * @deprecated 使用 getAvailableSlots 替代
    */
   async getInsertSlots(
     data: GetInsertSlotsRequest,
     factoryId?: string
   ): Promise<ApiResponse<InsertSlot[]>> {
-    const currentFactoryId = requireFactoryId(factoryId);
-    return await apiClient.post(
-      `/api/mobile/${currentFactoryId}/urgent-insert/slots`,
-      data
-    );
+    console.warn('[DEPRECATED] getInsertSlots is deprecated. Use getAvailableSlots instead.');
+    return this.getAvailableSlots(3, factoryId);
   }
 
   /**
-   * 分析插单影响
+   * [兼容] 分析插单影响 (旧版API，保留向后兼容)
+   * @deprecated 使用 analyzeSlotImpact 替代
    */
   async analyzeInsertImpact(
     slotId: string,
     data: { productTypeId: string; quantity: number },
     factoryId?: string
-  ): Promise<ApiResponse<{ impactedPlans: Array<{ planId: string; delayMinutes: number }> }>> {
-    const currentFactoryId = requireFactoryId(factoryId);
-    return await apiClient.post(
-      `/api/mobile/${currentFactoryId}/urgent-insert/analyze`,
-      { slotId, ...data }
-    );
+  ): Promise<ApiResponse<UrgentInsertImpactAnalysis>> {
+    console.warn('[DEPRECATED] analyzeInsertImpact is deprecated. Use analyzeSlotImpact instead.');
+    return this.analyzeSlotImpact(slotId, data.productTypeId, data.quantity, factoryId);
   }
 
   /**
-   * 确认紧急插单
+   * [兼容] 确认紧急插单 (旧版API，保留向后兼容)
+   * @deprecated 使用 confirmUrgentInsert 替代
    */
   async confirmInsert(
     data: ConfirmInsertRequest,
     factoryId?: string
-  ): Promise<ApiResponse<SchedulingPlan>> {
-    const currentFactoryId = requireFactoryId(factoryId);
+  ): Promise<ApiResponse<ProductionPlanDTO>> {
+    console.warn('[DEPRECATED] confirmInsert is deprecated. Use confirmUrgentInsert instead.');
+    // 转换旧格式到新格式
+    const request: ConfirmUrgentInsertRequest = {
+      slotId: data.slotId,
+      productTypeId: data.productTypeId,
+      plannedQuantity: data.quantity,
+      urgentReason: data.reason ?? '紧急订单',
+      priority: data.priority,
+    };
+    return this.confirmUrgentInsert(request, factoryId);
+  }
+
+  // ==================== 强制插单审批 ====================
+
+  /**
+   * 获取待审批的强制插单列表
+   * 返回所有 requires_approval=true 且 approval_status='PENDING' 的生产计划
+   */
+  async getPendingApprovals(factoryId?: string): Promise<ApiResponse<ProductionPlanDTO[]>> {
+    return await apiClient.get(`${this.getPath(factoryId)}/approvals/pending`);
+  }
+
+  /**
+   * 批准强制插单
+   * @param planId 计划ID
+   * @param comment 审批备注（可选）
+   * @param factoryId 工厂ID（可选）
+   */
+  async approveForceInsert(
+    planId: string,
+    comment?: string,
+    factoryId?: string
+  ): Promise<ApiResponse<ProductionPlanDTO>> {
     return await apiClient.post(
-      `/api/mobile/${currentFactoryId}/urgent-insert/confirm`,
-      data
+      `${this.getPath(factoryId)}/approvals/${planId}/approve`,
+      null,
+      { params: comment ? { comment } : undefined }
+    );
+  }
+
+  /**
+   * 拒绝强制插单
+   * @param planId 计划ID
+   * @param reason 拒绝原因（可选）
+   * @param factoryId 工厂ID（可选）
+   */
+  async rejectForceInsert(
+    planId: string,
+    reason?: string,
+    factoryId?: string
+  ): Promise<ApiResponse<ProductionPlanDTO>> {
+    return await apiClient.post(
+      `${this.getPath(factoryId)}/approvals/${planId}/reject`,
+      null,
+      { params: reason ? { reason } : undefined }
     );
   }
 
@@ -652,6 +903,7 @@ class SchedulingApiClient {
 
   /**
    * 获取批次分配列表 (HR模块)
+   * 调用 /processing/batches 获取批次列表，包含员工分配统计
    */
   async getBatchAssignments(params?: {
     status?: string;
@@ -672,12 +924,50 @@ class SchedulingApiClient {
     totalElements: number;
     totalPages: number;
   }> {
-    // TODO: 对接后端 API
+    const fid = params?.factoryId || requireFactoryId();
+    const response = await apiClient.get<ApiResponse<{
+      content: Array<{
+        id: number | string;
+        batchNumber: string;
+        productTypeName?: string;
+        status: string;
+        assignedWorkerCount?: number;
+        plannedQuantity?: number;
+        totalWorkMinutes?: number;
+        laborCost?: number;
+      }>;
+      totalElements: number;
+      totalPages: number;
+    }>>(`/api/mobile/${fid}/processing/batches`, {
+      params: {
+        status: params?.status,
+        page: params?.page || 1,
+        size: params?.size || 20,
+      },
+    });
+
+    if (response.success && response.data) {
+      return {
+        content: response.data.content.map(batch => ({
+          batchId: String(batch.id),
+          batchNumber: batch.batchNumber || '',
+          productName: batch.productTypeName || '',
+          status: batch.status || '',
+          assignedCount: batch.assignedWorkerCount || 0,
+          requiredCount: batch.plannedQuantity || 0,
+          totalWorkHours: (batch.totalWorkMinutes || 0) / 60,
+          laborCost: batch.laborCost || 0,
+        })),
+        totalElements: response.data.totalElements || 0,
+        totalPages: response.data.totalPages || 0,
+      };
+    }
     return { content: [], totalElements: 0, totalPages: 0 };
   }
 
   /**
    * 获取批次员工列表 (HR模块)
+   * 调用 /processing/batches/{batchId}/workers 获取批次员工列表
    */
   async getBatchWorkers(batchId: string, factoryId?: string): Promise<{
     content: {
@@ -690,25 +980,59 @@ class SchedulingApiClient {
     }[];
     totalElements: number;
   }> {
-    // TODO: 对接后端 API
+    const fid = factoryId || requireFactoryId();
+    const response = await apiClient.get<ApiResponse<Array<{
+      sessionId?: number;
+      workerId: number;
+      workerName?: string;
+      workMinutes?: number;
+      status?: string;
+      statusText?: string;
+      departmentName?: string;
+    }>>>(`/api/mobile/${fid}/processing/batches/${batchId}/workers`);
+
+    if (response.success && response.data) {
+      const workers = Array.isArray(response.data) ? response.data : [];
+      return {
+        content: workers.map(worker => ({
+          id: worker.sessionId || 0,
+          userId: worker.workerId || 0,
+          userName: worker.workerName || '',
+          workType: worker.departmentName || '生产',
+          workMinutes: worker.workMinutes || 0,
+          status: worker.status || 'ASSIGNED',
+        })),
+        totalElements: workers.length,
+      };
+    }
     return { content: [], totalElements: 0 };
   }
 
   /**
    * 从批次移除工人 (HR模块)
+   * 调用 DELETE /processing/batches/{batchId}/workers/{workerId} 取消员工分配
    */
   async removeWorkerFromBatch(
     batchId: string,
     workerId: number,
     factoryId?: string
   ): Promise<{ success: boolean }> {
-    // TODO: 对接后端 API
-    console.log('[schedulingApiClient] removeWorkerFromBatch:', batchId, workerId);
-    return { success: true };
+    const fid = factoryId || requireFactoryId();
+    const response = await apiClient.delete<ApiResponse<{
+      success?: boolean;
+      sessionId?: number;
+      workerId?: number;
+      message?: string;
+    }>>(`/api/mobile/${fid}/processing/batches/${batchId}/workers/${workerId}`);
+
+    return {
+      success: response.success && (response.data?.success !== false),
+    };
   }
 
   /**
    * 获取排班计划列表 (HR模块)
+   * 调用 /scheduling/plans 获取调度计划列表，转换为排班格式
    */
   async getWorkSchedules(params?: {
     startDate?: string;
@@ -730,7 +1054,45 @@ class SchedulingApiClient {
     totalElements: number;
     totalPages: number;
   }> {
-    // TODO: 对接后端 API
+    const fid = params?.factoryId || requireFactoryId();
+    const response = await apiClient.get<ApiResponse<{
+      content: Array<{
+        id: string;
+        planDate?: string;
+        shiftType?: string;
+        startTime?: string;
+        endTime?: string;
+        totalWorkers?: number;
+        confirmedWorkers?: number;
+        status?: string;
+      }>;
+      totalElements: number;
+      totalPages: number;
+    }>>(`/api/mobile/${fid}/scheduling/plans`, {
+      params: {
+        startDate: params?.startDate,
+        endDate: params?.endDate,
+        status: params?.shiftType,  // 使用 status 过滤
+        page: (params?.page || 1) - 1,  // 后端从 0 开始
+        size: params?.size || 20,
+      },
+    });
+
+    if (response.success && response.data) {
+      return {
+        content: response.data.content.map(plan => ({
+          id: plan.id || '',
+          date: plan.planDate || '',
+          shiftType: plan.shiftType || 'day',
+          startTime: plan.startTime || '08:00',
+          endTime: plan.endTime || '18:00',
+          assignedCount: plan.totalWorkers || 0,
+          confirmedCount: plan.confirmedWorkers || 0,
+        })),
+        totalElements: response.data.totalElements || 0,
+        totalPages: response.data.totalPages || 0,
+      };
+    }
     return { content: [], totalElements: 0, totalPages: 0 };
   }
 }

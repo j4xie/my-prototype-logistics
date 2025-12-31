@@ -7,13 +7,18 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.processing.ProcessingStageRecordDTO;
+import com.cretas.aims.dto.quality.*;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.entity.QualityInspection;
 import com.cretas.aims.entity.enums.ProcessingStageType;
+import com.cretas.aims.repository.QualityInspectionRepository;
 import com.cretas.aims.service.AIEnterpriseService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.ProcessingService;
 import com.cretas.aims.service.ProcessingStageRecordService;
+import com.cretas.aims.service.QualityDispositionRuleService;
+import com.cretas.aims.service.SpecialApprovalService;
 import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,6 +53,9 @@ public class ProcessingController {
     private final MobileService mobileService;
     private final AIEnterpriseService aiEnterpriseService;
     private final ProcessingStageRecordService stageRecordService;
+    private final QualityDispositionRuleService qualityDispositionRuleService;
+    private final SpecialApprovalService specialApprovalService;
+    private final QualityInspectionRepository qualityInspectionRepository;
 
     // ========== 批次管理接口 ==========
 
@@ -382,6 +390,309 @@ public class ProcessingController {
         log.info("获取质量趋势: factoryId={}, days={}", factoryId, days);
         List<Map<String, Object>> trends = processingService.getQualityTrends(factoryId, days);
         return ApiResponse.success(trends);
+    }
+
+    // ========== 质检处置与特批放行接口 ==========
+
+    /**
+     * 评估处置建议
+     * 根据质检结果，通过规则引擎评估推荐的处置动作
+     */
+    @PostMapping("/quality/inspections/{inspectionId}/evaluate-disposition")
+    @Operation(summary = "评估处置建议", description = "根据质检结果评估推荐的处置动作")
+    public ApiResponse<DispositionEvaluationDTO> evaluateDisposition(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "质检记录ID") String inspectionId) {
+        log.info("评估处置建议: factoryId={}, inspectionId={}", factoryId, inspectionId);
+
+        // 获取质检记录
+        QualityInspection inspection = qualityInspectionRepository.findById(inspectionId)
+                .orElseThrow(() -> new IllegalArgumentException("质检记录不存在: " + inspectionId));
+
+        // 验证工厂ID
+        if (!inspection.getFactoryId().equals(factoryId)) {
+            throw new IllegalArgumentException("质检记录不属于该工厂");
+        }
+
+        QualityDispositionRuleService.DispositionResult result =
+                qualityDispositionRuleService.evaluateDisposition(factoryId, inspection);
+
+        // 构建质检摘要
+        DispositionEvaluationDTO.InspectionSummary inspectionSummary =
+                DispositionEvaluationDTO.InspectionSummary.builder()
+                        .passRate(inspection.getPassRate())
+                        .defectRate(inspection.getDefectRate())
+                        .sampleSize(inspection.getSampleSize())
+                        .passCount(inspection.getPassCount())
+                        .failCount(inspection.getFailCount())
+                        .inspectionResult(inspection.getResult())
+                        .qualityGrade(inspection.getQualityGrade())
+                        .build();
+
+        // 转换备选动作
+        List<DispositionEvaluationDTO.AlternativeAction> alternativeActions = null;
+        if (result.getAlternativeActions() != null) {
+            alternativeActions = java.util.Arrays.stream(result.getAlternativeActions())
+                    .map(action -> DispositionEvaluationDTO.AlternativeAction.builder()
+                            .action(action.name())
+                            .description(getActionDescription(action))
+                            .requiresApproval(action == QualityDispositionRuleService.DispositionAction.SPECIAL_APPROVAL)
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        // 转换为 DTO
+        DispositionEvaluationDTO dto = DispositionEvaluationDTO.builder()
+                .inspectionId(inspectionId)
+                .productionBatchId(inspection.getProductionBatchId())
+                .recommendedAction(result.getRecommendedAction().name())
+                .recommendedActionDescription(getActionDescription(result.getRecommendedAction()))
+                .requiresApproval(result.isRequiresApproval())
+                .triggeredRuleName(result.getTriggeredRuleName())
+                .ruleConfigId(result.getRuleConfigId())
+                .ruleVersion(result.getRuleVersion())
+                .confidence(result.getConfidence())
+                .reason(result.getReason())
+                .inspectionSummary(inspectionSummary)
+                .alternativeActions(alternativeActions)
+                .build();
+
+        return ApiResponse.success(dto);
+    }
+
+    /**
+     * 获取处置动作的中文描述
+     */
+    private String getActionDescription(QualityDispositionRuleService.DispositionAction action) {
+        if (action == null) return null;
+        switch (action) {
+            case RELEASE: return "直接放行";
+            case CONDITIONAL_RELEASE: return "条件放行";
+            case REWORK: return "返工处理";
+            case SCRAP: return "报废处理";
+            case SPECIAL_APPROVAL: return "特批放行";
+            case HOLD: return "暂扣待定";
+            default: return action.name();
+        }
+    }
+
+    /**
+     * 执行处置动作
+     * 直接执行处置动作（不需要审批的情况）
+     */
+    @PostMapping("/quality/inspections/{inspectionId}/execute-disposition")
+    @Operation(summary = "执行处置动作", description = "执行质检结果的处置动作")
+    public ApiResponse<Map<String, Object>> executeDisposition(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "质检记录ID") String inspectionId,
+            @RequestBody @Valid @Parameter(description = "处置请求") DispositionRequest request,
+            HttpServletRequest httpRequest) {
+        log.info("执行处置动作: factoryId={}, inspectionId={}, action={}",
+                factoryId, inspectionId, request.getRequestedAction());
+
+        // 获取质检记录
+        QualityInspection inspection = qualityInspectionRepository.findById(inspectionId)
+                .orElseThrow(() -> new IllegalArgumentException("质检记录不存在: " + inspectionId));
+
+        // 验证工厂ID
+        if (!inspection.getFactoryId().equals(factoryId)) {
+            throw new IllegalArgumentException("质检记录不属于该工厂");
+        }
+
+        // 获取当前用户ID
+        Long executorId = request.getExecutorId();
+        if (executorId == null) {
+            String authorization = httpRequest.getHeader("Authorization");
+            if (authorization != null) {
+                try {
+                    String token = TokenUtils.extractToken(authorization);
+                    var userDTO = mobileService.getUserFromToken(token);
+                    executorId = userDTO.getId();
+                } catch (Exception e) {
+                    log.warn("无法从token获取用户信息: {}", e.getMessage());
+                }
+            }
+        }
+
+        QualityDispositionRuleService.DispositionAction action =
+                QualityDispositionRuleService.DispositionAction.valueOf(request.getRequestedAction());
+
+        QualityDispositionRuleService.DispositionExecutionResult result =
+                qualityDispositionRuleService.executeDisposition(
+                        factoryId, inspection, action, executorId, request.getReason());
+
+        Map<String, Object> response = Map.of(
+                "success", result.isSuccess(),
+                "message", result.getMessage(),
+                "action", result.getExecutedAction() != null ? result.getExecutedAction().name() : null,
+                "newBatchStatus", result.getNewBatchStatus() != null ? result.getNewBatchStatus() : "",
+                "auditLogId", result.getAuditLogId() != null ? result.getAuditLogId() : ""
+        );
+
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 提交特批放行申请
+     * 当处置动作需要审批时，提交特批申请
+     */
+    @PostMapping("/quality/inspections/{inspectionId}/request-special-approval")
+    @Operation(summary = "提交特批申请", description = "提交质检特批放行申请")
+    public ApiResponse<SpecialApprovalDTO> submitSpecialApproval(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "质检记录ID") String inspectionId,
+            @RequestBody @Valid @Parameter(description = "特批申请") SpecialApprovalRequest request,
+            HttpServletRequest httpRequest) {
+        log.info("提交特批申请: factoryId={}, inspectionId={}", factoryId, inspectionId);
+
+        // 获取当前用户ID
+        Long requesterId = null;
+        String authorization = httpRequest.getHeader("Authorization");
+        if (authorization != null) {
+            try {
+                String token = TokenUtils.extractToken(authorization);
+                var userDTO = mobileService.getUserFromToken(token);
+                requesterId = userDTO.getId();
+            } catch (Exception e) {
+                log.warn("无法从token获取用户信息: {}", e.getMessage());
+                throw new IllegalArgumentException("无法获取申请人信息");
+            }
+        }
+
+        if (requesterId == null) {
+            throw new IllegalArgumentException("无法获取申请人信息");
+        }
+
+        SpecialApprovalDTO result = specialApprovalService.submitSpecialApproval(
+                factoryId, inspectionId, request, requesterId);
+
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取待审批列表
+     */
+    @GetMapping("/quality/approvals/pending")
+    @Operation(summary = "待审批列表", description = "获取质检特批待审批列表")
+    public ApiResponse<List<SpecialApprovalDTO>> getPendingApprovals(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+        log.info("获取待审批列表: factoryId={}", factoryId);
+        List<SpecialApprovalDTO> approvals = specialApprovalService.getPendingApprovals(factoryId);
+        return ApiResponse.success(approvals);
+    }
+
+    /**
+     * 获取审批详情
+     */
+    @GetMapping("/quality/approvals/{approvalId}")
+    @Operation(summary = "审批详情", description = "获取特批申请详情")
+    public ApiResponse<SpecialApprovalDTO> getApprovalById(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "审批ID") String approvalId) {
+        log.info("获取审批详情: factoryId={}, approvalId={}", factoryId, approvalId);
+        SpecialApprovalDTO approval = specialApprovalService.getApprovalById(factoryId, approvalId);
+        return ApiResponse.success(approval);
+    }
+
+    /**
+     * 处理审批决策
+     */
+    @PostMapping("/quality/approvals/{approvalId}/decision")
+    @Operation(summary = "处理审批", description = "审批或拒绝特批申请")
+    public ApiResponse<SpecialApprovalDTO> processApprovalDecision(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "审批ID") String approvalId,
+            @RequestBody @Valid @Parameter(description = "审批决策") ApprovalDecisionRequest decision,
+            HttpServletRequest httpRequest) {
+        log.info("处理审批决策: factoryId={}, approvalId={}, decision={}",
+                factoryId, approvalId, decision.getDecision());
+
+        // 获取审批人ID
+        Long approverId = decision.getApproverId();
+        if (approverId == null) {
+            String authorization = httpRequest.getHeader("Authorization");
+            if (authorization != null) {
+                try {
+                    String token = TokenUtils.extractToken(authorization);
+                    var userDTO = mobileService.getUserFromToken(token);
+                    approverId = userDTO.getId();
+                } catch (Exception e) {
+                    log.warn("无法从token获取用户信息: {}", e.getMessage());
+                    throw new IllegalArgumentException("无法获取审批人信息");
+                }
+            }
+        }
+
+        if (approverId == null) {
+            throw new IllegalArgumentException("无法获取审批人信息");
+        }
+
+        SpecialApprovalDTO result = specialApprovalService.processDecision(
+                factoryId, approvalId, decision, approverId);
+
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取我的申请记录
+     */
+    @GetMapping("/quality/approvals/my-requests")
+    @Operation(summary = "我的申请", description = "获取当前用户的特批申请记录")
+    public ApiResponse<List<SpecialApprovalDTO>> getMyRequests(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            HttpServletRequest httpRequest) {
+        log.info("获取我的申请记录: factoryId={}", factoryId);
+
+        // 获取当前用户ID
+        String authorization = httpRequest.getHeader("Authorization");
+        Long requesterId = null;
+        if (authorization != null) {
+            try {
+                String token = TokenUtils.extractToken(authorization);
+                var userDTO = mobileService.getUserFromToken(token);
+                requesterId = userDTO.getId();
+            } catch (Exception e) {
+                log.warn("无法从token获取用户信息: {}", e.getMessage());
+            }
+        }
+
+        if (requesterId == null) {
+            return ApiResponse.success(List.of());
+        }
+
+        List<SpecialApprovalDTO> requests = specialApprovalService.getMyRequests(factoryId, requesterId);
+        return ApiResponse.success(requests);
+    }
+
+    /**
+     * 获取我的审批记录
+     */
+    @GetMapping("/quality/approvals/my-decisions")
+    @Operation(summary = "我的审批", description = "获取当前用户处理过的审批记录")
+    public ApiResponse<List<SpecialApprovalDTO>> getMyApprovals(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            HttpServletRequest httpRequest) {
+        log.info("获取我的审批记录: factoryId={}", factoryId);
+
+        // 获取当前用户ID
+        String authorization = httpRequest.getHeader("Authorization");
+        Long approverId = null;
+        if (authorization != null) {
+            try {
+                String token = TokenUtils.extractToken(authorization);
+                var userDTO = mobileService.getUserFromToken(token);
+                approverId = userDTO.getId();
+            } catch (Exception e) {
+                log.warn("无法从token获取用户信息: {}", e.getMessage());
+            }
+        }
+
+        if (approverId == null) {
+            return ApiResponse.success(List.of());
+        }
+
+        List<SpecialApprovalDTO> approvals = specialApprovalService.getMyApprovals(factoryId, approverId);
+        return ApiResponse.success(approvals);
     }
 
     // ========== 成本分析接口 ==========

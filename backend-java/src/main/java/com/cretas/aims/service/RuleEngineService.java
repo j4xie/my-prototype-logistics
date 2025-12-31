@@ -145,4 +145,71 @@ public interface RuleEngineService {
      * @return 统计信息 (ruleCount, executionCount, avgExecutionTime)
      */
     Map<String, Object> getStatistics(String factoryId);
+
+    // ==================== 关键决策审计方法 ====================
+
+    /**
+     * 执行规则并记录审计日志
+     * 用于关键决策场景，需要可回放和审计追踪
+     *
+     * @param factoryId 工厂ID
+     * @param ruleGroup 规则组
+     * @param entityType 业务实体类型 (如 "PRODUCTION_BATCH", "QUALITY_CHECK")
+     * @param entityId 业务实体ID
+     * @param executorId 执行者ID
+     * @param executorName 执行者名称 (可选)
+     * @param executorRole 执行者角色 (可选)
+     * @param facts 事实对象
+     * @param <T> 返回类型
+     * @return 规则执行结果
+     */
+    <T> T executeRulesWithAudit(
+            String factoryId,
+            String ruleGroup,
+            String entityType,
+            String entityId,
+            Long executorId,
+            String executorName,
+            String executorRole,
+            Object... facts);
+
+    /**
+     * 执行规则并记录审计日志（多结果版本）
+     *
+     * @param factoryId 工厂ID
+     * @param ruleGroup 规则组
+     * @param entityType 业务实体类型
+     * @param entityId 业务实体ID
+     * @param executorId 执行者ID
+     * @param executorName 执行者名称
+     * @param executorRole 执行者角色
+     * @param facts 事实对象
+     * @return 规则执行结果列表
+     */
+    List<Object> executeRulesWithAuditMultipleResults(
+            String factoryId,
+            String ruleGroup,
+            String entityType,
+            String entityId,
+            Long executorId,
+            String executorName,
+            String executorRole,
+            Object... facts);
+
+    // ==================== Dry-Run 方法 ====================
+
+    /**
+     * 执行规则 Dry-Run（沙箱执行）
+     * 在不保存规则的情况下测试规则效果
+     * 用于规则发布前预览执行结果
+     *
+     * @param drlContent DRL 规则内容
+     * @param testData 测试数据
+     * @param context 执行上下文 (factoryId, entityType, hookPoint 等)
+     * @return 执行结果 (rulesMatched, result, simulatedChanges, validationErrors, warnings)
+     */
+    Map<String, Object> executeDryRun(
+            String drlContent,
+            Map<String, Object> testData,
+            Map<String, Object> context);
 }

@@ -3,17 +3,15 @@
     <el-upload
       multiple
       :disabled="disabled"
-      :action="uploadImgUrl"
+      :action="'#'"
+      :http-request="customUpload"
       list-type="picture-card"
-      :on-success="handleUploadSuccess"
       :before-upload="handleBeforeUpload"
       :limit="limit"
-      :on-error="handleUploadError"
       :on-exceed="handleExceed"
       ref="imageUpload"
       :before-remove="handleDelete"
       :show-file-list="true"
-      :headers="headers"
       :file-list="fileList"
       :on-preview="handlePictureCardPreview"
       :class="{ hide: fileList.length >= limit }"
@@ -29,7 +27,7 @@
       <template v-if="fileType">
         格式为 <b style="color: #f56c6c">{{ fileType.join("/") }}</b>
       </template>
-      的文件
+      的文件 (直传阿里云OSS)
     </div>
 
     <el-dialog
@@ -47,7 +45,7 @@
 </template>
 
 <script setup>
-import { getToken } from "@/utils/auth";
+import { uploadToOss } from "@/utils/oss-upload";
 
 const props = defineProps({
   modelValue: [String, Object, Array],
@@ -85,6 +83,11 @@ const props = defineProps({
     type: String,
     default: "string",
   },
+  // OSS上传类型 (product/avatar/feedback/merchant)
+  uploadType: {
+    type: String,
+    default: "product",
+  },
 });
 
 const { proxy } = getCurrentInstance();
@@ -93,9 +96,6 @@ const number = ref(0);
 const uploadList = ref([]);
 const dialogImageUrl = ref("");
 const dialogVisible = ref(false);
-const baseUrl = import.meta.env.VITE_APP_BASE_API;
-const uploadImgUrl = ref(import.meta.env.VITE_APP_BASE_API + "/common/upload"); // 上传的图片服务器地址
-const headers = ref({ Authorization: "Bearer " + getToken() });
 const fileList = ref([]);
 const showTip = computed(
   () => props.isShowTip && (props.fileType || props.fileSize)
@@ -110,12 +110,7 @@ watch(
       // 然后将数组转为对象数组
       fileList.value = list.map((item) => {
         if (typeof item === "string") {
-          // 判断如果不是http开头
-          if (item.indexOf(baseUrl) === -1 && !item.startsWith("http")) {
-            item = { name: baseUrl + item, url: baseUrl + item };
-          } else {
-            item = { name: item, url: item };
-          }
+          item = { name: item, url: item };
         }
         return item;
       });
@@ -127,7 +122,7 @@ watch(
   { deep: true, immediate: true }
 );
 
-// 上传前loading加载
+// 上传前验证
 function handleBeforeUpload(file) {
   let isImg = false;
   if (props.fileType.length) {
@@ -152,12 +147,38 @@ function handleBeforeUpload(file) {
   if (props.fileSize) {
     const isLt = file.size / 1024 / 1024 < props.fileSize;
     if (!isLt) {
-      proxy.$modal.msgError(`上传头像图片大小不能超过 ${props.fileSize} MB!`);
+      proxy.$modal.msgError(`上传图片大小不能超过 ${props.fileSize} MB!`);
       return false;
     }
   }
-  proxy.$modal.loading("正在上传图片，请稍候...");
+  return true;
+}
+
+// 自定义上传到OSS
+async function customUpload(options) {
+  const { file, onProgress, onSuccess, onError } = options;
+
+  proxy.$modal.loading("正在上传图片到云端...");
   number.value++;
+
+  try {
+    // 上传到OSS
+    const imageUrl = await uploadToOss(file, props.uploadType, (percent) => {
+      onProgress({ percent });
+    });
+
+    // 上传成功
+    uploadList.value.push({ name: imageUrl, url: imageUrl });
+    onSuccess({ url: imageUrl });
+    uploadedSuccessfully();
+
+  } catch (error) {
+    console.error('OSS上传失败:', error);
+    number.value--;
+    proxy.$modal.closeLoading();
+    proxy.$modal.msgError("上传图片失败: " + (error.message || '网络错误'));
+    onError(error);
+  }
 }
 
 // 文件个数超出
@@ -165,24 +186,10 @@ function handleExceed() {
   proxy.$modal.msgError(`上传文件数量不能超过 ${props.limit} 个!`);
 }
 
-// 上传成功回调
-function handleUploadSuccess(res, file) {
-  if (res.code === 200) {
-    uploadList.value.push({ name: res.fileName, url: res.fileName });
-    uploadedSuccessfully();
-  } else {
-    number.value--;
-    proxy.$modal.closeLoading();
-    proxy.$modal.msgError(res.msg);
-    proxy.$refs.imageUpload.handleRemove(file);
-    uploadedSuccessfully();
-  }
-}
-
 // 删除图片
 function handleDelete(file) {
   const findex = fileList.value.map((f) => f.name).indexOf(file.name);
-  if (findex > -1 && uploadList.value.length === number.value) {
+  if (findex > -1) {
     fileList.value.splice(findex, 1);
 
     if (props.returnType === "array") {
@@ -211,12 +218,6 @@ function uploadedSuccessfully() {
   proxy.$modal.closeLoading();
 }
 
-// 上传失败
-function handleUploadError() {
-  proxy.$modal.msgError("上传图片失败");
-  proxy.$modal.closeLoading();
-}
-
 // 预览
 function handlePictureCardPreview(file) {
   dialogImageUrl.value = file.url;
@@ -229,17 +230,18 @@ function listToString(list, separator) {
   separator = separator || ",";
   for (let i in list) {
     if (undefined !== list[i].url && list[i].url.indexOf("blob:") !== 0) {
-      strs += list[i].url.replace(baseUrl, "") + separator;
+      strs += list[i].url + separator;
     }
   }
   return strs != "" ? strs.substr(0, strs.length - 1) : "";
 }
-// 对象转成指定 数组
+
+// 对象转成指定数组
 function listToArray(list) {
   let urls = [];
   for (let i in list) {
     if (undefined !== list[i].url && list[i].url.indexOf("blob:") !== 0) {
-      urls.push(list[i].url.replace(baseUrl, ""));
+      urls.push(list[i].url);
     }
   }
   return urls;
