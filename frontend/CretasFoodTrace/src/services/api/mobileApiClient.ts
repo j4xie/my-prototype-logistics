@@ -43,12 +43,34 @@ export const deviceActivationAPI = {
 
 export const mobileUploadAPI = {
   /**
-   * 移动端文件上传
+   * 移动端文件上传（单文件）
    * POST /api/mobile/upload
+   * @param file - 文件对象 (React Native 格式: { uri, type, name })
+   * @param metadata - 可选元数据 { category, metadata }
    */
   uploadFile: async (file: any, metadata?: { category?: string; metadata?: string }) => {
     const formData = new FormData();
-    formData.append('file', file);
+    // 后端期望字段名为 'files'
+    formData.append('files', file);
+    if (metadata?.category) formData.append('category', metadata.category);
+    if (metadata?.metadata) formData.append('metadata', metadata.metadata);
+
+    return await apiClient.post('/api/mobile/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  /**
+   * 移动端批量文件上传
+   * POST /api/mobile/upload
+   * @param files - 文件对象数组
+   * @param metadata - 可选元数据
+   */
+  uploadFiles: async (files: any[], metadata?: { category?: string; metadata?: string }) => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
     if (metadata?.category) formData.append('category', metadata.category);
     if (metadata?.metadata) formData.append('metadata', metadata.metadata);
 
