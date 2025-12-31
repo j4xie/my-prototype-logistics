@@ -20,13 +20,16 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
+  Alert,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { DISPATCHER_THEME } from '../../../types/dispatcher';
-// import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { DISPATCHER_THEME, ProductionPlanDTO } from '../../../types/dispatcher';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 
 // Local extended type for mock data display
 type PlanSourceType = 'customer_order' | 'ai_forecast' | 'safety_stock' | 'manual' | 'urgent_insert' | 'mixed_batch';
@@ -60,113 +63,271 @@ interface DisplayPlan {
   aiConfidence?: number;
   season?: string;
   stockLevel?: number;
+  // 紧急状态监控字段
+  isUrgent?: boolean;
+  currentProbability?: number;
+  // 审批相关字段
+  requiresApproval?: boolean;
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  forceInsertReason?: string;
+  isForceInserted?: boolean;
 }
-
-// Mock data
-const mockPlans: DisplayPlan[] = [
-  {
-    id: '1',
-    planNumber: 'PP20241227001',
-    productName: '冷冻带鱼段',
-    quantity: 500,
-    unit: 'kg',
-    workshopName: '切片车间',
-    supervisorName: '张主任',
-    status: 'in_progress',
-    progress: 65,
-    sourceType: 'customer_order',
-    customerName: '永辉超市',
-    crValue: 0.8,
-    crLevel: 'urgent',
-    deadline: '12-28 18:00',
-    tags: ['已匹配', '高优先级'],
-  },
-  {
-    id: '2',
-    planNumber: 'PP20241227002',
-    productName: '鱿鱼圈',
-    quantity: 800,
-    unit: '袋',
-    workshopName: '包装车间',
-    supervisorName: '李主任',
-    status: 'pending',
-    progress: 0,
-    sourceType: 'mixed_batch',
-    isMixedBatch: true,
-    mergedOrderCount: 3,
-    relatedOrders: [
-      { orderId: 'ORD-001', customerName: '盒马', quantity: 300 },
-      { orderId: 'ORD-002', customerName: '永辉', quantity: 300 },
-      { orderId: 'ORD-003', customerName: '大润发', quantity: 200 },
-    ],
-    crValue: 1.2,
-    crLevel: 'tight',
-    deadline: '12-29 12:00',
-    tags: ['待匹配', '中优先级'],
-  },
-  {
-    id: '3',
-    planNumber: 'PP20241227003',
-    productName: '大虾仁',
-    quantity: 300,
-    unit: 'kg',
-    workshopName: '冷冻车间',
-    supervisorName: '王主任',
-    status: 'completed',
-    progress: 100,
-    sourceType: 'ai_forecast',
-    forecastReason: '冬季火锅需求 +15%',
-    aiConfidence: 85,
-    season: '冬季',
-    tags: ['已消耗', '普通'],
-  },
-  {
-    id: '4',
-    planNumber: 'PP20241227004',
-    productName: '带鱼段',
-    quantity: 400,
-    unit: 'kg',
-    workshopName: '切片车间',
-    supervisorName: '张主任',
-    status: 'in_progress',
-    progress: 30,
-    sourceType: 'safety_stock',
-    stockLevel: 28,
-    crValue: 2.5,
-    crLevel: 'sufficient',
-    tags: ['已匹配', '中优先级'],
-  },
-];
 
 const statusOptions = ['全部状态', '待开始', '进行中', '已完成'];
 const workshopOptions = ['全部车间', '切片车间', '包装车间', '冷冻车间'];
 const dateOptions = ['日期范围', '今天', '本周', '本月'];
 const sourceOptions = ['全部来源', '客户订单', 'AI预测', '安全库存', '混批'];
+const urgentOptions = ['全部', '仅紧急', '待审批'];
 
 export default function PlanListScreen() {
   const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
-  const [plans, setPlans] = useState<DisplayPlan[]>(mockPlans);
+  const [plans, setPlans] = useState<DisplayPlan[]>([]);
+  const [urgentThreshold, setUrgentThreshold] = useState(0.6);
+  const [pendingApprovals, setPendingApprovals] = useState<DisplayPlan[]>([]);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
 
   // Filters
   const [selectedStatus, setSelectedStatus] = useState('全部状态');
   const [selectedWorkshop, setSelectedWorkshop] = useState('全部车间');
   const [selectedDate, setSelectedDate] = useState('日期范围');
   const [selectedSource, setSelectedSource] = useState('全部来源');
+  const [selectedUrgent, setSelectedUrgent] = useState('全部');
   const [expandedMixedBatch, setExpandedMixedBatch] = useState<string | null>(null);
+
+  // 审批模态框状态
+  const [approvalModalVisible, setApprovalModalVisible] = useState(false);
+  const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>('approve');
+  const [selectedPlanForApproval, setSelectedPlanForApproval] = useState<DisplayPlan | null>(null);
+  const [approvalComment, setApprovalComment] = useState('');
+  const [approvalLoading, setApprovalLoading] = useState(false);
+
+  // 转换 ProductionPlanDTO 为 DisplayPlan
+  const convertToDisplayPlan = useCallback((dto: ProductionPlanDTO): DisplayPlan => {
+    // 根据 crValue 判断 crLevel
+    let crLevel: 'urgent' | 'tight' | 'sufficient' | undefined;
+    if (dto.crValue !== undefined) {
+      if (dto.crValue < 1) crLevel = 'urgent';
+      else if (dto.crValue < 1.5) crLevel = 'tight';
+      else crLevel = 'sufficient';
+    }
+
+    // 根据 sourceType 确定来源
+    let sourceType: PlanSourceType = 'manual';
+    if (dto.sourceType) {
+      const src = dto.sourceType.toLowerCase();
+      if (src.includes('customer') || src.includes('order')) sourceType = 'customer_order';
+      else if (src.includes('ai') || src.includes('forecast')) sourceType = 'ai_forecast';
+      else if (src.includes('safety') || src.includes('stock')) sourceType = 'safety_stock';
+      else if (src.includes('mixed') || src.includes('batch')) sourceType = 'mixed_batch';
+      else if (src.includes('urgent') || src.includes('insert')) sourceType = 'urgent_insert';
+    }
+
+    // 生成标签
+    const tags: string[] = [];
+    if (dto.isFullyMatched) tags.push('已匹配');
+    else if (dto.allocatedQuantity && dto.allocatedQuantity > 0) tags.push('部分匹配');
+    else tags.push('待匹配');
+
+    if (dto.isUrgent) tags.push('紧急');
+    else if (dto.priority && dto.priority >= 8) tags.push('高优先级');
+    else if (dto.priority && dto.priority >= 5) tags.push('中优先级');
+
+    // 计算进度
+    const progress = dto.matchingProgress ??
+      (dto.allocatedQuantity && dto.plannedQuantity
+        ? Math.round((dto.allocatedQuantity / dto.plannedQuantity) * 100)
+        : 0);
+
+    return {
+      id: dto.id,
+      planNumber: dto.planNumber,
+      productName: dto.productTypeName || '未命名',
+      quantity: dto.plannedQuantity,
+      unit: 'kg',
+      workshopName: '生产车间', // 后端暂未返回
+      supervisorName: '', // 后端暂未返回
+      status: dto.status === 'PENDING' ? 'pending'
+            : dto.status === 'IN_PROGRESS' ? 'in_progress'
+            : dto.status === 'COMPLETED' ? 'completed'
+            : 'pending',
+      progress,
+      sourceType,
+      customerName: dto.sourceCustomerName,
+      crValue: dto.crValue,
+      crLevel,
+      deadline: dto.expectedCompletionDate,
+      tags,
+      isMixedBatch: dto.isMixedBatch,
+      forecastReason: dto.forecastReason,
+      aiConfidence: dto.aiConfidence ? Math.round(dto.aiConfidence * 100) : undefined,
+      isUrgent: dto.isUrgent,
+      currentProbability: dto.currentProbability,
+      // 审批字段
+      requiresApproval: dto.requiresApproval,
+      approvalStatus: dto.approvalStatus as 'PENDING' | 'APPROVED' | 'REJECTED' | undefined,
+      forceInsertReason: dto.forceInsertReason,
+      isForceInserted: dto.isForceInserted,
+    };
+  }, []);
+
+  // 加载紧急阈值
+  const loadUrgentThreshold = useCallback(async () => {
+    try {
+      const response = await schedulingApiClient.getUrgentThresholdConfig();
+      if (response.success && response.data) {
+        setUrgentThreshold(response.data.threshold ?? 0.6);
+      }
+    } catch (error) {
+      console.warn('使用默认紧急阈值 0.6:', error);
+    }
+  }, []);
+
+  // 加载计划列表
+  const loadPlans = useCallback(async () => {
+    try {
+      const response = await schedulingApiClient.getPendingBatches({});
+      if (response.success && response.data) {
+        // 紧急置顶，按完成概率升序排列
+        const sorted = [...response.data].sort((a, b) => {
+          if (a.isUrgent && !b.isUrgent) return -1;
+          if (!a.isUrgent && b.isUrgent) return 1;
+          const probA = a.currentProbability ?? 1;
+          const probB = b.currentProbability ?? 1;
+          return probA - probB;
+        });
+        setPlans(sorted.map(convertToDisplayPlan));
+      }
+    } catch (error) {
+      console.error('加载计划列表失败:', error);
+      Alert.alert('加载失败', '无法加载生产计划列表，请检查网络');
+    }
+  }, [convertToDisplayPlan]);
+
+  // 加载待审批列表
+  const loadPendingApprovals = useCallback(async () => {
+    try {
+      const response = await schedulingApiClient.getPendingApprovals();
+      if (response.success && response.data) {
+        const approvals = response.data.map(convertToDisplayPlan);
+        setPendingApprovals(approvals);
+        setPendingApprovalsCount(approvals.length);
+      }
+    } catch (error) {
+      console.warn('加载待审批列表失败:', error);
+      setPendingApprovals([]);
+      setPendingApprovalsCount(0);
+    }
+  }, [convertToDisplayPlan]);
+
+  // 初始加载
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      await Promise.all([loadUrgentThreshold(), loadPlans(), loadPendingApprovals()]);
+      setLoading(false);
+    };
+    init();
+  }, [loadUrgentThreshold, loadPlans, loadPendingApprovals]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // const data = await schedulingApiClient.getSchedulingPlans(...);
-      // setPlans(data);
+      await Promise.all([loadPlans(), loadPendingApprovals()]);
     } catch (error) {
       console.error('Failed to refresh:', error);
     } finally {
       setRefreshing(false);
     }
+  }, [loadPlans, loadPendingApprovals]);
+
+  // 打开审批模态框
+  const openApprovalModal = useCallback((plan: DisplayPlan, action: 'approve' | 'reject') => {
+    setSelectedPlanForApproval(plan);
+    setApprovalAction(action);
+    setApprovalComment('');
+    setApprovalModalVisible(true);
   }, []);
+
+  // 提交审批操作
+  const handleApprovalSubmit = useCallback(async () => {
+    if (!selectedPlanForApproval) return;
+
+    setApprovalLoading(true);
+    try {
+      if (approvalAction === 'approve') {
+        await schedulingApiClient.approveForceInsert(
+          selectedPlanForApproval.id,
+          approvalComment || undefined
+        );
+        Alert.alert('成功', '已批准该强制插单');
+      } else {
+        if (!approvalComment.trim()) {
+          Alert.alert('提示', '请填写拒绝原因');
+          setApprovalLoading(false);
+          return;
+        }
+        await schedulingApiClient.rejectForceInsert(
+          selectedPlanForApproval.id,
+          approvalComment
+        );
+        Alert.alert('成功', '已拒绝该强制插单');
+      }
+
+      setApprovalModalVisible(false);
+      // 刷新列表
+      await loadPendingApprovals();
+      await loadPlans();
+    } catch (error) {
+      console.error('审批操作失败:', error);
+      Alert.alert('失败', '审批操作失败，请稍后重试');
+    } finally {
+      setApprovalLoading(false);
+    }
+  }, [selectedPlanForApproval, approvalAction, approvalComment, loadPendingApprovals, loadPlans]);
+
+  // 筛选计划
+  const filteredPlans = React.useMemo(() => {
+    // 待审批模式：直接返回 pendingApprovals
+    if (selectedUrgent === '待审批') {
+      // 可选：对待审批列表也应用搜索
+      if (!searchText) return pendingApprovals;
+      const lower = searchText.toLowerCase();
+      return pendingApprovals.filter(plan =>
+        plan.planNumber.toLowerCase().includes(lower) ||
+        plan.productName.toLowerCase().includes(lower)
+      );
+    }
+
+    // 正常筛选模式
+    return plans.filter(plan => {
+      // 紧急筛选
+      if (selectedUrgent === '仅紧急' && !plan.isUrgent) return false;
+
+      // 状态筛选
+      if (selectedStatus !== '全部状态') {
+        const statusMap: Record<string, string> = {
+          '待开始': 'pending',
+          '进行中': 'in_progress',
+          '已完成': 'completed',
+        };
+        if (plan.status !== statusMap[selectedStatus]) return false;
+      }
+
+      // 搜索
+      if (searchText) {
+        const lower = searchText.toLowerCase();
+        if (!plan.planNumber.toLowerCase().includes(lower) &&
+            !plan.productName.toLowerCase().includes(lower)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [plans, pendingApprovals, selectedUrgent, selectedStatus, searchText]);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -245,14 +406,35 @@ export default function PlanListScreen() {
         <View style={styles.planHeader}>
           <View style={styles.planIdRow}>
             <Text style={styles.planId}>{plan.planNumber}</Text>
+            {plan.isUrgent && (
+              <View style={styles.urgentBadge}>
+                <MaterialCommunityIcons name="alert" size={10} color="#fff" />
+                <Text style={styles.urgentBadgeText}>紧急</Text>
+              </View>
+            )}
             {plan.isMixedBatch && (
               <View style={styles.mixedBadge}>
                 <Text style={styles.mixedBadgeText}>混批</Text>
               </View>
             )}
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-            <Text style={[styles.statusText, { color: statusStyle.text }]}>{statusStyle.label}</Text>
+          <View style={styles.headerRight}>
+            {plan.currentProbability !== undefined && (
+              <View style={[
+                styles.probabilityBadge,
+                { backgroundColor: plan.currentProbability < urgentThreshold ? '#fff1f0' : '#f6ffed' }
+              ]}>
+                <Text style={[
+                  styles.probabilityText,
+                  { color: plan.currentProbability < urgentThreshold ? '#ff4d4f' : '#52c41a' }
+                ]}>
+                  {Math.round(plan.currentProbability * 100)}%
+                </Text>
+              </View>
+            )}
+            <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+              <Text style={[styles.statusText, { color: statusStyle.text }]}>{statusStyle.label}</Text>
+            </View>
           </View>
         </View>
 
@@ -351,6 +533,48 @@ export default function PlanListScreen() {
           </TouchableOpacity>
         )}
 
+        {/* 审批操作区域 - 仅对需要审批的计划显示 */}
+        {plan.requiresApproval && plan.approvalStatus === 'PENDING' && (
+          <View style={styles.approvalSection}>
+            <View style={styles.approvalHeader}>
+              <View style={styles.approvalBadge}>
+                <MaterialCommunityIcons name="alert-circle" size={12} color="#fff" />
+                <Text style={styles.approvalBadgeText}>需审批</Text>
+              </View>
+              {plan.isForceInserted && (
+                <Text style={styles.forceInsertLabel}>强制插单</Text>
+              )}
+            </View>
+            {plan.forceInsertReason && (
+              <Text style={styles.forceInsertReason}>
+                原因: {plan.forceInsertReason}
+              </Text>
+            )}
+            <View style={styles.approvalButtons}>
+              <TouchableOpacity
+                style={styles.approveButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  openApprovalModal(plan, 'approve');
+                }}
+              >
+                <MaterialCommunityIcons name="check" size={16} color="#fff" />
+                <Text style={styles.approveButtonText}>批准</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.rejectButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  openApprovalModal(plan, 'reject');
+                }}
+              >
+                <MaterialCommunityIcons name="close" size={16} color="#fff" />
+                <Text style={styles.rejectButtonText}>拒绝</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Tags */}
         <View style={styles.tagsRow}>
           {plan.tags?.map((tag, index) => (
@@ -408,27 +632,11 @@ export default function PlanListScreen() {
             <Text style={styles.filterSelectText}>{selectedDate}</Text>
             <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
           </TouchableOpacity>
+          <TouchableOpacity style={styles.filterSelect}>
+            <Text style={styles.filterSelectText}>{selectedSource}</Text>
+            <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
+          </TouchableOpacity>
         </View>
-
-        {/* Source Filter Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipContainer}
-        >
-          {sourceOptions.map((source) => (
-            <TouchableOpacity
-              key={source}
-              style={[styles.chip, selectedSource === source && styles.chipActive]}
-              onPress={() => setSelectedSource(source)}
-            >
-              <Text style={[styles.chipText, selectedSource === source && styles.chipTextActive]}>
-                {source}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
 
         {/* Search Box */}
         <View style={styles.searchBox}>
@@ -444,40 +652,208 @@ export default function PlanListScreen() {
 
         {/* Quick Entry */}
         <View style={styles.quickEntryRow}>
-          <TouchableOpacity style={styles.quickEntry} onPress={() => navigation.navigate('PlanGantt')}>
+          <TouchableOpacity
+            style={styles.quickEntry}
+            onPress={() => navigation.navigate('PlanGantt' as never)}
+          >
             <MaterialCommunityIcons name="chart-gantt" size={24} color={DISPATCHER_THEME.secondary} />
             <Text style={styles.quickEntryText}>甘特图</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickEntry} onPress={() => navigation.navigate('UrgentInsert')}>
+          <TouchableOpacity
+            style={styles.quickEntry}
+            onPress={() => navigation.navigate('UrgentInsert' as never)}
+          >
             <MaterialCommunityIcons name="lightning-bolt" size={24} color="#ff4d4f" />
             <Text style={styles.quickEntryText}>紧急插单</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.quickEntry, styles.quickEntryWithBadge]} onPress={() => navigation.navigate('MixedBatch')}>
+          <TouchableOpacity
+            style={[styles.quickEntry, styles.quickEntryWithBadge]}
+            onPress={() => navigation.navigate('MixedBatch' as never)}
+          >
             <View style={styles.quickEntryBadge}>
               <Text style={styles.quickEntryBadgeText}>3</Text>
             </View>
             <MaterialCommunityIcons name="view-grid" size={24} color={DISPATCHER_THEME.primary} />
             <Text style={styles.quickEntryText}>混批排产</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickEntry} onPress={() => navigation.navigate('ResourceOverview')}>
+          <TouchableOpacity
+            style={styles.quickEntry}
+            onPress={() => navigation.navigate('ResourceOverview' as never)}
+          >
             <MaterialCommunityIcons name="monitor-dashboard" size={24} color="#52c41a" />
             <Text style={styles.quickEntryText}>资源总览</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Section Header */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>今日计划 ({plans.length}个)</Text>
+        {/* Urgent Filter Toggle */}
+        <View style={styles.urgentFilterRow}>
+          <TouchableOpacity
+            style={[
+              styles.urgentFilterChip,
+              selectedUrgent === '全部' && styles.urgentFilterChipActive,
+            ]}
+            onPress={() => setSelectedUrgent('全部')}
+          >
+            <Text style={[
+              styles.urgentFilterText,
+              selectedUrgent === '全部' && styles.urgentFilterTextActive,
+            ]}>全部</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.urgentFilterChip,
+              selectedUrgent === '仅紧急' && styles.urgentFilterChipUrgent,
+            ]}
+            onPress={() => setSelectedUrgent('仅紧急')}
+          >
+            <MaterialCommunityIcons
+              name="alert"
+              size={12}
+              color={selectedUrgent === '仅紧急' ? '#fff' : '#ff4d4f'}
+            />
+            <Text style={[
+              styles.urgentFilterText,
+              selectedUrgent === '仅紧急' && styles.urgentFilterTextActive,
+              selectedUrgent !== '仅紧急' && { color: '#ff4d4f' },
+            ]}>仅紧急</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.urgentFilterChip,
+              selectedUrgent === '待审批' && styles.urgentFilterChipApproval,
+            ]}
+            onPress={() => setSelectedUrgent('待审批')}
+          >
+            <MaterialCommunityIcons
+              name="clipboard-check-outline"
+              size={12}
+              color={selectedUrgent === '待审批' ? '#fff' : '#fa8c16'}
+            />
+            <Text style={[
+              styles.urgentFilterText,
+              selectedUrgent === '待审批' && styles.urgentFilterTextActive,
+              selectedUrgent !== '待审批' && { color: '#fa8c16' },
+            ]}>待审批</Text>
+            {pendingApprovalsCount > 0 && (
+              <View style={styles.approvalCountBadge}>
+                <Text style={styles.approvalCountText}>{pendingApprovalsCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <View style={styles.urgentCountBadge}>
+            <Text style={styles.urgentCountText}>
+              {plans.filter(p => p.isUrgent).length}个紧急
+            </Text>
+          </View>
         </View>
 
-        {/* Plan Cards */}
-        {plans.map(renderPlanCard)}
+        {/* Section Header */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            {selectedUrgent === '仅紧急' ? '紧急计划' :
+             selectedUrgent === '待审批' ? '待审批计划' : '今日计划'} ({filteredPlans.length}个)
+          </Text>
+        </View>
+
+        {/* Loading / Empty / Plan Cards */}
+        {loading ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>加载中...</Text>
+          </View>
+        ) : filteredPlans.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <MaterialCommunityIcons name="clipboard-text-outline" size={48} color="#999" />
+            <Text style={styles.emptyText}>暂无计划</Text>
+          </View>
+        ) : (
+          filteredPlans.map(renderPlanCard)
+        )}
 
         {/* Load More */}
         <Text style={styles.loadMore}>加载更多...</Text>
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* 审批模态框 */}
+      <Modal
+        visible={approvalModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setApprovalModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {approvalAction === 'approve' ? '批准插单' : '拒绝插单'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setApprovalModalVisible(false)}
+                disabled={approvalLoading}
+              >
+                <MaterialCommunityIcons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedPlanForApproval && (
+              <View style={styles.modalPlanInfo}>
+                <Text style={styles.modalPlanNumber}>
+                  {selectedPlanForApproval.planNumber}
+                </Text>
+                <Text style={styles.modalPlanProduct}>
+                  {selectedPlanForApproval.productName} · {selectedPlanForApproval.quantity}{selectedPlanForApproval.unit}
+                </Text>
+                {selectedPlanForApproval.forceInsertReason && (
+                  <Text style={styles.modalReason}>
+                    插单原因: {selectedPlanForApproval.forceInsertReason}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            <Text style={styles.modalLabel}>
+              {approvalAction === 'approve' ? '审批备注 (可选)' : '拒绝原因 (必填)'}
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder={approvalAction === 'approve' ? '请输入审批备注...' : '请输入拒绝原因...'}
+              placeholderTextColor="#999"
+              value={approvalComment}
+              onChangeText={setApprovalComment}
+              multiline
+              numberOfLines={3}
+              editable={!approvalLoading}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setApprovalModalVisible(false)}
+                disabled={approvalLoading}
+              >
+                <Text style={styles.modalCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalConfirmButton,
+                  approvalAction === 'reject' && styles.modalRejectConfirmButton,
+                ]}
+                onPress={handleApprovalSubmit}
+                disabled={approvalLoading}
+              >
+                {approvalLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalConfirmText}>
+                    {approvalAction === 'approve' ? '确认批准' : '确认拒绝'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -849,5 +1225,279 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 14,
     paddingVertical: 20,
+  },
+  // 紧急状态相关样式
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  urgentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ff4d4f',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 3,
+    gap: 2,
+  },
+  urgentBadgeText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  probabilityBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  probabilityText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  // 紧急筛选行样式
+  urgentFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  urgentFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    gap: 4,
+  },
+  urgentFilterChipActive: {
+    backgroundColor: DISPATCHER_THEME.primary,
+    borderColor: DISPATCHER_THEME.primary,
+  },
+  urgentFilterChipUrgent: {
+    backgroundColor: '#ff4d4f',
+    borderColor: '#ff4d4f',
+  },
+  urgentFilterChipApproval: {
+    backgroundColor: '#fa8c16',
+    borderColor: '#fa8c16',
+  },
+  approvalCountBadge: {
+    marginLeft: 4,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    minWidth: 18,
+    alignItems: 'center',
+  },
+  approvalCountText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  urgentFilterText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  urgentFilterTextActive: {
+    color: '#fff',
+  },
+  urgentCountBadge: {
+    marginLeft: 'auto',
+    backgroundColor: '#fff1f0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  urgentCountText: {
+    fontSize: 11,
+    color: '#ff4d4f',
+    fontWeight: '500',
+  },
+  // 空状态样式
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
+  },
+  // 审批区域样式
+  approvalSection: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#fff7e6',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#fa8c16',
+  },
+  approvalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  approvalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fa8c16',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    gap: 4,
+  },
+  approvalBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  forceInsertLabel: {
+    fontSize: 12,
+    color: '#fa8c16',
+    fontWeight: '500',
+  },
+  forceInsertReason: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 10,
+    lineHeight: 18,
+  },
+  approvalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  approveButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#52c41a',
+    paddingVertical: 10,
+    borderRadius: 6,
+    gap: 4,
+  },
+  approveButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  rejectButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ff4d4f',
+    paddingVertical: 10,
+    borderRadius: 6,
+    gap: 4,
+  },
+  rejectButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // 模态框样式
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalPlanInfo: {
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  modalPlanNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: DISPATCHER_THEME.primary,
+    marginBottom: 4,
+  },
+  modalPlanProduct: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  modalReason: {
+    fontSize: 12,
+    color: '#fa8c16',
+    marginTop: 4,
+  },
+  modalLabel: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 8,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#333',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  modalCancelText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  modalConfirmButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#52c41a',
+  },
+  modalRejectConfirmButton: {
+    backgroundColor: '#ff4d4f',
+  },
+  modalConfirmText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
   },
 });

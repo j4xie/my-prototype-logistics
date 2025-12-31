@@ -5,10 +5,13 @@ import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.FactoryEquipment;
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.entity.enums.ProcessingStageType;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.FeatureEngineeringService;
+import com.cretas.aims.service.IndividualEfficiencyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -28,7 +31,6 @@ import java.util.*;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class FeatureEngineeringServiceImpl implements FeatureEngineeringService {
 
     private final UserRepository userRepository;
@@ -39,9 +41,32 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
     private final ProductionBatchRepository productionBatchRepository;
     private final TimeClockRecordRepository timeClockRecordRepository;
 
-    // 特征维度常量
-    private static final int TASK_FEATURE_DIM = 6;
-    private static final int WORKER_FEATURE_DIM = 6;
+    // Phase 4: 注入个人效率服务 (使用 @Lazy 避免循环依赖)
+    private final IndividualEfficiencyService individualEfficiencyService;
+
+    // Phase 4: 特征维度从 6+6=12 扩展到 8+8=16
+    private static final int TASK_FEATURE_DIM = 8;
+    private static final int WORKER_FEATURE_DIM = 8;
+
+    // 构造函数注入 (使用 @Lazy 避免循环依赖)
+    public FeatureEngineeringServiceImpl(
+            UserRepository userRepository,
+            WorkerAllocationFeedbackRepository feedbackRepository,
+            ProductTypeRepository productTypeRepository,
+            EquipmentRepository equipmentRepository,
+            ProductionPlanRepository productionPlanRepository,
+            ProductionBatchRepository productionBatchRepository,
+            TimeClockRecordRepository timeClockRecordRepository,
+            @Lazy IndividualEfficiencyService individualEfficiencyService) {
+        this.userRepository = userRepository;
+        this.feedbackRepository = feedbackRepository;
+        this.productTypeRepository = productTypeRepository;
+        this.equipmentRepository = equipmentRepository;
+        this.productionPlanRepository = productionPlanRepository;
+        this.productionBatchRepository = productionBatchRepository;
+        this.timeClockRecordRepository = timeClockRecordRepository;
+        this.individualEfficiencyService = individualEfficiencyService;
+    }
 
     // ==================== 任务特征提取 ====================
 
@@ -76,7 +101,75 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
         String workshopId = getString(taskInfo, "workshopId", "default");
         features[5] = encodeString(workshopId);
 
+        // Phase 4 新增特征:
+        // [6] 工艺类型编码 (ProcessingStageType hash, 0-1)
+        ProcessingStageType stageType = getStageType(taskInfo);
+        features[6] = encodeStageType(stageType);
+
+        // [7] 工艺所需技能等级 (归一化 1-5 → 0-1)
+        int requiredSkillLevel = getRequiredSkillLevelForStage(stageType);
+        features[7] = normalize(requiredSkillLevel, 1, 5);
+
         return features;
+    }
+
+    /**
+     * 从任务信息中获取工艺类型
+     */
+    private ProcessingStageType getStageType(Map<String, Object> taskInfo) {
+        if (taskInfo == null) {
+            return ProcessingStageType.OTHER;
+        }
+
+        Object stageTypeObj = taskInfo.get("stageType");
+        if (stageTypeObj instanceof ProcessingStageType) {
+            return (ProcessingStageType) stageTypeObj;
+        }
+
+        if (stageTypeObj instanceof String) {
+            try {
+                return ProcessingStageType.valueOf((String) stageTypeObj);
+            } catch (IllegalArgumentException e) {
+                log.debug("无法解析工艺类型: {}", stageTypeObj);
+            }
+        }
+
+        return ProcessingStageType.OTHER;
+    }
+
+    /**
+     * 编码工艺类型为 0-1 范围的特征值
+     */
+    private double encodeStageType(ProcessingStageType stageType) {
+        if (stageType == null) {
+            return 0.5;
+        }
+        // 使用序号编码，归一化到 0-1
+        return (double) stageType.ordinal() / ProcessingStageType.values().length;
+    }
+
+    /**
+     * 获取工艺所需的技能等级
+     * 不同工艺对技能要求不同
+     */
+    private int getRequiredSkillLevelForStage(ProcessingStageType stageType) {
+        if (stageType == null) {
+            return 3; // 默认中等
+        }
+
+        // 根据工艺复杂度确定所需技能等级
+        return switch (stageType) {
+            // 高技能要求 (等级 5)
+            case QUALITY_CHECK, METAL_DETECTION -> 5;
+            // 较高技能要求 (等级 4)
+            case SLICING, DICING, MINCING, TRIMMING -> 4;
+            // 中等技能要求 (等级 3)
+            case MARINATING, SEASONING, FRYING, COOKING, BAKING, STEAMING -> 3;
+            // 较低技能要求 (等级 2)
+            case FREEZING, THAWING, COOLING, CHILLING, WASHING, DRAINING -> 2;
+            // 基础技能 (等级 1)
+            case PACKAGING, LABELING, WEIGHT_CHECK, BOXING, RECEIVING, CLEANING, LINE_CHANGE, OTHER -> 1;
+        };
     }
 
     @Override
@@ -170,10 +263,39 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
         return features;
     }
 
+    @Override
+    public double[] extractWorkerFeatures(String factoryId, Long workerId, ProcessingStageType stageType) {
+        double[] features = new double[WORKER_FEATURE_DIM];
+
+        try {
+            Optional<User> userOpt = userRepository.findById(workerId);
+            if (userOpt.isPresent()) {
+                User worker = userOpt.get();
+                features = extractWorkerFeaturesFromUser(factoryId, worker, stageType);
+            } else {
+                // 用户不存在，返回默认特征
+                features = getDefaultWorkerFeatures();
+            }
+        } catch (Exception e) {
+            log.warn("提取工人特征失败: workerId={}, stageType={}, error={}", workerId, stageType, e.getMessage());
+            features = getDefaultWorkerFeatures();
+        }
+
+        return features;
+    }
+
     /**
-     * 从 User 实体提取工人特征
+     * 从 User 实体提取工人特征 (无工艺上下文，使用默认值)
      */
     private double[] extractWorkerFeaturesFromUser(String factoryId, User worker) {
+        return extractWorkerFeaturesFromUser(factoryId, worker, null);
+    }
+
+    /**
+     * 从 User 实体提取工人特征 (包含工艺上下文)
+     * Phase 4: 扩展到 8 维特征
+     */
+    private double[] extractWorkerFeaturesFromUser(String factoryId, User worker, ProcessingStageType stageType) {
         double[] features = new double[WORKER_FEATURE_DIM];
 
         // [0] 技能等级 (归一化 1-5 → 0-1)
@@ -210,7 +332,77 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
         double fatigueLevel = todayHours > 6 ? Math.min(1.0, (todayHours - 6) / 6.0) : 0;
         features[5] = fatigueLevel;
 
+        // Phase 4 新增特征:
+        // [6] 该工艺专项技能 (从 User.skillLevels 解析, 归一化 1-5 → 0-1)
+        int stageSkillLevel = parseSkillLevelForStage(worker.getSkillLevels(), stageType);
+        features[6] = normalize(stageSkillLevel, 1, 5);
+
+        // [7] 该工艺历史效率 (从 IndividualEfficiencyService 获取, 0-1)
+        double stageEfficiency = getWorkerStageEfficiency(factoryId, worker.getId(), stageType);
+        features[7] = stageEfficiency;
+
         return features;
+    }
+
+    /**
+     * 解析工人在特定工艺上的技能等级
+     * Phase 4: 支持工艺维度的技能追踪
+     */
+    private int parseSkillLevelForStage(String skillLevelsJson, ProcessingStageType stageType) {
+        if (stageType == null || skillLevelsJson == null || skillLevelsJson.isEmpty()) {
+            return 3; // 默认中等
+        }
+
+        try {
+            // 解析 JSON: {"SLICING": 4, "PACKAGING": 3}
+            String cleaned = skillLevelsJson.replaceAll("[{}\"\\s]", "");
+            String[] pairs = cleaned.split(",");
+
+            for (String pair : pairs) {
+                String[] kv = pair.split(":");
+                if (kv.length == 2) {
+                    String key = kv[0].trim();
+                    // 匹配工艺类型名称
+                    if (stageType.name().equalsIgnoreCase(key) ||
+                        stageType.getName().equals(key)) {
+                        try {
+                            return Integer.parseInt(kv[1].trim());
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("解析工艺技能等级失败: stageType={}", stageType);
+        }
+
+        // 如果没有找到特定工艺的技能，返回平均技能等级
+        return parseSkillLevel(skillLevelsJson);
+    }
+
+    /**
+     * 获取工人在特定工艺上的历史效率
+     * Phase 4: 从 IndividualEfficiencyService 获取
+     */
+    private double getWorkerStageEfficiency(String factoryId, Long workerId, ProcessingStageType stageType) {
+        if (stageType == null || individualEfficiencyService == null) {
+            return 0.8; // 默认效率
+        }
+
+        try {
+            Map<ProcessingStageType, BigDecimal> efficiencies =
+                    individualEfficiencyService.getWorkerEfficiencyByStage(factoryId, workerId);
+
+            if (efficiencies != null && efficiencies.containsKey(stageType)) {
+                BigDecimal efficiency = efficiencies.get(stageType);
+                // 归一化效率值到 0-1 (假设效率范围 0.5-1.5)
+                return Math.max(0, Math.min(1, (efficiency.doubleValue() - 0.5) / 1.0));
+            }
+        } catch (Exception e) {
+            log.debug("获取工人工艺效率失败: workerId={}, stageType={}", workerId, stageType);
+        }
+
+        return 0.8; // 默认效率
     }
 
     @Override
@@ -236,20 +428,30 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
         // [5] 疲劳度
         features[5] = getDouble(workerInfo, "fatigueLevel", 0);
 
+        // Phase 4 新增特征:
+        // [6] 该工艺专项技能 (默认使用平均技能)
+        features[6] = normalize(getDouble(workerInfo, "stageSkillLevel", 3), 1, 5);
+
+        // [7] 该工艺历史效率 (默认 0.8)
+        features[7] = getDouble(workerInfo, "stageEfficiency", 0.8);
+
         return features;
     }
 
     /**
-     * 获取默认工人特征
+     * 获取默认工人特征 (8 维)
+     * Phase 4: 扩展到 8 维
      */
     private double[] getDefaultWorkerFeatures() {
         return new double[] {
-                0.6,  // 技能等级 3/5
-                0.25, // 经验天数 90/365
-                0.8,  // 默认效率
-                1.0,  // 正式工
-                0.0,  // 今日工时
-                0.0   // 疲劳度
+                0.6,  // [0] 技能等级 3/5
+                0.25, // [1] 经验天数 90/365
+                0.8,  // [2] 默认效率
+                1.0,  // [3] 正式工
+                0.0,  // [4] 今日工时
+                0.0,  // [5] 疲劳度
+                0.6,  // [6] 工艺专项技能 3/5 (Phase 4)
+                0.8   // [7] 工艺历史效率 (Phase 4)
         };
     }
 

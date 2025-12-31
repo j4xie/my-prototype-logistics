@@ -463,12 +463,15 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
     @Override
     public List<ProductionPlanDTO> getPendingPlansToExecute(String factoryId) {
-        // 暂时注释 - 数据库表中没有planned_date字段
-        // return productionPlanRepository.findPendingPlansToExecute(factoryId)
-        //         .stream()
-        //         .map(productionPlanMapper::toDTO)
-        //         .collect(Collectors.toList());
-        return new ArrayList<>();
+        // 查询 PENDING 状态的生产计划
+        List<ProductionPlan> plans = productionPlanRepository.findByFactoryIdAndStatus(
+            factoryId,
+            ProductionPlanStatus.PENDING
+        );
+        return plans.stream()
+            .filter(plan -> plan.getDeletedAt() == null)
+            .map(productionPlanMapper::toDTO)
+            .collect(Collectors.toList());
     }
 
     @Override

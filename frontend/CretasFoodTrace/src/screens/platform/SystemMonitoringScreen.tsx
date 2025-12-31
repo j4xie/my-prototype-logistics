@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl, Dimensions, Alert } from 'react-native';
 import {
   Text,
   Appbar,
@@ -9,11 +9,13 @@ import {
   Divider,
   ProgressBar,
   List,
+  ActivityIndicator,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import { logger } from '../../utils/logger';
+import { platformAPI, SystemMetrics, ActivityLog } from '../../services/api/platformApiClient';
 
 // 创建SystemMonitoring专用logger
 const systemMonitorLogger = logger.createContextLogger('SystemMonitoring');
@@ -26,31 +28,47 @@ const { width } = Dimensions.get('window');
  * 系统监控页面
  * 实时监控平台运行状态和性能指标
  */
+// 默认初始值
+const DEFAULT_METRICS: SystemMetrics = {
+  cpuUsage: 0,
+  memoryUsage: 0,
+  usedMemoryMB: 0,
+  maxMemoryMB: 0,
+  diskUsage: 0,
+  networkIn: 0,
+  networkOut: 0,
+  activeConnections: 0,
+  requestsPerMinute: 0,
+  averageResponseTime: 0,
+  errorRate: 0,
+  uptime: '加载中...',
+  uptimeMs: 0,
+  availableProcessors: 0,
+  javaVersion: '',
+  osName: '',
+  osArch: '',
+  appVersion: '',
+  connectionPool: {
+    activeConnections: 0,
+    idleConnections: 0,
+    maxConnections: 0,
+    utilizationPercent: 0,
+  },
+  serviceHealthStatus: [],
+  recentActivity: [],
+};
+
 export default function SystemMonitoringScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock数据 - 实际应从后端API获取
-  const [systemMetrics, setSystemMetrics] = useState({
-    cpuUsage: 45.2,
-    memoryUsage: 62.8,
-    diskUsage: 38.5,
-    networkIn: 125.6, // MB/s
-    networkOut: 89.3, // MB/s
-    activeConnections: 342,
-    requestsPerMinute: 1250,
-    averageResponseTime: 85, // ms
-    errorRate: 0.02, // %
-    uptime: '15天 6小时 32分钟',
-  });
+  // 系统监控指标 - 从后端 API 获取
+  const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>(DEFAULT_METRICS);
 
-  const [recentActivity, setRecentActivity] = useState([
-    { id: 1, type: 'info', message: '系统健康检查完成', time: '2分钟前', icon: 'check-circle', color: '#4CAF50' },
-    { id: 2, type: 'warning', message: 'CPU使用率超过45%', time: '5分钟前', icon: 'alert-circle', color: '#FF9800' },
-    { id: 3, type: 'info', message: '数据库备份完成', time: '15分钟前', icon: 'database-check', color: '#2196F3' },
-    { id: 4, type: 'info', message: 'AI服务响应正常', time: '30分钟前', icon: 'robot', color: '#9C27B0' },
-    { id: 5, type: 'success', message: '系统更新成功', time: '1小时前', icon: 'update', color: '#00BCD4' },
-  ]);
+  // 最近活动日志 - 从后端 API 获取
+  const [recentActivity, setRecentActivity] = useState<ActivityLog[]>([]);
 
   useEffect(() => {
     loadSystemMetrics();
@@ -58,8 +76,31 @@ export default function SystemMonitoringScreen() {
 
   const loadSystemMetrics = async () => {
     systemMonitorLogger.info('加载系统监控数据');
-    // TODO: 从后端API加载真实数据
-    // const response = await platformAPI.getSystemMetrics();
+    try {
+      setError(null);
+      const response = await platformAPI.getSystemMetrics();
+
+      if (response.success && response.data) {
+        systemMonitorLogger.info('系统监控数据加载成功', {
+          cpuUsage: response.data.cpuUsage,
+          memoryUsage: response.data.memoryUsage,
+          uptime: response.data.uptime,
+        });
+        setSystemMetrics(response.data);
+        setRecentActivity(response.data.recentActivity || []);
+      } else {
+        const errorMsg = response.message || '加载系统监控数据失败';
+        systemMonitorLogger.warn('加载失败', { message: errorMsg });
+        setError(errorMsg);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : '网络请求失败';
+      systemMonitorLogger.error('加载系统监控数据异常', { error: errorMsg });
+      setError(errorMsg);
+      Alert.alert('加载失败', errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRefresh = async () => {
@@ -95,7 +136,41 @@ export default function SystemMonitoringScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        {/* 系统状态总览 */}
+        {/* 加载状态 */}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#1976D2" />
+            <Text variant="bodyMedium" style={styles.loadingText}>
+              加载系统监控数据...
+            </Text>
+          </View>
+        )}
+
+        {/* 错误状态 */}
+        {error && !loading && (
+          <Card style={[styles.card, styles.errorCard]} mode="elevated">
+            <Card.Content>
+              <View style={styles.errorContent}>
+                <Avatar.Icon icon="alert-circle" size={48} color="#F44336" style={styles.errorIcon} />
+                <Text variant="bodyLarge" style={styles.errorText}>
+                  {error}
+                </Text>
+                <Chip
+                  mode="outlined"
+                  onPress={handleRefresh}
+                  style={styles.retryChip}
+                  icon="refresh"
+                >
+                  重试
+                </Chip>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* 系统状态总览 - 仅在加载完成且无错误时显示 */}
+        {!loading && !error && (
+          <>
         <Card style={styles.card} mode="elevated">
           <Card.Title title="⚡ 系统状态" />
           <Card.Content>
@@ -288,29 +363,37 @@ export default function SystemMonitoringScreen() {
         <Card style={styles.card} mode="elevated">
           <Card.Title title="📋 最近活动" />
           <Card.Content>
-            {recentActivity.map((activity, index) => (
-              <React.Fragment key={activity.id}>
-                <View style={styles.activityItem}>
-                  <Avatar.Icon
-                    icon={activity.icon}
-                    size={32}
-                    color={activity.color}
-                    style={styles.activityIcon}
-                  />
-                  <View style={styles.activityContent}>
-                    <Text variant="bodyMedium" style={styles.activityMessage}>
-                      {activity.message}
-                    </Text>
-                    <Text variant="bodySmall" style={styles.activityTime}>
-                      {activity.time}
-                    </Text>
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity, index) => (
+                <React.Fragment key={activity.id}>
+                  <View style={styles.activityItem}>
+                    <Avatar.Icon
+                      icon={activity.icon}
+                      size={32}
+                      color={activity.color}
+                      style={styles.activityIcon}
+                    />
+                    <View style={styles.activityContent}>
+                      <Text variant="bodyMedium" style={styles.activityMessage}>
+                        {activity.message}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.activityTime}>
+                        {activity.time}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-                {index < recentActivity.length - 1 && <Divider style={styles.divider} />}
-              </React.Fragment>
-            ))}
+                  {index < recentActivity.length - 1 && <Divider style={styles.divider} />}
+                </React.Fragment>
+              ))
+            ) : (
+              <Text variant="bodyMedium" style={styles.emptyText}>
+                暂无活动记录
+              </Text>
+            )}
           </Card.Content>
         </Card>
+          </>
+        )}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -445,5 +528,39 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    color: '#757575',
+  },
+  errorCard: {
+    backgroundColor: '#FFF3F3',
+  },
+  errorContent: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  errorIcon: {
+    backgroundColor: 'transparent',
+    marginBottom: 12,
+  },
+  errorText: {
+    color: '#D32F2F',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryChip: {
+    borderColor: '#1976D2',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#9E9E9E',
+    paddingVertical: 16,
   },
 });

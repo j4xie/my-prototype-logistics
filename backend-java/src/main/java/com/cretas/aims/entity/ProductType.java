@@ -58,6 +58,71 @@ public class ProductType extends BaseEntity {
     private Integer productionTimeMinutes;
     @Column(name = "shelf_life_days")
     private Integer shelfLifeDays;
+
+    // ==================== Sprint 2 S2-1: Form Template Association ====================
+
+    /**
+     * Associated form template ID for this product type
+     * Allows different product types to have specialized input forms
+     */
+    @Column(name = "form_template_id", length = 100)
+    private String formTemplateId;
+
+    // ==================== Sprint 2 S2-5: SOP Configuration Association ====================
+
+    /**
+     * Default SOP configuration ID for this product type
+     * Links to SopConfig entity for standardized operating procedures
+     */
+    @Column(name = "default_sop_config_id", length = 50)
+    private String defaultSopConfigId;
+
+    // ==================== Phase 5: SKU Configuration Fields ====================
+
+    /**
+     * Standard work hours to produce one unit
+     * Used by scheduling system for capacity planning
+     */
+    @Column(name = "work_hours", precision = 10, scale = 2)
+    private BigDecimal workHours;
+
+    /**
+     * Processing steps as JSON array
+     * Format: [{"stageType": "SLICING", "orderIndex": 1, "requiredSkillLevel": 3, "estimatedMinutes": 30}, ...]
+     */
+    @Column(name = "processing_steps", columnDefinition = "JSON")
+    private String processingSteps;
+
+    /**
+     * Skill requirements as JSON object
+     * Format: {"minLevel": 2, "preferredLevel": 4, "specialSkills": ["knife_handling"]}
+     */
+    @Column(name = "skill_requirements", columnDefinition = "JSON")
+    private String skillRequirements;
+
+    /**
+     * Required equipment IDs as JSON array
+     * Format: ["EQ-001", "EQ-002"]
+     */
+    @Column(name = "equipment_ids", columnDefinition = "JSON")
+    private String equipmentIds;
+
+    /**
+     * Associated quality check item IDs as JSON array
+     * Format: ["QC-001", "QC-002"]
+     */
+    @Column(name = "quality_check_ids", columnDefinition = "JSON")
+    private String qualityCheckIds;
+
+    /**
+     * Production complexity score (1-5)
+     * Used by LinUCB feature extraction for worker recommendation
+     */
+    @Column(name = "complexity_score")
+    private Integer complexityScore;
+
+    // ==================== End Phase 5 Fields ====================
+
     @Column(name = "package_spec", length = 100)
     private String packageSpec;
     @Column(name = "is_active", nullable = false)

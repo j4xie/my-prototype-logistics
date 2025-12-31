@@ -3,8 +3,72 @@ import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 产品类型管理API客户端
- * 总计12个API - 路径：/api/mobile/{factoryId}/product-types/*
+ * 总计16个API - 路径：/api/mobile/{factoryId}/product-types/*
+ *
+ * Phase 5 更新: 新增 SKU 配置相关接口
  */
+
+// ==================== Phase 5: SKU Configuration Types ====================
+
+/**
+ * 加工步骤配置
+ */
+export interface ProcessingStep {
+  /** 加工环节类型 (ProcessingStageType enum value) */
+  stageType: string;
+  /** 步骤顺序 (1-based) */
+  orderIndex: number;
+  /** 所需技能等级 (1-5) */
+  requiredSkillLevel: number;
+  /** 预估时间 (分钟) */
+  estimatedMinutes: number;
+  /** 备注 */
+  notes?: string;
+}
+
+/**
+ * 技能要求配置
+ */
+export interface SkillRequirement {
+  /** 最低技能等级 (1-5) */
+  minLevel: number;
+  /** 建议技能等级 (1-5) */
+  preferredLevel: number;
+  /** 特殊技能标签 */
+  specialSkills: string[];
+}
+
+/**
+ * 加工环节类型选项 (用于下拉选择)
+ */
+export interface ProcessingStageOption {
+  /** 枚举值 (如 'SLICING') */
+  value: string;
+  /** 显示名称 (如 '切片') */
+  label: string;
+  /** 描述 */
+  description: string;
+}
+
+/**
+ * 调度信息 (供调度系统使用)
+ */
+export interface ProductSchedulingInfo {
+  productTypeId: string;
+  productCode: string;
+  productName: string;
+  category?: string;
+  workHours?: number;
+  productionTimeMinutes?: number;
+  complexityScore?: number;
+  processingSteps?: ProcessingStep[];
+  stepCount?: number;
+  skillRequirements?: SkillRequirement;
+  equipmentIds?: string[];
+  qualityCheckIds?: string[];
+}
+
+// ==================== End Phase 5 Types ====================
 
 export interface ProductType {
   id: string;
@@ -18,6 +82,26 @@ export interface ProductType {
   isActive: boolean;
   createdAt: string;
   updatedAt?: string;
+
+  // Phase 5: SKU Configuration Fields
+  /** 标准工时 */
+  workHours?: number;
+  /** 加工步骤配置 */
+  processingSteps?: ProcessingStep[];
+  /** 技能要求配置 */
+  skillRequirements?: SkillRequirement;
+  /** 关联设备ID列表 */
+  equipmentIds?: string[];
+  /** 关联质检项ID列表 */
+  qualityCheckIds?: string[];
+  /** 复杂度评分 (1-5) */
+  complexityScore?: number;
+  /** 生产时间 (分钟) */
+  productionTimeMinutes?: number;
+  /** 保质期 (天) */
+  shelfLifeDays?: number;
+  /** 包装规格 */
+  packageSpec?: string;
 }
 
 /**
@@ -114,6 +198,50 @@ class ProductTypeApiClient {
 
   async batchUpdateStatus(ids: string[], isActive: boolean, factoryId?: string): Promise<void> {
     return await apiClient.put(`${this.getPath(factoryId)}/batch/status`, { ids, isActive });
+  }
+
+  // ==================== Phase 5: SKU Configuration Methods ====================
+
+  /**
+   * 获取所有可用的加工环节类型
+   * 用于前端下拉选择
+   */
+  async getProcessingStages(factoryId?: string): Promise<ProcessingStageOption[]> {
+    return await apiClient.get(`${this.getPath(factoryId)}/processing-stages`);
+  }
+
+  /**
+   * 更新产品类型的 SKU 配置
+   * 仅更新调度相关字段
+   */
+  async updateProductTypeConfig(
+    id: string,
+    config: {
+      workHours?: number;
+      processingSteps?: ProcessingStep[];
+      skillRequirements?: SkillRequirement;
+      equipmentIds?: string[];
+      qualityCheckIds?: string[];
+      complexityScore?: number;
+    },
+    factoryId?: string
+  ): Promise<ProductType> {
+    return await apiClient.put(`${this.getPath(factoryId)}/${id}/config`, config);
+  }
+
+  /**
+   * 获取产品类型的调度信息
+   * 返回调度系统所需的关键字段
+   */
+  async getSchedulingInfo(id: string, factoryId?: string): Promise<ProductSchedulingInfo> {
+    return await apiClient.get(`${this.getPath(factoryId)}/${id}/scheduling-info`);
+  }
+
+  /**
+   * 批量获取产品类型的调度信息
+   */
+  async getSchedulingInfoBatch(productTypeIds: string[], factoryId?: string): Promise<ProductSchedulingInfo[]> {
+    return await apiClient.post(`${this.getPath(factoryId)}/scheduling-info/batch`, productTypeIds);
   }
 }
 

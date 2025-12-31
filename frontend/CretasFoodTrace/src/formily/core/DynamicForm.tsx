@@ -5,14 +5,35 @@
  * 提供统一的动态表单渲染能力
  */
 
-import React, { useMemo, useCallback, useImperativeHandle, forwardRef, useRef } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Button, useTheme } from 'react-native-paper';
+import React, { useMemo, useCallback, useImperativeHandle, forwardRef, useRef, useEffect, useState } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Button, useTheme, Snackbar } from 'react-native-paper';
 import { createForm, Form, onFieldValueChange } from '@formily/core';
 import { FormProvider, ISchema } from '@formily/react';
 import { SchemaField } from './SchemaField';
 import { AIAssistantButton } from '../components/AIAssistantButton';
 import { EntityType } from '../../services/api/formTemplateApiClient';
+import { EntityType as RuleEntityType } from '../../services/api/ruleConfigApiClient';
+import { useRuleHooks, RuleExecutionResult } from '../hooks';
+import {
+  ValidationCorrectionModal,
+  ValidationCorrectionModalProps,
+} from '../../components/form/ValidationCorrectionModal';
+import { ValidationError, FormFieldDefinition } from '../../services/api/formAssistantApiClient';
+
+// 将 formTemplateApiClient 的 EntityType 转换为 ruleConfigApiClient 的 EntityType
+const mapEntityTypeForRules = (entityType: EntityType | undefined): RuleEntityType => {
+  if (!entityType) return 'MaterialBatch';
+  const mapping: Record<EntityType, RuleEntityType> = {
+    QUALITY_CHECK: 'QualityInspection',
+    MATERIAL_BATCH: 'MaterialBatch',
+    PROCESSING_BATCH: 'ProcessingBatch',
+    SHIPMENT: 'Shipment',
+    EQUIPMENT: 'Equipment',
+    DISPOSAL_RECORD: 'DisposalRecord',
+  };
+  return mapping[entityType] ?? 'MaterialBatch';
+};
 
 // FormSchema 是一个简化的业务 Schema 类型
 // 实际使用时会兼容 Formily 的 ISchema
@@ -61,6 +82,12 @@ export interface DynamicFormProps {
   aiContext?: Record<string, unknown>;
   onAIFillSuccess?: (fieldValues: Record<string, unknown>, confidence: number) => void;
   onAIFillError?: (error: string) => void;
+  // 规则 Hook 相关配置
+  enableRuleHooks?: boolean;
+  factoryId?: string;
+  onRuleExecuted?: (result: RuleExecutionResult) => void;
+  onRuleValidationError?: (errors: string[]) => void;
+  onRuleWarning?: (warnings: string[]) => void;
 }
 
 export interface DynamicFormRef {
@@ -126,12 +153,58 @@ export const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
       aiContext,
       onAIFillSuccess,
       onAIFillError,
+      // 规则 Hook 配置
+      enableRuleHooks = false,
+      factoryId,
+      onRuleExecuted,
+      onRuleValidationError,
+      onRuleWarning,
     },
     ref
   ) => {
       // 内部 ref 用于 AI 助手
       const internalRef = useRef<DynamicFormRef>(null);
       const theme = useTheme();
+
+      // Snackbar 状态 (用于显示规则警告)
+      const [snackbarVisible, setSnackbarVisible] = React.useState(false);
+      const [snackbarMessage, setSnackbarMessage] = React.useState('');
+
+      // 校验修正弹窗状态
+      const [validationModalVisible, setValidationModalVisible] = useState(false);
+      const [currentValidationErrors, setCurrentValidationErrors] = useState<ValidationError[]>([]);
+      const [currentSubmittedValues, setCurrentSubmittedValues] = useState<Record<string, unknown>>({});
+      const [validationSessionId, setValidationSessionId] = useState<string | undefined>();
+
+      // 从 schema 提取字段定义 (用于 AI 理解表单结构)
+      const formFieldsFromSchema: FormFieldDefinition[] = useMemo(() => {
+        if (!schema?.properties) return [];
+
+        // 映射 schema type 到 FormFieldDefinition type
+        const mapType = (schemaType: string, hasEnum: boolean): FormFieldDefinition['type'] => {
+          if (hasEnum) return 'enum';
+          switch (schemaType) {
+            case 'string': return 'string';
+            case 'number':
+            case 'integer': return 'number';
+            case 'boolean': return 'boolean';
+            case 'array': return 'array';
+            default: return 'string'; // 将 object 等其他类型映射为 string
+          }
+        };
+
+        return Object.entries(schema.properties).map(([name, field]) => ({
+          name,
+          title: field.title || name,
+          type: mapType(field.type, !!field.enum),
+          required: field.required,
+          description: field.description,
+          enumOptions: field.enum?.map(e => typeof e === 'object'
+            ? { label: e.label, value: e.value }
+            : { label: String(e), value: e }
+          ),
+        }));
+      }, [schema]);
 
       // 创建表单实例
       const form = useMemo(() => {
@@ -163,17 +236,167 @@ export const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
         form.setPattern(disabled ? 'disabled' : readOnly ? 'readOnly' : 'editable');
       }, [form, disabled, readOnly]);
 
+      // 规则 Hook
+      const ruleHooks = useRuleHooks({
+        formRef: internalRef,
+        entityType: mapEntityTypeForRules(entityType),
+        factoryId,
+        enabled: enableRuleHooks && !!entityType,
+        onAfterExecute: (result) => {
+          onRuleExecuted?.(result);
+        },
+        onValuesModified: (modifiedValues) => {
+          // 将规则修改的值应用到表单
+          Object.entries(modifiedValues).forEach(([key, value]) => {
+            form.setFieldState(key, (state) => {
+              state.value = value;
+            });
+          });
+        },
+        onValidationError: (errors) => {
+          onRuleValidationError?.(errors);
+        },
+        onError: (error) => {
+          console.error('[DynamicForm] 规则执行错误:', error);
+        },
+      });
+
+      // beforeCreate Hook 执行 (表单初始化时)
+      useEffect(() => {
+        if (!enableRuleHooks || !entityType) return;
+
+        const executeBeforeCreate = async () => {
+          try {
+            const result = await ruleHooks.executeBeforeCreate(initialValues ?? {});
+            if (result.modifiedValues && Object.keys(result.modifiedValues).length > 0) {
+              // 应用规则返回的初始值修改
+              form.setValues({ ...form.values, ...result.modifiedValues });
+            }
+          } catch (error) {
+            console.error('[DynamicForm] beforeCreate Hook 执行失败:', error);
+          }
+        };
+
+        // 等待表单初始化完成后执行
+        const timer = setTimeout(executeBeforeCreate, 100);
+        return () => clearTimeout(timer);
+      }, [entityType, enableRuleHooks]);
+
       // 提交表单
       const handleSubmit = useCallback(async () => {
         try {
+          // 1. 表单验证
           await form.validate();
           const values = form.values;
-          await onSubmit?.(values);
+
+          // 2. 执行 beforeSubmit 规则 Hook
+          if (enableRuleHooks && entityType) {
+            const beforeSubmitResult = await ruleHooks.executeBeforeSubmit(values);
+
+            // 检查规则验证错误 - 触发 AI 校验修正弹窗
+            if (beforeSubmitResult.validationErrors && beforeSubmitResult.validationErrors.length > 0) {
+              // 将规则验证错误转换为 ValidationError 格式
+              const validationErrors: ValidationError[] = beforeSubmitResult.validationErrors.map((error, index) => {
+                // 尝试从错误信息中解析字段名 (格式: "字段名: 错误信息" 或 "fieldName - 错误信息")
+                const colonMatch = error.match(/^([^:：]+)[：:]\s*(.+)$/);
+                const dashMatch = error.match(/^([^ -]+)\s*[-–]\s*(.+)$/);
+                const match = colonMatch || dashMatch;
+
+                // 安全提取字段名和错误信息
+                const fieldName = match?.[1]?.trim();
+                const errorMessage = match?.[2]?.trim();
+
+                return {
+                  field: fieldName ?? `validation_${index}`,
+                  message: errorMessage ?? error,
+                  rule: `drools_rule_${index}`,
+                  currentValue: fieldName ? values[fieldName] : undefined,
+                };
+              });
+
+              // 保存当前提交的值和错误信息，打开校验修正弹窗
+              setCurrentValidationErrors(validationErrors);
+              setCurrentSubmittedValues(values);
+              setValidationModalVisible(true);
+
+              // 通知父组件
+              onRuleValidationError?.(beforeSubmitResult.validationErrors);
+
+              // 抛出错误阻止提交，但不显示 Alert (由 Modal 处理)
+              throw new Error('VALIDATION_CORRECTION_REQUIRED');
+            }
+
+            // 显示警告 (但不阻止提交)
+            if (beforeSubmitResult.warnings && beforeSubmitResult.warnings.length > 0) {
+              onRuleWarning?.(beforeSubmitResult.warnings);
+              setSnackbarMessage(beforeSubmitResult.warnings.join('; '));
+              setSnackbarVisible(true);
+            }
+
+            // 如果规则修改了值，使用修改后的值
+            const finalValues = beforeSubmitResult.modifiedValues
+              ? { ...values, ...beforeSubmitResult.modifiedValues }
+              : values;
+
+            // 3. 调用原始 onSubmit
+            const submitResult = await onSubmit?.(finalValues);
+
+            // 4. 执行 afterSubmit 规则 Hook
+            await ruleHooks.executeAfterSubmit(finalValues, submitResult);
+          } else {
+            // 不启用规则 Hook 时直接提交
+            await onSubmit?.(values);
+          }
         } catch (errors) {
-          console.error('表单验证失败:', errors);
+          console.error('表单提交失败:', errors);
           throw errors;
         }
-      }, [form, onSubmit]);
+      }, [form, onSubmit, enableRuleHooks, entityType, ruleHooks, onRuleWarning]);
+
+      // 校验修正弹窗回调：应用 AI 建议的修正值
+      const handleApplySuggestions = useCallback((correctedValues: Record<string, unknown>) => {
+        // 将 AI 修正值应用到表单
+        Object.entries(correctedValues).forEach(([key, value]) => {
+          form.setFieldState(key, (state) => {
+            state.value = value;
+          });
+        });
+
+        // 关闭弹窗
+        setValidationModalVisible(false);
+
+        // 清空校验错误
+        setCurrentValidationErrors([]);
+
+        // 显示成功提示
+        setSnackbarMessage('已应用 AI 修正建议，请检查后重新提交');
+        setSnackbarVisible(true);
+      }, [form]);
+
+      // 校验修正弹窗回调：重试提交
+      const handleRetrySubmit = useCallback(async () => {
+        // 关闭弹窗
+        setValidationModalVisible(false);
+
+        // 清空校验错误
+        setCurrentValidationErrors([]);
+
+        // 延迟一帧后重新提交，确保 UI 更新
+        setTimeout(() => {
+          handleSubmit().catch((error) => {
+            // 如果是校验修正错误，弹窗会再次打开，不需要额外处理
+            if (error.message !== 'VALIDATION_CORRECTION_REQUIRED') {
+              console.error('重试提交失败:', error);
+            }
+          });
+        }, 100);
+      }, [handleSubmit]);
+
+      // 关闭校验修正弹窗
+      const handleDismissValidationModal = useCallback(() => {
+        setValidationModalVisible(false);
+        // 保留错误信息，用户可能需要手动修改
+      }, []);
 
       // 创建 ref 对象
       const formRefObject: DynamicFormRef = useMemo(() => ({
@@ -234,6 +457,38 @@ export const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
         />
       ) : null;
 
+      // 规则警告 Snackbar
+      const ruleWarningSnackbar = (
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={4000}
+          action={{
+            label: '关闭',
+            onPress: () => setSnackbarVisible(false),
+          }}
+          style={styles.snackbar}
+        >
+          {snackbarMessage}
+        </Snackbar>
+      );
+
+      // 校验修正弹窗 (AI 辅助纠错)
+      const validationCorrectionModal = entityType ? (
+        <ValidationCorrectionModal
+          visible={validationModalVisible}
+          onDismiss={handleDismissValidationModal}
+          validationErrors={currentValidationErrors}
+          submittedValues={currentSubmittedValues}
+          entityType={entityType}
+          formFields={formFieldsFromSchema}
+          onApplySuggestions={handleApplySuggestions}
+          onRetry={handleRetrySubmit}
+          sessionId={validationSessionId}
+          onSessionIdChange={setValidationSessionId}
+        />
+      ) : null;
+
       if (scrollable) {
         return (
           <View style={[styles.container, style]}>
@@ -245,6 +500,8 @@ export const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
               {content}
             </ScrollView>
             {aiAssistantButton}
+            {ruleWarningSnackbar}
+            {validationCorrectionModal}
           </View>
         );
       }
@@ -253,6 +510,8 @@ export const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
         <View style={[styles.container, style]}>
           {content}
           {aiAssistantButton}
+          {ruleWarningSnackbar}
+          {validationCorrectionModal}
         </View>
       );
   }
@@ -277,6 +536,9 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     borderRadius: 8,
+  },
+  snackbar: {
+    marginBottom: 16,
   },
 });
 

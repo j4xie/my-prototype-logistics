@@ -90,6 +90,57 @@ export interface PlanSource {
   forecastReason?: string;
 }
 
+/**
+ * 生产计划 DTO（用于调度模块紧急状态监控）
+ * 与后端 ProductionPlanDTO 对应
+ */
+export interface ProductionPlanDTO {
+  // 基础信息
+  id: string;
+  planNumber: string;
+  productTypeId: string;
+  productTypeName?: string;
+  plannedQuantity: number;
+  expectedCompletionDate: string; // ISO date (YYYY-MM-DD)
+  status: string;
+  priority?: number;
+
+  // 来源信息
+  sourceType: string;
+  customerOrderNumber?: string;
+  sourceCustomerName?: string;
+
+  // 调度字段
+  crValue?: number;
+  aiConfidence?: number;
+  forecastReason?: string;
+  isMixedBatch?: boolean;
+  allocatedQuantity?: number;
+  isFullyMatched?: boolean;
+  matchingProgress?: number;
+
+  // 紧急监控字段
+  currentProbability?: number; // 0-1
+  probabilityUpdatedAt?: string; // ISO datetime
+  isUrgent?: boolean;
+
+  // 强制插单审批字段
+  isForceInserted?: boolean;
+  requiresApproval?: boolean;
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  forceInsertReason?: string;
+  forceInsertBy?: number;
+  forceInsertedAt?: string;
+  approverId?: number;
+  approverName?: string;
+  approvedAt?: string;
+  approvalComment?: string;
+
+  // 时间戳
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== 调度排程 ====================
 
 /** 调度计划 */
@@ -112,6 +163,12 @@ export interface SchedulingPlan {
 
   // 关联数据
   lineSchedules?: LineSchedule[];
+
+  // AI 调度返回的扩展字段 (可选)
+  batchNumber?: string;
+  productTypeName?: string;
+  plannedStartTime?: string;
+  plannedEndTime?: string;
 }
 
 /** 产线排程 */
@@ -364,20 +421,70 @@ export interface ProductionTrend {
 
 // ==================== 紧急插单 ====================
 
-/** 紧急插单时段 */
+/** 推荐评分分解 (多维度评分) */
+export interface ScoreBreakdown {
+  capacityFactor: number;    // 产能利用率 (0-1)
+  workerFactor: number;      // 工人可用性 (0-1)
+  deadlineFactor: number;    // 交期紧迫度 (0-1)
+  impactFactor: number;      // 影响程度 (0-1, 越高越好)
+  switchCostFactor: number;  // 换线成本 (0-1, 越高越好)
+}
+
+/** 链式影响详情 */
+export interface ChainImpactDetails {
+  directConflicts: number;   // 直接冲突计划数
+  cascadeDelays: number;     // 级联延误计划数
+  maxDelayMinutes: number;   // 最大延误时间(分钟)
+  affectsVipCustomer?: boolean; // 是否影响VIP客户
+  criticalCrPlans?: number;  // CR<0.5的关键计划数
+}
+
+/** 资源状态 */
+export interface ResourceStatus {
+  availableWorkers: number;
+  requiredWorkers: number;
+  workerNames?: string[];
+  availableEquipment?: string[];
+  materialStatus?: 'sufficient' | 'partial' | 'insufficient';
+}
+
+/** 紧急插单时段 (增强版) */
 export interface InsertSlot {
   id: string;
-  productionLineId: string;
-  productionLineName: string;
+  productionLineId?: string;
+  productionLineName?: string;
   startTime: string;
   endTime: string;
   availableCapacity: number;
-  impactLevel: 'none' | 'low' | 'medium' | 'high';
+
+  // 推荐评分 (0-100)
+  recommendScore: number;
+  scoreBreakdown?: ScoreBreakdown;
+
+  // 影响分析
+  impactLevel: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  impactDetails?: ChainImpactDetails;
   impactedPlans?: ImpactedPlan[];
+
+  // 资源状态
   requiredWorkers: number;
   availableWorkers: number;
+  resourceStatus?: ResourceStatus;
+
+  // 换线成本
   switchCostMinutes: number;
-  recommendScore: number;
+
+  // 时段状态
+  status?: 'available' | 'locked' | 'unavailable';
+  isFeasible?: boolean;
+  infeasibleReason?: string;
+
+  // 锁定信息
+  isLocked?: boolean;
+  lockedBy?: string;
+  lockExpireAt?: string;
+
+  // 推荐理由
   recommendation?: string;
 }
 
@@ -385,7 +492,53 @@ export interface InsertSlot {
 export interface ImpactedPlan {
   planId: string;
   planNumber: string;
+  productName?: string;
+  originalEndTime?: string;
+  newEndTime?: string;
   delayMinutes: number;
+  customerName?: string;
+  isVip?: boolean;
+  crValue?: number;
+}
+
+/** 确认紧急插单请求 */
+export interface ConfirmUrgentInsertRequest {
+  slotId: string;
+  productTypeId: string;
+  plannedQuantity: number;
+  priority?: number;  // 1-10, default 9
+  urgentReason: string;
+  requestedDeadline?: string;
+  customerName?: string;
+  customerOrderNumber?: string;
+  assignedWorkerIds?: number[];
+  assignedEquipmentIds?: string[];
+  materialBatchIds?: string[];
+  notes?: string;
+  forceInsert?: boolean;
+}
+
+/** 强制插单请求 */
+export interface ForceInsertRequest extends ConfirmUrgentInsertRequest {
+  forceInsert: true;
+  overrideReason: string;
+}
+
+/** 紧急插单影响分析结果 */
+export interface UrgentInsertImpactAnalysis {
+  slotId: string;
+  impactLevel: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  impactScore: number;
+  chainImpact: ChainImpactDetails;
+  affectedPlans: ImpactedPlan[];
+  resourceImpact: {
+    workerOvertime?: number;
+    equipmentConflicts?: string[];
+    materialShortage?: boolean;
+  };
+  recommendation: string;
+  requiresApproval: boolean;
+  approverRole?: string;
 }
 
 // ==================== 混批排产 ====================
@@ -494,7 +647,7 @@ export interface GetInsertSlotsRequest {
   urgencyLevel?: 'normal' | 'urgent' | 'critical';
 }
 
-/** 确认插单请求 */
+/** 确认插单请求 (已废弃，使用 ConfirmUrgentInsertRequest) */
 export interface ConfirmInsertRequest {
   slotId: string;
   productTypeId: string;
@@ -502,6 +655,10 @@ export interface ConfirmInsertRequest {
   deadline: string;
   workerIds?: number[];
   notes?: string;
+  /** @deprecated 使用 ConfirmUrgentInsertRequest.urgentReason */
+  reason?: string;
+  /** @deprecated 使用 ConfirmUrgentInsertRequest.priority */
+  priority?: number;
 }
 
 /** 检测混批请求 */

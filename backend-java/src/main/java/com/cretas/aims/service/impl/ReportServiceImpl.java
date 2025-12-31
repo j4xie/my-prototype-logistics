@@ -1,8 +1,13 @@
 package com.cretas.aims.service.impl;
 
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import com.cretas.aims.dto.report.DashboardStatisticsDTO;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.FactoryEquipment;
+import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.entity.ShipmentRecord;
+import com.cretas.aims.entity.TimeClockRecord;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.repository.*;
@@ -15,9 +20,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -42,6 +50,10 @@ public class ReportServiceImpl implements ReportService {
     private final FactoryRepository factoryRepository;
     private final AIAnalysisService aiAnalysisService;
     private final ProcessingService processingService;  // 委托 Dashboard 数据
+    private final ProductionBatchRepository productionBatchRepository;
+    private final QualityInspectionRepository qualityInspectionRepository;
+    private final ShipmentRecordRepository shipmentRecordRepository;
+    private final TimeClockRecordRepository timeClockRecordRepository;
     @Override
     @Cacheable(value = "dashboardStats", key = "#factoryId", unless = "#result == null")
     public DashboardStatisticsDTO getDashboardStatistics(String factoryId) {
@@ -168,6 +180,9 @@ public class ReportServiceImpl implements ReportService {
         BigDecimal monthlyOutput = productionPlanRepository.calculateOutputBetweenDates(factoryId, monthStart.atStartOfDay(), LocalDate.now().atTime(23, 59, 59));
         // 计算完成率和效率
         double completionRate = totalPlans > 0 ? (completedPlans * 100.0 / totalPlans) : 0.0;
+        // 从生产批次计算实际效率
+        BigDecimal avgEfficiency = productionBatchRepository.calculateAverageEfficiency(factoryId, monthStart.atStartOfDay());
+        double efficiency = avgEfficiency != null ? avgEfficiency.doubleValue() : 85.0;
         return DashboardStatisticsDTO.ProductionStatistics.builder()
                 .totalPlans((int) totalPlans)
                 .activePlans((int) activePlans)
@@ -175,7 +190,7 @@ public class ReportServiceImpl implements ReportService {
                 .totalOutput(totalOutput != null ? totalOutput : BigDecimal.ZERO)
                 .monthlyOutput(monthlyOutput != null ? monthlyOutput : BigDecimal.ZERO)
                 .completionRate(completionRate)
-                .efficiency(85.0) // TODO: 实际计算效率
+                .efficiency(efficiency)
                 .build();
     }
     private DashboardStatisticsDTO.InventoryStatistics getInventoryStatistics(String factoryId) {
@@ -188,27 +203,64 @@ public class ReportServiceImpl implements ReportService {
         List<MaterialBatch> expiredBatches = materialBatchRepository.findExpiredBatches(factoryId);
         // 获取低库存预警
         List<Object> lowStockMaterials = materialBatchRepository.findLowStockMaterials(factoryId);
+        // 计算库存周转率 = 年消耗量 / 平均库存价值
+        // 简化计算：月消耗量 * 12 / 当前库存价值
+        LocalDate monthStart = LocalDate.now().withDayOfMonth(1);
+        BigDecimal monthlyConsumption = materialBatchRepository.calculateConsumedValue(
+                factoryId, monthStart, LocalDate.now());
+        BigDecimal turnoverRate = BigDecimal.valueOf(4.5); // 默认值
+        if (totalValue != null && totalValue.compareTo(BigDecimal.ZERO) > 0 && monthlyConsumption != null) {
+            // 年化周转率 = (月消耗量 * 12) / 库存价值
+            turnoverRate = monthlyConsumption.multiply(BigDecimal.valueOf(12))
+                    .divide(totalValue, 2, RoundingMode.HALF_UP);
+        }
         return DashboardStatisticsDTO.InventoryStatistics.builder()
                 .totalBatches((int) totalBatches)
                 .totalValue(totalValue != null ? totalValue : BigDecimal.ZERO)
                 .expiringBatches(expiringBatches.size())
                 .expiredBatches(expiredBatches.size())
                 .lowStockItems(lowStockMaterials.size())
-                .turnoverRate(BigDecimal.valueOf(4.5)) // TODO: 计算实际周转率
+                .turnoverRate(turnoverRate)
                 .build();
     }
     private DashboardStatisticsDTO.FinanceStatistics getFinanceStatistics(String factoryId) {
-        // TODO: 实现财务统计
+        // 计算财务统计
+        LocalDate today = LocalDate.now();
+        LocalDate yearStart = LocalDate.of(today.getYear(), 1, 1);
+        LocalDate monthStart = today.withDayOfMonth(1);
+        // 年度收入和成本
+        BigDecimal totalRevenue = shipmentRecordRepository.calculateTotalRevenue(factoryId, yearStart, today);
+        BigDecimal totalCost = productionPlanRepository.calculateTotalCostBetweenDates(
+                factoryId, yearStart.atStartOfDay(), today.atTime(23, 59, 59));
+        if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
+        if (totalCost == null) totalCost = BigDecimal.ZERO;
+        BigDecimal totalProfit = totalRevenue.subtract(totalCost);
+        // 月度收入和成本
+        BigDecimal monthlyRevenue = shipmentRecordRepository.calculateTotalRevenue(factoryId, monthStart, today);
+        BigDecimal monthlyCost = productionPlanRepository.calculateTotalCostBetweenDates(
+                factoryId, monthStart.atStartOfDay(), today.atTime(23, 59, 59));
+        if (monthlyRevenue == null) monthlyRevenue = BigDecimal.ZERO;
+        if (monthlyCost == null) monthlyCost = BigDecimal.ZERO;
+        BigDecimal monthlyProfit = monthlyRevenue.subtract(monthlyCost);
+        // 利润率
+        double profitMargin = 0.0;
+        if (totalRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            profitMargin = totalProfit.divide(totalRevenue, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)).doubleValue();
+        }
+        // 应收应付
+        BigDecimal accountsReceivable = customerRepository.calculateTotalOutstandingBalance(factoryId);
+        BigDecimal accountsPayable = supplierRepository.calculateTotalOutstandingBalance(factoryId);
         return DashboardStatisticsDTO.FinanceStatistics.builder()
-                .totalRevenue(BigDecimal.valueOf(1000000))
-                .totalCost(BigDecimal.valueOf(700000))
-                .totalProfit(BigDecimal.valueOf(300000))
-                .monthlyRevenue(BigDecimal.valueOf(100000))
-                .monthlyCost(BigDecimal.valueOf(70000))
-                .monthlyProfit(BigDecimal.valueOf(30000))
-                .profitMargin(30.0)
-                .accountsReceivable(BigDecimal.valueOf(50000))
-                .accountsPayable(BigDecimal.valueOf(30000))
+                .totalRevenue(totalRevenue)
+                .totalCost(totalCost)
+                .totalProfit(totalProfit)
+                .monthlyRevenue(monthlyRevenue)
+                .monthlyCost(monthlyCost)
+                .monthlyProfit(monthlyProfit)
+                .profitMargin(profitMargin)
+                .accountsReceivable(accountsReceivable != null ? accountsReceivable : BigDecimal.ZERO)
+                .accountsPayable(accountsPayable != null ? accountsPayable : BigDecimal.ZERO)
                 .build();
     }
     private DashboardStatisticsDTO.PersonnelStatistics getPersonnelStatistics(String factoryId) {
@@ -246,15 +298,32 @@ public class ReportServiceImpl implements ReportService {
                 .build();
     }
     private DashboardStatisticsDTO.QualityStatistics getQualityStatistics(String factoryId) {
-        // TODO: 实现质量统计
+        // 质量统计 - 使用本月数据
+        LocalDate today = LocalDate.now();
+        LocalDate monthStart = today.withDayOfMonth(1);
+        // 获取样本量和合格/不合格数据
+        BigDecimal totalSampleSize = qualityInspectionRepository.calculateTotalSampleSize(factoryId, monthStart, today);
+        BigDecimal passCount = qualityInspectionRepository.calculateTotalPassCount(factoryId, monthStart, today);
+        BigDecimal failCount = qualityInspectionRepository.calculateTotalFailCount(factoryId, monthStart, today);
+        if (totalSampleSize == null) totalSampleSize = BigDecimal.ZERO;
+        if (passCount == null) passCount = BigDecimal.ZERO;
+        if (failCount == null) failCount = BigDecimal.ZERO;
+        // 计算合格率
+        BigDecimal avgPassRate = qualityInspectionRepository.calculateAveragePassRate(factoryId, monthStart, today);
+        double qualityRate = avgPassRate != null ? avgPassRate.doubleValue() : 98.0;
+        // 质量问题统计
+        long qualityIssues = qualityInspectionRepository.countQualityIssues(factoryId, monthStart, today);
+        long resolvedIssues = qualityInspectionRepository.countResolvedIssues(factoryId, monthStart, today);
+        // 一次通过率
+        Double firstPassRate = qualityInspectionRepository.calculateFirstPassRate(factoryId, monthStart, today);
         return DashboardStatisticsDTO.QualityStatistics.builder()
-                .totalProduction(BigDecimal.valueOf(10000))
-                .qualifiedProduction(BigDecimal.valueOf(9800))
-                .defectiveProduction(BigDecimal.valueOf(200))
-                .qualityRate(98.0)
-                .qualityIssues(5)
-                .resolvedIssues(3)
-                .firstPassRate(96.0)
+                .totalProduction(totalSampleSize)
+                .qualifiedProduction(passCount)
+                .defectiveProduction(failCount)
+                .qualityRate(qualityRate)
+                .qualityIssues((int) qualityIssues)
+                .resolvedIssues((int) resolvedIssues)
+                .firstPassRate(firstPassRate != null ? firstPassRate : 96.0)
                 .build();
     }
     private DashboardStatisticsDTO.TrendStatistics getTrendStatistics(String factoryId) {
@@ -383,8 +452,9 @@ public class ReportServiceImpl implements ReportService {
     public Map<String, Object> getFinanceReport(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取财务报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
         Map<String, Object> report = new HashMap<>();
-        // 收入统计
-        BigDecimal totalRevenue = BigDecimal.ZERO; // TODO: 从订单表计算
+        // 收入统计 - 从出货记录计算
+        BigDecimal totalRevenue = shipmentRecordRepository.calculateTotalRevenue(factoryId, startDate, endDate);
+        if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
         report.put("totalRevenue", totalRevenue);
         // 成本统计
         BigDecimal materialCost = productionPlanRepository.calculateMaterialCostBetweenDates(
@@ -421,13 +491,33 @@ public class ReportServiceImpl implements ReportService {
     public Map<String, Object> getQualityReport(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取质量报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
         Map<String, Object> report = new HashMap<>();
-        // TODO: 实现质量报表统计
-        report.put("totalProduction", BigDecimal.valueOf(10000));
-        report.put("qualifiedProduction", BigDecimal.valueOf(9800));
-        report.put("defectiveProduction", BigDecimal.valueOf(200));
-        report.put("qualityRate", 98.0);
-        report.put("firstPassRate", 96.0);
-        report.put("reworkRate", 2.0);
+        // 质量报表统计 - 从质检记录获取实际数据
+        BigDecimal totalSampleSize = qualityInspectionRepository.calculateTotalSampleSize(factoryId, startDate, endDate);
+        BigDecimal passCount = qualityInspectionRepository.calculateTotalPassCount(factoryId, startDate, endDate);
+        BigDecimal failCount = qualityInspectionRepository.calculateTotalFailCount(factoryId, startDate, endDate);
+        if (totalSampleSize == null) totalSampleSize = BigDecimal.ZERO;
+        if (passCount == null) passCount = BigDecimal.ZERO;
+        if (failCount == null) failCount = BigDecimal.ZERO;
+        // 计算合格率
+        double qualityRate = 98.0;
+        if (totalSampleSize.compareTo(BigDecimal.ZERO) > 0) {
+            qualityRate = passCount.divide(totalSampleSize, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)).doubleValue();
+        }
+        // 一次通过率
+        Double firstPassRate = qualityInspectionRepository.calculateFirstPassRate(factoryId, startDate, endDate);
+        // 返工率 = (不合格数 / 总样本数) * 100
+        double reworkRate = 2.0;
+        if (totalSampleSize.compareTo(BigDecimal.ZERO) > 0) {
+            reworkRate = failCount.divide(totalSampleSize, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)).doubleValue();
+        }
+        report.put("totalProduction", totalSampleSize);
+        report.put("qualifiedProduction", passCount);
+        report.put("defectiveProduction", failCount);
+        report.put("qualityRate", qualityRate);
+        report.put("firstPassRate", firstPassRate != null ? firstPassRate : 96.0);
+        report.put("reworkRate", reworkRate);
         return report;
     }
     @Override
@@ -473,10 +563,57 @@ public class ReportServiceImpl implements ReportService {
             departmentDistribution.put((String) row[0], (Long) row[1]);
         }
         report.put("departmentDistribution", departmentDistribution);
-        // TODO: 绩效指标
-        report.put("attendanceRate", 95.0);
-        report.put("productivity", 88.0);
-        report.put("satisfaction", 4.2);
+        // 绩效指标 - 从考勤和生产记录计算
+        // 1. 出勤率 = (有打卡记录的员工数 / 总员工数) * 100
+        double attendanceRate = 95.0; // 默认值
+        if (totalEmployees > 0) {
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.plusDays(1).atStartOfDay();
+            long attendedUsers = timeClockRecordRepository.countDistinctUsersByFactoryIdAndClockDateBetween(
+                    factoryId, start, end);
+            attendanceRate = (double) attendedUsers / totalEmployees * 100;
+            attendanceRate = Math.min(100.0, Math.round(attendanceRate * 10) / 10.0); // 最大100%，保留1位小数
+        }
+        report.put("attendanceRate", attendanceRate);
+        // 2. 生产效率 = (实际产量 / 计划产量) * 100
+        double productivity = 88.0; // 默认值
+        List<ProductionBatch> batches = productionBatchRepository.findByFactoryIdAndCreatedAtBetween(
+                factoryId, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay());
+        if (!batches.isEmpty()) {
+            BigDecimal totalPlanned = BigDecimal.ZERO;
+            BigDecimal totalActual = BigDecimal.ZERO;
+            for (ProductionBatch batch : batches) {
+                if (batch.getPlannedQuantity() != null) {
+                    totalPlanned = totalPlanned.add(batch.getPlannedQuantity());
+                }
+                if (batch.getActualQuantity() != null) {
+                    totalActual = totalActual.add(batch.getActualQuantity());
+                }
+            }
+            if (totalPlanned.compareTo(BigDecimal.ZERO) > 0) {
+                productivity = totalActual.divide(totalPlanned, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)).doubleValue();
+                productivity = Math.round(productivity * 10) / 10.0; // 保留1位小数
+            }
+        }
+        report.put("productivity", productivity);
+        // 3. 满意度 - 基于质量合格率计算 (5分制)
+        // 假设合格率 >= 98% 为5分，每降低2%扣0.2分
+        double satisfaction = 4.2; // 默认值
+        try {
+            BigDecimal totalSamples = qualityInspectionRepository.calculateTotalSampleSize(factoryId, startDate, endDate);
+            BigDecimal passCount = qualityInspectionRepository.calculateTotalPassCount(factoryId, startDate, endDate);
+            if (totalSamples != null && totalSamples.compareTo(BigDecimal.ZERO) > 0 && passCount != null) {
+                double passRate = passCount.divide(totalSamples, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)).doubleValue();
+                // 转换为5分制: 98%+ = 5.0, 每2%降低扣0.2分，最低3.0分
+                satisfaction = 5.0 - Math.max(0, (98.0 - passRate) / 2 * 0.2);
+                satisfaction = Math.max(3.0, Math.round(satisfaction * 10) / 10.0);
+            }
+        } catch (Exception e) {
+            log.warn("计算满意度时出错: {}", e.getMessage());
+        }
+        report.put("satisfaction", satisfaction);
         return report;
     }
     @Override
@@ -535,11 +672,25 @@ public class ReportServiceImpl implements ReportService {
     public Map<String, Object> getSalesReport(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取销售报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
         Map<String, Object> report = new HashMap<>();
-        // TODO: 实现销售报表
-        report.put("totalOrders", 100);
-        report.put("totalRevenue", BigDecimal.valueOf(1000000));
-        report.put("averageOrderValue", BigDecimal.valueOf(10000));
-        report.put("conversionRate", 25.0);
+        // 销售报表 - 从出货记录获取实际数据
+        // 1. 订单总数
+        long totalOrders = shipmentRecordRepository.countByFactoryIdAndDateRange(factoryId, startDate, endDate);
+        report.put("totalOrders", totalOrders);
+        // 2. 总收入
+        BigDecimal totalRevenue = shipmentRecordRepository.calculateTotalRevenue(factoryId, startDate, endDate);
+        report.put("totalRevenue", totalRevenue != null ? totalRevenue : BigDecimal.ZERO);
+        // 3. 平均订单金额
+        BigDecimal averageOrderValue = shipmentRecordRepository.calculateAverageOrderValue(factoryId, startDate, endDate);
+        report.put("averageOrderValue", averageOrderValue != null ? averageOrderValue : BigDecimal.ZERO);
+        // 4. 订单完成率 = (已发货+已送达订单数 / 总订单数) * 100
+        double conversionRate = 100.0;
+        if (totalOrders > 0) {
+            long shippedOrders = shipmentRecordRepository.countByFactoryIdAndStatus(factoryId, "shipped");
+            long deliveredOrders = shipmentRecordRepository.countByFactoryIdAndStatus(factoryId, "delivered");
+            conversionRate = (double) (shippedOrders + deliveredOrders) / totalOrders * 100;
+            conversionRate = Math.round(conversionRate * 10) / 10.0; // 保留1位小数
+        }
+        report.put("conversionRate", conversionRate);
         return report;
     }
     @Override
@@ -616,22 +767,109 @@ public class ReportServiceImpl implements ReportService {
     public Map<String, Object> getCustomReport(String factoryId, Map<String, Object> parameters) {
         log.info("获取自定义报表: factoryId={}, parameters={}", factoryId, parameters);
         Map<String, Object> report = new HashMap<>();
-        // TODO: 实现自定义报表逻辑
+        // 解析参数
+        String reportType = (String) parameters.getOrDefault("reportType", "production");
+        LocalDate startDate = parameters.containsKey("startDate") ?
+                LocalDate.parse((String) parameters.get("startDate")) : LocalDate.now().minusDays(30);
+        LocalDate endDate = parameters.containsKey("endDate") ?
+                LocalDate.parse((String) parameters.get("endDate")) : LocalDate.now();
         report.put("parameters", parameters);
-        report.put("data", new HashMap<>());
+        report.put("startDate", startDate.toString());
+        report.put("endDate", endDate.toString());
+        // 根据报表类型路由到对应的报表方法
+        Map<String, Object> data;
+        switch (reportType.toLowerCase()) {
+            case "production":
+                data = getProductionReport(factoryId, startDate, endDate);
+                break;
+            case "finance":
+                data = getFinanceReport(factoryId, startDate, endDate);
+                break;
+            case "quality":
+                data = getQualityReport(factoryId, startDate, endDate);
+                break;
+            case "equipment":
+                data = getEquipmentEfficiencyReport(factoryId, startDate, endDate);
+                break;
+            case "personnel":
+                data = getPersonnelPerformanceReport(factoryId, startDate, endDate);
+                break;
+            case "supply_chain":
+                data = getSupplyChainReport(factoryId, startDate, endDate);
+                break;
+            case "sales":
+                data = getSalesReport(factoryId, startDate, endDate);
+                break;
+            case "cost":
+                data = getCostAnalysisReport(factoryId, startDate, endDate);
+                break;
+            case "comprehensive":
+                // 综合报表：包含所有核心指标
+                data = new HashMap<>();
+                data.put("production", getProductionReport(factoryId, startDate, endDate));
+                data.put("finance", getFinanceReport(factoryId, startDate, endDate));
+                data.put("quality", getQualityReport(factoryId, startDate, endDate));
+                data.put("equipment", getEquipmentEfficiencyReport(factoryId, startDate, endDate));
+                break;
+            default:
+                log.warn("未知的报表类型: {}, 使用生产报表", reportType);
+                data = getProductionReport(factoryId, startDate, endDate);
+        }
+        report.put("data", data);
         return report;
     }
     @Override
     public byte[] exportReportToExcel(String factoryId, String reportType, Map<String, Object> parameters) {
         log.info("导出Excel报表: factoryId={}, reportType={}", factoryId, reportType);
-        // TODO: 实现Excel导出
-        throw new UnsupportedOperationException("Excel导出功能待实现");
+        try {
+            // 解析日期参数
+            LocalDate startDate = parameters.containsKey("startDate") ?
+                    LocalDate.parse((String) parameters.get("startDate")) : LocalDate.now().minusDays(30);
+            LocalDate endDate = parameters.containsKey("endDate") ?
+                    LocalDate.parse((String) parameters.get("endDate")) : LocalDate.now();
+            // 获取报表数据
+            Map<String, Object> reportData = getCustomReport(factoryId, Map.of(
+                    "reportType", reportType,
+                    "startDate", startDate.toString(),
+                    "endDate", endDate.toString()
+            ));
+            // 转换为Excel数据格式
+            List<List<Object>> excelData = new ArrayList<>();
+            // 添加标题行
+            List<Object> headerRow = new ArrayList<>();
+            headerRow.add("指标名称");
+            headerRow.add("数值");
+            excelData.add(headerRow);
+            // 添加数据行
+            @SuppressWarnings("unchecked")
+            Map<String, Object> data = (Map<String, Object>) reportData.get("data");
+            if (data != null) {
+                for (Map.Entry<String, Object> entry : data.entrySet()) {
+                    List<Object> row = new ArrayList<>();
+                    row.add(entry.getKey());
+                    row.add(entry.getValue() != null ? entry.getValue().toString() : "");
+                    excelData.add(row);
+                }
+            }
+            // 使用EasyExcel导出
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            EasyExcel.write(outputStream)
+                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
+                    .sheet(reportType + "报表")
+                    .doWrite(excelData);
+            log.info("Excel导出成功: {} 行数据", excelData.size());
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            log.error("Excel导出失败: {}", e.getMessage(), e);
+            throw new RuntimeException("Excel导出失败: " + e.getMessage(), e);
+        }
     }
     @Override
     public byte[] exportReportToPDF(String factoryId, String reportType, Map<String, Object> parameters) {
         log.info("导出PDF报表: factoryId={}, reportType={}", factoryId, reportType);
-        // TODO: 实现PDF导出
-        throw new UnsupportedOperationException("PDF导出功能待实现");
+        // PDF导出需要额外的库支持（如iText、Flying Saucer等）
+        // 当前版本暂不支持PDF导出，建议使用Excel导出后手动转换
+        throw new UnsupportedOperationException("PDF导出功能暂不支持，请使用Excel导出后转换为PDF");
     }
     @Override
     public Map<String, Object> getRealTimeProductionData(String factoryId) {
@@ -715,11 +953,66 @@ public class ReportServiceImpl implements ReportService {
     public Map<String, Object> getForecastReport(String factoryId, Integer forecastDays) {
         log.info("获取预测分析: factoryId={}, forecastDays={}", factoryId, forecastDays);
         Map<String, Object> forecast = new HashMap<>();
-        // TODO: 实现预测逻辑
         forecast.put("forecastDays", forecastDays);
-        forecast.put("expectedProduction", BigDecimal.valueOf(10000 * forecastDays));
-        forecast.put("expectedRevenue", BigDecimal.valueOf(100000 * forecastDays));
-        forecast.put("expectedCost", BigDecimal.valueOf(70000 * forecastDays));
+        // 基于历史数据预测（使用过去30天数据）
+        LocalDate today = LocalDate.now();
+        LocalDate historyStart = today.minusDays(30);
+        int historyDays = 30;
+        // 1. 历史产量统计
+        BigDecimal historyOutput = productionPlanRepository.calculateOutputBetweenDates(
+                factoryId, historyStart.atStartOfDay(), today.atStartOfDay());
+        BigDecimal avgDailyProduction = BigDecimal.ZERO;
+        if (historyOutput != null && historyOutput.compareTo(BigDecimal.ZERO) > 0) {
+            avgDailyProduction = historyOutput.divide(BigDecimal.valueOf(historyDays), 2, RoundingMode.HALF_UP);
+        }
+        BigDecimal expectedProduction = avgDailyProduction.multiply(BigDecimal.valueOf(forecastDays));
+        forecast.put("expectedProduction", expectedProduction);
+        forecast.put("avgDailyProduction", avgDailyProduction);
+        // 2. 历史收入统计
+        BigDecimal historyRevenue = shipmentRecordRepository.calculateTotalRevenue(factoryId, historyStart, today);
+        BigDecimal avgDailyRevenue = BigDecimal.ZERO;
+        if (historyRevenue != null && historyRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            avgDailyRevenue = historyRevenue.divide(BigDecimal.valueOf(historyDays), 2, RoundingMode.HALF_UP);
+        }
+        BigDecimal expectedRevenue = avgDailyRevenue.multiply(BigDecimal.valueOf(forecastDays));
+        forecast.put("expectedRevenue", expectedRevenue);
+        forecast.put("avgDailyRevenue", avgDailyRevenue);
+        // 3. 历史成本统计
+        BigDecimal historyCost = productionPlanRepository.calculateTotalCostBetweenDates(
+                factoryId, historyStart.atStartOfDay(), today.atStartOfDay());
+        BigDecimal avgDailyCost = BigDecimal.ZERO;
+        if (historyCost != null && historyCost.compareTo(BigDecimal.ZERO) > 0) {
+            avgDailyCost = historyCost.divide(BigDecimal.valueOf(historyDays), 2, RoundingMode.HALF_UP);
+        }
+        BigDecimal expectedCost = avgDailyCost.multiply(BigDecimal.valueOf(forecastDays));
+        forecast.put("expectedCost", expectedCost);
+        forecast.put("avgDailyCost", avgDailyCost);
+        // 4. 预期利润
+        BigDecimal expectedProfit = expectedRevenue.subtract(expectedCost);
+        forecast.put("expectedProfit", expectedProfit);
+        // 5. 利润率预测
+        double profitMargin = 0.0;
+        if (expectedRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            profitMargin = expectedProfit.divide(expectedRevenue, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)).doubleValue();
+        }
+        forecast.put("profitMargin", profitMargin);
+        // 6. 增长趋势（与前30天对比）
+        LocalDate prevStart = historyStart.minusDays(30);
+        BigDecimal prevOutput = productionPlanRepository.calculateOutputBetweenDates(
+                factoryId, prevStart.atStartOfDay(), historyStart.atStartOfDay());
+        double productionGrowth = 0.0;
+        if (prevOutput != null && prevOutput.compareTo(BigDecimal.ZERO) > 0 && historyOutput != null) {
+            productionGrowth = historyOutput.subtract(prevOutput)
+                    .divide(prevOutput, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)).doubleValue();
+        }
+        forecast.put("productionGrowth", productionGrowth);
+        // 7. 置信度（基于数据充足程度）
+        long dataPoints = productionPlanRepository.countByFactoryIdAndCreatedAtBetween(
+                factoryId, historyStart.atStartOfDay(), today.atStartOfDay());
+        double confidence = Math.min(100.0, dataPoints * 3.3); // 30个数据点达到100%置信度
+        forecast.put("confidence", confidence);
         return forecast;
     }
     @Override

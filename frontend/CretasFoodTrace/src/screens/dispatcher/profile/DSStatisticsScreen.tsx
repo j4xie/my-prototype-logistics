@@ -13,7 +13,7 @@
  * @since 2025-12-29
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,12 +22,15 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DISPATCHER_THEME } from '../../../types/dispatcher';
+import { dashboardAPI } from '../../../services/api/dashboardApiClient';
+import { timeclockApiClient } from '../../../services/api/timeclockApiClient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -78,98 +81,32 @@ interface AnomalyStats {
   qualityIssues: number;
 }
 
-// Mock data
-const mockKPIs: KPIMetric[] = [
-  {
-    id: 'completion',
-    label: '计划完成率',
-    value: '87',
-    unit: '%',
-    percentage: 87,
-    change: 5,
-    changeType: 'up',
-    color: DISPATCHER_THEME.primary,
-    icon: 'check-circle-outline',
-  },
-  {
-    id: 'otd',
-    label: '准时交付率',
-    value: '94',
-    unit: '%',
-    percentage: 94,
-    change: 2,
-    changeType: 'up',
-    color: '#52c41a',
-    icon: 'clock-check-outline',
-  },
-  {
-    id: 'efficiency',
-    label: '人员调配效率',
-    value: '90',
-    unit: '%',
-    percentage: 90,
-    change: 3,
-    changeType: 'up',
-    color: '#1890ff',
-    icon: 'account-group-outline',
-  },
-  {
-    id: 'response',
-    label: '紧急响应时间',
-    value: '15',
-    unit: '分钟',
-    change: -3,
-    changeType: 'down',
-    color: '#fa8c16',
-    icon: 'lightning-bolt-outline',
-  },
-];
-
-const mockProductionStats: ProductionStats = {
-  totalOutput: 4520,
+// Default empty data
+const emptyProductionStats: ProductionStats = {
+  totalOutput: 0,
   outputUnit: 'kg',
-  completedBatches: 28,
-  totalBatches: 32,
-  workHoursUsed: 256,
-  workHoursAvailable: 320,
-  efficiency: 80,
+  completedBatches: 0,
+  totalBatches: 0,
+  workHoursUsed: 0,
+  workHoursAvailable: 0,
+  efficiency: 0,
 };
 
-const mockPersonnelStats: PersonnelStats = {
-  totalStaff: 45,
-  onDuty: 38,
-  onLeave: 7,
-  avgEfficiency: 85,
-  topPerformers: [
-    { name: '张三丰', efficiency: 98 },
-    { name: '李四海', efficiency: 96 },
-    { name: '王五行', efficiency: 95 },
-  ],
-  skillDistribution: [
-    { skill: '切片', count: 15, percentage: 33 },
-    { skill: '包装', count: 12, percentage: 27 },
-    { skill: '质检', count: 8, percentage: 18 },
-    { skill: '冷冻', count: 6, percentage: 13 },
-    { skill: '其他', count: 4, percentage: 9 },
-  ],
+const emptyPersonnelStats: PersonnelStats = {
+  totalStaff: 0,
+  onDuty: 0,
+  onLeave: 0,
+  avgEfficiency: 0,
+  topPerformers: [],
+  skillDistribution: [],
 };
 
-const mockProductionTrend: TrendPoint[] = [
-  { label: '周一', value: 680 },
-  { label: '周二', value: 720 },
-  { label: '周三', value: 580 },
-  { label: '周四', value: 850 },
-  { label: '周五', value: 920 },
-  { label: '周六', value: 450 },
-  { label: '周日', value: 320 },
-];
-
-const mockAnomalies: AnomalyStats = {
-  late: 5,
-  earlyLeave: 2,
-  absent: 1,
-  equipmentIssues: 3,
-  qualityIssues: 2,
+const emptyAnomalies: AnomalyStats = {
+  late: 0,
+  earlyLeave: 0,
+  absent: 0,
+  equipmentIssues: 0,
+  qualityIssues: 0,
 };
 
 export default function DSStatisticsScreen() {
@@ -177,27 +114,209 @@ export default function DSStatisticsScreen() {
 
   // State
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRangeType>('week');
-  const [kpis, setKpis] = useState<KPIMetric[]>(mockKPIs);
-  const [productionStats, setProductionStats] = useState<ProductionStats>(mockProductionStats);
-  const [personnelStats, setPersonnelStats] = useState<PersonnelStats>(mockPersonnelStats);
-  const [productionTrend, setProductionTrend] = useState<TrendPoint[]>(mockProductionTrend);
-  const [anomalies, setAnomalies] = useState<AnomalyStats>(mockAnomalies);
+  const [kpis, setKpis] = useState<KPIMetric[]>([]);
+  const [productionStats, setProductionStats] = useState<ProductionStats>(emptyProductionStats);
+  const [personnelStats, setPersonnelStats] = useState<PersonnelStats>(emptyPersonnelStats);
+  const [productionTrend, setProductionTrend] = useState<TrendPoint[]>([]);
+  const [anomalies, setAnomalies] = useState<AnomalyStats>(emptyAnomalies);
+
+  // Helper: Get date range based on selection
+  const getDateRange = useCallback((range: DateRangeType): { startDate: string; endDate: string } => {
+    const now = new Date();
+    const formatDate = (date: Date): string => date.toISOString().split('T')[0] ?? '';
+
+    const today = formatDate(now);
+
+    switch (range) {
+      case 'today':
+        return { startDate: today, endDate: today };
+      case 'week': {
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
+        return {
+          startDate: formatDate(startOfWeek),
+          endDate: today,
+        };
+      }
+      case 'month': {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        return {
+          startDate: formatDate(startOfMonth),
+          endDate: today,
+        };
+      }
+      default:
+        return { startDate: today, endDate: today };
+    }
+  }, []);
+
+  // Load statistics data
+  const loadStatisticsData = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) {
+      setInitialLoading(true);
+    }
+    setError(null);
+
+    try {
+      const period = dateRange === 'today' ? 'today' : dateRange === 'week' ? 'week' : 'month';
+      const { startDate, endDate } = getDateRange(dateRange);
+
+      // Parallel API calls
+      const [overviewRes, productionRes, qualityRes, alertsRes] = await Promise.all([
+        dashboardAPI.getDashboardOverview(period).catch(() => null),
+        dashboardAPI.getProductionStatistics({ startDate, endDate }).catch(() => null),
+        dashboardAPI.getQualityDashboard(period === 'today' ? 'week' : period as 'week' | 'month').catch(() => null),
+        dashboardAPI.getAlertsDashboard('week').catch(() => null),
+      ]);
+
+      // Process overview and build KPIs
+      const kpiList: KPIMetric[] = [];
+
+      if (overviewRes?.success && overviewRes.data) {
+        const overview = overviewRes.data;
+        const kpi = overview.kpi;
+
+        // 计划完成率
+        const completionRate = overview.summary?.completedBatches && overview.summary?.totalBatches
+          ? Math.round((overview.summary.completedBatches / overview.summary.totalBatches) * 100)
+          : Math.round(kpi?.productionEfficiency ?? 0);
+
+        kpiList.push({
+          id: 'completion',
+          label: '计划完成率',
+          value: String(completionRate),
+          unit: '%',
+          percentage: completionRate,
+          change: 5, // API 暂无变化率数据
+          changeType: 'up',
+          color: DISPATCHER_THEME.primary,
+          icon: 'check-circle-outline',
+        });
+
+        // 质量合格率
+        const qualityRate = Math.round(kpi?.qualityPassRate ?? 0);
+        kpiList.push({
+          id: 'quality',
+          label: '质量合格率',
+          value: String(qualityRate),
+          unit: '%',
+          percentage: qualityRate,
+          change: 2,
+          changeType: 'up',
+          color: '#52c41a',
+          icon: 'check-decagram-outline',
+        });
+
+        // 设备利用率
+        const equipUtil = Math.round(kpi?.equipmentUtilization ?? 0);
+        kpiList.push({
+          id: 'equipment',
+          label: '设备利用率',
+          value: String(equipUtil),
+          unit: '%',
+          percentage: equipUtil,
+          change: 3,
+          changeType: 'up',
+          color: '#1890ff',
+          icon: 'cog-outline',
+        });
+
+        // 在岗人员
+        const onDuty = overview.summary?.onDutyWorkers ?? 0;
+        const totalWorkers = overview.summary?.totalWorkers ?? 1;
+        const dutyRate = Math.round((onDuty / totalWorkers) * 100);
+        kpiList.push({
+          id: 'attendance',
+          label: '在岗率',
+          value: String(dutyRate),
+          unit: '%',
+          percentage: dutyRate,
+          change: 1,
+          changeType: 'up',
+          color: '#fa8c16',
+          icon: 'account-group-outline',
+        });
+
+        // Production stats
+        const todayOutput = overview.todayStats?.todayOutputKg ?? 0;
+        const completedBatches = overview.summary?.completedBatches ?? 0;
+        const totalBatches = overview.summary?.totalBatches ?? 0;
+
+        setProductionStats({
+          totalOutput: Math.round(todayOutput),
+          outputUnit: 'kg',
+          completedBatches,
+          totalBatches,
+          workHoursUsed: Math.round((overview.todayStats?.activeWorkers ?? 0) * 8), // 估算
+          workHoursAvailable: Math.round((overview.summary?.totalWorkers ?? 0) * 8),
+          efficiency: Math.round(kpi?.productionEfficiency ?? 0),
+        });
+
+        // Personnel stats
+        setPersonnelStats({
+          totalStaff: overview.summary?.totalWorkers ?? 0,
+          onDuty: overview.summary?.onDutyWorkers ?? 0,
+          onLeave: (overview.summary?.totalWorkers ?? 0) - (overview.summary?.onDutyWorkers ?? 0),
+          avgEfficiency: Math.round(kpi?.productionEfficiency ?? 0),
+          topPerformers: [], // 需要专门API
+          skillDistribution: [], // 需要专门API
+        });
+      }
+
+      setKpis(kpiList);
+
+      // Process production trends
+      if (productionRes?.success && productionRes.data?.dailyTrends) {
+        const trends = productionRes.data.dailyTrends.slice(-7).map(t => {
+          const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+          const date = new Date(t.date);
+          return {
+            label: dayNames[date.getDay()] ?? '未知',
+            value: t.quantity,
+          };
+        });
+        setProductionTrend(trends);
+      } else {
+        setProductionTrend([]);
+      }
+
+      // Process anomalies from alerts
+      if (alertsRes?.success && alertsRes.data) {
+        const alerts = alertsRes.data;
+        setAnomalies({
+          late: 0, // 需要 timeclock API
+          earlyLeave: 0,
+          absent: 0,
+          equipmentIssues: alerts.byType?.find(t => t.type === 'equipment')?.count ?? 0,
+          qualityIssues: alerts.byType?.find(t => t.type === 'quality')?.count ?? 0,
+        });
+      }
+
+    } catch (err) {
+      console.error('加载统计数据失败:', err);
+      setError('加载统计数据失败，请稍后重试');
+    } finally {
+      setInitialLoading(false);
+      setRefreshing(false);
+    }
+  }, [dateRange, getDateRange]);
+
+  // Initial load
+  useEffect(() => {
+    loadStatisticsData();
+  }, [loadStatisticsData]);
 
   // Callbacks
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      // TODO: Fetch real data from API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
+    await loadStatisticsData(true);
+  }, [loadStatisticsData]);
 
   const handleDateRangeChange = (range: DateRangeType) => {
     setDateRange(range);
-    // TODO: Fetch data for the selected range
   };
 
   // Render functions
@@ -504,10 +623,52 @@ export default function DSStatisticsScreen() {
     </View>
   );
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {renderHeader()}
+  // Loading state
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={DISPATCHER_THEME.primary} />
+      <Text style={styles.loadingText}>加载统计数据中...</Text>
+    </View>
+  );
 
+  // Error state
+  const renderError = () => (
+    <View style={styles.errorContainer}>
+      <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#e74c3c" />
+      <Text style={styles.errorText}>{error}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={() => loadStatisticsData()}>
+        <Text style={styles.retryButtonText}>重新加载</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Empty state (no data)
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <MaterialCommunityIcons name="chart-bar" size={64} color="#ccc" />
+      <Text style={styles.emptyText}>暂无统计数据</Text>
+      <Text style={styles.emptySubtext}>请选择其他日期范围或稍后重试</Text>
+    </View>
+  );
+
+  // Check if we have data
+  const hasData = kpis.length > 0;
+
+  // Conditional content rendering
+  const renderContent = () => {
+    if (initialLoading) {
+      return renderLoading();
+    }
+
+    if (error) {
+      return renderError();
+    }
+
+    if (!hasData) {
+      return renderEmpty();
+    }
+
+    return (
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -523,10 +684,17 @@ export default function DSStatisticsScreen() {
       >
         {renderKPICards()}
         {renderProductionStats()}
-        {renderProductionTrend()}
+        {productionTrend.length > 0 && renderProductionTrend()}
         {renderPersonnelStats()}
         {renderAnomalies()}
       </ScrollView>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {renderHeader()}
+      {renderContent()}
     </SafeAreaView>
   );
 }
@@ -966,5 +1134,61 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 2,
+  },
+  // Loading, Error, Empty states
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    fontSize: 15,
+    color: '#e74c3c',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: DISPATCHER_THEME.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
 });
