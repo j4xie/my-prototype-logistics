@@ -139,5 +139,59 @@ public interface TimeClockRecordRepository extends JpaRepository<TimeClockRecord
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    /**
+     * 查询工厂在日期范围内的所有打卡记录（分页版本）
+     *
+     * @param factoryId 工厂ID
+     * @param start 开始时间
+     * @param end 结束时间
+     * @param pageable 分页参数
+     * @return 分页的打卡记录
+     */
+    @Query("SELECT t FROM TimeClockRecord t WHERE t.factoryId = :factoryId " +
+           "AND t.clockInTime >= :start AND t.clockInTime < :end ORDER BY t.clockInTime DESC")
+    Page<TimeClockRecord> findByFactoryIdAndClockDateBetweenPaged(
+            @Param("factoryId") String factoryId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            Pageable pageable
+    );
+
+    /**
+     * 统计指定日期范围内有打卡记录的用户数（去重）
+     * 用于计算出勤率
+     *
+     * @param factoryId 工厂ID
+     * @param start 开始时间
+     * @param end 结束时间
+     * @return 出勤人数
+     */
+    @Query("SELECT COUNT(DISTINCT t.userId) FROM TimeClockRecord t WHERE t.factoryId = :factoryId " +
+           "AND t.clockInTime >= :start AND t.clockInTime < :end")
+    long countDistinctUsersByFactoryIdAndClockDateBetween(
+            @Param("factoryId") String factoryId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+    /**
+     * 统计指定日期范围内的打卡天数（用于计算平均出勤率）
+     *
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @param start 开始时间
+     * @param end 结束时间
+     * @return 打卡天数
+     */
+    @Query("SELECT COUNT(DISTINCT CAST(t.clockInTime AS LocalDate)) FROM TimeClockRecord t " +
+           "WHERE t.factoryId = :factoryId AND t.userId = :userId " +
+           "AND t.clockInTime >= :start AND t.clockInTime < :end")
+    long countAttendanceDaysByUserAndDateRange(
+            @Param("factoryId") String factoryId,
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }
 

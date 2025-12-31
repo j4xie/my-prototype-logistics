@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.ml;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.entity.enums.ProcessingStageType;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -20,7 +21,8 @@ import java.time.LocalDateTime;
 @Table(name = "worker_allocation_feedbacks", indexes = {
         @Index(name = "idx_waf_factory_task", columnList = "factory_id, task_id"),
         @Index(name = "idx_waf_factory_worker", columnList = "factory_id, worker_id"),
-        @Index(name = "idx_waf_completed", columnList = "completed_at")
+        @Index(name = "idx_waf_completed", columnList = "completed_at"),
+        @Index(name = "idx_waf_factory_stage", columnList = "factory_id, stage_type")
 })
 @Data
 @Builder
@@ -162,6 +164,24 @@ public class WorkerAllocationFeedback extends BaseEntity {
      */
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
+
+    // ==================== Phase 3: 工艺维度增强 ====================
+
+    /**
+     * 工艺类型
+     * 用于区分不同工艺的效率表现，支持个人效率分解计算
+     */
+    @Column(name = "stage_type", length = 30)
+    @Enumerated(EnumType.STRING)
+    private ProcessingStageType stageType;
+
+    /**
+     * 团队成员ID列表 (JSON数组)
+     * 记录同一任务的所有参与工人，用于个人效率分解
+     * 格式: [1, 2, 3, 4, 5]
+     */
+    @Column(name = "team_composition", columnDefinition = "JSON")
+    private String teamComposition;
 
     // ==================== 辅助方法 ====================
 

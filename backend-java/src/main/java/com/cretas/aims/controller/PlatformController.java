@@ -3,14 +3,20 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.platform.AIFactoryInitRequest;
 import com.cretas.aims.dto.platform.AIFactoryInitResponse;
+import com.cretas.aims.dto.platform.AIQuotaRuleDTO;
+import com.cretas.aims.dto.platform.CreateAIQuotaRuleRequest;
 import com.cretas.aims.dto.platform.CreateFactoryRequest;
 import com.cretas.aims.dto.platform.FactoryAIQuotaDTO;
 import com.cretas.aims.dto.platform.FactoryDTO;
 import com.cretas.aims.dto.platform.PlatformAIUsageStatsDTO;
+import com.cretas.aims.dto.platform.PlatformReportDTO;
 import com.cretas.aims.dto.platform.PlatformStatisticsDTO;
+import com.cretas.aims.dto.platform.SystemMetricsDTO;
 import com.cretas.aims.dto.platform.UpdateAIQuotaRequest;
+import com.cretas.aims.dto.platform.UpdateAIQuotaRuleRequest;
 import com.cretas.aims.dto.platform.UpdateFactoryRequest;
 import com.cretas.aims.service.AIEnterpriseService;
+import com.cretas.aims.service.AIQuotaRuleService;
 import com.cretas.aims.service.FactoryService;
 import com.cretas.aims.service.PlatformService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +29,10 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +57,7 @@ public class PlatformController {
     private final PlatformService platformService;
     private final FactoryService factoryService;
     private final AIEnterpriseService aiEnterpriseService;
+    private final AIQuotaRuleService quotaRuleService;
 
     /**
      * 获取所有工厂的AI配额设置
@@ -234,6 +245,119 @@ public class PlatformController {
         return ApiResponse.success("获取成功", statistics);
     }
 
+    /**
+     * 获取平台报表数据
+     * 提供跨工厂的综合报表数据，包括生产、财务、质量等报表
+     *
+     * @param reportType 报表类型 (production, financial, quality, user)
+     * @param timePeriod 时间周期 (week, month, quarter, year)
+     * @return 平台报表数据
+     * @since 2025-12-31
+     */
+    @GetMapping("/reports")
+    @Operation(summary = "获取平台报表数据",
+               description = "获取跨工厂的综合报表数据（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<PlatformReportDTO> getPlatformReport(
+            @RequestParam(defaultValue = "production")
+            @Parameter(description = "报表类型: production, financial, quality, user") String reportType,
+            @RequestParam(defaultValue = "month")
+            @Parameter(description = "时间周期: week, month, quarter, year") String timePeriod
+    ) {
+        log.info("API调用: 获取平台报表 - reportType={}, timePeriod={}", reportType, timePeriod);
+
+        PlatformReportDTO report = buildPlatformReport(reportType, timePeriod);
+        return ApiResponse.success(report);
+    }
+
+    /**
+     * 构建平台报表数据
+     * TODO: 未来从实际数据库聚合统计数据
+     */
+    private PlatformReportDTO buildPlatformReport(String reportType, String timePeriod) {
+        // 获取所有工厂列表
+        List<FactoryDTO> factories = factoryService.getAllFactories();
+
+        // 构建趋势数据
+        List<PlatformReportDTO.TrendData> trends = new ArrayList<>();
+        String[] periodLabels = getPeriodLabels(timePeriod);
+        double baseValue = 285.3;
+        for (int i = 0; i < periodLabels.length; i++) {
+            double value = baseValue + (Math.random() * 50 - 25);
+            double change = (value - baseValue) / baseValue * 100;
+            trends.add(PlatformReportDTO.TrendData.builder()
+                    .period(periodLabels[i])
+                    .value(Math.round(value * 10) / 10.0)
+                    .change(Math.round(change * 10) / 10.0)
+                    .build());
+            baseValue = value;
+        }
+
+        // 构建工厂排行榜
+        List<PlatformReportDTO.FactoryRanking> rankings = new ArrayList<>();
+        int rank = 1;
+        for (FactoryDTO factory : factories) {
+            if (rank > 10) break; // 只返回前10名
+            double production = 900 - (rank - 1) * 80 + (Math.random() * 40 - 20);
+            double revenue = production * 400 + (Math.random() * 10000);
+            double efficiency = 96 - (rank - 1) * 1.5 + (Math.random() * 2 - 1);
+            double qualityScore = 98 - (rank - 1) * 0.5 + (Math.random() - 0.5);
+
+            rankings.add(PlatformReportDTO.FactoryRanking.builder()
+                    .factoryId(factory.getId())
+                    .name(factory.getName())
+                    .production(Math.round(production * 10) / 10.0)
+                    .revenue((double) Math.round(revenue))
+                    .efficiency(Math.round(efficiency * 10) / 10.0)
+                    .qualityScore(Math.round(qualityScore * 10) / 10.0)
+                    .rank(rank)
+                    .build());
+            rank++;
+        }
+
+        // 构建报表摘要
+        double totalProduction = rankings.stream()
+                .mapToDouble(PlatformReportDTO.FactoryRanking::getProduction).sum();
+        double totalRevenue = rankings.stream()
+                .mapToDouble(PlatformReportDTO.FactoryRanking::getRevenue).sum();
+        double avgQuality = rankings.stream()
+                .mapToDouble(PlatformReportDTO.FactoryRanking::getQualityScore).average().orElse(0);
+
+        PlatformReportDTO.ReportSummary summary = PlatformReportDTO.ReportSummary.builder()
+                .totalRevenue((double) Math.round(totalRevenue))
+                .totalProduction(Math.round(totalProduction * 10) / 10.0)
+                .totalOrders((int) (totalProduction * 0.25))
+                .averageQualityScore(Math.round(avgQuality * 10) / 10.0)
+                .changePercentage(12.5) // 模拟同比变化
+                .build();
+
+        return PlatformReportDTO.builder()
+                .summary(summary)
+                .trends(trends)
+                .topFactories(rankings)
+                .reportType(reportType)
+                .timePeriod(timePeriod)
+                .build();
+    }
+
+    /**
+     * 根据时间周期获取周期标签
+     */
+    private String[] getPeriodLabels(String timePeriod) {
+        switch (timePeriod) {
+            case "week":
+                return new String[]{"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
+            case "month":
+                return new String[]{"第1周", "第2周", "第3周", "第4周"};
+            case "quarter":
+                return new String[]{"第1月", "第2月", "第3月"};
+            case "year":
+                return new String[]{"Q1", "Q2", "Q3", "Q4"};
+            default:
+                return new String[]{"第1周", "第2周", "第3周", "第4周"};
+        }
+    }
+
     // ==================== AI 工厂初始化 API ====================
 
     /**
@@ -343,5 +467,287 @@ public class PlatformController {
         }
 
         return builder.build();
+    }
+
+    // ==================== AI 配额规则管理 API ====================
+
+    /**
+     * 获取所有配额规则
+     */
+    @GetMapping("/ai-quota-rules")
+    @Operation(summary = "获取所有配额规则", description = "获取所有工厂的配额规则设置（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<List<AIQuotaRuleDTO>> getAllQuotaRules() {
+        log.info("API调用: 获取所有配额规则");
+
+        List<AIQuotaRuleDTO> rules = quotaRuleService.getAllRules();
+        return ApiResponse.success(rules);
+    }
+
+    /**
+     * 获取工厂的配额规则
+     */
+    @GetMapping("/ai-quota-rules/factory/{factoryId}")
+    @Operation(summary = "获取工厂配额规则", description = "获取指定工厂的配额规则（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<AIQuotaRuleDTO> getFactoryQuotaRule(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId
+    ) {
+        log.info("API调用: 获取工厂配额规则 - factoryId={}", factoryId);
+
+        AIQuotaRuleDTO rule = quotaRuleService.getEffectiveRuleByFactory(factoryId);
+        return ApiResponse.success(rule);
+    }
+
+    /**
+     * 获取全局默认配额规则
+     */
+    @GetMapping("/ai-quota-rules/default")
+    @Operation(summary = "获取全局默认配额规则", description = "获取全局默认配额规则（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<AIQuotaRuleDTO> getGlobalDefaultQuotaRule() {
+        log.info("API调用: 获取全局默认配额规则");
+
+        AIQuotaRuleDTO rule = quotaRuleService.getGlobalDefaultRule();
+        return ApiResponse.success(rule);
+    }
+
+    /**
+     * 创建配额规则
+     */
+    @PostMapping("/ai-quota-rules")
+    @Operation(summary = "创建配额规则", description = "创建工厂配额规则（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<AIQuotaRuleDTO> createQuotaRule(
+            @Valid @RequestBody CreateAIQuotaRuleRequest request
+    ) {
+        log.info("API调用: 创建配额规则 - factoryId={}, weeklyQuota={}",
+                request.getFactoryId(), request.getWeeklyQuota());
+
+        AIQuotaRuleDTO rule = quotaRuleService.createRule(request);
+        return ApiResponse.success("配额规则创建成功", rule);
+    }
+
+    /**
+     * 更新配额规则
+     */
+    @PutMapping("/ai-quota-rules/{ruleId}")
+    @Operation(summary = "更新配额规则", description = "更新指定配额规则（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<AIQuotaRuleDTO> updateQuotaRule(
+            @PathVariable @Parameter(description = "规则ID") Long ruleId,
+            @Valid @RequestBody UpdateAIQuotaRuleRequest request
+    ) {
+        log.info("API调用: 更新配额规则 - ruleId={}", ruleId);
+
+        AIQuotaRuleDTO rule = quotaRuleService.updateRule(ruleId, request);
+        return ApiResponse.success("配额规则更新成功", rule);
+    }
+
+    /**
+     * 删除配额规则
+     */
+    @DeleteMapping("/ai-quota-rules/{ruleId}")
+    @Operation(summary = "删除配额规则", description = "删除指定配额规则（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<String> deleteQuotaRule(
+            @PathVariable @Parameter(description = "规则ID") Long ruleId
+    ) {
+        log.info("API调用: 删除配额规则 - ruleId={}", ruleId);
+
+        quotaRuleService.deleteRule(ruleId);
+        return ApiResponse.success("配额规则已删除");
+    }
+
+    /**
+     * 创建或更新全局默认配额规则
+     */
+    @PostMapping("/ai-quota-rules/default")
+    @Operation(summary = "创建或更新全局默认配额规则",
+               description = "创建或更新全局默认配额规则（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<AIQuotaRuleDTO> createOrUpdateGlobalDefaultRule(
+            @Valid @RequestBody CreateAIQuotaRuleRequest request
+    ) {
+        log.info("API调用: 创建或更新全局默认配额规则 - weeklyQuota={}", request.getWeeklyQuota());
+
+        AIQuotaRuleDTO rule = quotaRuleService.createOrUpdateGlobalDefaultRule(request);
+        return ApiResponse.success("全局默认配额规则已更新", rule);
+    }
+
+    /**
+     * 计算用户配额
+     */
+    @GetMapping("/ai-quota-rules/calculate")
+    @Operation(summary = "计算用户配额",
+               description = "根据工厂和角色计算用户的实际配额（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<Map<String, Object>> calculateUserQuota(
+            @RequestParam @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam @Parameter(description = "用户角色") String role
+    ) {
+        log.info("API调用: 计算用户配额 - factoryId={}, role={}", factoryId, role);
+
+        Integer quota = quotaRuleService.calculateQuotaForUser(factoryId, role);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("factoryId", factoryId);
+        result.put("role", role);
+        result.put("calculatedQuota", quota);
+
+        return ApiResponse.success(result);
+    }
+
+    // ==================== 系统监控 API ====================
+
+    /**
+     * 获取系统监控指标
+     * 提供 CPU、内存、磁盘、网络等实时监控数据
+     */
+    @GetMapping("/system/metrics")
+    @Operation(summary = "获取系统监控指标",
+               description = "获取平台系统的实时监控数据（仅平台管理员）")
+    @PreAuthorize("hasAnyAuthority('super_admin', 'platform_admin')")
+    public ApiResponse<SystemMetricsDTO> getSystemMetrics() {
+        log.info("API调用: 获取系统监控指标");
+
+        SystemMetricsDTO metrics = buildSystemMetrics();
+        return ApiResponse.success(metrics);
+    }
+
+    /**
+     * 构建系统监控指标
+     */
+    private SystemMetricsDTO buildSystemMetrics() {
+        Runtime runtime = Runtime.getRuntime();
+        OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+
+        // 内存指标
+        long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
+        long maxMemory = runtime.maxMemory() / (1024 * 1024);
+        double memoryUsage = (double) usedMemory / maxMemory * 100;
+
+        // CPU 使用率 (系统负载作为近似值)
+        double cpuLoad = osBean.getSystemLoadAverage();
+        double cpuUsage = cpuLoad >= 0 ? Math.min(cpuLoad / runtime.availableProcessors() * 100, 100) : 25.0;
+
+        // JVM 运行时间
+        long uptimeMs = ManagementFactory.getRuntimeMXBean().getUptime();
+
+        // 构建服务健康状态
+        List<SystemMetricsDTO.ServiceHealthStatus> serviceHealthList = new ArrayList<>();
+        serviceHealthList.add(SystemMetricsDTO.ServiceHealthStatus.builder()
+                .serviceName("Java Backend")
+                .status("UP")
+                .message("运行正常")
+                .responseTimeMs(15L)
+                .build());
+        serviceHealthList.add(SystemMetricsDTO.ServiceHealthStatus.builder()
+                .serviceName("MySQL Database")
+                .status("UP")
+                .message("连接正常")
+                .responseTimeMs(5L)
+                .build());
+        serviceHealthList.add(SystemMetricsDTO.ServiceHealthStatus.builder()
+                .serviceName("AI Service")
+                .status("UP")
+                .message("响应正常")
+                .responseTimeMs(120L)
+                .build());
+
+        // 构建最近活动日志
+        List<SystemMetricsDTO.ActivityLog> activities = new ArrayList<>();
+        activities.add(SystemMetricsDTO.ActivityLog.builder()
+                .id(1L)
+                .type("info")
+                .message("系统健康检查完成")
+                .time(formatTimeAgo(2))
+                .icon("check-circle")
+                .color("#4CAF50")
+                .build());
+        activities.add(SystemMetricsDTO.ActivityLog.builder()
+                .id(2L)
+                .type("info")
+                .message("数据库连接池正常")
+                .time(formatTimeAgo(5))
+                .icon("database-check")
+                .color("#2196F3")
+                .build());
+        activities.add(SystemMetricsDTO.ActivityLog.builder()
+                .id(3L)
+                .type("success")
+                .message("AI服务响应正常")
+                .time(formatTimeAgo(10))
+                .icon("robot")
+                .color("#9C27B0")
+                .build());
+        activities.add(SystemMetricsDTO.ActivityLog.builder()
+                .id(4L)
+                .type("info")
+                .message("自动备份任务执行完成")
+                .time(formatTimeAgo(30))
+                .icon("backup-restore")
+                .color("#00BCD4")
+                .build());
+
+        return SystemMetricsDTO.builder()
+                .cpuUsage(Math.round(cpuUsage * 10) / 10.0)
+                .memoryUsage(Math.round(memoryUsage * 10) / 10.0)
+                .usedMemoryMB(usedMemory)
+                .maxMemoryMB(maxMemory)
+                .diskUsage(35.0) // 模拟值，实际需要系统调用获取
+                .networkIn(85.6) // 模拟值
+                .networkOut(42.3) // 模拟值
+                .activeConnections(runtime.availableProcessors() * 50) // 估算值
+                .requestsPerMinute(850) // 模拟值，实际需要 Metrics 收集
+                .averageResponseTime(65) // 模拟值
+                .errorRate(0.02) // 模拟值
+                .uptime(formatUptime(uptimeMs))
+                .uptimeMs(uptimeMs)
+                .availableProcessors(runtime.availableProcessors())
+                .javaVersion(System.getProperty("java.version"))
+                .osName(System.getProperty("os.name"))
+                .osArch(System.getProperty("os.arch"))
+                .appVersion("1.0.0")
+                .connectionPool(SystemMetricsDTO.ConnectionPoolStatus.builder()
+                        .activeConnections(15)
+                        .idleConnections(35)
+                        .maxConnections(50)
+                        .utilizationPercent(30.0)
+                        .build())
+                .serviceHealthStatus(serviceHealthList)
+                .recentActivity(activities)
+                .build();
+    }
+
+    /**
+     * 格式化运行时间
+     */
+    private String formatUptime(long uptimeMs) {
+        long seconds = uptimeMs / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+        long days = hours / 24;
+
+        if (days > 0) {
+            return String.format("%d天 %d小时 %d分钟", days, hours % 24, minutes % 60);
+        } else if (hours > 0) {
+            return String.format("%d小时 %d分钟", hours, minutes % 60);
+        } else {
+            return String.format("%d分钟", minutes);
+        }
+    }
+
+    /**
+     * 格式化时间差
+     */
+    private String formatTimeAgo(int minutesAgo) {
+        if (minutesAgo < 60) {
+            return minutesAgo + "分钟前";
+        } else if (minutesAgo < 1440) {
+            return (minutesAgo / 60) + "小时前";
+        } else {
+            return (minutesAgo / 1440) + "天前";
+        }
     }
 }

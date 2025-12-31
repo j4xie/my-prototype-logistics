@@ -11,10 +11,18 @@ import {
   IconButton,
   List,
   ProgressBar,
+  SegmentedButtons,
+  Chip,
+  Switch,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { platformAPI } from '../../services/api/platformApiClient';
-import type { FactoryAIQuota, PlatformAIUsageStats } from '../../types/processing';
+import type {
+  FactoryAIQuota,
+  PlatformAIUsageStats,
+  AIQuotaRule,
+  CreateAIQuotaRuleRequest,
+} from '../../types/processing';
 import { logger } from '../../utils/logger';
 
 // 创建AIQuotaManagement专用logger
@@ -27,13 +35,23 @@ const aiQuotaLogger = logger.createContextLogger('AIQuotaManagement');
 export default function AIQuotaManagementScreen() {
   const navigation = useNavigation();
 
-  // 状态
+  // Tab状态
+  const [activeTab, setActiveTab] = useState<'usage' | 'rules'>('usage');
+
+  // 使用概览状态
   const [factories, setFactories] = useState<FactoryAIQuota[]>([]);
   const [stats, setStats] = useState<PlatformAIUsageStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [editingFactory, setEditingFactory] = useState<string | null>(null);
   const [editQuota, setEditQuota] = useState<string>('');
+
+  // 规则配置状态
+  const [quotaRules, setQuotaRules] = useState<AIQuotaRule[]>([]);
+  const [globalRule, setGlobalRule] = useState<AIQuotaRule | null>(null);
+  const [editingRule, setEditingRule] = useState<number | null>(null);
+  const [editRuleQuota, setEditRuleQuota] = useState<string>('');
+  const [editRuleResetDay, setEditRuleResetDay] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -42,19 +60,36 @@ export default function AIQuotaManagementScreen() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [factoriesRes, statsRes] = await Promise.all([
-        platformAPI.getFactoryAIQuotas(),
-        platformAPI.getPlatformAIUsageStats(),
-      ]);
+      if (activeTab === 'usage') {
+        const [factoriesRes, statsRes] = await Promise.all([
+          platformAPI.getFactoryAIQuotas(),
+          platformAPI.getPlatformAIUsageStats(),
+        ]);
 
-      if (factoriesRes.success) setFactories(factoriesRes.data);
-      if (statsRes.success) setStats(statsRes.data);
+        if (factoriesRes.success) setFactories(factoriesRes.data);
+        if (statsRes.success) setStats(statsRes.data);
 
-      aiQuotaLogger.info('AI配额数据加载成功', {
-        factoryCount: factoriesRes.success ? factoriesRes.data.length : 0,
-        totalUsed: statsRes.success ? statsRes.data.totalUsed : 0,
-        currentWeek: statsRes.success ? statsRes.data.currentWeek : '',
-      });
+        aiQuotaLogger.info('AI配额数据加载成功', {
+          factoryCount: factoriesRes.success ? factoriesRes.data.length : 0,
+          totalUsed: statsRes.success ? statsRes.data.totalUsed : 0,
+          currentWeek: statsRes.success ? statsRes.data.currentWeek : '',
+        });
+      } else {
+        const [rulesRes, globalRuleRes] = await Promise.all([
+          platformAPI.getAllQuotaRules(),
+          platformAPI.getGlobalDefaultQuotaRule(),
+        ]);
+
+        if (rulesRes.success) {
+          setQuotaRules(rulesRes.data.filter((r) => r.factoryId !== null));
+        }
+        if (globalRuleRes.success) setGlobalRule(globalRuleRes.data);
+
+        aiQuotaLogger.info('AI配额规则加载成功', {
+          ruleCount: rulesRes.success ? rulesRes.data.length : 0,
+          hasGlobalRule: globalRuleRes.success,
+        });
+      }
     } catch (error) {
       aiQuotaLogger.error('加载数据失败', error as Error);
       Alert.alert('错误', '加载数据失败');
@@ -116,6 +151,87 @@ export default function AIQuotaManagementScreen() {
     if (utilization >= 80) return '#EF5350'; // 红色：高使用率
     if (utilization >= 50) return '#FFA726'; // 橙色：中等
     return '#66BB6A'; // 绿色：低使用率
+  };
+
+  // 规则管理函数
+  const handleEditRule = (rule: AIQuotaRule) => {
+    setEditingRule(rule.id || null);
+    setEditRuleQuota(rule.weeklyQuota.toString());
+    setEditRuleResetDay(rule.resetDayOfWeek.toString());
+  };
+
+  const handleSaveRule = async (ruleId: number) => {
+    const newQuota = parseInt(editRuleQuota);
+    const newResetDay = parseInt(editRuleResetDay);
+
+    if (isNaN(newQuota) || newQuota < 0 || newQuota > 10000) {
+      Alert.alert('错误', '配额应在0-10000之间');
+      return;
+    }
+
+    try {
+      const response = await platformAPI.updateQuotaRule(ruleId, {
+        weeklyQuota: newQuota,
+        resetDayOfWeek: newResetDay,
+      });
+
+      if (response.success) {
+        Alert.alert('成功', '规则已更新');
+        setEditingRule(null);
+        loadData();
+      }
+    } catch (error) {
+      aiQuotaLogger.error('保存规则失败', error as Error);
+      Alert.alert('错误', '保存失败');
+    }
+  };
+
+  const handleDeleteRule = async (ruleId: number) => {
+    Alert.alert('确认删除', '确定要删除这条配额规则吗？', [
+      { text: '取消', style: 'cancel' },
+      {
+        text: '删除',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await platformAPI.deleteQuotaRule(ruleId);
+            Alert.alert('成功', '规则已删除');
+            loadData();
+          } catch (error) {
+            aiQuotaLogger.error('删除规则失败', error as Error);
+            Alert.alert('错误', '删除失败');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleSaveGlobalRule = async () => {
+    if (!globalRule) return;
+
+    const newQuota = parseInt(editRuleQuota);
+
+    if (isNaN(newQuota) || newQuota < 0 || newQuota > 10000) {
+      Alert.alert('错误', '配额应在0-10000之间');
+      return;
+    }
+
+    try {
+      const response = await platformAPI.createOrUpdateGlobalDefaultRule({
+        weeklyQuota: newQuota,
+        resetDayOfWeek: globalRule.resetDayOfWeek,
+        enabled: true,
+      });
+
+      if (response.success) {
+        Alert.alert('成功', '全局默认规则已更新');
+        setEditingRule(null);
+        loadData();
+      }
+    } catch (error) {
+      aiQuotaLogger.error('保存全局规则失败', error as Error);
+      Alert.alert('错误', '保存失败');
+    }
   };
 
   const renderFactoryCard = (factory: FactoryAIQuota) => {
@@ -243,12 +359,29 @@ export default function AIQuotaManagementScreen() {
         <Appbar.Action icon="refresh" onPress={handleRefresh} />
       </Appbar.Header>
 
+      {/* Tab 选择器 */}
+      <View style={styles.tabContainer}>
+        <SegmentedButtons
+          value={activeTab}
+          onValueChange={(value) => {
+            setActiveTab(value as 'usage' | 'rules');
+            setTimeout(() => loadData(), 100);
+          }}
+          buttons={[
+            { value: 'usage', label: '使用概览', icon: 'chart-bar' },
+            { value: 'rules', label: '规则配置', icon: 'cog' },
+          ]}
+        />
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        {/* 平台使用概览 */}
-        {stats && (
+        {activeTab === 'usage' ? (
+          <>
+            {/* 平台使用概览 */}
+            {stats && (
           <Card style={styles.card} mode="elevated">
             <Card.Title title="📊 平台使用概览" />
             <Card.Content>
@@ -328,7 +461,150 @@ export default function AIQuotaManagementScreen() {
           </Card>
         )}
 
-        <View style={styles.bottomPadding} />
+            <View style={styles.bottomPadding} />
+          </>
+        ) : (
+          <>
+            {/* 规则配置 Tab */}
+            {/* 全局默认规则 */}
+            {globalRule && (
+              <Card style={styles.card} mode="elevated">
+                <Card.Title title="🌍 全局默认规则" />
+                <Card.Content>
+                  <Text variant="bodySmall" style={styles.ruleDescription}>
+                    适用于所有未配置特定规则的工厂
+                  </Text>
+                  <Divider style={styles.cardDivider} />
+                  <View style={styles.ruleRow}>
+                    <Text variant="bodyMedium">周配额:</Text>
+                    {editingRule === 0 ? (
+                      <View style={styles.editContainer}>
+                        <TextInput
+                          mode="outlined"
+                          value={editRuleQuota}
+                          onChangeText={setEditRuleQuota}
+                          keyboardType="numeric"
+                          style={styles.quotaInput}
+                          dense
+                        />
+                        <Button mode="contained" onPress={handleSaveGlobalRule} compact>
+                          保存
+                        </Button>
+                        <Button mode="text" onPress={() => setEditingRule(null)} compact>
+                          取消
+                        </Button>
+                      </View>
+                    ) : (
+                      <View style={styles.quotaDisplayRow}>
+                        <Text variant="titleMedium" style={styles.quotaValueLarge}>
+                          {globalRule.weeklyQuota}
+                        </Text>
+                        <Text variant="bodyMedium">次/周</Text>
+                        <IconButton
+                          icon="pencil"
+                          size={20}
+                          onPress={() => {
+                            setEditingRule(0);
+                            setEditRuleQuota(globalRule.weeklyQuota.toString());
+                          }}
+                        />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.ruleRow}>
+                    <Text variant="bodyMedium">重置周期:</Text>
+                    <Chip>
+                      {
+                        ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][
+                          globalRule.resetDayOfWeek === 7 ? 0 : globalRule.resetDayOfWeek
+                        ]
+                      }
+                    </Chip>
+                  </View>
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* 工厂特定规则 */}
+            <Card style={styles.card} mode="elevated">
+              <Card.Title
+                title="🏭 工厂特定规则"
+                subtitle={`共${quotaRules.length}个工厂配置了特定规则`}
+              />
+              <Card.Content>
+                {quotaRules.length === 0 ? (
+                  <Text variant="bodyMedium" style={styles.emptyText}>
+                    暂无工厂特定规则，所有工厂使用全局默认规则
+                  </Text>
+                ) : (
+                  quotaRules.map((rule) => (
+                    <Card key={rule.id} style={styles.ruleCard} mode="outlined">
+                      <Card.Content>
+                        <View style={styles.ruleHeader}>
+                          <Text variant="titleMedium" style={styles.factoryName}>
+                            {rule.factoryName}
+                          </Text>
+                          {editingRule !== rule.id && (
+                            <IconButton
+                              icon="delete"
+                              size={20}
+                              onPress={() => rule.id && handleDeleteRule(rule.id)}
+                            />
+                          )}
+                        </View>
+                        <Divider style={styles.cardDivider} />
+                        <View style={styles.ruleRow}>
+                          <Text variant="bodyMedium">周配额:</Text>
+                          {editingRule === rule.id ? (
+                            <View style={styles.editContainer}>
+                              <TextInput
+                                mode="outlined"
+                                value={editRuleQuota}
+                                onChangeText={setEditRuleQuota}
+                                keyboardType="numeric"
+                                style={styles.quotaInput}
+                                dense
+                              />
+                              <Button
+                                mode="contained"
+                                onPress={() => rule.id && handleSaveRule(rule.id)}
+                                compact
+                              >
+                                保存
+                              </Button>
+                              <Button mode="text" onPress={() => setEditingRule(null)} compact>
+                                取消
+                              </Button>
+                            </View>
+                          ) : (
+                            <View style={styles.quotaDisplayRow}>
+                              <Text variant="titleMedium" style={styles.quotaValueLarge}>
+                                {rule.weeklyQuota}
+                              </Text>
+                              <Text variant="bodyMedium">次/周</Text>
+                              <IconButton
+                                icon="pencil"
+                                size={20}
+                                onPress={() => handleEditRule(rule)}
+                              />
+                            </View>
+                          )}
+                        </View>
+                        {rule.description && (
+                          <Text variant="bodySmall" style={styles.ruleDescription}>
+                            {rule.description}
+                          </Text>
+                        )}
+                      </Card.Content>
+                    </Card>
+                  ))
+                )}
+              </Card.Content>
+            </Card>
+
+            <View style={styles.bottomPadding} />
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -468,5 +744,32 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 20,
+  },
+  tabContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  ruleCard: {
+    marginBottom: 12,
+  },
+  ruleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ruleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  ruleDescription: {
+    color: '#757575',
+    marginTop: 4,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#9E9E9E',
+    padding: 20,
   },
 });

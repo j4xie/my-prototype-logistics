@@ -230,6 +230,7 @@ export default function PlatformDashboardScreen() {
 
     if (implementedRoutes.includes(route)) {
       platformDashboardLogger.debug('导航到管理功能', { route });
+      // @ts-expect-error - TypeScript cannot narrow the type properly with includes check
       navigation.navigate(route);
     } else {
       // 显示开发中提示

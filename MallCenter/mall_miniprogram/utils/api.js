@@ -333,6 +333,23 @@ module.exports = {
   getMerchantStats: (merchantId) => {//获取商户统计数据
     return request('/weixin/api/ma/merchant/' + merchantId + '/stats', 'get', null, false)
   },
+  // ========== OSS直传相关 ==========
+  getOssSignature: (type, filename) => {//获取OSS上传签名
+    let url = '/weixin/api/ma/oss/signature?type=' + (type || 'product')
+    if (filename) {
+      url += '&filename=' + encodeURIComponent(filename)
+    }
+    return request(url, 'get', null, false)
+  },
+  getOssConfig: () => {//获取OSS配置
+    return request('/weixin/api/ma/oss/config', 'get', null, false)
+  },
+  getOssStsToken: () => {//获取OSS STS临时凭证
+    return request('/weixin/api/ma/oss/sts-token', 'get', null, false)
+  },
+  getBatchOssSignatures: (type, count) => {//批量获取OSS上传签名
+    return request('/weixin/api/ma/oss/signatures?type=' + (type || 'product') + '&count=' + (count || 1), 'get', null, false)
+  },
   // ========== 文件上传相关 ==========
   uploadFile: (filePath) => {//统一文件上传
     return new Promise((resolve, reject) => {

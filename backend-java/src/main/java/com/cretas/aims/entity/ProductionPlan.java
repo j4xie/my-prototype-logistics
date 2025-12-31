@@ -156,6 +156,26 @@ public class ProductionPlan extends BaseEntity {
     @Column(name = "related_orders", columnDefinition = "JSON")
     private String relatedOrders;
 
+    // ==================== 紧急状态监控字段 ====================
+
+    /**
+     * 当前完成概率 (0-1)
+     * 基于多因素加权计算：
+     * - CR值权重: 40%
+     * - 材料匹配权重: 30%
+     * - AI置信度权重: 20%
+     * - 混批影响权重: 10%
+     */
+    @Column(name = "current_probability", precision = 5, scale = 4)
+    private BigDecimal currentProbability;
+
+    /**
+     * 概率最后更新时间
+     * 用于判断概率是否过期（超过1小时需重新计算）
+     */
+    @Column(name = "probability_updated_at")
+    private LocalDateTime probabilityUpdatedAt;
+
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
@@ -221,10 +241,112 @@ public class ProductionPlan extends BaseEntity {
     }
 
     /**
-     * 判断是否紧急 (CR < 1)
+     * 判断是否紧急 (双重标准)
+     * 条件1: CR值 < 1 (时间紧急)
+     * 条件2: 完成概率 < 阈值 (资源不足)
+     *
+     * @param threshold 紧急阈值 (0-1之间)
+     * @return true表示紧急，false表示正常
      */
-    public boolean isUrgent() {
-        return crValue != null && crValue.compareTo(BigDecimal.ONE) < 0;
+    public boolean isUrgent(double threshold) {
+        // 时间紧急：CR < 1
+        if (crValue != null && crValue.compareTo(BigDecimal.ONE) < 0) {
+            return true;
+        }
+        // 资源不足：概率 < 阈值
+        if (currentProbability != null &&
+            currentProbability.compareTo(new BigDecimal(threshold)) < 0) {
+            return true;
+        }
+        return false;
+    }
+
+    // ==================== 审批流程字段 ====================
+
+    /**
+     * 是否为强制插单
+     */
+    @Column(name = "is_force_inserted")
+    private Boolean isForceInserted = false;
+
+    /**
+     * 是否需要审批
+     */
+    @Column(name = "requires_approval")
+    private Boolean requiresApproval = false;
+
+    /**
+     * 审批状态
+     * PENDING - 待审批
+     * APPROVED - 已批准
+     * REJECTED - 已拒绝
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", length = 20)
+    private ApprovalStatus approvalStatus;
+
+    /**
+     * 审批人ID
+     */
+    @Column(name = "approver_id")
+    private Long approverId;
+
+    /**
+     * 审批人姓名
+     */
+    @Column(name = "approver_name", length = 50)
+    private String approverName;
+
+    /**
+     * 审批时间
+     */
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    /**
+     * 审批备注/理由
+     */
+    @Column(name = "approval_comment", length = 500)
+    private String approvalComment;
+
+    /**
+     * 强制插单原因
+     */
+    @Column(name = "force_insert_reason", length = 500)
+    private String forceInsertReason;
+
+    /**
+     * 强制插单操作人ID
+     */
+    @Column(name = "force_insert_by")
+    private Long forceInsertBy;
+
+    /**
+     * 强制插单时间
+     */
+    @Column(name = "force_inserted_at")
+    private LocalDateTime forceInsertedAt;
+
+    /**
+     * 审批状态枚举
+     */
+    public enum ApprovalStatus {
+        PENDING,    // 待审批
+        APPROVED,   // 已批准
+        REJECTED    // 已拒绝
+    }
+
+    /**
+     * 检查概率是否过期（超过1小时）
+     * 过期的概率需要重新计算
+     *
+     * @return true表示过期，需要重新计算；false表示有效
+     */
+    public boolean isProbabilityStale() {
+        if (probabilityUpdatedAt == null) {
+            return true;  // 从未计算过，需要计算
+        }
+        return probabilityUpdatedAt.isBefore(LocalDateTime.now().minusHours(1));
     }
 
     /**
@@ -269,6 +391,97 @@ public class ProductionPlan extends BaseEntity {
             return "MEDIUM";
         } else {
             return "LOW";
+        }
+    }
+
+    // ==================== 审批辅助方法 ====================
+
+    /**
+     * 判断是否为待审批状态
+     */
+    public boolean isPendingApproval() {
+        return Boolean.TRUE.equals(requiresApproval) &&
+               approvalStatus == ApprovalStatus.PENDING;
+    }
+
+    /**
+     * 判断是否已批准
+     */
+    public boolean isApproved() {
+        return approvalStatus == ApprovalStatus.APPROVED;
+    }
+
+    /**
+     * 判断是否已拒绝
+     */
+    public boolean isRejected() {
+        return approvalStatus == ApprovalStatus.REJECTED;
+    }
+
+    /**
+     * 批准操作
+     *
+     * @param approverId   审批人ID
+     * @param approverName 审批人姓名
+     * @param comment      审批备注
+     */
+    public void approve(Long approverId, String approverName, String comment) {
+        this.approvalStatus = ApprovalStatus.APPROVED;
+        this.approverId = approverId;
+        this.approverName = approverName;
+        this.approvalComment = comment;
+        this.approvedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 拒绝操作
+     *
+     * @param approverId   审批人ID
+     * @param approverName 审批人姓名
+     * @param comment      拒绝理由
+     */
+    public void reject(Long approverId, String approverName, String comment) {
+        this.approvalStatus = ApprovalStatus.REJECTED;
+        this.approverId = approverId;
+        this.approverName = approverName;
+        this.approvalComment = comment;
+        this.approvedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 标记为强制插单
+     *
+     * @param operatorId 操作人ID
+     * @param reason     强制插单原因
+     * @param needsApproval 是否需要审批
+     */
+    public void markAsForceInsert(Long operatorId, String reason, boolean needsApproval) {
+        this.isForceInserted = true;
+        this.forceInsertBy = operatorId;
+        this.forceInsertReason = reason;
+        this.forceInsertedAt = LocalDateTime.now();
+        this.requiresApproval = needsApproval;
+        if (needsApproval) {
+            this.approvalStatus = ApprovalStatus.PENDING;
+        }
+    }
+
+    /**
+     * 获取审批状态显示名称
+     */
+    public String getApprovalStatusDisplayName() {
+        if (approvalStatus == null) {
+            return "无需审批";
+        }
+        switch (approvalStatus) {
+            case PENDING:
+                return "待审批";
+            case APPROVED:
+                return "已批准";
+            case REJECTED:
+                return "已拒绝";
+            default:
+                return "未知";
         }
     }
 }

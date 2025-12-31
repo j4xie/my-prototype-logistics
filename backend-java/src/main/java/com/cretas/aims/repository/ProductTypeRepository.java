@@ -62,4 +62,13 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
      * 统计工厂的产品类型总数
       */
     long countByFactoryId(String factoryId);
+
+    /**
+     * 查找工厂的所有激活产品类型
+     * 用于蓝图导出功能
+     *
+     * @param factoryId 工厂ID
+     * @return 产品类型列表
+     */
+    List<ProductType> findByFactoryIdAndIsActiveTrue(String factoryId);
 }

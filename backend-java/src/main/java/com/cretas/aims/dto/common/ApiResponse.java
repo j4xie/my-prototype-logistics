@@ -55,6 +55,19 @@ public class ApiResponse<T> implements Serializable {
         return response;
     }
 
+    /**
+     * 成功响应 - 仅消息，无数据 (用于 Void 返回类型)
+     */
+    public static ApiResponse<Void> successMessage(String message) {
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(200);
+        response.setMessage(message);
+        response.setData(null);
+        response.setTimestamp(LocalDateTime.now());
+        response.setSuccess(true);
+        return response;
+    }
+
     // 失败响应
     public static <T> ApiResponse<T> error(String message) {
         return error(400, message);

@@ -149,4 +149,13 @@ public interface FormTemplateRepository extends JpaRepository<FormTemplate, Stri
      */
     @Query("SELECT f FROM FormTemplate f WHERE f.source LIKE %:pattern% OR f.sourcePackageId = :pattern")
     List<FormTemplate> findBySourceContaining(@Param("pattern") String pattern);
+
+    /**
+     * 查询工厂的所有未删除模板
+     * 用于蓝图导出功能
+     *
+     * @param factoryId 工厂ID
+     * @return 模板列表
+     */
+    List<FormTemplate> findByFactoryIdAndDeletedAtIsNull(String factoryId);
 }

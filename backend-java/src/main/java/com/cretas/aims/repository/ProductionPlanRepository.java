@@ -397,4 +397,37 @@ public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, 
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             Pageable pageable);
+
+    /**
+     * 查找指定状态和预计完成日期范围内的计划（用于紧急状态监控）
+     * 不分页，返回所有符合条件的计划用于实时概率计算和紧急状态判断
+     *
+     * @param factoryId 工厂ID
+     * @param status 计划状态
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 符合条件的生产计划列表
+     * @since 2025-12-29
+     */
+    List<ProductionPlan> findByFactoryIdAndStatusAndExpectedCompletionDateBetween(
+            String factoryId,
+            ProductionPlanStatus status,
+            LocalDate startDate,
+            LocalDate endDate);
+
+    /**
+     * 统计指定时间范围内创建的生产计划数量
+     * 用于预测报表的置信度计算
+     *
+     * @param factoryId 工厂ID
+     * @param startDateTime 开始时间
+     * @param endDateTime 结束时间
+     * @return 创建的计划数量
+     */
+    @Query("SELECT COUNT(p) FROM ProductionPlan p WHERE p.factoryId = :factoryId " +
+           "AND p.createdAt >= :startDateTime AND p.createdAt < :endDateTime")
+    long countByFactoryIdAndCreatedAtBetween(
+            @Param("factoryId") String factoryId,
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime);
 }

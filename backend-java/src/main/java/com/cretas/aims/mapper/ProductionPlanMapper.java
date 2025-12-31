@@ -91,11 +91,23 @@ public class ProductionPlanMapper {
         dto.setAiConfidenceLevel(plan.getAiConfidenceLevel());
         dto.setForecastReason(plan.getForecastReason());
         dto.setCrValue(plan.getCrValue());
-        dto.setIsUrgent(plan.isUrgent());
+        dto.setIsUrgent(plan.isUrgent(1.0));
         dto.setIsMixedBatch(plan.getIsMixedBatch());
         dto.setMixedBatchType(plan.getMixedBatchType());
         dto.setMixedBatchTypeDisplayName(plan.getMixedBatchTypeDisplayName());
         dto.setRelatedOrders(parseRelatedOrders(plan.getRelatedOrders()));
+
+        // 设置强制插单审批字段
+        dto.setIsForceInserted(plan.getIsForceInserted());
+        dto.setRequiresApproval(plan.getRequiresApproval());
+        dto.setApprovalStatus(plan.getApprovalStatus() != null ? plan.getApprovalStatus().name() : null);
+        dto.setApproverId(plan.getApproverId());
+        dto.setApproverName(plan.getApproverName());
+        dto.setApprovedAt(plan.getApprovedAt());
+        dto.setApprovalComment(plan.getApprovalComment());
+        dto.setForceInsertReason(plan.getForceInsertReason());
+        dto.setForceInsertBy(plan.getForceInsertBy());
+        dto.setForceInsertedAt(plan.getForceInsertedAt());
 
         return dto;
     }

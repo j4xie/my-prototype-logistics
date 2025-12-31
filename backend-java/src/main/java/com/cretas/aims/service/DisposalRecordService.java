@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 报废记录服务层
+ * 报废记录服务层实现
  *
  * @author Cretas Team
  * @version 1.0.0
@@ -28,13 +28,14 @@ import java.util.Optional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DisposalRecordService {
+public class DisposalRecordService implements IDisposalRecordService {
 
     private final DisposalRecordRepository disposalRecordRepository;
 
     /**
      * 创建报废记录
      */
+    @Override
     @Transactional
     public DisposalRecord createDisposalRecord(DisposalRecord record) {
         // 设置默认值
@@ -51,6 +52,7 @@ public class DisposalRecordService {
     /**
      * 审批报废记录
      */
+    @Override
     @Transactional
     public DisposalRecord approveDisposal(Long id, Integer approverId, String approverName) {
         DisposalRecord record = disposalRecordRepository.findById(id)
@@ -64,6 +66,7 @@ public class DisposalRecordService {
     /**
      * 根据ID获取报废记录
      */
+    @Override
     public Optional<DisposalRecord> getById(Long id) {
         return disposalRecordRepository.findById(id);
     }
@@ -71,6 +74,7 @@ public class DisposalRecordService {
     /**
      * 分页查询工厂报废记录
      */
+    @Override
     public Page<DisposalRecord> getByFactoryId(String factoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "disposalDate"));
         return disposalRecordRepository.findByFactoryId(factoryId, pageable);
@@ -79,6 +83,7 @@ public class DisposalRecordService {
     /**
      * 按报废类型分页查询
      */
+    @Override
     public Page<DisposalRecord> getByFactoryIdAndType(String factoryId, String disposalType, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "disposalDate"));
         return disposalRecordRepository.findByFactoryIdAndDisposalType(factoryId, disposalType, pageable);
@@ -87,6 +92,7 @@ public class DisposalRecordService {
     /**
      * 获取待审批的报废记录
      */
+    @Override
     public List<DisposalRecord> getPendingApprovals(String factoryId) {
         return disposalRecordRepository.findPendingApprovals(factoryId);
     }
@@ -94,6 +100,7 @@ public class DisposalRecordService {
     /**
      * 按日期范围查询
      */
+    @Override
     public List<DisposalRecord> getByDateRange(String factoryId, LocalDateTime startDate, LocalDateTime endDate) {
         return disposalRecordRepository.findByDateRange(factoryId, startDate, endDate);
     }
@@ -101,6 +108,7 @@ public class DisposalRecordService {
     /**
      * 获取报废统计
      */
+    @Override
     public Map<String, Object> getDisposalStats(String factoryId, LocalDateTime startDate, LocalDateTime endDate) {
         Map<String, Object> stats = new HashMap<>();
         
@@ -125,6 +133,7 @@ public class DisposalRecordService {
     /**
      * 按类型统计
      */
+    @Override
     public List<Object[]> getStatsByType(String factoryId, LocalDateTime startDate, LocalDateTime endDate) {
         return disposalRecordRepository.getDisposalStatsByType(factoryId, startDate, endDate);
     }
@@ -132,6 +141,7 @@ public class DisposalRecordService {
     /**
      * 获取可回收报废记录
      */
+    @Override
     public List<DisposalRecord> getRecyclableDisposals(String factoryId) {
         return disposalRecordRepository.findRecyclableDisposals(factoryId);
     }
@@ -139,6 +149,7 @@ public class DisposalRecordService {
     /**
      * 更新报废记录
      */
+    @Override
     @Transactional
     public DisposalRecord updateDisposalRecord(Long id, DisposalRecord updateData) {
         DisposalRecord existing = disposalRecordRepository.findById(id)
@@ -178,6 +189,7 @@ public class DisposalRecordService {
     /**
      * 删除报废记录（软删除）
      */
+    @Override
     @Transactional
     public void deleteDisposalRecord(Long id) {
         DisposalRecord record = disposalRecordRepository.findById(id)

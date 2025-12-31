@@ -136,6 +136,11 @@ class ApiClient {
     // 拦截器已统一返回response.data，直接返回即可
     return await this.client.delete(url, config);
   }
+
+  async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    // 拦截器已统一返回response.data，直接返回即可
+    return await this.client.patch(url, data, config);
+  }
 }
 
 export const apiClient = new ApiClient();

@@ -68,5 +68,13 @@ _archived/
 # Claude 本地配置（包含敏感信息）
 .claude/settings.local.json
 
+# 凭证和密钥文件（绝不提交到版本控制）
+.claude/rules/*-credentials.md
+.claude/rules/*-keys.md
+.claude/rules/aliyun-credentials.md
+
 # APK 文件（太大，使用 Git LFS 或单独管理）
-*.apk 
+*.apk
+
+# 产品图片目录（不推送到仓库）
+MallCenter/product image/ 
