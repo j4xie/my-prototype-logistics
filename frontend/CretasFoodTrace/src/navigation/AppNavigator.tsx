@@ -2,13 +2,18 @@
  * 应用根导航器
  * 处理认证状态和角色路由
  */
-import React from "react";
+import React, { useCallback } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider } from "react-native-paper";
+import * as Notifications from "expo-notifications";
 import { useAuthStore } from "../store/authStore";
 import { getUserRole } from "../types/auth";
 import { theme } from "../theme";
+import { usePushNotifications } from "../hooks/usePushNotifications";
+import { logger } from "../utils/logger";
+
+const pushLogger = logger.createContextLogger('PushNotifications');
 
 // 认证页面
 import EnhancedLoginScreen from "../screens/auth/EnhancedLoginScreen";
@@ -33,6 +38,42 @@ const Stack = createNativeStackNavigator();
 function RoleBasedNavigator() {
   const { user } = useAuthStore();
   const userRole = getUserRole(user);
+
+  // 处理收到前台通知
+  const handleNotificationReceived = useCallback(
+    (notification: Notifications.Notification) => {
+      pushLogger.info('收到前台通知', {
+        title: notification.request.content.title,
+        body: notification.request.content.body,
+        data: notification.request.content.data,
+      });
+    },
+    []
+  );
+
+  // 处理用户点击通知
+  const handleNotificationTapped = useCallback(
+    (response: Notifications.NotificationResponse) => {
+      const data = response.notification.request.content.data as Record<string, unknown>;
+      pushLogger.info('用户点击通知', { data });
+
+      // 根据通知数据进行导航
+      if (data?.screen) {
+        pushLogger.info('尝试导航到', { screen: data.screen });
+        // 通知导航由各个 Navigator 内部处理
+        // 这里记录日志用于调试
+      }
+    },
+    []
+  );
+
+  // 集成推送通知 Hook
+  usePushNotifications({
+    onNotificationReceived: handleNotificationReceived,
+    onNotificationTapped: handleNotificationTapped,
+    autoRegisterOnLogin: true,
+    autoUnregisterOnLogout: true,
+  });
 
   // factory_super_admin 使用工厂管理员界面
   if (userRole === "factory_super_admin") {

@@ -2,6 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.entity.rules.DroolsRule;
 import com.cretas.aims.repository.DroolsRuleRepository;
+import com.cretas.aims.service.DecisionAuditService;
 import com.cretas.aims.service.RuleEngineService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class RuleEngineServiceImpl implements RuleEngineService {
 
     private final DroolsRuleRepository droolsRuleRepository;
+    private final DecisionAuditService decisionAuditService;
 
     /**
      * 工厂规则容器缓存
@@ -448,6 +450,319 @@ public class RuleEngineServiceImpl implements RuleEngineService {
         stats.put("isLoaded", isRulesLoaded(factoryId));
 
         return stats;
+    }
+
+    // ==================== 关键决策审计方法 ====================
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T executeRulesWithAudit(
+            String factoryId,
+            String ruleGroup,
+            String entityType,
+            String entityId,
+            Long executorId,
+            String executorName,
+            String executorRole,
+            Object... facts) {
+
+        log.info("执行规则(带审计) - factoryId={}, ruleGroup={}, entityType={}, entityId={}",
+                factoryId, ruleGroup, entityType, entityId);
+
+        long startTime = System.currentTimeMillis();
+        List<String> appliedRules = new ArrayList<>();
+
+        try {
+            // 准备输入上下文 (用于审计)
+            Map<String, Object> inputContext = new HashMap<>();
+            inputContext.put("factoryId", factoryId);
+            inputContext.put("ruleGroup", ruleGroup);
+            inputContext.put("entityType", entityType);
+            inputContext.put("entityId", entityId);
+            inputContext.put("factsCount", facts.length);
+            inputContext.put("timestamp", java.time.LocalDateTime.now().toString());
+
+            // 执行规则
+            T result = executeRules(factoryId, ruleGroup, facts);
+
+            // 收集触发的规则名称
+            appliedRules = collectAppliedRules(factoryId, ruleGroup);
+
+            // 记录审计日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            Map<String, Object> outputResult = new HashMap<>();
+            outputResult.put("result", result);
+            outputResult.put("executionTimeMs", executionTime);
+
+            String decisionMade = result != null
+                    ? "规则执行成功，返回结果: " + result.getClass().getSimpleName()
+                    : "规则执行完成，无返回结果";
+
+            try {
+                decisionAuditService.logRuleExecution(
+                        factoryId,
+                        entityType,
+                        entityId,
+                        inputContext,
+                        outputResult,
+                        appliedRules,
+                        decisionMade,
+                        executorId,
+                        executorName,
+                        executorRole
+                );
+                log.debug("规则执行审计日志已记录 - entityId={}, appliedRules={}", entityId, appliedRules.size());
+            } catch (Exception e) {
+                log.warn("记录规则执行审计日志失败 - entityId={}", entityId, e);
+                // 审计失败不影响规则执行结果
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("执行规则(带审计)失败 - entityId={}", entityId, e);
+            throw e;
+        }
+    }
+
+    @Override
+    public List<Object> executeRulesWithAuditMultipleResults(
+            String factoryId,
+            String ruleGroup,
+            String entityType,
+            String entityId,
+            Long executorId,
+            String executorName,
+            String executorRole,
+            Object... facts) {
+
+        log.info("执行规则(带审计,多结果) - factoryId={}, ruleGroup={}, entityType={}, entityId={}",
+                factoryId, ruleGroup, entityType, entityId);
+
+        long startTime = System.currentTimeMillis();
+        List<String> appliedRules = new ArrayList<>();
+
+        try {
+            // 准备输入上下文
+            Map<String, Object> inputContext = new HashMap<>();
+            inputContext.put("factoryId", factoryId);
+            inputContext.put("ruleGroup", ruleGroup);
+            inputContext.put("entityType", entityType);
+            inputContext.put("entityId", entityId);
+            inputContext.put("factsCount", facts.length);
+            inputContext.put("timestamp", java.time.LocalDateTime.now().toString());
+
+            // 执行规则
+            List<Object> results = executeRulesWithMultipleResults(factoryId, ruleGroup, facts);
+
+            // 收集触发的规则
+            appliedRules = collectAppliedRules(factoryId, ruleGroup);
+
+            // 记录审计日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            Map<String, Object> outputResult = new HashMap<>();
+            outputResult.put("resultsCount", results.size());
+            outputResult.put("executionTimeMs", executionTime);
+
+            String decisionMade = !results.isEmpty()
+                    ? "规则执行成功，返回 " + results.size() + " 个结果"
+                    : "规则执行完成，无返回结果";
+
+            try {
+                decisionAuditService.logRuleExecution(
+                        factoryId,
+                        entityType,
+                        entityId,
+                        inputContext,
+                        outputResult,
+                        appliedRules,
+                        decisionMade,
+                        executorId,
+                        executorName,
+                        executorRole
+                );
+                log.debug("规则执行审计日志已记录 - entityId={}, resultsCount={}", entityId, results.size());
+            } catch (Exception e) {
+                log.warn("记录规则执行审计日志失败 - entityId={}", entityId, e);
+            }
+
+            return results;
+
+        } catch (Exception e) {
+            log.error("执行规则(带审计,多结果)失败 - entityId={}", entityId, e);
+            throw e;
+        }
+    }
+
+    /**
+     * 收集触发的规则名称
+     */
+    private List<String> collectAppliedRules(String factoryId, String ruleGroup) {
+        List<String> rules = new ArrayList<>();
+
+        // 从缓存中获取规则组的规则列表
+        String prefix = factoryId + ":" + ruleGroup + ":";
+        for (String key : ruleContentCache.keySet()) {
+            if (key.startsWith(prefix)) {
+                String[] parts = key.split(":");
+                if (parts.length >= 3) {
+                    rules.add(parts[2]); // ruleName
+                }
+            }
+        }
+
+        // 也从数据库规则中获取
+        List<DroolsRule> dbRules = droolsRuleRepository
+                .findByFactoryIdAndRuleGroupAndEnabledTrueOrderByPriorityDesc(factoryId, ruleGroup);
+        for (DroolsRule rule : dbRules) {
+            if (!rules.contains(rule.getRuleName())) {
+                rules.add(rule.getRuleName());
+            }
+        }
+
+        return rules;
+    }
+
+    // ==================== Dry-Run 方法 ====================
+
+    @Override
+    public Map<String, Object> executeDryRun(
+            String drlContent,
+            Map<String, Object> testData,
+            Map<String, Object> context) {
+
+        log.info("执行规则 Dry-Run - context={}", context);
+
+        Map<String, Object> result = new HashMap<>();
+        List<String> rulesMatched = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // Step 1: 验证 DRL 语法
+            Map<String, Object> validation = validateDRL(drlContent);
+            if (!(Boolean) validation.get("isValid")) {
+                result.put("success", false);
+                result.put("validationErrors", validation.get("errors"));
+                result.put("rulesMatched", Collections.emptyList());
+                result.put("result", null);
+                result.put("simulatedChanges", Collections.emptyMap());
+                result.put("warnings", Collections.emptyList());
+                log.warn("Dry-Run 失败: DRL 语法错误 - errors={}", validation.get("errors"));
+                return result;
+            }
+
+            // Step 2: 创建临时 KieContainer
+            KieFileSystem kfs = kieServices.newKieFileSystem();
+            String rulePath = "src/main/resources/rules/dryrun/temp_rule.drl";
+            kfs.write(rulePath, drlContent);
+
+            KieBuilder kieBuilder = kieServices.newKieBuilder(kfs);
+            kieBuilder.buildAll();
+
+            Results buildResults = kieBuilder.getResults();
+            if (buildResults.hasMessages(Message.Level.WARNING)) {
+                for (Message message : buildResults.getMessages(Message.Level.WARNING)) {
+                    warnings.add(message.getText());
+                }
+            }
+
+            KieModule kieModule = kieBuilder.getKieModule();
+            KieContainer tempContainer = kieServices.newKieContainer(kieModule.getReleaseId());
+
+            try {
+                // Step 3: 创建 KieSession 并执行
+                KieSession session = tempContainer.newKieSession();
+                List<Object> ruleResults = new ArrayList<>();
+                Map<String, Object> simulatedChanges = new HashMap<>();
+
+                try {
+                    // 设置全局变量
+                    session.setGlobal("results", ruleResults);
+
+                    // 如果有 simulatedChanges 全局变量支持
+                    try {
+                        session.setGlobal("simulatedChanges", simulatedChanges);
+                    } catch (Exception e) {
+                        // 规则可能没有定义 simulatedChanges 全局变量
+                        log.debug("规则未定义 simulatedChanges 全局变量");
+                    }
+
+                    // 插入测试数据作为 Fact
+                    if (testData != null) {
+                        // 如果 testData 包含多个 fact，分别插入
+                        if (testData.containsKey("facts") && testData.get("facts") instanceof List) {
+                            @SuppressWarnings("unchecked")
+                            List<Object> facts = (List<Object>) testData.get("facts");
+                            for (Object fact : facts) {
+                                session.insert(fact);
+                            }
+                        } else {
+                            // 整个 testData 作为一个 Fact
+                            session.insert(testData);
+                        }
+                    }
+
+                    // 执行规则
+                    int firedCount = session.fireAllRules();
+                    log.debug("Dry-Run 触发了 {} 条规则", firedCount);
+
+                    // 收集匹配的规则
+                    // 在真实场景中可以使用 AgendaEventListener 来追踪
+                    if (firedCount > 0) {
+                        rulesMatched.add("temp_rule (fired " + firedCount + " times)");
+                    }
+
+                    // 构建结果
+                    String resultStatus = "ALLOW";  // 默认允许
+                    if (!ruleResults.isEmpty()) {
+                        Object firstResult = ruleResults.get(0);
+                        if (firstResult instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> resultMap = (Map<String, Object>) firstResult;
+                            if (resultMap.containsKey("result")) {
+                                resultStatus = String.valueOf(resultMap.get("result"));
+                            }
+                            if (resultMap.containsKey("block") && Boolean.TRUE.equals(resultMap.get("block"))) {
+                                resultStatus = "BLOCK";
+                            }
+                        }
+                    }
+
+                    result.put("success", true);
+                    result.put("validationErrors", Collections.emptyList());
+                    result.put("rulesMatched", rulesMatched);
+                    result.put("result", resultStatus);
+                    result.put("ruleResults", ruleResults);
+                    result.put("simulatedChanges", simulatedChanges);
+                    result.put("firedCount", firedCount);
+                    result.put("warnings", warnings);
+                    result.put("executionTimeMs", System.currentTimeMillis() - startTime);
+
+                    log.info("Dry-Run 执行成功 - firedCount={}, result={}", firedCount, resultStatus);
+
+                } finally {
+                    session.dispose();
+                }
+
+            } finally {
+                // Step 4: 清理临时 KieContainer
+                tempContainer.dispose();
+                log.debug("临时 KieContainer 已清理");
+            }
+
+        } catch (Exception e) {
+            log.error("Dry-Run 执行失败", e);
+            result.put("success", false);
+            result.put("validationErrors", Collections.singletonList("执行异常: " + e.getMessage()));
+            result.put("rulesMatched", Collections.emptyList());
+            result.put("result", null);
+            result.put("simulatedChanges", Collections.emptyMap());
+            result.put("warnings", warnings);
+            result.put("executionTimeMs", System.currentTimeMillis() - startTime);
+        }
+
+        return result;
     }
 
     // ==================== 私有方法 ====================

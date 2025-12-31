@@ -1,8 +1,10 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.dto.scheduling.*;
 import com.cretas.aims.service.SchedulingService;
+import com.cretas.aims.service.UrgentInsertService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -27,6 +29,7 @@ import java.util.List;
 public class SchedulingController {
 
     private final SchedulingService schedulingService;
+    private final UrgentInsertService urgentInsertService;
 
     // ==================== 调度计划 CRUD ====================
 
@@ -450,6 +453,292 @@ public class SchedulingController {
         log.info("获取实时监控: factoryId={}, planId={}", factoryId, planId);
         SchedulingDashboardDTO dashboard = schedulingService.getRealtimeMonitor(factoryId, planId);
         return ApiResponse.success("获取成功", dashboard);
+    }
+
+    // ==================== 紧急状态监控 ====================
+
+    /**
+     * 获取待排产批次列表（带紧急状态）
+     * 用于AI智能排产页面的待选批次展示
+     */
+    @GetMapping("/pending-batches")
+    public ApiResponse<List<ProductionPlanDTO>> getPendingBatches(
+            @PathVariable String factoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        log.info("获取待排产批次: factoryId={}, startDate={}, endDate={}",
+                factoryId, startDate, endDate);
+        List<ProductionPlanDTO> batches = schedulingService.getPendingBatches(factoryId, startDate, endDate);
+        return ApiResponse.success("获取成功", batches);
+    }
+
+    /**
+     * 获取当前紧急阈值配置
+     */
+    @GetMapping("/config/urgent-threshold")
+    public ApiResponse<java.util.Map<String, Object>> getUrgentThresholdConfig(
+            @PathVariable String factoryId) {
+        log.info("获取紧急阈值配置: factoryId={}", factoryId);
+
+        double threshold = schedulingService.getUrgentThreshold(factoryId);
+
+        java.util.Map<String, Object> config = new java.util.HashMap<>();
+        config.put("threshold", threshold);
+        config.put("factoryId", factoryId);
+        config.put("description", "完成概率低于此值时标记为紧急");
+
+        return ApiResponse.success("获取成功", config);
+    }
+
+    /**
+     * 更新紧急阈值配置（仅限管理员）
+     * 注：此接口应配合权限控制使用
+     */
+    @PutMapping("/config/urgent-threshold")
+    public ApiResponse<java.util.Map<String, Object>> updateUrgentThresholdConfig(
+            @PathVariable String factoryId,
+            @RequestBody java.util.Map<String, Double> request,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        Double newThreshold = request.get("threshold");
+
+        if (newThreshold == null || newThreshold < 0 || newThreshold > 1) {
+            return ApiResponse.error("阈值必须在0-1之间");
+        }
+
+        log.info("更新紧急阈值: factoryId={}, userId={}, threshold={}",
+                factoryId, userId, newThreshold);
+
+        schedulingService.updateUrgentThreshold(factoryId, newThreshold, userId);
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("threshold", newThreshold);
+        result.put("factoryId", factoryId);
+        result.put("updatedAt", java.time.LocalDateTime.now());
+
+        return ApiResponse.success("更新成功", result);
+    }
+
+    // ==================== 紧急插单管理 (Phase C) ====================
+
+    /**
+     * 获取可用的插单时段列表
+     * 返回按推荐分数排序的时段，包含多维度评分和影响分析
+     */
+    @GetMapping("/urgent-insert/slots")
+    public ApiResponse<List<InsertSlotDTO>> getInsertSlots(
+            @PathVariable String factoryId,
+            @RequestParam(required = false) String productTypeId,
+            @RequestParam(required = false) Integer quantity,
+            @RequestParam(required = false) String deadline) {
+        log.info("获取可用插单时段: factoryId={}, productTypeId={}, quantity={}",
+                factoryId, productTypeId, quantity);
+
+        GetInsertSlotsRequest request = new GetInsertSlotsRequest();
+        request.setProductTypeId(productTypeId);
+        if (quantity != null) {
+            request.setRequiredQuantity(java.math.BigDecimal.valueOf(quantity));
+        }
+        if (deadline != null) {
+            request.setDeadline(java.time.LocalDateTime.parse(deadline));
+        }
+
+        List<InsertSlotDTO> slots = urgentInsertService.getAvailableSlots(factoryId, request);
+        return ApiResponse.success("获取成功", slots);
+    }
+
+    /**
+     * 获取单个时段详情
+     */
+    @GetMapping("/urgent-insert/slots/{slotId}")
+    public ApiResponse<InsertSlotDTO> getSlotDetail(
+            @PathVariable String factoryId,
+            @PathVariable String slotId) {
+        log.info("获取时段详情: factoryId={}, slotId={}", factoryId, slotId);
+        InsertSlotDTO slot = urgentInsertService.getSlotDetail(factoryId, slotId);
+        return ApiResponse.success("获取成功", slot);
+    }
+
+    /**
+     * 分析插单影响
+     * 返回链式影响分析、资源检查、风险评估等详细信息
+     */
+    @GetMapping("/urgent-insert/slots/{slotId}/impact")
+    public ApiResponse<java.util.Map<String, Object>> analyzeSlotImpact(
+            @PathVariable String factoryId,
+            @PathVariable String slotId,
+            @RequestParam(required = false) String productTypeId,
+            @RequestParam(required = false) Integer quantity,
+            @RequestParam(required = false) String deadline) {
+        log.info("分析插单影响: factoryId={}, slotId={}, productTypeId={}, quantity={}",
+                factoryId, slotId, productTypeId, quantity);
+
+        GetInsertSlotsRequest request = new GetInsertSlotsRequest();
+        request.setProductTypeId(productTypeId);
+        if (quantity != null) {
+            request.setRequiredQuantity(java.math.BigDecimal.valueOf(quantity));
+        }
+        if (deadline != null) {
+            request.setDeadline(java.time.LocalDateTime.parse(deadline));
+        }
+
+        java.util.Map<String, Object> impact = urgentInsertService.analyzeInsertImpact(factoryId, slotId, request);
+        return ApiResponse.success("分析完成", impact);
+    }
+
+    /**
+     * 确认紧急插单（正常流程，创建生产计划）
+     */
+    @PostMapping("/urgent-insert/confirm")
+    public ApiResponse<com.cretas.aims.dto.production.ProductionPlanDTO> confirmUrgentInsert(
+            @PathVariable String factoryId,
+            @Valid @RequestBody ConfirmUrgentInsertRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("确认紧急插单: factoryId={}, slotId={}, productTypeId={}, userId={}",
+                factoryId, request.getSlotId(), request.getProductTypeId(), userId);
+        com.cretas.aims.dto.production.ProductionPlanDTO plan = urgentInsertService.confirmInsert(factoryId, userId, request);
+        return ApiResponse.success("插单成功", plan);
+    }
+
+    /**
+     * 强制插单（需要审批流程）
+     * 用于高影响等级场景，创建待审批状态的生产计划
+     */
+    @PostMapping("/urgent-insert/force")
+    public ApiResponse<com.cretas.aims.dto.production.ProductionPlanDTO> forceUrgentInsert(
+            @PathVariable String factoryId,
+            @Valid @RequestBody ConfirmUrgentInsertRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("强制插单: factoryId={}, slotId={}, productTypeId={}, userId={}",
+                factoryId, request.getSlotId(), request.getProductTypeId(), userId);
+        com.cretas.aims.dto.production.ProductionPlanDTO plan = urgentInsertService.forceInsert(factoryId, userId, request);
+        return ApiResponse.success("已提交审批", plan);
+    }
+
+    /**
+     * 生成/刷新插单时段
+     * 根据当前排产情况计算可用时段，使用科学的多维度分析算法
+     */
+    @PostMapping("/urgent-insert/generate-slots")
+    public ApiResponse<java.util.Map<String, Object>> generateInsertSlots(
+            @PathVariable String factoryId,
+            @RequestParam(defaultValue = "48") int hoursAhead) {
+        log.info("生成插单时段: factoryId={}, hoursAhead={}", factoryId, hoursAhead);
+        int count = urgentInsertService.generateInsertSlots(factoryId, hoursAhead);
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("generatedCount", count);
+        result.put("factoryId", factoryId);
+        result.put("hoursAhead", hoursAhead);
+        result.put("generatedAt", java.time.LocalDateTime.now());
+
+        return ApiResponse.success("生成完成", result);
+    }
+
+    /**
+     * 锁定时段（防止并发选择）
+     */
+    @PostMapping("/urgent-insert/slots/{slotId}/lock")
+    public ApiResponse<InsertSlotDTO> lockSlot(
+            @PathVariable String factoryId,
+            @PathVariable String slotId,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("锁定时段: factoryId={}, slotId={}, userId={}", factoryId, slotId, userId);
+        urgentInsertService.markSlotAsSelected(factoryId, slotId);
+        InsertSlotDTO slot = urgentInsertService.getSlotDetail(factoryId, slotId);
+        return ApiResponse.success("锁定成功", slot);
+    }
+
+    /**
+     * 释放时段锁定
+     */
+    @DeleteMapping("/urgent-insert/slots/{slotId}/lock")
+    public ApiResponse<Void> unlockSlot(
+            @PathVariable String factoryId,
+            @PathVariable String slotId,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("释放时段: factoryId={}, slotId={}, userId={}", factoryId, slotId, userId);
+        urgentInsertService.releaseSlot(factoryId, slotId);
+        return ApiResponse.success("释放成功", null);
+    }
+
+    /**
+     * 获取紧急插单统计信息
+     */
+    @GetMapping("/urgent-insert/statistics")
+    public ApiResponse<java.util.Map<String, Object>> getUrgentInsertStatistics(
+            @PathVariable String factoryId) {
+        log.info("获取紧急插单统计: factoryId={}", factoryId);
+        java.util.Map<String, Object> stats = urgentInsertService.getUrgentInsertStatistics(factoryId);
+        return ApiResponse.success("获取成功", stats);
+    }
+
+    /**
+     * 清理过期时段
+     */
+    @PostMapping("/urgent-insert/cleanup")
+    public ApiResponse<java.util.Map<String, Object>> cleanupExpiredSlots(
+            @PathVariable String factoryId) {
+        log.info("清理过期时段: factoryId={}", factoryId);
+        int count = urgentInsertService.cleanupExpiredSlots(factoryId);
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("cleanedCount", count);
+        result.put("factoryId", factoryId);
+        result.put("cleanedAt", java.time.LocalDateTime.now());
+
+        return ApiResponse.success("清理完成", result);
+    }
+
+    // ==================== 紧急插单审批管理 ====================
+
+    /**
+     * 获取待审批的强制插单列表
+     * 注意：使用production包下的ProductionPlanDTO（审批流程需要完整的计划信息）
+     */
+    @GetMapping("/approvals/pending")
+    public ApiResponse<List<com.cretas.aims.dto.production.ProductionPlanDTO>> getPendingApprovals(
+            @PathVariable String factoryId) {
+        log.info("获取待审批强制插单: factoryId={}", factoryId);
+        List<com.cretas.aims.dto.production.ProductionPlanDTO> approvals = urgentInsertService.getPendingForceInsertApprovals(factoryId);
+        return ApiResponse.success("获取成功", approvals);
+    }
+
+    /**
+     * 审批强制插单 - 批准
+     */
+    @PostMapping("/approvals/{planId}/approve")
+    public ApiResponse<com.cretas.aims.dto.production.ProductionPlanDTO> approveForceInsert(
+            @PathVariable String factoryId,
+            @PathVariable String planId,
+            @RequestParam(required = false) String comment,
+            HttpServletRequest httpRequest) {
+        Long approverId = getUserId(httpRequest);
+        log.info("批准强制插单: factoryId={}, planId={}, approverId={}", factoryId, planId, approverId);
+        com.cretas.aims.dto.production.ProductionPlanDTO plan = urgentInsertService.approveForceInsert(
+                factoryId, planId, approverId, true, comment);
+        return ApiResponse.success("审批通过", plan);
+    }
+
+    /**
+     * 审批强制插单 - 拒绝
+     */
+    @PostMapping("/approvals/{planId}/reject")
+    public ApiResponse<com.cretas.aims.dto.production.ProductionPlanDTO> rejectForceInsert(
+            @PathVariable String factoryId,
+            @PathVariable String planId,
+            @RequestParam String reason,
+            HttpServletRequest httpRequest) {
+        Long approverId = getUserId(httpRequest);
+        log.info("拒绝强制插单: factoryId={}, planId={}, approverId={}, reason={}",
+                factoryId, planId, approverId, reason);
+        com.cretas.aims.dto.production.ProductionPlanDTO plan = urgentInsertService.approveForceInsert(
+                factoryId, planId, approverId, false, reason);
+        return ApiResponse.success("已拒绝", plan);
     }
 
     // ==================== 辅助方法 ====================

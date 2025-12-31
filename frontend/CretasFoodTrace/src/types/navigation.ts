@@ -146,6 +146,7 @@ export type ManagementStackParamList = {
   UserManagement: undefined;
   WhitelistManagement: undefined;
   SupplierManagement: undefined;
+  SupplierAdmission: undefined; // 供应商准入规则管理
   CustomerManagement: undefined;
   ShipmentManagement: undefined;  // 出货管理
   FactorySettings: undefined;

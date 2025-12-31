@@ -1,5 +1,6 @@
 package com.cretas.aims.service;
 
+import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.dto.scheduling.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -88,4 +89,21 @@ public interface SchedulingService {
     SchedulingDashboardDTO getDashboard(String factoryId, LocalDate date);
 
     SchedulingDashboardDTO getRealtimeMonitor(String factoryId, String planId);
+
+    // ==================== 待排产批次与阈值配置 ====================
+
+    /**
+     * 获取待排产批次列表
+     */
+    List<ProductionPlanDTO> getPendingBatches(String factoryId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 获取紧急阈值
+     */
+    double getUrgentThreshold(String factoryId);
+
+    /**
+     * 更新紧急阈值
+     */
+    void updateUrgentThreshold(String factoryId, Double threshold, Long userId);
 }
