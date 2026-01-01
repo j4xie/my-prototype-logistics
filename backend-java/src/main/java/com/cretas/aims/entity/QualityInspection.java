@@ -52,6 +52,16 @@ public class QualityInspection extends BaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    /**
+     * 持久化前自动生成 ID
+     */
+    @PrePersist
+    public void prePersist() {
+        if (this.id == null || this.id.isEmpty()) {
+            this.id = java.util.UUID.randomUUID().toString();
+        }
+    }
+
     // ==================== 计算字段 ====================
 
     /**

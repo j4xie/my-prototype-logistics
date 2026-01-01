@@ -159,6 +159,9 @@ export type ManagementStackParamList = {
   HREmployeeAI: { employeeId?: number };  // 员工AI分析
   UserCreate: undefined;   // 添加员工
   AttendanceStats: undefined;  // 考勤统计
+
+  // S4-2 SOP配置 (factory_super_admin/management角色)
+  SopConfig: undefined;
 };
 
 // ==================== 个人中心模块导航参数 ====================
@@ -171,6 +174,9 @@ export type ProfileStackParamList = {
 
   // Phase 3 P2: 数据导出 (可选，也可以放在ProcessingStackParamList)
   DataExport: { reportType?: 'production' | 'cost' | 'attendance' };
+
+  // 通知中心 - 所有角色可访问
+  NotificationCenter: undefined;
 
   // 开发者工具: 服务器连接测试
   ServerConnectivityTest: undefined;
