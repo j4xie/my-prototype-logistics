@@ -9,6 +9,12 @@ import FeedbackScreen from '../screens/profile/FeedbackScreen';
 // Phase 3 P2 - 数据导出
 import DataExportScreen from '../screens/reports/DataExportScreen';
 
+// 开发者工具 - 服务器连接测试
+import ServerConnectivityTestScreen from '../screens/test/ServerConnectivityTestScreen';
+
+// S4-4 通知中心 - 所有角色可访问
+import NotificationCenterScreen from '../screens/common/NotificationCenterScreen';
+
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 /**
@@ -40,6 +46,20 @@ export function ProfileStackNavigator() {
         name="DataExport"
         component={DataExportScreen}
         options={{ title: '数据导出' }}
+      />
+
+      {/* 开发者工具 - 服务器连接测试 */}
+      <Stack.Screen
+        name="ServerConnectivityTest"
+        component={ServerConnectivityTestScreen}
+        options={{ title: '服务器连接测试' }}
+      />
+
+      {/* S4-4 通知中心 - 所有角色可访问 */}
+      <Stack.Screen
+        name="NotificationCenter"
+        component={NotificationCenterScreen}
+        options={{ title: '通知中心' }}
       />
     </Stack.Navigator>
   );

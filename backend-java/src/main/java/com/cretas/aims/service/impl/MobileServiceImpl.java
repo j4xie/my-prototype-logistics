@@ -34,6 +34,7 @@ import com.cretas.aims.repository.TimeClockRecordRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.WhitelistRepository;
 import com.cretas.aims.service.MobileService;
+import com.cretas.aims.service.OssService;
 import com.cretas.aims.service.TempTokenService;
 import com.cretas.aims.utils.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,11 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -98,8 +95,8 @@ public class MobileServiceImpl implements MobileService {
     // 用户反馈相关Repository
     private final com.cretas.aims.repository.UserFeedbackRepository userFeedbackRepository;
 
-    @Value("${app.upload.path:uploads/mobile}")
-    private String uploadPath;
+    // OSS 服务
+    private final OssService ossService;
 
     @Value("${app.version.latest:1.0.0}")
     private String latestVersion;
@@ -311,28 +308,28 @@ public class MobileServiceImpl implements MobileService {
                 .failedCount(0)
                 .build();
 
-        // 确保上传目录存在
-        Path uploadDir = Paths.get(uploadPath);
-        try {
-            Files.createDirectories(uploadDir);
-        } catch (IOException e) {
-            log.error("创建上传目录失败", e);
-            throw new BusinessException("文件上传服务暂时不可用");
+        // 从 metadata 中提取 factoryId，如果没有则使用默认值
+        String factoryId = "default";
+        if (metadata != null && !metadata.isEmpty()) {
+            try {
+                var metadataMap = objectMapper.readValue(metadata, Map.class);
+                if (metadataMap.containsKey("factoryId")) {
+                    factoryId = String.valueOf(metadataMap.get("factoryId"));
+                }
+            } catch (Exception e) {
+                log.debug("解析 metadata 失败，使用默认 factoryId: {}", e.getMessage());
+            }
         }
 
         for (MultipartFile file : files) {
             try {
-                // 生成唯一文件名
-                String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-                Path filepath = uploadDir.resolve(filename);
-
-                // 保存文件
-                file.transferTo(filepath.toFile());
+                // 使用 OSS 服务上传文件
+                String ossUrl = ossService.uploadFile(file, category, factoryId);
 
                 // 添加到响应
                 MobileDTO.UploadedFile uploadedFile = MobileDTO.UploadedFile.builder()
                         .id(UUID.randomUUID().toString())
-                        .url("/uploads/mobile/" + filename)
+                        .url(ossUrl)
                         .originalName(file.getOriginalFilename())
                         .size(file.getSize())
                         .contentType(file.getContentType())
@@ -341,6 +338,7 @@ public class MobileServiceImpl implements MobileService {
 
                 response.getFiles().add(uploadedFile);
                 response.setSuccessCount(response.getSuccessCount() + 1);
+                log.info("文件上传成功: {} -> {}", file.getOriginalFilename(), ossUrl);
             } catch (Exception e) {
                 log.error("文件上传失败: {}", file.getOriginalFilename(), e);
                 response.setFailedCount(response.getFailedCount() + 1);
@@ -558,18 +556,53 @@ public class MobileServiceImpl implements MobileService {
             throw new BusinessException("无效的刷新令牌");
         }
 
-        String userId = jwtUtil.getUserIdFromTokenAsString(refreshToken);
-        User user = userRepository.findById(Long.parseLong(userId))
-                .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
+        String userIdStr = jwtUtil.getUserIdFromTokenAsString(refreshToken);
 
-        // 生成新的访问令牌
-        String newToken = jwtUtil.generateToken(userId);
+        // 处理平台管理员 (userId格式为 "platform_X")
+        if (userIdStr != null && userIdStr.startsWith("platform_")) {
+            String platformIdStr = userIdStr.substring("platform_".length());
+            try {
+                Long platformId = Long.parseLong(platformIdStr);
+                PlatformAdmin admin = platformAdminRepository.findById(platformId)
+                        .orElseThrow(() -> new ResourceNotFoundException("平台管理员不存在"));
 
-        return MobileDTO.LoginResponse.builder()
-                .token(newToken)
-                .refreshToken(refreshToken) // 保持原刷新令牌
-                .expiresIn(3600L)
-                .build();
+                String role = admin.getPlatformRole() != null ? admin.getPlatformRole().name().toLowerCase() : "auditor";
+                String newToken = jwtUtil.generateToken(admin.getId(), "PLATFORM", admin.getUsername(), role);
+
+                return MobileDTO.LoginResponse.builder()
+                        .token(newToken)
+                        .refreshToken(refreshToken)
+                        .expiresIn(3600L)
+                        .userId(admin.getId())
+                        .username(admin.getUsername())
+                        .role(admin.getPlatformRole().name())
+                        .build();
+            } catch (NumberFormatException e) {
+                throw new BusinessException("无效的平台管理员ID格式");
+            }
+        }
+
+        // 处理普通工厂用户
+        try {
+            Long userId = Long.parseLong(userIdStr);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
+
+            String role = user.getRoleCode() != null ? user.getRoleCode() : "viewer";
+            String newToken = jwtUtil.generateToken(user.getId(), user.getFactoryId(), user.getUsername(), role);
+
+            return MobileDTO.LoginResponse.builder()
+                    .token(newToken)
+                    .refreshToken(refreshToken)
+                    .expiresIn(3600L)
+                    .userId(user.getId())
+                    .username(user.getUsername())
+                    .factoryId(user.getFactoryId())
+                    .role(role)
+                    .build();
+        } catch (NumberFormatException e) {
+            throw new BusinessException("无效的用户ID格式: " + userIdStr);
+        }
     }
 
     @Override
@@ -755,10 +788,39 @@ public class MobileServiceImpl implements MobileService {
 
     @Override
     public UserDTO getUserFromToken(String token) {
-        Long userId = jwtUtil.getUserIdFromToken(token);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
-        return userMapper.toDTO(user);
+        String userIdStr = jwtUtil.getUserIdFromTokenAsString(token);
+
+        // 处理平台管理员 (userId格式为 "platform_X")
+        if (userIdStr != null && userIdStr.startsWith("platform_")) {
+            String platformIdStr = userIdStr.substring("platform_".length());
+            try {
+                Long platformId = Long.parseLong(platformIdStr);
+                PlatformAdmin admin = platformAdminRepository.findById(platformId)
+                        .orElseThrow(() -> new ResourceNotFoundException("平台管理员不存在"));
+
+                // 将 PlatformAdmin 转换为 UserDTO
+                return UserDTO.builder()
+                        .id(admin.getId())
+                        .username(admin.getUsername())
+                        .fullName(admin.getRealName())
+                        .email(admin.getEmail())
+                        .phone(admin.getPhoneNumber())
+                        .isActive(true)
+                        .build();
+            } catch (NumberFormatException e) {
+                throw new BusinessException("无效的平台管理员ID格式");
+            }
+        }
+
+        // 处理普通工厂用户
+        try {
+            Long userId = Long.parseLong(userIdStr);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("用户不存在"));
+            return userMapper.toDTO(user);
+        } catch (NumberFormatException e) {
+            throw new BusinessException("无效的用户ID格式: " + userIdStr);
+        }
     }
 
     @Override

@@ -19,6 +19,7 @@ import {
   ShipmentManagementScreen,
   DisposalRecordManagementScreen,
   WorkSessionManagementScreen,
+  SopConfigScreen,  // S4-2 SOP配置
 } from '../screens/management';
 import AISettingsScreen from '../screens/management/AISettingsScreen';
 
@@ -123,6 +124,13 @@ export function ManagementStackNavigator() {
         name="FactorySettings"
         component={FactorySettingsScreen}
         options={{ title: '工厂设置' }}
+      />
+
+      {/* S4-2 SOP配置 */}
+      <Stack.Screen
+        name="SopConfig"
+        component={SopConfigScreen}
+        options={{ title: 'SOP流程配置' }}
       />
 
       {/* HR管理员模块 - 已迁移到 HRNavigator
