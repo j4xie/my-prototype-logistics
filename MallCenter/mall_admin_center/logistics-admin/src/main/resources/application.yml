@@ -15,8 +15,8 @@ joolun:
 
 # 开发环境配置
 server:
-  # 服务器的HTTP端口，默认为8083
-  port: 8083
+  # 服务器的HTTP端口，小程序使用7500
+  port: 7500
   servlet:
     # 应用的访问路径
     context-path: /
@@ -80,14 +80,14 @@ spring:
       timeout: 10s
       lettuce:
         pool:
-          # 连接池中的最小空闲连接
-          min-idle: 0
+          # 连接池中的最小空闲连接 (预热连接数)
+          min-idle: 10
           # 连接池中的最大空闲连接
-          max-idle: 8
-          # 连接池的最大数据库连接数
-          max-active: 8
-          # #连接池最大阻塞等待时间（使用负值表示没有限制）
-          max-wait: -1ms
+          max-idle: 30
+          # 连接池的最大数据库连接数 (支持高并发)
+          max-active: 100
+          # 连接池最大阻塞等待时间
+          max-wait: 5000ms
   mvc:
     static-path-pattern: /static/**
 
@@ -154,8 +154,8 @@ wx:
   # 小程序配置
   ma:
     configs:
-      - appId: xxxxxxxxxxxxxxxx
-        secret: xxxxxxxxxxxxx
+      - appId: wxf8e90943620b4080
+        secret: ea1be8e6df8c378a3239341296f4be84
         # 微信支付商户号，请去微信支付平台申请
         mchId: 1588227511
         # 微信支付商户APIv2密钥，请去微信支付平台申请
@@ -166,3 +166,44 @@ wx:
 mall:
   # 支付、物流回调地址，即后台服务7500端口的外网访问域名，要保证外网能访问，如：https://后台地址/prod-api
   notify-host: http://xx.xxxx.com
+
+# 短信服务配置 (阿里云)
+sms:
+  # 是否启用短信服务
+  enabled: false
+  # 每商户每日发送限额
+  daily-limit: 100
+  aliyun:
+    # 阿里云AccessKey (需要在阿里云控制台申请)
+    access-key:
+    access-secret:
+    # 短信签名名称 (需要在阿里云短信服务申请)
+    sign-name: 白垩纪食品
+    # API端点
+    endpoint: dysmsapi.aliyuncs.com
+
+# 阿里云OSS配置 (用于图片存储)
+aliyun:
+  oss:
+    # AccessKey ID (从环境变量读取)
+    access-key-id: ${ALIBABA_ACCESSKEY_ID:your-access-key-id}
+    # AccessKey Secret (从环境变量读取)
+    access-key-secret: ${ALIBABA_SECRET_KEY:your-secret-key}
+    # Region ID
+    region: cn-shanghai
+    # Bucket名称 (需要先在阿里云控制台创建)
+    bucket: mall-products-shanghai
+    # OSS Endpoint
+    endpoint: oss-cn-shanghai.aliyuncs.com
+    # STS临时凭证有效期(秒), 默认30分钟
+    sts-expire-seconds: 1800
+
+# AI服务配置 (阿里云DashScope - 使用OpenAI兼容模式)
+ai:
+  deepseek:
+    # DashScope API密钥 (与backend-ai-chat服务共用)
+    api-key: sk-e02592efaa6246d2b113a0ef8edaca4a
+    # DashScope OpenAI兼容模式接口地址 (代码会自动添加 /v1/chat/completions)
+    base-url: https://dashscope.aliyuncs.com/compatible-mode
+    # 使用通义千问模型
+    model: qwen-plus

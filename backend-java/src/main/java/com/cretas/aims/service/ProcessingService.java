@@ -68,10 +68,16 @@ public interface ProcessingService {
       */
     MaterialBatch updateMaterialReceipt(String factoryId, String batchId, MaterialBatch updates);
      /**
-     * 原材料消耗记录
+     * 原材料消耗记录 (向后兼容)
       */
     void recordMaterialConsumption(String factoryId, String productionBatchId,
                                    List<Map<String, Object>> consumptions);
+
+    /**
+     * 原材料消耗记录 (带用户ID)
+     */
+    void recordMaterialConsumption(String factoryId, String productionBatchId,
+                                   List<Map<String, Object>> consumptions, Long userId);
     // ========== 质量检验 ==========
      /**
      * 提交质检记录
