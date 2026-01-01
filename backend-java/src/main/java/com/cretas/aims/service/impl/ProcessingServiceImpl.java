@@ -291,9 +291,20 @@ public class ProcessingServiceImpl implements ProcessingService {
         }
         return materialBatchRepository.save(batch);
     }
+    /**
+     * 记录原材料消耗 (向后兼容，使用supervisorId或默认值)
+     */
     public void recordMaterialConsumption(String factoryId, String productionBatchId,
                                          List<Map<String, Object>> consumptions) {
-        log.info("记录原材料消耗: factoryId={}, productionBatchId={}", factoryId, productionBatchId);
+        recordMaterialConsumption(factoryId, productionBatchId, consumptions, null);
+    }
+
+    /**
+     * 记录原材料消耗 (带用户ID参数)
+     */
+    public void recordMaterialConsumption(String factoryId, String productionBatchId,
+                                         List<Map<String, Object>> consumptions, Long userId) {
+        log.info("记录原材料消耗: factoryId={}, productionBatchId={}, userId={}", factoryId, productionBatchId, userId);
         ProductionBatch productionBatch = getBatchById(factoryId, productionBatchId);
         for (Map<String, Object> consumption : consumptions) {
             String materialBatchId = (String) consumption.get("materialBatchId");
@@ -314,18 +325,24 @@ public class ProcessingServiceImpl implements ProcessingService {
             consumptionRecord.setFactoryId(factoryId);  // 设置工厂ID (必填字段)
             consumptionRecord.setBatch(materialBatch);
             consumptionRecord.setBatchId(materialBatchId);  // 设置原料批次ID
-            // 设置生产计划ID (从生产批次获取，如果没有则使用productionBatchId作为planId)
-            String planId = productionBatch.getProductionPlanId() != null
-                ? productionBatch.getProductionPlanId().toString()
-                : "PLAN-" + productionBatchId;  // 如果没有计划ID，生成一个临时ID
-            consumptionRecord.setProductionPlanId(planId);  // 设置生产计划ID (必填字段)
+            // 设置生产计划ID (从生产批次获取，如果没有则保持null，避免FK约束违反)
+            if (productionBatch.getProductionPlanId() != null) {
+                consumptionRecord.setProductionPlanId(productionBatch.getProductionPlanId().toString());
+            }
+            // 如果productionPlanId为null，则不设置 (字段允许null)
             consumptionRecord.setProductionBatchId(Long.parseLong(productionBatchId));
             consumptionRecord.setQuantity(quantity);
-            consumptionRecord.setUnitPrice(materialBatch.getUnitPrice());  // 从原料批次获取单价 (必填字段)
-            consumptionRecord.setTotalCost(quantity.multiply(materialBatch.getUnitPrice()));  // 计算总成本 (必填字段)
+            // 安全获取单价，避免 NPE (如果没有设置单价，默认为 0)
+            BigDecimal unitPrice = materialBatch.getUnitPrice() != null ? materialBatch.getUnitPrice() : BigDecimal.ZERO;
+            consumptionRecord.setUnitPrice(unitPrice);  // 从原料批次获取单价 (必填字段)
+            consumptionRecord.setTotalCost(quantity.multiply(unitPrice));  // 计算总成本 (必填字段)
             consumptionRecord.setConsumptionTime(LocalDateTime.now());  // 设置消耗时间 (必填字段)
             consumptionRecord.setConsumedAt(LocalDateTime.now());
-            consumptionRecord.setRecordedBy(productionBatch.getSupervisorId() != null ? productionBatch.getSupervisorId() : 1L);  // 设置记录人 (必填字段，默认使用督导或系统用户)
+            // 设置记录人: 优先使用传入的userId，其次使用supervisorId，最后使用批次创建者
+            Long recordedBy = userId != null ? userId :
+                (productionBatch.getSupervisorId() != null ? productionBatch.getSupervisorId() :
+                 productionBatch.getCreatedBy());
+            consumptionRecord.setRecordedBy(recordedBy);
             materialBatchRepository.save(materialBatch);
             materialConsumptionRepository.save(consumptionRecord);
         }
@@ -335,7 +352,8 @@ public class ProcessingServiceImpl implements ProcessingService {
             String materialBatchId = (String) consumption.get("materialBatchId");
             BigDecimal quantity = new BigDecimal(consumption.get("quantity").toString());
             MaterialBatch materialBatch = materialBatchRepository.findById(materialBatchId).get();
-            BigDecimal cost = quantity.multiply(materialBatch.getUnitPrice());
+            BigDecimal batchUnitPrice = materialBatch.getUnitPrice() != null ? materialBatch.getUnitPrice() : BigDecimal.ZERO;
+            BigDecimal cost = quantity.multiply(batchUnitPrice);
             totalMaterialCost = totalMaterialCost.add(cost);
         }
         productionBatch.setMaterialCost(totalMaterialCost);
