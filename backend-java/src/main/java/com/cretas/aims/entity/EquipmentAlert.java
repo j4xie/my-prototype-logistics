@@ -41,10 +41,11 @@ public class EquipmentAlert extends BaseEntity {
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    // 乐观锁版本号
+    // 乐观锁版本号 (必须初始化为0，否则Hibernate更新时NPE)
     @Version
     @Column(name = "version")
-    private Integer version;
+    @Builder.Default
+    private Integer version = 0;
 
     @Column(name = "factory_id", nullable = false, length = 50)
     private String factoryId;

@@ -874,6 +874,120 @@
 
 ---
 
+---
+
+## 十五、前端实现与权限审计
+
+### 15.1 Sprint 4/5/P0-P2 功能前端实现状态
+
+| 任务ID | 功能名称 | 前端文件 | 行数 | 角色权限 | 导航注册 | 状态 |
+|--------|----------|----------|------|----------|----------|------|
+| **S4-1** | 多轮追问UI | `components/form/MissingFieldsPrompt.tsx` | 463 | 所有角色 | Modal组件 | ✅ 完成 |
+| **S4-2** | SOP配置界面 | `screens/management/SopConfigScreen.tsx` | 1,076 | factory_super_admin, management | ⚠️ 未注册 | ❌ 导航缺失 |
+| **S4-3** | 配额规则配置 | `screens/platform/AIQuotaManagementScreen.tsx` | 775 | platform_admin | ✅ PlatformStack | ✅ 完成 |
+| **S4-4** | 通知中心UI | `screens/common/NotificationCenterScreen.tsx` | 562 | 所有角色 | ⚠️ 未注册 | ❌ 导航缺失 |
+| **S4-5** | 推送通知集成 | `services/pushNotificationService.ts` | 238 | 所有角色 | Hook集成 | ✅ 完成 |
+| **S4-6** | 强制插单审批 | `screens/dispatcher/plan/UrgentInsertScreen.tsx` | 1,498 | dispatcher | ✅ DSPlanStack | ✅ 完成 |
+| **S4-6** | 审批列表 | `screens/dispatcher/plan/ApprovalListScreen.tsx` | 544 | dispatcher, factory_super_admin | ⚠️ 未注册 | ❌ 导航缺失 |
+| **S4-7** | 质检处置Controller | 后端实现 | - | - | - | ✅ 完成 |
+| **S4-8** | 质检处置UI | `components/quality/DispositionSuggestion.tsx` | 511 | quality_inspector | Modal组件 | ✅ 完成 |
+| **S4-9** | Intent分类器 | AI服务实现 | - | - | - | ✅ 完成 |
+| **S5-1** | 供应商验收规则 | `screens/supplier/AdmissionRuleScreen.tsx` | - | platform_admin, factory_super_admin | ✅ 已注册 | ✅ 完成 |
+| **S5-2** | 质检处置E2E测试 | 测试脚本 | - | - | - | ✅ 完成 |
+| **S5-3** | 推送通知部署 | 后端实现 | - | - | - | ✅ 完成 |
+| **S5-4** | 意图分类器部署 | AI服务 | - | - | - | ✅ 完成 |
+| **S5-5** | 配额硬编码修复 | 后端实现 | - | - | - | ✅ 完成 |
+| **S5-6** | ai_audit_logs迁移 | 数据库 | - | - | - | ✅ 完成 |
+| **P0-1** | 状态机守卫 | 后端实现 | - | - | - | ✅ 完成 |
+| **P0-2** | ChangeSet机制 | `services/api/configChangeSetApiClient.ts` | - | platform_admin | API Client | ✅ 完成 |
+| **P0-3** | 校验失败回流 | `components/form/ValidationCorrectionModal.tsx` | - | 所有角色 | Modal组件 | ✅ 完成 |
+| **P1-1** | 缺字段追问 | `components/form/MissingFieldsPrompt.tsx` | 463 | 所有角色 | Modal组件 | ✅ 完成 |
+| **P1-2** | AI配额配置 | `screens/platform/AIQuotaManagementScreen.tsx` | 775 | platform_admin | ✅ PlatformStack | ✅ 完成 |
+| **P1-3** | 决策审计日志 | 后端实现 | - | - | - | ✅ 完成 |
+| **P2-1** | 配置变更追溯 | `screens/platform/BlueprintManagementScreen.tsx` | 500+ | platform_admin | ✅ PlatformStack | ✅ 完成 |
+| **P2-2** | 推送通知集成 | `services/pushNotificationService.ts` | 238 | 所有角色 | Hook集成 | ✅ 完成 |
+
+---
+
+### 15.2 导航未注册问题 (需修复)
+
+| 优先级 | 屏幕文件 | 行数 | 应注册到 | 访问角色 | 修复建议 |
+|--------|----------|------|----------|----------|----------|
+| **P0** | `ApprovalListScreen.tsx` | 544 | `DSPlanStackNavigator.tsx` | dispatcher, factory_super_admin | 紧急审批功能无法访问 |
+| **P0** | `NotificationCenterScreen.tsx` | 562 | `CommonStackNavigator.tsx` 或各角色Tab | 所有角色 | 通知中心无法访问 |
+| **P1** | `SopConfigScreen.tsx` | 1,076 | `ManagementStackNavigator.tsx` | factory_super_admin, management | SOP配置无法访问 |
+
+---
+
+### 15.3 角色权限矩阵
+
+| 角色 | 中文名 | 主导航器 | 可访问功能模块 |
+|------|--------|----------|----------------|
+| `platform_admin` | 平台管理员 | PlatformStackNavigator | AI配额、蓝图管理、工厂管理、系统配置 |
+| `factory_super_admin` | 工厂超级管理员 | AdminStackNavigator | 全部工厂功能、用户管理、设备管理 |
+| `dispatcher` | 调度员 | DispatcherTabNavigator | 排程、紧急插单、审批、人员分配 |
+| `quality_inspector` | 质检员 | QualityTabNavigator | 质检任务、处置建议、质量报表 |
+| `operator` | 操作员 | OperatorTabNavigator | 生产任务、扫码、加工记录 |
+| `warehouse_manager` | 仓库管理员 | WarehouseStackNavigator | 库存、出入库、盘点 |
+| `equipment_manager` | 设备管理员 | EquipmentStackNavigator | 设备列表、维护记录、告警 |
+| `management` | 管理层 | ManagementTabNavigator | 报表、统计、SOP配置 |
+| `department_admin` | 部门管理员 | DepartmentStackNavigator | 部门人员、考勤 |
+| `finance` | 财务 | FinanceStackNavigator | 成本、采购 |
+| `hr` | 人事 | HRStackNavigator | 人员档案、绩效 |
+| `logistics` | 物流 | LogisticsStackNavigator | 出货、运输 |
+| `supplier` | 供应商 | SupplierStackNavigator | 供货记录、验收 |
+| `consumer` | 消费者 | ConsumerStackNavigator | 溯源查询 |
+
+---
+
+### 15.4 功能模块入口汇总
+
+| 模块 | 入口位置 | 适用角色 | 状态 |
+|------|----------|----------|------|
+| **AI配额管理** | 平台Tab → AI配额 | platform_admin | ✅ 可访问 |
+| **蓝图管理** | 平台Tab → 蓝图管理 | platform_admin | ✅ 可访问 |
+| **SOP配置** | 管理Tab → SOP配置 | factory_super_admin, management | ⚠️ 未注册 |
+| **通知中心** | 顶部通知图标 | 所有角色 | ⚠️ 未注册 |
+| **审批列表** | 调度Tab → 待审批 | dispatcher, factory_super_admin | ⚠️ 未注册 |
+| **紧急插单** | 调度Tab → 紧急插单 | dispatcher | ✅ 可访问 |
+| **质检处置** | 质检详情页 → AI建议 | quality_inspector | ✅ 可访问 (Modal) |
+| **表单追问** | 动态表单 → 缺字段提示 | 所有角色 | ✅ 可访问 (Modal) |
+| **推送通知** | 后台自动注册 | 所有角色 | ✅ 自动集成 |
+
+---
+
+### 15.5 待修复优先级排列
+
+| 优先级 | 问题 | 影响范围 | 修复工时 |
+|--------|------|----------|----------|
+| **P0 - 立即修复** | ApprovalListScreen 导航注册 | 审批流程完全不可用 | 10分钟 |
+| **P0 - 立即修复** | NotificationCenterScreen 导航注册 | 通知中心不可访问 | 15分钟 |
+| **P1 - 本周修复** | SopConfigScreen 导航注册 | SOP配置不可访问 | 10分钟 |
+| **P2 - 可选** | 3个报表占位屏幕实现 | 报表功能缺失 | 2-3天 |
+
+---
+
+### 15.6 审计统计
+
+| 统计项 | 数量 |
+|--------|------|
+| Sprint 4 前端实现 | 7/9 (2个后端/AI) |
+| Sprint 5 前端实现 | 1/6 (5个后端/部署) |
+| P0-P2 前端实现 | 5/8 (3个后端) |
+| 导航注册正常 | 20/23 |
+| **导航注册缺失** | **3** |
+| Modal组件 (无需导航) | 4 |
+| Hook/Service集成 | 2 |
+
+---
+
+**审计结论**:
+1. ✅ 所有 Sprint 4/5/P0-P2 功能代码均已实现
+2. ⚠️ 3 个屏幕未注册到导航系统，导致用户无法访问
+3. 建议立即修复 P0 级别的 2 个导航注册问题
+
+---
+
 > **报告生成时间**: 2025-12-31
-> **最后更新**: 2025-12-31 (P3-P7 状态已验证更新)
+> **最后更新**: 2025-12-31 (新增第十五章：前端实现与权限审计)
 > **生成者**: Claude Code
