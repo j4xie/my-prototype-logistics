@@ -27,6 +27,7 @@ import PlanGanttScreen from '../../screens/dispatcher/plan/PlanGanttScreen';
 import UrgentInsertScreen from '../../screens/dispatcher/plan/UrgentInsertScreen';
 import MixedBatchScreen from '../../screens/dispatcher/plan/MixedBatchScreen';
 import ResourceOverviewScreen from '../../screens/dispatcher/plan/ResourceOverviewScreen';
+import ApprovalListScreen from '../../screens/dispatcher/plan/ApprovalListScreen';
 
 type DSPlanStackParamList = {
   PlanList: undefined;
@@ -38,6 +39,7 @@ type DSPlanStackParamList = {
   UrgentInsert: undefined;
   MixedBatch: undefined;
   ResourceOverview: undefined;
+  ApprovalList: undefined;
 };
 
 const Stack = createStackNavigator<DSPlanStackParamList>();
@@ -58,6 +60,7 @@ export function DSPlanStackNavigator() {
       <Stack.Screen name="UrgentInsert" component={UrgentInsertScreen} />
       <Stack.Screen name="MixedBatch" component={MixedBatchScreen} />
       <Stack.Screen name="ResourceOverview" component={ResourceOverviewScreen} />
+      <Stack.Screen name="ApprovalList" component={ApprovalListScreen} />
     </Stack.Navigator>
   );
 }

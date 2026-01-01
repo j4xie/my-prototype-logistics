@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.utils.SecurityUtils;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -44,6 +45,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class UserController {
 
     private final UserService userService;
+    private final com.cretas.aims.service.MobileService mobileService;
 
     /**
      * 创建用户
@@ -88,6 +90,22 @@ public class UserController {
         log.info("删除用户: factoryId={}, userId={}", factoryId, userId);
         userService.deleteUser(factoryId, userId);
         return ApiResponse.success("用户删除成功", null);
+    }
+
+    /**
+     * 获取当前登录用户信息
+     */
+    @GetMapping("/current")
+    @Operation(summary = "获取当前登录用户信息")
+    public ApiResponse<UserDTO> getCurrentUser(
+            @Parameter(description = "工厂ID", required = true)
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "访问令牌", required = true)
+            @RequestHeader("Authorization") String authorization) {
+        String token = com.cretas.aims.utils.TokenUtils.extractToken(authorization);
+        UserDTO user = mobileService.getUserFromToken(token);
+        log.debug("获取当前用户信息: factoryId={}, userId={}", factoryId, user.getId());
+        return ApiResponse.success(user);
     }
 
     /**

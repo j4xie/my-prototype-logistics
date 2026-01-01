@@ -310,9 +310,19 @@ public class ProcessingController {
     public ApiResponse<Void> recordMaterialConsumption(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @PathVariable @Parameter(description = "批次ID") String batchId,
-            @RequestBody @Parameter(description = "消耗记录") List<Map<String, Object>> consumptions) {
-        log.info("记录原材料消耗: factoryId={}, batchId={}", factoryId, batchId);
-        processingService.recordMaterialConsumption(factoryId, batchId, consumptions);
+            @RequestBody @Parameter(description = "消耗记录") List<Map<String, Object>> consumptions,
+            @RequestHeader("Authorization") String authorization) {
+        // 从Token获取用户ID，用于设置recordedBy
+        Long userId = null;
+        try {
+            String token = TokenUtils.extractToken(authorization);
+            var userDTO = mobileService.getUserFromToken(token);
+            userId = userDTO.getId();
+        } catch (Exception e) {
+            log.warn("无法从Token获取用户ID: {}", e.getMessage());
+        }
+        log.info("记录原材料消耗: factoryId={}, batchId={}, userId={}", factoryId, batchId, userId);
+        processingService.recordMaterialConsumption(factoryId, batchId, consumptions, userId);
         return ApiResponse.success();
     }
 
