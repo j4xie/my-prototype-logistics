@@ -16,6 +16,7 @@ import {
   SegmentedButtons,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { supplierApiClient, Supplier, CreateSupplierRequest } from '../../services/api/supplierApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
@@ -31,6 +32,7 @@ const supplierLogger = logger.createContextLogger('SupplierManagement');
  */
 export default function SupplierManagementScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('management');
   const { user } = useAuthStore();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -74,7 +76,7 @@ export default function SupplierManagementScreen() {
       const factoryId = user?.factoryId || user?.factoryUser?.factoryId || 'F001';
       
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂ID');
+        Alert.alert(t('common.error'), '无法获取工厂ID');
         setSuppliers([]);
         return;
       }
@@ -168,7 +170,7 @@ export default function SupplierManagementScreen() {
   const handleSave = async () => {
     // 验证必填项
     if (!formData.name || !formData.phone) {
-      Alert.alert('提示', '供应商名称和联系电话不能为空');
+      Alert.alert(t('common.confirm'), t('supplierManagement.messages.requiredFields'));
       return;
     }
 
@@ -184,13 +186,9 @@ export default function SupplierManagementScreen() {
           supplierId: editingSupplier.id,
           supplierName: formData.name,
         });
-        Alert.alert('成功', '供应商信息已更新');
+        Alert.alert(t('common.success'), t('supplierManagement.messages.updateSuccess'));
       } else {
         // 创建供应商
-        /* if (!formData.supplierCode) {
-          Alert.alert('提示', '供应商编码不能为空');
-          return;
-        } */
         await supplierApiClient.createSupplier(
           formData as CreateSupplierRequest,
           user?.factoryId
@@ -199,7 +197,7 @@ export default function SupplierManagementScreen() {
           supplierCode: formData.supplierCode,
           supplierName: formData.name,
         });
-        Alert.alert('成功', '供应商创建成功');
+        Alert.alert(t('common.success'), t('supplierManagement.messages.createSuccess'));
       }
 
       setModalVisible(false);
@@ -209,7 +207,7 @@ export default function SupplierManagementScreen() {
         isEdit: !!editingSupplier,
         supplierCode: formData.supplierCode,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert(t('common.error'), (error as any).response?.data?.message || '操作失败');
     }
   };
 

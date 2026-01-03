@@ -13,6 +13,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSBatchesStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<WSBatchesStackParamList, 'BatchDetail'>;
@@ -21,6 +22,7 @@ type RouteProps = RouteProp<WSBatchesStackParamList, 'BatchDetail'>;
 export function BatchDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
 
   // 模拟批次详情
   const batch = {
@@ -66,7 +68,7 @@ export function BatchDetailScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>批次详情</Text>
+        <Text style={styles.headerTitle}>{t('batchDetail.title')}</Text>
         <TouchableOpacity>
           <Icon source="dots-vertical" size={24} color="#fff" />
         </TouchableOpacity>
@@ -78,7 +80,7 @@ export function BatchDetailScreen() {
           <View style={styles.batchHeader}>
             <Text style={styles.batchNumber}>{batch.batchNumber}</Text>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>进行中</Text>
+              <Text style={styles.statusText}>{t('batchDetail.status.inProgress')}</Text>
             </View>
           </View>
           <Text style={styles.productName}>{batch.productName}</Text>
@@ -100,18 +102,18 @@ export function BatchDetailScreen() {
           <View style={styles.timeRow}>
             <View style={styles.timeItem}>
               <Icon source="clock-start" size={16} color="#666" />
-              <Text style={styles.timeText}>开始: {batch.startTime}</Text>
+              <Text style={styles.timeText}>{t('batchDetail.time.start')}: {batch.startTime}</Text>
             </View>
             <View style={styles.timeItem}>
               <Icon source="clock-end" size={16} color="#666" />
-              <Text style={styles.timeText}>预计: {batch.estimatedEndTime}</Text>
+              <Text style={styles.timeText}>{t('batchDetail.time.estimated')}: {batch.estimatedEndTime}</Text>
             </View>
           </View>
         </View>
 
         {/* 当前工艺环节 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>当前工艺环节</Text>
+          <Text style={styles.sectionTitle}>{t('batchDetail.currentStage')}</Text>
           <TouchableOpacity
             style={styles.currentStageCard}
             onPress={() => navigation.navigate('BatchStage', { batchId: batch.id, stageType: batch.currentStage, stageName: batch.currentStage })}
@@ -121,7 +123,7 @@ export function BatchDetailScreen() {
             </View>
             <View style={styles.stageInfo}>
               <Text style={styles.stageName}>{batch.currentStage}</Text>
-              <Text style={styles.stageDuration}>进行中 - 预计15分钟完成</Text>
+              <Text style={styles.stageDuration}>{t('batchDetail.stageDuration.inProgress')} - {t('batchDetail.stageDuration.estimated', { minutes: 15 })}</Text>
             </View>
             <Icon source="chevron-right" size={24} color="#667eea" />
           </TouchableOpacity>
@@ -129,7 +131,7 @@ export function BatchDetailScreen() {
 
         {/* 工艺流程 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>工艺流程</Text>
+          <Text style={styles.sectionTitle}>{t('batchDetail.processFlow')}</Text>
           <View style={styles.stagesList}>
             {batch.stages.map((stage, index) => {
               const stageStyle = getStageIcon(stage.status);
@@ -158,7 +160,7 @@ export function BatchDetailScreen() {
 
         {/* 参与人员 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>参与人员</Text>
+          <Text style={styles.sectionTitle}>{t('batchDetail.participants')}</Text>
           <View style={styles.workersList}>
             {batch.workers.map((worker) => (
               <View key={worker.id} style={styles.workerItem}>
@@ -176,7 +178,7 @@ export function BatchDetailScreen() {
 
         {/* 设备信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>使用设备</Text>
+          <Text style={styles.sectionTitle}>{t('batchDetail.equipment')}</Text>
           <View style={styles.equipmentCard}>
             <Icon source="cog" size={24} color="#667eea" />
             <View style={styles.equipmentInfo}>
@@ -184,7 +186,7 @@ export function BatchDetailScreen() {
               <Text style={styles.equipmentId}>{batch.equipment.equipmentId}</Text>
             </View>
             <View style={styles.equipmentStatus}>
-              <Text style={styles.equipmentStatusText}>运行中</Text>
+              <Text style={styles.equipmentStatusText}>{t('batchDetail.equipmentStatus.running')}</Text>
             </View>
           </View>
         </View>
@@ -199,14 +201,14 @@ export function BatchDetailScreen() {
           onPress={() => navigation.navigate('BatchStage', { batchId: batch.id, stageType: batch.currentStage, stageName: batch.currentStage })}
         >
           <Icon source="clipboard-text-play" size={20} color="#fff" />
-          <Text style={styles.actionBtnText}>录入数据</Text>
+          <Text style={styles.actionBtnText}>{t('batchDetail.actions.enterData')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionBtn, styles.completeBtn]}
           onPress={() => navigation.navigate('BatchComplete', { batchId: batch.id })}
         >
           <Icon source="check-circle" size={20} color="#fff" />
-          <Text style={styles.actionBtnText}>完成批次</Text>
+          <Text style={styles.actionBtnText}>{t('batchDetail.actions.completeBatch')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

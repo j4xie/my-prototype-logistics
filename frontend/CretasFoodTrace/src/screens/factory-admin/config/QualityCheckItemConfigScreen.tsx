@@ -32,6 +32,7 @@ import {
   List,
   ProgressBar,
 } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../store/authStore';
 import qualityCheckItemApi, {
   QualityCheckItem,
@@ -47,6 +48,7 @@ import qualityCheckItemApi, {
 } from '../../../services/api/qualityCheckItemApiClient';
 
 const QualityCheckItemConfigScreen: React.FC = () => {
+  const { t } = useTranslation('home');
   const { user } = useAuthStore();
   const factoryId = user?.factoryId ?? '';
 
@@ -109,7 +111,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
       setStatistics(statsData);
     } catch (error) {
       console.error('加载质检项失败:', error);
-      Alert.alert('错误', '加载质检项失败，请稍后重试');
+      Alert.alert(t('common.error'), t('qualityCheckItemConfig.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -197,7 +199,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
   // 保存
   const handleSave = async () => {
     if (!formData.itemCode || !formData.itemName) {
-      Alert.alert('错误', '请填写必填字段');
+      Alert.alert(t('common.error'), t('qualityCheckItemConfig.fillRequiredFields'));
       return;
     }
 
@@ -226,36 +228,36 @@ const QualityCheckItemConfigScreen: React.FC = () => {
           enabled: formData.enabled,
         };
         await qualityCheckItemApi.update(factoryId, editingItem.id, updateRequest);
-        Alert.alert('成功', '更新成功');
+        Alert.alert(t('common.success'), t('qualityCheckItemConfig.updateSuccess'));
       } else {
         await qualityCheckItemApi.create(factoryId, formData);
-        Alert.alert('成功', '创建成功');
+        Alert.alert(t('common.success'), t('qualityCheckItemConfig.createSuccess'));
       }
       setModalVisible(false);
       loadData();
     } catch (error: unknown) {
       console.error('保存失败:', error);
-      const errorMessage = error instanceof Error ? error.message : '保存失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('qualityCheckItemConfig.saveFailed');
+      Alert.alert(t('common.error'), errorMessage);
     }
   };
 
   // 删除
   const handleDelete = (item: QualityCheckItem) => {
-    Alert.alert('确认删除', `确定要删除质检项「${item.itemName}」吗？`, [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('qualityCheckItemConfig.confirmDelete'), t('qualityCheckItemConfig.confirmDeleteMessage', { name: item.itemName }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '删除',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
             await qualityCheckItemApi.delete(factoryId, item.id);
-            Alert.alert('成功', '删除成功');
+            Alert.alert(t('common.success'), t('qualityCheckItemConfig.deleteSuccess'));
             loadData();
           } catch (error: unknown) {
             console.error('删除失败:', error);
-            const errorMessage = error instanceof Error ? error.message : '删除失败';
-            Alert.alert('错误', errorMessage);
+            const errorMessage = error instanceof Error ? error.message : t('qualityCheckItemConfig.deleteFailed');
+            Alert.alert(t('common.error'), errorMessage);
           }
         },
       },
@@ -279,20 +281,20 @@ const QualityCheckItemConfigScreen: React.FC = () => {
   // 从模板复制
   const copyFromTemplate = async () => {
     Alert.alert(
-      '从模板复制',
-      '这将从系统默认模板复制质检项到您的工厂，已存在的项目将被跳过。确定继续吗？',
+      t('qualityCheckItemConfig.copyFromTemplateTitle'),
+      t('qualityCheckItemConfig.copyFromTemplateMessage'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确定',
+          text: t('common.confirm'),
           onPress: async () => {
             try {
               const copied = await qualityCheckItemApi.copyFromTemplate(factoryId);
-              Alert.alert('成功', `已复制 ${copied.length} 个质检项`);
+              Alert.alert(t('common.success'), t('qualityCheckItemConfig.copiedItems', { count: copied.length }));
               loadData();
             } catch (error) {
               console.error('复制失败:', error);
-              Alert.alert('错误', '复制失败');
+              Alert.alert(t('common.error'), t('qualityCheckItemConfig.copyFailed'));
             }
           },
         },
@@ -352,18 +354,18 @@ const QualityCheckItemConfigScreen: React.FC = () => {
           >
             <Menu.Item
               onPress={() => openEditModal(item)}
-              title="编辑"
+              title={t('common.edit')}
               leadingIcon="pencil"
             />
             <Menu.Item
               onPress={() => toggleEnabled(item)}
-              title={item.enabled ? '禁用' : '启用'}
+              title={item.enabled ? t('qualityCheckItemConfig.disable') : t('qualityCheckItemConfig.enable')}
               leadingIcon={item.enabled ? 'eye-off' : 'eye'}
             />
             <Divider />
             <Menu.Item
               onPress={() => handleDelete(item)}
-              title="删除"
+              title={t('common.delete')}
               leadingIcon="delete"
               titleStyle={{ color: '#F44336' }}
             />
@@ -380,28 +382,28 @@ const QualityCheckItemConfigScreen: React.FC = () => {
         <View style={styles.detailRow}>
           {item.minValue !== undefined || item.maxValue !== undefined ? (
             <Text style={styles.detailText}>
-              范围: {item.minValue ?? '-'} ~ {item.maxValue ?? '-'} {item.unit ?? ''}
+              {t('qualityCheckItemConfig.range')}: {item.minValue ?? '-'} ~ {item.maxValue ?? '-'} {item.unit ?? ''}
             </Text>
           ) : item.standardValue ? (
-            <Text style={styles.detailText}>标准值: {item.standardValue}</Text>
+            <Text style={styles.detailText}>{t('qualityCheckItemConfig.standardValue')}: {item.standardValue}</Text>
           ) : null}
         </View>
 
         <View style={styles.detailRow}>
           <Text style={styles.detailText}>
-            抽样: {item.samplingStrategyDescription} ({item.samplingRatio}%)
+            {t('qualityCheckItemConfig.sampling')}: {item.samplingStrategyDescription} ({item.samplingRatio}%)
           </Text>
         </View>
 
         <View style={styles.tagsRow}>
           {item.isRequired && (
             <Chip compact style={styles.tagChip} textStyle={styles.tagText}>
-              必检
+              {t('qualityCheckItemConfig.required')}
             </Chip>
           )}
           {item.requirePhotoOnFail && (
             <Chip compact style={styles.tagChip} textStyle={styles.tagText}>
-              需拍照
+              {t('qualityCheckItemConfig.photoRequired')}
             </Chip>
           )}
           {!item.enabled && (
@@ -410,12 +412,12 @@ const QualityCheckItemConfigScreen: React.FC = () => {
               style={[styles.tagChip, { backgroundColor: '#9E9E9E' }]}
               textStyle={styles.tagText}
             >
-              已禁用
+              {t('qualityCheckItemConfig.disabled')}
             </Chip>
           )}
           {item.bindingCount > 0 && (
             <Chip compact style={styles.tagChip} textStyle={styles.tagText}>
-              {item.bindingCount} 个产品
+              {t('qualityCheckItemConfig.productCount', { count: item.bindingCount })}
             </Chip>
           )}
         </View>
@@ -430,23 +432,23 @@ const QualityCheckItemConfigScreen: React.FC = () => {
     return (
       <Card style={styles.statsCard}>
         <Card.Content>
-          <Text style={styles.statsTitle}>统计概览</Text>
+          <Text style={styles.statsTitle}>{t('qualityCheckItemConfig.statsOverview')}</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{statistics.total}</Text>
-              <Text style={styles.statLabel}>总数</Text>
+              <Text style={styles.statLabel}>{t('qualityCheckItemConfig.stats.total')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: '#2196F3' }]}>
                 {statistics.requiredCount}
               </Text>
-              <Text style={styles.statLabel}>必检项</Text>
+              <Text style={styles.statLabel}>{t('qualityCheckItemConfig.stats.required')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: '#F44336' }]}>
                 {statistics.criticalCount}
               </Text>
-              <Text style={styles.statLabel}>关键项</Text>
+              <Text style={styles.statLabel}>{t('qualityCheckItemConfig.stats.critical')}</Text>
             </View>
           </View>
         </Card.Content>
@@ -465,7 +467,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
 
         <View style={styles.toolbar}>
           <Searchbar
-            placeholder="搜索质检项..."
+            placeholder={t('qualityCheckItemConfig.searchPlaceholder')}
             onChangeText={setSearchQuery}
             value={searchQuery}
             style={styles.searchbar}
@@ -477,7 +479,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
             icon="content-copy"
             compact
           >
-            从模板复制
+            {t('qualityCheckItemConfig.copyFromTemplate')}
           </Button>
         </View>
 
@@ -491,7 +493,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
             onPress={() => setSelectedCategory('all')}
             style={styles.filterChip}
           >
-            全部
+            {t('qualityCheckItemConfig.categories.all')}
           </Chip>
           {QUALITY_CHECK_CATEGORIES.map((cat) => (
             <Chip
@@ -514,8 +516,8 @@ const QualityCheckItemConfigScreen: React.FC = () => {
                 <Card.Content>
                   <Text style={styles.emptyText}>
                     {searchQuery || selectedCategory !== 'all'
-                      ? '没有找到匹配的质检项'
-                      : '暂无质检项，点击右下角按钮添加'}
+                      ? t('qualityCheckItemConfig.noMatches')
+                      : t('qualityCheckItemConfig.noItems')}
                   </Text>
                 </Card.Content>
               </Card>
@@ -537,11 +539,11 @@ const QualityCheckItemConfigScreen: React.FC = () => {
         >
           <ScrollView>
             <Text style={styles.modalTitle}>
-              {editingItem ? '编辑质检项' : '新建质检项'}
+              {editingItem ? t('qualityCheckItemConfig.editTitle') : t('qualityCheckItemConfig.createTitle')}
             </Text>
 
             <TextInput
-              label="项目编号 *"
+              label={t('qualityCheckItemConfig.itemCode') + ' *'}
               value={formData.itemCode}
               onChangeText={(text) =>
                 setFormData({ ...formData, itemCode: text })
@@ -551,7 +553,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
             />
 
             <TextInput
-              label="项目名称 *"
+              label={t('qualityCheckItemConfig.itemName') + ' *'}
               value={formData.itemName}
               onChangeText={(text) =>
                 setFormData({ ...formData, itemName: text })
@@ -559,7 +561,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
               style={styles.input}
             />
 
-            <Text style={styles.sectionLabel}>项目类别</Text>
+            <Text style={styles.sectionLabel}>{t('qualityCheckItemConfig.itemCategory')}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -580,7 +582,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
             </ScrollView>
 
             <TextInput
-              label="项目描述"
+              label={t('qualityCheckItemConfig.itemDescription')}
               value={formData.description}
               onChangeText={(text) =>
                 setFormData({ ...formData, description: text })
@@ -590,7 +592,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
             />
 
             <TextInput
-              label="检测方法"
+              label={t('qualityCheckItemConfig.checkMethod')}
               value={formData.checkMethod}
               onChangeText={(text) =>
                 setFormData({ ...formData, checkMethod: text })
@@ -600,16 +602,16 @@ const QualityCheckItemConfigScreen: React.FC = () => {
             />
 
             <TextInput
-              label="检测标准"
+              label={t('qualityCheckItemConfig.checkStandard')}
               value={formData.standardReference}
               onChangeText={(text) =>
                 setFormData({ ...formData, standardReference: text })
               }
               style={styles.input}
-              placeholder="如: GB 2733-2015"
+              placeholder={t('qualityCheckItemConfig.checkStandardPlaceholder')}
             />
 
-            <Text style={styles.sectionLabel}>检测类型</Text>
+            <Text style={styles.sectionLabel}>{t('qualityCheckItemConfig.valueType')}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -631,7 +633,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
 
             <View style={styles.row}>
               <TextInput
-                label="最小值"
+                label={t('qualityCheckItemConfig.minValue')}
                 value={formData.minValue?.toString() ?? ''}
                 onChangeText={(text) =>
                   setFormData({
@@ -643,7 +645,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
                 keyboardType="numeric"
               />
               <TextInput
-                label="最大值"
+                label={t('qualityCheckItemConfig.maxValue')}
                 value={formData.maxValue?.toString() ?? ''}
                 onChangeText={(text) =>
                   setFormData({
@@ -658,16 +660,16 @@ const QualityCheckItemConfigScreen: React.FC = () => {
 
             <View style={styles.row}>
               <TextInput
-                label="单位"
+                label={t('qualityCheckItemConfig.unit')}
                 value={formData.unit ?? ''}
                 onChangeText={(text) =>
                   setFormData({ ...formData, unit: text })
                 }
                 style={[styles.input, styles.halfInput]}
-                placeholder="如: °C, %, g"
+                placeholder={t('qualityCheckItemConfig.unitPlaceholder')}
               />
               <TextInput
-                label="抽样比例(%)"
+                label={t('qualityCheckItemConfig.samplingRatio')}
                 value={formData.samplingRatio?.toString() ?? '10'}
                 onChangeText={(text) =>
                   setFormData({
@@ -680,7 +682,7 @@ const QualityCheckItemConfigScreen: React.FC = () => {
               />
             </View>
 
-            <Text style={styles.sectionLabel}>严重程度</Text>
+            <Text style={styles.sectionLabel}>{t('qualityCheckItemConfig.severity')}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -712,8 +714,8 @@ const QualityCheckItemConfigScreen: React.FC = () => {
 
             <List.Section>
               <List.Item
-                title="必检项"
-                description="是否为必须检测的项目"
+                title={t('qualityCheckItemConfig.requiredItem')}
+                description={t('qualityCheckItemConfig.requiredItemDesc')}
                 right={() => (
                   <Switch
                     value={formData.isRequired}
@@ -724,8 +726,8 @@ const QualityCheckItemConfigScreen: React.FC = () => {
                 )}
               />
               <List.Item
-                title="不合格需拍照"
-                description="检测不合格时是否需要拍照记录"
+                title={t('qualityCheckItemConfig.photoOnFail')}
+                description={t('qualityCheckItemConfig.photoOnFailDesc')}
                 right={() => (
                   <Switch
                     value={formData.requirePhotoOnFail}
@@ -736,8 +738,8 @@ const QualityCheckItemConfigScreen: React.FC = () => {
                 )}
               />
               <List.Item
-                title="不合格需备注"
-                description="检测不合格时是否需要填写备注"
+                title={t('qualityCheckItemConfig.noteOnFail')}
+                description={t('qualityCheckItemConfig.noteOnFailDesc')}
                 right={() => (
                   <Switch
                     value={formData.requireNoteOnFail}
@@ -748,8 +750,8 @@ const QualityCheckItemConfigScreen: React.FC = () => {
                 )}
               />
               <List.Item
-                title="启用"
-                description="是否启用此质检项"
+                title={t('qualityCheckItemConfig.enableItem')}
+                description={t('qualityCheckItemConfig.enableItemDesc')}
                 right={() => (
                   <Switch
                     value={formData.enabled}
@@ -767,14 +769,14 @@ const QualityCheckItemConfigScreen: React.FC = () => {
                 onPress={() => setModalVisible(false)}
                 style={styles.modalButton}
               >
-                取消
+                {t('common.cancel')}
               </Button>
               <Button
                 mode="contained"
                 onPress={handleSave}
                 style={styles.modalButton}
               >
-                保存
+                {t('common.save')}
               </Button>
             </View>
           </ScrollView>

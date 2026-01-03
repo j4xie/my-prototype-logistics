@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系统告警 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="index.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">系统告警</div>
+      <div class="header-right" style="font-size: 14px; color: #667eea;">全部已读</div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 20px;">
+      <!-- 告警统计 -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div style="background: linear-gradient(135deg, #f5222d 0%, #cf1322 100%); border-radius: 12px; padding: 16px; color: white; text-align: center;">
+          <div style="font-size: 24px; font-weight: 600;">2</div>
+          <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">严重</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #faad14 0%, #d48806 100%); border-radius: 12px; padding: 16px; color: white; text-align: center;">
+          <div style="font-size: 24px; font-weight: 600;">5</div>
+          <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">警告</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); border-radius: 12px; padding: 16px; color: white; text-align: center;">
+          <div style="font-size: 24px; font-weight: 600;">12</div>
+          <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">提示</div>
+        </div>
+      </div>
+
+      <!-- 未处理告警 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">未处理告警</span>
+        <span style="font-size: 13px; color: #8c8c8c;">7条</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
+        <!-- 严重告警1 -->
+        <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; border-left: 4px solid #f5222d;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #fff1f0; color: #f5222d; border-radius: 4px; font-size: 11px; font-weight: 500;">严重</span>
+              <span style="font-size: 14px; font-weight: 500; color: #262626;">数据库连接异常</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">5分钟前</span>
+          </div>
+          <div style="font-size: 13px; color: #595959; margin-bottom: 10px;">
+            MySQL从库连接超时，同步延迟超过10秒
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span style="padding: 6px 12px; background: #f5222d; color: white; border-radius: 4px; font-size: 12px;">立即处理</span>
+            <span style="padding: 6px 12px; background: #f0f0f0; color: #595959; border-radius: 4px; font-size: 12px;">忽略</span>
+          </div>
+        </div>
+
+        <!-- 严重告警2 -->
+        <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; border-left: 4px solid #f5222d;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #fff1f0; color: #f5222d; border-radius: 4px; font-size: 11px; font-weight: 500;">严重</span>
+              <span style="font-size: 14px; font-weight: 500; color: #262626;">AI配额即将耗尽</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">15分钟前</span>
+          </div>
+          <div style="font-size: 13px; color: #595959; margin-bottom: 10px;">
+            速冻食品厂AI配额使用率达到95%，预计今日将耗尽
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span style="padding: 6px 12px; background: #f5222d; color: white; border-radius: 4px; font-size: 12px;">扩容配额</span>
+            <span style="padding: 6px 12px; background: #f0f0f0; color: #595959; border-radius: 4px; font-size: 12px;">忽略</span>
+          </div>
+        </div>
+
+        <!-- 警告1 -->
+        <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; border-left: 4px solid #faad14;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #fffbe6; color: #d48806; border-radius: 4px; font-size: 11px; font-weight: 500;">警告</span>
+              <span style="font-size: 14px; font-weight: 500; color: #262626;">AI服务响应缓慢</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">30分钟前</span>
+          </div>
+          <div style="font-size: 13px; color: #595959; margin-bottom: 10px;">
+            AI服务平均响应时间超过2秒阈值，当前: 2.8秒
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span style="padding: 6px 12px; background: #faad14; color: white; border-radius: 4px; font-size: 12px;">查看详情</span>
+            <span style="padding: 6px 12px; background: #f0f0f0; color: #595959; border-radius: 4px; font-size: 12px;">忽略</span>
+          </div>
+        </div>
+
+        <!-- 警告2 -->
+        <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; border-left: 4px solid #faad14;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #fffbe6; color: #d48806; border-radius: 4px; font-size: 11px; font-weight: 500;">警告</span>
+              <span style="font-size: 14px; font-weight: 500; color: #262626;">内存使用率偏高</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">1小时前</span>
+          </div>
+          <div style="font-size: 13px; color: #595959; margin-bottom: 10px;">
+            JVM堆内存使用率达到75%，建议检查是否存在内存泄漏
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span style="padding: 6px 12px; background: #faad14; color: white; border-radius: 4px; font-size: 12px;">查看监控</span>
+            <span style="padding: 6px 12px; background: #f0f0f0; color: #595959; border-radius: 4px; font-size: 12px;">忽略</span>
+          </div>
+        </div>
+
+        <!-- 警告3 -->
+        <div style="padding: 16px; border-left: 4px solid #faad14;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #fffbe6; color: #d48806; border-radius: 4px; font-size: 11px; font-weight: 500;">警告</span>
+              <span style="font-size: 14px; font-weight: 500; color: #262626;">登录异常检测</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">2小时前</span>
+          </div>
+          <div style="font-size: 13px; color: #595959; margin-bottom: 10px;">
+            检测到来自异常IP(203.45.67.89)的多次登录失败尝试
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span style="padding: 6px 12px; background: #faad14; color: white; border-radius: 4px; font-size: 12px;">封禁IP</span>
+            <span style="padding: 6px 12px; background: #f0f0f0; color: #595959; border-radius: 4px; font-size: 12px;">忽略</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 已处理告警 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">已处理告警</span>
+        <span style="font-size: 13px; color: #8c8c8c;">今日12条</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; overflow: hidden;">
+        <!-- 已处理1 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; opacity: 0.7;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #f0f0f0; color: #8c8c8c; border-radius: 4px; font-size: 11px;">已处理</span>
+              <span style="font-size: 14px; color: #595959;">API请求超时</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">3小时前</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c;">
+            处理方式: 自动恢复 | 处理人: 系统
+          </div>
+        </div>
+
+        <!-- 已处理2 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; opacity: 0.7;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #f0f0f0; color: #8c8c8c; border-radius: 4px; font-size: 11px;">已处理</span>
+              <span style="font-size: 14px; color: #595959;">磁盘空间预警</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">5小时前</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c;">
+            处理方式: 清理日志文件 | 处理人: 张管理员
+          </div>
+        </div>
+
+        <!-- 已处理3 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0; opacity: 0.7;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #f0f0f0; color: #8c8c8c; border-radius: 4px; font-size: 11px;">已处理</span>
+              <span style="font-size: 14px; color: #595959;">证书即将过期</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">昨日</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c;">
+            处理方式: 更新SSL证书 | 处理人: 张管理员
+          </div>
+        </div>
+
+        <!-- 已处理4 -->
+        <div style="padding: 14px 16px; opacity: 0.7;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #f0f0f0; color: #8c8c8c; border-radius: 4px; font-size: 11px;">已处理</span>
+              <span style="font-size: 14px; color: #595959;">配额使用预警</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">昨日</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c;">
+            处理方式: 临时扩容 | 处理人: 张管理员
+          </div>
+        </div>
+      </div>
+
+      <!-- 查看更多 -->
+      <div style="text-align: center; padding: 16px;">
+        <span style="font-size: 14px; color: #1890ff;">查看历史告警</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

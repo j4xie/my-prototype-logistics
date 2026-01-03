@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上传决策表 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="decision-table.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">上传决策表</div>
+      <div class="header-right"></div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 100px;">
+      <!-- 上传区域 -->
+      <div style="background: white; border: 2px dashed #667eea; border-radius: 16px; padding: 32px 24px; margin-bottom: 20px; text-align: center;">
+        <div style="width: 72px; height: 72px; background: rgba(102, 126, 234, 0.1); border-radius: 36px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div style="font-size: 16px; font-weight: 500; color: #262626; margin-bottom: 8px;">点击或拖拽文件到此处</div>
+        <div style="font-size: 13px; color: #8c8c8c; margin-bottom: 16px;">支持 .xlsx, .xls, .csv 格式，最大 10MB</div>
+        <button style="padding: 10px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+          选择文件
+        </button>
+      </div>
+
+      <!-- 已选文件 -->
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 48px; height: 48px; background: rgba(82, 196, 26, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 15px; font-weight: 500; color: #262626;">温度等级判定表.xlsx</div>
+            <div style="font-size: 13px; color: #8c8c8c;">256 KB · 上传完成</div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="16 10 10 16 8 14"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">基本信息</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">决策表名称 <span style="color: #f5222d;">*</span></label>
+          <input type="text" value="温度等级判定表" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">规则组</label>
+          <select style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; background: white;">
+            <option value="validation">验证规则 (Validation)</option>
+            <option value="quality" selected>质检规则 (Quality)</option>
+            <option value="workflow">工作流规则 (Workflow)</option>
+            <option value="costing">成本规则 (Costing)</option>
+            <option value="alert">告警规则 (Alert)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">描述</label>
+          <textarea placeholder="请描述决策表的用途..." style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; min-height: 80px; resize: vertical; box-sizing: border-box;">根据温度值判定存储等级和处理方式</textarea>
+        </div>
+      </div>
+
+      <!-- 解析预览 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">解析预览</span>
+        <span style="font-size: 13px; color: #52c41a;">识别到 5 条规则</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; min-width: 400px;">
+          <thead>
+            <tr style="background: #fafafa;">
+              <th style="padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0f0f0; color: #8c8c8c; font-weight: 500;">条件: 温度</th>
+              <th style="padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0f0f0; color: #8c8c8c; font-weight: 500;">条件: 产品类型</th>
+              <th style="padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0f0f0; color: #8c8c8c; font-weight: 500;">动作: 等级</th>
+              <th style="padding: 10px 8px; text-align: left; border-bottom: 1px solid #f0f0f0; color: #8c8c8c; font-weight: 500;">动作: 处理</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">&lt; -25°C</td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">冷冻海鲜</td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0;"><span style="padding: 2px 8px; background: rgba(82, 196, 26, 0.1); color: #52c41a; border-radius: 4px;">优秀</span></td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">正常入库</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">-25°C ~ -18°C</td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">冷冻海鲜</td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0;"><span style="padding: 2px 8px; background: rgba(24, 144, 255, 0.1); color: #1890ff; border-radius: 4px;">合格</span></td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">正常入库</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">-18°C ~ -10°C</td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">冷冻海鲜</td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0;"><span style="padding: 2px 8px; background: rgba(250, 173, 20, 0.1); color: #faad14; border-radius: 4px;">警告</span></td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">加速处理</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">&gt; -10°C</td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">冷冻海鲜</td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0;"><span style="padding: 2px 8px; background: rgba(245, 34, 45, 0.1); color: #f5222d; border-radius: 4px;">不合格</span></td>
+              <td style="padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #262626;">拒收处理</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 8px; color: #262626;">0°C ~ 4°C</td>
+              <td style="padding: 10px 8px; color: #262626;">冷藏海鲜</td>
+              <td style="padding: 10px 8px;"><span style="padding: 2px 8px; background: rgba(82, 196, 26, 0.1); color: #52c41a; border-radius: 4px;">优秀</span></td>
+              <td style="padding: 10px 8px; color: #262626;">正常入库</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 生成的 DRL 预览 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">生成规则预览</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">查看完整代码</span>
+      </div>
+
+      <div style="background: #1e1e1e; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <pre style="margin: 0; font-family: 'Menlo', 'Monaco', monospace; font-size: 11px; line-height: 1.6; color: #d4d4d4; overflow-x: auto;">
+<span style="color: #569cd6;">rule</span> <span style="color: #ce9178;">"温度等级_规则1_优秀"</span>
+    <span style="color: #c586c0;">salience</span> 100
+    <span style="color: #569cd6;">when</span>
+        $batch : MaterialBatch(
+            temperature < -25,
+            productType == "冷冻海鲜"
+        )
+    <span style="color: #569cd6;">then</span>
+        $batch.setGrade(<span style="color: #ce9178;">"优秀"</span>);
+        $batch.setProcessing(<span style="color: #ce9178;">"正常入库"</span>);
+<span style="color: #569cd6;">end</span>
+
+<span style="color: #569cd6;">rule</span> <span style="color: #ce9178;">"温度等级_规则2_合格"</span>
+    <span style="color: #c586c0;">salience</span> 99
+    <span style="color: #569cd6;">when</span>
+        $batch : MaterialBatch(
+            temperature >= -25 && temperature <= -18,
+            productType == "冷冻海鲜"
+        )
+    <span style="color: #569cd6;">then</span>
+        $batch.setGrade(<span style="color: #ce9178;">"合格"</span>);
+        $batch.setProcessing(<span style="color: #ce9178;">"正常入库"</span>);
+<span style="color: #569cd6;">end</span>
+<span style="color: #6a9955;">// ... 更多规则</span>
+        </pre>
+      </div>
+
+      <!-- 高级设置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">设置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626; margin-bottom: 4px;">立即激活规则</div>
+            <div style="font-size: 12px; color: #8c8c8c;">上传后直接启用生成的规则</div>
+          </div>
+          <div style="position: relative; width: 48px; height: 28px; background: #52c41a; border-radius: 14px; cursor: pointer;">
+            <div style="position: absolute; right: 2px; top: 2px; width: 24px; height: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626; margin-bottom: 4px;">覆盖同名规则</div>
+            <div style="font-size: 12px; color: #8c8c8c;">如果存在同名规则则覆盖更新</div>
+          </div>
+          <div style="position: relative; width: 48px; height: 28px; background: #d9d9d9; border-radius: 14px; cursor: pointer;">
+            <div style="position: absolute; left: 2px; top: 2px; width: 24px; height: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 14px; color: #262626; margin-bottom: 4px;">生成测试用例</div>
+            <div style="font-size: 12px; color: #8c8c8c;">自动为每条规则创建测试数据</div>
+          </div>
+          <div style="position: relative; width: 48px; height: 28px; background: #52c41a; border-radius: 14px; cursor: pointer;">
+            <div style="position: absolute; right: 2px; top: 2px; width: 24px; height: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-actions">
+      <a href="decision-table.html" class="bottom-actions__btn bottom-actions__btn--secondary" style="text-decoration: none;">取消</a>
+      <a href="decision-table.html" class="bottom-actions__btn bottom-actions__btn--primary" style="text-decoration: none;">确认上传</a>
+    </div>
+  </div>
+</body>
+</html>

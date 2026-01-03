@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>规则详情 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="rule-list.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">规则详情</div>
+      <div class="header-right">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="1"/>
+          <circle cx="19" cy="12" r="1"/>
+          <circle cx="5" cy="12" r="1"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 100px;">
+      <!-- 规则头部信息 -->
+      <div style="background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <span style="padding: 4px 10px; background: rgba(255,255,255,0.2); border-radius: 12px; font-size: 12px;">验证规则</span>
+          <span class="tag success">已启用</span>
+        </div>
+        <div style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">原材料批次验证</div>
+        <div style="font-size: 14px; opacity: 0.9;">验证批次号格式、数量有效性、过期日期检查</div>
+
+        <div style="display: flex; gap: 24px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);">
+          <div>
+            <div style="font-size: 20px; font-weight: 600;">1,234</div>
+            <div style="font-size: 12px; opacity: 0.8;">触发次数</div>
+          </div>
+          <div>
+            <div style="font-size: 20px; font-weight: 600;">10</div>
+            <div style="font-size: 12px; opacity: 0.8;">优先级</div>
+          </div>
+          <div>
+            <div style="font-size: 20px; font-weight: 600;">v1.2</div>
+            <div style="font-size: 12px; opacity: 0.8;">版本</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+        <a href="rule-test.html" style="text-decoration: none; background: white; border-radius: 12px; padding: 16px 8px; text-align: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#722ed1" stroke-width="2" style="margin-bottom: 4px;">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <div style="font-size: 12px; color: #595959;">测试</div>
+        </a>
+        <div style="background: white; border-radius: 12px; padding: 16px 8px; text-align: center; cursor: pointer;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2" style="margin-bottom: 4px;">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          <div style="font-size: 12px; color: #595959;">编辑</div>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 16px 8px; text-align: center; cursor: pointer;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2" style="margin-bottom: 4px;">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          <div style="font-size: 12px; color: #595959;">复制</div>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 16px 8px; text-align: center; cursor: pointer;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#faad14" stroke-width="2" style="margin-bottom: 4px;">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+          </svg>
+          <div style="font-size: 12px; color: #595959;">禁用</div>
+        </div>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">基本信息</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <span style="font-size: 14px; color: #8c8c8c;">规则ID</span>
+          <span style="font-size: 14px; color: #262626;">RULE-VAL-001</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <span style="font-size: 14px; color: #8c8c8c;">规则组</span>
+          <span style="font-size: 14px; color: #1890ff;">验证规则</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <span style="font-size: 14px; color: #8c8c8c;">适用工厂</span>
+          <span style="font-size: 14px; color: #262626;">海鲜加工一厂</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <span style="font-size: 14px; color: #8c8c8c;">创建时间</span>
+          <span style="font-size: 14px; color: #262626;">2024-01-15 09:30</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="font-size: 14px; color: #8c8c8c;">最后更新</span>
+          <span style="font-size: 14px; color: #262626;">2024-03-15 14:20</span>
+        </div>
+      </div>
+
+      <!-- DRL 规则代码 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">DRL 规则代码</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">全屏查看</span>
+      </div>
+
+      <div style="background: #1e1e1e; border-radius: 12px; padding: 16px; margin-bottom: 20px; overflow-x: auto;">
+        <pre style="margin: 0; font-family: 'Menlo', 'Monaco', monospace; font-size: 12px; line-height: 1.6; color: #d4d4d4;">
+<span style="color: #569cd6;">package</span> com.cretas.rules.validation
+
+<span style="color: #569cd6;">import</span> com.cretas.aims.entity.MaterialBatch
+<span style="color: #569cd6;">import</span> java.time.LocalDate
+
+<span style="color: #569cd6;">rule</span> <span style="color: #ce9178;">"原材料批次验证"</span>
+    <span style="color: #c586c0;">salience</span> 10
+    <span style="color: #569cd6;">when</span>
+        $batch : MaterialBatch(
+            batchNumber == null ||
+            batchNumber.length() < 5,
+            quantity <= 0,
+            expirationDate < LocalDate.now()
+        )
+    <span style="color: #569cd6;">then</span>
+        $batch.setValid(false);
+        $batch.addError(<span style="color: #ce9178;">"批次验证失败"</span>);
+        <span style="color: #6a9955;">// 触发告警通知</span>
+        alertService.send($batch);
+<span style="color: #569cd6;">end</span>
+        </pre>
+      </div>
+
+      <!-- 条件说明 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">条件说明</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <div style="width: 6px; height: 6px; background: #1890ff; border-radius: 3px;"></div>
+            <span style="font-size: 14px; font-weight: 500; color: #262626;">批次号格式检查</span>
+          </div>
+          <div style="font-size: 13px; color: #8c8c8c; padding-left: 14px;">批次号不能为空且长度必须大于等于5个字符</div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <div style="width: 6px; height: 6px; background: #52c41a; border-radius: 3px;"></div>
+            <span style="font-size: 14px; font-weight: 500; color: #262626;">数量有效性</span>
+          </div>
+          <div style="font-size: 13px; color: #8c8c8c; padding-left: 14px;">批次数量必须大于0</div>
+        </div>
+
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <div style="width: 6px; height: 6px; background: #faad14; border-radius: 3px;"></div>
+            <span style="font-size: 14px; font-weight: 500; color: #262626;">过期日期检查</span>
+          </div>
+          <div style="font-size: 13px; color: #8c8c8c; padding-left: 14px;">批次过期日期必须晚于当前日期</div>
+        </div>
+      </div>
+
+      <!-- 执行动作 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">执行动作</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 28px; height: 28px; background: rgba(245, 34, 45, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5222d" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 14px; color: #262626;">设置批次为无效状态</div>
+            <div style="font-size: 12px; color: #8c8c8c;">$batch.setValid(false)</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 28px; height: 28px; background: rgba(250, 173, 20, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#faad14" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 14px; color: #262626;">添加错误信息</div>
+            <div style="font-size: 12px; color: #8c8c8c;">$batch.addError("批次验证失败")</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 28px; height: 28px; background: rgba(24, 144, 255, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2">
+              <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 14px; color: #262626;">发送告警通知</div>
+            <div style="font-size: 12px; color: #8c8c8c;">alertService.send($batch)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 执行历史 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">最近执行记录</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">查看全部</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">MB-20240315-001</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2024-03-15 14:30:25</div>
+          </div>
+          <span class="tag success">通过</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">MB-20240315-002</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2024-03-15 14:28:10</div>
+          </div>
+          <span class="tag error">失败</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">MB-20240315-003</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2024-03-15 14:15:42</div>
+          </div>
+          <span class="tag success">通过</span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">MB-20240314-056</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2024-03-14 18:45:33</div>
+          </div>
+          <span class="tag success">通过</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-actions">
+      <a href="rule-test.html" class="bottom-actions__btn bottom-actions__btn--secondary" style="text-decoration: none;">测试规则</a>
+      <div class="bottom-actions__btn bottom-actions__btn--primary">编辑规则</div>
+    </div>
+  </div>
+</body>
+</html>

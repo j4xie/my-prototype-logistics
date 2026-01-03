@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>创建蓝图 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="blueprint-list.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">创建蓝图</div>
+      <div class="header-right"></div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 100px;">
+      <!-- 创建方式选择 -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">选择创建方式</div>
+            <div style="font-size: 13px; opacity: 0.8;">手动配置或从模板生成</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <div style="flex: 1; background: rgba(255,255,255,0.2); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; border: 2px solid white;">
+            <div style="font-size: 14px; font-weight: 500;">手动创建</div>
+          </div>
+          <div style="flex: 1; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer;">
+            <div style="font-size: 14px; font-weight: 500;">从模板复制</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">基本信息</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">
+            蓝图名称 <span style="color: #ff4d4f;">*</span>
+          </label>
+          <input type="text" placeholder="请输入蓝图名称" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">
+            蓝图ID <span style="color: #ff4d4f;">*</span>
+          </label>
+          <input type="text" placeholder="例如：BP-SEAFOOD-STD" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+          <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">创建后不可修改，建议使用英文和数字</div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">
+            行业类型 <span style="color: #ff4d4f;">*</span>
+          </label>
+          <div style="position: relative;">
+            <select style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; appearance: none; background: white; box-sizing: border-box;">
+              <option value="">请选择行业类型</option>
+              <option value="seafood">水产加工</option>
+              <option value="frozen">速冻食品</option>
+              <option value="meat">肉类加工</option>
+              <option value="dairy">乳制品</option>
+              <option value="vegetable">果蔬加工</option>
+              <option value="grain">粮油加工</option>
+            </select>
+            <svg style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">
+            初始版本号
+          </label>
+          <input type="text" value="v1.0.0" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">
+            描述
+          </label>
+          <textarea rows="3" placeholder="请输入蓝图描述，说明适用场景和特点..." style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; resize: none; box-sizing: border-box;"></textarea>
+        </div>
+      </div>
+
+      <!-- 产品类型配置 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">产品类型配置</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">批量导入</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+          <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f5f5f5; border-radius: 6px; font-size: 13px; color: #595959;">
+            冰鲜带鱼段
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" style="cursor: pointer;">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f5f5f5; border-radius: 6px; font-size: 13px; color: #595959;">
+            冰鲜黄鱼片
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" style="cursor: pointer;">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f5f5f5; border-radius: 6px; font-size: 13px; color: #595959;">
+            冷冻鱿鱼圈
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" style="cursor: pointer;">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </span>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <input type="text" placeholder="输入产品类型名称" style="flex: 1; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px;">
+          <button style="padding: 10px 16px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">添加</button>
+        </div>
+      </div>
+
+      <!-- 部门模板配置 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">部门模板</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">添加部门</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+            <div style="width: 32px; height: 32px; background: rgba(24, 144, 255, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #1890ff; font-size: 12px; font-weight: 500;">原</div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; color: #262626;">原料收购部</div>
+              <div style="font-size: 12px; color: #8c8c8c;">负责原材料采购入库</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+            <div style="width: 32px; height: 32px; background: rgba(82, 196, 26, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #52c41a; font-size: 12px; font-weight: 500;">加</div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; color: #262626;">加工生产部</div>
+              <div style="font-size: 12px; color: #8c8c8c;">负责产品加工生产</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+            <div style="width: 32px; height: 32px; background: rgba(114, 46, 209, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #722ed1; font-size: 12px; font-weight: 500;">质</div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; color: #262626;">质量检测部</div>
+              <div style="font-size: 12px; color: #8c8c8c;">负责质量检验</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
+            <div style="width: 32px; height: 32px; background: rgba(250, 173, 20, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #faad14; font-size: 12px; font-weight: 500;">仓</div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; color: #262626;">仓储物流部</div>
+              <div style="font-size: 12px; color: #8c8c8c;">负责仓储和出货</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 表单模板 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">表单模板</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">添加表单</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f5f5f5; border-radius: 8px;">
+            <span style="font-size: 14px; color: #262626;">原材料入库表单</span>
+            <span class="tag info" style="font-size: 11px;">12字段</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f5f5f5; border-radius: 8px;">
+            <span style="font-size: 14px; color: #262626;">生产加工记录表</span>
+            <span class="tag info" style="font-size: 11px;">15字段</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f5f5f5; border-radius: 8px;">
+            <span style="font-size: 14px; color: #262626;">质量检验表单</span>
+            <span class="tag info" style="font-size: 11px;">18字段</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f5f5f5; border-radius: 8px;">
+            <span style="font-size: 14px; color: #262626;">成品出货单</span>
+            <span class="tag info" style="font-size: 11px;">10字段</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 业务规则 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">业务规则</span>
+        <a href="rule-create.html" style="font-size: 13px; color: #667eea; text-decoration: none;">添加规则</a>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <span class="tag" style="background: rgba(24, 144, 255, 0.1); color: #1890ff;">验证规则 x4</span>
+          <span class="tag" style="background: rgba(82, 196, 26, 0.1); color: #52c41a;">工作流规则 x3</span>
+          <span class="tag" style="background: rgba(114, 46, 209, 0.1); color: #722ed1;">质检规则 x3</span>
+          <span class="tag" style="background: rgba(255, 77, 79, 0.1); color: #ff4d4f;">告警规则 x2</span>
+        </div>
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+          <a href="rule-list.html" style="font-size: 13px; color: #667eea; text-decoration: none;">管理业务规则 ></a>
+        </div>
+      </div>
+
+      <!-- 状态设置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">状态设置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 14px; color: #262626; margin-bottom: 4px;">创建后立即激活</div>
+            <div style="font-size: 12px; color: #8c8c8c;">激活后可被工厂选择绑定</div>
+          </div>
+          <div style="position: relative; width: 48px; height: 28px; background: #52c41a; border-radius: 14px; cursor: pointer;">
+            <div style="position: absolute; right: 2px; top: 2px; width: 24px; height: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-actions">
+      <a href="blueprint-list.html" class="bottom-actions__btn bottom-actions__btn--secondary" style="text-decoration: none;">取消</a>
+      <a href="blueprint-detail.html" class="bottom-actions__btn bottom-actions__btn--primary" style="text-decoration: none;">创建蓝图</a>
+    </div>
+  </div>
+</body>
+</html>

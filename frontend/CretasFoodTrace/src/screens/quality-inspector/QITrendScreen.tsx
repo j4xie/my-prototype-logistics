@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import {
   QI_COLORS,
@@ -43,6 +44,7 @@ interface TrendData {
 type MetricType = 'passRate' | 'avgScore' | 'count';
 
 export default function QITrendScreen() {
+  const { t } = useTranslation('quality');
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const factoryId = user?.factoryId;
@@ -66,7 +68,7 @@ export default function QITrendScreen() {
       const result = await qualityInspectorApi.getTrendData(period);
       setData(result);
     } catch (error) {
-      console.error('加载趋势数据失败:', error);
+      console.error(t('trend.loading'), error);
       // 使用模拟数据
       const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
       const dates = Array.from({ length: Math.min(days, 7) }, (_, i) => {
@@ -115,11 +117,11 @@ export default function QITrendScreen() {
   const getMetricLabel = (): string => {
     switch (metric) {
       case 'passRate':
-        return '合格率 (%)';
+        return `${t('analysis.passRate')} (%)`;
       case 'avgScore':
-        return '平均分';
+        return t('analysis.avgScore');
       case 'count':
-        return '检验数量';
+        return t('trend.inspectionCount');
       default:
         return '';
     }
@@ -217,7 +219,7 @@ export default function QITrendScreen() {
 
     return (
       <View style={styles.gradesTrendContainer}>
-        <Text style={styles.sectionTitle}>等级趋势</Text>
+        <Text style={styles.sectionTitle}>{t('trend.gradeTrend')}</Text>
         <View style={styles.gradesTrendChart}>
           {data.dates.map((date, i) => {
             const total = totals[i] ?? 1;
@@ -285,7 +287,7 @@ export default function QITrendScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={QI_COLORS.primary} />
-        <Text style={styles.loadingText}>加载趋势数据...</Text>
+        <Text style={styles.loadingText}>{t('trend.loading')}</Text>
       </View>
     );
   }
@@ -304,16 +306,16 @@ export default function QITrendScreen() {
     >
       {/* 时间周期选择 */}
       <View style={styles.periodBar}>
-        {renderPeriodTab('7d', '近7天')}
-        {renderPeriodTab('30d', '近30天')}
-        {renderPeriodTab('90d', '近90天')}
+        {renderPeriodTab('7d', t('trend.period.week'))}
+        {renderPeriodTab('30d', t('trend.period.month'))}
+        {renderPeriodTab('90d', t('trend.period.quarter'))}
       </View>
 
       {/* 指标选择 */}
       <View style={styles.metricBar}>
-        {renderMetricTab('passRate', '合格率', 'checkmark-circle-outline')}
-        {renderMetricTab('avgScore', '平均分', 'star-outline')}
-        {renderMetricTab('count', '检验数', 'layers-outline')}
+        {renderMetricTab('passRate', t('analysis.passRate'), 'checkmark-circle-outline')}
+        {renderMetricTab('avgScore', t('analysis.avgScore'), 'star-outline')}
+        {renderMetricTab('count', t('trend.inspectionCount'), 'layers-outline')}
       </View>
 
       {/* 折线图 */}
@@ -324,21 +326,21 @@ export default function QITrendScreen() {
       {/* 统计摘要 */}
       <View style={styles.summaryCard}>
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>最高值</Text>
+          <Text style={styles.summaryLabel}>{t('trend.maxValue')}</Text>
           <Text style={styles.summaryValue}>
             {Math.max(...getMetricData()).toFixed(metric === 'count' ? 0 : 1)}
           </Text>
         </View>
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>最低值</Text>
+          <Text style={styles.summaryLabel}>{t('trend.minValue')}</Text>
           <Text style={styles.summaryValue}>
             {Math.min(...getMetricData()).toFixed(metric === 'count' ? 0 : 1)}
           </Text>
         </View>
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>平均值</Text>
+          <Text style={styles.summaryLabel}>{t('trend.avgValue')}</Text>
           <Text style={styles.summaryValue}>
             {(
               getMetricData().reduce((a, b) => a + b, 0) / getMetricData().length
@@ -356,12 +358,12 @@ export default function QITrendScreen() {
       <View style={styles.insightCard}>
         <View style={styles.insightHeader}>
           <Ionicons name="bulb-outline" size={20} color={QI_COLORS.warning} />
-          <Text style={styles.insightTitle}>趋势分析</Text>
+          <Text style={styles.insightTitle}>{t('trend.trendAnalysis')}</Text>
         </View>
         <Text style={styles.insightText}>
-          {metric === 'passRate' && '合格率整体保持稳定，建议关注波动较大的时段，分析可能的影响因素。'}
-          {metric === 'avgScore' && '平均分呈现平稳趋势，各检验项目得分均衡，持续保持当前标准。'}
-          {metric === 'count' && '检验数量与生产计划匹配，建议合理安排检验人员排班。'}
+          {metric === 'passRate' && t('trend.passRateInsight')}
+          {metric === 'avgScore' && t('trend.avgScoreInsight')}
+          {metric === 'count' && t('trend.countInsight')}
         </Text>
       </View>
     </ScrollView>

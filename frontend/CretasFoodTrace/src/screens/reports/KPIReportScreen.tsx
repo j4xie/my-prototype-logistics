@@ -2,16 +2,18 @@ import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text, Appbar, Surface, Divider, ProgressBar } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 export default function KPIReportScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('reports');
   const [refreshing, setRefreshing] = useState(false);
 
   const kpis = [
-    { name: '生产完成率', value: 92, target: 95, color: '#4CAF50' },
-    { name: '质检合格率', value: 96, target: 98, color: '#2196F3' },
-    { name: '设备利用率', value: 85, target: 90, color: '#FF9800' },
-    { name: '准时交付率', value: 88, target: 95, color: '#9C27B0' },
+    { name: t('kpi.productionCompletionRate'), value: 92, target: 95, color: '#4CAF50' },
+    { name: t('kpi.qualityPassRate'), value: 96, target: 98, color: '#2196F3' },
+    { name: t('kpi.equipmentUtilizationRate'), value: 85, target: 90, color: '#FF9800' },
+    { name: t('kpi.onTimeDeliveryRate'), value: 88, target: 95, color: '#9C27B0' },
   ];
 
   const handleRefresh = useCallback(async () => {
@@ -30,7 +32,7 @@ export default function KPIReportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="KPI指标" />
+        <Appbar.Content title={t('kpi.title')} />
         <Appbar.Action icon="refresh" onPress={handleRefresh} />
       </Appbar.Header>
       <ScrollView
@@ -38,7 +40,7 @@ export default function KPIReportScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <Surface style={styles.card} elevation={1}>
-          <Text variant="titleMedium" style={styles.title}>关键绩效指标</Text>
+          <Text variant="titleMedium" style={styles.title}>{t('kpi.keyPerformanceIndicators')}</Text>
           <Divider style={styles.divider} />
           {kpis.map((kpi, index) => (
             <View key={index} style={styles.kpiItem}>

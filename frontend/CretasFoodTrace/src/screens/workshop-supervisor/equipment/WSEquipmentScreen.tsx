@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSEquipmentStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<WSEquipmentStackParamList, 'WSEquipment'>;
@@ -35,6 +36,7 @@ interface Equipment {
 
 export function WSEquipmentScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('workshop');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -103,15 +105,15 @@ export function WSEquipmentScreen() {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'running':
-        return { bg: '#52c41a', text: '运行中', icon: 'play-circle' };
+        return { bg: '#52c41a', text: t('equipment.status.running'), icon: 'play-circle' };
       case 'idle':
-        return { bg: '#1890ff', text: '空闲', icon: 'pause-circle' };
+        return { bg: '#1890ff', text: t('equipment.status.idle'), icon: 'pause-circle' };
       case 'maintenance':
-        return { bg: '#faad14', text: '维护中', icon: 'wrench' };
+        return { bg: '#faad14', text: t('equipment.status.maintenance'), icon: 'wrench' };
       case 'offline':
-        return { bg: '#8c8c8c', text: '离线', icon: 'power-off' };
+        return { bg: '#8c8c8c', text: t('equipment.status.offline'), icon: 'power-off' };
       default:
-        return { bg: '#8c8c8c', text: '未知', icon: 'help-circle' };
+        return { bg: '#8c8c8c', text: t('equipment.status.unknown'), icon: 'help-circle' };
     }
   };
 
@@ -144,7 +146,7 @@ export function WSEquipmentScreen() {
             {equipment.equipmentId} | {equipment.location}
           </Text>
           {equipment.currentTask && (
-            <Text style={styles.equipmentTask}>当前: {equipment.currentTask}</Text>
+            <Text style={styles.equipmentTask}>{t('equipment.currentTask', { task: equipment.currentTask })}</Text>
           )}
         </View>
 
@@ -167,7 +169,7 @@ export function WSEquipmentScreen() {
     <SafeAreaView style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>设备管理</Text>
+        <Text style={styles.headerTitle}>{t('equipment.title')}</Text>
       </View>
 
       {/* 搜索栏 */}
@@ -176,7 +178,7 @@ export function WSEquipmentScreen() {
           <Icon source="magnify" size={20} color="#999" />
           <TextInput
             style={styles.searchInput}
-            placeholder="搜索设备名称或编号..."
+            placeholder={t('equipment.searchPlaceholder')}
             placeholderTextColor="#999"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -189,22 +191,22 @@ export function WSEquipmentScreen() {
         <View style={[styles.statCard, { backgroundColor: '#f6ffed' }]}>
           <Icon source="play-circle" size={20} color="#52c41a" />
           <Text style={[styles.statValue, { color: '#52c41a' }]}>{running.length}</Text>
-          <Text style={styles.statLabel}>运行中</Text>
+          <Text style={styles.statLabel}>{t('equipment.stats.running')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: '#e6f7ff' }]}>
           <Icon source="pause-circle" size={20} color="#1890ff" />
           <Text style={[styles.statValue, { color: '#1890ff' }]}>{idle.length}</Text>
-          <Text style={styles.statLabel}>空闲</Text>
+          <Text style={styles.statLabel}>{t('equipment.stats.idle')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: '#fff7e6' }]}>
           <Icon source="wrench" size={20} color="#faad14" />
           <Text style={[styles.statValue, { color: '#faad14' }]}>{needAttention.length}</Text>
-          <Text style={styles.statLabel}>需维护</Text>
+          <Text style={styles.statLabel}>{t('equipment.stats.needMaintenance')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: '#f5f5f5' }]}>
           <Icon source="cog" size={20} color="#666" />
           <Text style={[styles.statValue, { color: '#666' }]}>{equipments.length}</Text>
-          <Text style={styles.statLabel}>总计</Text>
+          <Text style={styles.statLabel}>{t('equipment.stats.total')}</Text>
         </View>
       </View>
 
@@ -220,7 +222,7 @@ export function WSEquipmentScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Icon source="alert-circle" size={18} color="#ff4d4f" />
-              <Text style={styles.sectionTitle}>需要关注</Text>
+              <Text style={styles.sectionTitle}>{t('equipment.sections.needAttention')}</Text>
             </View>
             {needAttention.map(renderEquipmentCard)}
           </View>
@@ -231,7 +233,7 @@ export function WSEquipmentScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Icon source="play-circle" size={18} color="#52c41a" />
-              <Text style={styles.sectionTitle}>运行中</Text>
+              <Text style={styles.sectionTitle}>{t('equipment.sections.running')}</Text>
             </View>
             {running.map(renderEquipmentCard)}
           </View>
@@ -242,7 +244,7 @@ export function WSEquipmentScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Icon source="pause-circle" size={18} color="#1890ff" />
-              <Text style={styles.sectionTitle}>空闲</Text>
+              <Text style={styles.sectionTitle}>{t('equipment.sections.idle')}</Text>
             </View>
             {idle.map(renderEquipmentCard)}
           </View>

@@ -1,0 +1,556 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "search": "Search",
+    "viewAll": "View All",
+    "noData": "No Data"
+  },
+  "home": {
+    "title": "Workshop Supervisor Dashboard",
+    "greeting": {
+      "earlyMorning": "Good Early Morning",
+      "morning": "Good Morning",
+      "forenoon": "Good Forenoon",
+      "noon": "Good Noon",
+      "afternoon": "Good Afternoon",
+      "evening": "Good Evening",
+      "lateNight": "Late Night"
+    },
+    "subtitle": "Today's task schedule has been updated",
+    "nextTask": {
+      "title": "Next Task",
+      "urgent": "Urgent",
+      "assignedWorkers": "{{count}} workers assigned",
+      "plannedStart": "Planned to start at {{time}}",
+      "startTask": "Start Task"
+    },
+    "todayOverview": "Today's Task Overview",
+    "stats": {
+      "assigned": "Assigned",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "inProgressBatches": "Batches In Progress",
+    "personnelStatus": "Personnel Status",
+    "personnel": {
+      "onDuty": "On Duty",
+      "onLeave": "On Leave",
+      "absent": "Absent"
+    },
+    "equipmentStatus": "Equipment Status",
+    "equipment": {
+      "running": "Running",
+      "idle": "Idle",
+      "needMaintenance": "Need Maintenance"
+    },
+    "batch": {
+      "output": "{{current}}kg / {{target}}kg",
+      "estimated": "Est. {{time}}"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark All Read",
+    "empty": "No notifications",
+    "types": {
+      "task": "New Task Assigned",
+      "alert": "Equipment Alert",
+      "info": "Staff Leave",
+      "success": "Batch Completed"
+    },
+    "time": {
+      "minutesAgo": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hours ago",
+      "yesterday": "Yesterday {{time}}"
+    }
+  },
+  "taskGuide": {
+    "title": "Task Execution",
+    "steps": {
+      "step1": "Step 1/3: Go to Workstation",
+      "step2": "Step 2/3: Confirm Equipment",
+      "step3": "Step 3/3: Start Production"
+    },
+    "location": {
+      "workshop": "Workshop",
+      "line": "Production Line",
+      "station": "Workstation",
+      "equipment": "Equipment"
+    },
+    "viewMap": "View Workshop Map",
+    "arrivedConfirm": "I have arrived at the workstation",
+    "nextStep": "Next: Confirm Equipment",
+    "targetOutput": "Target {{quantity}}kg"
+  },
+  "profile": {
+    "title": "My Profile",
+    "role": "Workshop Supervisor",
+    "stats": {
+      "managedBatches": "Managed Batches",
+      "onDutyPersonnel": "On-Duty Personnel",
+      "runningEquipment": "Running Equipment"
+    },
+    "sections": {
+      "accountSettings": "Account Settings",
+      "systemSettings": "System Settings",
+      "helpSupport": "Help & Support"
+    },
+    "menu": {
+      "personalInfo": "Personal Information",
+      "changePassword": "Change Password",
+      "notificationSettings": "Notification Settings",
+      "settings": "System Settings",
+      "about": "About",
+      "logout": "Logout"
+    }
+  },
+  "workers": {
+    "title": "Personnel Management",
+    "searchPlaceholder": "Search by name or employee ID...",
+    "filters": {
+      "all": "All",
+      "onDuty": "On Duty",
+      "onLeave": "On Leave",
+      "temporary": "Temporary"
+    },
+    "stats": {
+      "onDuty": "On Duty",
+      "onLeave": "On Leave",
+      "absent": "Absent",
+      "temporary": "Temporary"
+    },
+    "status": {
+      "onDuty": "On Duty",
+      "offDuty": "Off Duty",
+      "onLeave": "On Leave",
+      "absent": "Absent",
+      "unknown": "Unknown",
+      "available": "Available",
+      "busy": "Busy",
+      "normal": "Normal",
+      "late": "Late",
+      "early": "Early Leave",
+      "leave": "Off"
+    },
+    "tempBadge": "Temp",
+    "currentTask": "Current: {{task}}",
+    "hours": "{{hours}}h",
+    "efficiency": {
+      "gradeA": "A",
+      "gradeB": "B",
+      "gradeC": "C",
+      "gradeD": "D",
+      "label": "Efficiency {{value}}%"
+    },
+    "assign": {
+      "title": "Assign Workers",
+      "batchInfo": "Batch Information",
+      "productName": "Product Name",
+      "requiredWorkers": "{{required}} workers needed · {{selected}} selected",
+      "selectWorkers": "Select Workers",
+      "confirmButton": "Confirm Assignment ({{selected}}/{{required}})",
+      "minWorkersAlert": "Please select at least {{required}} workers",
+      "confirmTitle": "Confirm Assignment",
+      "confirmMessage": "Are you sure to assign {{workers}} to batch {{batch}}?",
+      "successMessage": "Workers assigned successfully!"
+    },
+    "attendance": {
+      "title": "Attendance History",
+      "monthSelector": "Month Selector",
+      "stats": {
+        "workDays": "Work Days",
+        "late": "Late",
+        "absent": "Absent",
+        "totalHours": "Total Hours"
+      },
+      "listHeaders": {
+        "date": "Date",
+        "clockTime": "Clock",
+        "workHours": "Hours",
+        "status": "Status"
+      },
+      "weekdays": {
+        "monday": "Mon",
+        "tuesday": "Tue",
+        "wednesday": "Wed",
+        "thursday": "Thu",
+        "friday": "Fri",
+        "saturday": "Sat",
+        "sunday": "Sun"
+      }
+    },
+    "clockIn": {
+      "title": "Clock Management",
+      "currentTime": "Current Time",
+      "todayStats": {
+        "clockedIn": "Clocked In",
+        "late": "Late",
+        "absent": "Absent",
+        "expected": "Expected"
+      },
+      "todayRecords": "Today's Clock Records",
+      "notClockedIn": "Not Clocked In",
+      "clockTime": "Clock time: {{time}}"
+    },
+    "detail": {
+      "title": "Worker Detail",
+      "basicInfo": {
+        "title": "Basic Information",
+        "phone": "Phone",
+        "joinDate": "Join Date",
+        "department": "Department"
+      },
+      "statsCard": {
+        "todayHours": "Today's Hours",
+        "efficiencyGrade": "Efficiency Grade",
+        "overallEfficiency": "Overall Efficiency"
+      },
+      "aiScore": {
+        "title": "AI Efficiency Score",
+        "attendance": "Attendance",
+        "quality": "Quality",
+        "speed": "Speed",
+        "trend": "{{percent}}% improvement in last 7 days"
+      },
+      "recentTasks": {
+        "title": "Recent Tasks",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "dayBefore": "2 days ago",
+        "statusInProgress": "In Progress",
+        "statusCompleted": "Completed"
+      }
+    }
+  },
+  "batches": {
+    "title": "Batch Management",
+    "searchPlaceholder": "Search batch number...",
+    "filters": {
+      "all": "All",
+      "inProgress": "In Progress",
+      "pending": "Pending",
+      "completed": "Completed"
+    },
+    "stats": {
+      "inProgress": "In Progress",
+      "pending": "Pending",
+      "completed": "Completed"
+    },
+    "status": {
+      "urgent": "[Urgent] ",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "fields": {
+      "product": "Product",
+      "target": "Target",
+      "output": "Output",
+      "completedTime": "Completed Time",
+      "plannedStart": "Planned Start",
+      "progress": "Progress"
+    },
+    "progressInfo": "{{current}}kg / {{target}}kg",
+    "estimated": "Est. {{time}}"
+  },
+  "equipment": {
+    "title": "Equipment Management",
+    "searchPlaceholder": "Search equipment name or ID...",
+    "status": {
+      "running": "Running",
+      "idle": "Idle",
+      "maintenance": "Maintenance",
+      "offline": "Offline",
+      "fault": "Fault",
+      "unknown": "Unknown"
+    },
+    "stats": {
+      "running": "Running",
+      "idle": "Idle",
+      "needMaintenance": "Need Maintenance",
+      "total": "Total"
+    },
+    "sections": {
+      "needAttention": "Need Attention",
+      "running": "Running",
+      "idle": "Idle"
+    },
+    "currentTask": "Current: {{task}}",
+    "alert": {
+      "title": "Alert Details",
+      "priority": {
+        "high": "High Priority",
+        "medium": "Medium Priority",
+        "low": "Low Priority",
+        "unknown": "Unknown"
+      },
+      "handled": "Handled",
+      "equipmentInfo": "Equipment Info",
+      "equipmentName": "Equipment Name",
+      "equipmentId": "Equipment ID",
+      "location": "Location",
+      "suggestedActions": "Suggested Actions",
+      "handleHistory": "Handle History",
+      "confirmHandle": "Confirm Handle",
+      "confirmHandleMsg": "Confirm this alert has been handled?",
+      "escalate": "Escalate",
+      "escalateMsg": "Confirm escalating this alert to equipment administrator?",
+      "escalateConfirm": "Confirm Escalate",
+      "handleSuccess": "Alert has been marked as handled",
+      "escalateSuccess": "Alert has been escalated to equipment administrator",
+      "confirmButton": "Confirm Handle"
+    },
+    "maintenance": {
+      "title": "Maintenance Records",
+      "lastMaintenance": "Last Maintenance",
+      "nextMaintenance": "Next Maintenance",
+      "maintenanceCycle": "Maintenance Cycle",
+      "daysRemaining": "{{days}} days remaining",
+      "overdue": "Overdue",
+      "days": "{{days}} days",
+      "history": "Maintenance History",
+      "types": {
+        "routine": "Routine Maintenance",
+        "repair": "Repair",
+        "inspection": "Inspection",
+        "other": "Other"
+      },
+      "status": {
+        "completed": "Completed",
+        "pending": "In Progress",
+        "scheduled": "Scheduled",
+        "unknown": "Unknown"
+      },
+      "requestMaintenance": "Request Maintenance",
+      "requestConfirm": "Confirm submitting maintenance request?",
+      "requestSuccess": "Maintenance request submitted, waiting for equipment administrator to arrange"
+    }
+  },
+  "taskGuideDetail": {
+    "title": "Task Execution",
+    "batchProduct": "{{product}} · Target {{target}}kg",
+    "step1": {
+      "title": "Step 1/3: Go to Workstation",
+      "workshop": "Workshop",
+      "line": "Production Line",
+      "station": "Workstation",
+      "equipment": "Equipment",
+      "viewMap": "View Workshop Map",
+      "arrivedConfirm": "I have arrived at the workstation",
+      "nextStep": "Next: Confirm Equipment"
+    },
+    "step2": {
+      "title": "Step 2/3: Confirm Equipment",
+      "equipmentStatus": {
+        "running": "Running",
+        "starting": "Starting...",
+        "idle": "Idle"
+      },
+      "oee": "OEE",
+      "lastMaintenance": "Last Maintenance",
+      "startEquipment": "Start Equipment",
+      "starting": "Starting...",
+      "started": "Started",
+      "reportIssue": "Report Issue",
+      "reportIssueTitle": "Report Equipment Issue",
+      "reportIssueMsg": "Confirm reporting equipment malfunction? This will notify the equipment administrator.",
+      "reportIssueConfirm": "Confirm Report",
+      "issueReported": "Submitted",
+      "issueReportedMsg": "Equipment malfunction report submitted, equipment administrator will handle it soon.",
+      "equipmentReady": "Equipment started and running normally",
+      "nextStep": "Next: Gather Personnel"
+    },
+    "step3": {
+      "title": "Step 3/3: Gather Personnel",
+      "stats": {
+        "ready": "Ready",
+        "pending": "Pending",
+        "total": "Total"
+      },
+      "assignedWorkers": "System Assigned Personnel",
+      "personnelReady": "Personnel are ready",
+      "startProduction": "Confirm Start Production",
+      "confirmStart": "Confirm Start Production",
+      "confirmStartMsg": "Batch {{batchNumber}} is about to start production, confirm?",
+      "confirmButton": "Confirm Start"
+    }
+  },
+  "batchDetail": {
+    "title": "Batch Details",
+    "status": {
+      "inProgress": "In Progress"
+    },
+    "currentStage": "Current Process Stage",
+    "processFlow": "Process Flow",
+    "participants": "Participants",
+    "equipment": "Equipment Used",
+    "stages": {
+      "defrost": "Defrost",
+      "clean": "Clean",
+      "slice": "Slice",
+      "package": "Package",
+      "warehouse": "Warehouse"
+    },
+    "stageStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "pending": "Pending"
+    },
+    "stageDuration": {
+      "inProgress": "In Progress",
+      "estimated": "Est. {{minutes}}min to complete"
+    },
+    "time": {
+      "start": "Start",
+      "estimated": "Est."
+    },
+    "equipmentStatus": {
+      "running": "Running"
+    },
+    "actions": {
+      "enterData": "Enter Data",
+      "completeBatch": "Complete Batch"
+    }
+  },
+  "batchStage": {
+    "title": "{{stageName}} - Data Entry",
+    "submit": "Submit",
+    "autoData": {
+      "title": "Auto-Collected Data (Read-only)",
+      "refresh": "Refresh",
+      "duration": "Duration",
+      "envTemp": "Env. Temperature",
+      "inputWeight": "Input Weight",
+      "outputWeight": "Output Weight",
+      "dataSource": "Data Source",
+      "updatedAt": "Updated at"
+    },
+    "aiData": {
+      "title": "AI Recognition (Please Confirm/Correct)",
+      "productCount": "Product Count (AI Recognition)",
+      "confidence": "Confidence",
+      "confirmedDefects": "Confirmed Defects",
+      "viewDefects": "View AI Marked Images",
+      "unit": {
+        "pieces": "pcs",
+        "percent": "%"
+      }
+    },
+    "manualData": {
+      "title": "Manual Entry Data",
+      "reworkCount": "Rework Count (pcs)",
+      "thicknessStd": "Slice Thickness Std. Dev. (mm)",
+      "actualWorkers": "Actual Workers"
+    },
+    "notes": {
+      "title": "Notes & Issue Report",
+      "placeholder": "Enter notes or issues..."
+    },
+    "comparison": {
+      "title": "AI Comparison Analysis",
+      "lossRate": "Current Loss Rate",
+      "passRate": "Current Pass Rate",
+      "industryAvg": "Industry Avg"
+    },
+    "actions": {
+      "save": "Save Data"
+    },
+    "alerts": {
+      "submitSuccess": "Submit Successful",
+      "dataSaved": "Process stage data has been saved"
+    }
+  },
+  "batchComplete": {
+    "title": "Complete Batch",
+    "summary": {
+      "title": "Batch Production Completed",
+      "productionData": "Production Data Summary"
+    },
+    "data": {
+      "targetQuantity": "Target Quantity",
+      "actualQuantity": "Actual Quantity",
+      "qualifiedQuantity": "Qualified Quantity",
+      "qualityRate": "Quality Rate",
+      "totalTime": "Total Time",
+      "workers": "Workers",
+      "people": "people"
+    },
+    "checklist": {
+      "title": "Completion Checklist",
+      "qualityCheck": "Quality Inspection Completed",
+      "dataComplete": "Data Entry Completed",
+      "equipmentReset": "Equipment Reset & Cleaned"
+    },
+    "actions": {
+      "confirm": "Confirm Complete Batch"
+    },
+    "alerts": {
+      "confirmTitle": "Confirm Completion",
+      "confirmMessage": "Confirm completing batch {{batchNumber}}?",
+      "successTitle": "Success",
+      "successMessage": "Batch completed!"
+    }
+  },
+  "materialConsumption": {
+    "title": "Material Consumption",
+    "batchInfo": {
+      "currentStage": "{{stage}}"
+    },
+    "stats": {
+      "batches": "Consumption Batches",
+      "plannedTotal": "Planned Total",
+      "actualUsage": "Actual Usage"
+    },
+    "list": {
+      "title": "Consumption Records"
+    },
+    "record": {
+      "status": {
+        "consumed": "Consumed",
+        "pending": "Pending"
+      },
+      "plannedQuantity": "Planned Qty",
+      "actualQuantity": "Actual Qty",
+      "variance": "Variance",
+      "consumedAt": "Consumed At",
+      "operator": "Operator"
+    },
+    "actions": {
+      "add": "Add Consumption Record"
+    },
+    "alerts": {
+      "addConsumption": "Add Consumption",
+      "selectFromInventory": "Select material batch from inventory for consumption recording"
+    }
+  },
+  "batchStart": {
+    "title": "Create Batch",
+    "selectProduct": "Select Product *",
+    "targetQuantity": "Target Quantity (kg) *",
+    "notes": "Notes (Optional)",
+    "placeholder": {
+      "targetQuantity": "Enter target quantity",
+      "notes": "Enter notes..."
+    },
+    "info": {
+      "title": "Info",
+      "message": "After creating the batch, the system will automatically assign workstation, equipment and personnel. Please complete the task guide process before starting."
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "create": "Create Batch"
+    },
+    "alerts": {
+      "selectProduct": "Please select a product",
+      "enterQuantity": "Please enter target quantity",
+      "confirmCreate": "Confirm Create",
+      "confirmMessage": "Confirm creating new batch?\nProduct: {{product}}\nTarget Quantity: {{quantity}}kg",
+      "successTitle": "Success",
+      "successMessage": "Batch created"
+    }
+  }
+}

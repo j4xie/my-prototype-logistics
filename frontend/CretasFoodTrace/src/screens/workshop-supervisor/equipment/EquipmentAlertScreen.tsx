@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSEquipmentStackParamList } from '../../../types/navigation';
 
 type RouteProps = RouteProp<WSEquipmentStackParamList, 'EquipmentAlert'>;
@@ -20,6 +21,7 @@ type RouteProps = RouteProp<WSEquipmentStackParamList, 'EquipmentAlert'>;
 export function EquipmentAlertScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
 
   const [isHandled, setIsHandled] = useState(false);
 
@@ -50,13 +52,13 @@ export function EquipmentAlertScreen() {
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
       case 'high':
-        return { text: '高优先级', color: '#ff4d4f', bg: '#fff1f0', icon: 'alert-circle' };
+        return { text: t('equipment.alert.priority.high'), color: '#ff4d4f', bg: '#fff1f0', icon: 'alert-circle' };
       case 'medium':
-        return { text: '中优先级', color: '#faad14', bg: '#fff7e6', icon: 'alert' };
+        return { text: t('equipment.alert.priority.medium'), color: '#faad14', bg: '#fff7e6', icon: 'alert' };
       case 'low':
-        return { text: '低优先级', color: '#1890ff', bg: '#e6f7ff', icon: 'information' };
+        return { text: t('equipment.alert.priority.low'), color: '#1890ff', bg: '#e6f7ff', icon: 'information' };
       default:
-        return { text: '未知', color: '#999', bg: '#f5f5f5', icon: 'help-circle' };
+        return { text: t('equipment.alert.priority.unknown'), color: '#999', bg: '#f5f5f5', icon: 'help-circle' };
     }
   };
 
@@ -64,15 +66,15 @@ export function EquipmentAlertScreen() {
 
   const handleAcknowledge = () => {
     Alert.alert(
-      '确认处理',
-      '确认已处理此告警？',
+      t('equipment.alert.confirmHandle'),
+      t('equipment.alert.confirmHandleMsg'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认',
+          text: t('common.confirm'),
           onPress: () => {
             setIsHandled(true);
-            Alert.alert('成功', '告警已标记为已处理');
+            Alert.alert(t('common.confirm'), t('equipment.alert.handleSuccess'));
           },
         },
       ]
@@ -81,14 +83,14 @@ export function EquipmentAlertScreen() {
 
   const handleEscalate = () => {
     Alert.alert(
-      '上报告警',
-      '确认上报此告警给设备管理员？',
+      t('equipment.alert.escalate'),
+      t('equipment.alert.escalateMsg'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认上报',
+          text: t('equipment.alert.escalateConfirm'),
           onPress: () => {
-            Alert.alert('成功', '告警已上报给设备管理员');
+            Alert.alert(t('common.confirm'), t('equipment.alert.escalateSuccess'));
           },
         },
       ]
@@ -102,7 +104,7 @@ export function EquipmentAlertScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>告警详情</Text>
+        <Text style={styles.headerTitle}>{t('equipment.alert.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -119,7 +121,7 @@ export function EquipmentAlertScreen() {
             {isHandled && (
               <View style={styles.handledBadge}>
                 <Icon source="check" size={14} color="#52c41a" />
-                <Text style={styles.handledText}>已处理</Text>
+                <Text style={styles.handledText}>{t('equipment.alert.handled')}</Text>
               </View>
             )}
           </View>
@@ -133,18 +135,18 @@ export function EquipmentAlertScreen() {
 
         {/* 设备信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>设备信息</Text>
+          <Text style={styles.sectionTitle}>{t('equipment.alert.equipmentInfo')}</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>设备名称</Text>
+              <Text style={styles.infoLabel}>{t('equipment.alert.equipmentName')}</Text>
               <Text style={styles.infoValue}>{alert.equipmentName}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>设备编号</Text>
+              <Text style={styles.infoLabel}>{t('equipment.alert.equipmentId')}</Text>
               <Text style={styles.infoValue}>{alert.equipmentId}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>位置</Text>
+              <Text style={styles.infoLabel}>{t('equipment.alert.location')}</Text>
               <Text style={styles.infoValue}>{alert.location}</Text>
             </View>
           </View>
@@ -152,7 +154,7 @@ export function EquipmentAlertScreen() {
 
         {/* 建议操作 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>建议操作</Text>
+          <Text style={styles.sectionTitle}>{t('equipment.alert.suggestedActions')}</Text>
           <View style={styles.suggestionsCard}>
             {alert.suggestedActions.map((action, index) => (
               <View key={index} style={styles.suggestionItem}>
@@ -167,7 +169,7 @@ export function EquipmentAlertScreen() {
 
         {/* 处理历史 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>处理历史</Text>
+          <Text style={styles.sectionTitle}>{t('equipment.alert.handleHistory')}</Text>
           <View style={styles.historyCard}>
             {alert.history.map((item, index) => (
               <View key={index} style={styles.historyItem}>
@@ -191,11 +193,11 @@ export function EquipmentAlertScreen() {
         <View style={styles.footer}>
           <TouchableOpacity style={styles.escalateBtn} onPress={handleEscalate}>
             <Icon source="arrow-up-circle" size={20} color="#667eea" />
-            <Text style={styles.escalateBtnText}>上报</Text>
+            <Text style={styles.escalateBtnText}>{t('equipment.alert.escalate')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.acknowledgeBtn} onPress={handleAcknowledge}>
             <Icon source="check-circle" size={20} color="#fff" />
-            <Text style={styles.acknowledgeBtnText}>确认处理</Text>
+            <Text style={styles.acknowledgeBtnText}>{t('equipment.alert.confirmButton')}</Text>
           </TouchableOpacity>
         </View>
       )}

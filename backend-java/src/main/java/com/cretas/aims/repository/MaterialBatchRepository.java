@@ -4,6 +4,7 @@ import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -97,6 +98,7 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
     /**
      * 查找工厂的原材料批次
      */
+    @EntityGraph(attributePaths = {"materialType", "supplier"})
     Page<MaterialBatch> findByFactoryId(String factoryId, Pageable pageable);
 
     /**
@@ -123,6 +125,7 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
     /**
      * 注意：batchNumber使用右模糊（可使用索引），name使用双向模糊（无法使用索引）
      */
+    @EntityGraph(attributePaths = {"materialType"})
     @Query("SELECT m FROM MaterialBatch m " +
            "LEFT JOIN m.materialType mt " +
            "WHERE m.factoryId = :factoryId " +

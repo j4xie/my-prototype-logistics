@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHInboundStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
@@ -101,6 +102,7 @@ interface InboundDetail {
 }
 
 export function WHInboundDetailScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
@@ -152,7 +154,7 @@ export function WHInboundDetailScreen() {
         });
       }
     } catch (error) {
-      handleError(error, { title: '加载入库详情失败' });
+      handleError(error, { title: t('messages.loadDetailFailed') });
     } finally {
       setLoading(false);
     }
@@ -163,12 +165,12 @@ export function WHInboundDetailScreen() {
   }, [loadData]);
 
   const handleConfirm = () => {
-    Alert.alert("确认入库", "确定要确认此入库单吗？", [
-      { text: "取消", style: "cancel" },
+    Alert.alert(t('inbound.detail.confirmTitle'), t('inbound.detail.confirmMessage'), [
+      { text: t('inbound.detail.cancel'), style: "cancel" },
       {
-        text: "确定",
+        text: t('inbound.detail.confirm'),
         onPress: () => {
-          Alert.alert("成功", "入库确认成功，进入质检流程");
+          Alert.alert(t('inbound.detail.success'), t('inbound.detail.successMessage'));
           navigation.goBack();
         },
       },
@@ -183,12 +185,12 @@ export function WHInboundDetailScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>入库详情</Text>
+          <Text style={styles.headerTitle}>{t('inbound.detail.title')}</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('inbound.detail.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -202,12 +204,12 @@ export function WHInboundDetailScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>入库详情</Text>
+          <Text style={styles.headerTitle}>{t('inbound.detail.title')}</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <MaterialCommunityIcons name="package-variant" size={64} color="#ddd" />
-          <Text style={styles.loadingText}>未找到入库记录</Text>
+          <Text style={styles.loadingText}>{t('inbound.detail.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -223,7 +225,7 @@ export function WHInboundDetailScreen() {
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>入库详情</Text>
+        <Text style={styles.headerTitle}>{t('inbound.detail.title')}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -249,22 +251,22 @@ export function WHInboundDetailScreen() {
 
         {/* 基本信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>基本信息</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.detail.basicInfo')}</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>供应商</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.supplier')}</Text>
               <Text style={styles.infoValue}>{detail.supplier}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>联系人</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.contact')}</Text>
               <Text style={styles.infoValue}>{detail.supplierContact}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>单价</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.unitPrice')}</Text>
               <Text style={styles.infoValue}>¥{detail.unitPrice}/kg</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>金额</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.amount')}</Text>
               <Text style={[styles.infoValue, styles.amountValue]}>
                 ¥{detail.totalAmount.toLocaleString()}
               </Text>
@@ -274,18 +276,18 @@ export function WHInboundDetailScreen() {
 
         {/* 保质信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>保质信息</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.detail.qualityInfo')}</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>生产日期</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.productionDate')}</Text>
               <Text style={styles.infoValue}>{detail.productionDate}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>保质期至</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.expiryDate')}</Text>
               <Text style={styles.infoValue}>{detail.expiryDate}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>存储温度</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.storageTemp')}</Text>
               <Text style={styles.infoValue}>{detail.storageTemp}</Text>
             </View>
           </View>
@@ -293,22 +295,22 @@ export function WHInboundDetailScreen() {
 
         {/* 物流信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>物流信息</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.detail.logisticsInfo')}</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>到货时间</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.arrivalTime')}</Text>
               <Text style={styles.infoValue}>{detail.arrivalTime}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>车牌号</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.vehicleNo')}</Text>
               <Text style={styles.infoValue}>{detail.vehicleNo}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>司机</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.driver')}</Text>
               <Text style={styles.infoValue}>{detail.driverName}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>联系电话</Text>
+              <Text style={styles.infoLabel}>{t('inbound.detail.phone')}</Text>
               <Text style={styles.infoValue}>{detail.driverPhone}</Text>
             </View>
           </View>
@@ -316,7 +318,7 @@ export function WHInboundDetailScreen() {
 
         {/* 备注 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>备注</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.detail.remarks')}</Text>
           <Text style={styles.remarksText}>{detail.remarks}</Text>
         </View>
 
@@ -332,7 +334,7 @@ export function WHInboundDetailScreen() {
             style={styles.cancelButton}
             labelStyle={styles.cancelButtonLabel}
           >
-            返回
+            {t('inbound.detail.back')}
           </Button>
           <Button
             mode="contained"
@@ -340,7 +342,7 @@ export function WHInboundDetailScreen() {
             style={styles.confirmButton}
             labelStyle={styles.confirmButtonLabel}
           >
-            确认入库
+            {t('inbound.detail.confirmInbound')}
           </Button>
         </View>
       )}

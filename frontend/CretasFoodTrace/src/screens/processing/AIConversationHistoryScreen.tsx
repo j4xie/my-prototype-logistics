@@ -16,6 +16,7 @@ import {
   IconButton,
 } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, ConversationMessage } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -41,6 +42,7 @@ type AIConversationHistoryScreenProps = ProcessingScreenProps<'AIConversationHis
  * @since 2025-11-05
  */
 export default function AIConversationHistoryScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<AIConversationHistoryScreenProps['navigation']>();
   const route = useRoute<AIConversationHistoryScreenProps['route']>();
   const { user } = useAuthStore();
@@ -58,7 +60,7 @@ export default function AIConversationHistoryScreen() {
     if (sessionId) {
       fetchConversationHistory();
     } else {
-      Alert.alert('错误', '缺少会话ID');
+      Alert.alert(t('common.error') || 'Error', t('aiConversationHistory.missingSessionId'));
       navigation.goBack();
     }
   }, [sessionId]);
@@ -72,7 +74,7 @@ export default function AIConversationHistoryScreen() {
 
       const factoryId = user?.factoryUser?.factoryId;
       if (!factoryId || !sessionId) {
-        Alert.alert('错误', '用户信息不完整');
+        Alert.alert(t('common.error') || 'Error', t('aiConversationHistory.userInfoIncomplete'));
         return;
       }
 
@@ -101,7 +103,7 @@ export default function AIConversationHistoryScreen() {
         sessionId,
         factoryId: user?.factoryUser?.factoryId,
       });
-      Alert.alert('加载失败', getErrorMsg(error) || '请稍后重试');
+      Alert.alert(t('aiConversationHistory.loadFailed'), getErrorMsg(error) || t('common.retryLater') || 'Please try again later');
       setMessages([]);
     } finally {
       setLoading(false);
@@ -125,12 +127,12 @@ export default function AIConversationHistoryScreen() {
       if (!sessionId) return;
 
       Alert.alert(
-        '确认关闭',
-        '确定要关闭此会话吗？关闭后将无法继续对话。',
+        t('aiConversationHistory.closeConfirmTitle'),
+        t('aiConversationHistory.closeConfirmMessage'),
         [
-          { text: '取消', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: '确认',
+            text: t('common.confirm'),
             style: 'destructive',
             onPress: async () => {
               const factoryId = user?.factoryUser?.factoryId;
@@ -138,8 +140,8 @@ export default function AIConversationHistoryScreen() {
 
               await aiApiClient.closeConversation(sessionId, factoryId);
               conversationLogger.info('AI会话已关闭', { sessionId, factoryId });
-              Alert.alert('成功', '会话已关闭', [
-                { text: '确定', onPress: () => navigation.goBack() },
+              Alert.alert(t('common.success') || 'Success', t('aiConversationHistory.closeSuccess'), [
+                { text: t('common.ok') || 'OK', onPress: () => navigation.goBack() },
               ]);
             },
           },
@@ -150,7 +152,7 @@ export default function AIConversationHistoryScreen() {
         sessionId,
         factoryId: user?.factoryUser?.factoryId,
       });
-      Alert.alert('关闭失败', getErrorMsg(error) || '请稍后重试');
+      Alert.alert(t('aiConversationHistory.closeFailed'), getErrorMsg(error) || t('common.retryLater') || 'Please try again later');
     }
   };
 
@@ -164,11 +166,11 @@ export default function AIConversationHistoryScreen() {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
 
-    if (diffMins < 1) return '刚刚';
-    if (diffMins < 60) return `${diffMins}分钟前`;
-    if (diffHours < 24) return `${diffHours}小时前`;
+    if (diffMins < 1) return t('aiConversationHistory.time.justNow');
+    if (diffMins < 60) return t('aiConversationHistory.time.minutesAgo', { minutes: diffMins });
+    if (diffHours < 24) return t('aiConversationHistory.time.hoursAgo', { hours: diffHours });
 
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString(undefined, {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
@@ -217,7 +219,7 @@ export default function AIConversationHistoryScreen() {
                   isUser ? styles.userRoleChipText : styles.assistantRoleChipText,
                 ]}
               >
-                {isUser ? '用户' : 'AI助手'}
+                {isUser ? t('aiConversationHistory.role.user') : t('aiConversationHistory.role.assistant')}
               </Chip>
               <Text variant="bodySmall" style={styles.timestamp}>
                 {formatTime(item.timestamp)}
@@ -239,7 +241,7 @@ export default function AIConversationHistoryScreen() {
             {item.tokens !== undefined && item.tokens > 0 && (
               <View style={styles.tokenInfo}>
                 <Text variant="bodySmall" style={styles.tokenText}>
-                  消耗 {item.tokens} tokens
+                  {t('aiConversationHistory.tokensConsumed', { tokens: item.tokens })}
                 </Text>
               </View>
             )}
@@ -254,7 +256,7 @@ export default function AIConversationHistoryScreen() {
       {/* 顶部导航栏 */}
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="对话历史" />
+        <Appbar.Content title={t('aiConversationHistory.title')} />
         {sessionInfo?.status === 'active' && (
           <Appbar.Action
             icon="close-circle-outline"
@@ -266,7 +268,7 @@ export default function AIConversationHistoryScreen() {
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text variant="bodyMedium" style={styles.loadingText}>加载中...</Text>
+          <Text variant="bodyMedium" style={styles.loadingText}>{t('aiConversationHistory.loading')}</Text>
         </View>
       ) : (
         <>
@@ -276,7 +278,7 @@ export default function AIConversationHistoryScreen() {
               <Card.Content>
                 <View style={styles.sessionRow}>
                   <View style={styles.sessionInfo}>
-                    <Text variant="bodySmall" style={styles.sessionLabel}>会话ID</Text>
+                    <Text variant="bodySmall" style={styles.sessionLabel}>{t('aiConversationHistory.sessionId')}</Text>
                     <Text variant="bodyMedium" style={styles.sessionValue} numberOfLines={1}>
                       {sessionInfo.sessionId}
                     </Text>
@@ -291,13 +293,13 @@ export default function AIConversationHistoryScreen() {
                     ]}
                     textStyle={styles.statusChipText}
                   >
-                    {sessionInfo.status === 'active' ? '活跃' : '已关闭'}
+                    {sessionInfo.status === 'active' ? t('aiConversationHistory.status.active') : t('aiConversationHistory.status.closed')}
                   </Chip>
                 </View>
 
                 {sessionInfo.contextBatchId && (
                   <View style={styles.sessionRow}>
-                    <Text variant="bodySmall" style={styles.sessionLabel}>关联批次</Text>
+                    <Text variant="bodySmall" style={styles.sessionLabel}>{t('aiConversationHistory.relatedBatch')}</Text>
                     <Text variant="bodyMedium" style={styles.sessionValue}>
                       #{sessionInfo.contextBatchId}
                     </Text>
@@ -305,16 +307,16 @@ export default function AIConversationHistoryScreen() {
                 )}
 
                 <View style={styles.sessionRow}>
-                  <Text variant="bodySmall" style={styles.sessionLabel}>创建时间</Text>
+                  <Text variant="bodySmall" style={styles.sessionLabel}>{t('aiConversationHistory.createdAt')}</Text>
                   <Text variant="bodyMedium" style={styles.sessionValue}>
-                    {new Date(sessionInfo.createdAt).toLocaleString('zh-CN')}
+                    {new Date(sessionInfo.createdAt).toLocaleString()}
                   </Text>
                 </View>
 
                 <View style={styles.sessionRow}>
-                  <Text variant="bodySmall" style={styles.sessionLabel}>消息数量</Text>
+                  <Text variant="bodySmall" style={styles.sessionLabel}>{t('aiConversationHistory.messageCount')}</Text>
                   <Text variant="bodyMedium" style={styles.sessionValue}>
-                    {messages.length} 条
+                    {messages.length} {t('aiAnalysisDetail.messages')}
                   </Text>
                 </View>
               </Card.Content>
@@ -324,7 +326,7 @@ export default function AIConversationHistoryScreen() {
           {/* 对话消息列表 */}
           {messages.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text variant="titleMedium" style={styles.emptyText}>暂无对话记录</Text>
+              <Text variant="titleMedium" style={styles.emptyText}>{t('aiConversationHistory.noRecords')}</Text>
             </View>
           ) : (
             <FlatList

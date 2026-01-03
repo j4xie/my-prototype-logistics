@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAHomeStackParamList } from '../../../types/navigation';
 import { dashboardAPI, AlertsDashboardData } from '../../../services/api/dashboardApiClient';
 
@@ -31,6 +32,7 @@ interface AlertItem {
 
 export function AIAlertsScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('home');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,7 +48,7 @@ export function AIAlertsScreen() {
       }
     } catch (err) {
       console.error('加载告警数据失败:', err);
-      setError('数据加载失败');
+      setError(t('alerts.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -74,10 +76,10 @@ export function AIAlertsScreen() {
 
   const getSeverityLabel = (severity: string): string => {
     const labels: Record<string, string> = {
-      critical: '紧急',
-      high: '高',
-      medium: '中',
-      low: '低',
+      critical: t('alerts.severity.critical'),
+      high: t('alerts.severity.high'),
+      medium: t('alerts.severity.medium'),
+      low: t('alerts.severity.low'),
     };
     return labels[severity] || severity;
   };
@@ -100,9 +102,9 @@ export function AIAlertsScreen() {
     const hours = Math.floor(diff / 3600000);
 
     if (minutes < 60) {
-      return `${minutes} 分钟前`;
+      return t('alerts.time.minutesAgo', { count: minutes });
     } else if (hours < 24) {
-      return `${hours} 小时前`;
+      return t('alerts.time.hoursAgo', { count: hours });
     } else {
       return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
     }
@@ -134,7 +136,7 @@ export function AIAlertsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -150,7 +152,7 @@ export function AIAlertsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>告警中心</Text>
+        <Text style={styles.headerTitle}>{t('alerts.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -176,30 +178,30 @@ export function AIAlertsScreen() {
             <View style={styles.summaryCards}>
               <View style={[styles.summaryCard, { backgroundColor: '#e53e3e' }]}>
                 <Text style={styles.summaryValue}>{summary?.criticalAlerts ?? 0}</Text>
-                <Text style={styles.summaryLabel}>紧急</Text>
+                <Text style={styles.summaryLabel}>{t('alerts.summary.critical')}</Text>
               </View>
               <View style={[styles.summaryCard, { backgroundColor: '#ed8936' }]}>
                 <Text style={styles.summaryValue}>{summary?.activeAlerts ?? 0}</Text>
-                <Text style={styles.summaryLabel}>活跃</Text>
+                <Text style={styles.summaryLabel}>{t('alerts.summary.active')}</Text>
               </View>
               <View style={[styles.summaryCard, { backgroundColor: '#48bb78' }]}>
                 <Text style={styles.summaryValue}>{summary?.resolvedAlerts ?? 0}</Text>
-                <Text style={styles.summaryLabel}>已解决</Text>
+                <Text style={styles.summaryLabel}>{t('alerts.summary.resolved')}</Text>
               </View>
               <View style={[styles.summaryCard, { backgroundColor: '#667eea' }]}>
                 <Text style={styles.summaryValue}>{summary?.totalAlerts ?? 0}</Text>
-                <Text style={styles.summaryLabel}>总计</Text>
+                <Text style={styles.summaryLabel}>{t('alerts.summary.total')}</Text>
               </View>
             </View>
 
-            <Text style={styles.sectionTitle}>最近告警</Text>
+            <Text style={styles.sectionTitle}>{t('alerts.recentAlerts')}</Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Icon source="check-circle" size={48} color="#48bb78" />
-            <Text style={styles.emptyText}>暂无告警</Text>
-            <Text style={styles.emptySubtext}>系统运行正常</Text>
+            <Text style={styles.emptyText}>{t('alerts.empty')}</Text>
+            <Text style={styles.emptySubtext}>{t('alerts.systemNormal')}</Text>
           </View>
         }
       />

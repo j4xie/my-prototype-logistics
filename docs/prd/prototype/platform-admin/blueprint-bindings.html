@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工厂绑定 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="blueprint-detail.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">工厂绑定</div>
+      <a href="blueprint-apply.html" class="header-right" style="text-decoration: none; color: white; font-size: 14px;">
+        添加
+      </a>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content">
+      <!-- 蓝图信息 -->
+      <div style="background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); border-radius: 16px; padding: 16px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600;">
+            水
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 16px; font-weight: 600;">水产加工标准版</div>
+            <div style="font-size: 13px; opacity: 0.9;">版本 v2.0.1</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <div style="flex: 1; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; text-align: center;">
+            <div style="font-size: 18px; font-weight: 700;">3</div>
+            <div style="font-size: 12px; opacity: 0.8;">已绑定</div>
+          </div>
+          <div style="flex: 1; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; text-align: center;">
+            <div style="font-size: 18px; font-weight: 700;">2</div>
+            <div style="font-size: 12px; opacity: 0.8;">已同步</div>
+          </div>
+          <div style="flex: 1; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; text-align: center;">
+            <div style="font-size: 18px; font-weight: 700;">1</div>
+            <div style="font-size: 12px; opacity: 0.8;">待同步</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 已绑定工厂列表 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">已绑定工厂 (3)</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">批量同步</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <!-- 工厂1 - 已同步 -->
+        <div style="padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div style="width: 44px; height: 44px; background: rgba(24, 144, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #1890ff; font-size: 16px; font-weight: 600;">
+              厂
+            </div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 15px; font-weight: 500; color: #262626;">海鲜加工一厂</span>
+                <span class="tag success">已同步</span>
+              </div>
+              <div style="font-size: 13px; color: #8c8c8c;">F001 · 绑定于 2024-01-20</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <div style="flex: 1; padding: 8px 12px; background: #f5f5f5; border-radius: 6px; text-align: center;">
+              <div style="font-size: 14px; font-weight: 500; color: #262626;">v2.0.1</div>
+              <div style="font-size: 11px; color: #8c8c8c;">当前版本</div>
+            </div>
+            <div style="flex: 1; padding: 8px 12px; background: #f5f5f5; border-radius: 6px; text-align: center;">
+              <div style="font-size: 14px; font-weight: 500; color: #52c41a;">运行中</div>
+              <div style="font-size: 11px; color: #8c8c8c;">状态</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 工厂2 - 已同步 -->
+        <div style="padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div style="width: 44px; height: 44px; background: rgba(24, 144, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #1890ff; font-size: 16px; font-weight: 600;">
+              厂
+            </div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 15px; font-weight: 500; color: #262626;">海鲜加工二厂</span>
+                <span class="tag success">已同步</span>
+              </div>
+              <div style="font-size: 13px; color: #8c8c8c;">F002 · 绑定于 2024-02-10</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <div style="flex: 1; padding: 8px 12px; background: #f5f5f5; border-radius: 6px; text-align: center;">
+              <div style="font-size: 14px; font-weight: 500; color: #262626;">v2.0.1</div>
+              <div style="font-size: 11px; color: #8c8c8c;">当前版本</div>
+            </div>
+            <div style="flex: 1; padding: 8px 12px; background: #f5f5f5; border-radius: 6px; text-align: center;">
+              <div style="font-size: 14px; font-weight: 500; color: #52c41a;">运行中</div>
+              <div style="font-size: 11px; color: #8c8c8c;">状态</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 工厂3 - 待同步 -->
+        <div>
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div style="width: 44px; height: 44px; background: rgba(250, 173, 20, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #faad14; font-size: 16px; font-weight: 600;">
+              厂
+            </div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 15px; font-weight: 500; color: #262626;">海鲜加工三厂</span>
+                <span class="tag warning">待同步</span>
+              </div>
+              <div style="font-size: 13px; color: #8c8c8c;">F003 · 绑定于 2024-03-15</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <div style="flex: 1; padding: 8px 12px; background: #fff7e6; border-radius: 6px; text-align: center;">
+              <div style="font-size: 14px; font-weight: 500; color: #faad14;">v2.0.0</div>
+              <div style="font-size: 11px; color: #8c8c8c;">当前版本</div>
+            </div>
+            <div style="flex: 1; padding: 8px 12px; background: #f5f5f5; border-radius: 6px; text-align: center;">
+              <div style="font-size: 14px; font-weight: 500; color: #52c41a;">运行中</div>
+              <div style="font-size: 11px; color: #8c8c8c;">状态</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button style="flex: 1; padding: 10px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+              立即同步
+            </button>
+            <button style="flex: 1; padding: 10px; background: white; color: #ff4d4f; border: 1px solid #ff4d4f; border-radius: 8px; font-size: 14px; cursor: pointer;">
+              解除绑定
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 可绑定工厂 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">可绑定工厂</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="margin-bottom: 12px; font-size: 13px; color: #8c8c8c;">
+          以下工厂尚未绑定蓝图，可以应用当前蓝图
+        </div>
+
+        <!-- 可绑定工厂1 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f5f5f5; border-radius: 8px; margin-bottom: 8px;">
+          <div style="width: 40px; height: 40px; background: rgba(102, 126, 234, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #667eea; font-size: 14px; font-weight: 600;">
+            厂
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">海鲜加工四厂</div>
+            <div style="font-size: 12px; color: #8c8c8c;">F004 · 未绑定蓝图</div>
+          </div>
+          <button style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">
+            绑定
+          </button>
+        </div>
+
+        <!-- 可绑定工厂2 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f5f5f5; border-radius: 8px; margin-bottom: 8px;">
+          <div style="width: 40px; height: 40px; background: rgba(102, 126, 234, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #667eea; font-size: 14px; font-weight: 600;">
+            厂
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">沿海水产加工厂</div>
+            <div style="font-size: 12px; color: #8c8c8c;">F008 · 未绑定蓝图</div>
+          </div>
+          <button style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">
+            绑定
+          </button>
+        </div>
+
+        <!-- 查看更多 -->
+        <div style="text-align: center; padding-top: 8px;">
+          <span style="font-size: 13px; color: #667eea; cursor: pointer;">查看全部可绑定工厂 (5个)</span>
+        </div>
+      </div>
+
+      <!-- 同步设置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">同步设置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626; margin-bottom: 4px;">自动同步</div>
+            <div style="font-size: 12px; color: #8c8c8c;">蓝图更新时自动推送到所有工厂</div>
+          </div>
+          <div style="position: relative; width: 48px; height: 28px; background: #d9d9d9; border-radius: 14px; cursor: pointer;">
+            <div style="position: absolute; left: 2px; top: 2px; width: 24px; height: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 14px; color: #262626; margin-bottom: 4px;">同步通知</div>
+            <div style="font-size: 12px; color: #8c8c8c;">同步完成后通知工厂管理员</div>
+          </div>
+          <div style="position: relative; width: 48px; height: 28px; background: #52c41a; border-radius: 14px; cursor: pointer;">
+            <div style="position: absolute; right: 2px; top: 2px; width: 24px; height: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 同步历史 -->
+      <div style="margin-top: 20px;">
+        <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span class="section__title" style="font-size: 16px; font-weight: 600;">同步历史</span>
+          <span style="font-size: 13px; color: #8c8c8c;">最近7天</span>
+        </div>
+
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 4px;"></div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; color: #262626;">海鲜加工一厂 同步成功</div>
+              <div style="font-size: 12px; color: #8c8c8c;">v2.0.0 → v2.0.1 · 2024-03-20 14:35</div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 4px;"></div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; color: #262626;">海鲜加工二厂 同步成功</div>
+              <div style="font-size: 12px; color: #8c8c8c;">v2.0.0 → v2.0.1 · 2024-03-20 14:32</div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #ff4d4f; border-radius: 4px;"></div>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; color: #262626;">海鲜加工三厂 同步失败</div>
+              <div style="font-size: 12px; color: #ff4d4f;">网络超时，请重试 · 2024-03-20 14:30</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

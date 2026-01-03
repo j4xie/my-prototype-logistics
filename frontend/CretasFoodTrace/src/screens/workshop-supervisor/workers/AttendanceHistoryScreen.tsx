@@ -9,11 +9,11 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  ScrollView,
   FlatList,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 interface AttendanceRecord {
   date: string;
@@ -26,6 +26,7 @@ interface AttendanceRecord {
 
 export function AttendanceHistoryScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('workshop');
 
   // 当前月份
   const [currentMonth, setCurrentMonth] = useState('2025年12月');
@@ -56,17 +57,17 @@ export function AttendanceHistoryScreen() {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'normal':
-        return { text: '正常', color: '#52c41a', bg: '#f6ffed' };
+        return { text: t('workers.status.normal'), color: '#52c41a', bg: '#f6ffed' };
       case 'late':
-        return { text: '迟到', color: '#faad14', bg: '#fff7e6' };
+        return { text: t('workers.status.late'), color: '#faad14', bg: '#fff7e6' };
       case 'early':
-        return { text: '早退', color: '#faad14', bg: '#fff7e6' };
+        return { text: t('workers.status.early'), color: '#faad14', bg: '#fff7e6' };
       case 'absent':
-        return { text: '缺勤', color: '#ff4d4f', bg: '#fff1f0' };
+        return { text: t('workers.status.absent'), color: '#ff4d4f', bg: '#fff1f0' };
       case 'leave':
-        return { text: '休息', color: '#999', bg: '#f5f5f5' };
+        return { text: t('workers.status.leave'), color: '#999', bg: '#f5f5f5' };
       default:
-        return { text: '未知', color: '#999', bg: '#f5f5f5' };
+        return { text: t('workers.status.unknown'), color: '#999', bg: '#f5f5f5' };
     }
   };
 
@@ -109,7 +110,7 @@ export function AttendanceHistoryScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>考勤历史</Text>
+        <Text style={styles.headerTitle}>{t('workers.attendance.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -129,22 +130,22 @@ export function AttendanceHistoryScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{stats.actualDays}/{stats.workDays}</Text>
-            <Text style={styles.statLabel}>出勤天数</Text>
+            <Text style={styles.statLabel}>{t('workers.attendance.stats.workDays')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: '#faad14' }]}>{stats.lateDays}</Text>
-            <Text style={styles.statLabel}>迟到</Text>
+            <Text style={styles.statLabel}>{t('workers.attendance.stats.late')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: '#ff4d4f' }]}>{stats.absentDays}</Text>
-            <Text style={styles.statLabel}>缺勤</Text>
+            <Text style={styles.statLabel}>{t('workers.attendance.stats.absent')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{stats.totalHours}h</Text>
-            <Text style={styles.statLabel}>总工时</Text>
+            <Text style={styles.statLabel}>{t('workers.attendance.stats.totalHours')}</Text>
           </View>
         </View>
       </View>
@@ -152,10 +153,10 @@ export function AttendanceHistoryScreen() {
       {/* 记录列表 */}
       <View style={styles.listContainer}>
         <View style={styles.listHeader}>
-          <Text style={styles.listHeaderCell}>日期</Text>
-          <Text style={styles.listHeaderCell}>打卡</Text>
-          <Text style={styles.listHeaderCell}>工时</Text>
-          <Text style={styles.listHeaderCell}>状态</Text>
+          <Text style={styles.listHeaderCell}>{t('workers.attendance.listHeaders.date')}</Text>
+          <Text style={styles.listHeaderCell}>{t('workers.attendance.listHeaders.clockTime')}</Text>
+          <Text style={styles.listHeaderCell}>{t('workers.attendance.listHeaders.workHours')}</Text>
+          <Text style={styles.listHeaderCell}>{t('workers.attendance.listHeaders.status')}</Text>
         </View>
         <FlatList
           data={records}

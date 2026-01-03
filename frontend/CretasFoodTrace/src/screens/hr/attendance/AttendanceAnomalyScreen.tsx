@@ -25,6 +25,7 @@ import { Text, Card, Chip, Avatar, ActivityIndicator, Menu, Button } from 'react
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { hrApiClient } from '../../../services/api/hrApiClient';
 import {
@@ -38,6 +39,7 @@ type FilterType = AttendanceAnomalyType | 'all';
 
 export default function AttendanceAnomalyScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filterType, setFilterType] = useState<FilterType>('all');
@@ -63,7 +65,7 @@ export default function AttendanceAnomalyScreen() {
       }));
       setAnomalies(mappedAnomalies);
     } catch (error) {
-      console.error('加载考勤异常失败:', error);
+      console.error(t('common.loading'), error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -84,18 +86,18 @@ export default function AttendanceAnomalyScreen() {
 
   const handleResolve = async (anomaly: AttendanceAnomaly) => {
     Alert.alert(
-      '处理异常',
+      t('attendance.anomaly.resolve'),
       `确定要将 ${anomaly.userName} 的${ANOMALY_TYPE_CONFIG[anomaly.anomalyType].label}记录标记为已处理吗？`,
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确定',
+          text: t('common.confirm'),
           onPress: async () => {
             try {
               await hrApiClient.resolveAnomaly(anomaly.id, { action: 'resolved', notes: '手动处理' });
               loadData();
             } catch (error) {
-              Alert.alert('错误', '处理失败，请重试');
+              Alert.alert(t('messages.error'), '处理失败，请重试');
             }
           },
         },
@@ -104,12 +106,12 @@ export default function AttendanceAnomalyScreen() {
   };
 
   const filterOptions: { value: FilterType; label: string }[] = [
-    { value: 'all', label: '全部' },
-    { value: 'LATE', label: '迟到' },
-    { value: 'ABSENT', label: '缺勤' },
-    { value: 'EARLY_LEAVE', label: '早退' },
-    { value: 'NO_CLOCK_IN', label: '未打上班卡' },
-    { value: 'NO_CLOCK_OUT', label: '未打下班卡' },
+    { value: 'all', label: t('staff.filter.all') },
+    { value: 'LATE', label: t('anomalyTypes.late') },
+    { value: 'ABSENT', label: t('anomalyTypes.absent') },
+    { value: 'EARLY_LEAVE', label: t('anomalyTypes.earlyLeave') },
+    { value: 'NO_CLOCK_IN', label: t('anomalyTypes.missingCheckIn') },
+    { value: 'NO_CLOCK_OUT', label: t('anomalyTypes.missingCheckOut') },
   ];
 
   const renderItem = ({ item }: { item: AttendanceAnomaly }) => {
@@ -127,7 +129,7 @@ export default function AttendanceAnomalyScreen() {
               />
               <View style={styles.userMeta}>
                 <Text style={styles.userName}>{item.userName}</Text>
-                <Text style={styles.department}>{item.department || '未分配部门'}</Text>
+                <Text style={styles.department}>{item.department || t('staff.card.noDepartment')}</Text>
               </View>
             </View>
             <Chip
@@ -165,7 +167,7 @@ export default function AttendanceAnomalyScreen() {
             {item.isResolved ? (
               <View style={styles.resolvedBadge}>
                 <MaterialCommunityIcons name="check-circle" size={16} color={HR_THEME.success} />
-                <Text style={styles.resolvedText}>已处理</Text>
+                <Text style={styles.resolvedText}>{t('attendance.anomaly.resolve')}</Text>
               </View>
             ) : (
               <Button
@@ -175,7 +177,7 @@ export default function AttendanceAnomalyScreen() {
                 style={styles.resolveButton}
                 textColor={HR_THEME.primary}
               >
-                标记处理
+                {t('attendance.anomaly.resolve')}
               </Button>
             )}
           </View>
@@ -198,7 +200,7 @@ export default function AttendanceAnomalyScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>考勤异常</Text>
+        <Text style={styles.headerTitle}>{t('attendance.anomaly.title')}</Text>
         <Menu
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
@@ -249,7 +251,7 @@ export default function AttendanceAnomalyScreen() {
               size={64}
               color={HR_THEME.success}
             />
-            <Text style={styles.emptyText}>暂无考勤异常</Text>
+            <Text style={styles.emptyText}>{t('attendance.anomaly.empty')}</Text>
           </View>
         }
       />

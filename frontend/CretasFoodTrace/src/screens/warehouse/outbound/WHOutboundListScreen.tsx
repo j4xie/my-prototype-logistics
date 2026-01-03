@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHOutboundStackParamList } from "../../../types/navigation";
 import { shipmentApiClient, ShipmentRecord, ShipmentStats } from "../../../services/api/shipmentApiClient";
 import { handleError } from "../../../utils/errorHandler";

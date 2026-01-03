@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHInventoryStackParamList } from "../../../types/navigation";
 
 type NavigationProp = NativeStackNavigationProp<WHInventoryStackParamList>;
@@ -38,6 +39,7 @@ interface CategoryStat {
 }
 
 export function WHIOStatisticsScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
@@ -90,11 +92,11 @@ export function WHIOStatisticsScreen() {
   };
 
   const handleExport = () => {
-    Alert.alert("成功", "报表已导出");
+    Alert.alert(t('inbound.create.success'), t('conversion.exportReport'));
   };
 
   const handleShare = () => {
-    Alert.alert("提示", "分享报表功能");
+    Alert.alert(t('inbound.create.alert'), t('conversion.generateReport'));
   };
 
   const getBalance = (inbound: number, outbound: number) => {
@@ -112,8 +114,8 @@ export function WHIOStatisticsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>出入库统计</Text>
-          <Text style={styles.headerSubtitle}>数据分析报表</Text>
+          <Text style={styles.headerTitle}>{t('ioStatistics.title')}</Text>
+          <Text style={styles.headerSubtitle}>{t('ioStatistics.headerSubtitle')}</Text>
         </View>
         <View style={styles.headerRight} />
       </View>
@@ -122,10 +124,10 @@ export function WHIOStatisticsScreen() {
         {/* 时间筛选 */}
         <View style={styles.filterTabs}>
           {[
-            { key: "today" as TimeFilter, label: "今日" },
-            { key: "week" as TimeFilter, label: "本周" },
-            { key: "month" as TimeFilter, label: "本月" },
-            { key: "custom" as TimeFilter, label: "自定义" },
+            { key: "today" as TimeFilter, label: t('conversion.period.today') },
+            { key: "week" as TimeFilter, label: t('conversion.period.week') },
+            { key: "month" as TimeFilter, label: t('conversion.period.month') },
+            { key: "custom" as TimeFilter, label: t('ioStatistics.dateRange') },
           ].map((filter) => (
             <TouchableOpacity
               key={filter.key}
@@ -149,14 +151,14 @@ export function WHIOStatisticsScreen() {
 
         {/* 总览数据 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>本周总览</Text>
+          <Text style={styles.sectionTitle}>{t('conversion.period.week')}</Text>
           <View style={styles.overviewRow}>
             <View style={[styles.overviewCard, styles.overviewCardInbound]}>
               <View style={styles.overviewIconContainer}>
                 <Text style={styles.overviewIcon}>IN</Text>
               </View>
               <View style={styles.overviewContent}>
-                <Text style={styles.overviewLabel}>入库总量</Text>
+                <Text style={styles.overviewLabel}>{t('ioStatistics.totalInbound')}</Text>
                 <Text style={styles.overviewValue}>
                   {overviewData.inboundTotal.toLocaleString()} kg
                 </Text>
@@ -175,7 +177,7 @@ export function WHIOStatisticsScreen() {
                 <Text style={styles.overviewIconOut}>OUT</Text>
               </View>
               <View style={styles.overviewContent}>
-                <Text style={styles.overviewLabel}>出库总量</Text>
+                <Text style={styles.overviewLabel}>{t('ioStatistics.totalOutbound')}</Text>
                 <Text style={styles.overviewValue}>
                   {overviewData.outboundTotal.toLocaleString()} kg
                 </Text>
@@ -189,7 +191,7 @@ export function WHIOStatisticsScreen() {
 
         {/* 每日明细 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>每日明细</Text>
+          <Text style={styles.sectionTitle}>{t('ioStatistics.inboundStats')}</Text>
           {dailyStats.map((stat, index) => {
             const balance = getBalance(stat.inbound, stat.outbound);
             return (
@@ -200,11 +202,11 @@ export function WHIOStatisticsScreen() {
                 </View>
                 <View style={styles.dailyData}>
                   <View style={styles.dailyRow}>
-                    <Text style={styles.dailyLabel}>入库</Text>
+                    <Text style={styles.dailyLabel}>{t('conversion.input')}</Text>
                     <Text style={styles.dailyValue}>{stat.inbound} kg</Text>
                   </View>
                   <View style={styles.dailyRow}>
-                    <Text style={styles.dailyLabel}>出库</Text>
+                    <Text style={styles.dailyLabel}>{t('conversion.output')}</Text>
                     <Text style={styles.dailyValue}>{stat.outbound} kg</Text>
                   </View>
                 </View>
@@ -226,7 +228,7 @@ export function WHIOStatisticsScreen() {
 
         {/* 品类分析 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>品类分析</Text>
+          <Text style={styles.sectionTitle}>{t('conversion.categoryAnalysis')}</Text>
           {categoryStats.map((category, index) => (
             <View key={index} style={styles.categoryItem}>
               <View style={styles.categoryInfo}>
@@ -242,9 +244,9 @@ export function WHIOStatisticsScreen() {
                 />
               </View>
               <View style={styles.categoryValues}>
-                <Text style={styles.categoryIn}>入: {category.inbound} kg</Text>
+                <Text style={styles.categoryIn}>{t('conversion.input')}: {category.inbound} kg</Text>
                 <Text style={styles.categoryOut}>
-                  出: {category.outbound} kg
+                  {t('conversion.output')}: {category.outbound} kg
                 </Text>
               </View>
             </View>
@@ -253,7 +255,7 @@ export function WHIOStatisticsScreen() {
 
         {/* 趋势图表 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>趋势分析</Text>
+          <Text style={styles.sectionTitle}>{t('conversion.trendAnalysis')}</Text>
           <View style={styles.chartPlaceholder}>
             <View style={styles.chartBars}>
               {dailyStats.map((stat, index) => (
@@ -277,11 +279,11 @@ export function WHIOStatisticsScreen() {
             <View style={styles.chartLegend}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: "#4CAF50" }]} />
-                <Text style={styles.legendText}>入库</Text>
+                <Text style={styles.legendText}>{t('conversion.input')}</Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: "#f57c00" }]} />
-                <Text style={styles.legendText}>出库</Text>
+                <Text style={styles.legendText}>{t('conversion.output')}</Text>
               </View>
             </View>
           </View>
@@ -292,7 +294,7 @@ export function WHIOStatisticsScreen() {
           <View style={styles.aiHeader}>
             <View style={styles.aiTitleRow}>
               <Text style={styles.aiIcon}>🤖</Text>
-              <Text style={styles.aiTitle}>AI 库存预测</Text>
+              <Text style={styles.aiTitle}>{t('batch.detail.smartAnalysis')}</Text>
             </View>
             <View style={styles.aiPeriodTabs}>
               {(["7", "14", "30"] as AIPredictionPeriod[]).map((period) => (
@@ -331,11 +333,11 @@ export function WHIOStatisticsScreen() {
           <View style={styles.aiChartLegend}>
             <View style={styles.aiLegendItem}>
               <View style={[styles.aiLegendDot, { backgroundColor: "#4CAF50" }]} />
-              <Text style={styles.aiLegendText}>历史数据</Text>
+              <Text style={styles.aiLegendText}>{t('conversion.actualRate')}</Text>
             </View>
             <View style={styles.aiLegendItem}>
               <View style={[styles.aiLegendDot, { backgroundColor: "#81c784" }]} />
-              <Text style={styles.aiLegendText}>AI 预测</Text>
+              <Text style={styles.aiLegendText}>{t('batch.detail.smartAnalysis')}</Text>
             </View>
           </View>
 
@@ -345,25 +347,25 @@ export function WHIOStatisticsScreen() {
               <Text style={styles.aiSummaryValue}>
                 {aiPrediction.expectedConsumption} kg
               </Text>
-              <Text style={styles.aiSummaryLabel}>预计消耗</Text>
+              <Text style={styles.aiSummaryLabel}>{t('batch.detail.consumed')}</Text>
             </View>
             <View style={styles.aiSummaryItem}>
               <Text style={styles.aiSummaryValue}>
-                {aiPrediction.fishStockDays} 天
+                {aiPrediction.fishStockDays} {t('inventoryStats.batchNumber').split('/')[0]}
               </Text>
-              <Text style={styles.aiSummaryLabel}>带鱼库存可用</Text>
+              <Text style={styles.aiSummaryLabel}>{t('inventoryDetail.availableStock')}</Text>
             </View>
             <View style={styles.aiSummaryItem}>
               <Text style={styles.aiSummaryValue}>
                 {aiPrediction.suggestedRestock} kg
               </Text>
-              <Text style={styles.aiSummaryLabel}>建议补货量</Text>
+              <Text style={styles.aiSummaryLabel}>{t('inventory.warning.lowStock')}</Text>
             </View>
           </View>
 
           {/* 置信度 */}
           <View style={styles.aiConfidence}>
-            <Text style={styles.aiConfidenceLabel}>预测置信度:</Text>
+            <Text style={styles.aiConfidenceLabel}>{t('batch.detail.qualityScore')}:</Text>
             <View style={styles.aiConfidenceBadge}>
               <Text style={styles.aiConfidenceText}>
                 高 ({aiPrediction.confidence}%)
@@ -375,7 +377,7 @@ export function WHIOStatisticsScreen() {
           <View style={styles.aiInsights}>
             <View style={styles.aiInsightHeader}>
               <Text style={styles.aiInsightIcon}>💡</Text>
-              <Text style={styles.aiInsightTitle}>AI 分析洞察</Text>
+              <Text style={styles.aiInsightTitle}>{t('conversion.aiOptimization')}</Text>
             </View>
             {aiPrediction.insights.map((insight, index) => (
               <View
@@ -402,7 +404,7 @@ export function WHIOStatisticsScreen() {
             style={styles.actionBtnSecondary}
             labelStyle={{ color: "#666" }}
           >
-            导出报表
+            {t('conversion.exportReport')}
           </Button>
           <Button
             mode="contained"
@@ -410,7 +412,7 @@ export function WHIOStatisticsScreen() {
             style={styles.actionBtnPrimary}
             labelStyle={{ color: "#fff" }}
           >
-            分享
+            {t('conversion.generateReport')}
           </Button>
         </View>
 

@@ -6,6 +6,7 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   Text,
   Appbar,
@@ -26,7 +27,7 @@ import { Alert } from 'react-native';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 
-// 创建EquipmentMonitoring专用logger
+// Create EquipmentMonitoring context logger
 const equipmentMonitoringLogger = logger.createContextLogger('EquipmentMonitoring');
 
 const screenWidth = Dimensions.get('window').width;
@@ -38,17 +39,18 @@ type EquipmentMonitoringScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 /**
- * 设备监控中心页面
- * P1-006: 设备监控中心
+ * Equipment Monitoring Center Screen
+ * P1-006: Equipment Monitoring Center
  *
- * 功能:
- * - 设备总体统计信息
- * - 设备状态分布
- * - 设备价值统计
- * - 维护提醒概览
- * - 快速导航到告警和详情
+ * Features:
+ * - Overall equipment statistics
+ * - Equipment status distribution
+ * - Asset value statistics
+ * - Maintenance reminders overview
+ * - Quick navigation to alerts and details
  */
 export default function EquipmentMonitoringScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<EquipmentMonitoringScreenNavigationProp>();
 
   // Get user context
@@ -70,11 +72,11 @@ export default function EquipmentMonitoringScreen() {
     setLoading(true);
     try {
       // API integration - GET /equipment/overall-statistics
-      equipmentMonitoringLogger.debug('获取设备统计数据', { factoryId });
+      equipmentMonitoringLogger.debug('Fetching equipment statistics', { factoryId });
 
       const response = await equipmentApiClient.getOverallStatistics(factoryId);
 
-      equipmentMonitoringLogger.info('设备统计数据加载成功', {
+      equipmentMonitoringLogger.info('Equipment statistics loaded successfully', {
         factoryId,
         totalCount: (response as any).data.totalCount,
         activeCount: (response as any).data.activeCount,
@@ -84,14 +86,14 @@ export default function EquipmentMonitoringScreen() {
       setStatistics((response as any).data);
 
     } catch (error) {
-      equipmentMonitoringLogger.error('获取设备统计失败', error as Error, {
+      equipmentMonitoringLogger.error('Failed to fetch equipment statistics', error as Error, {
         factoryId,
       });
 
-      const errorMessage = getErrorMsg(error) || '无法加载设备统计，请稍后重试';
-      Alert.alert('加载失败', errorMessage);
+      const errorMessage = getErrorMsg(error) || t('equipmentMonitoring.messages.loadError');
+      Alert.alert(t('equipmentMonitoring.messages.loadFailed'), errorMessage);
 
-      // 不降级到mock数据，设置为null触发错误UI
+      // No fallback to mock data, set to null to trigger error UI
       setStatistics(null);
     } finally {
       setLoading(false);
@@ -106,7 +108,7 @@ export default function EquipmentMonitoringScreen() {
 
   // Helper functions
   const formatCurrency = (value: number): string => {
-    return `¥${(value / 10000).toFixed(1)}万`;
+    return t('equipmentMonitoring.currency', { value: (value / 10000).toFixed(1) });
   };
 
   const getStatusPercentage = (count: number, total: number): number => {
@@ -119,11 +121,11 @@ export default function EquipmentMonitoringScreen() {
       <View style={styles.container}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="设备监控" />
+          <Appbar.Content title={t('equipmentMonitoring.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('equipmentMonitoring.loading')}</Text>
         </View>
       </View>
     );
@@ -135,12 +137,12 @@ export default function EquipmentMonitoringScreen() {
       <View style={styles.container}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="设备监控" />
+          <Appbar.Content title={t('equipmentMonitoring.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>未找到统计数据</Text>
+          <Text style={styles.errorText}>{t('equipmentMonitoring.messages.notFound')}</Text>
           <Button mode="contained" onPress={fetchStatistics} style={{ marginTop: 16 }}>
-            重试
+            {t('equipmentMonitoring.retry')}
           </Button>
         </View>
       </View>
@@ -151,7 +153,7 @@ export default function EquipmentMonitoringScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="设备监控" />
+        <Appbar.Content title={t('equipmentMonitoring.title')} />
         <Appbar.Action
           icon="cog"
           onPress={() => navigation.navigate('EquipmentManagement')}
@@ -172,31 +174,31 @@ export default function EquipmentMonitoringScreen() {
         {/* Overall Statistics */}
         <Surface style={styles.section} elevation={1}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            设备总览
+            {t('equipmentMonitoring.sections.overview')}
           </Text>
 
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{statistics.totalCount}</Text>
-              <Text style={styles.statLabel}>设备总数</Text>
+              <Text style={styles.statLabel}>{t('equipmentMonitoring.stats.total')}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={[styles.statValue, { color: '#4CAF50' }]}>
                 {statistics.activeCount}
               </Text>
-              <Text style={styles.statLabel}>运行中</Text>
+              <Text style={styles.statLabel}>{t('equipmentMonitoring.stats.active')}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={[styles.statValue, { color: '#FF9800' }]}>
                 {statistics.maintenanceCount}
               </Text>
-              <Text style={styles.statLabel}>维护中</Text>
+              <Text style={styles.statLabel}>{t('equipmentMonitoring.stats.maintenance')}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={[styles.statValue, { color: '#9E9E9E' }]}>
                 {statistics.inactiveCount}
               </Text>
-              <Text style={styles.statLabel}>停用</Text>
+              <Text style={styles.statLabel}>{t('equipmentMonitoring.stats.inactive')}</Text>
             </View>
           </View>
         </Surface>
@@ -204,14 +206,14 @@ export default function EquipmentMonitoringScreen() {
         {/* Status Distribution */}
         <Surface style={styles.section} elevation={1}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            状态分布
+            {t('equipmentMonitoring.sections.statusDistribution')}
           </Text>
 
           <View style={styles.statusItem}>
             <View style={styles.statusHeader}>
               <View style={styles.statusLeft}>
                 <View style={[styles.statusDot, { backgroundColor: '#4CAF50' }]} />
-                <Text style={styles.statusLabel}>运行中</Text>
+                <Text style={styles.statusLabel}>{t('equipmentMonitoring.statusDistribution.running')}</Text>
               </View>
               <Text style={styles.statusValue}>
                 {getStatusPercentage(statistics.activeCount, statistics.totalCount).toFixed(1)}%
@@ -228,7 +230,7 @@ export default function EquipmentMonitoringScreen() {
             <View style={styles.statusHeader}>
               <View style={styles.statusLeft}>
                 <View style={[styles.statusDot, { backgroundColor: '#FF9800' }]} />
-                <Text style={styles.statusLabel}>维护中</Text>
+                <Text style={styles.statusLabel}>{t('equipmentMonitoring.statusDistribution.maintenance')}</Text>
               </View>
               <Text style={styles.statusValue}>
                 {getStatusPercentage(statistics.maintenanceCount, statistics.totalCount).toFixed(1)}%
@@ -245,7 +247,7 @@ export default function EquipmentMonitoringScreen() {
             <View style={styles.statusHeader}>
               <View style={styles.statusLeft}>
                 <View style={[styles.statusDot, { backgroundColor: '#9E9E9E' }]} />
-                <Text style={styles.statusLabel}>停用/报废</Text>
+                <Text style={styles.statusLabel}>{t('equipmentMonitoring.statusDistribution.inactiveOrScrapped')}</Text>
               </View>
               <Text style={styles.statusValue}>
                 {getStatusPercentage(
@@ -265,19 +267,19 @@ export default function EquipmentMonitoringScreen() {
         {/* Asset Value */}
         <Surface style={styles.section} elevation={1}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            资产价值
+            {t('equipmentMonitoring.sections.assetValue')}
           </Text>
 
           <View style={styles.valueRow}>
             <View style={styles.valueItem}>
-              <Text style={styles.valueLabel}>原始总值</Text>
+              <Text style={styles.valueLabel}>{t('equipmentMonitoring.assetValue.original')}</Text>
               <Text style={styles.valueAmount}>
                 {formatCurrency(statistics.totalValue)}
               </Text>
             </View>
             <Divider style={styles.valueDivider} />
             <View style={styles.valueItem}>
-              <Text style={styles.valueLabel}>折旧后价值</Text>
+              <Text style={styles.valueLabel}>{t('equipmentMonitoring.assetValue.depreciated')}</Text>
               <Text style={[styles.valueAmount, { color: '#2196F3' }]}>
                 {formatCurrency(statistics.depreciatedValue)}
               </Text>
@@ -285,7 +287,7 @@ export default function EquipmentMonitoringScreen() {
           </View>
 
           <View style={styles.depreciationInfo}>
-            <Text style={styles.depreciationLabel}>资产保值率</Text>
+            <Text style={styles.depreciationLabel}>{t('equipmentMonitoring.assetValue.retentionRate')}</Text>
             <Text style={styles.depreciationValue}>
               {statistics.totalValue > 0 ? ((statistics.depreciatedValue / statistics.totalValue) * 100).toFixed(1) : '0.0'}%
             </Text>
@@ -295,7 +297,7 @@ export default function EquipmentMonitoringScreen() {
         {/* Alerts & Reminders */}
         <Surface style={styles.section} elevation={1}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            提醒事项
+            {t('equipmentMonitoring.sections.alerts')}
           </Text>
 
           <Card style={styles.alertCard} mode="contained">
@@ -309,13 +311,13 @@ export default function EquipmentMonitoringScreen() {
                   >
                     {statistics.maintenanceDueCount}
                   </Chip>
-                  <Text style={styles.alertText}>设备需要维护</Text>
+                  <Text style={styles.alertText}>{t('equipmentMonitoring.alerts.maintenanceDue')}</Text>
                 </View>
                 <Button
                   mode="text"
                   onPress={() => navigation.navigate('EquipmentAlerts', {})}
                 >
-                  查看
+                  {t('equipmentMonitoring.alerts.view')}
                 </Button>
               </View>
             </Card.Content>
@@ -332,13 +334,13 @@ export default function EquipmentMonitoringScreen() {
                   >
                     {statistics.warrantyExpiringCount}
                   </Chip>
-                  <Text style={styles.alertText}>保修即将到期</Text>
+                  <Text style={styles.alertText}>{t('equipmentMonitoring.alerts.warrantyExpiring')}</Text>
                 </View>
                 <Button
                   mode="text"
                   onPress={() => navigation.navigate('EquipmentAlerts', {})}
                 >
-                  查看
+                  {t('equipmentMonitoring.alerts.view')}
                 </Button>
               </View>
             </Card.Content>
@@ -353,7 +355,7 @@ export default function EquipmentMonitoringScreen() {
             onPress={() => navigation.navigate('EquipmentManagement')}
             style={styles.actionButton}
           >
-            设备管理
+            {t('equipmentMonitoring.actions.management')}
           </Button>
           <Button
             mode="contained"
@@ -361,7 +363,7 @@ export default function EquipmentMonitoringScreen() {
             onPress={() => navigation.navigate('EquipmentAlerts', {})}
             style={styles.actionButton}
           >
-            设备告警
+            {t('equipmentMonitoring.actions.alerts')}
           </Button>
         </View>
       </ScrollView>

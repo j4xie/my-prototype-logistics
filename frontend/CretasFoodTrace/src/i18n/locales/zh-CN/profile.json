@@ -1,0 +1,142 @@
+{
+  "title": "我的",
+  "defaultUser": "用户",
+  "sections": {
+    "accountSettings": "账户设置",
+    "systemSettings": "系统设置",
+    "helpSupport": "帮助与支持"
+  },
+  "menu": {
+    "personalInfo": "个人信息",
+    "changePassword": "修改密码",
+    "notificationSettings": "通知设置",
+    "systemSettings": "系统设置",
+    "dataExport": "数据导出",
+    "helpCenter": "帮助中心",
+    "feedback": "意见反馈",
+    "about": "关于",
+    "logout": "退出登录",
+    "membership": "会员中心",
+    "settings": "设置",
+    "operationLog": "操作日志",
+    "statistics": "统计数据"
+  },
+  "roles": {
+    "factoryAdmin": "工厂管理员",
+    "factorySuperAdmin": "工厂超级管理员",
+    "platformAdmin": "平台管理员",
+    "workshopSupervisor": "车间主管",
+    "warehouseManager": "仓库管理员",
+    "hrManager": "人事管理员",
+    "dispatcher": "调度员",
+    "operator": "操作员",
+    "viewer": "查看者"
+  },
+  "personalInfo": {
+    "title": "个人信息",
+    "avatar": "头像",
+    "username": "用户名",
+    "realName": "真实姓名",
+    "phone": "手机号",
+    "email": "邮箱",
+    "department": "所属部门",
+    "factory": "所属工厂",
+    "role": "角色",
+    "position": "职位",
+    "joinDate": "入职日期",
+    "save": "保存",
+    "edit": "编辑",
+    "saving": "保存中...",
+    "loading": "加载中...",
+    "basicInfo": "基本信息",
+    "workInfo": "工作信息",
+    "enterPlaceholder": "请输入{{field}}",
+    "updateSuccess": "个人信息更新成功",
+    "updateFailed": "更新失败，请重试"
+  },
+  "changePassword": {
+    "title": "修改密码",
+    "currentPassword": "当前密码",
+    "newPassword": "新密码",
+    "confirmPassword": "确认新密码",
+    "submit": "确认修改",
+    "passwordHint": "密码长度至少8位，包含字母和数字"
+  },
+  "notificationSettings": {
+    "title": "通知设置",
+    "pushNotification": "推送通知",
+    "emailNotification": "邮件通知",
+    "smsNotification": "短信通知",
+    "systemAlert": "系统告警",
+    "taskReminder": "任务提醒",
+    "productionAlert": "生产告警",
+    "qualityAlert": "质量告警"
+  },
+  "systemSettings": {
+    "title": "系统设置",
+    "language": "语言",
+    "theme": "主题",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystem": "跟随系统",
+    "fontSize": "字体大小",
+    "cache": "缓存",
+    "clearCache": "清除缓存"
+  },
+  "helpCenter": {
+    "title": "帮助中心",
+    "faq": "常见问题",
+    "userGuide": "使用指南",
+    "contactSupport": "联系客服"
+  },
+  "feedback": {
+    "title": "意见反馈",
+    "placeholder": "请输入您的意见或建议...",
+    "submit": "提交",
+    "thankYou": "感谢您的反馈！"
+  },
+  "about": {
+    "title": "关于",
+    "version": "版本",
+    "appName": "白垩纪食品溯源",
+    "copyright": "版权所有",
+    "privacyPolicy": "隐私政策",
+    "termsOfService": "服务条款",
+    "checkUpdate": "检查更新"
+  },
+  "logout": {
+    "confirmTitle": "退出登录",
+    "confirmMessage": "确定要退出登录吗？",
+    "confirm": "确定",
+    "cancel": "取消"
+  },
+  "messages": {
+    "saveSuccess": "保存成功",
+    "saveFailed": "保存失败",
+    "passwordChanged": "密码修改成功",
+    "passwordMismatch": "两次密码输入不一致",
+    "cacheCleared": "缓存已清除",
+    "updateAvailable": "发现新版本",
+    "noUpdate": "已是最新版本"
+  },
+  "feedback": {
+    "title": "意见反馈",
+    "placeholder": "请输入您的意见或建议...",
+    "submit": "提交",
+    "submitting": "提交中...",
+    "thankYou": "感谢您的反馈!",
+    "submitSuccess": "反馈提交成功",
+    "submitFailed": "提交失败，请重试",
+    "emptyContent": "请输入反馈内容"
+  },
+  "membership": {
+    "title": "会员中心",
+    "level": "会员等级",
+    "benefits": "会员权益",
+    "points": "积分",
+    "expiry": "有效期",
+    "comingSoon": "功能开发中",
+    "upgrade": "升级会员",
+    "viewHistory": "查看记录"
+  }
+}

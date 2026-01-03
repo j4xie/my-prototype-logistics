@@ -72,7 +72,7 @@ public class AIController {
     @Operation(summary = "AI批次成本分析",
                description = "对指定批次进行AI成本分析，支持默认分析、follow-up对话和历史综合报告")
     public ApiResponse<MobileDTO.AICostAnalysisResponse> analyzeBatchCost(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @Valid @RequestBody @Parameter(description = "批次成本分析请求")
             MobileDTO.AICostAnalysisRequest request,
             HttpServletRequest httpRequest) {
@@ -100,7 +100,7 @@ public class AIController {
     @Operation(summary = "AI时间范围成本分析",
                description = "分析指定时间范围内的成本数据，支持日/周/月等不同维度")
     public ApiResponse<MobileDTO.AICostAnalysisResponse> analyzeTimeRangeCost(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @Valid @RequestBody @Parameter(description = "时间范围分析请求")
             AIRequestDTO.TimeRangeAnalysisRequest request,
             HttpServletRequest httpRequest) {
@@ -140,7 +140,7 @@ public class AIController {
     @Operation(summary = "AI时间范围成本分析 - 流式响应",
                description = "流式返回AI分析过程，支持实时显示思考过程和答案")
     public SseEmitter analyzeTimeRangeCostStream(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @Valid @RequestBody @Parameter(description = "时间范围分析请求")
             AIRequestDTO.TimeRangeAnalysisRequest request,
             HttpServletRequest httpRequest) {
@@ -179,7 +179,7 @@ public class AIController {
     @Operation(summary = "AI批次对比分析",
                description = "对比2-5个批次的成本、效率、质量等指标")
     public ApiResponse<MobileDTO.AICostAnalysisResponse> compareBatchCosts(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @Valid @RequestBody @Parameter(description = "批次对比分析请求")
             AIRequestDTO.ComparativeAnalysisRequest request,
             HttpServletRequest httpRequest) {
@@ -209,7 +209,7 @@ public class AIController {
     @Operation(summary = "查询AI配额信息",
                description = "获取工厂的AI配额使用情况、剩余额度、使用记录等")
     public ApiResponse<MobileDTO.AIQuotaInfo> getQuotaInfo(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             HttpServletRequest httpRequest) {
 
         log.info("查询AI配额信息: factoryId={}", factoryId);

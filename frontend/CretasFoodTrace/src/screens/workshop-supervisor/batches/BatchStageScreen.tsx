@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSBatchesStackParamList } from '../../../types/navigation';
 
 type RouteProps = RouteProp<WSBatchesStackParamList, 'BatchStage'>;
@@ -21,6 +22,7 @@ type RouteProps = RouteProp<WSBatchesStackParamList, 'BatchStage'>;
 export function BatchStageScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
   const { stageName } = route.params || {};
 
   // 自动采集数据 (模拟)
@@ -53,8 +55,8 @@ export function BatchStageScreen() {
   });
 
   const handleSubmit = () => {
-    Alert.alert('提交成功', '工艺环节数据已保存', [
-      { text: '确定', onPress: () => navigation.goBack() }
+    Alert.alert(t('batchStage.alerts.submitSuccess'), t('batchStage.alerts.dataSaved'), [
+      { text: t('common.confirm'), onPress: () => navigation.goBack() }
     ]);
   };
 
@@ -65,9 +67,9 @@ export function BatchStageScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{stageName || '切片'} - 数据录入</Text>
+        <Text style={styles.headerTitle}>{t('batchStage.title', { stageName: stageName || '切片' })}</Text>
         <TouchableOpacity onPress={handleSubmit}>
-          <Text style={styles.headerAction}>提交</Text>
+          <Text style={styles.headerAction}>{t('batchStage.submit')}</Text>
         </TouchableOpacity>
       </View>
 

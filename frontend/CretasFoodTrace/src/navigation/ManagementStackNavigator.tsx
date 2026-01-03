@@ -22,6 +22,7 @@ import {
   SopConfigScreen,  // S4-2 SOP配置
 } from '../screens/management';
 import AISettingsScreen from '../screens/management/AISettingsScreen';
+import IntentConfigScreen from '../screens/management/IntentConfigScreen';
 
 // Phase 3 P2 - 工厂设置
 import FactorySettingsScreen from '../screens/management/FactorySettingsScreen';
@@ -72,6 +73,11 @@ export function ManagementStackNavigator() {
         name="AISettings"
         component={AISettingsScreen}
         options={{ title: 'AI分析设置' }}
+      />
+      <Stack.Screen
+        name="IntentConfig"
+        component={IntentConfigScreen}
+        options={{ title: 'AI意图配置' }}
       />
       <Stack.Screen
         name="DepartmentManagement"

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSEquipmentStackParamList } from '../../../types/navigation';
 
 type RouteProps = RouteProp<WSEquipmentStackParamList, 'EquipmentMaintenance'>;
@@ -32,6 +33,7 @@ interface MaintenanceRecord {
 export function EquipmentMaintenanceScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
 
   // 设备信息
   const equipment = {
@@ -90,39 +92,39 @@ export function EquipmentMaintenanceScreen() {
   const getTypeStyle = (type: string) => {
     switch (type) {
       case 'routine':
-        return { text: '定期保养', color: '#52c41a', bg: '#f6ffed', icon: 'wrench' };
+        return { text: t('equipment.maintenance.types.routine'), color: '#52c41a', bg: '#f6ffed', icon: 'wrench' };
       case 'repair':
-        return { text: '维修', color: '#faad14', bg: '#fff7e6', icon: 'tools' };
+        return { text: t('equipment.maintenance.types.repair'), color: '#faad14', bg: '#fff7e6', icon: 'tools' };
       case 'inspection':
-        return { text: '检查', color: '#1890ff', bg: '#e6f7ff', icon: 'clipboard-check' };
+        return { text: t('equipment.maintenance.types.inspection'), color: '#1890ff', bg: '#e6f7ff', icon: 'clipboard-check' };
       default:
-        return { text: '其他', color: '#999', bg: '#f5f5f5', icon: 'help-circle' };
+        return { text: t('equipment.maintenance.types.other'), color: '#999', bg: '#f5f5f5', icon: 'help-circle' };
     }
   };
 
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'completed':
-        return { text: '已完成', color: '#52c41a' };
+        return { text: t('equipment.maintenance.status.completed'), color: '#52c41a' };
       case 'pending':
-        return { text: '进行中', color: '#1890ff' };
+        return { text: t('equipment.maintenance.status.pending'), color: '#1890ff' };
       case 'scheduled':
-        return { text: '已计划', color: '#999' };
+        return { text: t('equipment.maintenance.status.scheduled'), color: '#999' };
       default:
-        return { text: '未知', color: '#999' };
+        return { text: t('equipment.maintenance.status.unknown'), color: '#999' };
     }
   };
 
   const handleRequestMaintenance = () => {
     Alert.alert(
-      '申请维护',
-      '确认提交维护申请？',
+      t('equipment.maintenance.requestMaintenance'),
+      t('equipment.maintenance.requestConfirm'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认',
+          text: t('common.confirm'),
           onPress: () => {
-            Alert.alert('成功', '维护申请已提交，等待设备管理员安排');
+            Alert.alert(t('common.confirm'), t('equipment.maintenance.requestSuccess'));
           },
         },
       ]
@@ -177,7 +179,7 @@ export function EquipmentMaintenanceScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>维护记录</Text>
+        <Text style={styles.headerTitle}>{t('equipment.maintenance.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -196,30 +198,30 @@ export function EquipmentMaintenanceScreen() {
 
           <View style={styles.maintenanceStats}>
             <View style={styles.maintenanceStatItem}>
-              <Text style={styles.maintenanceStatLabel}>上次维护</Text>
+              <Text style={styles.maintenanceStatLabel}>{t('equipment.maintenance.lastMaintenance')}</Text>
               <Text style={styles.maintenanceStatValue}>{equipment.lastMaintenance}</Text>
             </View>
             <View style={styles.maintenanceStatDivider} />
             <View style={styles.maintenanceStatItem}>
-              <Text style={styles.maintenanceStatLabel}>下次维护</Text>
+              <Text style={styles.maintenanceStatLabel}>{t('equipment.maintenance.nextMaintenance')}</Text>
               <Text style={[styles.maintenanceStatValue, daysUntilNext <= 7 && { color: '#faad14' }]}>
                 {equipment.nextMaintenance}
               </Text>
               <Text style={styles.maintenanceStatNote}>
-                {daysUntilNext > 0 ? `还剩 ${daysUntilNext} 天` : '已逾期'}
+                {daysUntilNext > 0 ? t('equipment.maintenance.daysRemaining', { days: daysUntilNext }) : t('equipment.maintenance.overdue')}
               </Text>
             </View>
             <View style={styles.maintenanceStatDivider} />
             <View style={styles.maintenanceStatItem}>
-              <Text style={styles.maintenanceStatLabel}>维护周期</Text>
-              <Text style={styles.maintenanceStatValue}>{equipment.maintenanceCycle} 天</Text>
+              <Text style={styles.maintenanceStatLabel}>{t('equipment.maintenance.maintenanceCycle')}</Text>
+              <Text style={styles.maintenanceStatValue}>{t('equipment.maintenance.days', { days: equipment.maintenanceCycle })}</Text>
             </View>
           </View>
         </View>
 
         {/* 维护记录列表 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>维护历史</Text>
+          <Text style={styles.sectionTitle}>{t('equipment.maintenance.history')}</Text>
           <View style={styles.recordsList}>
             {records.map((record) => (
               <View key={record.id}>
@@ -236,7 +238,7 @@ export function EquipmentMaintenanceScreen() {
       <View style={styles.footer}>
         <TouchableOpacity style={styles.requestBtn} onPress={handleRequestMaintenance}>
           <Icon source="plus-circle" size={20} color="#fff" />
-          <Text style={styles.requestBtnText}>申请维护</Text>
+          <Text style={styles.requestBtnText}>{t('equipment.maintenance.requestMaintenance')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

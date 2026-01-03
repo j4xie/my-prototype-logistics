@@ -24,18 +24,20 @@ import { Text, Card, Chip, Avatar, ActivityIndicator, Searchbar } from 'react-na
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import { HR_THEME, type BatchAssignmentItem } from '../../../types/hrNavigation';
 
-const STATUS_CONFIG = {
-  in_progress: { label: '进行中', color: HR_THEME.info, bgColor: '#e6f7ff' },
-  pending: { label: '待处理', color: HR_THEME.warning, bgColor: '#fff7e6' },
-  completed: { label: '已完成', color: HR_THEME.success, bgColor: '#f6ffed' },
-};
+const getStatusConfig = (t: any) => ({
+  in_progress: { label: t('production.batchAssignment.status.inProgress'), color: HR_THEME.info, bgColor: '#e6f7ff' },
+  pending: { label: t('production.batchAssignment.status.pending'), color: HR_THEME.warning, bgColor: '#fff7e6' },
+  completed: { label: t('production.batchAssignment.status.completed'), color: HR_THEME.success, bgColor: '#f6ffed' },
+});
 
 export default function BatchAssignmentScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -94,6 +96,7 @@ export default function BatchAssignmentScreen() {
   };
 
   const renderItem = ({ item }: { item: BatchAssignmentItem }) => {
+    const STATUS_CONFIG = getStatusConfig(t);
     const statusConfig = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending;
 
     return (
@@ -122,7 +125,7 @@ export default function BatchAssignmentScreen() {
                   color={HR_THEME.textSecondary}
                 />
                 <Text style={styles.assignmentText}>
-                  已分配 {item.assignedCount}/{item.requiredCount} 人
+                  {t('production.batchAssignment.assigned')} {item.assignedCount}/{item.requiredCount} {t('production.batchAssignment.required')}
                 </Text>
               </View>
               <View style={styles.avatarGroup}>
@@ -161,7 +164,7 @@ export default function BatchAssignmentScreen() {
                   color={HR_THEME.info}
                 />
                 <Text style={styles.statText}>
-                  {item.totalWorkHours?.toFixed(1) || 0}h 工时
+                  {item.totalWorkHours?.toFixed(1) || 0}h {t('production.batchAssignment.workHours')}
                 </Text>
               </View>
               <View style={styles.statItem}>
@@ -195,13 +198,13 @@ export default function BatchAssignmentScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>批次分配</Text>
+        <Text style={styles.headerTitle}>{t('production.batchAssignment.title')}</Text>
         <View style={styles.placeholder} />
       </View>
 
       <View style={styles.searchContainer}>
         <Searchbar
-          placeholder="搜索批次号或产品名..."
+          placeholder={t('production.batchAssignment.search')}
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchbar}
@@ -223,7 +226,7 @@ export default function BatchAssignmentScreen() {
               size={64}
               color={HR_THEME.textMuted}
             />
-            <Text style={styles.emptyText}>暂无批次任务</Text>
+            <Text style={styles.emptyText}>{t('production.batchAssignment.empty')}</Text>
           </View>
         }
       />

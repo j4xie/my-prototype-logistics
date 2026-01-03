@@ -5,10 +5,12 @@ import com.cretas.aims.dto.scheduling.*;
 import com.cretas.aims.entity.*;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.rules.DroolsRule;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.FeatureEngineeringService;
 import com.cretas.aims.service.LinUCBService;
 import com.cretas.aims.service.NotificationService;
+import com.cretas.aims.service.PushNotificationService;
 import com.cretas.aims.service.SchedulingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +56,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     private final FeatureEngineeringService featureEngineeringService;
     private final LinUCBService linUCBService;
     private final NotificationService notificationService;
+    private final PushNotificationService pushNotificationService;
 
     @Value("${ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -123,20 +127,37 @@ public class SchedulingServiceImpl implements SchedulingService {
             // 不阻塞创建流程
         }
 
+        // 发送推送通知到工厂所有设备
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "plan_created");
+            pushData.put("planId", plan.getId());
+            pushData.put("planDate", plan.getPlanDate().toString());
+            pushData.put("screen", "SchedulingPlanDetail");
+            pushNotificationService.sendToFactory(
+                factoryId,
+                "生产计划已创建",
+                String.format("计划 %s 已创建，包含 %d 个批次", plan.getPlanName(), plan.getTotalBatches()),
+                pushData
+            );
+            log.info("调度计划创建推送通知已发送: planId={}", plan.getId());
+        } catch (Exception e) {
+            log.error("发送调度计划创建推送通知失败: planId={}", plan.getId(), e);
+            // 不阻塞创建流程
+        }
+
         return enrichPlanDTO(SchedulingPlanDTO.fromEntity(plan));
     }
 
     @Override
     public SchedulingPlanDTO getPlan(String factoryId, String planId) {
         SchedulingPlan plan = planRepository.findByIdAndFactoryIdAndDeletedAtIsNull(planId, factoryId)
-            .orElseThrow(() -> new RuntimeException("调度计划不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("SchedulePlan", planId));
         SchedulingPlanDTO dto = SchedulingPlanDTO.fromEntity(plan);
 
-        // 获取排程列表
+        // 获取排程列表（使用批量版本解决 N+1 问题）
         List<LineSchedule> schedules = scheduleRepository.findByPlanIdOrderBySequenceOrder(planId);
-        dto.setLineSchedules(schedules.stream()
-            .map(this::enrichScheduleDTO)
-            .collect(Collectors.toList()));
+        dto.setLineSchedules(enrichScheduleDTOs(schedules));
 
         return enrichPlanDTO(dto);
     }
@@ -168,7 +189,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public SchedulingPlanDTO updatePlan(String factoryId, String planId, CreateSchedulingPlanRequest request) {
         SchedulingPlan plan = planRepository.findByIdAndFactoryIdAndDeletedAtIsNull(planId, factoryId)
-            .orElseThrow(() -> new RuntimeException("调度计划不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("SchedulePlan", planId));
 
         if (plan.getStatus() != SchedulingPlan.PlanStatus.draft) {
             throw new RuntimeException("只能修改草稿状态的计划");
@@ -185,7 +206,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public SchedulingPlanDTO confirmPlan(String factoryId, String planId, Long userId) {
         SchedulingPlan plan = planRepository.findByIdAndFactoryIdAndDeletedAtIsNull(planId, factoryId)
-            .orElseThrow(() -> new RuntimeException("调度计划不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("SchedulePlan", planId));
 
         if (plan.getStatus() != SchedulingPlan.PlanStatus.draft) {
             throw new RuntimeException("只能确认草稿状态的计划");
@@ -208,6 +229,25 @@ public class SchedulingServiceImpl implements SchedulingService {
             // 不阻塞确认流程
         }
 
+        // 发送推送通知 - 审批类型通知给相关用户
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "plan_confirmed");
+            pushData.put("planId", planId);
+            pushData.put("planDate", plan.getPlanDate().toString());
+            pushData.put("screen", "SchedulingPlanDetail");
+            pushNotificationService.sendToFactory(
+                factoryId,
+                "生产计划已确认",
+                String.format("计划 %s 已确认，请相关人员做好准备", plan.getPlanName()),
+                pushData
+            );
+            log.info("调度计划确认推送通知已发送: planId={}", planId);
+        } catch (Exception e) {
+            log.error("发送调度计划确认推送通知失败: planId={}", planId, e);
+            // 不阻塞确认流程
+        }
+
         return enrichPlanDTO(SchedulingPlanDTO.fromEntity(plan));
     }
 
@@ -215,7 +255,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public void cancelPlan(String factoryId, String planId, String reason) {
         SchedulingPlan plan = planRepository.findByIdAndFactoryIdAndDeletedAtIsNull(planId, factoryId)
-            .orElseThrow(() -> new RuntimeException("调度计划不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("SchedulePlan", planId));
 
         plan.setStatus(SchedulingPlan.PlanStatus.cancelled);
         plan.setNotes(plan.getNotes() != null ? plan.getNotes() + "\n取消原因: " + reason : "取消原因: " + reason);
@@ -227,7 +267,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Override
     public LineScheduleDTO getSchedule(String factoryId, String scheduleId) {
         LineSchedule schedule = scheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new RuntimeException("排程不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionSchedule", scheduleId));
         return enrichScheduleDTO(schedule);
     }
 
@@ -235,7 +275,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public LineScheduleDTO updateSchedule(String factoryId, String scheduleId, UpdateScheduleRequest request) {
         LineSchedule schedule = scheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new RuntimeException("排程不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionSchedule", scheduleId));
 
         if (request.getSequenceOrder() != null) {
             schedule.setSequenceOrder(request.getSequenceOrder());
@@ -261,7 +301,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public LineScheduleDTO startSchedule(String factoryId, String scheduleId) {
         LineSchedule schedule = scheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new RuntimeException("排程不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionSchedule", scheduleId));
 
         schedule.setStatus(LineSchedule.ScheduleStatus.in_progress);
         schedule.setActualStartTime(LocalDateTime.now());
@@ -281,7 +321,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public LineScheduleDTO completeSchedule(String factoryId, String scheduleId, Integer completedQuantity) {
         LineSchedule schedule = scheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new RuntimeException("排程不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionSchedule", scheduleId));
 
         schedule.setStatus(LineSchedule.ScheduleStatus.completed);
         schedule.setActualEndTime(LocalDateTime.now());
@@ -308,7 +348,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public LineScheduleDTO updateProgress(String factoryId, String scheduleId, Integer completedQuantity) {
         LineSchedule schedule = scheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new RuntimeException("排程不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionSchedule", scheduleId));
 
         schedule.setCompletedQuantity(completedQuantity);
 
@@ -377,6 +417,24 @@ public class SchedulingServiceImpl implements SchedulingService {
                                 factoryId, scheduleId, delayReason, actualEfficiency);
                         } catch (Exception notifyEx) {
                             log.error("发送延期通知失败: scheduleId={}", scheduleId, notifyEx);
+                        }
+
+                        // 7. 发送延期推送通知
+                        try {
+                            Map<String, Object> pushData = new HashMap<>();
+                            pushData.put("type", "schedule_delayed");
+                            pushData.put("scheduleId", scheduleId);
+                            pushData.put("efficiency", actualEfficiency);
+                            pushData.put("screen", "ScheduleProgressScreen");
+                            pushNotificationService.sendToFactory(
+                                factoryId,
+                                "排程延期预警",
+                                delayReason,
+                                pushData
+                            );
+                            log.info("排程延期推送通知已发送: scheduleId={}", scheduleId);
+                        } catch (Exception pushEx) {
+                            log.error("发送延期推送通知失败: scheduleId={}", scheduleId, pushEx);
                         }
                     }
                 }
@@ -772,6 +830,26 @@ public class SchedulingServiceImpl implements SchedulingService {
             log.error("发送延期预警通知失败: scheduleId={}", scheduleId, e);
             // 不阻塞告警创建流程
         }
+
+        // 发送紧急告警推送通知
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "urgent_alert");
+            pushData.put("scheduleId", scheduleId);
+            pushData.put("planId", planId);
+            pushData.put("probability", currentProbability);
+            pushData.put("screen", "SchedulingAlertScreen");
+            pushNotificationService.sendToFactory(
+                factoryId,
+                "紧急告警 - 完成概率过低",
+                alert.getMessage(),
+                pushData
+            );
+            log.info("紧急告警推送通知已发送: scheduleId={}", scheduleId);
+        } catch (Exception e) {
+            log.error("发送紧急告警推送通知失败: scheduleId={}", scheduleId, e);
+            // 不阻塞告警创建流程
+        }
     }
 
     // ==================== 工人分配 ====================
@@ -780,7 +858,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public List<WorkerAssignmentDTO> assignWorkers(String factoryId, AssignWorkerRequest request) {
         LineSchedule schedule = scheduleRepository.findById(request.getScheduleId())
-            .orElseThrow(() -> new RuntimeException("排程不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionSchedule", request.getScheduleId()));
 
         // === Phase 5B: LinUCB 集成 ===
         // 1. 提取任务特征 (从排程/批次)
@@ -853,9 +931,8 @@ public class SchedulingServiceImpl implements SchedulingService {
         schedule.setAssignedWorkers((int) assignmentRepository.countByScheduleId(request.getScheduleId()));
         scheduleRepository.save(schedule);
 
-        return assignments.stream()
-            .map(this::enrichAssignmentDTO)
-            .collect(Collectors.toList());
+        // 使用批量版本的 enrichAssignmentDTOs，避免 N+1 查询问题
+        return enrichAssignmentDTOs(assignments);
     }
 
     /**
@@ -921,7 +998,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public void removeWorkerAssignment(String factoryId, String assignmentId) {
         WorkerAssignment assignment = assignmentRepository.findById(assignmentId)
-            .orElseThrow(() -> new RuntimeException("分配记录不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("WorkerAssignment", assignmentId));
 
         String scheduleId = assignment.getScheduleId();
         assignmentRepository.delete(assignment);
@@ -938,7 +1015,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public WorkerAssignmentDTO workerCheckIn(String factoryId, String assignmentId) {
         WorkerAssignment assignment = assignmentRepository.findById(assignmentId)
-            .orElseThrow(() -> new RuntimeException("分配记录不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("WorkerAssignment", assignmentId));
 
         assignment.setStatus(WorkerAssignment.AssignmentStatus.checked_in);
         assignment.setActualStartTime(LocalDateTime.now());
@@ -951,7 +1028,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public WorkerAssignmentDTO workerCheckOut(String factoryId, String assignmentId, Integer performanceScore) {
         WorkerAssignment assignment = assignmentRepository.findById(assignmentId)
-            .orElseThrow(() -> new RuntimeException("分配记录不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("WorkerAssignment", assignmentId));
 
         assignment.setStatus(WorkerAssignment.AssignmentStatus.checked_out);
         assignment.setActualEndTime(LocalDateTime.now());
@@ -1024,8 +1101,61 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Override
     public List<WorkerAssignmentDTO> getWorkerAssignments(String factoryId, Long userId, LocalDate date) {
         List<WorkerAssignment> assignments = assignmentRepository.findByUserIdAndDate(userId, date);
-        return assignments.stream()
-            .map(this::enrichAssignmentDTO)
+        // 使用批量版本的 enrichAssignmentDTOs，避免 N+1 查询问题
+        return enrichAssignmentDTOs(assignments);
+    }
+
+    @Override
+    public List<AvailableWorkerDTO> getAvailableWorkers(String factoryId, LocalDate date, String scheduleId) {
+        log.info("获取可用工人列表: factoryId={}, date={}, scheduleId={}", factoryId, date, scheduleId);
+
+        // 1. 获取工厂所有活跃工人
+        List<User> activeWorkers = userRepository.findByFactoryIdAndIsActive(factoryId, true);
+
+        if (activeWorkers.isEmpty()) {
+            log.warn("工厂 {} 没有活跃工人", factoryId);
+            return new ArrayList<>();
+        }
+
+        // 2. 如果指定了日期和排程ID，排除已分配的工人
+        Set<Long> assignedWorkerIds = new HashSet<>();
+        if (date != null && scheduleId != null) {
+            List<WorkerAssignment> existingAssignments = assignmentRepository
+                .findByScheduleId(scheduleId);
+            assignedWorkerIds = existingAssignments.stream()
+                .map(WorkerAssignment::getUserId)
+                .collect(Collectors.toSet());
+        } else if (date != null) {
+            // 获取指定日期所有排程的已分配工人
+            List<SchedulingPlan> plansOnDate = planRepository
+                .findByFactoryIdAndPlanDateAndDeletedAtIsNull(factoryId, date)
+                .stream().collect(Collectors.toList());
+
+            for (SchedulingPlan plan : plansOnDate) {
+                List<LineSchedule> schedules = scheduleRepository
+                    .findByPlanId(plan.getId());
+                for (LineSchedule schedule : schedules) {
+                    List<WorkerAssignment> assignments = assignmentRepository
+                        .findByScheduleId(schedule.getId());
+                    assignedWorkerIds.addAll(
+                        assignments.stream()
+                            .map(WorkerAssignment::getUserId)
+                            .collect(Collectors.toSet())
+                    );
+                }
+            }
+        }
+
+        // 3. 过滤掉已分配的工人
+        final Set<Long> finalAssignedIds = assignedWorkerIds;
+        List<User> availableWorkers = activeWorkers.stream()
+            .filter(w -> !finalAssignedIds.contains(w.getId()))
+            .collect(Collectors.toList());
+
+        log.info("可用工人数: {}, 已分配工人数: {}", availableWorkers.size(), finalAssignedIds.size());
+
+        return availableWorkers.stream()
+            .map(AvailableWorkerDTO::fromEntity)
             .collect(Collectors.toList());
     }
 
@@ -1327,23 +1457,24 @@ public class SchedulingServiceImpl implements SchedulingService {
         // TODO: 调用 OR-Tools 优化
         // 简化实现：返回现有分配
         SchedulingPlan plan = planRepository.findByIdAndFactoryIdAndDeletedAtIsNull(request.getPlanId(), factoryId)
-            .orElseThrow(() -> new RuntimeException("计划不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionPlan", request.getPlanId()));
 
-        List<WorkerAssignment> assignments = new ArrayList<>();
         List<LineSchedule> schedules = scheduleRepository.findByPlanId(request.getPlanId());
-        for (LineSchedule schedule : schedules) {
-            assignments.addAll(assignmentRepository.findByScheduleId(schedule.getId()));
-        }
 
-        return assignments.stream()
-            .map(this::enrichAssignmentDTO)
-            .collect(Collectors.toList());
+        // 批量查询所有排程的工人分配 - 解决 N+1 查询问题
+        Set<String> scheduleIds = schedules.stream()
+            .map(LineSchedule::getId)
+            .collect(Collectors.toSet());
+        List<WorkerAssignment> assignments = assignmentRepository.findByScheduleIdIn(scheduleIds);
+
+        // 使用批量版本的 enrichAssignmentDTOs，避免 N+1 查询问题
+        return enrichAssignmentDTOs(assignments);
     }
 
     @Override
     public CompletionProbabilityResponse calculateCompletionProbability(String factoryId, String scheduleId) {
         LineSchedule schedule = scheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new RuntimeException("排程不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionSchedule", scheduleId));
 
         CompletionProbabilityResponse response = new CompletionProbabilityResponse();
         response.setScheduleId(scheduleId);
@@ -1697,7 +1828,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public SchedulingPlanDTO reschedule(String factoryId, RescheduleRequest request, Long userId) {
         SchedulingPlan plan = planRepository.findByIdAndFactoryIdAndDeletedAtIsNull(request.getPlanId(), factoryId)
-            .orElseThrow(() -> new RuntimeException("计划不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionPlan", request.getPlanId()));
 
         // 简化实现：标记为需要重新调度
         plan.setNotes((plan.getNotes() != null ? plan.getNotes() + "\n" : "")
@@ -1742,7 +1873,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public SchedulingAlertDTO acknowledgeAlert(String factoryId, String alertId, Long userId) {
         SchedulingAlert alert = alertRepository.findByIdAndFactoryId(alertId, factoryId)
-            .orElseThrow(() -> new RuntimeException("告警不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ScheduleAlert", alertId));
 
         alert.setAcknowledgedAt(LocalDateTime.now());
         alert.setAcknowledgedBy(userId);
@@ -1755,7 +1886,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public SchedulingAlertDTO resolveAlert(String factoryId, String alertId, Long userId, String resolutionNotes) {
         SchedulingAlert alert = alertRepository.findByIdAndFactoryId(alertId, factoryId)
-            .orElseThrow(() -> new RuntimeException("告警不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ScheduleAlert", alertId));
 
         alert.setIsResolved(true);
         alert.setResolvedAt(LocalDateTime.now());
@@ -1806,7 +1937,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public ProductionLineDTO updateProductionLine(String factoryId, String lineId, ProductionLineDTO request) {
         ProductionLine line = lineRepository.findByIdAndFactoryIdAndDeletedAtIsNull(lineId, factoryId)
-            .orElseThrow(() -> new RuntimeException("产线不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionLine", lineId));
 
         if (request.getName() != null) line.setName(request.getName());
         if (request.getLineCode() != null) line.setLineCode(request.getLineCode());
@@ -1826,7 +1957,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Transactional
     public ProductionLineDTO updateProductionLineStatus(String factoryId, String lineId, String status) {
         ProductionLine line = lineRepository.findByIdAndFactoryIdAndDeletedAtIsNull(lineId, factoryId)
-            .orElseThrow(() -> new RuntimeException("产线不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionLine", lineId));
 
         line.setStatus(ProductionLine.LineStatus.valueOf(status));
         line = lineRepository.save(line);
@@ -1895,11 +2026,11 @@ public class SchedulingServiceImpl implements SchedulingService {
                     .multiply(BigDecimal.valueOf(100)));
             }
 
-            // 当前排程
-            dashboard.setCurrentSchedules(schedules.stream()
+            // 当前排程（使用批量版本解决 N+1 问题）
+            List<LineSchedule> inProgressSchedules = schedules.stream()
                 .filter(s -> s.getStatus() == LineSchedule.ScheduleStatus.in_progress)
-                .map(this::enrichScheduleDTO)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
+            dashboard.setCurrentSchedules(enrichScheduleDTOs(inProgressSchedules));
         }
 
         // 产线状态
@@ -1916,15 +2047,13 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Override
     public SchedulingDashboardDTO getRealtimeMonitor(String factoryId, String planId) {
         SchedulingPlan plan = planRepository.findByIdAndFactoryIdAndDeletedAtIsNull(planId, factoryId)
-            .orElseThrow(() -> new RuntimeException("计划不存在"));
+            .orElseThrow(() -> new EntityNotFoundException("ProductionPlan", planId));
 
         SchedulingDashboardDTO dashboard = getDashboard(factoryId, plan.getPlanDate());
 
-        // 添加实时排程详情
+        // 添加实时排程详情（使用批量版本解决 N+1 问题）
         List<LineSchedule> schedules = scheduleRepository.findByPlanIdOrderBySequenceOrder(planId);
-        dashboard.setCurrentSchedules(schedules.stream()
-            .map(this::enrichScheduleDTO)
-            .collect(Collectors.toList()));
+        dashboard.setCurrentSchedules(enrichScheduleDTOs(schedules));
 
         return dashboard;
     }
@@ -1968,11 +2097,9 @@ public class SchedulingServiceImpl implements SchedulingService {
                 dto.setBatchNumber(batch.getBatchNumber()));
         }
 
-        // 获取工人分配
+        // 获取工人分配 - 使用批量版本避免 N+1 查询问题
         List<WorkerAssignment> assignments = assignmentRepository.findByScheduleId(entity.getId());
-        dto.setWorkerAssignments(assignments.stream()
-            .map(this::enrichAssignmentDTO)
-            .collect(Collectors.toList()));
+        dto.setWorkerAssignments(enrichAssignmentDTOs(assignments));
 
         return dto;
     }
@@ -2002,5 +2129,173 @@ public class SchedulingServiceImpl implements SchedulingService {
         }
 
         return dto;
+    }
+
+    /**
+     * 批量版本的 enrichAssignmentDTOs - 解决 N+1 查询问题
+     * 使用批量查询 + Map 缓存，将 O(N) 次查询优化为 O(1) 次
+     */
+    private List<WorkerAssignmentDTO> enrichAssignmentDTOs(List<WorkerAssignment> assignments) {
+        if (assignments == null || assignments.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 1. 收集所有需要查询的 ID
+        Set<Long> userIds = assignments.stream()
+                .map(WorkerAssignment::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<String> productionLineIds = assignments.stream()
+                .filter(a -> a.getSchedule() != null)
+                .map(a -> a.getSchedule().getProductionLineId())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<Long> batchIds = assignments.stream()
+                .filter(a -> a.getSchedule() != null && a.getSchedule().getBatchId() != null)
+                .map(a -> a.getSchedule().getBatchId())
+                .collect(Collectors.toSet());
+
+        // 2. 批量查询所有关联实体
+        Map<Long, User> userMap = userIds.isEmpty() ? Collections.emptyMap() :
+                userRepository.findAllById(userIds).stream()
+                        .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        Map<String, ProductionLine> lineMap = productionLineIds.isEmpty() ? Collections.emptyMap() :
+                lineRepository.findAllById(productionLineIds).stream()
+                        .collect(Collectors.toMap(ProductionLine::getId, Function.identity()));
+
+        Map<Long, ProductionBatch> batchMap = batchIds.isEmpty() ? Collections.emptyMap() :
+                batchRepository.findAllById(batchIds).stream()
+                        .collect(Collectors.toMap(ProductionBatch::getId, Function.identity()));
+
+        // 3. 使用缓存的 Map 构建 DTO
+        return assignments.stream().map(entity -> {
+            WorkerAssignmentDTO dto = WorkerAssignmentDTO.fromEntity(entity);
+
+            // 设置用户信息
+            User user = userMap.get(entity.getUserId());
+            if (user != null) {
+                dto.setUserName(user.getFullName());
+                dto.setUserPhone(user.getPhone());
+            }
+
+            // 设置排程信息
+            if (entity.getSchedule() != null) {
+                LineSchedule schedule = entity.getSchedule();
+                dto.setScheduledStartTime(schedule.getPlannedStartTime());
+                dto.setScheduledEndTime(schedule.getPlannedEndTime());
+
+                ProductionLine line = lineMap.get(schedule.getProductionLineId());
+                if (line != null) {
+                    dto.setProductionLineName(line.getName());
+                }
+
+                if (schedule.getBatchId() != null) {
+                    ProductionBatch batch = batchMap.get(schedule.getBatchId());
+                    if (batch != null) {
+                        dto.setBatchNumber(batch.getBatchNumber());
+                    }
+                }
+            }
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 批量版本的 enrichScheduleDTOs - 解决 N+1 查询问题
+     * 使用批量查询 + Map 缓存，将 O(N) 次查询优化为 O(1) 次
+     */
+    private List<LineScheduleDTO> enrichScheduleDTOs(List<LineSchedule> schedules) {
+        if (schedules == null || schedules.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 1. 收集所有需要查询的 ID
+        Set<String> productionLineIds = schedules.stream()
+                .map(LineSchedule::getProductionLineId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<Long> batchIds = schedules.stream()
+                .map(LineSchedule::getBatchId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<String> scheduleIds = schedules.stream()
+                .map(LineSchedule::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 2. 批量查询所有关联实体
+        Map<String, ProductionLine> lineMap = productionLineIds.isEmpty() ? Collections.emptyMap() :
+                lineRepository.findAllById(productionLineIds).stream()
+                        .collect(Collectors.toMap(ProductionLine::getId, Function.identity()));
+
+        Map<Long, ProductionBatch> batchMap = batchIds.isEmpty() ? Collections.emptyMap() :
+                batchRepository.findAllById(batchIds).stream()
+                        .collect(Collectors.toMap(ProductionBatch::getId, Function.identity()));
+
+        // 3. 批量查询所有工人分配
+        List<WorkerAssignment> allAssignments = scheduleIds.isEmpty() ? Collections.emptyList() :
+                assignmentRepository.findByScheduleIdIn(scheduleIds);
+
+        // 4. 按 scheduleId 分组工人分配
+        Map<String, List<WorkerAssignment>> assignmentsBySchedule = allAssignments.stream()
+                .collect(Collectors.groupingBy(a -> a.getSchedule().getId()));
+
+        // 5. 批量查询所有相关用户（工人）
+        Set<Long> userIds = allAssignments.stream()
+                .map(WorkerAssignment::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, User> userMap = userIds.isEmpty() ? Collections.emptyMap() :
+                userRepository.findAllById(userIds).stream()
+                        .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        // 6. 使用缓存的 Map 构建 DTO
+        return schedules.stream().map(entity -> {
+            LineScheduleDTO dto = LineScheduleDTO.fromEntity(entity);
+
+            // 设置产线名称
+            ProductionLine line = lineMap.get(entity.getProductionLineId());
+            if (line != null) {
+                dto.setProductionLineName(line.getName());
+            }
+
+            // 设置批次号
+            if (entity.getBatchId() != null) {
+                ProductionBatch batch = batchMap.get(entity.getBatchId());
+                if (batch != null) {
+                    dto.setBatchNumber(batch.getBatchNumber());
+                }
+            }
+
+            // 设置工人分配（使用已查询的数据）
+            List<WorkerAssignment> assignments = assignmentsBySchedule.getOrDefault(entity.getId(), Collections.emptyList());
+            dto.setWorkerAssignments(assignments.stream().map(assignment -> {
+                WorkerAssignmentDTO assignmentDTO = WorkerAssignmentDTO.fromEntity(assignment);
+
+                // 使用缓存的用户信息
+                User user = userMap.get(assignment.getUserId());
+                if (user != null) {
+                    assignmentDTO.setUserName(user.getFullName());
+                    assignmentDTO.setUserPhone(user.getPhone());
+                }
+
+                // 使用已有的排程信息（无需再次查询）
+                assignmentDTO.setScheduledStartTime(entity.getPlannedStartTime());
+                assignmentDTO.setScheduledEndTime(entity.getPlannedEndTime());
+                assignmentDTO.setProductionLineName(dto.getProductionLineName());
+                assignmentDTO.setBatchNumber(dto.getBatchNumber());
+
+                return assignmentDTO;
+            }).collect(Collectors.toList()));
+
+            return dto;
+        }).collect(Collectors.toList());
     }
 }

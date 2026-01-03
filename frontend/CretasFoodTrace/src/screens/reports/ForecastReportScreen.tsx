@@ -2,33 +2,35 @@ import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Appbar, Surface, Icon, Card } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 export default function ForecastReportScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('reports');
 
   return (
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="预测报表" />
+        <Appbar.Content title={t('forecast.title')} />
       </Appbar.Header>
       <ScrollView style={styles.content}>
         <Surface style={styles.card} elevation={1}>
           <View style={styles.infoBox}>
             <Icon source="crystal-ball" size={48} color="#E91E63" />
-            <Text variant="titleMedium" style={styles.infoTitle}>AI智能预测</Text>
+            <Text variant="titleMedium" style={styles.infoTitle}>{t('forecast.aiSmartForecast')}</Text>
             <Text variant="bodyMedium" style={styles.infoText}>
-              基于DeepSeek AI的智能预测分析功能
+              {t('forecast.description')}
             </Text>
           </View>
         </Surface>
         <Card style={styles.featureCard}>
           <Card.Content>
-            <Text variant="titleSmall" style={styles.featureTitle}>预测功能</Text>
-            <Text variant="bodySmall" style={styles.featureItem}>• 需求预测</Text>
-            <Text variant="bodySmall" style={styles.featureItem}>• 库存预警</Text>
-            <Text variant="bodySmall" style={styles.featureItem}>• 生产计划优化</Text>
-            <Text variant="bodySmall" style={styles.featureItem}>• 成本趋势预测</Text>
+            <Text variant="titleSmall" style={styles.featureTitle}>{t('forecast.features')}</Text>
+            <Text variant="bodySmall" style={styles.featureItem}>• {t('forecast.demandForecast')}</Text>
+            <Text variant="bodySmall" style={styles.featureItem}>• {t('forecast.inventoryAlert')}</Text>
+            <Text variant="bodySmall" style={styles.featureItem}>• {t('forecast.productionPlanOptimization')}</Text>
+            <Text variant="bodySmall" style={styles.featureItem}>• {t('forecast.costTrendForecast')}</Text>
           </Card.Content>
         </Card>
       </ScrollView>

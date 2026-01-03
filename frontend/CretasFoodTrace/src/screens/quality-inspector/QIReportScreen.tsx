@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS } from '../../types/qualityInspector';
 import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
@@ -31,6 +32,7 @@ interface ReportOption {
 }
 
 export default function QIReportScreen() {
+  const { t } = useTranslation('quality');
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
@@ -40,12 +42,12 @@ export default function QIReportScreen() {
   const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
   const [generating, setGenerating] = useState(false);
   const [options, setOptions] = useState<ReportOption[]>([
-    { id: 'summary', label: '检验概况统计', checked: true },
-    { id: 'gradeDistribution', label: '等级分布图表', checked: true },
-    { id: 'categoryScores', label: '分类评分详情', checked: true },
-    { id: 'issueAnalysis', label: '问题分析汇总', checked: true },
-    { id: 'trendChart', label: '趋势走势图', checked: false },
-    { id: 'batchList', label: '批次明细列表', checked: false },
+    { id: 'summary', label: t('report.summary'), checked: true },
+    { id: 'gradeDistribution', label: t('report.gradeDistribution'), checked: true },
+    { id: 'categoryScores', label: t('report.categoryScores'), checked: true },
+    { id: 'issueAnalysis', label: t('report.issueAnalysis'), checked: true },
+    { id: 'trendChart', label: t('report.trendChart'), checked: false },
+    { id: 'batchList', label: t('report.batchList'), checked: false },
   ]);
 
   const toggleOption = (id: string) => {
@@ -59,7 +61,7 @@ export default function QIReportScreen() {
   const handleGenerate = async () => {
     const selectedOptions = options.filter((opt) => opt.checked);
     if (selectedOptions.length === 0) {
-      Alert.alert('提示', '请至少选择一项报告内容');
+      Alert.alert(t('clock.alert'), t('report.selectAtLeastOne'));
       return;
     }
 
@@ -73,13 +75,13 @@ export default function QIReportScreen() {
         options: selectedOptions.map((opt) => opt.id),
       });
 
-      Alert.alert('成功', '报告生成成功，已保存到文件', [
-        { text: '查看报告', onPress: () => console.log('Open report:', result) },
-        { text: '确定', style: 'cancel' },
+      Alert.alert(t('clock.clockSuccess'), t('report.generateSuccess'), [
+        { text: t('report.viewReport'), onPress: () => console.log('Open report:', result) },
+        { text: t('camera.cancel'), style: 'cancel' },
       ]);
     } catch (error) {
       console.error('生成报告失败:', error);
-      Alert.alert('错误', '报告生成失败，请稍后重试');
+      Alert.alert(t('clock.clockFailed'), t('report.generateFailed'));
     } finally {
       setGenerating(false);
     }
@@ -126,27 +128,27 @@ export default function QIReportScreen() {
       >
         {/* 报告类型 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>报告类型</Text>
+          <Text style={styles.sectionTitle}>{t('report.reportType')}</Text>
           <View style={styles.typeCard}>
-            {renderReportTypeOption('daily', '日报', '今日检验数据汇总')}
-            {renderReportTypeOption('weekly', '周报', '本周检验数据汇总')}
-            {renderReportTypeOption('monthly', '月报', '本月检验数据汇总')}
-            {renderReportTypeOption('custom', '自定义', '选择日期范围')}
+            {renderReportTypeOption('daily', t('report.daily'), t('report.dailyDesc'))}
+            {renderReportTypeOption('weekly', t('report.weekly'), t('report.weeklyDesc'))}
+            {renderReportTypeOption('monthly', t('report.monthly'), t('report.monthlyDesc'))}
+            {renderReportTypeOption('custom', t('report.custom'), t('report.customDesc'))}
           </View>
         </View>
 
         {/* 报告格式 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>导出格式</Text>
+          <Text style={styles.sectionTitle}>{t('report.exportFormat')}</Text>
           <View style={styles.formatRow}>
-            {renderFormatOption('pdf', 'document-text', 'PDF 文档')}
-            {renderFormatOption('excel', 'grid', 'Excel 表格')}
+            {renderFormatOption('pdf', 'document-text', t('report.pdfDocument'))}
+            {renderFormatOption('excel', 'grid', t('report.excelSheet'))}
           </View>
         </View>
 
         {/* 报告内容 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>报告内容</Text>
+          <Text style={styles.sectionTitle}>{t('report.reportContent')}</Text>
           <View style={styles.optionsCard}>
             {options.map((option) => (
               <TouchableOpacity
@@ -167,13 +169,13 @@ export default function QIReportScreen() {
 
         {/* 预览 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>报告预览</Text>
+          <Text style={styles.sectionTitle}>{t('report.preview')}</Text>
           <View style={styles.previewCard}>
             <View style={styles.previewHeader}>
               <Ionicons name="document-text" size={40} color={QI_COLORS.primary} />
               <View style={styles.previewInfo}>
                 <Text style={styles.previewTitle}>
-                  质检{reportType === 'daily' ? '日' : reportType === 'weekly' ? '周' : reportType === 'monthly' ? '月' : '自定义'}报
+                  {t('report.title')} - {reportType === 'daily' ? t('report.daily') : reportType === 'weekly' ? t('report.weekly') : reportType === 'monthly' ? t('report.monthly') : t('report.custom')}
                 </Text>
                 <Text style={styles.previewDate}>
                   {new Date().toLocaleDateString('zh-CN')}
@@ -191,7 +193,7 @@ export default function QIReportScreen() {
                 ))}
             </View>
             <Text style={styles.previewFormat}>
-              格式: {reportFormat === 'pdf' ? 'PDF 文档' : 'Excel 表格'}
+              {t('report.format')}: {reportFormat === 'pdf' ? t('report.pdfDocument') : t('report.excelSheet')}
             </Text>
           </View>
         </View>
@@ -210,7 +212,7 @@ export default function QIReportScreen() {
             <Ionicons name="download-outline" size={20} color="#fff" />
           )}
           <Text style={styles.generateBtnText}>
-            {generating ? '生成中...' : '生成报告'}
+            {generating ? t('report.generating') : t('report.generate')}
           </Text>
         </TouchableOpacity>
       </View>

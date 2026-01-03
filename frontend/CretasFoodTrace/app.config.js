@@ -32,7 +32,7 @@ module.exports = ({ config }) => {
       favicon: './assets/favicon.png',
       bundler: 'metro',
     },
-    plugins: ['expo-secure-store'],
+    plugins: ['expo-secure-store', 'expo-localization'],
     extra: {
       // 将环境变量传递给应用
       env: env,

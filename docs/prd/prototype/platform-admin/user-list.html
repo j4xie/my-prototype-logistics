@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户列表 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="profile.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">用户管理</div>
+      <div class="header-right" style="font-size: 14px; color: rgba(255,255,255,0.9);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 20px;">
+      <!-- 搜索栏 -->
+      <div style="margin-bottom: 16px;">
+        <div class="search-box">
+          <svg class="search-box__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input class="search-box__input" type="text" placeholder="搜索用户名、姓名、手机号">
+        </div>
+      </div>
+
+      <!-- 筛选标签 -->
+      <div style="display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px; padding-bottom: 4px;">
+        <div style="flex-shrink: 0; padding: 6px 16px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; font-size: 13px; color: white; font-weight: 500;">
+          全部 (26)
+        </div>
+        <div style="flex-shrink: 0; padding: 6px 16px; background: #f5f5f5; border-radius: 16px; font-size: 13px; color: #595959; font-weight: 500;">
+          平台管理员 (3)
+        </div>
+        <div style="flex-shrink: 0; padding: 6px 16px; background: #f5f5f5; border-radius: 16px; font-size: 13px; color: #595959; font-weight: 500;">
+          工厂超管 (8)
+        </div>
+        <div style="flex-shrink: 0; padding: 6px 16px; background: #f5f5f5; border-radius: 16px; font-size: 13px; color: #595959; font-weight: 500;">
+          部门管理员 (15)
+        </div>
+      </div>
+
+      <!-- 状态筛选 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <div style="flex: 1; padding: 10px; background: white; border-radius: 8px; text-align: center; border: 2px solid #1a1a2e;">
+          <div style="font-size: 18px; font-weight: 600; color: #262626;">23</div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-top: 2px;">启用中</div>
+        </div>
+        <div style="flex: 1; padding: 10px; background: white; border-radius: 8px; text-align: center; border: 1px solid #f0f0f0;">
+          <div style="font-size: 18px; font-weight: 600; color: #262626;">3</div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-top: 2px;">已禁用</div>
+        </div>
+      </div>
+
+      <!-- 用户列表 -->
+      <div style="background: white; border-radius: 12px; overflow: hidden;">
+        <!-- 用户1 - 平台管理员 -->
+        <a href="user-detail.html" style="text-decoration: none; display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <span style="font-size: 18px; color: white; font-weight: 600;">张</span>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; color: #262626; font-weight: 500;">张超级</span>
+              <span style="display: inline-flex; padding: 2px 8px; background: #f6ffed; border-radius: 10px; font-size: 11px; color: #52c41a; font-weight: 500;">
+                平台管理员
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #8c8c8c;">platform_admin | 138****8888</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%; margin-left: auto; margin-bottom: 4px;"></div>
+            <div style="font-size: 11px; color: #52c41a;">启用</div>
+          </div>
+        </a>
+
+        <!-- 用户2 - 工厂超级管理员 -->
+        <a href="user-detail.html" style="text-decoration: none; display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <span style="font-size: 18px; color: white; font-weight: 600;">李</span>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; color: #262626; font-weight: 500;">李工厂</span>
+              <span style="display: inline-flex; padding: 2px 8px; background: #e6f7ff; border-radius: 10px; font-size: 11px; color: #1890ff; font-weight: 500;">
+                工厂超级管理员
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #8c8c8c;">F001_admin | 上海水产加工厂</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%; margin-left: auto; margin-bottom: 4px;"></div>
+            <div style="font-size: 11px; color: #52c41a;">启用</div>
+          </div>
+        </a>
+
+        <!-- 用户3 - 部门管理员 -->
+        <a href="user-detail.html" style="text-decoration: none; display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <span style="font-size: 18px; color: white; font-weight: 600;">王</span>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; color: #262626; font-weight: 500;">王调度</span>
+              <span style="display: inline-flex; padding: 2px 8px; background: #fff7e6; border-radius: 10px; font-size: 11px; color: #faad14; font-weight: 500;">
+                部门管理员
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #8c8c8c;">scheduler_001 | 调度中心</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%; margin-left: auto; margin-bottom: 4px;"></div>
+            <div style="font-size: 11px; color: #52c41a;">启用</div>
+          </div>
+        </a>
+
+        <!-- 用户4 - 普通操作员 -->
+        <a href="user-detail.html" style="text-decoration: none; display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <span style="font-size: 18px; color: #595959; font-weight: 600;">赵</span>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; color: #262626; font-weight: 500;">赵操作</span>
+              <span style="display: inline-flex; padding: 2px 8px; background: #f5f5f5; border-radius: 10px; font-size: 11px; color: #595959; font-weight: 500;">
+                操作员
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #8c8c8c;">operator_005 | 生产车间A</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%; margin-left: auto; margin-bottom: 4px;"></div>
+            <div style="font-size: 11px; color: #52c41a;">启用</div>
+          </div>
+        </a>
+
+        <!-- 用户5 - 已禁用 -->
+        <a href="user-detail.html" style="text-decoration: none; display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 48px; height: 48px; background: #d9d9d9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <span style="font-size: 18px; color: white; font-weight: 600;">刘</span>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; color: #8c8c8c; font-weight: 500;">刘离职</span>
+              <span style="display: inline-flex; padding: 2px 8px; background: #f5f5f5; border-radius: 10px; font-size: 11px; color: #8c8c8c; font-weight: 500;">
+                部门管理员
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #bfbfbf;">quality_003 | 质检部</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="width: 8px; height: 8px; background: #d9d9d9; border-radius: 50%; margin-left: auto; margin-bottom: 4px;"></div>
+            <div style="font-size: 11px; color: #8c8c8c;">禁用</div>
+          </div>
+        </a>
+
+        <!-- 用户6 -->
+        <a href="user-detail.html" style="text-decoration: none; display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <span style="font-size: 18px; color: white; font-weight: 600;">陈</span>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; color: #262626; font-weight: 500;">陈分析</span>
+              <span style="display: inline-flex; padding: 2px 8px; background: #fff7e6; border-radius: 10px; font-size: 11px; color: #faad14; font-weight: 500;">
+                部门管理员
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #8c8c8c;">analyst_002 | 数据分析部</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%; margin-left: auto; margin-bottom: 4px;"></div>
+            <div style="font-size: 11px; color: #52c41a;">启用</div>
+          </div>
+        </a>
+
+        <!-- 用户7 -->
+        <a href="user-detail.html" style="text-decoration: none; display: flex; align-items: center; padding: 16px;">
+          <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <span style="font-size: 18px; color: white; font-weight: 600;">周</span>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 15px; color: #262626; font-weight: 500;">周质检</span>
+              <span style="display: inline-flex; padding: 2px 8px; background: #f5f5f5; border-radius: 10px; font-size: 11px; color: #595959; font-weight: 500;">
+                操作员
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #8c8c8c;">inspector_008 | 质检岗</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%; margin-left: auto; margin-bottom: 4px;"></div>
+            <div style="font-size: 11px; color: #52c41a;">启用</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- 统计信息 -->
+      <div style="background: linear-gradient(135deg, rgba(26,26,46,0.05) 0%, rgba(22,33,62,0.05) 100%); border-radius: 12px; padding: 16px; margin-top: 16px;">
+        <div style="display: flex; justify-content: space-around; text-align: center;">
+          <div>
+            <div style="font-size: 20px; font-weight: 700; color: #262626;">26</div>
+            <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">总用户数</div>
+          </div>
+          <div style="width: 1px; background: #d9d9d9;"></div>
+          <div>
+            <div style="font-size: 20px; font-weight: 700; color: #52c41a;">23</div>
+            <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">在线用户</div>
+          </div>
+          <div style="width: 1px; background: #d9d9d9;"></div>
+          <div>
+            <div style="font-size: 20px; font-weight: 700; color: #1890ff;">8</div>
+            <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">本月新增</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

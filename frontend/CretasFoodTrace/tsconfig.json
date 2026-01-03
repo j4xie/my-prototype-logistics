@@ -1,6 +1,10 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    // ===== JSON 模块支持（i18n 翻译文件）=====
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+
     // ===== 开启严格模式 - 符合CLAUDE.md规范 =====
     "strict": true,
     "noImplicitAny": true,

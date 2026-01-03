@@ -12,6 +12,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LineChart } from 'react-native-chart-kit';
+import { useTranslation } from 'react-i18next';
 import { timeStatsApiClient } from '../../services/api/timeStatsApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
@@ -37,6 +38,7 @@ const { width } = Dimensions.get('window');
 export default function TimeStatsScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('hr');
   const factoryId = getFactoryId(user);
 
   const [loading, setLoading] = useState(false);
@@ -179,10 +181,10 @@ export default function TimeStatsScreen() {
    * 格式化工时
    */
   const formatHours = (hours: number): string => {
-    if (!hours) return '0小时';
+    if (!hours) return `0${t('common.units.hour')}`;
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    return m > 0 ? `${h}小时${m}分` : `${h}小时`;
+    return m > 0 ? `${h}${t('common.units.hour')}${m}${t('common.units.minute')}` : `${h}${t('common.units.hour')}`;
   };
 
   /**
@@ -215,7 +217,7 @@ export default function TimeStatsScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="工时统计分析" />
+        <Appbar.Content title={t('attendance.timeStats.title')} />
       </Appbar.Header>
 
       <ScrollView
@@ -229,9 +231,9 @@ export default function TimeStatsScreen() {
               value={timeRange}
               onValueChange={(value) => setTimeRange(value as 'daily' | 'weekly' | 'monthly')}
               buttons={[
-                { value: 'daily', label: '今日' },
-                { value: 'weekly', label: '本周' },
-                { value: 'monthly', label: '本月' },
+                { value: 'daily', label: t('attendance.timeStats.periods.daily') },
+                { value: 'weekly', label: t('attendance.timeStats.periods.weekly') },
+                { value: 'monthly', label: t('attendance.timeStats.periods.monthly') },
               ]}
             />
           </Card.Content>
@@ -239,12 +241,12 @@ export default function TimeStatsScreen() {
 
         {/* 统计概览 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="统计概览" />
+          <Card.Title title={t('attendance.timeStats.overview')} />
           <Card.Content>
             {loading ? (
               <View style={styles.statsRow}>
                 <Text variant="bodyMedium" style={{ color: '#999' }}>
-                  加载中...
+                  {t('attendance.timeStats.loading')}
                 </Text>
               </View>
             ) : (
@@ -255,7 +257,7 @@ export default function TimeStatsScreen() {
                       {formatHours(statsOverview.totalHours)}
                     </Text>
                     <Text variant="bodySmall" style={styles.statLabel}>
-                      总工时
+                      {t('attendance.timeStats.totalHours')}
                     </Text>
                   </View>
                   <View style={styles.statItem}>
@@ -263,7 +265,7 @@ export default function TimeStatsScreen() {
                       {formatHours(statsOverview.regularHours)}
                     </Text>
                     <Text variant="bodySmall" style={styles.statLabel}>
-                      正常工时
+                      {t('attendance.timeStats.regularHours')}
                     </Text>
                   </View>
                   <View style={styles.statItem}>
@@ -271,17 +273,17 @@ export default function TimeStatsScreen() {
                       {formatHours(statsOverview.overtimeHours)}
                     </Text>
                     <Text variant="bodySmall" style={styles.statLabel}>
-                      加班工时
+                      {t('attendance.timeStats.overtimeHours')}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.statsDetailRow}>
                   <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>员工数:</Text>
+                    <Text style={styles.detailLabel}>{t('attendance.timeStats.employeeCount')}:</Text>
                     <Text style={styles.detailValue}>{statsOverview.totalEmployees}</Text>
                   </View>
                   <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>人均工时:</Text>
+                    <Text style={styles.detailLabel}>{t('attendance.timeStats.avgHoursPerEmployee')}:</Text>
                     <Text style={styles.detailValue}>{formatHours(statsOverview.avgHoursPerEmployee)}</Text>
                   </View>
                 </View>
@@ -293,23 +295,23 @@ export default function TimeStatsScreen() {
         {/* 效率分析 */}
         {efficiencyReport && (
           <Card style={styles.card} mode="elevated">
-            <Card.Title title="效率分析" />
+            <Card.Title title={t('attendance.timeStats.efficiencyAnalysis')} />
             <Card.Content>
               <View style={styles.efficiencyRow}>
                 <View style={styles.efficiencyItem}>
-                  <Text style={styles.efficiencyLabel}>出勤率</Text>
+                  <Text style={styles.efficiencyLabel}>{t('attendance.timeStats.attendanceRate')}</Text>
                   <Text style={[styles.efficiencyValue, { color: '#4CAF50' }]}>
                     {(efficiencyReport.attendanceRate * 100).toFixed(1)}%
                   </Text>
                 </View>
                 <View style={styles.efficiencyItem}>
-                  <Text style={styles.efficiencyLabel}>生产效率</Text>
+                  <Text style={styles.efficiencyLabel}>{t('attendance.timeStats.productivityRate')}</Text>
                   <Text style={[styles.efficiencyValue, { color: '#2196F3' }]}>
                     {(efficiencyReport.productivityRate * 100).toFixed(1)}%
                   </Text>
                 </View>
                 <View style={styles.efficiencyItem}>
-                  <Text style={styles.efficiencyLabel}>加班率</Text>
+                  <Text style={styles.efficiencyLabel}>{t('attendance.timeStats.overtimeRate')}</Text>
                   <Text style={[styles.efficiencyValue, { color: '#FF9800' }]}>
                     {(efficiencyReport.overtimeRate * 100).toFixed(1)}%
                   </Text>
@@ -322,14 +324,14 @@ export default function TimeStatsScreen() {
         {/* 绩效排行榜 */}
         {topPerformers.length > 0 && (
           <Card style={styles.card} mode="elevated">
-            <Card.Title title="绩效排行榜 (Top 10)" />
+            <Card.Title title={`${t('attendance.timeStats.performanceRanking')} (${t('attendance.timeStats.topPerformers')})`} />
             <Card.Content>
               <DataTable>
                 <DataTable.Header>
-                  <DataTable.Title>排名</DataTable.Title>
-                  <DataTable.Title>员工</DataTable.Title>
-                  <DataTable.Title numeric>工时</DataTable.Title>
-                  <DataTable.Title numeric>效率</DataTable.Title>
+                  <DataTable.Title>{t('common.table.rank')}</DataTable.Title>
+                  <DataTable.Title>{t('common.table.employee')}</DataTable.Title>
+                  <DataTable.Title numeric>{t('common.table.workHours')}</DataTable.Title>
+                  <DataTable.Title numeric>{t('common.table.efficiency')}</DataTable.Title>
                 </DataTable.Header>
                 {topPerformers.slice(0, 10).map((performer, index) => (
                   <DataTable.Row key={performer.employeeId || index}>
@@ -344,7 +346,7 @@ export default function TimeStatsScreen() {
                         {index + 1}
                       </Chip>
                     </DataTable.Cell>
-                    <DataTable.Cell>{performer.employeeName || `员工${performer.employeeId}`}</DataTable.Cell>
+                    <DataTable.Cell>{performer.employeeName || `${t('common.employee')}${performer.employeeId}`}</DataTable.Cell>
                     <DataTable.Cell numeric>{formatHours(performer.totalHours)}</DataTable.Cell>
                     <DataTable.Cell numeric>
                       {performer.efficiency ? `${(performer.efficiency * 100).toFixed(0)}%` : 'N/A'}

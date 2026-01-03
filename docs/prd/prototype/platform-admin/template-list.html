@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>行业模板 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header header--platform">
+    <a href="profile.html" class="back-btn">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <h1 class="header__title">行业模板</h1>
+    <button class="icon-btn" onclick="alert('新建模板')">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M10 5V15M5 10H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <svg class="search-bar__icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="2"/>
+        <path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input type="text" class="search-bar__input" placeholder="搜索模板名称或行业">
+    </div>
+
+    <!-- Industry Category Tags -->
+    <div class="category-tags">
+      <button class="tag tag--active">全部</button>
+      <button class="tag">水产加工</button>
+      <button class="tag">冷链物流</button>
+      <button class="tag">中央厨房</button>
+      <button class="tag">农产品加工</button>
+    </div>
+
+    <!-- Template List -->
+    <div class="card-list">
+      <!-- Template Card 1 -->
+      <div class="card" onclick="location.href='template-detail.html?id=T001'">
+        <div class="card__header">
+          <div>
+            <h3 class="card__title">标准水产加工模板</h3>
+            <span class="badge badge--primary">水产加工</span>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M7.5 5L12.5 10L7.5 15" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="info-row">
+            <span class="info-label">适用场景</span>
+            <span class="info-value">海鲜加工、水产品分拣、冷冻储存</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">包含配置</span>
+            <span class="info-value">生产蓝图 × 3 | 验收规则 × 5</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">已应用工厂</span>
+            <span class="info-value" style="color: #7c3aed; font-weight: 500;">12 家</span>
+          </div>
+        </div>
+        <div class="card__footer">
+          <span class="timestamp">创建于 2025-11-15</span>
+        </div>
+      </div>
+
+      <!-- Template Card 2 -->
+      <div class="card" onclick="location.href='template-detail.html?id=T002'">
+        <div class="card__header">
+          <div>
+            <h3 class="card__title">冷链物流标准模板</h3>
+            <span class="badge badge--info">冷链物流</span>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M7.5 5L12.5 10L7.5 15" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="info-row">
+            <span class="info-label">适用场景</span>
+            <span class="info-value">温控运输、冷库管理、配送中心</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">包含配置</span>
+            <span class="info-value">生产蓝图 × 4 | 验收规则 × 6</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">已应用工厂</span>
+            <span class="info-value" style="color: #7c3aed; font-weight: 500;">8 家</span>
+          </div>
+        </div>
+        <div class="card__footer">
+          <span class="timestamp">创建于 2025-10-20</span>
+        </div>
+      </div>
+
+      <!-- Template Card 3 -->
+      <div class="card" onclick="location.href='template-detail.html?id=T003'">
+        <div class="card__header">
+          <div>
+            <h3 class="card__title">中央厨房生产模板</h3>
+            <span class="badge badge--success">中央厨房</span>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M7.5 5L12.5 10L7.5 15" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="info-row">
+            <span class="info-label">适用场景</span>
+            <span class="info-value">食材预处理、餐食制作、分装配送</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">包含配置</span>
+            <span class="info-value">生产蓝图 × 5 | 验收规则 × 8</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">已应用工厂</span>
+            <span class="info-value" style="color: #7c3aed; font-weight: 500;">15 家</span>
+          </div>
+        </div>
+        <div class="card__footer">
+          <span class="timestamp">创建于 2025-12-01</span>
+        </div>
+      </div>
+
+      <!-- Template Card 4 -->
+      <div class="card" onclick="location.href='template-detail.html?id=T004'">
+        <div class="card__header">
+          <div>
+            <h3 class="card__title">农产品加工基础模板</h3>
+            <span class="badge badge--warning">农产品加工</span>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M7.5 5L12.5 10L7.5 15" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="card__body">
+          <div class="info-row">
+            <span class="info-label">适用场景</span>
+            <span class="info-value">果蔬分拣、初加工、包装入库</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">包含配置</span>
+            <span class="info-value">生产蓝图 × 3 | 验收规则 × 4</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">已应用工厂</span>
+            <span class="info-value" style="color: #7c3aed; font-weight: 500;">6 家</span>
+          </div>
+        </div>
+        <div class="card__footer">
+          <span class="timestamp">创建于 2025-11-28</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State (hidden by default) -->
+    <div class="empty-state" style="display: none;">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <rect x="12" y="16" width="40" height="36" rx="2" stroke="#ccc" stroke-width="2"/>
+        <line x1="20" y1="28" x2="44" y2="28" stroke="#ccc" stroke-width="2"/>
+        <line x1="20" y1="36" x2="38" y2="36" stroke="#ccc" stroke-width="2"/>
+        <line x1="20" y1="44" x2="42" y2="44" stroke="#ccc" stroke-width="2"/>
+      </svg>
+      <p class="empty-state__text">暂无行业模板</p>
+      <button class="btn btn--primary" onclick="alert('新建模板')">创建第一个模板</button>
+    </div>
+  </main>
+
+  <script>
+    // Category tag toggle
+    document.querySelectorAll('.tag').forEach(tag => {
+      tag.addEventListener('click', function() {
+        document.querySelectorAll('.tag').forEach(t => t.classList.remove('tag--active'));
+        this.classList.add('tag--active');
+      });
+    });
+
+    // Search functionality
+    const searchInput = document.querySelector('.search-bar__input');
+    searchInput.addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const cards = document.querySelectorAll('.card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const title = card.querySelector('.card__title').textContent.toLowerCase();
+        const badge = card.querySelector('.badge').textContent.toLowerCase();
+        if (title.includes(searchTerm) || badge.includes(searchTerm)) {
+          card.style.display = 'block';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      // Show/hide empty state
+      const emptyState = document.querySelector('.empty-state');
+      const cardList = document.querySelector('.card-list');
+      if (visibleCount === 0) {
+        cardList.style.display = 'none';
+        emptyState.style.display = 'flex';
+      } else {
+        cardList.style.display = 'block';
+        emptyState.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

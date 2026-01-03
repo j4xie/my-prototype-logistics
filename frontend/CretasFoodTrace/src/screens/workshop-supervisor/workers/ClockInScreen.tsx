@@ -9,13 +9,14 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 export function ClockInScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('workshop');
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // 模拟今日考勤数据
@@ -41,13 +42,13 @@ export function ClockInScreen() {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'normal':
-        return { text: '正常', color: '#52c41a', bg: '#f6ffed' };
+        return { text: t('workers.status.normal'), color: '#52c41a', bg: '#f6ffed' };
       case 'late':
-        return { text: '迟到', color: '#faad14', bg: '#fff7e6' };
+        return { text: t('workers.status.late'), color: '#faad14', bg: '#fff7e6' };
       case 'absent':
-        return { text: '缺勤', color: '#ff4d4f', bg: '#fff1f0' };
+        return { text: t('workers.status.absent'), color: '#ff4d4f', bg: '#fff1f0' };
       default:
-        return { text: '未知', color: '#999', bg: '#f5f5f5' };
+        return { text: t('workers.status.unknown'), color: '#999', bg: '#f5f5f5' };
     }
   };
 
@@ -58,7 +59,7 @@ export function ClockInScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>打卡管理</Text>
+        <Text style={styles.headerTitle}>{t('workers.clockIn.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -82,31 +83,31 @@ export function ClockInScreen() {
             <Text style={[styles.statValue, { color: '#52c41a' }]}>
               {todayAttendance.clockedIn}
             </Text>
-            <Text style={styles.statLabel}>已打卡</Text>
+            <Text style={styles.statLabel}>{t('workers.clockIn.todayStats.clockedIn')}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#fff7e6' }]}>
             <Text style={[styles.statValue, { color: '#faad14' }]}>
               {todayAttendance.late}
             </Text>
-            <Text style={styles.statLabel}>迟到</Text>
+            <Text style={styles.statLabel}>{t('workers.clockIn.todayStats.late')}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#fff1f0' }]}>
             <Text style={[styles.statValue, { color: '#ff4d4f' }]}>
               {todayAttendance.absent}
             </Text>
-            <Text style={styles.statLabel}>缺勤</Text>
+            <Text style={styles.statLabel}>{t('workers.clockIn.todayStats.absent')}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#f5f5f5' }]}>
             <Text style={[styles.statValue, { color: '#666' }]}>
               {todayAttendance.total}
             </Text>
-            <Text style={styles.statLabel}>应到</Text>
+            <Text style={styles.statLabel}>{t('workers.clockIn.todayStats.expected')}</Text>
           </View>
         </View>
 
         {/* 打卡记录 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>今日打卡记录</Text>
+          <Text style={styles.sectionTitle}>{t('workers.clockIn.todayRecords')}</Text>
           <View style={styles.recordsList}>
             {todayAttendance.records.map((record) => {
               const statusStyle = getStatusStyle(record.status);
@@ -118,7 +119,7 @@ export function ClockInScreen() {
                   <View style={styles.recordInfo}>
                     <Text style={styles.recordName}>{record.name}</Text>
                     <Text style={styles.recordTime}>
-                      {record.time === '-' ? '未打卡' : `打卡时间: ${record.time}`}
+                      {record.time === '-' ? t('workers.clockIn.notClockedIn') : t('workers.clockIn.clockTime', { time: record.time })}
                     </Text>
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>

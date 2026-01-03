@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAHomeStackParamList } from '../../../types/navigation';
 import { processingApiClient, ProcessingBatch } from '../../../services/api/processingApiClient';
 
@@ -23,6 +24,7 @@ type NavigationProp = NativeStackNavigationProp<FAHomeStackParamList, 'TodayBatc
 
 export function TodayBatchesScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('home');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -47,7 +49,7 @@ export function TodayBatchesScreen() {
       }
     } catch (err) {
       console.error('加载批次数据失败:', err);
-      setError('数据加载失败');
+      setError(t('todayBatches.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -75,10 +77,10 @@ export function TodayBatchesScreen() {
 
   const getStatusLabel = (status: string): string => {
     const labels: Record<string, string> = {
-      pending: '待处理',
-      in_progress: '进行中',
-      completed: '已完成',
-      cancelled: '已取消',
+      pending: t('todayBatches.status.pending'),
+      in_progress: t('todayBatches.status.inProgress'),
+      completed: t('todayBatches.status.completed'),
+      cancelled: t('todayBatches.status.cancelled'),
     };
     return labels[status] || status;
   };
@@ -100,12 +102,12 @@ export function TodayBatchesScreen() {
       <Text style={styles.productType}>{item.productType}</Text>
       <View style={styles.batchFooter}>
         <View style={styles.quantityInfo}>
-          <Text style={styles.quantityLabel}>计划:</Text>
+          <Text style={styles.quantityLabel}>{t('todayBatches.planned')}:</Text>
           <Text style={styles.quantityValue}>{item.targetQuantity} kg</Text>
         </View>
         {item.actualQuantity !== undefined && (
           <View style={styles.quantityInfo}>
-            <Text style={styles.quantityLabel}>实际:</Text>
+            <Text style={styles.quantityLabel}>{t('todayBatches.actual')}:</Text>
             <Text style={styles.quantityValue}>{item.actualQuantity} kg</Text>
           </View>
         )}
@@ -119,7 +121,7 @@ export function TodayBatchesScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -132,9 +134,9 @@ export function TodayBatchesScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>今日批次</Text>
+        <Text style={styles.headerTitle}>{t('todayBatches.title')}</Text>
         <View style={styles.headerRight}>
-          <Text style={styles.batchCount}>{batches.length} 批</Text>
+          <Text style={styles.batchCount}>{batches.length} {t('todayBatches.batchUnit')}</Text>
         </View>
       </View>
 
@@ -157,7 +159,7 @@ export function TodayBatchesScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Icon source="package-variant" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>今日暂无批次</Text>
+            <Text style={styles.emptyText}>{t('todayBatches.empty')}</Text>
           </View>
         }
       />

@@ -16,6 +16,7 @@ import {
   Switch,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { platformAPI } from '../../services/api/platformApiClient';
 import type {
   FactoryAIQuota,
@@ -34,6 +35,7 @@ const aiQuotaLogger = logger.createContextLogger('AIQuotaManagement');
  */
 export default function AIQuotaManagementScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('platform');
 
   // Tab状态
   const [activeTab, setActiveTab] = useState<'usage' | 'rules'>('usage');
@@ -92,7 +94,7 @@ export default function AIQuotaManagementScreen() {
       }
     } catch (error) {
       aiQuotaLogger.error('加载数据失败', error as Error);
-      Alert.alert('错误', '加载数据失败');
+      Alert.alert(t('aiQuota.error'), t('aiQuota.saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -113,7 +115,7 @@ export default function AIQuotaManagementScreen() {
     const newQuota = parseInt(editQuota);
 
     if (isNaN(newQuota) || newQuota < 0 || newQuota > 1000) {
-      Alert.alert('错误', '配额应在0-1000之间');
+      Alert.alert(t('aiQuota.error'), t('aiQuota.quotaOutOfRange'));
       return;
     }
 
@@ -129,7 +131,7 @@ export default function AIQuotaManagementScreen() {
           oldQuota: factories.find(f => f.id === factoryId)?.aiWeeklyQuota,
           newQuota,
         });
-        Alert.alert('成功', '配额已更新');
+        Alert.alert(t('aiQuota.success'), t('aiQuota.quotaSaved'));
         setEditingFactory(null);
         loadData(); // 重新加载数据
       }
@@ -138,7 +140,7 @@ export default function AIQuotaManagementScreen() {
         factoryId,
         newQuota,
       });
-      Alert.alert('错误', '保存失败');
+      Alert.alert(t('aiQuota.error'), t('aiQuota.saveFailed'));
     }
   };
 
@@ -165,7 +167,7 @@ export default function AIQuotaManagementScreen() {
     const newResetDay = parseInt(editRuleResetDay);
 
     if (isNaN(newQuota) || newQuota < 0 || newQuota > 10000) {
-      Alert.alert('错误', '配额应在0-10000之间');
+      Alert.alert(t('aiQuota.error'), t('aiQuota.ruleOutOfRange'));
       return;
     }
 
@@ -176,30 +178,30 @@ export default function AIQuotaManagementScreen() {
       });
 
       if (response.success) {
-        Alert.alert('成功', '规则已更新');
+        Alert.alert(t('aiQuota.success'), t('aiQuota.ruleSaved'));
         setEditingRule(null);
         loadData();
       }
     } catch (error) {
       aiQuotaLogger.error('保存规则失败', error as Error);
-      Alert.alert('错误', '保存失败');
+      Alert.alert(t('aiQuota.error'), t('aiQuota.saveFailed'));
     }
   };
 
   const handleDeleteRule = async (ruleId: number) => {
-    Alert.alert('确认删除', '确定要删除这条配额规则吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('aiQuota.confirmDeleteRule'), t('aiQuota.confirmDeleteRuleMessage'), [
+      { text: t('aiQuota.cancel'), style: 'cancel' },
       {
-        text: '删除',
+        text: t('aiQuota.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
             await platformAPI.deleteQuotaRule(ruleId);
-            Alert.alert('成功', '规则已删除');
+            Alert.alert(t('aiQuota.success'), t('aiQuota.deleteSuccess'));
             loadData();
           } catch (error) {
             aiQuotaLogger.error('删除规则失败', error as Error);
-            Alert.alert('错误', '删除失败');
+            Alert.alert(t('aiQuota.error'), t('aiQuota.deleteFailed'));
           }
         },
       },
@@ -212,7 +214,7 @@ export default function AIQuotaManagementScreen() {
     const newQuota = parseInt(editRuleQuota);
 
     if (isNaN(newQuota) || newQuota < 0 || newQuota > 10000) {
-      Alert.alert('错误', '配额应在0-10000之间');
+      Alert.alert(t('aiQuota.error'), t('aiQuota.ruleOutOfRange'));
       return;
     }
 
@@ -224,13 +226,13 @@ export default function AIQuotaManagementScreen() {
       });
 
       if (response.success) {
-        Alert.alert('成功', '全局默认规则已更新');
+        Alert.alert(t('aiQuota.success'), t('aiQuota.globalRuleSaved'));
         setEditingRule(null);
         loadData();
       }
     } catch (error) {
       aiQuotaLogger.error('保存全局规则失败', error as Error);
-      Alert.alert('错误', '保存失败');
+      Alert.alert(t('aiQuota.error'), t('aiQuota.saveFailed'));
     }
   };
 
@@ -264,7 +266,7 @@ export default function AIQuotaManagementScreen() {
           {/* 配额设置 */}
           <View style={styles.quotaSection}>
             <Text variant="bodyMedium" style={styles.sectionLabel}>
-              每周配额
+              {t('aiQuota.weeklyQuota')}
             </Text>
             {isEditing ? (
               <View style={styles.editContainer}>
@@ -276,12 +278,12 @@ export default function AIQuotaManagementScreen() {
                   style={styles.quotaInput}
                   dense
                 />
-                <Text variant="bodyMedium">次/周</Text>
+                <Text variant="bodyMedium">{t('aiQuota.timesPerWeek')}</Text>
                 <Button mode="contained" onPress={() => handleSaveQuota(factory.id)} compact>
-                  保存
+                  {t('aiQuota.save')}
                 </Button>
                 <Button mode="text" onPress={handleCancelEdit} compact>
-                  取消
+                  {t('aiQuota.cancel')}
                 </Button>
               </View>
             ) : (
@@ -290,7 +292,7 @@ export default function AIQuotaManagementScreen() {
                   {factory.aiWeeklyQuota}
                 </Text>
                 <Text variant="bodyMedium" style={styles.quotaUnit}>
-                  次/周
+                  {t('aiQuota.timesPerWeek')}
                 </Text>
               </View>
             )}
@@ -303,7 +305,7 @@ export default function AIQuotaManagementScreen() {
               <View style={styles.usageSection}>
                 <View style={styles.usageHeader}>
                   <Text variant="bodyMedium" style={styles.sectionLabel}>
-                    本周使用
+                    {t('aiQuota.thisWeekUsage')}
                   </Text>
                   <Text
                     variant="titleSmall"
@@ -318,7 +320,7 @@ export default function AIQuotaManagementScreen() {
                   style={styles.progressBar}
                 />
                 <Text variant="bodySmall" style={styles.remainingText}>
-                  剩余: {factoryStat.remaining}次
+                  {t('aiQuota.remaining', { count: factoryStat.remaining })}
                 </Text>
               </View>
             </>
@@ -328,7 +330,7 @@ export default function AIQuotaManagementScreen() {
           <Divider style={styles.cardDivider} />
           <View style={styles.historySection}>
             <Text variant="bodySmall" style={styles.historyText}>
-              历史总调用: {factory._count.aiUsageLogs}次
+              {t('aiQuota.historicalTotal', { count: factory._count.aiUsageLogs })}
             </Text>
           </View>
         </Card.Content>
@@ -341,11 +343,11 @@ export default function AIQuotaManagementScreen() {
       <View style={styles.container}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="AI配额管理" />
+          <Appbar.Content title={t('aiQuota.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载配额数据中...</Text>
+          <Text style={styles.loadingText}>{t('aiQuota.loading')}</Text>
         </View>
       </View>
     );
@@ -355,7 +357,7 @@ export default function AIQuotaManagementScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="AI配额管理" />
+        <Appbar.Content title={t('aiQuota.title')} />
         <Appbar.Action icon="refresh" onPress={handleRefresh} />
       </Appbar.Header>
 
@@ -368,8 +370,8 @@ export default function AIQuotaManagementScreen() {
             setTimeout(() => loadData(), 100);
           }}
           buttons={[
-            { value: 'usage', label: '使用概览', icon: 'chart-bar' },
-            { value: 'rules', label: '规则配置', icon: 'cog' },
+            { value: 'usage', label: t('aiQuota.usageOverview'), icon: 'chart-bar' },
+            { value: 'rules', label: t('aiQuota.ruleConfig'), icon: 'cog' },
           ]}
         />
       </View>
@@ -383,12 +385,12 @@ export default function AIQuotaManagementScreen() {
             {/* 平台使用概览 */}
             {stats && (
           <Card style={styles.card} mode="elevated">
-            <Card.Title title="📊 平台使用概览" />
+            <Card.Title title={t('aiQuota.platformOverview')} />
             <Card.Content>
               <View style={styles.overviewGrid}>
                 <View style={styles.overviewItem}>
                   <Text variant="bodySmall" style={styles.overviewLabel}>
-                    本周期
+                    {t('aiQuota.currentWeek')}
                   </Text>
                   <Text variant="titleMedium" style={styles.overviewValue}>
                     {stats.currentWeek}
@@ -396,18 +398,18 @@ export default function AIQuotaManagementScreen() {
                 </View>
                 <View style={styles.overviewItem}>
                   <Text variant="bodySmall" style={styles.overviewLabel}>
-                    总使用量
+                    {t('aiQuota.totalUsage')}
                   </Text>
                   <Text variant="titleMedium" style={styles.overviewValue}>
-                    {stats.totalUsed}次
+                    {stats.totalUsed}{t('aiQuota.times')}
                   </Text>
                 </View>
                 <View style={styles.overviewItem}>
                   <Text variant="bodySmall" style={styles.overviewLabel}>
-                    工厂数量
+                    {t('aiQuota.factoryCount')}
                   </Text>
                   <Text variant="titleMedium" style={styles.overviewValue}>
-                    {stats.factories.length}个
+                    {stats.factories.length}
                   </Text>
                 </View>
               </View>
@@ -418,7 +420,7 @@ export default function AIQuotaManagementScreen() {
         {/* 工厂配额列表 */}
         <View style={styles.factoriesSection}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            🏭 工厂配额列表
+            {t('aiQuota.factoryQuotaList')}
           </Text>
           {factories.map(renderFactoryCard)}
         </View>
@@ -426,7 +428,7 @@ export default function AIQuotaManagementScreen() {
         {/* 配额建议 */}
         {stats && (
           <Card style={styles.tipsCard} mode="elevated">
-            <Card.Title title="💡 配额建议" />
+            <Card.Title title={t('aiQuota.quotaSuggestions')} />
             <Card.Content>
               {stats.factories.map((factory) => {
                 const util = parseFloat(factory.utilization);
@@ -435,15 +437,15 @@ export default function AIQuotaManagementScreen() {
                 let color = '';
 
                 if (util >= 90) {
-                  suggestion = `${factory.factoryName}: 利用率${util}%，已达高峰，建议增加配额`;
+                  suggestion = t('aiQuota.highUtilization', { name: factory.factoryName, util });
                   icon = 'alert-circle';
                   color = '#EF5350';
                 } else if (util >= 80) {
-                  suggestion = `${factory.factoryName}: 利用率${util}%，接近上限，建议关注`;
+                  suggestion = t('aiQuota.mediumUtilization', { name: factory.factoryName, util });
                   icon = 'alert';
                   color = '#FFA726';
                 } else if (util < 30 && factory.used > 0) {
-                  suggestion = `${factory.factoryName}: 利用率${util}%，较低，可适当降低配额`;
+                  suggestion = t('aiQuota.lowUtilization', { name: factory.factoryName, util });
                   icon = 'information';
                   color = '#66BB6A';
                 }
@@ -469,14 +471,14 @@ export default function AIQuotaManagementScreen() {
             {/* 全局默认规则 */}
             {globalRule && (
               <Card style={styles.card} mode="elevated">
-                <Card.Title title="🌍 全局默认规则" />
+                <Card.Title title={t('aiQuota.globalDefaultRule')} />
                 <Card.Content>
                   <Text variant="bodySmall" style={styles.ruleDescription}>
-                    适用于所有未配置特定规则的工厂
+                    {t('aiQuota.globalRuleHint')}
                   </Text>
                   <Divider style={styles.cardDivider} />
                   <View style={styles.ruleRow}>
-                    <Text variant="bodyMedium">周配额:</Text>
+                    <Text variant="bodyMedium">{t('aiQuota.weeklyQuota')}:</Text>
                     {editingRule === 0 ? (
                       <View style={styles.editContainer}>
                         <TextInput
@@ -488,10 +490,10 @@ export default function AIQuotaManagementScreen() {
                           dense
                         />
                         <Button mode="contained" onPress={handleSaveGlobalRule} compact>
-                          保存
+                          {t('aiQuota.save')}
                         </Button>
                         <Button mode="text" onPress={() => setEditingRule(null)} compact>
-                          取消
+                          {t('aiQuota.cancel')}
                         </Button>
                       </View>
                     ) : (
@@ -499,7 +501,7 @@ export default function AIQuotaManagementScreen() {
                         <Text variant="titleMedium" style={styles.quotaValueLarge}>
                           {globalRule.weeklyQuota}
                         </Text>
-                        <Text variant="bodyMedium">次/周</Text>
+                        <Text variant="bodyMedium">{t('aiQuota.timesPerWeek')}</Text>
                         <IconButton
                           icon="pencil"
                           size={20}
@@ -512,12 +514,18 @@ export default function AIQuotaManagementScreen() {
                     )}
                   </View>
                   <View style={styles.ruleRow}>
-                    <Text variant="bodyMedium">重置周期:</Text>
+                    <Text variant="bodyMedium">{t('aiQuota.resetCycle')}</Text>
                     <Chip>
                       {
-                        ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][
-                          globalRule.resetDayOfWeek === 7 ? 0 : globalRule.resetDayOfWeek
-                        ]
+                        [
+                          t('aiQuota.sunday'),
+                          t('aiQuota.monday'),
+                          t('aiQuota.tuesday'),
+                          t('aiQuota.wednesday'),
+                          t('aiQuota.thursday'),
+                          t('aiQuota.friday'),
+                          t('aiQuota.saturday'),
+                        ][globalRule.resetDayOfWeek === 7 ? 0 : globalRule.resetDayOfWeek]
                       }
                     </Chip>
                   </View>
@@ -528,13 +536,13 @@ export default function AIQuotaManagementScreen() {
             {/* 工厂特定规则 */}
             <Card style={styles.card} mode="elevated">
               <Card.Title
-                title="🏭 工厂特定规则"
-                subtitle={`共${quotaRules.length}个工厂配置了特定规则`}
+                title={t('aiQuota.factorySpecificRules')}
+                subtitle={t('aiQuota.factoryRulesCount', { count: quotaRules.length })}
               />
               <Card.Content>
                 {quotaRules.length === 0 ? (
                   <Text variant="bodyMedium" style={styles.emptyText}>
-                    暂无工厂特定规则，所有工厂使用全局默认规则
+                    {t('aiQuota.noFactoryRules')}
                   </Text>
                 ) : (
                   quotaRules.map((rule) => (
@@ -554,7 +562,7 @@ export default function AIQuotaManagementScreen() {
                         </View>
                         <Divider style={styles.cardDivider} />
                         <View style={styles.ruleRow}>
-                          <Text variant="bodyMedium">周配额:</Text>
+                          <Text variant="bodyMedium">{t('aiQuota.weeklyQuota')}:</Text>
                           {editingRule === rule.id ? (
                             <View style={styles.editContainer}>
                               <TextInput
@@ -570,10 +578,10 @@ export default function AIQuotaManagementScreen() {
                                 onPress={() => rule.id && handleSaveRule(rule.id)}
                                 compact
                               >
-                                保存
+                                {t('aiQuota.save')}
                               </Button>
                               <Button mode="text" onPress={() => setEditingRule(null)} compact>
-                                取消
+                                {t('aiQuota.cancel')}
                               </Button>
                             </View>
                           ) : (
@@ -581,7 +589,7 @@ export default function AIQuotaManagementScreen() {
                               <Text variant="titleMedium" style={styles.quotaValueLarge}>
                                 {rule.weeklyQuota}
                               </Text>
-                              <Text variant="bodyMedium">次/周</Text>
+                              <Text variant="bodyMedium">{t('aiQuota.timesPerWeek')}</Text>
                               <IconButton
                                 icon="pencil"
                                 size={20}

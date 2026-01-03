@@ -24,6 +24,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHInboundStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { qualityInspectionApiClient, InspectionResult } from "../../../services/api/qualityInspectionApiClient";
@@ -60,6 +61,7 @@ const getStorageTypeLabel = (storageType?: string): string => {
 };
 
 export function WHInspectScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
@@ -99,7 +101,7 @@ export function WHInspectScreen() {
         }
       }
     } catch (error) {
-      handleError(error, { title: '加载批次信息失败' });
+      handleError(error, { title: t('messages.loadBatchFailed') });
     } finally {
       setLoading(false);
     }
@@ -109,14 +111,16 @@ export function WHInspectScreen() {
     loadBatchData();
   }, [loadBatchData]);
 
-  // 质检项
-  const [inspectItems, setInspectItems] = useState<InspectItem[]>([
-    { key: "appearance", label: "外观检查 - 颜色正常，无异物", checked: false },
-    { key: "smell", label: "气味检查 - 无异味", checked: false },
-    { key: "temp", label: "温度检测 - 符合冷链要求", checked: false },
-    { key: "package", label: "包装检查 - 完整无破损", checked: false },
-    { key: "certificate", label: "证书检查 - 资质齐全有效", checked: false },
-  ]);
+  // 质检项 - 使用 t() 获取翻译
+  const getInspectItems = useCallback((): InspectItem[] => [
+    { key: "appearance", label: t('inbound.inspect.items.appearance'), checked: false },
+    { key: "smell", label: t('inbound.inspect.items.smell'), checked: false },
+    { key: "temp", label: t('inbound.inspect.items.temp'), checked: false },
+    { key: "package", label: t('inbound.inspect.items.package'), checked: false },
+    { key: "certificate", label: t('inbound.inspect.items.certificate'), checked: false },
+  ], [t]);
+
+  const [inspectItems, setInspectItems] = useState<InspectItem[]>(() => getInspectItems());
 
   const [sampleWeight, setSampleWeight] = useState("");
   const [actualTemp, setActualTemp] = useState("");
@@ -136,13 +140,13 @@ export function WHInspectScreen() {
   // 提交质检结果
   const submitInspection = async (result: InspectionResult) => {
     if (!productionBatchId) {
-      Alert.alert('错误', '批次ID无效，无法提交质检');
+      Alert.alert(t('inbound.inspect.error'), t('inbound.inspect.invalidBatchId'));
       return;
     }
 
     const userId = getUserId();
     if (!userId) {
-      Alert.alert('错误', '用户未登录');
+      Alert.alert(t('inbound.inspect.error'), t('inbound.inspect.notLoggedIn'));
       return;
     }
 
@@ -158,17 +162,17 @@ export function WHInspectScreen() {
         passCount: result === InspectionResult.PASS ? sampleSizeNum : 0,
         failCount: result === InspectionResult.FAIL ? sampleSizeNum : 0,
         result,
-        notes: remarks || `质检项目: ${checkedCount}/${inspectItems.length} 通过，实测温度: ${actualTemp || '-'}°C`,
+        notes: remarks || `${t('inbound.inspect.inspectionItems')}: ${checkedCount}/${inspectItems.length}, ${t('inbound.inspect.actualTemp')}: ${actualTemp || '-'}`,
       });
 
       if (result === InspectionResult.PASS) {
-        Alert.alert('成功', '质检通过，请进行上架操作');
+        Alert.alert(t('inbound.inspect.success'), t('inbound.inspect.passSuccess'));
       } else {
-        Alert.alert('已标记', '批次已标记为质检不通过');
+        Alert.alert(t('inbound.inspect.success'), t('inbound.inspect.rejectSuccess'));
       }
       navigation.goBack();
     } catch (error) {
-      handleError(error, { title: '提交质检失败' });
+      handleError(error, { title: t('messages.submitInspectionFailed') });
     } finally {
       setSubmitting(false);
     }
@@ -176,24 +180,24 @@ export function WHInspectScreen() {
 
   const handlePass = () => {
     if (!allChecked) {
-      Alert.alert("提示", "请完成所有质检项目");
+      Alert.alert(t('inbound.inspect.alert'), t('inbound.inspect.completeAll'));
       return;
     }
 
-    Alert.alert("质检通过", "确定此批次质检通过吗？", [
-      { text: "取消", style: "cancel" },
+    Alert.alert(t('inbound.inspect.passTitle'), t('inbound.inspect.passMessage'), [
+      { text: t('inbound.inspect.cancel'), style: "cancel" },
       {
-        text: "确定",
+        text: t('inbound.inspect.confirm'),
         onPress: () => submitInspection(InspectionResult.PASS),
       },
     ]);
   };
 
   const handleReject = () => {
-    Alert.alert("质检不通过", "确定此批次质检不通过吗？", [
-      { text: "取消", style: "cancel" },
+    Alert.alert(t('inbound.inspect.rejectTitle'), t('inbound.inspect.rejectMessage'), [
+      { text: t('inbound.inspect.cancel'), style: "cancel" },
       {
-        text: "确定",
+        text: t('inbound.inspect.confirm'),
         style: "destructive",
         onPress: () => submitInspection(InspectionResult.FAIL),
       },
@@ -208,12 +212,12 @@ export function WHInspectScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>质检作业</Text>
+          <Text style={styles.headerTitle}>{t('inbound.inspect.title')}</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('inbound.inspect.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -227,12 +231,12 @@ export function WHInspectScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>质检作业</Text>
+          <Text style={styles.headerTitle}>{t('inbound.inspect.title')}</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <MaterialCommunityIcons name="clipboard-check-outline" size={64} color="#ddd" />
-          <Text style={styles.loadingText}>未找到批次信息</Text>
+          <Text style={styles.loadingText}>{t('inbound.inspect.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -248,7 +252,7 @@ export function WHInspectScreen() {
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>质检作业</Text>
+        <Text style={styles.headerTitle}>{t('inbound.inspect.title')}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -258,7 +262,7 @@ export function WHInspectScreen() {
           <View style={styles.batchHeader}>
             <Text style={styles.batchNumber}>{batchInfo.batchNumber}</Text>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>质检中</Text>
+              <Text style={styles.statusText}>{t('inbound.inspect.inspecting')}</Text>
             </View>
           </View>
           <View style={styles.batchInfo}>
@@ -273,9 +277,9 @@ export function WHInspectScreen() {
         {/* 质检项目 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>质检项目</Text>
+            <Text style={styles.sectionTitle}>{t('inbound.inspect.inspectionItems')}</Text>
             <Text style={styles.progressText}>
-              {checkedCount}/{inspectItems.length}
+              {t('inbound.inspect.progress', { current: checkedCount, total: inspectItems.length })}
             </Text>
           </View>
 
@@ -305,16 +309,16 @@ export function WHInspectScreen() {
 
         {/* 质检数据 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>质检数据</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.inspect.inspectionData')}</Text>
 
           <View style={styles.dataRow}>
             <View style={styles.dataItem}>
-              <Text style={styles.dataLabel}>抽样重量(kg)</Text>
+              <Text style={styles.dataLabel}>{t('inbound.inspect.sampleWeight')}</Text>
               <TextInput
                 mode="outlined"
                 value={sampleWeight}
                 onChangeText={setSampleWeight}
-                placeholder="0"
+                placeholder={t('inbound.inspect.placeholders.sampleWeight')}
                 keyboardType="numeric"
                 style={styles.dataInput}
                 outlineColor="#ddd"
@@ -322,12 +326,12 @@ export function WHInspectScreen() {
               />
             </View>
             <View style={styles.dataItem}>
-              <Text style={styles.dataLabel}>实测温度(°C)</Text>
+              <Text style={styles.dataLabel}>{t('inbound.inspect.actualTemp')}</Text>
               <TextInput
                 mode="outlined"
                 value={actualTemp}
                 onChangeText={setActualTemp}
-                placeholder="-18"
+                placeholder={t('inbound.inspect.placeholders.actualTemp')}
                 keyboardType="numbers-and-punctuation"
                 style={styles.dataInput}
                 outlineColor="#ddd"
@@ -339,12 +343,12 @@ export function WHInspectScreen() {
 
         {/* 备注 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>质检备注</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.inspect.inspectionRemarks')}</Text>
           <TextInput
             mode="outlined"
             value={remarks}
             onChangeText={setRemarks}
-            placeholder="请输入质检备注..."
+            placeholder={t('inbound.inspect.placeholders.remarks')}
             multiline
             numberOfLines={3}
             style={styles.textArea}
@@ -366,7 +370,7 @@ export function WHInspectScreen() {
           icon="close"
           disabled={submitting}
         >
-          不通过
+          {t('inbound.inspect.reject')}
         </Button>
         <Button
           mode="contained"
@@ -377,7 +381,7 @@ export function WHInspectScreen() {
           disabled={!allChecked || submitting}
           loading={submitting}
         >
-          {submitting ? '提交中...' : '质检通过'}
+          {submitting ? t('inbound.inspect.passing') : t('inbound.inspect.pass')}
         </Button>
       </View>
     </SafeAreaView>

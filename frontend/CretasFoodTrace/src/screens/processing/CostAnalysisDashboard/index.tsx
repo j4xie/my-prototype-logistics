@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, ScrollView, RefreshControl } from 'react-native';
 import { Text, Appbar, Card, Button, ActivityIndicator, Chip } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ProcessingScreenProps } from '../../../types/navigation';
 import { useCostData, useAIAnalysis } from './hooks';
 import { CostOverviewCard } from './components/CostOverviewCard';
@@ -27,6 +28,7 @@ type CostAnalysisDashboardProps = ProcessingScreenProps<'CostAnalysisDashboard'>
 export default function CostAnalysisDashboard() {
   const navigation = useNavigation<CostAnalysisDashboardProps['navigation']>();
   const route = useRoute<CostAnalysisDashboardProps['route']>();
+  const { t } = useTranslation('processing');
   const { batchId } = route.params || {};
 
   // 使用自定义Hooks管理数据和状态
@@ -52,12 +54,12 @@ export default function CostAnalysisDashboard() {
       <View style={styles.container}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="成本分析" />
+          <Appbar.Content title={t('costAnalysisDashboard.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
           <Text variant="bodyMedium" style={styles.loadingText}>
-            加载成本数据中...
+            {t('costAnalysisDashboard.loading')}
           </Text>
         </View>
       </View>
@@ -70,14 +72,14 @@ export default function CostAnalysisDashboard() {
       <View style={styles.container}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="成本分析" />
+          <Appbar.Content title={t('costAnalysisDashboard.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <Text variant="bodyLarge" style={styles.errorText}>
-            未找到成本数据
+            {t('costAnalysisDashboard.noData')}
           </Text>
           <Button mode="outlined" onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
-            返回
+            {t('common.back')}
           </Button>
         </View>
       </View>
@@ -91,7 +93,7 @@ export default function CostAnalysisDashboard() {
       {/* 顶部导航栏 */}
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="成本分析" />
+        <Appbar.Content title={t('costAnalysisDashboard.title')} />
         <Appbar.Action icon="refresh" onPress={handleRefresh} />
       </Appbar.Header>
 
@@ -106,7 +108,7 @@ export default function CostAnalysisDashboard() {
             <View style={styles.batchHeader}>
               <View>
                 <Text variant="bodySmall" style={styles.label}>
-                  批次号
+                  {t('costAnalysisDashboard.batchNumber')}
                 </Text>
                 <Text variant="titleLarge" style={styles.batchNumber}>
                   {batch.batchNumber}

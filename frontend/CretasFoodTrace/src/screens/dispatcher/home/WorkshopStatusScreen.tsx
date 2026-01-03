@@ -25,6 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 // 调度员主题色
 const DISPATCHER_THEME = {
@@ -171,6 +172,7 @@ const mockWorkshops: Workshop[] = [
 
 export default function WorkshopStatusScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('dispatcher');
   const [refreshing, setRefreshing] = useState(false);
   const [workshops] = useState<Workshop[]>(mockWorkshops);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -202,20 +204,20 @@ export default function WorkshopStatusScreen() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'running': return '运行中';
-      case 'idle': return '空闲';
-      case 'maintenance': return '维护中';
+      case 'running': return t('workshop.status.statusLabels.running');
+      case 'idle': return t('workshop.status.statusLabels.idle');
+      case 'maintenance': return t('workshop.status.statusLabels.maintenance');
       default: return status;
     }
   };
 
   const renderFilters = () => {
     const filters: { key: FilterType; label: string }[] = [
-      { key: 'all', label: '全部' },
-      { key: 'slicing', label: '切片' },
-      { key: 'packaging', label: '包装' },
-      { key: 'freezing', label: '冷冻' },
-      { key: 'storage', label: '仓储' },
+      { key: 'all', label: t('workshop.status.filters.all') },
+      { key: 'slicing', label: t('workshop.status.filters.slicing') },
+      { key: 'packaging', label: t('workshop.status.filters.packaging') },
+      { key: 'freezing', label: t('workshop.status.filters.freezing') },
+      { key: 'storage', label: t('workshop.status.filters.storage') },
     ];
 
     return (
@@ -321,7 +323,7 @@ export default function WorkshopStatusScreen() {
       <View style={styles.emptySlotAvatar}>
         <Text style={styles.emptySlotIcon}>+</Text>
       </View>
-      <Text style={styles.emptySlotText}>空缺</Text>
+      <Text style={styles.emptySlotText}>{t('workshop.status.emptySlot')}</Text>
       <Text style={styles.emptySlotCode}>--</Text>
     </View>
   );
@@ -373,32 +375,32 @@ export default function WorkshopStatusScreen() {
 
         {/* 负责人 */}
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>负责人</Text>
+          <Text style={styles.infoLabel}>{t('workshop.status.sections.supervisor')}</Text>
           <Text style={styles.infoValue}>{workshop.supervisor}</Text>
         </View>
 
         {/* 今日任务 */}
         {isRunning && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>今日任务</Text>
+            <Text style={styles.sectionLabel}>{t('workshop.status.sections.todayTasks')}</Text>
             <View style={styles.taskStats}>
               <Text style={styles.taskStatItem}>
                 <Text style={{ color: DISPATCHER_THEME.success, fontWeight: '500' }}>
                   {workshop.tasks.completed}
                 </Text>{' '}
-                已完成
+                {t('workshop.status.taskStatus.completed')}
               </Text>
               <Text style={styles.taskStatItem}>
                 <Text style={{ color: DISPATCHER_THEME.info, fontWeight: '500' }}>
                   {workshop.tasks.inProgress}
                 </Text>{' '}
-                进行中
+                {t('workshop.status.taskStatus.inProgress')}
               </Text>
               <Text style={styles.taskStatItem}>
                 <Text style={{ color: '#999', fontWeight: '500' }}>
                   {workshop.tasks.pending}
                 </Text>{' '}
-                待开始
+                {t('workshop.status.taskStatus.pending')}
               </Text>
             </View>
           </View>
@@ -407,7 +409,7 @@ export default function WorkshopStatusScreen() {
         {/* 任务进度 */}
         <View style={styles.section}>
           <View style={styles.progressHeader}>
-            <Text style={styles.sectionLabel}>任务进度</Text>
+            <Text style={styles.sectionLabel}>{t('workshop.status.sections.taskProgress')}</Text>
             <Text
               style={[
                 styles.progressValue,
@@ -443,14 +445,14 @@ export default function WorkshopStatusScreen() {
 
         {/* 当前任务组 */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>当前任务组</Text>
+          <Text style={styles.sectionLabel}>{t('workshop.status.sections.currentTaskGroups')}</Text>
           {workshop.taskGroups.length > 0 ? (
             <View style={styles.taskGroupList}>
               {workshop.taskGroups.map(renderTaskGroup)}
             </View>
           ) : (
             <View style={styles.emptyTaskGroup}>
-              <Text style={styles.emptyTaskText}>暂无任务</Text>
+              <Text style={styles.emptyTaskText}>{t('workshop.status.noTasks')}</Text>
             </View>
           )}
         </View>
@@ -458,14 +460,14 @@ export default function WorkshopStatusScreen() {
         {/* 人员在岗 */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>
-            人员在岗 ({workshop.workers.length}人 / 编制{workshop.capacity}人)
+            {t('workshop.status.sections.personnelOnDuty')} ({workshop.workers.length}人 / {t('workshop.status.personnel.capacity')}{workshop.capacity}人)
             {workshop.temporaryCount > 0 && (
               <Text style={{ color: DISPATCHER_THEME.warning, fontSize: 11 }}>
-                {' '}含临时工{workshop.temporaryCount}人
+                {' '}{t('workshop.status.personnel.temporaryWorkers', { count: workshop.temporaryCount })}
               </Text>
             )}
             {isUnderstaffed && (
-              <Text style={{ color: DISPATCHER_THEME.danger, fontSize: 11 }}> 人员不足</Text>
+              <Text style={{ color: DISPATCHER_THEME.danger, fontSize: 11 }}> {t('workshop.status.personnel.understaffed')}</Text>
             )}
           </Text>
           <View style={styles.workersGrid}>
@@ -477,13 +479,13 @@ export default function WorkshopStatusScreen() {
             )}
           </View>
           {workshop.temporaryCount > 0 && (
-            <Text style={styles.tempNote}>* 临时工</Text>
+            <Text style={styles.tempNote}>{t('workshop.status.personnel.temporaryMark')}</Text>
           )}
         </View>
 
         {/* 设备状态 */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>设备状态</Text>
+          <Text style={styles.sectionLabel}>{t('workshop.status.sections.equipmentStatus')}</Text>
           <View style={styles.equipmentList}>
             {workshop.equipment.map(renderEquipmentItem)}
           </View>
@@ -512,7 +514,7 @@ export default function WorkshopStatusScreen() {
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>车间状态详情</Text>
+        <Text style={styles.headerTitle}>{t('workshop.status.title')}</Text>
         <View style={styles.placeholder} />
       </LinearGradient>
 

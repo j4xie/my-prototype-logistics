@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 interface Notification {
   id: string;
@@ -25,6 +26,7 @@ interface Notification {
 
 export function NotificationsScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('workshop');
   const [refreshing, setRefreshing] = useState(false);
 
   const [notifications] = useState<Notification[]>([
@@ -112,9 +114,9 @@ export function NotificationsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>通知</Text>
+        <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
         <TouchableOpacity>
-          <Text style={styles.headerAction}>全部已读</Text>
+          <Text style={styles.headerAction}>{t('notifications.markAllRead')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -129,7 +131,7 @@ export function NotificationsScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Icon source="bell-off-outline" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>暂无通知</Text>
+            <Text style={styles.emptyText}>{t('notifications.empty')}</Text>
           </View>
         }
       />

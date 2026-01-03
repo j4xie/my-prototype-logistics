@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 /**
@@ -268,4 +269,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> searchUsersWithEmployeeCode(@Param("factoryId") String factoryId,
                                            @Param("keyword") String keyword,
                                            Pageable pageable);
+
+    /**
+     * 批量查询多个用户 - 解决 N+1 查询问题
+     * @param ids 用户ID集合
+     * @return 用户列表
+     */
+    List<User> findByIdIn(Collection<Long> ids);
 }

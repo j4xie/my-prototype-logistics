@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.quality.*;
 import com.cretas.aims.entity.QualityInspection;
 import com.cretas.aims.entity.DecisionAuditLog;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.QualityInspectionRepository;
 import com.cretas.aims.repository.DecisionAuditLogRepository;
 import com.cretas.aims.service.QualityDispositionRuleService;
@@ -12,6 +13,7 @@ import com.cretas.aims.service.QualityDispositionRuleService.DispositionResult;
 import com.cretas.aims.service.QualityDispositionRuleService.DispositionExecutionResult;
 import com.cretas.aims.service.StateMachineService;
 import com.cretas.aims.service.NotificationService;
+import com.cretas.aims.service.PushNotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +25,7 @@ import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +54,7 @@ public class QualityDispositionController {
     private final DecisionAuditLogRepository decisionAuditLogRepository;
     private final StateMachineService stateMachineService;
     private final NotificationService notificationService;
+    private final PushNotificationService pushNotificationService;
 
     /**
      * 根据质检结果评估处置建议
@@ -65,14 +69,14 @@ public class QualityDispositionController {
     @PostMapping("/evaluate")
     @Operation(summary = "评估质检处置", description = "根据质检结果评估推荐的处置动作")
     public ApiResponse<DispositionEvaluationDTO> evaluateDisposition(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @Valid @RequestBody @Parameter(description = "质检结果") QualityCheckResultDTO qualityResult) {
 
         log.info("评估质检处置 - factoryId={}, inspectionId={}", factoryId, qualityResult.getInspectionId());
 
         // 查找质检记录
         QualityInspection inspection = qualityInspectionRepository.findById(qualityResult.getInspectionId())
-                .orElseThrow(() -> new RuntimeException("质检记录不存在: " + qualityResult.getInspectionId()));
+                .orElseThrow(() -> new EntityNotFoundException("Quality inspection", qualityResult.getInspectionId()));
 
         // 评估处置
         DispositionResult result = qualityDispositionRuleService.evaluateDisposition(factoryId, inspection);
@@ -119,7 +123,7 @@ public class QualityDispositionController {
     @GetMapping("/actions")
     @Operation(summary = "获取可用处置动作", description = "获取所有可用的质检处置动作列表")
     public ApiResponse<List<DispositionActionDTO>> getAvailableActions(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
 
         log.info("获取可用处置动作 - factoryId={}", factoryId);
 
@@ -152,7 +156,7 @@ public class QualityDispositionController {
     @PostMapping("/execute")
     @Operation(summary = "执行处置动作", description = "执行质检处置动作，集成状态机门禁")
     public ApiResponse<DispositionResultDTO> executeDisposition(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @Valid @RequestBody @Parameter(description = "执行处置请求") ExecuteDispositionRequest request) {
 
         log.info("执行质检处置 - factoryId={}, batchId={}, action={}",
@@ -160,7 +164,7 @@ public class QualityDispositionController {
 
         // 查找质检记录
         QualityInspection inspection = qualityInspectionRepository.findById(request.getInspectionId())
-                .orElseThrow(() -> new RuntimeException("质检记录不存在: " + request.getInspectionId()));
+                .orElseThrow(() -> new EntityNotFoundException("Quality inspection", request.getInspectionId()));
 
         // 解析处置动作
         DispositionAction action;
@@ -235,12 +239,13 @@ public class QualityDispositionController {
 
     /**
      * 获取处置历史
+     * 优化：使用批量查询避免 N+1 问题
      */
     @GetMapping("/history/{batchId}")
     @Operation(summary = "获取处置历史", description = "获取指定批次的质检处置历史记录")
     public ApiResponse<List<DispositionHistoryDTO>> getDispositionHistory(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "生产批次ID") Long batchId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "生产批次ID", example = "1") Long batchId) {
 
         log.info("获取处置历史 - factoryId={}, batchId={}", factoryId, batchId);
 
@@ -248,35 +253,54 @@ public class QualityDispositionController {
         List<QualityInspection> inspections = qualityInspectionRepository
                 .findByFactoryIdAndProductionBatchId(factoryId, batchId);
 
+        if (inspections.isEmpty()) {
+            return ApiResponse.success(Collections.emptyList());
+        }
+
+        // 优化：批量查询所有质检记录的审计日志，避免 N+1 问题
+        Set<String> inspectionIds = inspections.stream()
+                .map(QualityInspection::getId)
+                .collect(Collectors.toSet());
+
+        List<DecisionAuditLog> allAuditLogs = decisionAuditLogRepository
+                .findByFactoryIdAndEntityTypeAndEntityIdIn(factoryId, "QualityInspection", inspectionIds);
+
+        // 构建 inspectionId -> List<DecisionAuditLog> 的映射
+        Map<String, List<DecisionAuditLog>> auditLogsByInspectionId = allAuditLogs.stream()
+                .collect(Collectors.groupingBy(DecisionAuditLog::getEntityId));
+
+        // 构建 inspectionId -> QualityInspection 的映射
+        Map<String, QualityInspection> inspectionMap = inspections.stream()
+                .collect(Collectors.toMap(QualityInspection::getId, Function.identity()));
+
         List<DispositionHistoryDTO> history = new ArrayList<>();
 
         for (QualityInspection inspection : inspections) {
-            // 查找该质检记录相关的审计日志
-            List<DecisionAuditLog> auditLogs = decisionAuditLogRepository
-                    .findByFactoryIdAndEntityTypeAndEntityId(factoryId, "QualityInspection", inspection.getId());
+            List<DecisionAuditLog> auditLogs = auditLogsByInspectionId.getOrDefault(
+                    inspection.getId(), Collections.emptyList());
 
-            for (DecisionAuditLog log : auditLogs) {
+            for (DecisionAuditLog auditLog : auditLogs) {
                 DispositionHistoryDTO dto = DispositionHistoryDTO.builder()
-                        .id(log.getId())
+                        .id(auditLog.getId())
                         .batchId(batchId)
                         .inspectionId(inspection.getId())
-                        .action(log.getDecisionMade())
-                        .actionDescription(log.getDecisionMade())
-                        .reason(log.getReason())
+                        .action(auditLog.getDecisionMade())
+                        .actionDescription(auditLog.getDecisionMade())
+                        .reason(auditLog.getReason())
                         .passRate(inspection.getPassRate())
                         .defectRate(inspection.getDefectRate())
                         .qualityGrade(inspection.getQualityGrade())
-                        .executorId(log.getExecutorId())
-                        .executorName(log.getExecutorName())
-                        .executorRole(log.getExecutorRole())
-                        .requiresApproval(log.getRequiresApproval())
-                        .approvalStatus(log.getApprovalStatus() != null
-                                ? log.getApprovalStatus().name()
+                        .executorId(auditLog.getExecutorId())
+                        .executorName(auditLog.getExecutorName())
+                        .executorRole(auditLog.getExecutorRole())
+                        .requiresApproval(auditLog.getRequiresApproval())
+                        .approvalStatus(auditLog.getApprovalStatus() != null
+                                ? auditLog.getApprovalStatus().name()
                                 : null)
-                        .approverName(log.getApproverName())
-                        .approvedAt(log.getApprovedAt())
-                        .newStatus(log.getNewState())
-                        .createdAt(log.getCreatedAt())
+                        .approverName(auditLog.getApproverName())
+                        .approvedAt(auditLog.getApprovedAt())
+                        .newStatus(auditLog.getNewState())
+                        .createdAt(auditLog.getCreatedAt())
                         .build();
                 history.add(dto);
             }
@@ -294,7 +318,7 @@ public class QualityDispositionController {
     @PostMapping("/rules")
     @Operation(summary = "创建处置规则", description = "创建新的质检处置规则")
     public ApiResponse<DispositionRuleDTO> createRule(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @Valid @RequestBody @Parameter(description = "规则创建请求") CreateDispositionRuleRequest request) {
 
         log.info("创建处置规则 - factoryId={}, ruleName={}", factoryId, request.getRuleName());
@@ -331,7 +355,7 @@ public class QualityDispositionController {
     @GetMapping("/rules")
     @Operation(summary = "获取处置规则列表", description = "获取工厂的所有质检处置规则")
     public ApiResponse<List<DispositionRuleDTO>> getRules(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
 
         log.info("获取处置规则列表 - factoryId={}", factoryId);
 
@@ -384,6 +408,303 @@ public class QualityDispositionController {
         log.warn("处置规则列表功能尚未完全实现，返回模拟数据");
 
         return ApiResponse.success(rules);
+    }
+
+    // ==================== 待处置列表与审批 ====================
+
+    /**
+     * 获取待处置列表
+     * 返回所有需要审批或处理的质检记录
+     */
+    @GetMapping("/pending")
+    @Operation(summary = "获取待处置列表", description = "获取所有待处理的质检处置请求")
+    public ApiResponse<List<PendingDispositionDTO>> getPendingDispositions(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
+
+        log.info("获取待处置列表 - factoryId={}", factoryId);
+
+        // 使用专门的查询方法获取质检待审批列表
+        List<DecisionAuditLog> pendingLogs = decisionAuditLogRepository
+                .findQualityPendingApprovals(factoryId);
+
+        // 优化：批量查询质检记录避免 N+1 问题
+        Set<String> entityIds = pendingLogs.stream()
+                .map(DecisionAuditLog::getEntityId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, QualityInspection> inspectionMap = entityIds.isEmpty() ? Collections.emptyMap() :
+                qualityInspectionRepository.findAllById(entityIds).stream()
+                        .collect(Collectors.toMap(QualityInspection::getId, Function.identity()));
+
+        List<PendingDispositionDTO> pendingList = pendingLogs.stream()
+                .map(auditLog -> {
+                    PendingDispositionDTO dto = new PendingDispositionDTO();
+                    dto.setId(auditLog.getId());
+                    dto.setEntityType(auditLog.getEntityType());
+                    dto.setEntityId(auditLog.getEntityId());
+                    dto.setDecisionMade(auditLog.getDecisionMade());
+                    dto.setReason(auditLog.getReason());
+                    dto.setExecutorId(auditLog.getExecutorId());
+                    dto.setExecutorName(auditLog.getExecutorName());
+                    dto.setExecutorRole(auditLog.getExecutorRole());
+                    dto.setRuleConfigName(auditLog.getRuleConfigName());
+                    dto.setCreatedAt(auditLog.getCreatedAt());
+
+                    // 从预加载的 Map 中获取质检记录并提取批次信息
+                    if (auditLog.getEntityId() != null) {
+                        QualityInspection inspection = inspectionMap.get(auditLog.getEntityId());
+                        if (inspection != null) {
+                            dto.setProductionBatchId(inspection.getProductionBatchId());
+                        }
+                    }
+
+                    // 根据处置动作推断审批级别
+                    dto.setApprovalLevel(getApprovalLevelForAction(auditLog.getDecisionMade()));
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponse.success(pendingList);
+    }
+
+    /**
+     * 申请处置
+     * 创建一个新的处置申请，需要后续审批
+     */
+    @PostMapping("/apply")
+    @Operation(summary = "申请处置", description = "提交质检处置申请")
+    public ApiResponse<DispositionApplicationDTO> applyDisposition(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @Valid @RequestBody @Parameter(description = "处置申请请求") DispositionApplyRequest request) {
+
+        log.info("申请处置 - factoryId={}, batchId={}, action={}",
+                factoryId, request.getBatchId(), request.getActionCode());
+
+        // 获取审批级别
+        String approvalLevel = getApprovalLevelForAction(request.getActionCode());
+
+        // 创建审计日志记录申请
+        DecisionAuditLog auditLog = DecisionAuditLog.builder()
+                .factoryId(factoryId)
+                .entityType("QualityDisposition")
+                .entityId(request.getInspectionId())
+                .decisionType(DecisionAuditLog.DecisionType.APPROVAL)
+                .decisionMade(request.getActionCode())
+                .reason(request.getReason())
+                .executorId(request.getApplicantId())
+                .executorName(request.getApplicantName())
+                .executionMode(DecisionAuditLog.ExecutionMode.MANUAL)
+                .requiresApproval(true)
+                .approvalStatus(DecisionAuditLog.ApprovalStatus.PENDING)
+                .previousState("PENDING_REVIEW")
+                .newState("PENDING_APPROVAL")
+                .build();
+
+        auditLog = decisionAuditLogRepository.save(auditLog);
+
+        // 发送审批通知
+        try {
+            notificationService.sendNotification(
+                    factoryId,
+                    "QUALITY_DISPOSITION_APPLY",
+                    "质检处置申请",
+                    String.format("批次 %d 的质检处置申请（%s）需要审批",
+                            request.getBatchId(), request.getActionCode()),
+                    Map.of("applicationId", auditLog.getId(),
+                            "batchId", request.getBatchId(),
+                            "action", request.getActionCode())
+            );
+        } catch (Exception e) {
+            log.warn("发送处置申请通知失败", e);
+        }
+
+        // 发送质检处置申请推送通知
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "quality_disposition_apply");
+            pushData.put("applicationId", auditLog.getId());
+            pushData.put("batchId", request.getBatchId());
+            pushData.put("actionCode", request.getActionCode());
+            pushData.put("screen", "QualityDispositionApproval");
+
+            // 发送到工厂相关人员（审批人）
+            Long inspectionIdLong = null;
+            try {
+                inspectionIdLong = Long.parseLong(request.getInspectionId());
+            } catch (NumberFormatException e) {
+                log.warn("无法解析 inspectionId: {}", request.getInspectionId());
+            }
+            pushNotificationService.sendQualityNotification(
+                    request.getApplicantId(), // 暂时发给申请人，实际应发给审批人
+                    inspectionIdLong,
+                    request.getActionCode(),
+                    String.format("批次 %d 的质检处置申请需要审批", request.getBatchId())
+            );
+            log.info("质检处置申请推送通知已发送: applicationId={}", auditLog.getId());
+        } catch (Exception e) {
+            log.warn("发送质检处置申请推送通知失败", e);
+        }
+
+        DispositionApplicationDTO dto = DispositionApplicationDTO.builder()
+                .applicationId(auditLog.getId())
+                .batchId(request.getBatchId())
+                .inspectionId(request.getInspectionId())
+                .actionCode(request.getActionCode())
+                .status("PENDING_APPROVAL")
+                .approvalLevel(approvalLevel)
+                .applicantId(request.getApplicantId())
+                .applicantName(request.getApplicantName())
+                .createdAt(auditLog.getCreatedAt())
+                .message("处置申请已提交，等待审批")
+                .build();
+
+        log.info("处置申请已创建 - applicationId={}", auditLog.getId());
+
+        return ApiResponse.success(dto);
+    }
+
+    /**
+     * 审批处置申请
+     */
+    @PostMapping("/{id}/approve")
+    @Operation(summary = "审批处置", description = "审批或拒绝质检处置申请")
+    public ApiResponse<DispositionApprovalResultDTO> approveDisposition(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "处置申请ID", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
+            @Valid @RequestBody @Parameter(description = "审批请求") DispositionApproveRequest request) {
+
+        log.info("审批处置 - factoryId={}, id={}, approved={}", factoryId, id, request.getApproved());
+
+        // 查找审计日志
+        DecisionAuditLog auditLog = decisionAuditLogRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Decision audit log", id));
+
+        // 验证工厂ID
+        if (!auditLog.getFactoryId().equals(factoryId)) {
+            return ApiResponse.error("无权审批此处置申请");
+        }
+
+        // 更新审批状态
+        auditLog.setApprovalStatus(request.getApproved()
+                ? DecisionAuditLog.ApprovalStatus.APPROVED
+                : DecisionAuditLog.ApprovalStatus.REJECTED);
+        auditLog.setApproverId(request.getApproverId());
+        auditLog.setApproverName(request.getApproverName());
+        auditLog.setApprovalComment(request.getComment());
+        auditLog.setApprovedAt(LocalDateTime.now());
+
+        if (request.getApproved()) {
+            auditLog.setNewState("APPROVED");
+        } else {
+            auditLog.setNewState("REJECTED");
+        }
+
+        auditLog = decisionAuditLogRepository.save(auditLog);
+
+        // 获取批次ID用于通知
+        Long productionBatchId = null;
+        String executionStatus = null;
+        String newBatchStatus = null;
+
+        // 如果批准，执行处置动作
+        if (request.getApproved() && auditLog.getEntityId() != null) {
+            try {
+                QualityInspection inspection = qualityInspectionRepository.findById(auditLog.getEntityId())
+                        .orElse(null);
+                if (inspection != null) {
+                    productionBatchId = inspection.getProductionBatchId();
+                    DispositionAction action = DispositionAction.valueOf(auditLog.getDecisionMade());
+                    var executionResult = qualityDispositionRuleService.executeDisposition(
+                            factoryId, inspection, action,
+                            request.getApproverId(),
+                            "审批通过后执行: " + request.getComment()
+                    );
+                    executionStatus = "EXECUTED";
+                    newBatchStatus = executionResult.getNewBatchStatus();
+                }
+            } catch (Exception e) {
+                log.warn("执行处置动作失败", e);
+                executionStatus = "EXECUTION_FAILED";
+            }
+        }
+
+        // 发送通知
+        try {
+            String notificationMessage = productionBatchId != null
+                    ? String.format("批次 %d 的质检处置申请已%s", productionBatchId, request.getApproved() ? "批准" : "拒绝")
+                    : String.format("质检处置申请 %s 已%s", id, request.getApproved() ? "批准" : "拒绝");
+
+            Map<String, Object> notificationData = new HashMap<>();
+            notificationData.put("applicationId", id);
+            notificationData.put("approved", request.getApproved());
+            if (productionBatchId != null) {
+                notificationData.put("batchId", productionBatchId);
+            }
+
+            notificationService.sendNotification(
+                    factoryId,
+                    request.getApproved() ? "QUALITY_DISPOSITION_APPROVED" : "QUALITY_DISPOSITION_REJECTED",
+                    request.getApproved() ? "质检处置已批准" : "质检处置已拒绝",
+                    notificationMessage,
+                    notificationData
+            );
+        } catch (Exception e) {
+            log.warn("发送审批通知失败", e);
+        }
+
+        // 发送审批结果推送通知给申请人
+        try {
+            Long applicantId = auditLog.getExecutorId();
+            if (applicantId != null) {
+                Long entityIdLong = null;
+                try {
+                    entityIdLong = Long.parseLong(auditLog.getEntityId());
+                } catch (NumberFormatException e) {
+                    log.warn("无法解析 entityId: {}", auditLog.getEntityId());
+                }
+                String resultText = request.getApproved() ? "已批准" : "已拒绝";
+                pushNotificationService.sendQualityNotification(
+                        applicantId,
+                        entityIdLong,
+                        request.getApproved() ? "APPROVED" : "REJECTED",
+                        String.format("您的质检处置申请%s: %s", resultText,
+                                request.getComment() != null ? request.getComment() : auditLog.getDecisionMade())
+                );
+                log.info("质检处置审批结果推送通知已发送: applicationId={}, applicantId={}", id, applicantId);
+            }
+        } catch (Exception e) {
+            log.warn("发送审批结果推送通知失败", e);
+        }
+
+        DispositionApprovalResultDTO dto = DispositionApprovalResultDTO.builder()
+                .applicationId(id)
+                .batchId(productionBatchId)
+                .approved(request.getApproved())
+                .approverId(request.getApproverId())
+                .approverName(request.getApproverName())
+                .comment(request.getComment())
+                .approvedAt(auditLog.getApprovedAt())
+                .executionStatus(executionStatus)
+                .newBatchStatus(newBatchStatus)
+                .message(request.getApproved() ? "处置申请已批准" : "处置申请已拒绝")
+                .build();
+
+        log.info("处置审批完成 - id={}, approved={}", id, request.getApproved());
+
+        return ApiResponse.success(dto);
+    }
+
+    /**
+     * 获取处置动作对应的审批级别
+     */
+    private String getApprovalLevelForAction(String actionCode) {
+        try {
+            DispositionAction action = DispositionAction.valueOf(actionCode);
+            return getActionApprovalLevel(action);
+        } catch (Exception e) {
+            return "SUPERVISOR";
+        }
     }
 
     // ==================== 私有辅助方法 ====================

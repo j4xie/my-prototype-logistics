@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS, QualityInspectorStackParamList } from '../../types/qualityInspector';
 import { useAuthStore } from '../../store/authStore';
@@ -36,6 +37,7 @@ export default function QIProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
+  const { t } = useTranslation('quality');
 
   const [todayStats, setTodayStats] = useState({
     inspected: 12,
@@ -44,10 +46,10 @@ export default function QIProfileScreen() {
   });
 
   const handleLogout = () => {
-    Alert.alert('确认退出', '确定要退出登录吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('profile.confirmLogout'), t('profile.confirmLogoutMessage'), [
+      { text: t('camera.cancel'), style: 'cancel' },
       {
-        text: '退出',
+        text: t('profile.logout'),
         style: 'destructive',
         onPress: () => {
           logout();
@@ -61,20 +63,20 @@ export default function QIProfileScreen() {
       {
         id: 'clockIn',
         icon: 'time-outline',
-        label: '考勤打卡',
+        label: t('profile.menu.clockIn'),
         onPress: () => navigation.navigate('QIClockIn'),
       },
       {
         id: 'notifications',
         icon: 'notifications-outline',
-        label: '消息通知',
+        label: t('profile.menu.notifications'),
         badge: 3,
         onPress: () => navigation.navigate('QINotifications'),
       },
       {
         id: 'records',
         icon: 'document-text-outline',
-        label: '我的记录',
+        label: t('profile.menu.myRecords'),
         onPress: () => navigation.navigate('QIRecords'),
       },
     ],
@@ -82,21 +84,21 @@ export default function QIProfileScreen() {
       {
         id: 'settings',
         icon: 'settings-outline',
-        label: '设置',
+        label: t('profile.menu.settings'),
         onPress: () => navigation.navigate('QISettings'),
       },
       {
         id: 'help',
         icon: 'help-circle-outline',
-        label: '帮助中心',
-        onPress: () => Alert.alert('帮助中心', '如有问题请联系管理员'),
+        label: t('profile.menu.help'),
+        onPress: () => Alert.alert(t('profile.menu.help'), t('profile.helpMessage')),
       },
       {
         id: 'about',
         icon: 'information-circle-outline',
-        label: '关于',
-        value: 'v1.0.0',
-        onPress: () => Alert.alert('关于', '白垩纪食品溯源系统\n质检员版本 v1.0.0'),
+        label: t('profile.menu.about'),
+        value: t('profile.version'),
+        onPress: () => Alert.alert(t('profile.menu.about'), t('profile.aboutMessage')),
       },
     ],
   ];
@@ -140,12 +142,12 @@ export default function QIProfileScreen() {
             </View>
           )}
           <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>质检员</Text>
+            <Text style={styles.roleBadgeText}>{t('profile.inspector')}</Text>
           </View>
         </View>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{user?.fullName || user?.username || '质检员'}</Text>
-          <Text style={styles.userDept}>{user?.department === 'quality' ? '质检部' : user?.department || '质检部'}</Text>
+          <Text style={styles.userName}>{user?.fullName || user?.username || t('profile.inspector')}</Text>
+          <Text style={styles.userDept}>{user?.department === 'quality' ? t('profile.department') : user?.department || t('profile.department')}</Text>
         </View>
         <TouchableOpacity style={styles.editBtn}>
           <Ionicons name="create-outline" size={20} color={QI_COLORS.primary} />
@@ -156,17 +158,17 @@ export default function QIProfileScreen() {
       <View style={styles.statsCard}>
         <View style={styles.statsItem}>
           <Text style={styles.statsValue}>{todayStats.inspected}</Text>
-          <Text style={styles.statsLabel}>今日检验</Text>
+          <Text style={styles.statsLabel}>{t('profile.todayInspected')}</Text>
         </View>
         <View style={styles.statsDivider} />
         <View style={styles.statsItem}>
           <Text style={styles.statsValue}>{todayStats.passed}</Text>
-          <Text style={styles.statsLabel}>检验合格</Text>
+          <Text style={styles.statsLabel}>{t('profile.todayPassed')}</Text>
         </View>
         <View style={styles.statsDivider} />
         <View style={styles.statsItem}>
           <Text style={styles.statsValue}>{todayStats.workHours}</Text>
-          <Text style={styles.statsLabel}>工作时长</Text>
+          <Text style={styles.statsLabel}>{t('profile.workHours')}</Text>
         </View>
       </View>
 
@@ -179,7 +181,7 @@ export default function QIProfileScreen() {
           <View style={[styles.quickActionIcon, { backgroundColor: '#E3F2FD' }]}>
             <Ionicons name="finger-print-outline" size={24} color="#1976D2" />
           </View>
-          <Text style={styles.quickActionLabel}>打卡</Text>
+          <Text style={styles.quickActionLabel}>{t('profile.quickActions.clock')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.quickActionItem}
@@ -188,7 +190,7 @@ export default function QIProfileScreen() {
           <View style={[styles.quickActionIcon, { backgroundColor: '#E8F5E9' }]}>
             <Ionicons name="clipboard-outline" size={24} color={QI_COLORS.primary} />
           </View>
-          <Text style={styles.quickActionLabel}>质检</Text>
+          <Text style={styles.quickActionLabel}>{t('profile.quickActions.inspect')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.quickActionItem}
@@ -197,7 +199,7 @@ export default function QIProfileScreen() {
           <View style={[styles.quickActionIcon, { backgroundColor: '#FFF3E0' }]}>
             <Ionicons name="file-tray-full-outline" size={24} color="#FF9800" />
           </View>
-          <Text style={styles.quickActionLabel}>记录</Text>
+          <Text style={styles.quickActionLabel}>{t('profile.quickActions.records')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.quickActionItem}
@@ -206,7 +208,7 @@ export default function QIProfileScreen() {
           <View style={[styles.quickActionIcon, { backgroundColor: '#F3E5F5' }]}>
             <Ionicons name="stats-chart-outline" size={24} color="#9C27B0" />
           </View>
-          <Text style={styles.quickActionLabel}>分析</Text>
+          <Text style={styles.quickActionLabel}>{t('profile.quickActions.analysis')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -220,7 +222,7 @@ export default function QIProfileScreen() {
       {/* 退出登录 */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={20} color={QI_COLORS.danger} />
-        <Text style={styles.logoutText}>退出登录</Text>
+        <Text style={styles.logoutText}>{t('profile.logout')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
