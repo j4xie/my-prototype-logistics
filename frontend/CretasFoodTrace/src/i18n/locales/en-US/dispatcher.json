@@ -1,0 +1,576 @@
+{
+  "home": {
+    "title": "Dispatcher Workbench",
+    "role": "Dispatcher",
+    "aiCenter": {
+      "title": "AI Intelligent Scheduling Center",
+      "subtitle": "Monte Carlo + OR-Tools + LLM",
+      "todayProbability": "Today's Completion Probability",
+      "pendingBatches": "Pending Batches",
+      "optimizationSpace": "Optimization Space",
+      "oneClickSchedule": "One-Click AI Scheduling"
+    },
+    "aiRisk": {
+      "title": "AI Risk Alert",
+      "description": "Detected {{count}} batches with completion probability below 70%. Consider adjusting staffing or deadlines.",
+      "view": "View"
+    },
+    "pendingTasks": {
+      "title": "Today's Pending Tasks",
+      "subtitle": "Priority Order",
+      "unassigned": "Unassigned Tasks",
+      "inProgress": "In Progress",
+      "pendingApproval": "Pending Approval"
+    },
+    "workshop": {
+      "title": "Workshop Real-time Status",
+      "viewAll": "View All >",
+      "workers": "workers",
+      "batches": "batches"
+    },
+    "personnel": {
+      "title": "Personnel Allocation",
+      "transfer": "Transfer Staff >",
+      "floatingStaff": "Floating Staff",
+      "aiOptimize": "AI Optimize"
+    },
+    "approval": {
+      "title": "Pending Approvals",
+      "pendingCount": "{{count}} pending >",
+      "pending": "Pending",
+      "plan": "Plan",
+      "transfer": "Transfer",
+      "newPlanRequest": "New Production Plan Request",
+      "transferRequest": "Staff Transfer Request"
+    },
+    "workshops": {
+      "slicing": "Slicing Workshop",
+      "packaging": "Packaging Workshop",
+      "freezing": "Freezing Workshop"
+    }
+  },
+  "planList": {
+    "title": "Production Plans",
+    "create": "+ New",
+    "filters": {
+      "allStatus": "All Status",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "allWorkshop": "All Workshops",
+      "dateRange": "Date Range",
+      "today": "Today",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "allSource": "All Sources",
+      "customerOrder": "Customer Order",
+      "aiPredict": "AI Prediction",
+      "safetyStock": "Safety Stock",
+      "mixedBatch": "Mixed Batch",
+      "all": "All",
+      "urgentOnly": "Urgent Only",
+      "pendingApproval": "Pending Approval"
+    },
+    "search": {
+      "placeholder": "Search plan number/product name..."
+    },
+    "quickEntry": {
+      "gantt": "Gantt Chart",
+      "urgentInsert": "Urgent Insert",
+      "mixedBatch": "Mixed Batch",
+      "resource": "Resource Overview"
+    },
+    "urgentCount": "{{count}} urgent",
+    "section": {
+      "urgentPlans": "Urgent Plans",
+      "pendingApproval": "Pending Approval Plans",
+      "todayPlans": "Today's Plans",
+      "count": "({{count}})"
+    },
+    "card": {
+      "source": "Source:",
+      "customerOrder": "Customer Order",
+      "mixedBatch": "Mixed Batch",
+      "aiPredict": "AI Prediction",
+      "safetyStock": "Safety Stock",
+      "crValue": "CR Value:",
+      "deadline": "Deadline",
+      "earliestDeadline": "Earliest Deadline",
+      "confidence": "Prediction Confidence:",
+      "seasonality": "Seasonality:",
+      "currentStock": "Current Stock:",
+      "stockTrigger": "Triggered by stock below 30%",
+      "mergedOrders": "(Merged {{count}} orders)",
+      "mixedDetails": "Mixed Batch Details"
+    },
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "crLevel": {
+      "urgent": "Urgent",
+      "tight": "Tight",
+      "sufficient": "Sufficient"
+    },
+    "tags": {
+      "matched": "Matched",
+      "partialMatched": "Partial Match",
+      "pendingMatch": "Pending Match",
+      "urgent": "Urgent",
+      "highPriority": "High Priority",
+      "mediumPriority": "Medium Priority"
+    },
+    "approval": {
+      "required": "Requires Approval",
+      "forceInsert": "Force Insert",
+      "reason": "Reason:",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveTitle": "Approve Insertion",
+      "rejectTitle": "Reject Insertion",
+      "commentOptional": "Approval Comment (Optional)",
+      "rejectReasonRequired": "Rejection Reason (Required)",
+      "enterComment": "Enter approval comment...",
+      "enterRejectReason": "Enter rejection reason...",
+      "confirmApprove": "Confirm Approve",
+      "confirmReject": "Confirm Reject",
+      "success": "Success",
+      "approved": "Force insertion approved",
+      "rejected": "Force insertion rejected",
+      "fillRejectReason": "Please provide a rejection reason",
+      "failed": "Failed",
+      "operationFailed": "Approval operation failed. Please try again later."
+    },
+    "empty": {
+      "title": "No plans available"
+    },
+    "loadMore": "Load more...",
+    "loading": "Loading..."
+  },
+  "messages": {
+    "loadFailed": "Failed to load dispatcher dashboard data",
+    "loadPlansFailed": "Unable to load production plans. Please check network.",
+    "usingDefaultThreshold": "Using default urgent threshold 0.6",
+    "refreshing": "Refreshing..."
+  },
+  "workshop": {
+    "status": {
+      "title": "Workshop Status Details",
+      "filters": {
+        "all": "All",
+        "slicing": "Slicing",
+        "packaging": "Packaging",
+        "freezing": "Freezing",
+        "storage": "Storage"
+      },
+      "statusLabels": {
+        "running": "Running",
+        "idle": "Idle",
+        "maintenance": "Maintenance"
+      },
+      "sections": {
+        "supervisor": "Supervisor",
+        "todayTasks": "Today's Tasks",
+        "taskProgress": "Task Progress",
+        "currentTaskGroups": "Current Task Groups",
+        "equipmentStatus": "Equipment Status",
+        "personnelOnDuty": "Personnel On Duty"
+      },
+      "taskStatus": {
+        "completed": "Completed",
+        "inProgress": "In Progress",
+        "pending": "Pending"
+      },
+      "personnel": {
+        "capacity": "Capacity",
+        "temporaryWorkers": "Including {{count}} temporary workers",
+        "understaffed": "Understaffed",
+        "temporaryMark": "* Temporary"
+      },
+      "equipment": {
+        "slicingMachineA": "Slicing Machine A",
+        "slicingMachineB": "Slicing Machine B",
+        "washingLine": "Washing Line",
+        "sealingMachineA": "Sealing Machine A",
+        "sealingMachineB": "Sealing Machine B",
+        "quickFreezingA": "Quick Freezing A",
+        "quickFreezingB": "Quick Freezing B"
+      },
+      "emptySlot": "Vacant",
+      "noTasks": "No tasks",
+      "warning": "Warning"
+    }
+  },
+  "planDetail": {
+    "title": "Plan Details",
+    "edit": "Edit",
+    "sections": {
+      "basicInfo": "Plan Information",
+      "progress": "Production Progress",
+      "materialMatch": "Material Matching",
+      "assignedWorkers": "Assigned Workers",
+      "relatedBatches": "Related Production Batches"
+    },
+    "fields": {
+      "planNumber": "Plan Number",
+      "product": "Product",
+      "quantity": "Quantity",
+      "workshop": "Workshop",
+      "supervisor": "Supervisor",
+      "planDate": "Plan Date",
+      "priority": "Priority",
+      "completionProgress": "Completion Progress",
+      "completed": "Completed",
+      "remaining": "Remaining",
+      "estimatedCompletion": "Est. Completion"
+    },
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "material": {
+      "matched": "Matched",
+      "unmatched": "Unmatched",
+      "batch": "Batch",
+      "required": "Required",
+      "available": "Available",
+      "rematch": "Rematch"
+    },
+    "workers": {
+      "assign": "+ Assign",
+      "totalWorkHours": "Total Work Hours",
+      "laborCost": "Labor Cost"
+    },
+    "batch": {
+      "producing": "Producing",
+      "pending": "Pending",
+      "progress": "Progress"
+    },
+    "actions": {
+      "pause": "Pause Plan",
+      "complete": "Complete Plan",
+      "pauseConfirm": "Are you sure you want to pause this production plan?",
+      "completeConfirm": "Are you sure you want to mark this plan as completed?",
+      "paused": "Plan paused",
+      "completed": "Plan completed"
+    }
+  },
+  "resource": {
+    "title": "Resource Overview",
+    "subtitle": "Real-time workshop resource monitoring",
+    "tabs": {
+      "workshop": "Workshop",
+      "equipment": "Equipment",
+      "alert": "Alerts"
+    },
+    "stats": {
+      "runningLines": "Running Lines",
+      "onDutyPersonnel": "On Duty",
+      "normalAbnormalEquipment": "Normal/Abnormal Equipment",
+      "avgUtilization": "Avg Utilization"
+    },
+    "workshop": {
+      "productionLines": "production lines",
+      "utilization": "Utilization",
+      "lineStatus": {
+        "running": "Running",
+        "idle": "Idle",
+        "maintenance": "Maintenance",
+        "error": "Error"
+      },
+      "capacity": "Capacity",
+      "personnel": "Personnel",
+      "available": "available"
+    },
+    "equipment": {
+      "status": {
+        "normal": "Normal",
+        "warning": "Warning",
+        "error": "Error",
+        "offline": "Offline"
+      },
+      "runtime": "Runtime",
+      "hours": "hours",
+      "lastMaintenance": "Last Maintenance",
+      "nextMaintenance": "Next Maintenance"
+    },
+    "alert": {
+      "criticalWarning": "{{count}} critical alerts require attention",
+      "noAlerts": "No alerts",
+      "allNormal": "All resources operating normally",
+      "level": {
+        "critical": "Critical",
+        "warning": "Warning",
+        "info": "Info"
+      },
+      "type": {
+        "capacity": "Capacity",
+        "worker": "Worker",
+        "equipment": "Equipment",
+        "material": "Material"
+      }
+    },
+    "realtime": "Real-time Data",
+    "loadError": "Failed to load resource data. Please try again."
+  },
+  "urgentInsert": {
+    "title": "Urgent Insert",
+    "orderInfo": "Order Information",
+    "fields": {
+      "productType": "Product Type",
+      "quantity": "Quantity",
+      "deadline": "Deadline",
+      "urgencyLevel": "Urgency Level",
+      "customerName": "Customer Name",
+      "urgentReason": "Urgent Reason",
+      "notes": "Notes",
+      "selectProductType": "Select product type",
+      "enterQuantity": "Enter quantity",
+      "deadlinePlaceholder": "e.g., 2025-12-29 18:00",
+      "reasonPlaceholder": "Explain the reason for urgent insertion (e.g., urgent customer order, equipment failure recovery, etc.)",
+      "notesPlaceholder": "Enter notes"
+    },
+    "urgency": {
+      "normal": "Normal",
+      "urgent": "Urgent",
+      "critical": "Critical"
+    },
+    "analyze": {
+      "button": "AI Analyze Available Slots",
+      "analyzing": "AI Analyzing...",
+      "reanalyze": "Reanalyze"
+    },
+    "slots": {
+      "title": "Available Slots",
+      "noSlots": "No available slots",
+      "impact": {
+        "none": "No Impact",
+        "low": "Low Impact",
+        "medium": "Medium Impact",
+        "high": "High Impact"
+      },
+      "capacity": "Capacity",
+      "workers": "Workers",
+      "switchCost": "Switchover",
+      "minutes": "min",
+      "aiRecommend": "AI Recommend",
+      "scoreBreakdown": {
+        "capacity": "Capacity",
+        "worker": "Worker",
+        "deadline": "Deadline",
+        "impact": "Impact",
+        "switchCost": "Switch"
+      },
+      "impactedPlans": "Impacted plans:",
+      "delay": "Delay",
+      "viewDetailedImpact": "View Detailed Impact Analysis"
+    },
+    "confirm": {
+      "button": "Confirm Insert",
+      "title": "Confirm Insert?",
+      "description": "Will create urgent production plan at {{line}}, potentially affecting {{count}} existing plans.",
+      "highImpactWarning": "This slot has \"{{level}}\" impact level. Confirm insertion? May require admin approval.",
+      "success": "Insert Successful",
+      "approvalSuccess": "Submitted for Approval",
+      "approvalMessage": "Urgent plan {{planNumber}} created, awaiting factory manager approval.\n\nImpact Level: {{level}}\nAffected Plans: {{count}}",
+      "successMessage": "Urgent plan {{planNumber}} created and ready to execute.",
+      "failed": "Insert failed"
+    },
+    "impactAnalysis": {
+      "title": "Impact Analysis Details",
+      "impactLevel": "Impact Level",
+      "requiresApproval": "Requires {{role}} approval",
+      "chainImpact": "Chain Impact Statistics",
+      "directConflicts": "Direct Conflicts",
+      "cascadeDelays": "Cascade Delays",
+      "maxDelay": "Max Delay (min)",
+      "criticalCrPlans": "Critical CR Plans",
+      "affectsVipCustomer": "Affects VIP customer orders",
+      "resourceImpact": "Resource Impact",
+      "workerOvertime": "Requires {{minutes}} min overtime",
+      "equipmentConflicts": "Equipment conflicts: {{equipment}}",
+      "materialShortage": "Material shortage",
+      "affectedPlans": "Affected Plans",
+      "originalEndTime": "Original End:",
+      "estimatedDelay": "Est. Delay:",
+      "crValue": "CR Value:",
+      "aiRecommendation": "AI Recommendation",
+      "close": "Close"
+    },
+    "validation": {
+      "selectProductAndQuantity": "Please enter product type and quantity",
+      "selectSlot": "Please select a slot",
+      "enterReason": "Please enter urgent reason"
+    },
+    "roles": {
+      "factoryManager": "Factory Manager",
+      "productionSupervisor": "Production Supervisor"
+    }
+  },
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "loading": "Loading...",
+    "submitting": "Submitting...",
+    "success": "Success",
+    "failed": "Failed",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "more": "More",
+    "viewAll": "View All",
+    "viewDetail": "View Details",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "noData": "No data",
+    "networkError": "Network error. Please check connection.",
+    "required": "*"
+  },
+  "personnelDetailScreen": {
+    "title": "Employee Details",
+    "editInDevelopment": "Edit feature is in development",
+    "confirmDisable": "Confirm Disable",
+    "disableWarning": "Are you sure you want to disable employee {{name}}? They will not be able to receive task assignments.",
+    "confirmDisableButton": "Confirm Disable",
+    "status": {
+      "working": "Working",
+      "idle": "Idle",
+      "offDuty": "Off Duty",
+      "onLeave": "On Leave"
+    },
+    "contractType": {
+      "fullTime": "Full-time",
+      "partTime": "Part-time",
+      "temporary": "Temporary",
+      "dispatch": "Dispatch"
+    },
+    "taskStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "cancelled": "Cancelled"
+    },
+    "workInfo": "Work Information",
+    "workshop": "Workshop",
+    "position": "Position",
+    "hireDate": "Hire Date",
+    "tenure": "Tenure",
+    "weeklyHours": "Weekly Hours",
+    "overtime": "Overtime",
+    "skillLevel": "Skill Level",
+    "performanceMetrics": "Performance Metrics",
+    "recentTasks": "Recent Tasks",
+    "transfer": "Transfer",
+    "disable": "Disable"
+  },
+  "personnelTransferScreen": {
+    "title": "Personnel Transfer",
+    "transferConfig": "Transfer Configuration",
+    "sourceWorkshop": "Source Workshop",
+    "targetWorkshop": "Target Workshop",
+    "selectSourceWorkshop": "Select source workshop",
+    "selectTargetWorkshop": "Select target workshop",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "selectWorkers": "Select Workers",
+    "selectedCount": "{{count}} selected",
+    "temporary": "Temp",
+    "efficiency": "Efficiency",
+    "currentTask": "Current Task",
+    "status": {
+      "idle": "Idle",
+      "working": "Working"
+    },
+    "transferReason": "Transfer Reason",
+    "selectReason": "Select transfer reason",
+    "reasons": {
+      "urgentStaffing": "Urgent staffing shortage",
+      "skillMatching": "Skill matching adjustment",
+      "crossWorkshopSupport": "Cross-workshop support",
+      "regularRotation": "Regular rotation",
+      "trainingLearning": "Training & learning",
+      "other": "Other reason"
+    },
+    "customReasonPlaceholder": "Please specify the reason...",
+    "impactPreview": "Transfer Impact Preview",
+    "impact": {
+      "source": "Source Workshop",
+      "target": "Target Workshop",
+      "personnel": "Personnel",
+      "utilization": "Utilization"
+    },
+    "warnings": {
+      "lowUtilization": "{{workshop}} utilization will drop below 50% after transfer",
+      "nearCapacity": "{{workshop}} will be near full capacity after transfer"
+    },
+    "submitTransfer": "Submit Transfer Request",
+    "confirmTransfer": "Confirm Transfer",
+    "confirmTransferMessage": "Confirm transferring {{count}} workers from {{source}} to {{target}}?",
+    "submitSuccess": "Transfer request submitted, awaiting approval",
+    "validation": {
+      "selectSourceWorkshop": "Please select source workshop",
+      "selectTargetWorkshop": "Please select target workshop",
+      "sameWorkshop": "Source and target workshop cannot be the same",
+      "selectWorkers": "Please select workers to transfer",
+      "selectReason": "Please select a transfer reason",
+      "enterCustomReason": "Please enter a specific reason"
+    }
+  },
+  "personnelListScreen": {
+    "dispatch": "Dispatch",
+    "intern": "Intern",
+    "leaveReason": "Leave Reason",
+    "expectedReturn": "Expected Return",
+    "contractExpiry": "Contract Expiry",
+    "daysRemaining": "{{count}} days remaining",
+    "type": "Type",
+    "fullTime": "Full-time",
+    "dispatchCompany": "Dispatch Company",
+    "efficiency": "Efficiency",
+    "weeklyHours": "Weekly Hours",
+    "overtimeAvailable": "Overtime Available",
+    "transfer": "Transfer",
+    "temp": "Temp",
+    "people": " workers",
+    "contractExpiringAlert": "contract expiring soon",
+    "searchPlaceholder": "Search by employee ID (e.g., 001) or name...",
+    "filters": {
+      "allWorkshops": "All Workshops",
+      "slicing": "Slicing Workshop",
+      "packaging": "Packaging Workshop",
+      "freezing": "Freezing Workshop",
+      "allTypes": "All Types",
+      "fullTime": "Full-time",
+      "temporary": "Temporary",
+      "dispatch": "Dispatch",
+      "intern": "Intern",
+      "allStatus": "All Status",
+      "working": "Working",
+      "idle": "Idle",
+      "leave": "Leave"
+    },
+    "workshops": {
+      "slicing": "Slicing Workshop",
+      "packaging": "Packaging Workshop",
+      "freezing": "Freezing Workshop"
+    },
+    "taskGroups": "Task Groups",
+    "taskGroup": "Task Group",
+    "running": "Running",
+    "moreMembers": "more members",
+    "more": "more",
+    "idlePersonnel": "Idle Personnel",
+    "transferable": "Transferable"
+  }
+}

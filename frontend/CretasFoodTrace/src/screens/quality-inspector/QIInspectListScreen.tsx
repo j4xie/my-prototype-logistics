@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS, QualityInspectorStackParamList, QIBatch, BATCH_STATUS_LABELS, BATCH_STATUS_COLORS } from '../../types/qualityInspector';
 import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
@@ -25,6 +26,7 @@ import { useAuthStore } from '../../store/authStore';
 type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 
 export default function QIInspectListScreen() {
+  const { t } = useTranslation('quality');
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();

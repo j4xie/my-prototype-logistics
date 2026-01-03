@@ -24,12 +24,14 @@ import { Text, Card, Searchbar, Chip, Avatar, ActivityIndicator } from 'react-na
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { userApiClient } from '../../../services/api/userApiClient';
 import { HR_THEME, STAFF_STATUS_CONFIG, type StaffListItem } from '../../../types/hrNavigation';
 
 export default function NewHiresScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,8 +74,8 @@ export default function NewHiresScreen() {
         setNewHires(mappedHires);
       }
     } catch (error) {
-      console.error('加载本月入职员工失败:', error);
-    } finally {
+      console.error(t('common.loading'), error);
+    } finally{
       setLoading(false);
       setRefreshing(false);
     }
@@ -115,7 +117,7 @@ export default function NewHiresScreen() {
             />
             <View style={styles.info}>
               <Text style={styles.name}>{item.fullName || item.username}</Text>
-              <Text style={styles.department}>{item.department || '未分配部门'}</Text>
+              <Text style={styles.department}>{item.department || t('staff.card.noDepartment')}</Text>
               <View style={styles.metaRow}>
                 <Chip
                   mode="flat"
@@ -126,7 +128,7 @@ export default function NewHiresScreen() {
                 </Chip>
                 {item.hireDate && (
                   <Text style={styles.hireDate}>
-                    入职: {item.hireDate.split('T')[0]}
+                    {t('staff.form.hireDate')}: {item.hireDate.split('T')[0]}
                   </Text>
                 )}
               </View>
@@ -156,13 +158,13 @@ export default function NewHiresScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>本月入职</Text>
+        <Text style={styles.headerTitle}>{t('home.newHires.title')}</Text>
         <View style={styles.placeholder} />
       </View>
 
       <View style={styles.searchContainer}>
         <Searchbar
-          placeholder="搜索员工..."
+          placeholder={t('staff.search.placeholder')}
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchbar}
@@ -171,7 +173,7 @@ export default function NewHiresScreen() {
 
       <View style={styles.summary}>
         <Text style={styles.summaryText}>
-          本月共入职 <Text style={styles.summaryCount}>{newHires.length}</Text> 人
+          {t('home.newHires.title')} <Text style={styles.summaryCount}>{newHires.length}</Text> 人
         </Text>
       </View>
 
@@ -190,7 +192,7 @@ export default function NewHiresScreen() {
               size={64}
               color={HR_THEME.textMuted}
             />
-            <Text style={styles.emptyText}>本月暂无新入职员工</Text>
+            <Text style={styles.emptyText}>{t('home.newHires.empty')}</Text>
           </View>
         }
       />

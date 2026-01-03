@@ -7,6 +7,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Ima
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Icon } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { FAProfileStackParamList } from "../../../types/navigation";
 import { useAuthStore } from "../../../store/authStore";
 
@@ -37,9 +38,24 @@ function MenuItem({ icon, title, onPress, showArrow = true, rightText, danger = 
 export function FAProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuthStore();
+  const { t } = useTranslation('profile');
 
   const handleLogout = () => {
     logout();
+  };
+
+  // Get role display name
+  const getRoleDisplayName = (): string => {
+    const role = user?.factoryUser?.role;
+    const roleMap: Record<string, string> = {
+      factory_super_admin: t('roles.factorySuperAdmin'),
+      factory_admin: t('roles.factoryAdmin'),
+      permission_admin: t('roles.factoryAdmin'),
+      department_admin: t('roles.factoryAdmin'),
+      operator: t('roles.operator'),
+      viewer: t('roles.viewer'),
+    };
+    return roleMap[role || ''] || t('roles.factoryAdmin');
   };
 
   return (
@@ -47,7 +63,7 @@ export function FAProfileScreen() {
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>我的</Text>
+          <Text style={styles.title}>{t('title')}</Text>
         </View>
 
         {/* 用户信息卡片 */}
@@ -59,29 +75,29 @@ export function FAProfileScreen() {
             <Icon source="account" size={40} color="#fff" />
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.username || "用户"}</Text>
-            <Text style={styles.userRole}>工厂管理员</Text>
+            <Text style={styles.userName}>{user?.username || t('defaultUser')}</Text>
+            <Text style={styles.userRole}>{getRoleDisplayName()}</Text>
           </View>
           <Icon source="chevron-right" size={24} color="#ccc" />
         </TouchableOpacity>
 
         {/* 账户设置 */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>账户设置</Text>
+          <Text style={styles.sectionTitle}>{t('sections.accountSettings')}</Text>
           <View style={styles.menuGroup}>
             <MenuItem
               icon="account-edit"
-              title="个人信息"
+              title={t('menu.personalInfo')}
               onPress={() => navigation.navigate("PersonalInfo")}
             />
             <MenuItem
               icon="lock-outline"
-              title="修改密码"
+              title={t('menu.changePassword')}
               onPress={() => navigation.navigate("ChangePassword")}
             />
             <MenuItem
               icon="bell-outline"
-              title="通知设置"
+              title={t('menu.notificationSettings')}
               onPress={() => navigation.navigate("NotificationSettings")}
             />
           </View>
@@ -89,16 +105,16 @@ export function FAProfileScreen() {
 
         {/* 系统设置 */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>系统设置</Text>
+          <Text style={styles.sectionTitle}>{t('sections.systemSettings')}</Text>
           <View style={styles.menuGroup}>
             <MenuItem
               icon="cog-outline"
-              title="系统设置"
+              title={t('menu.systemSettings')}
               onPress={() => navigation.navigate("SystemSettings")}
             />
             <MenuItem
               icon="download-outline"
-              title="数据导出"
+              title={t('menu.dataExport')}
               onPress={() => navigation.navigate("DataExport", {})}
             />
           </View>
@@ -106,21 +122,21 @@ export function FAProfileScreen() {
 
         {/* 帮助与支持 */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>帮助与支持</Text>
+          <Text style={styles.sectionTitle}>{t('sections.helpSupport')}</Text>
           <View style={styles.menuGroup}>
             <MenuItem
               icon="help-circle-outline"
-              title="帮助中心"
+              title={t('menu.helpCenter')}
               onPress={() => navigation.navigate("HelpCenter")}
             />
             <MenuItem
               icon="message-text-outline"
-              title="意见反馈"
+              title={t('menu.feedback')}
               onPress={() => navigation.navigate("Feedback")}
             />
             <MenuItem
               icon="information-outline"
-              title="关于"
+              title={t('menu.about')}
               onPress={() => navigation.navigate("About")}
               rightText="v1.0.0"
             />
@@ -132,7 +148,7 @@ export function FAProfileScreen() {
           <View style={styles.menuGroup}>
             <MenuItem
               icon="logout"
-              title="退出登录"
+              title={t('menu.logout')}
               onPress={handleLogout}
               showArrow={false}
               danger

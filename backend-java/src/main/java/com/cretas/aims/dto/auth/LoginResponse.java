@@ -65,33 +65,37 @@ public class LoginResponse {
         private String userType;
     }
 
+    /**
+     * 模块权限配置
+     * 注意：JSON字段名统一使用camelCase格式
+     */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ModulePermissions {
-        @JsonProperty("farming_access")
+        @Schema(description = "养殖模块访问权限")
         private Boolean farmingAccess;
 
-        @JsonProperty("processing_access")
+        @Schema(description = "加工模块访问权限")
         private Boolean processingAccess;
 
-        @JsonProperty("logistics_access")
+        @Schema(description = "物流模块访问权限")
         private Boolean logisticsAccess;
 
-        @JsonProperty("trace_access")
+        @Schema(description = "追溯模块访问权限")
         private Boolean traceAccess;
 
-        @JsonProperty("admin_access")
+        @Schema(description = "管理模块访问权限")
         private Boolean adminAccess;
 
-        @JsonProperty("platform_access")
+        @Schema(description = "平台模块访问权限")
         private Boolean platformAccess;
 
-        @JsonProperty("debug_access")
+        @Schema(description = "调试模块访问权限")
         private Boolean debugAccess;
 
-        @JsonProperty("system_config")
+        @Schema(description = "系统配置访问权限")
         private Boolean systemConfig;
     }
 }

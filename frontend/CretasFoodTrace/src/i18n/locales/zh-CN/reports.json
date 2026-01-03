@@ -1,0 +1,258 @@
+{
+  "dashboard": {
+    "title": "报表中心",
+    "reportFeatures": "报表功能",
+    "reportFeaturesDescription": "综合查看生产、质量、成本等各维度数据报表，支持实时监控和趋势分析。",
+    "quickActions": "快捷操作",
+    "dataExport": "数据导出",
+    "monthlySummary": "月度汇总",
+    "annualReport": "年度报告"
+  },
+  "categories": {
+    "production": {
+      "title": "生产报表",
+      "description": "加工批次、产量统计、生产进度"
+    },
+    "quality": {
+      "title": "质量报表",
+      "description": "质检记录、合格率、问题分析"
+    },
+    "cost": {
+      "title": "成本报表",
+      "description": "成本分析、物料消耗、成本对比"
+    },
+    "efficiency": {
+      "title": "效率报表",
+      "description": "设备OEE、人员效率、工时分析"
+    },
+    "trend": {
+      "title": "趋势分析",
+      "description": "历史趋势、周期对比、增长分析"
+    },
+    "personnel": {
+      "title": "人员报表",
+      "description": "人员统计、出勤率、部门分布"
+    },
+    "kpi": {
+      "title": "KPI指标",
+      "description": "关键绩效指标、目标达成率"
+    },
+    "forecast": {
+      "title": "预测报表",
+      "description": "AI预测、需求预测、库存预警"
+    },
+    "anomaly": {
+      "title": "异常报表",
+      "description": "异常检测、质量问题、设备故障"
+    },
+    "realtime": {
+      "title": "实时监控",
+      "description": "实时数据、当前状态、即时统计"
+    }
+  },
+  "production": {
+    "title": "生产报表",
+    "timeRange": "时间范围",
+    "today": "今日",
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "productionStats": "生产统计",
+    "productionBatches": "生产批次",
+    "totalOutput": "总产量(kg)",
+    "completionRate": "完成率",
+    "avgOutput": "平均产量",
+    "recentCompletedBatches": "最近完成批次",
+    "batchNumber": "批次号",
+    "product": "产品",
+    "output": "产量",
+    "status": "状态",
+    "noStatsData": "暂无统计数据",
+    "noBatchRecords": "暂无批次记录",
+    "cannotGetFactoryInfo": "无法获取工厂信息，请重新登录",
+    "loadFailed": "加载失败",
+    "loadProductionDataFailed": "加载生产数据失败，请稍后重试",
+    "error": "错误"
+  },
+  "quality": {
+    "title": "质量报表",
+    "timeRange": "时间范围",
+    "today": "今日",
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "qualityStats": "质检统计",
+    "totalInspections": "总质检数",
+    "passed": "合格",
+    "failed": "不合格",
+    "conditional": "待定",
+    "passRate": "合格率",
+    "recentInspectionRecords": "最近质检记录",
+    "batchNumber": "批次号",
+    "inspector": "质检员",
+    "result": "结果",
+    "noStatsData": "暂无统计数据",
+    "noInspectionRecords": "暂无质检记录",
+    "cannotGetFactoryInfo": "无法获取工厂信息，请重新登录",
+    "loadFailed": "加载失败",
+    "loadQualityDataFailed": "加载质检数据失败，请稍后重试",
+    "error": "错误"
+  },
+  "cost": {
+    "title": "成本报表",
+    "timeRange": "时间范围",
+    "today": "今日",
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "costOverview": "成本总览",
+    "totalCost": "总成本",
+    "materialCost": "物料成本",
+    "laborCost": "人工成本",
+    "overheadCost": "间接成本",
+    "avgCostPerBatch": "批次平均成本",
+    "batchCostDetails": "批次成本明细",
+    "batchNumber": "批次号",
+    "product": "产品",
+    "noCostData": "暂无成本数据",
+    "noBatchData": "暂无批次数据",
+    "cannotGetFactoryInfo": "无法获取工厂信息，请重新登录",
+    "error": "错误"
+  },
+  "efficiency": {
+    "title": "效率报表",
+    "timeRange": "时间范围",
+    "today": "今日",
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "efficiencyMetrics": "效率指标",
+    "equipmentOEE": "设备OEE",
+    "equipmentUtilization": "设备利用率",
+    "laborEfficiency": "人员效率",
+    "overallEfficiency": "整体效率",
+    "noEfficiencyData": "暂无效率数据",
+    "cannotGetFactoryInfo": "无法获取工厂信息，请重新登录",
+    "loadFailed": "加载失败",
+    "error": "错误"
+  },
+  "trend": {
+    "title": "趋势分析",
+    "timeRange": "时间范围",
+    "week": "周",
+    "month": "月",
+    "quarter": "季",
+    "year": "年",
+    "trendAnalysis": "趋势分析",
+    "comingSoon": "历史数据趋势、周期对比、增长分析等功能即将上线"
+  },
+  "personnel": {
+    "title": "人员报表",
+    "timeRange": "时间范围",
+    "today": "今日",
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "personnelOverview": "人员总览",
+    "totalEmployees": "总人数",
+    "present": "在岗",
+    "absent": "缺勤",
+    "activeDepartments": "活跃部门",
+    "avgAttendanceRate": "平均出勤率",
+    "workHoursRanking": "工时排行榜（TOP 10）",
+    "name": "姓名",
+    "department": "部门",
+    "workHours": "工时",
+    "attendanceRate": "出勤率",
+    "noPersonnelData": "暂无人员数据",
+    "noWorkHoursData": "暂无工时数据",
+    "cannotGetFactoryInfo": "无法获取工厂信息，请重新登录",
+    "loadFailed": "加载失败",
+    "error": "错误"
+  },
+  "kpi": {
+    "title": "KPI指标",
+    "keyPerformanceIndicators": "关键绩效指标",
+    "productionCompletionRate": "生产完成率",
+    "qualityPassRate": "质检合格率",
+    "equipmentUtilizationRate": "设备利用率",
+    "onTimeDeliveryRate": "准时交付率"
+  },
+  "forecast": {
+    "title": "预测报表",
+    "aiSmartForecast": "AI智能预测",
+    "description": "基于DeepSeek AI的智能预测分析功能",
+    "features": "预测功能",
+    "demandForecast": "需求预测",
+    "inventoryAlert": "库存预警",
+    "productionPlanOptimization": "生产计划优化",
+    "costTrendForecast": "成本趋势预测"
+  },
+  "anomaly": {
+    "title": "异常报表",
+    "equipmentAlerts": "设备告警",
+    "equipment": "设备",
+    "type": "类型",
+    "severity": "严重度",
+    "high": "高",
+    "medium": "中",
+    "low": "低",
+    "noAlertData": "暂无告警数据",
+    "cannotGetFactoryInfo": "无法获取工厂信息",
+    "error": "错误"
+  },
+  "realtime": {
+    "title": "实时监控",
+    "realtimeData": "实时数据",
+    "activeBatches": "进行中批次",
+    "activeEquipment": "运行中设备",
+    "lastUpdate": "最后更新",
+    "autoRefresh": "自动刷新（每30秒）",
+    "noRealtimeData": "暂无实时数据",
+    "cannotGetFactoryInfo": "无法获取工厂信息",
+    "error": "错误"
+  },
+  "export": {
+    "title": "数据导出",
+    "selectReportType": "选择报表类型",
+    "selectExportFormat": "选择导出格式",
+    "dateRange": "日期范围",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "reportTypes": {
+      "production": {
+        "label": "生产报表",
+        "description": "批次号、产品、消耗、产出、转换率、状态"
+      },
+      "cost": {
+        "label": "成本报表",
+        "description": "批次号、成本明细、单位成本、偏差、超支金额"
+      },
+      "attendance": {
+        "label": "工时报表",
+        "description": "员工、部门、工作类型、工时、加班时间"
+      }
+    },
+    "formats": {
+      "excel": "Excel",
+      "pdf": "PDF",
+      "csv": "CSV"
+    },
+    "preview": "预览",
+    "export": "导出",
+    "exporting": "导出中...",
+    "exportSuccess": "导出成功",
+    "exportFailed": "导出失败",
+    "pleaseSelectDateRange": "请选择日期范围",
+    "noFactoryInfo": "无法获取工厂信息"
+  },
+  "status": {
+    "completed": "已完成",
+    "inProgress": "进行中",
+    "pending": "待开始",
+    "cancelled": "已取消",
+    "unknown": "未知"
+  },
+  "common": {
+    "loading": "加载中...",
+    "noData": "暂无数据",
+    "refresh": "刷新",
+    "export": "导出",
+    "error": "错误"
+  }
+}

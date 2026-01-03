@@ -2,37 +2,39 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Appbar, Surface, SegmentedButtons, Icon } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 export default function TrendReportScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('reports');
   const [timeRange, setTimeRange] = useState('month');
 
   return (
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="趋势分析" />
+        <Appbar.Content title={t('trend.title')} />
       </Appbar.Header>
       <ScrollView style={styles.content}>
         <Surface style={styles.card} elevation={1}>
-          <Text variant="bodyMedium" style={styles.label}>时间范围</Text>
+          <Text variant="bodyMedium" style={styles.label}>{t('trend.timeRange')}</Text>
           <SegmentedButtons
             value={timeRange}
             onValueChange={setTimeRange}
             buttons={[
-              { value: 'week', label: '周' },
-              { value: 'month', label: '月' },
-              { value: 'quarter', label: '季' },
-              { value: 'year', label: '年' },
+              { value: 'week', label: t('trend.week') },
+              { value: 'month', label: t('trend.month') },
+              { value: 'quarter', label: t('trend.quarter') },
+              { value: 'year', label: t('trend.year') },
             ]}
           />
         </Surface>
         <Surface style={styles.card} elevation={1}>
           <View style={styles.infoBox}>
             <Icon source="chart-line" size={48} color="#2196F3" />
-            <Text variant="titleMedium" style={styles.infoTitle}>趋势分析</Text>
+            <Text variant="titleMedium" style={styles.infoTitle}>{t('trend.trendAnalysis')}</Text>
             <Text variant="bodyMedium" style={styles.infoText}>
-              历史数据趋势、周期对比、增长分析等功能即将上线
+              {t('trend.comingSoon')}
             </Text>
           </View>
         </Surface>

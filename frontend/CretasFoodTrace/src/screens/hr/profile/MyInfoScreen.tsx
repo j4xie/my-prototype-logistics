@@ -13,6 +13,7 @@ import { Text, TextInput, Button, Avatar, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '../../../store/authStore';
 import { userApiClient } from '../../../services/api/userApiClient';
@@ -21,6 +22,7 @@ import { HR_THEME } from '../../../types/hrNavigation';
 export default function MyInfoScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('hr');
 
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState(user?.fullName || '');
@@ -30,7 +32,7 @@ export default function MyInfoScreen() {
 
   const handleSave = async () => {
     if (!fullName.trim()) {
-      Alert.alert('提示', '请输入姓名');
+      Alert.alert(t('messages.tip'), t('profile.myInfo.form.nameRequired'));
       return;
     }
 
@@ -44,14 +46,14 @@ export default function MyInfoScreen() {
       });
 
       if (res) {
-        Alert.alert('成功', '信息更新成功');
+        Alert.alert(t('messages.success'), t('profile.myInfo.alerts.updateSuccess'));
         setIsEditing(false);
       } else {
-        Alert.alert('失败', '更新失败');
+        Alert.alert(t('messages.error'), t('profile.myInfo.alerts.updateFailed'));
       }
     } catch (error) {
       console.error('更新用户信息失败:', error);
-      Alert.alert('错误', '更新失败，请重试');
+      Alert.alert(t('messages.error'), t('profile.myInfo.alerts.updateError'));
     } finally {
       setLoading(false);
     }
@@ -70,7 +72,7 @@ export default function MyInfoScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>个人信息</Text>
+        <Text style={styles.headerTitle}>{t('profile.myInfo.title')}</Text>
         {!isEditing ? (
           <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.editBtn}>
             <MaterialCommunityIcons name="pencil" size={22} color={HR_THEME.primary} />
@@ -93,28 +95,28 @@ export default function MyInfoScreen() {
               style={{ backgroundColor: HR_THEME.primary }}
             />
             <TouchableOpacity style={styles.changeAvatarBtn}>
-              <Text style={styles.changeAvatarText}>更换头像</Text>
+              <Text style={styles.changeAvatarText}>{t('profile.myInfo.changeAvatar')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* 基本信息 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>基本信息</Text>
+            <Text style={styles.sectionTitle}>{t('profile.myInfo.basicInfo')}</Text>
 
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>用户名</Text>
+              <Text style={styles.infoLabel}>{t('profile.myInfo.username')}</Text>
               <Text style={styles.infoValue}>{user?.username || '-'}</Text>
             </View>
             <Divider style={styles.divider} />
 
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>姓名</Text>
+              <Text style={styles.infoLabel}>{t('profile.myInfo.realName')}</Text>
               {isEditing ? (
                 <TextInput
                   mode="outlined"
                   value={fullName}
                   onChangeText={setFullName}
-                  placeholder="请输入姓名"
+                  placeholder={t('profile.myInfo.form.namePlaceholder')}
                   style={styles.input}
                   outlineColor={HR_THEME.border}
                   activeOutlineColor={HR_THEME.primary}
@@ -127,13 +129,13 @@ export default function MyInfoScreen() {
             <Divider style={styles.divider} />
 
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>手机号</Text>
+              <Text style={styles.infoLabel}>{t('profile.myInfo.phone')}</Text>
               {isEditing ? (
                 <TextInput
                   mode="outlined"
                   value={phone}
                   onChangeText={setPhone}
-                  placeholder="请输入手机号"
+                  placeholder={t('profile.myInfo.form.phonePlaceholder')}
                   keyboardType="phone-pad"
                   style={styles.input}
                   outlineColor={HR_THEME.border}
@@ -147,13 +149,13 @@ export default function MyInfoScreen() {
             <Divider style={styles.divider} />
 
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>邮箱</Text>
+              <Text style={styles.infoLabel}>{t('profile.myInfo.email')}</Text>
               {isEditing ? (
                 <TextInput
                   mode="outlined"
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="请输入邮箱"
+                  placeholder={t('profile.myInfo.form.emailPlaceholder')}
                   keyboardType="email-address"
                   style={styles.input}
                   outlineColor={HR_THEME.border}
@@ -168,40 +170,40 @@ export default function MyInfoScreen() {
 
           {/* 工作信息 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>工作信息</Text>
+            <Text style={styles.sectionTitle}>{t('profile.myInfo.workInfo')}</Text>
 
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>角色</Text>
-              <Text style={styles.infoValue}>人力资源管理员</Text>
+              <Text style={styles.infoLabel}>{t('profile.myInfo.role')}</Text>
+              <Text style={styles.infoValue}>{t('profile.role')}</Text>
             </View>
             <Divider style={styles.divider} />
 
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>所属工厂</Text>
+              <Text style={styles.infoLabel}>{t('profile.myInfo.factory')}</Text>
               <Text style={styles.infoValue}>{(user as any)?.factoryName || user?.factoryId || '-'}</Text>
             </View>
             <Divider style={styles.divider} />
 
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>入职日期</Text>
+              <Text style={styles.infoLabel}>{t('profile.myInfo.hireDate')}</Text>
               <Text style={styles.infoValue}>{(user as any)?.hireDate?.split('T')[0] || '-'}</Text>
             </View>
             <Divider style={styles.divider} />
 
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>工号</Text>
+              <Text style={styles.infoLabel}>{t('profile.myInfo.employeeCode')}</Text>
               <Text style={styles.infoValue}>{(user as any)?.employeeCode || '-'}</Text>
             </View>
           </View>
 
           {/* 账号安全 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>账号安全</Text>
+            <Text style={styles.sectionTitle}>{t('profile.myInfo.security')}</Text>
 
             <TouchableOpacity style={styles.securityItem}>
               <View style={styles.securityLeft}>
                 <MaterialCommunityIcons name="lock" size={20} color={HR_THEME.textSecondary} />
-                <Text style={styles.securityLabel}>修改密码</Text>
+                <Text style={styles.securityLabel}>{t('profile.myInfo.changePassword')}</Text>
               </View>
               <MaterialCommunityIcons name="chevron-right" size={22} color={HR_THEME.textMuted} />
             </TouchableOpacity>
@@ -210,7 +212,7 @@ export default function MyInfoScreen() {
             <TouchableOpacity style={styles.securityItem}>
               <View style={styles.securityLeft}>
                 <MaterialCommunityIcons name="cellphone" size={20} color={HR_THEME.textSecondary} />
-                <Text style={styles.securityLabel}>绑定设备</Text>
+                <Text style={styles.securityLabel}>{t('profile.myInfo.bindDevice')}</Text>
               </View>
               <MaterialCommunityIcons name="chevron-right" size={22} color={HR_THEME.textMuted} />
             </TouchableOpacity>
@@ -224,7 +226,7 @@ export default function MyInfoScreen() {
                 style={styles.cancelButton}
                 textColor={HR_THEME.textSecondary}
               >
-                取消
+                {t('profile.myInfo.cancel')}
               </Button>
               <Button
                 mode="contained"
@@ -234,7 +236,7 @@ export default function MyInfoScreen() {
                 style={styles.saveButton}
                 buttonColor={HR_THEME.primary}
               >
-                保存
+                {t('profile.myInfo.save')}
               </Button>
             </View>
           )}

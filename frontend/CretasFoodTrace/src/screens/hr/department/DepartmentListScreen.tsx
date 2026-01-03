@@ -13,12 +13,14 @@ import { Text, Card, Searchbar, Chip, FAB, ActivityIndicator, IconButton } from 
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { departmentApiClient } from '../../../services/api/departmentApiClient';
 import { HR_THEME, type Department } from '../../../types/hrNavigation';
 
 export default function DepartmentListScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,15 +53,15 @@ export default function DepartmentListScreen() {
   const onRefresh = useCallback(() => { setRefreshing(true); loadData(); }, [loadData]);
 
   const handleDelete = (item: Department) => {
-    Alert.alert('确认删除', `确定要删除 ${item.name} 部门吗？`, [
-      { text: '取消', style: 'cancel' },
-      { text: '删除', style: 'destructive', onPress: async () => {
+    Alert.alert(t('department.list.deleteConfirm'), t('department.list.deleteMessage', { name: item.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
         try {
           // item.id can be string or number, convert to number for API
           const numericId = typeof item.id === 'string' ? parseInt(item.id, 10) : item.id;
           await departmentApiClient.deleteDepartment(numericId);
           loadData();
-        } catch (e) { Alert.alert('错误', '删除失败'); }
+        } catch (e) { Alert.alert(t('messages.error'), t('department.list.deleteFailed')); }
       }},
     ]);
   };
@@ -81,11 +83,11 @@ export default function DepartmentListScreen() {
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
                 <MaterialCommunityIcons name="account" size={14} color={HR_THEME.textSecondary} />
-                <Text style={styles.metaText}>{item.managerName || '未指定'}</Text>
+                <Text style={styles.metaText}>{item.managerName || t('department.list.noManager')}</Text>
               </View>
               <View style={styles.metaItem}>
                 <MaterialCommunityIcons name="account-group" size={14} color={HR_THEME.textSecondary} />
-                <Text style={styles.metaText}>{item.memberCount ?? 0} 人</Text>
+                <Text style={styles.metaText}>{t('department.list.memberCount', { count: item.memberCount ?? 0 })}</Text>
               </View>
             </View>
           </View>
@@ -95,7 +97,7 @@ export default function DepartmentListScreen() {
               textStyle={{ fontSize: 10, color: item.isActive ? HR_THEME.success : HR_THEME.textMuted }}
               style={[styles.chip, { backgroundColor: item.isActive ? '#f6ffed' : '#f5f5f5' }]}
             >
-              {item.isActive ? '正常' : '停用'}
+              {item.isActive ? t('department.list.status.active') : t('department.list.status.disabled')}
             </Chip>
             <IconButton
               icon="delete"
@@ -120,12 +122,12 @@ export default function DepartmentListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>部门管理</Text>
+        <Text style={styles.headerTitle}>{t('department.list.title')}</Text>
       </View>
 
       <View style={styles.search}>
         <Searchbar
-          placeholder="搜索部门..."
+          placeholder={t('department.list.searchPlaceholder')}
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchbar}
@@ -134,7 +136,7 @@ export default function DepartmentListScreen() {
 
       <View style={styles.summary}>
         <Text style={styles.summaryText}>
-          共 <Text style={styles.summaryCount}>{filteredData.length}</Text> 个部门
+          {t('department.list.totalPrefix')} <Text style={styles.summaryCount}>{filteredData.length}</Text> {t('department.list.totalSuffix')}
         </Text>
       </View>
 
@@ -147,7 +149,7 @@ export default function DepartmentListScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <MaterialCommunityIcons name="office-building-outline" size={64} color={HR_THEME.textMuted} />
-            <Text style={styles.emptyText}>暂无部门</Text>
+            <Text style={styles.emptyText}>{t('department.list.empty')}</Text>
           </View>
         }
       />

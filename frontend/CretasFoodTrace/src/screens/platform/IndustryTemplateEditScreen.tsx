@@ -42,6 +42,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import {
   templatePackageApiClient,
@@ -271,6 +272,7 @@ interface EntitySchemaConfig {
 export function IndustryTemplateEditScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('platform');
   const templateId = route.params?.templateId;
   const isEditMode = !!templateId;
 
@@ -350,7 +352,7 @@ export function IndustryTemplateEditScreen() {
         }
       }
     } catch (error) {
-      handleError(error, { title: '加载模板失败' });
+      handleError(error, { title: t('industryTemplate.edit.loadFailed') });
     } finally {
       setLoading(false);
     }
@@ -415,7 +417,7 @@ export function IndustryTemplateEditScreen() {
         const parsed = JSON.parse(schemaText) as FormilySchema;
         setCurrentSchema(parsed);
       } catch (e) {
-        Alert.alert('JSON 格式错误', '无法切换到可视化模式，请先修复 JSON 格式');
+        Alert.alert(t('industryTemplate.edit.jsonFormatError'), t('industryTemplate.edit.jsonFormatErrorMessage'));
         return;
       }
     }
@@ -431,7 +433,7 @@ export function IndustryTemplateEditScreen() {
     if (visualEditorMode) {
       // 可视化模式: 使用 currentSchema
       if (!currentSchema) {
-        Alert.alert('错误', 'Schema 数据丢失');
+        Alert.alert(t('errors.loadFailed'), t('industryTemplate.edit.schemaDataLost'));
         return;
       }
       schemaToSave = currentSchema;
@@ -440,7 +442,7 @@ export function IndustryTemplateEditScreen() {
       try {
         schemaToSave = JSON.parse(schemaText) as FormilySchema;
       } catch (e) {
-        Alert.alert('JSON 格式错误', '请检查 Schema JSON 格式是否正确');
+        Alert.alert(t('industryTemplate.edit.jsonFormatError'), t('industryTemplate.edit.jsonFormatCheckError'));
         return;
       }
     }
@@ -466,18 +468,18 @@ export function IndustryTemplateEditScreen() {
     const newErrors: Record<string, string> = {};
 
     if (!industryCode.trim()) {
-      newErrors.industryCode = '请输入行业代码';
+      newErrors.industryCode = t('industryTemplate.edit.industryCodeRequired');
     } else if (!/^[a-z_]+$/.test(industryCode)) {
-      newErrors.industryCode = '行业代码只能包含小写字母和下划线';
+      newErrors.industryCode = t('industryTemplate.edit.industryCodeFormat');
     }
 
     if (!industryName.trim()) {
-      newErrors.industryName = '请输入行业名称';
+      newErrors.industryName = t('industryTemplate.edit.industryNameRequired');
     }
 
     const enabledCount = entityConfigs.filter((c) => c.enabled).length;
     if (enabledCount === 0) {
-      newErrors.entityTypes = '请至少启用一个实体类型';
+      newErrors.entityTypes = t('industryTemplate.edit.entityTypesRequired');
     }
 
     setErrors(newErrors);
@@ -487,7 +489,7 @@ export function IndustryTemplateEditScreen() {
   // 保存模板
   const handleSave = async () => {
     if (!validate()) {
-      Alert.alert('验证失败', '请检查表单填写是否完整');
+      Alert.alert(t('industryTemplate.edit.validationFailed'), t('industryTemplate.edit.validationFailedMessage'));
       return;
     }
 
@@ -510,8 +512,8 @@ export function IndustryTemplateEditScreen() {
           isDefault,
         };
         await templatePackageApiClient.updateTemplatePackage(templateId, request);
-        Alert.alert('成功', '模板更新成功', [
-          { text: '确定', onPress: () => navigation.goBack() },
+        Alert.alert(t('industryTemplate.edit.success'), t('industryTemplate.edit.updateSuccess'), [
+          { text: t('aiQuota.confirmAction'), onPress: () => navigation.goBack() },
         ]);
       } else {
         // 创建
@@ -523,12 +525,12 @@ export function IndustryTemplateEditScreen() {
           isDefault,
         };
         await templatePackageApiClient.createTemplatePackage(request);
-        Alert.alert('成功', '模板创建成功', [
-          { text: '确定', onPress: () => navigation.goBack() },
+        Alert.alert(t('industryTemplate.edit.success'), t('industryTemplate.edit.createSuccess'), [
+          { text: t('aiQuota.confirmAction'), onPress: () => navigation.goBack() },
         ]);
       }
     } catch (error) {
-      handleError(error, { title: '保存模板失败' });
+      handleError(error, { title: t('industryTemplate.edit.saveFailed') });
     } finally {
       setSaving(false);
     }
@@ -543,7 +545,7 @@ export function IndustryTemplateEditScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="加载中..." />
+          <Appbar.Content title={t('industryTemplate.edit.loading')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
@@ -556,7 +558,7 @@ export function IndustryTemplateEditScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title={isEditMode ? '编辑行业模板' : '创建行业模板'} />
+        <Appbar.Content title={isEditMode ? t('industryTemplate.edit.title') : t('industryTemplate.edit.createTitle')} />
         <Appbar.Action icon="content-save" onPress={handleSave} disabled={saving} />
       </Appbar.Header>
 
@@ -568,8 +570,8 @@ export function IndustryTemplateEditScreen() {
           {/* 基础信息卡片 */}
           <Card style={styles.card}>
             <Card.Title
-              title="基础信息"
-              subtitle="设置行业模板的基本属性"
+              title={t('industryTemplate.edit.basicInfo')}
+              subtitle={t('industryTemplate.edit.basicInfoSubtitle')}
               left={(props) => <List.Icon {...props} icon="information" />}
             />
             <Card.Content>
@@ -577,10 +579,10 @@ export function IndustryTemplateEditScreen() {
               <View style={styles.fieldRow}>
                 <TextInput
                   mode="outlined"
-                  label="行业代码 *"
+                  label={t('industryTemplate.edit.industryCode')}
                   value={industryCode}
                   onChangeText={setIndustryCode}
-                  placeholder="例如: seafood_processing"
+                  placeholder={t('industryTemplate.edit.industryCodePlaceholder')}
                   disabled={isEditMode}
                   error={!!errors.industryCode}
                   style={styles.input}
@@ -619,10 +621,10 @@ export function IndustryTemplateEditScreen() {
               <View style={styles.fieldRow}>
                 <TextInput
                   mode="outlined"
-                  label="行业名称 *"
+                  label={t('industryTemplate.edit.industryName')}
                   value={industryName}
                   onChangeText={setIndustryName}
-                  placeholder="例如: 水产加工"
+                  placeholder={t('industryTemplate.edit.industryNamePlaceholder')}
                   error={!!errors.industryName}
                   style={styles.input}
                 />
@@ -634,10 +636,10 @@ export function IndustryTemplateEditScreen() {
               {/* 描述 */}
               <TextInput
                 mode="outlined"
-                label="描述"
+                label={t('industryTemplate.edit.description')}
                 value={description}
                 onChangeText={setDescription}
-                placeholder="模板描述信息"
+                placeholder={t('industryTemplate.edit.descriptionPlaceholder')}
                 multiline
                 numberOfLines={3}
                 style={styles.input}
@@ -646,9 +648,9 @@ export function IndustryTemplateEditScreen() {
               {/* 设为推荐 */}
               <View style={styles.switchRow}>
                 <View style={styles.switchLabel}>
-                  <Text variant="bodyMedium">设为推荐模板</Text>
+                  <Text variant="bodyMedium">{t('industryTemplate.edit.setAsDefault')}</Text>
                   <Text variant="bodySmall" style={styles.switchHint}>
-                    推荐模板会在工厂初始化时优先显示
+                    {t('industryTemplate.edit.defaultHint')}
                   </Text>
                 </View>
                 <Switch value={isDefault} onValueChange={setIsDefault} />
@@ -659,8 +661,8 @@ export function IndustryTemplateEditScreen() {
           {/* 实体类型配置卡片 */}
           <Card style={styles.card}>
             <Card.Title
-              title="实体类型配置"
-              subtitle={`已启用 ${enabledEntities.length} 个类型，共 ${totalFields} 个字段`}
+              title={t('industryTemplate.edit.entityTypeConfig')}
+              subtitle={t('industryTemplate.edit.entityTypeSubtitle', { count: enabledEntities.length, fields: totalFields })}
               left={(props) => <List.Icon {...props} icon="form-select" />}
             />
             <Card.Content>
@@ -693,7 +695,7 @@ export function IndustryTemplateEditScreen() {
                     {config.enabled && (
                       <View style={styles.entityActions}>
                         <Chip icon="code-json" style={styles.fieldCountChip}>
-                          {config.customFields} 个字段
+                          {t('industryTemplate.edit.fieldsCount', { count: config.customFields })}
                         </Chip>
                         <Button
                           mode="outlined"
@@ -701,7 +703,7 @@ export function IndustryTemplateEditScreen() {
                           icon="pencil"
                           onPress={() => openSchemaEditor(config.entityType)}
                         >
-                          编辑 Schema
+                          {t('industryTemplate.edit.editSchema')}
                         </Button>
                       </View>
                     )}
@@ -716,7 +718,7 @@ export function IndustryTemplateEditScreen() {
           {/* 预览统计 */}
           <Card style={styles.card}>
             <Card.Title
-              title="模板预览"
+              title={t('industryTemplate.edit.templatePreview')}
               left={(props) => <List.Icon {...props} icon="eye" />}
             />
             <Card.Content>
@@ -725,26 +727,26 @@ export function IndustryTemplateEditScreen() {
                   <Text variant="headlineMedium" style={styles.statValue}>
                     {enabledEntities.length}
                   </Text>
-                  <Text variant="bodySmall">实体类型</Text>
+                  <Text variant="bodySmall">{t('industryTemplate.edit.entityTypes')}</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text variant="headlineMedium" style={styles.statValue}>
                     {totalFields}
                   </Text>
-                  <Text variant="bodySmall">字段总数</Text>
+                  <Text variant="bodySmall">{t('industryTemplate.edit.totalFields')}</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text variant="headlineMedium" style={styles.statValue}>
                     v{isEditMode ? '2' : '1'}
                   </Text>
-                  <Text variant="bodySmall">版本</Text>
+                  <Text variant="bodySmall">{t('industryTemplate.edit.version')}</Text>
                 </View>
               </View>
 
               {enabledEntities.length > 0 && (
                 <View style={styles.enabledList}>
                   <Text variant="labelMedium" style={styles.enabledLabel}>
-                    包含的实体类型:
+                    {t('industryTemplate.edit.includedEntityTypes')}
                   </Text>
                   <View style={styles.chipRow}>
                     {enabledEntities.map((config) => (
@@ -767,7 +769,7 @@ export function IndustryTemplateEditScreen() {
       {/* 保存按钮 */}
       <FAB
         icon="content-save"
-        label={saving ? '保存中...' : '保存模板'}
+        label={saving ? t('industryTemplate.edit.saving') : t('industryTemplate.edit.saveTemplate')}
         style={styles.fab}
         onPress={handleSave}
         loading={saving}
@@ -784,7 +786,7 @@ export function IndustryTemplateEditScreen() {
           <View style={styles.schemaModalHeader}>
             <View style={styles.schemaModalTitleRow}>
               <Text variant="titleLarge">
-                编辑 {currentEditEntity && ENTITY_TYPE_INFO[currentEditEntity]?.name} Schema
+                {t('industryTemplate.edit.editSchemaTitle', { name: currentEditEntity && ENTITY_TYPE_INFO[currentEditEntity]?.name })}
               </Text>
               <View style={styles.editorModeToggle}>
                 <Chip
@@ -794,7 +796,7 @@ export function IndustryTemplateEditScreen() {
                   icon="palette"
                   compact
                 >
-                  可视化
+                  {t('industryTemplate.edit.visualMode')}
                 </Chip>
                 <Chip
                   mode={!visualEditorMode ? 'flat' : 'outlined'}
@@ -803,7 +805,7 @@ export function IndustryTemplateEditScreen() {
                   icon="code-json"
                   compact
                 >
-                  JSON
+                  {t('industryTemplate.edit.jsonMode')}
                 </Chip>
               </View>
             </View>
@@ -832,7 +834,7 @@ export function IndustryTemplateEditScreen() {
                 multiline
                 numberOfLines={20}
                 style={styles.schemaInput}
-                placeholder="输入 JSON Schema..."
+                placeholder={t('industryTemplate.edit.inputJsonPlaceholder')}
               />
             </ScrollView>
           )}
@@ -841,10 +843,10 @@ export function IndustryTemplateEditScreen() {
 
           <View style={styles.schemaModalFooter}>
             <Button mode="outlined" onPress={() => setSchemaEditorVisible(false)}>
-              取消
+              {t('industryTemplate.edit.cancel')}
             </Button>
             <Button mode="contained" onPress={saveSchemaEdit}>
-              保存
+              {t('industryTemplate.edit.save')}
             </Button>
           </View>
         </Modal>

@@ -15,6 +15,7 @@ import {
   Dialog,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -58,6 +59,7 @@ interface FormDataFile {
  */
 export default function EntityDataExportScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('management');
   const { user } = useAuthStore();
 
   // 实体类型选择
@@ -74,42 +76,42 @@ export default function EntityDataExportScreen() {
   const entityTypes = [
     {
       value: 'customer' as EntityType,
-      label: '客户',
+      label: t('entityDataExport.entityTypes.customer.label'),
       icon: 'account-group',
       endpoint: 'customers',
-      description: '客户信息：编码、名称、联系方式、付款条款等',
+      description: t('entityDataExport.entityTypes.customer.description'),
       color: '#2196F3',
     },
     {
       value: 'supplier' as EntityType,
-      label: '供应商',
+      label: t('entityDataExport.entityTypes.supplier.label'),
       icon: 'truck-delivery',
       endpoint: 'suppliers',
-      description: '供应商信息：编码、名称、供应材料、交货天数等',
+      description: t('entityDataExport.entityTypes.supplier.description'),
       color: '#FF9800',
     },
     {
       value: 'equipment' as EntityType,
-      label: '设备',
+      label: t('entityDataExport.entityTypes.equipment.label'),
       icon: 'factory',
       endpoint: 'equipment',
-      description: '设备信息：编码、型号、制造商、维护状态等',
+      description: t('entityDataExport.entityTypes.equipment.description'),
       color: '#4CAF50',
     },
     {
       value: 'user' as EntityType,
-      label: '用户',
+      label: t('entityDataExport.entityTypes.user.label'),
       icon: 'account',
       endpoint: 'users',
-      description: '用户信息：用户名、角色、部门、工资等',
+      description: t('entityDataExport.entityTypes.user.description'),
       color: '#9C27B0',
     },
     {
       value: 'materialType' as EntityType,
-      label: '原材料类型',
+      label: t('entityDataExport.entityTypes.materialType.label'),
       icon: 'package-variant',
       endpoint: 'materials/types',
-      description: '原材料类型：编码、名称、类别、计量单位等',
+      description: t('entityDataExport.entityTypes.materialType.description'),
       color: '#00BCD4',
     },
   ];
@@ -118,17 +120,17 @@ export default function EntityDataExportScreen() {
   const operationModes = [
     {
       value: 'export' as OperationMode,
-      label: '导出数据',
+      label: t('entityDataExport.operations.export'),
       icon: 'download',
     },
     {
       value: 'template' as OperationMode,
-      label: '下载模板',
+      label: t('entityDataExport.operations.template'),
       icon: 'file-download-outline',
     },
     {
       value: 'import' as OperationMode,
-      label: '批量导入',
+      label: t('entityDataExport.operations.import'),
       icon: 'upload',
     },
   ];
@@ -146,7 +148,7 @@ export default function EntityDataExportScreen() {
   const handleExportData = async () => {
     const factoryId = getFactoryId(user);
     if (!factoryId) {
-      Alert.alert('错误', '无法获取工厂信息，请重新登录');
+      Alert.alert(t('common.error'), t('entityDataExport.errors.noFactory'));
       return;
     }
 
@@ -168,7 +170,7 @@ export default function EntityDataExportScreen() {
       const downloadResult = await FileSystem.downloadAsync(apiUrl, fileUri);
 
       if (downloadResult.status !== 200) {
-        throw new Error(`下载失败，HTTP状态码: ${downloadResult.status}`);
+        throw new Error(t('entityDataExport.errors.downloadFailed', { status: downloadResult.status }));
       }
 
       entityExportLogger.info('文件下载成功', { fileName, fileUri: downloadResult.uri });
@@ -182,21 +184,21 @@ export default function EntityDataExportScreen() {
       if (isAvailable) {
         const fileSize = (fileInfo.exists && 'size' in fileInfo) ? fileInfo.size : 0;
         Alert.alert(
-          '导出成功',
-          `${currentEntity.label}数据已导出\n\n文件大小：${(fileSize / 1024).toFixed(2)} KB`,
+          t('entityDataExport.messages.exportSuccess'),
+          t('entityDataExport.messages.exportSuccessDetail', { entityType: currentEntity.label, fileSize: (fileSize / 1024).toFixed(2) }),
           [
             {
-              text: '稍后查看',
+              text: t('common.viewLater'),
               style: 'cancel',
             },
             {
-              text: '分享文件',
+              text: t('entityDataExport.shareFile'),
               onPress: async () => {
                 try {
                   await Sharing.shareAsync(downloadResult.uri);
                 } catch (shareError) {
                   entityExportLogger.error('分享文件失败', shareError);
-                  Alert.alert('分享失败', '无法分享文件，请稍后重试');
+                  Alert.alert(t('entityDataExport.errors.shareFailed'), t('entityDataExport.errors.shareFailedRetry'));
                 }
               },
             },
@@ -204,14 +206,14 @@ export default function EntityDataExportScreen() {
         );
       } else {
         Alert.alert(
-          '导出成功',
-          `${currentEntity.label}数据已导出\n\n文件已保存到：${downloadResult.uri}`,
-          [{ text: '确定' }]
+          t('entityDataExport.messages.exportSuccess'),
+          t('entityDataExport.messages.fileSavedTo', { entityType: currentEntity.label, path: downloadResult.uri }),
+          [{ text: t('common.ok') }]
         );
       }
     } catch (error) {
       entityExportLogger.error('导出失败', error, { entityType });
-      Alert.alert('导出失败', getErrorMsg(error) || '导出数据时出现错误，请重试');
+      Alert.alert(t('entityDataExport.errors.exportFailed'), getErrorMsg(error) || t('entityDataExport.errors.exportError'));
     } finally {
       setLoading(false);
     }
@@ -223,7 +225,7 @@ export default function EntityDataExportScreen() {
   const handleDownloadTemplate = async () => {
     const factoryId = getFactoryId(user);
     if (!factoryId) {
-      Alert.alert('错误', '无法获取工厂信息，请重新登录');
+      Alert.alert(t('common.error'), t('entityDataExport.errors.noFactory'));
       return;
     }
 
@@ -237,14 +239,14 @@ export default function EntityDataExportScreen() {
       entityExportLogger.info('下载模板', { entityType, endpoint: currentEntity.endpoint });
 
       // 生成文件名
-      const fileName = `${currentEntity.label}_导入模板.xlsx`;
+      const fileName = `${currentEntity.label}_${t('entityDataExport.importTemplate')}.xlsx`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
       // 下载文件
       const downloadResult = await FileSystem.downloadAsync(apiUrl, fileUri);
 
       if (downloadResult.status !== 200) {
-        throw new Error(`下载失败，HTTP状态码: ${downloadResult.status}`);
+        throw new Error(t('entityDataExport.errors.downloadFailed', { status: downloadResult.status }));
       }
 
       entityExportLogger.info('模板下载成功', { fileName, fileUri: downloadResult.uri });
@@ -254,21 +256,21 @@ export default function EntityDataExportScreen() {
 
       if (isAvailable) {
         Alert.alert(
-          '下载成功',
-          `${currentEntity.label}导入模板已下载`,
+          t('entityDataExport.messages.downloadSuccess'),
+          t('entityDataExport.messages.templateDownloaded', { entityType: currentEntity.label }),
           [
             {
-              text: '稍后查看',
+              text: t('common.viewLater'),
               style: 'cancel',
             },
             {
-              text: '分享模板',
+              text: t('entityDataExport.shareTemplate'),
               onPress: async () => {
                 try {
                   await Sharing.shareAsync(downloadResult.uri);
                 } catch (shareError) {
                   entityExportLogger.error('分享模板失败', shareError);
-                  Alert.alert('分享失败', '无法分享文件，请稍后重试');
+                  Alert.alert(t('entityDataExport.errors.shareFailed'), t('entityDataExport.errors.shareFailedRetry'));
                 }
               },
             },
@@ -276,14 +278,14 @@ export default function EntityDataExportScreen() {
         );
       } else {
         Alert.alert(
-          '下载成功',
-          `模板已保存到：${downloadResult.uri}`,
-          [{ text: '确定' }]
+          t('entityDataExport.messages.downloadSuccess'),
+          t('entityDataExport.messages.templateSavedTo', { path: downloadResult.uri }),
+          [{ text: t('common.ok') }]
         );
       }
     } catch (error) {
       entityExportLogger.error('下载模板失败', error, { entityType });
-      Alert.alert('下载失败', getErrorMsg(error) || '下载模板时出现错误，请重试');
+      Alert.alert(t('entityDataExport.errors.downloadFailed'), getErrorMsg(error) || t('entityDataExport.errors.downloadError'));
     } finally {
       setLoading(false);
     }
@@ -295,7 +297,7 @@ export default function EntityDataExportScreen() {
   const handleImport = async () => {
     const factoryId = getFactoryId(user);
     if (!factoryId) {
-      Alert.alert('错误', '无法获取工厂信息，请重新登录');
+      Alert.alert(t('common.error'), t('entityDataExport.errors.noFactory'));
       return;
     }
 
@@ -315,7 +317,7 @@ export default function EntityDataExportScreen() {
 
       const file = result.assets?.[0];
       if (!file) {
-        Alert.alert('错误', '未选择文件');
+        Alert.alert(t('common.error'), t('entityDataExport.errors.noFileSelected'));
         return;
       }
 
@@ -326,7 +328,7 @@ export default function EntityDataExportScreen() {
 
       // 验证文件大小（10MB限制）
       if (file.size && file.size > 10 * 1024 * 1024) {
-        Alert.alert('文件过大', '文件大小不能超过10MB，请分批导入');
+        Alert.alert(t('entityDataExport.errors.fileTooLarge'), t('entityDataExport.errors.fileTooLargeDetail'));
         return;
       }
 
@@ -361,7 +363,7 @@ export default function EntityDataExportScreen() {
       });
 
       if (!response.ok) {
-        throw new Error(responseData.message || '导入失败');
+        throw new Error(responseData.message || t('entityDataExport.errors.importFailed'));
       }
 
       const importResultData: ImportResult = responseData.data;
@@ -369,16 +371,16 @@ export default function EntityDataExportScreen() {
 
       if (importResultData.isFullSuccess) {
         Alert.alert(
-          '导入成功',
-          `成功导入${importResultData.successCount}条${currentEntity.label}记录`,
-          [{ text: '确定' }]
+          t('entityDataExport.messages.importSuccess'),
+          t('entityDataExport.messages.importSuccessDetail', { count: importResultData.successCount, entityType: currentEntity.label }),
+          [{ text: t('common.ok') }]
         );
       } else {
         setShowResultDialog(true);
       }
     } catch (error) {
       entityExportLogger.error('导入失败', error, { entityType });
-      Alert.alert('导入失败', getErrorMsg(error) || '导入数据时出现错误，请重试');
+      Alert.alert(t('entityDataExport.errors.importFailed'), getErrorMsg(error) || t('entityDataExport.errors.importError'));
     } finally {
       setLoading(false);
     }
@@ -408,13 +410,13 @@ export default function EntityDataExportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="数据导出导入" />
+        <Appbar.Content title={t('entityDataExport.title')} />
       </Appbar.Header>
 
       <ScrollView style={styles.content}>
         {/* 实体类型选择 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="选择数据类型" titleVariant="titleMedium" />
+          <Card.Title title={t('entityDataExport.selectDataType')} titleVariant="titleMedium" />
           <Card.Content>
             <RadioButton.Group
               onValueChange={(value) => setEntityType(value as EntityType)}
@@ -449,7 +451,7 @@ export default function EntityDataExportScreen() {
 
         {/* 操作模式选择 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="选择操作" titleVariant="titleMedium" />
+          <Card.Title title={t('entityDataExport.selectOperation')} titleVariant="titleMedium" />
           <Card.Content>
             <SegmentedButtons
               value={operationMode}
@@ -464,9 +466,9 @@ export default function EntityDataExportScreen() {
             {/* 操作说明 */}
             <View style={styles.operationInfo}>
               <Text variant="bodySmall" style={styles.operationInfoText}>
-                {operationMode === 'export' && '• 导出当前所有数据到Excel文件'}
-                {operationMode === 'template' && '• 下载空白导入模板，填写数据后可批量导入'}
-                {operationMode === 'import' && '• 上传填好的Excel文件，批量导入数据'}
+                {operationMode === 'export' && t('entityDataExport.operationInfo.export')}
+                {operationMode === 'template' && t('entityDataExport.operationInfo.template')}
+                {operationMode === 'import' && t('entityDataExport.operationInfo.import')}
               </Text>
             </View>
           </Card.Content>
@@ -474,11 +476,11 @@ export default function EntityDataExportScreen() {
 
         {/* 操作预览 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="操作预览" titleVariant="titleMedium" />
+          <Card.Title title={t('entityDataExport.operationPreview')} titleVariant="titleMedium" />
           <Card.Content>
             <View style={styles.previewRow}>
               <Text variant="bodyMedium" style={styles.previewLabel}>
-                数据类型：
+                {t('entityDataExport.dataType')}:
               </Text>
               <Chip style={{ backgroundColor: currentEntity?.color }}>
                 {currentEntity?.label}
@@ -487,7 +489,7 @@ export default function EntityDataExportScreen() {
 
             <View style={styles.previewRow}>
               <Text variant="bodyMedium" style={styles.previewLabel}>
-                操作类型：
+                {t('entityDataExport.operationType')}:
               </Text>
               <Text variant="bodyMedium">{currentOperation?.label}</Text>
             </View>
@@ -510,7 +512,7 @@ export default function EntityDataExportScreen() {
           style={styles.executeButton}
           contentStyle={styles.executeButtonContent}
         >
-          {loading ? '处理中...' : currentOperation?.label}
+          {loading ? t('common.processing') : currentOperation?.label}
         </Button>
 
         <View style={styles.bottomPadding} />
@@ -519,20 +521,20 @@ export default function EntityDataExportScreen() {
       {/* 导入结果对话框 */}
       <Portal>
         <Dialog visible={showResultDialog} onDismiss={() => setShowResultDialog(false)}>
-          <Dialog.Title>导入结果</Dialog.Title>
+          <Dialog.Title>{t('entityDataExport.importResult')}</Dialog.Title>
           <Dialog.ScrollArea>
             <ScrollView style={styles.dialogContent}>
               {importResult && (
                 <>
                   <View style={styles.resultSummary}>
                     <Text variant="bodyMedium">
-                      总计：{importResult.totalCount} 条
+                      {t('entityDataExport.result.total')}: {importResult.totalCount} {t('entityDataExport.result.records')}
                     </Text>
                     <Text variant="bodyMedium" style={{ color: '#4CAF50' }}>
-                      成功：{importResult.successCount} 条
+                      {t('entityDataExport.result.success')}: {importResult.successCount} {t('entityDataExport.result.records')}
                     </Text>
                     <Text variant="bodyMedium" style={{ color: '#F44336' }}>
-                      失败：{importResult.failureCount} 条
+                      {t('entityDataExport.result.failed')}: {importResult.failureCount} {t('entityDataExport.result.records')}
                     </Text>
                   </View>
 
@@ -540,12 +542,12 @@ export default function EntityDataExportScreen() {
                     <>
                       <Divider style={styles.divider} />
                       <Text variant="titleSmall" style={styles.failureTitle}>
-                        失败详情：
+                        {t('entityDataExport.result.failureDetails')}:
                       </Text>
                       {importResult.failureDetails.map((detail, index) => (
                         <List.Item
                           key={index}
-                          title={`第 ${detail.rowNumber} 行`}
+                          title={t('entityDataExport.result.rowNumber', { row: detail.rowNumber })}
                           description={detail.reason}
                           left={(props) => <List.Icon {...props} icon="alert-circle" color="#F44336" />}
                           style={styles.failureItem}
@@ -558,7 +560,7 @@ export default function EntityDataExportScreen() {
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setShowResultDialog(false)}>关闭</Button>
+            <Button onPress={() => setShowResultDialog(false)}>{t('common.close')}</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -567,7 +569,7 @@ export default function EntityDataExportScreen() {
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#2196F3" />
-          <Text style={styles.loadingText}>处理中，请稍候...</Text>
+          <Text style={styles.loadingText}>{t('common.processingPleaseWait')}</Text>
         </View>
       )}
     </View>

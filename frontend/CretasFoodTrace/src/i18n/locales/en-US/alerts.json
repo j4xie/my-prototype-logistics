@@ -1,0 +1,89 @@
+{
+  "exception": {
+    "title": "Exception Alerts",
+    "activeAlerts": "Active Alerts",
+    "critical": "Critical",
+    "warning": "Warning",
+    "info": "Info",
+    "total": "Total",
+    "all": "All",
+    "active": "Active",
+    "resolved": "Resolved",
+    "searchPlaceholder": "Search alerts...",
+    "noAlerts": "No Alerts",
+    "refresh": "Refresh",
+    "resolveSuccess": "Alert resolved successfully",
+    "resolveFailed": "Failed to resolve alert",
+    "cannotGetUserInfo": "Unable to get user info. Please log in again.",
+    "cannotGetFactoryInfo": "Unable to get factory info. Please log in again.",
+    "loadFailed": "Failed to load alert list"
+  },
+  "types": {
+    "materialExpiry": "Material Expiry",
+    "costOverrun": "Cost Overrun",
+    "conversionAbnormal": "Conversion Abnormal",
+    "equipmentFault": "Equipment Fault",
+    "employeeLate": "Employee Late"
+  },
+  "levels": {
+    "critical": "Critical",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "status": {
+    "active": "Active",
+    "resolved": "Resolved",
+    "pending": "Pending"
+  },
+  "create": {
+    "title": "Report Exception",
+    "step": "Step {{current}}/{{total}}",
+    "step1Title": "Step 1: What happened?",
+    "step2Title": "Step 2: Details",
+    "step3Title": "Step 3: Confirm Report",
+    "exceptionTypes": {
+      "equipment": "Equipment Fault",
+      "material": "Material Issue",
+      "safety": "Safety Hazard",
+      "other": "Other Issue"
+    },
+    "describeIssue": "Please describe the issue...",
+    "clickToTakePhoto": "Click to take photo (optional)",
+    "type": "Type",
+    "description": "Description",
+    "photo": "Photo",
+    "photoAdded": "{{count}} photo(s) added",
+    "previousStep": "Previous",
+    "nextStep": "Next",
+    "confirmReport": "Confirm Report",
+    "selectType": "Please select a type",
+    "enterDescription": "Please enter a description",
+    "selectExceptionType": "Please select an exception type",
+    "cameraPermissionRequired": "Camera permission required",
+    "submitSuccess": "Submitted Successfully",
+    "exceptionReported": "Exception has been reported. Please wait for processing.",
+    "submitFailed": "Submission Failed",
+    "pleaseRetryLater": "Please try again later"
+  },
+  "time": {
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago"
+  },
+  "equipment": {
+    "title": "Equipment Alerts",
+    "equipmentName": "Equipment Name",
+    "alertType": "Alert Type",
+    "alertLevel": "Alert Level",
+    "alertTime": "Alert Time",
+    "resolveTime": "Resolve Time",
+    "resolvedBy": "Resolved By",
+    "resolutionNotes": "Resolution Notes"
+  },
+  "actions": {
+    "resolve": "Resolve",
+    "ignore": "Ignore",
+    "escalate": "Escalate",
+    "viewDetails": "View Details"
+  }
+}

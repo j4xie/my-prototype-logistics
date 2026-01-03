@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI配额设置 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="factory-detail.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">AI配额设置</div>
+      <div class="header-right"></div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 100px;">
+      <!-- 工厂信息 -->
+      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600;">
+            厂
+          </div>
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">海鲜加工一厂</div>
+            <div style="font-size: 13px; opacity: 0.8;">F001 · 水产加工</div>
+          </div>
+        </div>
+
+        <!-- 配额仪表盘 -->
+        <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 16px;">
+          <div style="text-align: center; margin-bottom: 12px;">
+            <div style="font-size: 32px; font-weight: 700;">286 / 500</div>
+            <div style="font-size: 13px; opacity: 0.8;">本周已使用 / 总配额</div>
+          </div>
+          <div style="height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden;">
+            <div style="width: 57%; height: 100%; background: linear-gradient(90deg, #52c41a, #73d13d); border-radius: 4px;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; opacity: 0.8;">
+            <span>剩余 214 次</span>
+            <span>使用率 57%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 配额设置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">配额设置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <!-- 每周配额 -->
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 14px; color: #262626;">每周调用上限</span>
+            <span style="font-size: 18px; font-weight: 600; color: #667eea;">500 次</span>
+          </div>
+          <input type="range" min="100" max="2000" value="500" style="width: 100%; height: 8px; border-radius: 4px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #8c8c8c; margin-top: 4px;">
+            <span>100次</span>
+            <span>500次</span>
+            <span>1000次</span>
+            <span>2000次</span>
+          </div>
+        </div>
+
+        <!-- 预设选项 -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <span style="padding: 8px 16px; background: #f5f5f5; border-radius: 20px; font-size: 13px; color: #595959; cursor: pointer;">小型 (200)</span>
+          <span style="padding: 8px 16px; background: rgba(102, 126, 234, 0.1); border: 1px solid #667eea; border-radius: 20px; font-size: 13px; color: #667eea; cursor: pointer;">中型 (500)</span>
+          <span style="padding: 8px 16px; background: #f5f5f5; border-radius: 20px; font-size: 13px; color: #595959; cursor: pointer;">大型 (1000)</span>
+          <span style="padding: 8px 16px; background: #f5f5f5; border-radius: 20px; font-size: 13px; color: #595959; cursor: pointer;">企业 (2000)</span>
+        </div>
+      </div>
+
+      <!-- 高级设置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">高级设置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <!-- 超额处理 -->
+        <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="font-size: 14px; color: #262626; margin-bottom: 8px;">超额处理方式</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="radio" name="overflow" checked style="accent-color: #667eea;">
+              <span style="font-size: 14px; color: #595959;">拒绝请求并提示</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="radio" name="overflow" style="accent-color: #667eea;">
+              <span style="font-size: 14px; color: #595959;">允许超额（计费）</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="radio" name="overflow" style="accent-color: #667eea;">
+              <span style="font-size: 14px; color: #595959;">使用平台储备配额</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 预警阈值 -->
+        <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 14px; color: #262626;">预警阈值</span>
+            <span style="font-size: 14px; font-weight: 500; color: #262626;">80%</span>
+          </div>
+          <input type="range" min="50" max="95" value="80" style="width: 100%; height: 6px; border-radius: 3px;">
+          <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">
+            使用达到 80% 时发送预警通知
+          </div>
+        </div>
+
+        <!-- 通知设置 -->
+        <div>
+          <div style="font-size: 14px; color: #262626; margin-bottom: 12px;">通知方式</div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 14px; color: #262626;">系统通知</div>
+                <div style="font-size: 12px; color: #8c8c8c;">App 内消息推送</div>
+              </div>
+              <div style="position: relative; width: 44px; height: 24px; background: #52c41a; border-radius: 12px; cursor: pointer;">
+                <div style="position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; background: white; border-radius: 10px;"></div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 14px; color: #262626;">邮件通知</div>
+                <div style="font-size: 12px; color: #8c8c8c;">发送到管理员邮箱</div>
+              </div>
+              <div style="position: relative; width: 44px; height: 24px; background: #52c41a; border-radius: 12px; cursor: pointer;">
+                <div style="position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; background: white; border-radius: 10px;"></div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 14px; color: #262626;">短信通知</div>
+                <div style="font-size: 12px; color: #8c8c8c;">发送到管理员手机</div>
+              </div>
+              <div style="position: relative; width: 44px; height: 24px; background: #d9d9d9; border-radius: 12px; cursor: pointer;">
+                <div style="position: absolute; left: 2px; top: 2px; width: 20px; height: 20px; background: white; border-radius: 10px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 使用统计 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">使用统计</span>
+        <a href="quota-usage-stats.html" style="font-size: 13px; color: #667eea; text-decoration: none;">详细报表</a>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+          <div style="flex: 1; text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+            <div style="font-size: 20px; font-weight: 700; color: #262626;">1,250</div>
+            <div style="font-size: 12px; color: #8c8c8c;">本月累计</div>
+          </div>
+          <div style="flex: 1; text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+            <div style="font-size: 20px; font-weight: 700; color: #52c41a;">45</div>
+            <div style="font-size: 12px; color: #8c8c8c;">日均使用</div>
+          </div>
+        </div>
+
+        <!-- 近7天趋势 -->
+        <div style="font-size: 13px; color: #8c8c8c; margin-bottom: 8px;">近7天使用趋势</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; height: 60px; gap: 4px;">
+          <div style="flex: 1; background: rgba(102, 126, 234, 0.3); height: 45%; border-radius: 2px;"></div>
+          <div style="flex: 1; background: rgba(102, 126, 234, 0.5); height: 60%; border-radius: 2px;"></div>
+          <div style="flex: 1; background: rgba(102, 126, 234, 0.4); height: 50%; border-radius: 2px;"></div>
+          <div style="flex: 1; background: rgba(102, 126, 234, 0.6); height: 70%; border-radius: 2px;"></div>
+          <div style="flex: 1; background: rgba(102, 126, 234, 0.5); height: 55%; border-radius: 2px;"></div>
+          <div style="flex: 1; background: rgba(102, 126, 234, 0.7); height: 80%; border-radius: 2px;"></div>
+          <div style="flex: 1; background: #667eea; height: 100%; border-radius: 2px;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #bfbfbf; margin-top: 4px;">
+          <span>周一</span>
+          <span>周二</span>
+          <span>周三</span>
+          <span>周四</span>
+          <span>周五</span>
+          <span>周六</span>
+          <span>今天</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-actions">
+      <a href="factory-detail.html" class="bottom-actions__btn bottom-actions__btn--secondary" style="text-decoration: none;">取消</a>
+      <a href="factory-detail.html" class="bottom-actions__btn bottom-actions__btn--primary" style="text-decoration: none;">保存设置</a>
+    </div>
+  </div>
+</body>
+</html>

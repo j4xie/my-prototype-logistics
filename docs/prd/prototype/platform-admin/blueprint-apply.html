@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>应用蓝图 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="blueprint-detail.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">应用蓝图</div>
+      <div class="header-right"></div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 100px;">
+      <!-- 蓝图信息 -->
+      <div style="background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); border-radius: 16px; padding: 16px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600;">
+            水
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 16px; font-weight: 600;">水产加工标准版</div>
+            <div style="font-size: 13px; opacity: 0.9;">版本 v2.0.1</div>
+          </div>
+          <span style="padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 12px; font-size: 12px;">选择工厂</span>
+        </div>
+      </div>
+
+      <!-- 搜索 -->
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; background: white; border-radius: 8px; padding: 10px 12px; border: 1px solid #d9d9d9;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" placeholder="搜索工厂名称..." style="flex: 1; background: none; border: none; font-size: 14px; margin-left: 8px; outline: none;">
+        </div>
+      </div>
+
+      <!-- 筛选条件 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+        <span style="padding: 6px 12px; background: rgba(102, 126, 234, 0.1); border: 1px solid #667eea; border-radius: 16px; font-size: 12px; color: #667eea;">全部工厂</span>
+        <span style="padding: 6px 12px; background: #f5f5f5; border-radius: 16px; font-size: 12px; color: #595959;">未绑定蓝图</span>
+        <span style="padding: 6px 12px; background: #f5f5f5; border-radius: 16px; font-size: 12px; color: #595959;">水产加工</span>
+        <span style="padding: 6px 12px; background: #f5f5f5; border-radius: 16px; font-size: 12px; color: #595959;">速冻食品</span>
+      </div>
+
+      <!-- 工厂列表 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">选择目标工厂</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">全选</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <!-- 工厂1 - 可选 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <input type="checkbox" style="width: 20px; height: 20px; accent-color: #667eea;">
+          <div style="width: 44px; height: 44px; background: rgba(24, 144, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #1890ff; font-size: 16px; font-weight: 600;">
+            厂
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 15px; font-weight: 500; color: #262626;">海鲜加工四厂</div>
+            <div style="font-size: 13px; color: #8c8c8c;">F004 · 水产加工 · 未绑定蓝图</div>
+          </div>
+          <span class="tag success">运行中</span>
+        </div>
+
+        <!-- 工厂2 - 可选 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <input type="checkbox" checked style="width: 20px; height: 20px; accent-color: #667eea;">
+          <div style="width: 44px; height: 44px; background: rgba(24, 144, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #1890ff; font-size: 16px; font-weight: 600;">
+            厂
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 15px; font-weight: 500; color: #262626;">沿海水产加工厂</div>
+            <div style="font-size: 13px; color: #8c8c8c;">F008 · 水产加工 · 未绑定蓝图</div>
+          </div>
+          <span class="tag success">运行中</span>
+        </div>
+
+        <!-- 工厂3 - 已绑定其他蓝图 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0; opacity: 0.6;">
+          <input type="checkbox" disabled style="width: 20px; height: 20px;">
+          <div style="width: 44px; height: 44px; background: rgba(140, 140, 140, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #8c8c8c; font-size: 16px; font-weight: 600;">
+            厂
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 15px; font-weight: 500; color: #262626;">速冻食品一厂</div>
+            <div style="font-size: 13px; color: #8c8c8c;">F005 · 速冻食品 · 已绑定: 速冻食品标准版</div>
+          </div>
+          <span class="tag default">已绑定</span>
+        </div>
+
+        <!-- 工厂4 - 可选 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <input type="checkbox" style="width: 20px; height: 20px; accent-color: #667eea;">
+          <div style="width: 44px; height: 44px; background: rgba(24, 144, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #1890ff; font-size: 16px; font-weight: 600;">
+            厂
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 15px; font-weight: 500; color: #262626;">深海水产厂</div>
+            <div style="font-size: 13px; color: #8c8c8c;">F010 · 水产加工 · 未绑定蓝图</div>
+          </div>
+          <span class="tag warning">试运行</span>
+        </div>
+
+        <!-- 工厂5 - 可选 -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <input type="checkbox" style="width: 20px; height: 20px; accent-color: #667eea;">
+          <div style="width: 44px; height: 44px; background: rgba(24, 144, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #1890ff; font-size: 16px; font-weight: 600;">
+            厂
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 15px; font-weight: 500; color: #262626;">远洋海产加工厂</div>
+            <div style="font-size: 13px; color: #8c8c8c;">F012 · 水产加工 · 未绑定蓝图</div>
+          </div>
+          <span class="tag success">运行中</span>
+        </div>
+      </div>
+
+      <!-- 应用选项 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">应用选项</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; cursor: pointer;">
+          <input type="checkbox" checked style="width: 18px; height: 18px; margin-top: 2px; accent-color: #667eea;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">应用产品类型</div>
+            <div style="font-size: 12px; color: #8c8c8c;">将蓝图中的产品类型配置应用到工厂</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; cursor: pointer;">
+          <input type="checkbox" checked style="width: 18px; height: 18px; margin-top: 2px; accent-color: #667eea;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">应用原材料类型</div>
+            <div style="font-size: 12px; color: #8c8c8c;">将蓝图中的原材料类型应用到工厂</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; cursor: pointer;">
+          <input type="checkbox" checked style="width: 18px; height: 18px; margin-top: 2px; accent-color: #667eea;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">应用部门结构</div>
+            <div style="font-size: 12px; color: #8c8c8c;">创建蓝图中定义的部门结构</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; cursor: pointer;">
+          <input type="checkbox" checked style="width: 18px; height: 18px; margin-top: 2px; accent-color: #667eea;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">应用表单模板</div>
+            <div style="font-size: 12px; color: #8c8c8c;">将入库、加工、出货等表单应用到工厂</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; cursor: pointer;">
+          <input type="checkbox" checked style="width: 18px; height: 18px; margin-top: 2px; accent-color: #667eea;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">应用业务规则</div>
+            <div style="font-size: 12px; color: #8c8c8c;">将验证规则、质检规则等应用到工厂</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer;">
+          <input type="checkbox" style="width: 18px; height: 18px; margin-top: 2px; accent-color: #667eea;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">应用转换率配置</div>
+            <div style="font-size: 12px; color: #8c8c8c;">将默认转换率配置应用到工厂（可覆盖现有配置）</div>
+          </div>
+        </label>
+      </div>
+
+      <!-- 同步设置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">同步设置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626; margin-bottom: 4px;">启用自动同步</div>
+            <div style="font-size: 12px; color: #8c8c8c;">蓝图更新时自动同步到已绑定工厂</div>
+          </div>
+          <div style="position: relative; width: 48px; height: 28px; background: #52c41a; border-radius: 14px; cursor: pointer;">
+            <div style="position: absolute; right: 2px; top: 2px; width: 24px; height: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 14px; color: #262626; margin-bottom: 4px;">通知工厂管理员</div>
+            <div style="font-size: 12px; color: #8c8c8c;">应用完成后通知对应工厂管理员</div>
+          </div>
+          <div style="position: relative; width: 48px; height: 28px; background: #52c41a; border-radius: 14px; cursor: pointer;">
+            <div style="position: absolute; right: 2px; top: 2px; width: 24px; height: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 应用摘要 -->
+      <div style="margin-top: 16px; padding: 16px; background: rgba(102, 126, 234, 0.1); border-radius: 12px;">
+        <div style="font-size: 14px; font-weight: 500; color: #262626; margin-bottom: 8px;">应用摘要</div>
+        <div style="font-size: 13px; color: #595959; line-height: 1.6;">
+          将 <span style="font-weight: 500; color: #667eea;">水产加工标准版 v2.0.1</span> 应用到 <span style="font-weight: 500; color: #667eea;">1 个工厂</span>，包括产品类型、原材料、部门结构、表单模板和业务规则。
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-actions">
+      <a href="blueprint-detail.html" class="bottom-actions__btn bottom-actions__btn--secondary" style="text-decoration: none;">取消</a>
+      <a href="blueprint-bindings.html" class="bottom-actions__btn bottom-actions__btn--primary" style="text-decoration: none;">确认应用</a>
+    </div>
+  </div>
+</body>
+</html>

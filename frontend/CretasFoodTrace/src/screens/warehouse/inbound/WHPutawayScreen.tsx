@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHInboundStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
@@ -75,6 +76,7 @@ interface LocationOption {
 }
 
 export function WHPutawayScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
@@ -102,16 +104,16 @@ export function WHPutawayScreen() {
         const storageType = batch.storageType ?? 'fresh';
         setBatchInfo({
           batchNumber: batch.batchNumber ?? `MB-${batch.id}`,
-          material: batch.materialName ?? '未知原料',
+          material: batch.materialName ?? t('messages.unknownMaterial'),
           materialType: getStorageTypeLabel(storageType),
-          supplier: batch.supplierName ?? '未知供应商',
+          supplier: batch.supplierName ?? t('messages.unknownSupplier'),
           quantity: batch.remainingQuantity ?? batch.inboundQuantity ?? 0,
-          inspectResult: batch.status === 'available' ? '质检通过' : '待质检',
+          inspectResult: batch.status === 'available' ? t('inbound.putaway.inspectPass') : t('inbound.putaway.inspectPending'),
           storageTemp: getStorageTemp(storageType),
         });
       }
     } catch (error) {
-      handleError(error, { title: '加载批次信息失败' });
+      handleError(error, { title: t('messages.loadBatchFailed') });
     } finally {
       setLoading(false);
     }
@@ -165,22 +167,22 @@ export function WHPutawayScreen() {
 
   const handleConfirm = async () => {
     if (!selectedLocation) {
-      Alert.alert("提示", "请选择上架库位");
+      Alert.alert(t('inbound.putaway.alert'), t('inbound.putaway.selectLocationAlert'));
       return;
     }
 
-    Alert.alert("确认上架", "确定将货物上架到所选库位吗？", [
-      { text: "取消", style: "cancel" },
+    Alert.alert(t('inbound.putaway.confirmTitle'), t('inbound.putaway.confirmMessage'), [
+      { text: t('inbound.putaway.cancel'), style: "cancel" },
       {
-        text: "确定",
+        text: t('inbound.detail.confirm'),
         onPress: async () => {
           setSubmitting(true);
           try {
             // TODO: 调用上架 API（updateBatchStorageLocation 或类似接口）
-            Alert.alert("成功", "货物已上架完成");
+            Alert.alert(t('inbound.putaway.success'), t('inbound.putaway.successMessage'));
             navigation.goBack();
           } catch (error) {
-            handleError(error, { title: '上架失败' });
+            handleError(error, { title: t('messages.putawayFailed') });
           } finally {
             setSubmitting(false);
           }
@@ -197,12 +199,12 @@ export function WHPutawayScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>确认上架</Text>
+          <Text style={styles.headerTitle}>{t('inbound.putaway.title')}</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('inbound.putaway.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -216,12 +218,12 @@ export function WHPutawayScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>确认上架</Text>
+          <Text style={styles.headerTitle}>{t('inbound.putaway.title')}</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <MaterialCommunityIcons name="package-variant" size={64} color="#ddd" />
-          <Text style={styles.loadingText}>未找到批次信息</Text>
+          <Text style={styles.loadingText}>{t('inbound.putaway.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -237,7 +239,7 @@ export function WHPutawayScreen() {
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>确认上架</Text>
+        <Text style={styles.headerTitle}>{t('inbound.putaway.title')}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -252,23 +254,23 @@ export function WHPutawayScreen() {
           </View>
           <View style={styles.batchInfo}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>物料</Text>
+              <Text style={styles.infoLabel}>{t('inbound.putaway.material')}</Text>
               <Text style={styles.infoValue}>
                 {batchInfo.material} ({batchInfo.materialType})
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>供应商</Text>
+              <Text style={styles.infoLabel}>{t('inbound.putaway.supplier')}</Text>
               <Text style={styles.infoValue}>{batchInfo.supplier}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>数量</Text>
+              <Text style={styles.infoLabel}>{t('inbound.putaway.quantity')}</Text>
               <Text style={[styles.infoValue, styles.quantityValue]}>
                 {batchInfo.quantity} kg
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>存储温度</Text>
+              <Text style={styles.infoLabel}>{t('inbound.putaway.storageTemp')}</Text>
               <Text style={styles.infoValue}>{batchInfo.storageTemp}</Text>
             </View>
           </View>
@@ -276,7 +278,7 @@ export function WHPutawayScreen() {
 
         {/* 选择库位 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>选择库位</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.putaway.selectLocation')}</Text>
 
           {locationOptions.map((location) => (
             <TouchableOpacity
@@ -293,7 +295,7 @@ export function WHPutawayScreen() {
                   <Text style={styles.locationName}>{location.name}</Text>
                   {location.recommended && (
                     <View style={styles.recommendBadge}>
-                      <Text style={styles.recommendText}>推荐</Text>
+                      <Text style={styles.recommendText}>{t('inbound.putaway.recommend')}</Text>
                     </View>
                   )}
                 </View>
@@ -343,7 +345,7 @@ export function WHPutawayScreen() {
 
         {/* 上架数量 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>上架数量</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.putaway.putawayQuantity')}</Text>
           <View style={styles.quantityRow}>
             <TextInput
               mode="outlined"
@@ -358,19 +360,19 @@ export function WHPutawayScreen() {
           </View>
           {Number(actualQuantity) !== batchInfo.quantity && (
             <Text style={styles.warningText}>
-              注意：上架数量与入库数量不一致
+              {t('inbound.putaway.quantityMismatch')}
             </Text>
           )}
         </View>
 
         {/* 备注 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>备注</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.putaway.remarks')}</Text>
           <TextInput
             mode="outlined"
             value={remarks}
             onChangeText={setRemarks}
-            placeholder="请输入上架备注..."
+            placeholder={t('inbound.putaway.placeholders.remarks')}
             multiline
             numberOfLines={3}
             style={styles.textArea}
@@ -391,7 +393,7 @@ export function WHPutawayScreen() {
           labelStyle={styles.cancelButtonLabel}
           disabled={submitting}
         >
-          返回
+          {t('inbound.putaway.back')}
         </Button>
         <Button
           mode="contained"
@@ -402,7 +404,7 @@ export function WHPutawayScreen() {
           disabled={submitting}
           loading={submitting}
         >
-          {submitting ? '提交中...' : '确认上架'}
+          {submitting ? t('inbound.putaway.confirming') : t('inbound.putaway.confirm')}
         </Button>
       </View>
     </SafeAreaView>

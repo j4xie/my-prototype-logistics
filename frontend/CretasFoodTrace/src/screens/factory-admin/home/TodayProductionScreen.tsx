@@ -17,6 +17,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAHomeStackParamList } from '../../../types/navigation';
 import { dashboardAPI, ProductionStatisticsData } from '../../../services/api/dashboardApiClient';
 
@@ -24,6 +25,7 @@ type NavigationProp = NativeStackNavigationProp<FAHomeStackParamList, 'TodayProd
 
 export function TodayProductionScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('home');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -42,7 +44,7 @@ export function TodayProductionScreen() {
       }
     } catch (err) {
       console.error('加载生产数据失败:', err);
-      setError('数据加载失败');
+      setError(t('todayProduction.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -69,12 +71,28 @@ export function TodayProductionScreen() {
     0
   ) ?? 0;
 
+  // 获取状态标签（使用i18n）
+  const getStatusLabelTranslated = (status: string): string => {
+    const normalizedStatus = status?.toUpperCase();
+    const statusKeys: Record<string, string> = {
+      PLANNED: 'todayProduction.status.planned',
+      PENDING: 'todayProduction.status.pending',
+      IN_PROGRESS: 'todayProduction.status.inProgress',
+      PROCESSING: 'todayProduction.status.processing',
+      COMPLETED: 'todayProduction.status.completed',
+      CANCELLED: 'todayProduction.status.cancelled',
+      PAUSED: 'todayProduction.status.paused',
+    };
+    const key = statusKeys[normalizedStatus];
+    return key ? t(key) : status;
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -87,7 +105,7 @@ export function TodayProductionScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>今日产量</Text>
+        <Text style={styles.headerTitle}>{t('todayProduction.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -111,27 +129,27 @@ export function TodayProductionScreen() {
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>{totalQuantity.toFixed(0)}</Text>
-              <Text style={styles.summaryLabel}>总产量 (kg)</Text>
+              <Text style={styles.summaryLabel}>{t('todayProduction.totalOutput')}</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
               <Text style={styles.summaryValue}>{totalBatches}</Text>
-              <Text style={styles.summaryLabel}>批次数</Text>
+              <Text style={styles.summaryLabel}>{t('todayProduction.batchCount')}</Text>
             </View>
           </View>
         </View>
 
         {/* 状态分布 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>批次状态分布</Text>
+          <Text style={styles.sectionTitle}>{t('todayProduction.statusDistribution')}</Text>
           {data?.batchStatusDistribution?.map((item, index) => (
             <View key={index} style={styles.statusItem}>
               <View style={styles.statusLeft}>
                 <View style={[styles.statusDot, { backgroundColor: getStatusColor(item.status) }]} />
-                <Text style={styles.statusName}>{getStatusLabel(item.status)}</Text>
+                <Text style={styles.statusName}>{getStatusLabelTranslated(item.status)}</Text>
               </View>
               <View style={styles.statusRight}>
-                <Text style={styles.statusCount}>{item.count} 批</Text>
+                <Text style={styles.statusCount}>{item.count} {t('todayProduction.batchUnit')}</Text>
                 <Text style={styles.statusQty}>{item.totalQuantity?.toFixed(0) ?? 0} kg</Text>
               </View>
             </View>
@@ -140,7 +158,7 @@ export function TodayProductionScreen() {
 
         {/* 产品类型统计 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>产品类型统计</Text>
+          <Text style={styles.sectionTitle}>{t('todayProduction.productTypeStats')}</Text>
           {data?.productTypeStats?.map((item, index) => (
             <View key={index} style={styles.productItem}>
               <View style={styles.productLeft}>
@@ -148,17 +166,17 @@ export function TodayProductionScreen() {
                   <Icon source="cube-outline" size={16} color="#fff" />
                 </View>
                 <Text style={styles.productName} numberOfLines={1}>
-                  {(item as any).productTypeName || item.productType || (item as any).productTypeId || '未知产品'}
+                  {(item as any).productTypeName || item.productType || (item as any).productTypeId || t('todayProduction.unknownProduct')}
                 </Text>
               </View>
               <View style={styles.productStats}>
-                <Text style={styles.productCount}>{item.count} 批</Text>
+                <Text style={styles.productCount}>{item.count} {t('todayProduction.batchUnit')}</Text>
                 <Text style={styles.productQty}>{item.totalQuantity?.toFixed(0) ?? 0} kg</Text>
               </View>
             </View>
           ))}
           {(!data?.productTypeStats || data.productTypeStats.length === 0) && (
-            <Text style={styles.emptyText}>暂无产品数据</Text>
+            <Text style={styles.emptyText}>{t('todayProduction.noProductData')}</Text>
           )}
         </View>
 
@@ -183,19 +201,11 @@ function getStatusColor(status: string): string {
   return colors[normalizedStatus] || '#a0aec0';
 }
 
-// 获取状态标签（中文）
+// 获取状态标签（中文）- 该函数需要在组件内部调用以使用t函数
 function getStatusLabel(status: string): string {
+  // Note: This is a fallback. The actual translation happens in the component
   const normalizedStatus = status?.toUpperCase();
-  const labels: Record<string, string> = {
-    PLANNED: '计划中',
-    PENDING: '待处理',
-    IN_PROGRESS: '进行中',
-    PROCESSING: '加工中',
-    COMPLETED: '已完成',
-    CANCELLED: '已取消',
-    PAUSED: '已暂停',
-  };
-  return labels[normalizedStatus] || status;
+  return normalizedStatus || status;
 }
 
 // 获取产品颜色

@@ -12,6 +12,7 @@ import {
   Chip,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { timeStatsApiClient, DailyStats, MonthlyStats, EmployeeTimeStats } from '../../services/api/timeStatsApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
@@ -46,6 +47,7 @@ interface EmployeeTimeRecord {
 export default function AttendanceStatisticsScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('hr');
 
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState('today'); // today, week, month, custom
@@ -127,7 +129,7 @@ export default function AttendanceStatisticsScreen() {
         userId: user?.id,
         factoryId: user?.factoryId,
       });
-      Alert.alert('错误', getErrorMsg(error) || '加载统计数据失败');
+      Alert.alert(t('messages.error'), getErrorMsg(error) || t('attendance.statistics.errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -138,7 +140,7 @@ export default function AttendanceStatisticsScreen() {
       // 获取个人工时统计
       const userId = user?.id;
       if (!userId) {
-        throw new Error('用户ID不存在');
+        throw new Error(t('attendance.statistics.errors.noUserId'));
       }
 
       const dateRange = getDateRange();
@@ -300,19 +302,19 @@ export default function AttendanceStatisticsScreen() {
 
   const getPeriodLabel = () => {
     switch (timePeriod) {
-      case 'today': return '今日';
-      case 'week': return '本周';
-      case 'month': return '本月';
-      case 'custom': return '自定义';
+      case 'today': return t('attendance.statistics.periods.today');
+      case 'week': return t('attendance.statistics.periods.week');
+      case 'month': return t('attendance.statistics.periods.month');
+      case 'custom': return t('attendance.statistics.periods.custom');
       default: return timePeriod;
     }
   };
 
   const getDimensionLabel = () => {
     switch (viewDimension) {
-      case 'personal': return '个人工时';
-      case 'department': return '部门工时';
-      case 'factory': return '全厂工时';
+      case 'personal': return t('attendance.statistics.dimensionLabels.personal');
+      case 'department': return t('attendance.statistics.dimensionLabels.department');
+      case 'factory': return t('attendance.statistics.dimensionLabels.factory');
       default: return viewDimension;
     }
   };
@@ -322,7 +324,7 @@ export default function AttendanceStatisticsScreen() {
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="工时统计" />
+        <Appbar.Content title={t('attendance.statistics.title')} />
         <Appbar.Action icon="refresh" onPress={loadStats} />
       </Appbar.Header>
 
@@ -330,14 +332,14 @@ export default function AttendanceStatisticsScreen() {
         {/* Time Period Selector */}
         <Card style={styles.selectorCard}>
           <Card.Content>
-            <Text style={styles.selectorLabel}>时间范围</Text>
+            <Text style={styles.selectorLabel}>{t('attendance.statistics.timeRange')}</Text>
             <SegmentedButtons
               value={timePeriod}
               onValueChange={setTimePeriod}
               buttons={[
-                { value: 'today', label: '今日' },
-                { value: 'week', label: '本周' },
-                { value: 'month', label: '本月' },
+                { value: 'today', label: t('attendance.statistics.periods.today') },
+                { value: 'week', label: t('attendance.statistics.periods.week') },
+                { value: 'month', label: t('attendance.statistics.periods.month') },
               ]}
             />
           </Card.Content>
@@ -346,14 +348,14 @@ export default function AttendanceStatisticsScreen() {
         {/* Dimension Selector */}
         <Card style={styles.selectorCard}>
           <Card.Content>
-            <Text style={styles.selectorLabel}>统计维度</Text>
+            <Text style={styles.selectorLabel}>{t('attendance.statistics.dimension')}</Text>
             <SegmentedButtons
               value={viewDimension}
               onValueChange={setViewDimension}
               buttons={[
-                { value: 'personal', label: '个人', disabled: false },
-                { value: 'department', label: '部门', disabled: !canViewDepartment },
-                { value: 'factory', label: '全厂', disabled: !canViewFactory },
+                { value: 'personal', label: t('attendance.statistics.dimensions.personal'), disabled: false },
+                { value: 'department', label: t('attendance.statistics.dimensions.department'), disabled: !canViewDepartment },
+                { value: 'factory', label: t('attendance.statistics.dimensions.factory'), disabled: !canViewFactory },
               ]}
             />
           </Card.Content>
@@ -362,7 +364,7 @@ export default function AttendanceStatisticsScreen() {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" />
-            <Text style={styles.loadingText}>加载中...</Text>
+            <Text style={styles.loadingText}>{t('attendance.statistics.loading')}</Text>
           </View>
         ) : (
           <>
@@ -377,25 +379,25 @@ export default function AttendanceStatisticsScreen() {
                 <View style={styles.statsGrid}>
                   <View style={styles.statBox}>
                     <Text style={styles.statValue}>{stats?.totalHours.toFixed(1) || '0.0'}</Text>
-                    <Text style={styles.statLabel}>总工时</Text>
+                    <Text style={styles.statLabel}>{t('attendance.statistics.totalHours')}</Text>
                   </View>
                   <View style={styles.statBox}>
                     <Text style={[styles.statValue, { color: '#2E7D32' }]}>
                       {stats?.regularHours.toFixed(1) || '0.0'}
                     </Text>
-                    <Text style={styles.statLabel}>正常工时</Text>
+                    <Text style={styles.statLabel}>{t('attendance.statistics.regularHours')}</Text>
                   </View>
                   <View style={styles.statBox}>
                     <Text style={[styles.statValue, { color: '#D32F2F' }]}>
                       {stats?.overtimeHours.toFixed(1) || '0.0'}
                     </Text>
-                    <Text style={styles.statLabel}>加班工时</Text>
+                    <Text style={styles.statLabel}>{t('attendance.statistics.overtimeHours')}</Text>
                   </View>
                   <View style={styles.statBox}>
                     <Text style={styles.statValue}>
                       {stats?.averageDailyHours.toFixed(1) || '0.0'}
                     </Text>
-                    <Text style={styles.statLabel}>平均每日工时</Text>
+                    <Text style={styles.statLabel}>{t('attendance.statistics.avgDailyHours')}</Text>
                   </View>
                 </View>
 
@@ -403,7 +405,7 @@ export default function AttendanceStatisticsScreen() {
                 {stats && stats.totalHours > 0 && (
                   <View style={styles.progressSection}>
                     <View style={styles.progressRow}>
-                      <Text style={styles.progressLabel}>正常工时占比</Text>
+                      <Text style={styles.progressLabel}>{t('attendance.statistics.regularPercent')}</Text>
                       <Text style={styles.progressValue}>
                         {((stats.regularHours / stats.totalHours) * 100).toFixed(1)}%
                       </Text>
@@ -415,7 +417,7 @@ export default function AttendanceStatisticsScreen() {
                     />
 
                     <View style={styles.progressRow}>
-                      <Text style={styles.progressLabel}>加班工时占比</Text>
+                      <Text style={styles.progressLabel}>{t('attendance.statistics.overtimePercent')}</Text>
                       <Text style={styles.progressValue}>
                         {((stats.overtimeHours / stats.totalHours) * 100).toFixed(1)}%
                       </Text>
@@ -434,7 +436,7 @@ export default function AttendanceStatisticsScreen() {
             {viewDimension !== 'personal' && employeeRecords.length > 0 && (
               <Card style={styles.recordsCard}>
                 <Card.Content>
-                  <Text style={styles.recordsTitle}>员工工时明细</Text>
+                  <Text style={styles.recordsTitle}>{t('attendance.statistics.employeeDetails')}</Text>
                   <Divider style={styles.divider} />
 
                   {employeeRecords.map((record, index) => (
@@ -447,7 +449,7 @@ export default function AttendanceStatisticsScreen() {
                           </Chip>
                         </View>
                         <Text style={styles.recordTotal}>
-                          {record.totalHours.toFixed(1)}小时
+                          {record.totalHours.toFixed(1)}{t('attendance.statistics.hours')}
                         </Text>
                       </View>
 
@@ -455,13 +457,13 @@ export default function AttendanceStatisticsScreen() {
                         <View style={styles.recordDetailItem}>
                           <List.Icon icon="clock-outline" style={styles.recordIcon} />
                           <Text style={styles.recordDetailText}>
-                            正常: {record.regularHours.toFixed(1)}h
+                            {t('attendance.statistics.normal')}: {record.regularHours.toFixed(1)}h
                           </Text>
                         </View>
                         <View style={styles.recordDetailItem}>
                           <List.Icon icon="clock-fast" style={styles.recordIcon} />
                           <Text style={[styles.recordDetailText, { color: '#D32F2F' }]}>
-                            加班: {record.overtimeHours.toFixed(1)}h
+                            {t('attendance.statistics.overtime')}: {record.overtimeHours.toFixed(1)}h
                           </Text>
                         </View>
                       </View>
@@ -488,8 +490,8 @@ export default function AttendanceStatisticsScreen() {
               <Card style={styles.emptyCard}>
                 <Card.Content style={styles.emptyContent}>
                   <List.Icon icon="clock-outline" color="#999" />
-                  <Text style={styles.emptyText}>当前时间段暂无工时记录</Text>
-                  <Text style={styles.emptyHint}>请先进行考勤打卡</Text>
+                  <Text style={styles.emptyText}>{t('attendance.statistics.noData')}</Text>
+                  <Text style={styles.emptyHint}>{t('attendance.statistics.noDataHint')}</Text>
                 </Card.Content>
               </Card>
             )}

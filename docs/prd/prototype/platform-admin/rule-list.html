@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>规则管理 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="index.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">规则管理</div>
+      <div class="header-right">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content">
+      <!-- 工厂选择器 -->
+      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 16px; margin-bottom: 20px; color: white;">
+        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 8px;">当前工厂</div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600;">
+              厂
+            </div>
+            <div>
+              <div style="font-size: 16px; font-weight: 600;">海鲜加工一厂</div>
+              <div style="font-size: 13px; opacity: 0.8;">F001 · 水产加工</div>
+            </div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 规则分类 Tab -->
+      <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
+        <span style="padding: 8px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; font-size: 13px; color: white; white-space: nowrap;">全部规则</span>
+        <span style="padding: 8px 16px; background: #f5f5f5; border-radius: 20px; font-size: 13px; color: #595959; white-space: nowrap;">验证规则</span>
+        <span style="padding: 8px 16px; background: #f5f5f5; border-radius: 20px; font-size: 13px; color: #595959; white-space: nowrap;">工作流</span>
+        <span style="padding: 8px 16px; background: #f5f5f5; border-radius: 20px; font-size: 13px; color: #595959; white-space: nowrap;">成本</span>
+        <span style="padding: 8px 16px; background: #f5f5f5; border-radius: 20px; font-size: 13px; color: #595959; white-space: nowrap;">质检</span>
+        <span style="padding: 8px 16px; background: #f5f5f5; border-radius: 20px; font-size: 13px; color: #595959; white-space: nowrap;">告警</span>
+      </div>
+
+      <!-- 统计卡片 -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div style="background: white; border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 600; color: #262626;">28</div>
+          <div style="font-size: 12px; color: #8c8c8c;">总规则数</div>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 600; color: #52c41a;">24</div>
+          <div style="font-size: 12px; color: #8c8c8c;">已启用</div>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="font-size: 24px; font-weight: 600; color: #faad14;">4</div>
+          <div style="font-size: 12px; color: #8c8c8c;">已禁用</div>
+        </div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+        <a href="decision-table.html" style="text-decoration: none; background: rgba(24, 144, 255, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="width: 40px; height: 40px; background: #1890ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 600; margin: 0 auto 8px;">表</div>
+          <div style="font-size: 13px; color: #262626;">决策表</div>
+        </a>
+        <a href="state-machine-list.html" style="text-decoration: none; background: rgba(82, 196, 26, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="width: 40px; height: 40px; background: #52c41a; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 600; margin: 0 auto 8px;">态</div>
+          <div style="font-size: 13px; color: #262626;">状态机</div>
+        </a>
+        <a href="rule-test.html" style="text-decoration: none; background: rgba(114, 46, 209, 0.1); border-radius: 12px; padding: 16px; text-align: center;">
+          <div style="width: 40px; height: 40px; background: #722ed1; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 600; margin: 0 auto 8px;">测</div>
+          <div style="font-size: 13px; color: #262626;">规则测试</div>
+        </a>
+      </div>
+
+      <!-- 规则列表 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">DRL 规则列表</span>
+        <span style="font-size: 13px; color: #8c8c8c;">28 条规则</span>
+      </div>
+
+      <!-- 验证规则组 -->
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <div style="width: 4px; height: 16px; background: #1890ff; border-radius: 2px;"></div>
+          <span style="font-size: 14px; font-weight: 500; color: #262626;">验证规则</span>
+          <span style="font-size: 12px; color: #8c8c8c;">(8)</span>
+        </div>
+
+        <a href="rule-detail.html" style="text-decoration: none; display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 8px; border-left: 3px solid #1890ff;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">原材料批次验证</div>
+              <div style="font-size: 13px; color: #8c8c8c; margin-top: 4px;">验证批次号格式、数量有效性</div>
+            </div>
+            <span class="tag success">启用</span>
+          </div>
+          <div style="display: flex; gap: 12px; font-size: 12px; color: #8c8c8c;">
+            <span>优先级: 10</span>
+            <span>触发: 1,234次</span>
+            <span>更新: 2024-03-15</span>
+          </div>
+        </a>
+
+        <a href="rule-detail.html" style="text-decoration: none; display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 8px; border-left: 3px solid #1890ff;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">温度范围检验</div>
+              <div style="font-size: 13px; color: #8c8c8c; margin-top: 4px;">冷链温度必须在-18°C至-25°C之间</div>
+            </div>
+            <span class="tag success">启用</span>
+          </div>
+          <div style="display: flex; gap: 12px; font-size: 12px; color: #8c8c8c;">
+            <span>优先级: 5</span>
+            <span>触发: 856次</span>
+            <span>更新: 2024-03-10</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- 工作流规则组 -->
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <div style="width: 4px; height: 16px; background: #52c41a; border-radius: 2px;"></div>
+          <span style="font-size: 14px; font-weight: 500; color: #262626;">工作流规则</span>
+          <span style="font-size: 12px; color: #8c8c8c;">(6)</span>
+        </div>
+
+        <a href="rule-detail.html" style="text-decoration: none; display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 8px; border-left: 3px solid #52c41a;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">质检通过自动入库</div>
+              <div style="font-size: 13px; color: #8c8c8c; margin-top: 4px;">质检合格后自动更新批次状态为可用</div>
+            </div>
+            <span class="tag success">启用</span>
+          </div>
+          <div style="display: flex; gap: 12px; font-size: 12px; color: #8c8c8c;">
+            <span>优先级: 8</span>
+            <span>触发: 567次</span>
+            <span>更新: 2024-03-12</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- 质检规则组 -->
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <div style="width: 4px; height: 16px; background: #722ed1; border-radius: 2px;"></div>
+          <span style="font-size: 14px; font-weight: 500; color: #262626;">质检规则</span>
+          <span style="font-size: 12px; color: #8c8c8c;">(5)</span>
+        </div>
+
+        <a href="rule-detail.html" style="text-decoration: none; display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 8px; border-left: 3px solid #722ed1;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">出口质量标准</div>
+              <div style="font-size: 13px; color: #8c8c8c; margin-top: 4px;">出口产品需满足国际食品安全标准</div>
+            </div>
+            <span class="tag success">启用</span>
+          </div>
+          <div style="display: flex; gap: 12px; font-size: 12px; color: #8c8c8c;">
+            <span>优先级: 3</span>
+            <span>触发: 234次</span>
+            <span>更新: 2024-03-08</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- 告警规则组 -->
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <div style="width: 4px; height: 16px; background: #f5222d; border-radius: 2px;"></div>
+          <span style="font-size: 14px; font-weight: 500; color: #262626;">告警规则</span>
+          <span style="font-size: 12px; color: #8c8c8c;">(5)</span>
+        </div>
+
+        <a href="rule-detail.html" style="text-decoration: none; display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 8px; border-left: 3px solid #f5222d;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">设备异常告警</div>
+              <div style="font-size: 13px; color: #8c8c8c; margin-top: 4px;">设备温度超标时触发告警通知</div>
+            </div>
+            <span class="tag warning">已禁用</span>
+          </div>
+          <div style="display: flex; gap: 12px; font-size: 12px; color: #8c8c8c;">
+            <span>优先级: 1</span>
+            <span>触发: 45次</span>
+            <span>更新: 2024-02-20</span>
+          </div>
+        </a>
+
+        <a href="rule-detail.html" style="text-decoration: none; display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 8px; border-left: 3px solid #f5222d;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">库存预警规则</div>
+              <div style="font-size: 13px; color: #8c8c8c; margin-top: 4px;">原材料库存低于阈值时发送预警</div>
+            </div>
+            <span class="tag success">启用</span>
+          </div>
+          <div style="display: flex; gap: 12px; font-size: 12px; color: #8c8c8c;">
+            <span>优先级: 2</span>
+            <span>触发: 123次</span>
+            <span>更新: 2024-03-01</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- 成本规则组 -->
+      <div style="margin-bottom: 100px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <div style="width: 4px; height: 16px; background: #fa8c16; border-radius: 2px;"></div>
+          <span style="font-size: 14px; font-weight: 500; color: #262626;">成本规则</span>
+          <span style="font-size: 12px; color: #8c8c8c;">(4)</span>
+        </div>
+
+        <a href="rule-detail.html" style="text-decoration: none; display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 8px; border-left: 3px solid #fa8c16;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">转换率成本核算</div>
+              <div style="font-size: 13px; color: #8c8c8c; margin-top: 4px;">根据转换率计算原材料成本分摊</div>
+            </div>
+            <span class="tag success">启用</span>
+          </div>
+          <div style="display: flex; gap: 12px; font-size: 12px; color: #8c8c8c;">
+            <span>优先级: 6</span>
+            <span>触发: 789次</span>
+            <span>更新: 2024-03-18</span>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 浮动按钮 -->
+    <a href="rule-create.html" style="position: fixed; bottom: 80px; right: 24px; width: 56px; height: 56px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); text-decoration: none;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </a>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="bottom-nav__item">
+        <svg class="bottom-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span class="bottom-nav__label">首页</span>
+      </a>
+      <a href="factories.html" class="bottom-nav__item">
+        <svg class="bottom-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 20h20"/>
+          <path d="M5 20V8l7-5 7 5v12"/>
+          <path d="M9 20v-4h6v4"/>
+        </svg>
+        <span class="bottom-nav__label">工厂</span>
+      </a>
+      <a href="blueprints.html" class="bottom-nav__item">
+        <svg class="bottom-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        <span class="bottom-nav__label">蓝图</span>
+      </a>
+      <a href="profile.html" class="bottom-nav__item">
+        <svg class="bottom-nav__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span class="bottom-nav__label">我的</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>

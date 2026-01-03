@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑配额规则 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="quota-rules.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">编辑规则</div>
+      <div class="header-right" style="font-size: 14px; color: #667eea;">保存</div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 100px;">
+      <!-- 规则信息头部 -->
+      <div style="background: linear-gradient(135deg, #faad14 0%, #d48806 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">规则编号</div>
+        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">QUOTA-WARN-001</div>
+        <div style="font-size: 13px; opacity: 0.9;">配额预警规则</div>
+      </div>
+
+      <!-- 基本信息 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">基本信息</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">规则名称 <span style="color: #f5222d;">*</span></label>
+          <input type="text" value="配额预警规则" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">规则类型</label>
+          <select style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; background: white;">
+            <option value="warning" selected>预警规则</option>
+            <option value="limit">限流规则</option>
+            <option value="auto_scale">自动扩容</option>
+            <option value="daily_limit">日限制</option>
+            <option value="concurrent">并发限制</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">规则描述</label>
+          <textarea rows="3" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box; resize: none;">当工厂配额使用率达到阈值时触发预警通知</textarea>
+        </div>
+      </div>
+
+      <!-- 触发条件 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">触发条件</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">阈值类型</label>
+          <select style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; background: white;">
+            <option value="percentage" selected>百分比</option>
+            <option value="absolute">绝对值</option>
+            <option value="daily">日用量</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">触发阈值</label>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <input type="range" min="50" max="100" value="80" style="flex: 1; height: 6px;">
+            <div style="width: 60px; padding: 8px 12px; background: #fafafa; border-radius: 6px; text-align: center; font-size: 14px; font-weight: 500;">80%</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #8c8c8c; margin-top: 4px;">
+            <span>50%</span>
+            <span>100%</span>
+          </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">检查频率</label>
+          <select style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; background: white;">
+            <option value="realtime">实时检查</option>
+            <option value="5min" selected>每5分钟</option>
+            <option value="15min">每15分钟</option>
+            <option value="hourly">每小时</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 通知设置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">通知设置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 12px;">通知方式</label>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #fafafa; border-radius: 8px; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <span style="font-size: 14px; color: #262626;">邮件通知</span>
+            </div>
+            <div style="width: 44px; height: 24px; background: #1890ff; border-radius: 12px; position: relative; cursor: pointer;">
+              <div style="width: 20px; height: 20px; background: white; border-radius: 10px; position: absolute; right: 2px; top: 2px;"></div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #fafafa; border-radius: 8px; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              <span style="font-size: 14px; color: #262626;">短信通知</span>
+            </div>
+            <div style="width: 44px; height: 24px; background: #1890ff; border-radius: 12px; position: relative; cursor: pointer;">
+              <div style="width: 20px; height: 20px; background: white; border-radius: 10px; position: absolute; right: 2px; top: 2px;"></div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #fafafa; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#722ed1" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span style="font-size: 14px; color: #262626;">站内通知</span>
+            </div>
+            <div style="width: 44px; height: 24px; background: #e0e0e0; border-radius: 12px; position: relative; cursor: pointer;">
+              <div style="width: 20px; height: 20px; background: white; border-radius: 10px; position: absolute; left: 2px; top: 2px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">通知接收人</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: #fafafa; border-radius: 8px;">
+            <span style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: #e6f7ff; color: #1890ff; border-radius: 4px; font-size: 12px;">
+              平台管理员
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="cursor: pointer;">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </span>
+            <span style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: #e6f7ff; color: #1890ff; border-radius: 4px; font-size: 12px;">
+              工厂管理员
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="cursor: pointer;">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </span>
+            <span style="padding: 4px 10px; color: #1890ff; font-size: 12px; cursor: pointer;">+ 添加</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 高级设置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">高级设置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">启用规则</div>
+            <div style="font-size: 12px; color: #8c8c8c; margin-top: 2px;">关闭后规则将不再生效</div>
+          </div>
+          <div style="width: 44px; height: 24px; background: #1890ff; border-radius: 12px; position: relative; cursor: pointer;">
+            <div style="width: 20px; height: 20px; background: white; border-radius: 10px; position: absolute; right: 2px; top: 2px;"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">静默期</div>
+            <div style="font-size: 12px; color: #8c8c8c; margin-top: 2px;">同一规则多久内不重复触发</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px; color: #262626;">1 小时</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">应用范围</div>
+            <div style="font-size: 12px; color: #8c8c8c; margin-top: 2px;">规则适用于哪些工厂</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px; color: #262626;">全部工厂</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 规则预览 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">规则预览</span>
+      </div>
+
+      <div style="background: #1e1e1e; border-radius: 12px; padding: 16px;">
+        <pre style="margin: 0; font-family: 'Menlo', 'Monaco', monospace; font-size: 11px; line-height: 1.6; color: #d4d4d4; overflow-x: auto;"><span style="color: #569cd6;">IF</span> quota.usageRate >= <span style="color: #b5cea8;">0.80</span>
+<span style="color: #569cd6;">AND</span> lastNotify > <span style="color: #b5cea8;">1</span> <span style="color: #6a9955;">hour</span>
+<span style="color: #569cd6;">THEN</span>
+  <span style="color: #dcdcaa;">sendEmail</span>(recipients)
+  <span style="color: #dcdcaa;">sendSMS</span>(recipients)
+  <span style="color: #dcdcaa;">updateLastNotify</span>()</pre>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-actions">
+      <div class="bottom-actions__btn bottom-actions__btn--secondary">删除规则</div>
+      <div class="bottom-actions__btn bottom-actions__btn--primary">保存规则</div>
+    </div>
+  </div>
+</body>
+</html>

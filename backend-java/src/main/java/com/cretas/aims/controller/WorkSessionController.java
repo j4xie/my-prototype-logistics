@@ -2,6 +2,9 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.EmployeeWorkSession;
 import com.cretas.aims.service.EmployeeWorkSessionService;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,6 +27,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/work-sessions")
+@Tag(name = "员工工作会话管理", description = "员工工作会话管理相关接口，包括工作会话的创建、查询、开始、结束、取消，用户活跃会话查询，按时间范围/工作类型筛选，会话统计及用户工时统计等功能")
 @RequiredArgsConstructor
 public class WorkSessionController {
 
@@ -33,11 +37,12 @@ public class WorkSessionController {
      * 获取工作会话列表（分页）
      */
     @GetMapping
+    @Operation(summary = "获取工作会话列表", description = "分页获取工厂的工作会话列表，支持按状态筛选")
     public ResponseEntity<?> getWorkSessions(
-            @PathVariable String factoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String status) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "0") @Parameter(description = "页码（0-based）", example = "0") int page,
+            @RequestParam(defaultValue = "10") @Parameter(description = "每页大小", example = "10") int size,
+            @RequestParam(required = false) @Parameter(description = "会话状态：ACTIVE-进行中/COMPLETED-已完成/CANCELLED-已取消", example = "ACTIVE") String status) {
         try {
             Page<EmployeeWorkSession> sessions;
             if (status != null && !status.isEmpty()) {
@@ -67,9 +72,10 @@ public class WorkSessionController {
      * 获取单个工作会话
      */
     @GetMapping("/{id}")
+    @Operation(summary = "获取工作会话详情", description = "根据ID获取工作会话的详细信息")
     public ResponseEntity<?> getWorkSession(
-            @PathVariable String factoryId,
-            @PathVariable Long id) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "工作会话ID", example = "1") Long id) {
         try {
             return workSessionService.getById(id)
                     .map(session -> ResponseEntity.ok(Map.of(
@@ -90,9 +96,10 @@ public class WorkSessionController {
      * 开始工作会话
      */
     @PostMapping("/start")
+    @Operation(summary = "开始工作会话", description = "为员工创建并开始一个新的工作会话，同一员工只能有一个活跃会话")
     public ResponseEntity<?> startSession(
-            @PathVariable String factoryId,
-            @RequestBody EmployeeWorkSession session) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @Parameter(description = "工作会话信息，包含员工ID、工作类型等") EmployeeWorkSession session) {
         try {
             session.setFactoryId(factoryId);
             EmployeeWorkSession started = workSessionService.startSession(session);
@@ -120,10 +127,11 @@ public class WorkSessionController {
      * 结束工作会话
      */
     @PutMapping("/{id}/end")
+    @Operation(summary = "结束工作会话", description = "结束指定的工作会话，可记录休息时间和备注，系统自动计算工时")
     public ResponseEntity<?> endSession(
-            @PathVariable String factoryId,
-            @PathVariable Long id,
-            @RequestBody(required = false) Map<String, Object> body) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "工作会话ID", example = "1") Long id,
+            @RequestBody(required = false) @Parameter(description = "结束信息: {breakMinutes: 休息分钟数, notes: 备注}") Map<String, Object> body) {
         try {
             Integer breakMinutes = body != null ? (Integer) body.get("breakMinutes") : null;
             String notes = body != null ? (String) body.get("notes") : null;
@@ -153,9 +161,10 @@ public class WorkSessionController {
      * 取消工作会话
      */
     @PutMapping("/{id}/cancel")
+    @Operation(summary = "取消工作会话", description = "取消指定的工作会话，取消后不计入工时统计")
     public ResponseEntity<?> cancelSession(
-            @PathVariable String factoryId,
-            @PathVariable Long id) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "工作会话ID", example = "1") Long id) {
         try {
             EmployeeWorkSession cancelled = workSessionService.cancelSession(id);
             return ResponseEntity.ok(Map.of(
@@ -182,10 +191,11 @@ public class WorkSessionController {
      * 更新工作会话
      */
     @PutMapping("/{id}")
+    @Operation(summary = "更新工作会话", description = "更新工作会话信息，如工作类型、备注等")
     public ResponseEntity<?> updateSession(
-            @PathVariable String factoryId,
-            @PathVariable Long id,
-            @RequestBody EmployeeWorkSession updateData) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "工作会话ID", example = "1") Long id,
+            @RequestBody @Parameter(description = "更新的工作会话信息") EmployeeWorkSession updateData) {
         try {
             EmployeeWorkSession updated = workSessionService.updateSession(id, updateData);
             return ResponseEntity.ok(Map.of(
@@ -212,9 +222,10 @@ public class WorkSessionController {
      * 获取用户当前活跃会话
      */
     @GetMapping("/active/{userId}")
+    @Operation(summary = "获取用户当前活跃会话", description = "查询指定用户当前是否有活跃的工作会话，每个用户同时只能有一个活跃会话")
     public ResponseEntity<?> getActiveSession(
-            @PathVariable String factoryId,
-            @PathVariable Long userId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "用户ID", example = "22") Long userId) {
         try {
             return workSessionService.getActiveSession(factoryId, userId)
                     .map(session -> {
@@ -243,9 +254,10 @@ public class WorkSessionController {
      * 获取用户工作会话列表
      */
     @GetMapping("/user/{userId}")
+    @Operation(summary = "获取用户工作会话列表", description = "获取指定用户的所有工作会话记录，包括已完成和进行中的会话")
     public ResponseEntity<?> getUserSessions(
-            @PathVariable String factoryId,
-            @PathVariable Long userId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "用户ID", example = "22") Long userId) {
         try {
             List<EmployeeWorkSession> sessions = workSessionService.getByUserId(userId);
             return ResponseEntity.ok(Map.of(
@@ -265,10 +277,11 @@ public class WorkSessionController {
      * 按时间范围查询
      */
     @GetMapping("/date-range")
+    @Operation(summary = "按时间范围查询工作会话", description = "查询指定时间范围内的所有工作会话记录")
     public ResponseEntity<?> getByDateRange(
-            @PathVariable String factoryId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(description = "开始时间（ISO格式）", example = "2025-01-01T08:00:00") LocalDateTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(description = "结束时间（ISO格式）", example = "2025-01-31T18:00:00") LocalDateTime endTime) {
         try {
             List<EmployeeWorkSession> sessions = workSessionService.getByTimeRange(factoryId, startTime, endTime);
             return ResponseEntity.ok(Map.of(
@@ -288,9 +301,10 @@ public class WorkSessionController {
      * 按工作类型查询
      */
     @GetMapping("/work-type/{workTypeId}")
+    @Operation(summary = "按工作类型查询会话", description = "查询指定工作类型的所有工作会话记录")
     public ResponseEntity<?> getByWorkType(
-            @PathVariable String factoryId,
-            @PathVariable Integer workTypeId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "工作类型ID", example = "1") Integer workTypeId) {
         try {
             List<EmployeeWorkSession> sessions = workSessionService.getByWorkType(factoryId, workTypeId);
             return ResponseEntity.ok(Map.of(
@@ -310,10 +324,11 @@ public class WorkSessionController {
      * 获取工作会话统计
      */
     @GetMapping("/stats")
+    @Operation(summary = "获取工作会话统计", description = "统计指定时间范围内的工作会话数据，包括总会话数、总工时、平均工时等")
     public ResponseEntity<?> getStats(
-            @PathVariable String factoryId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(description = "开始时间（ISO格式）", example = "2025-01-01T00:00:00") LocalDateTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(description = "结束时间（ISO格式）", example = "2025-01-31T23:59:59") LocalDateTime endTime) {
         try {
             Map<String, Object> stats = workSessionService.getSessionStats(factoryId, startTime, endTime);
             return ResponseEntity.ok(Map.of(
@@ -333,11 +348,12 @@ public class WorkSessionController {
      * 获取用户工时统计
      */
     @GetMapping("/user/{userId}/stats")
+    @Operation(summary = "获取用户工时统计", description = "统计指定用户在时间范围内的工时数据，包括总工时、有效工时、休息时间等")
     public ResponseEntity<?> getUserStats(
-            @PathVariable String factoryId,
-            @PathVariable Long userId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "用户ID", example = "22") Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(description = "开始时间（ISO格式）", example = "2025-01-01T00:00:00") LocalDateTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(description = "结束时间（ISO格式）", example = "2025-01-31T23:59:59") LocalDateTime endTime) {
         try {
             Map<String, Object> stats = workSessionService.getUserWorkStats(userId, startTime, endTime);
             return ResponseEntity.ok(Map.of(

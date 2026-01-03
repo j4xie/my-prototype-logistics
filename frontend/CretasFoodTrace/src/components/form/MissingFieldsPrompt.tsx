@@ -47,6 +47,7 @@ import {
   useTheme,
   Chip,
 } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { speechRecognitionService } from '../../services/voice/SpeechRecognitionService';
 
 // ========== 类型定义 ==========
@@ -83,6 +84,7 @@ export function MissingFieldsPrompt({
   isLoading = false,
 }: MissingFieldsPromptProps): React.ReactElement {
   const theme = useTheme();
+  const { t } = useTranslation('common');
 
   // 状态：每个缺失字段的答案
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -213,7 +215,7 @@ export function MissingFieldsPrompt({
               textStyle={styles.chipText}
               style={styles.chip}
             >
-              必填
+              {t('form.missingFields.required')}
             </Chip>
           </View>
 
@@ -222,7 +224,7 @@ export function MissingFieldsPrompt({
           <View style={styles.inputRow}>
             <TextInput
               mode="outlined"
-              placeholder="请输入或使用语音"
+              placeholder={t('form.missingFields.placeholder')}
               value={answers[fieldName] || ''}
               onChangeText={(text) => updateAnswer(fieldName, text)}
               style={styles.textInput}
@@ -247,7 +249,7 @@ export function MissingFieldsPrompt({
           {isCurrentRecording && (
             <View style={styles.recordingIndicator}>
               <ActivityIndicator size="small" color="#FF5722" />
-              <Text style={styles.recordingText}>正在录音...</Text>
+              <Text style={styles.recordingText}>{t('form.missingFields.recording')}</Text>
             </View>
           )}
         </Card.Content>
@@ -279,7 +281,7 @@ export function MissingFieldsPrompt({
             <View style={styles.titleContainer}>
               <IconButton icon="robot" size={24} iconColor={theme.colors.primary} />
               <Text variant="titleLarge" style={styles.title}>
-                {followUpQuestion || '需要补充信息'}
+                {followUpQuestion || t('form.missingFields.title')}
               </Text>
             </View>
             <IconButton icon="close" size={24} onPress={handleCancel} />
@@ -290,7 +292,7 @@ export function MissingFieldsPrompt({
           {/* 字段输入列表 */}
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             <Text variant="bodyMedium" style={styles.sectionTitle}>
-              请补充以下 {missingFields.length} 个必填字段
+              {t('form.missingFields.pleaseComplete', { count: missingFields.length })}
             </Text>
 
             {missingFields.map((field, index) => {
@@ -301,7 +303,7 @@ export function MissingFieldsPrompt({
             <Surface style={styles.tipBox} elevation={1}>
               <IconButton icon="information" size={20} iconColor="#2196F3" />
               <Text style={styles.tipText}>
-                您可以直接输入，或点击麦克风图标使用语音
+                {t('form.missingFields.tip')}
               </Text>
             </Surface>
           </ScrollView>
@@ -313,7 +315,7 @@ export function MissingFieldsPrompt({
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" />
-                <Text style={styles.loadingText}>AI 正在分析...</Text>
+                <Text style={styles.loadingText}>{t('form.missingFields.aiProcessing')}</Text>
               </View>
             ) : (
               <>
@@ -323,7 +325,7 @@ export function MissingFieldsPrompt({
                   style={styles.button}
                   disabled={isLoading}
                 >
-                  跳过
+                  {t('form.missingFields.skip')}
                 </Button>
                 <Button
                   mode="contained"
@@ -331,7 +333,7 @@ export function MissingFieldsPrompt({
                   style={styles.button}
                   disabled={isLoading || !hasAnyAnswer}
                 >
-                  继续
+                  {t('form.missingFields.continue')}
                 </Button>
               </>
             )}

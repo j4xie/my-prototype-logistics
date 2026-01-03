@@ -16,6 +16,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAHomeStackParamList } from '../../../types/navigation';
 import { materialBatchApiClient, MaterialBatch } from '../../../services/api/materialBatchApiClient';
 
@@ -26,6 +27,7 @@ export function MaterialBatchDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
   const { batchId } = route.params;
+  const { t } = useTranslation('home');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,7 +43,7 @@ export function MaterialBatchDetailScreen() {
       }
     } catch (err) {
       console.error('加载原材料批次详情失败:', err);
-      setError('数据加载失败');
+      setError(t('materialBatchDetail.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,12 +73,12 @@ export function MaterialBatchDetailScreen() {
 
   const getStatusLabel = (status: string): string => {
     const labels: Record<string, string> = {
-      available: '可用',
-      fresh: '新鲜',
-      reserved: '已预留',
-      depleted: '已消耗',
-      expired: '已过期',
-      frozen: '冷冻',
+      available: t('materialBatchDetail.status.available'),
+      fresh: t('materialBatchDetail.status.fresh'),
+      reserved: t('materialBatchDetail.status.reserved'),
+      depleted: t('materialBatchDetail.status.depleted'),
+      expired: t('materialBatchDetail.status.expired'),
+      frozen: t('materialBatchDetail.status.frozen'),
     };
     return labels[status] || status;
   };
@@ -100,7 +102,7 @@ export function MaterialBatchDetailScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -113,14 +115,14 @@ export function MaterialBatchDetailScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Icon source="arrow-left" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>原材料详情</Text>
+          <Text style={styles.headerTitle}>{t('materialBatchDetail.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.errorContainer}>
           <Icon source="alert-circle" size={48} color="#e53e3e" />
-          <Text style={styles.errorText}>{error || '未找到批次信息'}</Text>
+          <Text style={styles.errorText}>{error || t('materialBatchDetail.notFound')}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={loadData}>
-            <Text style={styles.retryText}>重试</Text>
+            <Text style={styles.retryText}>{t('materialBatchDetail.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -134,7 +136,7 @@ export function MaterialBatchDetailScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>原材料详情</Text>
+        <Text style={styles.headerTitle}>{t('materialBatchDetail.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -157,29 +159,29 @@ export function MaterialBatchDetailScreen() {
 
         {/* 基本信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>基本信息</Text>
+          <Text style={styles.sectionTitle}>{t('materialBatchDetail.basicInfo')}</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>原料名称</Text>
+            <Text style={styles.infoLabel}>{t('materialBatchDetail.materialName')}</Text>
             <Text style={styles.infoValue}>{batch.materialName || batch.materialTypeId}</Text>
           </View>
           {batch.materialCode && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>原料代码</Text>
+              <Text style={styles.infoLabel}>{t('materialBatchDetail.materialCode')}</Text>
               <Text style={styles.infoValue}>{batch.materialCode}</Text>
             </View>
           )}
           {batch.materialCategory && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>原料类别</Text>
+              <Text style={styles.infoLabel}>{t('materialBatchDetail.materialCategory')}</Text>
               <Text style={styles.infoValue}>{batch.materialCategory}</Text>
             </View>
           )}
           {batch.storageType && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>存储类型</Text>
+              <Text style={styles.infoLabel}>{t('materialBatchDetail.storageType')}</Text>
               <Text style={styles.infoValue}>
-                {batch.storageType === 'fresh' ? '新鲜' :
-                 batch.storageType === 'frozen' ? '冷冻' : '干货'}
+                {batch.storageType === 'fresh' ? t('materialBatchDetail.storageTypes.fresh') :
+                 batch.storageType === 'frozen' ? t('materialBatchDetail.storageTypes.frozen') : t('materialBatchDetail.storageTypes.dry')}
               </Text>
             </View>
           )}
@@ -187,40 +189,40 @@ export function MaterialBatchDetailScreen() {
 
         {/* 库存信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>库存信息</Text>
+          <Text style={styles.sectionTitle}>{t('materialBatchDetail.inventoryInfo')}</Text>
           <View style={styles.quantityGrid}>
             <View style={styles.quantityItem}>
               <Text style={styles.quantityValue}>{batch.inboundQuantity}</Text>
-              <Text style={styles.quantityLabel}>入库数量</Text>
+              <Text style={styles.quantityLabel}>{t('materialBatchDetail.inboundQuantity')}</Text>
             </View>
             <View style={styles.quantityItem}>
               <Text style={[styles.quantityValue, { color: '#48bb78' }]}>{batch.remainingQuantity}</Text>
-              <Text style={styles.quantityLabel}>剩余数量</Text>
+              <Text style={styles.quantityLabel}>{t('materialBatchDetail.remainingQuantity')}</Text>
             </View>
             <View style={styles.quantityItem}>
               <Text style={[styles.quantityValue, { color: '#ed8936' }]}>{batch.reservedQuantity}</Text>
-              <Text style={styles.quantityLabel}>已预留</Text>
+              <Text style={styles.quantityLabel}>{t('materialBatchDetail.reservedQuantity')}</Text>
             </View>
             <View style={styles.quantityItem}>
               <Text style={[styles.quantityValue, { color: '#667eea' }]}>{batch.usedQuantity}</Text>
-              <Text style={styles.quantityLabel}>已使用</Text>
+              <Text style={styles.quantityLabel}>{t('materialBatchDetail.usedQuantity')}</Text>
             </View>
           </View>
         </View>
 
         {/* 供应商与成本 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>供应商与成本</Text>
+          <Text style={styles.sectionTitle}>{t('materialBatchDetail.supplierAndCost')}</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>供应商</Text>
+            <Text style={styles.infoLabel}>{t('materialBatchDetail.supplier')}</Text>
             <Text style={styles.infoValue}>{batch.supplierName || batch.supplierId || '-'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>单价</Text>
+            <Text style={styles.infoLabel}>{t('materialBatchDetail.unitPrice')}</Text>
             <Text style={styles.infoValue}>{formatCurrency(batch.unitPrice)}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>总成本</Text>
+            <Text style={styles.infoLabel}>{t('materialBatchDetail.totalCost')}</Text>
             <Text style={[styles.infoValue, { color: '#667eea', fontWeight: '600' }]}>
               {formatCurrency(batch.totalCost)}
             </Text>
@@ -229,20 +231,20 @@ export function MaterialBatchDetailScreen() {
 
         {/* 时间信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>时间信息</Text>
+          <Text style={styles.sectionTitle}>{t('materialBatchDetail.timeInfo')}</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>入库日期</Text>
+            <Text style={styles.infoLabel}>{t('materialBatchDetail.inboundDate')}</Text>
             <Text style={styles.infoValue}>{formatDate(batch.inboundDate)}</Text>
           </View>
           {batch.productionDate && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>生产日期</Text>
+              <Text style={styles.infoLabel}>{t('materialBatchDetail.productionDate')}</Text>
               <Text style={styles.infoValue}>{formatDate(batch.productionDate)}</Text>
             </View>
           )}
           {batch.expiryDate && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>过期日期</Text>
+              <Text style={styles.infoLabel}>{t('materialBatchDetail.expiryDate')}</Text>
               <Text style={[styles.infoValue,
                 new Date(batch.expiryDate) < new Date() && { color: '#e53e3e' }
               ]}>
@@ -251,35 +253,35 @@ export function MaterialBatchDetailScreen() {
             </View>
           )}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>创建时间</Text>
+            <Text style={styles.infoLabel}>{t('materialBatchDetail.createdAt')}</Text>
             <Text style={styles.infoValue}>{formatDate(batch.createdAt)}</Text>
           </View>
         </View>
 
         {/* 其他信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>其他信息</Text>
+          <Text style={styles.sectionTitle}>{t('materialBatchDetail.otherInfo')}</Text>
           {batch.qualityGrade && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>质量等级</Text>
+              <Text style={styles.infoLabel}>{t('materialBatchDetail.qualityGrade')}</Text>
               <Text style={styles.infoValue}>{batch.qualityGrade}</Text>
             </View>
           )}
           {batch.storageLocation && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>存储位置</Text>
+              <Text style={styles.infoLabel}>{t('materialBatchDetail.storageLocation')}</Text>
               <Text style={styles.infoValue}>{batch.storageLocation}</Text>
             </View>
           )}
           {batch.createdByName && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>创建人</Text>
+              <Text style={styles.infoLabel}>{t('materialBatchDetail.createdBy')}</Text>
               <Text style={styles.infoValue}>{batch.createdByName}</Text>
             </View>
           )}
           {batch.notes && (
             <View style={styles.notesRow}>
-              <Text style={styles.infoLabel}>备注</Text>
+              <Text style={styles.infoLabel}>{t('materialBatchDetail.notes')}</Text>
               <Text style={styles.notesText}>{batch.notes}</Text>
             </View>
           )}

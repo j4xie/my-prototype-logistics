@@ -1,0 +1,294 @@
+{
+  "shared": {
+    "conversion": {
+      "title": "Conversion Analysis",
+      "subtitle": "AI Intelligent Production Efficiency Analysis",
+      "period": {
+        "today": "Today",
+        "week": "This Week",
+        "month": "This Month",
+        "quarter": "Quarter"
+      },
+      "weekDays": {
+        "monday": "Mon",
+        "tuesday": "Tue",
+        "wednesday": "Wed",
+        "thursday": "Thu",
+        "friday": "Fri",
+        "saturday": "Sat",
+        "sunday": "Sun"
+      },
+      "mainCard": {
+        "title": "Overall Conversion Rate This Month",
+        "aiTag": "AI Analysis",
+        "comparedToLastMonth": "vs Last Month",
+        "industryAvg": "Industry Avg",
+        "target": "Target",
+        "gap": "Gap"
+      },
+      "categoryAnalysis": "Category Conversion Analysis",
+      "input": "Input",
+      "output": "Output",
+      "status": {
+        "exceed": "Exceeds Target",
+        "belowIndustry": "Below Industry",
+        "meetTarget": "Meets Target",
+        "excellent": "Excellent",
+        "flat": "Flat"
+      },
+      "lossAnalysis": "Loss Analysis",
+      "normalLoss": "Normal Loss",
+      "abnormalLoss": "Abnormal Loss",
+      "abnormalDetails": "Abnormal Loss Details",
+      "trendAnalysis": "Conversion Rate Trend",
+      "actualRate": "Actual Rate",
+      "targetLine": "Target Line (93%)",
+      "industryLine": "Industry Avg (91%)",
+      "aiOptimization": "AI Optimization Recommendations",
+      "smartAnalysis": "Smart Analysis",
+      "aiAnalyzedAt": "AI analyzed {{time}} ago",
+      "generateReport": "Generate Report",
+      "supplierImpact": "Supplier Impact Analysis",
+      "grade": "Grade {{grade}}",
+      "conversionRate": "Conversion Rate",
+      "qualityRate": "Quality Pass Rate",
+      "sharePercent": "Supply Share",
+      "exportReport": "Export Report",
+      "deepAnalysis": "AI Deep Analysis"
+    },
+    "alertHandle": {
+      "title": "Handle Alert",
+      "subtitle": "Process inventory alert",
+      "alertInfo": "Alert Information",
+      "urgent": "Urgent",
+      "currentStock": "Current Stock",
+      "safeStock": "Safety Stock",
+      "gap": "Gap",
+      "expireTime": "Expiry Time",
+      "selectSolution": "Select Solution",
+      "solutions": {
+        "purchase": {
+          "title": "Emergency Purchase",
+          "recommended": "Recommended",
+          "suggestedQty": "Suggested Qty: {{qty}} kg",
+          "recommendedSupplier": "Recommended Supplier: {{supplier}}",
+          "expectedArrival": "Expected Arrival: {{days}} days"
+        },
+        "freeze": {
+          "title": "Convert to Frozen",
+          "extendShelfLife": "Extend Shelf Life: +{{days}} days",
+          "transferTo": "Transfer to: {{location}}",
+          "suitable": "Suitable for expiring batches"
+        },
+        "fifo": {
+          "title": "Priority Consumption (FIFO)",
+          "relatedPlans": "Related Production Plans: {{count}}",
+          "markPriority": "Mark as priority consumption batch",
+          "autoRecommend": "System automatically recommends this batch"
+        },
+        "dispose": {
+          "title": "Disposal",
+          "estimatedLoss": "Estimated Loss: ¥{{amount}}",
+          "requiresApproval": "Requires Approval: {{role}}",
+          "suitable": "Suitable for expired/spoiled materials"
+        }
+      },
+      "purchaseInfo": "Purchase Information",
+      "purchaseQty": "Purchase Quantity",
+      "supplier": "Supplier",
+      "unitPrice": "Estimated Unit Price",
+      "totalAmount": "Estimated Total",
+      "remarks": "Remarks",
+      "remarksPlaceholder": "Enter remarks",
+      "freezeInfo": "Freeze Information",
+      "freezeQty": "Conversion Quantity",
+      "targetLocation": "Target Location",
+      "freezeInstructions": "Freeze Instructions",
+      "extendedExpiryDate": "New Expiry Date: {{date}}",
+      "freezeProcessTime": "Requires {{hours}} hours freeze processing",
+      "cancel": "Cancel",
+      "confirmSolution": "Confirm Solution",
+      "success": "Success",
+      "successMessage": "Solution submitted successfully"
+    },
+    "alertList": {
+      "alertTypeTabs": {
+        "standard": "Standard Alerts",
+        "ai": "AI Smart Alerts"
+      },
+      "aiAnalysis": "🤖 AI Smart Analysis Alerts",
+      "urgentAlerts": "Urgent Alerts",
+      "warningAlerts": "Warning Alerts",
+      "priority": {
+        "high": "High Priority",
+        "medium": "Medium Priority",
+        "low": "Low Priority"
+      },
+      "aiSuggestion": "🤖 AI Suggestions",
+      "ignore": "Ignore",
+      "handle": "Handle",
+      "handleImmediately": "Handle Now",
+      "viewDetails": "View Details",
+      "alertStats": "Alert Statistics",
+      "statsCategories": {
+        "urgent": "Urgent",
+        "warning": "Warning",
+        "info": "Info",
+        "resolved": "Resolved"
+      },
+      "noAiAlerts": "No AI alerts",
+      "noUrgentAlerts": "No urgent alerts",
+      "noWarningAlerts": "No warning alerts",
+      "totalAlerts": "Total {{count}} alerts",
+      "loadingAlerts": "Loading alerts...",
+      "ignoreSuccess": "Alert ignored",
+      "handleSuccess": "Alert handled",
+      "ignoreFailed": "Failed to ignore alert",
+      "handleFailed": "Failed to handle alert"
+    },
+    "scanOperation": {
+      "inbound": {
+        "title": "Scan Inbound",
+        "action": "Inbound"
+      },
+      "outbound": {
+        "title": "Scan Outbound",
+        "action": "Outbound"
+      },
+      "scanHint": "Place QR code/barcode inside frame",
+      "scanning": "Scanning...",
+      "scanned": "Scanned",
+      "lastScan": "Last Scan",
+      "noRecord": "No scan record",
+      "clickToScan": "Click to Scan",
+      "manualInput": "Manual Input",
+      "scanSuccess": "Scan Successful",
+      "batchNumber": "Batch Number: {{number}}",
+      "successAction": "{{action}} successful!",
+      "continueScanning": "Continue Scanning",
+      "inputTitle": "Manual Input",
+      "inputPrompt": "Enter batch number",
+      "inputCancel": "Cancel",
+      "inputConfirm": "Confirm",
+      "inputSuccess": "Batch {{number}} {{action}} successful!",
+      "notSupported": "Manual input not supported, please use scan function",
+      "tips": {
+        "title": "Scan Instructions",
+        "qrAndBarcode": "Supports QR code and barcode scanning",
+        "autoConfirm": "Auto confirms {{action}} after scanning",
+        "manualFallback": "If scan fails, click \"Manual Input\""
+      }
+    },
+    "recall": {
+      "title": "Recall Management",
+      "subtitle": "Product Recall Traceability",
+      "tabs": {
+        "active": "Active ({{count}})",
+        "completed": "Completed ({{count}})",
+        "create": "Create Recall"
+      },
+      "level": {
+        "urgent": "Urgent",
+        "normal": "Normal"
+      },
+      "status": {
+        "processing": "Processing",
+        "completed": "Completed"
+      },
+      "recallNumber": "Recall Number",
+      "recallReason": "Recall Reason",
+      "affectedBatch": "Affected Batch",
+      "affectedQuantity": "Affected Quantity",
+      "startTime": "Start Time",
+      "completeTime": "Complete Time",
+      "traceScope": "Trace Scope",
+      "inventory": "In Inventory",
+      "shipped": "Shipped",
+      "consumed": "Consumed",
+      "frozen": "Frozen",
+      "notifying": "Notifying",
+      "processingProgress": "Processing Progress",
+      "viewDetails": "View Details",
+      "continueProcess": "Continue Processing",
+      "recallFlow": "Recall Flow",
+      "flowSteps": {
+        "freezeInventory": {
+          "title": "Freeze Inventory",
+          "description": "Lock problem batch"
+        },
+        "notifyCustomers": {
+          "title": "Notify Customers",
+          "description": "Send recall notice"
+        },
+        "recoverProducts": {
+          "title": "Recover Products",
+          "description": "Handle customer returns"
+        },
+        "dispose": {
+          "title": "Disposal Record",
+          "description": "Destroy/Process"
+        },
+        "rootCause": {
+          "title": "Root Cause Analysis",
+          "description": "Root cause analysis report"
+        },
+        "closeRecall": {
+          "title": "Close Recall",
+          "description": "Complete loop"
+        }
+      },
+      "historyRecords": "Historical Recall Records",
+      "createNew": "Create New Recall",
+      "selectBatch": "Select batch to recall",
+      "confirmRecall": "Confirm to initiate recall?",
+      "activeRecalls": "Active Recalls"
+    },
+    "batchTrace": {
+      "title": "Batch Traceability",
+      "batchNumber": "Batch Number",
+      "initial": "Initial",
+      "current": "Current",
+      "completeTraceChain": "Complete Trace Chain",
+      "nodes": {
+        "source": "Material Source",
+        "inbound": "Inbound Inspection",
+        "storage": "Warehouse Management",
+        "outbound": "Outbound Records",
+        "current": "Current Status"
+      },
+      "supplier": "Supplier",
+      "catchDate": "Catch Date",
+      "catchArea": "Catch Area",
+      "inspectionReport": "Inspection Report",
+      "viewReport": "View Report >",
+      "inboundTime": "Inbound Time",
+      "inboundQty": "Inbound Quantity",
+      "inspector": "Inspector",
+      "qualityGrade": "Quality Grade",
+      "location": "Location",
+      "storageTemp": "Storage Temperature",
+      "meetsRequirement": "Meets Requirement",
+      "tempRecords": "Temperature Records",
+      "viewRecords": "View Records >",
+      "storageDays": "Storage Days",
+      "days": "{{count}} days",
+      "order": "Order",
+      "productionBatch": "Production Batch",
+      "customer": "Customer",
+      "outboundTime": "Outbound Time",
+      "product": "Product",
+      "consumptionTime": "Consumption Time",
+      "remainingQty": "Remaining Quantity",
+      "expiryTime": "Expiry Time",
+      "daysLater": "({{days}} days later)",
+      "exportReport": "Export Report",
+      "initiateRecall": "Initiate Recall",
+      "confirmRecall": "Confirm to initiate recall?",
+      "confirmRecallTitle": "Confirm",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "reportExported": "Trace report exported",
+      "exportSuccess": "Success"
+    }
+  }
+}

@@ -32,6 +32,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { DISPATCHER_THEME, PlanSourceType, DispatcherStackParamList } from '../../../types/dispatcher';
 import { productionPlanApiClient, PlanType } from '../../../services/api/productionPlanApiClient';
 import { productTypeApiClient, ProductType } from '../../../services/api/productTypeApiClient';
@@ -57,6 +58,7 @@ const PRIORITY_OPTIONS = [
 
 export function PlanCreateScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('dispatcher');
 
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -111,19 +113,19 @@ export function PlanCreateScreen() {
 
   const validateForm = (): boolean => {
     if (!selectedProductId) {
-      Alert.alert('提示', '请选择产品类型');
+      Alert.alert(t('common.info'), t('planCreate.validation.selectProduct'));
       return false;
     }
     if (!plannedQuantity || parseFloat(plannedQuantity) <= 0) {
-      Alert.alert('提示', '请输入有效的计划数量');
+      Alert.alert(t('common.info'), t('planCreate.validation.enterQuantity'));
       return false;
     }
     if (!plannedDate) {
-      Alert.alert('提示', '请选择计划日期');
+      Alert.alert(t('common.info'), t('planCreate.validation.selectPlannedDate'));
       return false;
     }
     if (!deadline) {
-      Alert.alert('提示', '请选择交货期限');
+      Alert.alert(t('common.info'), t('planCreate.validation.selectDeadline'));
       return false;
     }
     return true;
@@ -150,15 +152,15 @@ export function PlanCreateScreen() {
       });
 
       if (response.success) {
-        Alert.alert('成功', '生产计划创建成功', [
-          { text: '确定', onPress: () => navigation.goBack() },
+        Alert.alert(t('planCreate.submit.success'), t('planCreate.submit.successMessage'), [
+          { text: t('common.confirm'), onPress: () => navigation.goBack() },
         ]);
       } else {
-        Alert.alert('失败', response.message || '创建失败，请重试');
+        Alert.alert(t('planCreate.submit.failed'), response.message || t('planCreate.submit.failedMessage'));
       }
     } catch (err) {
       console.error('创建生产计划失败:', err);
-      Alert.alert('错误', '创建失败，请检查网络连接');
+      Alert.alert(t('planCreate.submit.error'), t('planCreate.submit.errorMessage'));
     } finally {
       setLoading(false);
     }
@@ -198,7 +200,7 @@ export function PlanCreateScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>新建生产计划</Text>
+        <Text style={styles.headerTitle}>{t('planCreate.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 

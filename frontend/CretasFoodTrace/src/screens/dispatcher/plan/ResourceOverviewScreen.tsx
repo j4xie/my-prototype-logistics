@@ -27,6 +27,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -260,6 +261,7 @@ const mockAlerts: ResourceAlert[] = [
 
 export default function ResourceOverviewScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('dispatcher');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [workshops, setWorkshops] = useState<Workshop[]>(mockWorkshops);
@@ -278,7 +280,7 @@ export default function ResourceOverviewScreen() {
       setAlerts(mockAlerts);
     } catch (error) {
       console.error('加载资源数据失败:', error);
-      Alert.alert('错误', '加载资源数据失败，请重试');
+      Alert.alert(t('common.error'), t('resource.loadError'));
     } finally {
       setLoading(false);
     }

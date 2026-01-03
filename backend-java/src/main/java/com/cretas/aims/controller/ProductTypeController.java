@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/product-types")
 @RequiredArgsConstructor
-@Tag(name = "产品类型管理")
+@Tag(name = "产品类型管理", description = "产品类型管理相关接口，包括产品类型的创建、查询、更新、删除，按类别筛选、关键字搜索、批量状态更新、编码唯一性校验、默认类型初始化，以及SKU调度配置（工时、加工步骤、技能要求、设备关联）等功能")
 @Validated
 public class ProductTypeController {
 

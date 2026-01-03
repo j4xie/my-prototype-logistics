@@ -6,6 +6,7 @@ import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.ProductionPlanBatchUsage;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.enums.ProductionPlanType;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.ConversionRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ProductionPlanBatchUsageRepository;
@@ -165,7 +166,7 @@ public class FuturePlanMatchingServiceImpl implements FuturePlanMatchingService 
     @Transactional
     public List<MatchResultDTO> triggerManualMatching(String factoryId, String batchId) {
         MaterialBatch batch = materialBatchRepository.findById(batchId)
-                .orElseThrow(() -> new RuntimeException("批次不存在: " + batchId));
+                .orElseThrow(() -> new EntityNotFoundException("MaterialBatch", batchId));
 
         if (!factoryId.equals(batch.getFactoryId())) {
             throw new RuntimeException("批次不属于该工厂");
@@ -178,7 +179,7 @@ public class FuturePlanMatchingServiceImpl implements FuturePlanMatchingService 
     @Transactional
     public void releasePlanAllocations(String planId) {
         ProductionPlan plan = productionPlanRepository.findById(planId)
-                .orElseThrow(() -> new RuntimeException("计划不存在: " + planId));
+                .orElseThrow(() -> new EntityNotFoundException("ProductionPlan", planId));
 
         // 获取所有批次使用记录
         List<ProductionPlanBatchUsage> usages = batchUsageRepository.findByProductionPlanId(planId);

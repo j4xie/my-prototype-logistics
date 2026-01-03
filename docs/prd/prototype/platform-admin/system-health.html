@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>健康状态 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="index.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">健康状态</div>
+      <div class="header-right">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 20px;">
+      <!-- 整体健康度 -->
+      <div style="background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">系统健康度</div>
+            <div style="font-size: 36px; font-weight: 700;">98%</div>
+            <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">所有核心服务运行正常</div>
+          </div>
+          <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 健康统计 -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;">
+        <div style="background: white; border-radius: 10px; padding: 12px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 600; color: #52c41a;">8</div>
+          <div style="font-size: 11px; color: #8c8c8c; margin-top: 2px;">正常</div>
+        </div>
+        <div style="background: white; border-radius: 10px; padding: 12px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 600; color: #faad14;">1</div>
+          <div style="font-size: 11px; color: #8c8c8c; margin-top: 2px;">警告</div>
+        </div>
+        <div style="background: white; border-radius: 10px; padding: 12px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 600; color: #f5222d;">0</div>
+          <div style="font-size: 11px; color: #8c8c8c; margin-top: 2px;">异常</div>
+        </div>
+        <div style="background: white; border-radius: 10px; padding: 12px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 600; color: #8c8c8c;">1</div>
+          <div style="font-size: 11px; color: #8c8c8c; margin-top: 2px;">维护</div>
+        </div>
+      </div>
+
+      <!-- 核心服务 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">核心服务</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
+        <!-- API网关 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%;"></div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">API网关</div>
+              <div style="font-size: 11px; color: #8c8c8c;">gateway-service</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #52c41a;">运行中</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 用户服务 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%;"></div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">用户服务</div>
+              <div style="font-size: 11px; color: #8c8c8c;">user-service</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #52c41a;">运行中</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 生产服务 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%;"></div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">生产服务</div>
+              <div style="font-size: 11px; color: #8c8c8c;">production-service</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #52c41a;">运行中</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- AI服务 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #faad14; border-radius: 50%;"></div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">AI服务</div>
+              <div style="font-size: 11px; color: #faad14;">响应较慢</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #faad14;">警告</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 规则引擎 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%;"></div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">规则引擎</div>
+              <div style="font-size: 11px; color: #8c8c8c;">drools-service</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #52c41a;">运行中</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 基础设施 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">基础设施</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
+        <!-- MySQL主库 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%;"></div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">MySQL主库</div>
+              <div style="font-size: 11px; color: #8c8c8c;">139.196.165.140:3306</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #52c41a;">正常</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Redis -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%;"></div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">Redis缓存</div>
+              <div style="font-size: 11px; color: #8c8c8c;">139.196.165.140:6379</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #52c41a;">正常</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 文件存储 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #52c41a; border-radius: 50%;"></div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">文件存储</div>
+              <div style="font-size: 11px; color: #8c8c8c;">OSS存储服务</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #52c41a;">正常</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 消息队列 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; background: #8c8c8c; border-radius: 50%;"></div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">消息队列</div>
+              <div style="font-size: 11px; color: #8c8c8c;">计划维护中</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #8c8c8c;">维护</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近检查 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">最近检查</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; overflow: hidden;">
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <span style="font-size: 14px; color: #262626;">自动健康检查</span>
+            <span style="font-size: 12px; color: #52c41a;">通过</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c;">2分钟前 - 所有服务响应正常</div>
+        </div>
+
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <span style="font-size: 14px; color: #262626;">数据库连接检查</span>
+            <span style="font-size: 12px; color: #52c41a;">通过</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c;">5分钟前 - 连接池状态正常</div>
+        </div>
+
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <span style="font-size: 14px; color: #262626;">AI服务响应检查</span>
+            <span style="font-size: 12px; color: #faad14;">警告</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c;">10分钟前 - 响应时间超过阈值(>2s)</div>
+        </div>
+
+        <div style="padding: 14px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <span style="font-size: 14px; color: #262626;">磁盘空间检查</span>
+            <span style="font-size: 12px; color: #52c41a;">通过</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c;">15分钟前 - 剩余空间充足(55%)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

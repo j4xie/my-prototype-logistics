@@ -12,6 +12,7 @@ import {
   Surface,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
@@ -45,6 +46,7 @@ const formatDate = (date: Date): string => {
 export default function DepartmentAttendanceScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('hr');
 
   // UI状态
   const [loading, setLoading] = useState(false);
@@ -63,10 +65,10 @@ export default function DepartmentAttendanceScreen() {
    * 部门列表
    */
   const departments = [
-    { value: 'PROCESSING', label: '加工部', code: 'PROCESSING' },
-    { value: 'QUALITY', label: '质检部', code: 'QUALITY' },
-    { value: 'LOGISTICS', label: '物流部', code: 'LOGISTICS' },
-    { value: 'MANAGEMENT', label: '管理部门', code: 'MANAGEMENT' },
+    { value: 'PROCESSING', label: t('attendance.department.departments.processing'), code: 'PROCESSING' },
+    { value: 'QUALITY', label: t('attendance.department.departments.quality'), code: 'QUALITY' },
+    { value: 'LOGISTICS', label: t('attendance.department.departments.logistics'), code: 'LOGISTICS' },
+    { value: 'MANAGEMENT', label: t('attendance.department.departments.management'), code: 'MANAGEMENT' },
   ];
 
   /**
@@ -78,7 +80,7 @@ export default function DepartmentAttendanceScreen() {
       const factoryId = getFactoryId(user);
 
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('messages.error'), t('attendance.department.errors.noFactory'));
         return;
       }
 
@@ -124,8 +126,8 @@ export default function DepartmentAttendanceScreen() {
         date: formatDate(selectedDate),
         factoryId: getFactoryId(user),
       });
-      const errorMessage = getErrorMsg(error) || '加载部门考勤失败，请稍后重试';
-      Alert.alert('加载失败', errorMessage);
+      const errorMessage = getErrorMsg(error) || t('attendance.department.errors.loadFailed');
+      Alert.alert(t('messages.error'), errorMessage);
       setAttendanceData(null);
       setAttendanceRecords([]);
     } finally {
@@ -159,11 +161,11 @@ export default function DepartmentAttendanceScreen() {
       string,
       { label: string; color: string; bgColor: string }
     > = {
-      present: { label: '正常', color: '#4CAF50', bgColor: '#E8F5E9' },
-      late: { label: '迟到', color: '#FF9800', bgColor: '#FFF3E0' },
-      early_leave: { label: '早退', color: '#FF9800', bgColor: '#FFF3E0' },
-      absent: { label: '缺勤', color: '#F44336', bgColor: '#FFEBEE' },
-      on_leave: { label: '请假', color: '#2196F3', bgColor: '#E3F2FD' },
+      present: { label: t('attendance.department.statusLabels.present'), color: '#4CAF50', bgColor: '#E8F5E9' },
+      late: { label: t('attendance.department.statusLabels.late'), color: '#FF9800', bgColor: '#FFF3E0' },
+      early_leave: { label: t('attendance.department.statusLabels.earlyLeave'), color: '#FF9800', bgColor: '#FFF3E0' },
+      absent: { label: t('attendance.department.statusLabels.absent'), color: '#F44336', bgColor: '#FFEBEE' },
+      on_leave: { label: t('attendance.department.statusLabels.onLeave'), color: '#2196F3', bgColor: '#E3F2FD' },
     };
 
     const config = statusMap[status] ?? statusMap['absent'];
@@ -175,7 +177,7 @@ export default function DepartmentAttendanceScreen() {
         style={{ backgroundColor: config?.bgColor ?? '#FFF3E0' }}
         textStyle={{ color: config?.color ?? '#FF9800', fontSize: 12 }}
       >
-        {config?.label ?? '缺勤'}
+        {config?.label ?? t('attendance.department.statusLabels.absent')}
       </Chip>
     );
   };
@@ -218,7 +220,7 @@ export default function DepartmentAttendanceScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="部门考勤查询" />
+        <Appbar.Content title={t('attendance.department.title')} />
         <Appbar.Action icon="refresh" onPress={loadDepartmentAttendance} />
       </Appbar.Header>
 
@@ -230,7 +232,7 @@ export default function DepartmentAttendanceScreen() {
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             <Text variant="bodyMedium" style={styles.sectionLabel}>
-              查询日期
+              {t('attendance.department.queryDate')}
             </Text>
             <View style={styles.dateRow}>
               <Chip
@@ -251,7 +253,7 @@ export default function DepartmentAttendanceScreen() {
                   onPress={() => setSelectedDate(new Date())}
                   style={styles.quickDateChip}
                 >
-                  今天
+                  {t('attendance.department.today')}
                 </Chip>
                 <Chip
                   mode="outlined"
@@ -259,7 +261,7 @@ export default function DepartmentAttendanceScreen() {
                   onPress={() => setQuickDate(-1)}
                   style={styles.quickDateChip}
                 >
-                  昨天
+                  {t('attendance.department.yesterday')}
                 </Chip>
               </View>
             </View>
@@ -270,7 +272,7 @@ export default function DepartmentAttendanceScreen() {
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             <Text variant="bodyMedium" style={styles.sectionLabel}>
-              选择部门
+              {t('attendance.department.selectDepartment')}
             </Text>
             <View style={styles.departmentGrid}>
               {departments.map((dept) => (
@@ -291,39 +293,39 @@ export default function DepartmentAttendanceScreen() {
         {/* 统计概览 */}
         <Surface style={styles.statsCard} elevation={1}>
           <Text variant="titleMedium" style={styles.statsTitle}>
-            考勤统计
+            {t('attendance.department.attendanceStats')}
           </Text>
           <Divider style={styles.divider} />
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" />
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>{t('attendance.department.loading')}</Text>
             </View>
           ) : (
             <View style={styles.statsGrid}>
               <View style={styles.statBox}>
                 <Text style={styles.statValue}>{stats.total}</Text>
-                <Text style={styles.statLabel}>应出勤</Text>
+                <Text style={styles.statLabel}>{t('attendance.department.shouldAttend')}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={[styles.statValue, { color: '#4CAF50' }]}>{stats.present}</Text>
-                <Text style={styles.statLabel}>实际出勤</Text>
+                <Text style={styles.statLabel}>{t('attendance.department.actualAttend')}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={[styles.statValue, { color: '#FF9800' }]}>{stats.late}</Text>
-                <Text style={styles.statLabel}>迟到</Text>
+                <Text style={styles.statLabel}>{t('attendance.stats.late')}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={[styles.statValue, { color: '#F44336' }]}>{stats.absent}</Text>
-                <Text style={styles.statLabel}>缺勤</Text>
+                <Text style={styles.statLabel}>{t('attendance.stats.absent')}</Text>
               </View>
             </View>
           )}
 
           {!loading && stats.total > 0 && (
             <View style={styles.attendanceRateContainer}>
-              <Text style={styles.attendanceRateLabel}>出勤率</Text>
+              <Text style={styles.attendanceRateLabel}>{t('attendance.department.attendanceRate')}</Text>
               <Text style={styles.attendanceRateValue}>
                 {stats.attendanceRate.toFixed(1)}%
               </Text>
@@ -333,14 +335,14 @@ export default function DepartmentAttendanceScreen() {
 
         {/* 员工打卡列表 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="员工打卡记录" titleVariant="titleMedium" />
+          <Card.Title title={t('attendance.department.employeeRecords')} titleVariant="titleMedium" />
           <DataTable>
             <DataTable.Header>
-              <DataTable.Title>姓名</DataTable.Title>
-              <DataTable.Title>上班</DataTable.Title>
-              <DataTable.Title>下班</DataTable.Title>
-              <DataTable.Title numeric>工时</DataTable.Title>
-              <DataTable.Title>状态</DataTable.Title>
+              <DataTable.Title>{t('attendance.department.name')}</DataTable.Title>
+              <DataTable.Title>{t('attendance.department.clockInTime')}</DataTable.Title>
+              <DataTable.Title>{t('attendance.department.clockOutTime')}</DataTable.Title>
+              <DataTable.Title numeric>{t('attendance.department.workHours')}</DataTable.Title>
+              <DataTable.Title>{t('attendance.department.status')}</DataTable.Title>
             </DataTable.Header>
 
             {loading ? (
@@ -350,7 +352,7 @@ export default function DepartmentAttendanceScreen() {
             ) : attendanceRecords.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Text variant="bodyMedium" style={styles.emptyText}>
-                  暂无考勤记录
+                  {t('attendance.department.noRecords')}
                 </Text>
               </View>
             ) : (

@@ -1049,13 +1049,17 @@ public class MobileServiceImpl implements MobileService {
         LocalDateTime startDateTime = start.atStartOfDay();
         LocalDateTime endDateTime = end.plusDays(1).atStartOfDay();
 
-        // 从time_clock_record表查询实际考勤数据
-        List<TimeClockRecord> allRecords = new ArrayList<>();
-        for (User user : allUsers) {
-            List<TimeClockRecord> userRecords = timeClockRecordRepository
-                    .findByFactoryIdAndUserIdAndClockDateBetween(factoryId, Long.valueOf(user.getId()), startDateTime, endDateTime);
-            allRecords.addAll(userRecords);
-        }
+        // 从time_clock_record表批量查询实际考勤数据（避免N+1查询问题）
+        // 提取所有用户ID
+        List<Long> userIds = allUsers.stream()
+                .map(User::getId)
+                .collect(Collectors.toList());
+
+        // 使用批量查询方法一次性获取所有用户的考勤记录
+        List<TimeClockRecord> allRecords = userIds.isEmpty()
+                ? new ArrayList<>()
+                : timeClockRecordRepository.findByFactoryIdAndUserIdInAndClockDateBetween(
+                        factoryId, userIds, startDateTime, endDateTime);
 
         // 统计实际出勤人数（在日期范围内有打卡记录的人数）
         Set<Long> presentUserIds = allRecords.stream()
@@ -1118,13 +1122,29 @@ public class MobileServiceImpl implements MobileService {
         // 获取工厂所有激活用户
         List<User> activeUsers = userRepository.findByFactoryIdAndIsActive(factoryId, true);
 
+        // 批量查询所有用户的打卡记录（避免N+1查询问题）
+        List<Long> userIds = activeUsers.stream()
+                .map(User::getId)
+                .collect(Collectors.toList());
+
+        List<TimeClockRecord> allRecords = userIds.isEmpty()
+                ? new ArrayList<>()
+                : timeClockRecordRepository.findByFactoryIdAndUserIdInAndClockDateBetween(
+                        factoryId, userIds, startDateTime, endDateTime);
+
+        // 按用户ID分组
+        Map<Long, List<TimeClockRecord>> recordsByUser = allRecords.stream()
+                .collect(Collectors.groupingBy(TimeClockRecord::getUserId));
+
+        // 计算日期范围内的总天数
+        long totalDays = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
+
         // 计算每个用户的工时数据
         List<MobileDTO.WorkHoursRankingItem> ranking = new ArrayList<>();
 
         for (User user : activeUsers) {
-            // 查询用户在日期范围内的所有打卡记录
-            List<TimeClockRecord> records = timeClockRecordRepository
-                    .findByFactoryIdAndUserIdAndClockDateBetween(factoryId, Long.valueOf(user.getId()), startDateTime, endDateTime);
+            // 从Map中获取用户的打卡记录（O(1)查找）
+            List<TimeClockRecord> records = recordsByUser.getOrDefault(user.getId(), List.of());
 
             if (records.isEmpty()) {
                 continue; // 没有打卡记录的用户不参与排行
@@ -1144,9 +1164,6 @@ public class MobileServiceImpl implements MobileService {
 
             // 统计出勤天数
             int attendanceDays = records.size();
-
-            // 计算日期范围内的总天数
-            long totalDays = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
 
             // 计算出勤率
             double attendanceRate = totalDays > 0
@@ -1195,14 +1212,27 @@ public class MobileServiceImpl implements MobileService {
             users = userRepository.findByFactoryIdAndIsActive(factoryId, true);
         }
 
+        // 批量查询所有用户的打卡记录（避免N+1查询问题）
+        List<Long> userIds = users.stream()
+                .map(User::getId)
+                .collect(Collectors.toList());
+
+        List<TimeClockRecord> allRecords = userIds.isEmpty()
+                ? new ArrayList<>()
+                : timeClockRecordRepository.findByFactoryIdAndUserIdInAndClockDateBetween(
+                        factoryId, userIds, startDateTime, endDateTime);
+
+        // 按用户ID分组
+        Map<Long, List<TimeClockRecord>> recordsByUser = allRecords.stream()
+                .collect(Collectors.groupingBy(TimeClockRecord::getUserId));
+
         // 统计每个用户的加班数据
         Map<Long, Double> userOvertimeMap = new HashMap<>();
         double totalOvertimeMinutes = 0.0;
 
         for (User user : users) {
-            // 查询用户在日期范围内的所有打卡记录
-            List<TimeClockRecord> records = timeClockRecordRepository
-                    .findByFactoryIdAndUserIdAndClockDateBetween(factoryId, user.getId(), startDateTime, endDateTime);
+            // 从Map中获取用户的打卡记录（O(1)查找）
+            List<TimeClockRecord> records = recordsByUser.getOrDefault(user.getId(), List.of());
 
             // 计算该用户的总加班时长
             double userOvertimeMinutes = records.stream()
@@ -1285,13 +1315,49 @@ public class MobileServiceImpl implements MobileService {
             users = userRepository.findByFactoryIdAndIsActive(factoryId, true);
         }
 
+        // ========== 批量预加载所有关联数据（避免3N+1查询问题）==========
+
+        // 1. 批量查询所有用户的打卡记录
+        List<Long> userIds = users.stream()
+                .map(User::getId)
+                .collect(Collectors.toList());
+
+        List<TimeClockRecord> allTimeClockRecords = userIds.isEmpty()
+                ? new ArrayList<>()
+                : timeClockRecordRepository.findByFactoryIdAndUserIdInAndClockDateBetween(
+                        factoryId, userIds, startDateTime, endDateTime);
+
+        // 按用户ID分组打卡记录
+        Map<Long, List<TimeClockRecord>> timeClockRecordsByUser = allTimeClockRecords.stream()
+                .collect(Collectors.groupingBy(TimeClockRecord::getUserId));
+
+        // 2. 一次性查询所有质检记录（而非在循环中重复查询）
+        List<QualityInspection> allInspections = qualityInspectionRepository
+                .findByFactoryIdAndDateRange(factoryId, start, end);
+
+        // 按质检员ID分组
+        Map<Long, List<QualityInspection>> inspectionsByInspector = allInspections.stream()
+                .filter(qi -> qi.getInspectorId() != null)
+                .collect(Collectors.groupingBy(QualityInspection::getInspectorId));
+
+        // 3. 一次性查询所有生产批次（而非在循环中重复查询）
+        List<ProductionBatch> allBatches = productionBatchRepository
+                .findBatchesInDateRange(factoryId, startDateTime, endDateTime);
+
+        // 按主管ID分组
+        Map<Long, List<ProductionBatch>> batchesBySupervisor = allBatches.stream()
+                .filter(batch -> batch.getSupervisorId() != null)
+                .collect(Collectors.groupingBy(ProductionBatch::getSupervisorId));
+
+        // 计算日期范围内的总天数
+        long totalDays = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
+
         // 计算每个用户的绩效数据
         List<MobileDTO.PerformanceItem> performance = new ArrayList<>();
 
         for (User user : users) {
-            // 1. 从time_clock_records计算工时和出勤率
-            List<TimeClockRecord> records = timeClockRecordRepository
-                    .findByFactoryIdAndUserIdAndClockDateBetween(factoryId, Long.valueOf(user.getId()), startDateTime, endDateTime);
+            // 1. 从Map中获取用户的打卡记录（O(1)查找）
+            List<TimeClockRecord> records = timeClockRecordsByUser.getOrDefault(user.getId(), List.of());
 
             double workMinutes = records.stream()
                     .mapToDouble(r -> r.getWorkDurationMinutes() != null ? r.getWorkDurationMinutes() : 0.0)
@@ -1299,19 +1365,12 @@ public class MobileServiceImpl implements MobileService {
             double workHours = workMinutes / 60.0;
 
             int attendanceDays = records.size();
-            long totalDays = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
             double attendanceRate = totalDays > 0
                     ? ((double) attendanceDays / totalDays) * 100
                     : 0.0;
 
-            // 2. 从quality_inspections计算质量分数（平均合格率）
-            List<QualityInspection> inspections = qualityInspectionRepository
-                    .findByFactoryIdAndDateRange(factoryId, start, end);
-
-            // 筛选该用户作为质检员的记录
-            List<QualityInspection> userInspections = inspections.stream()
-                    .filter(qi -> qi.getInspectorId().equals(user.getId()))
-                    .collect(Collectors.toList());
+            // 2. 从Map中获取该用户作为质检员的记录（O(1)查找）
+            List<QualityInspection> userInspections = inspectionsByInspector.getOrDefault(user.getId(), List.of());
 
             double qualityScore = 0.0;
             if (!userInspections.isEmpty()) {
@@ -1325,17 +1384,8 @@ public class MobileServiceImpl implements MobileService {
                 qualityScore = 85.0; // 无质检记录则给予默认分数
             }
 
-            // 3. 从processing_batches计算效率分数
-            // 效率评估：作为主管的批次完成情况
-            // 注意：startDateTime和endDateTime已在方法开头定义
-
-            List<ProductionBatch> batches = productionBatchRepository
-                    .findBatchesInDateRange(factoryId, startDateTime, endDateTime);
-
-            // 筛选该用户作为主管的批次
-            List<ProductionBatch> userBatches = batches.stream()
-                    .filter(batch -> batch.getSupervisorId() != null && batch.getSupervisorId().equals(user.getId()))
-                    .collect(Collectors.toList());
+            // 3. 从Map中获取该用户作为主管的批次（O(1)查找）
+            List<ProductionBatch> userBatches = batchesBySupervisor.getOrDefault(user.getId(), List.of());
 
             double efficiencyScore = 0.0;
             if (!userBatches.isEmpty()) {
@@ -1456,9 +1506,20 @@ public class MobileServiceImpl implements MobileService {
             page = equipmentAlertRepository.findByFactoryId(factoryId, springPageRequest);
         }
 
-        // 转换为响应DTO
+        // 批量预加载所有设备信息（避免N+1查询问题）
+        Set<Long> equipmentIds = page.getContent().stream()
+                .map(EquipmentAlert::getEquipmentId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, FactoryEquipment> equipmentMap = equipmentIds.isEmpty()
+                ? new HashMap<>()
+                : equipmentRepository.findAllById(equipmentIds).stream()
+                        .collect(Collectors.toMap(FactoryEquipment::getId, java.util.function.Function.identity()));
+
+        // 转换为响应DTO（使用预加载的设备Map）
         List<MobileDTO.AlertResponse> alertResponses = page.getContent().stream()
-                .map(this::convertToAlertResponse)
+                .map(alert -> convertToAlertResponse(alert, equipmentMap))
                 .collect(java.util.stream.Collectors.toList());
 
         // 创建分页响应
@@ -1677,7 +1738,7 @@ public class MobileServiceImpl implements MobileService {
     }
 
     /**
-     * 转换告警实体为响应DTO
+     * 转换告警实体为响应DTO（单个告警版本，用于单个告警操作）
      */
     private MobileDTO.AlertResponse convertToAlertResponse(EquipmentAlert alert) {
         // 获取设备名称
@@ -1685,6 +1746,27 @@ public class MobileServiceImpl implements MobileService {
                 .map(eq -> eq.getEquipmentName())
                 .orElse("未知设备");
 
+        return convertToAlertResponseInternal(alert, equipmentName);
+    }
+
+    /**
+     * 转换告警实体为响应DTO（批量版本，使用预加载的设备Map避免N+1查询）
+     */
+    private MobileDTO.AlertResponse convertToAlertResponse(EquipmentAlert alert, Map<Long, FactoryEquipment> equipmentMap) {
+        // 从Map中获取设备名称（O(1)查找）
+        String equipmentName = "未知设备";
+        if (alert.getEquipmentId() != null && equipmentMap.containsKey(alert.getEquipmentId())) {
+            FactoryEquipment equipment = equipmentMap.get(alert.getEquipmentId());
+            equipmentName = equipment.getEquipmentName() != null ? equipment.getEquipmentName() : "未知设备";
+        }
+
+        return convertToAlertResponseInternal(alert, equipmentName);
+    }
+
+    /**
+     * 转换告警实体为响应DTO的内部实现
+     */
+    private MobileDTO.AlertResponse convertToAlertResponseInternal(EquipmentAlert alert, String equipmentName) {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
 
         return MobileDTO.AlertResponse.builder()
