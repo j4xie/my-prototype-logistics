@@ -7,3 +7,13 @@ export { default as IndustryTemplateEditScreen } from './IndustryTemplateEditScr
 export { default as FactorySetupScreen } from './FactorySetupScreen';
 export { default as SystemMonitoringScreen } from './SystemMonitoringScreen';
 export { default as PlatformReportsScreen } from './PlatformReportsScreen';
+
+// Factory Screens
+export {
+  FactoryCreateScreen,
+  FactoryEditScreen,
+  FactoryListScreen,
+  FactoryDetailScreen,
+  FactoryAIPreviewScreen,
+  FactoryQuotaScreen,
+} from './factory';

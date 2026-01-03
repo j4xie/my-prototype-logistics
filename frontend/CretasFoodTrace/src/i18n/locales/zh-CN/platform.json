@@ -150,6 +150,147 @@
       "setupTemplates": "初始化模板"
     }
   },
+  "factoryCreate": {
+    "title": "手动创建工厂",
+    "manualHint": "手动创建需要逐项填写配置，推荐使用",
+    "aiQuickCreate": "AI快速创建",
+    "createFactory": "创建工厂",
+    "selectIndustry": "请选择行业类型",
+    "selectBlueprint": "请选择蓝图模板",
+    "previewBlueprint": "预览蓝图内容",
+    "blueprintHint": "蓝图将决定工厂的产品类型、部门结构和业务规则",
+    "aiQuotaRecommend": "建议根据工厂规模设置，中型工厂（50-100人）推荐 500 次/周",
+    "sections": {
+      "basicInfo": "基本信息",
+      "contactInfo": "联系信息",
+      "blueprint": "蓝图配置",
+      "aiQuota": "AI配额设置",
+      "adminAccount": "工厂管理员账号"
+    },
+    "fields": {
+      "factoryName": "工厂名称",
+      "factoryCode": "工厂编号",
+      "industryType": "行业类型",
+      "description": "工厂描述",
+      "contactName": "联系人姓名",
+      "contactPhone": "联系电话",
+      "address": "工厂地址",
+      "blueprint": "选择蓝图模板",
+      "aiQuota": "每周AI调用次数上限",
+      "adminUsername": "管理员用户名",
+      "adminPassword": "初始密码",
+      "confirmPassword": "确认密码"
+    },
+    "placeholders": {
+      "factoryName": "请输入工厂名称",
+      "factoryCode": "系统自动生成",
+      "description": "请输入工厂描述（选填）",
+      "contactName": "请输入联系人姓名",
+      "contactPhone": "请输入联系电话",
+      "address": "请输入详细地址",
+      "adminUsername": "请输入管理员用户名",
+      "adminPassword": "请输入初始密码",
+      "confirmPassword": "请再次输入密码"
+    },
+    "validation": {
+      "factoryNameRequired": "请输入工厂名称",
+      "industryTypeRequired": "请选择行业类型",
+      "contactNameRequired": "请输入联系人姓名",
+      "contactPhoneRequired": "请输入联系电话",
+      "invalidPhone": "请输入有效的手机号码",
+      "addressRequired": "请输入工厂地址",
+      "blueprintRequired": "请选择蓝图模板",
+      "usernameRequired": "请输入管理员用户名",
+      "usernameTooShort": "用户名至少4个字符",
+      "passwordRequired": "请输入初始密码",
+      "passwordTooShort": "密码至少8个字符",
+      "confirmPasswordRequired": "请确认密码",
+      "passwordMismatch": "两次输入的密码不一致",
+      "checkForm": "请检查表单填写是否正确"
+    },
+    "messages": {
+      "createSuccess": "工厂创建成功",
+      "createFailed": "工厂创建失败，请重试"
+    },
+    "cancelConfirm": {
+      "title": "确认取消",
+      "message": "确定要取消创建吗？已填写的内容将丢失。"
+    },
+    "blueprintPreview": {
+      "title": "蓝图预览",
+      "comingSoon": "蓝图预览功能开发中",
+      "noSelection": "提示",
+      "selectFirst": "请先选择蓝图模板"
+    }
+  },
+  "factoryEdit": {
+    "title": "编辑工厂",
+    "loading": "加载中...",
+    "saveChanges": "保存更改",
+    "selectIndustry": "请选择行业类型",
+    "codeNotEditable": "工厂编号创建后不可修改",
+    "statusHint": "停用后该工厂将无法登录和使用",
+    "sections": {
+      "basicInfo": "基本信息",
+      "contactInfo": "联系信息",
+      "status": "运营状态",
+      "blueprint": "蓝图配置",
+      "aiQuota": "AI配额"
+    },
+    "fields": {
+      "factoryName": "工厂名称",
+      "factoryCode": "工厂编号",
+      "industryType": "行业类型",
+      "description": "工厂描述",
+      "contactName": "联系人姓名",
+      "contactPhone": "联系电话",
+      "address": "工厂地址",
+      "status": "工厂状态",
+      "aiQuota": "每周调用上限"
+    },
+    "blueprint": {
+      "icon": "蓝",
+      "version": "版本",
+      "bound": "已绑定",
+      "synced": "已同步",
+      "autoSync": "自动同步蓝图更新",
+      "autoSyncHint": "蓝图更新时自动应用到工厂"
+    },
+    "quota": {
+      "thisWeekUsed": "本周已使用"
+    },
+    "validation": {
+      "factoryNameRequired": "请输入工厂名称",
+      "industryTypeRequired": "请选择行业类型",
+      "contactNameRequired": "请输入联系人姓名",
+      "contactPhoneRequired": "请输入联系电话",
+      "addressRequired": "请输入工厂地址",
+      "checkForm": "请检查表单填写是否正确"
+    },
+    "messages": {
+      "loadFailed": "无法加载工厂信息",
+      "updateSuccess": "工厂信息已更新",
+      "updateFailed": "工厂信息更新失败，请重试"
+    },
+    "noChanges": {
+      "title": "提示",
+      "message": "没有检测到任何更改"
+    },
+    "cancelConfirm": {
+      "title": "确认取消",
+      "message": "确定要取消吗？未保存的更改将丢失。"
+    },
+    "changeBlueprint": {
+      "title": "更换蓝图",
+      "action": "更换蓝图",
+      "comingSoon": "蓝图更换功能开发中"
+    },
+    "quotaSettings": {
+      "title": "详细设置",
+      "action": "详细设置",
+      "comingSoon": "AI配额详细设置功能开发中"
+    }
+  },
   "errors": {
     "loadFailed": "加载失败",
     "createFailed": "创建失败",

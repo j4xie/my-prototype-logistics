@@ -1,9 +1,4 @@
 ---
-description:
-globs:
-alwaysApply: true
----
----
 description: 统一开发管理规则 - 项目管理与文档规范时 - 更新README或任务列表时 - 管理重构阶段文档时 - 确保文档一致性和变更记录完整性 - 提供分层开发指导和智能规则引用导航
 globs:
 alwaysApply: true
