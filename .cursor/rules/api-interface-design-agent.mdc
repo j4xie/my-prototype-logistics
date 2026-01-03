@@ -1,9 +1,4 @@
 ---
-description:
-globs:
-alwaysApply: false
----
----
 description: 食品溯源系统API接口设计规范 - 设计新的API接口时 - 编写或更新API文档时 - 进行API架构规划时 - 前后端接口联调时 - API版本升级或重构时 - 确保RESTful设计和业务模型规范
 globs:
 alwaysApply: false

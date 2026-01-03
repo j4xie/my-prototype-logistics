@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.intent.CleanupRequest;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.intent.KeywordEffectiveness;
 import com.cretas.aims.utils.JwtUtil;
