@@ -1,9 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: false
----
----
 description: 一般开发3阶段简化工作流程 - 常规功能开发、组件开发、bug修复时 - 需要快速启动和高效执行时 - 借鉴Phase-3成功经验的简化流程时 - 2-3分钟快速启动确认
 globs: 
 alwaysApply: false

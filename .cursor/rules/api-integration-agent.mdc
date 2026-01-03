@@ -1,9 +1,4 @@
 ---
-description:
-globs:
-alwaysApply: false
----
----
 description: 食品溯源系统API集成代理规则 - API对接开发时 - API客户端封装时 - API文档编写时 - 环境切换配置时 - 错误处理优化时 - API测试验证时 - 确保类型安全的API服务层实现
 globs:
 alwaysApply: false
